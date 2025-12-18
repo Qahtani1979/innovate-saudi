@@ -1,503 +1,598 @@
-# Edge Function Consolidation Plan: RBAC & Access Control
+# Edge Function Consolidation Plan - Deep Analysis v2.0
 
 **Created:** December 18, 2024  
-**Status:** Planning Phase  
+**Updated:** December 18, 2024  
+**Status:** Planning Phase - Awaiting Confirmation  
 **Objective:** Merge all RBAC-related edge functions into a unified `rbac-manager` function
-
----
-
-## Table of Contents
-
-1. [Executive Summary](#executive-summary)
-2. [Current State Analysis](#current-state-analysis)
-3. [Target Architecture](#target-architecture)
-4. [Detailed Implementation Plan](#detailed-implementation-plan)
-5. [Migration Strategy](#migration-strategy)
-6. [Rollback Plan](#rollback-plan)
-7. [Testing Strategy](#testing-strategy)
-8. [Cleanup Plan](#cleanup-plan)
 
 ---
 
 ## Executive Summary
 
-### Problem Statement
-The RBAC system is fragmented across **6 separate edge functions**, leading to:
-- Code duplication
-- Inconsistent behavior
-- Maintenance overhead
-- Difficult debugging
-- Potential security gaps
+This document provides a comprehensive analysis of RBAC-related edge functions, their current usage, critical bugs discovered, and a detailed implementation plan for consolidation.
 
-### Solution
-Consolidate into a **single unified edge function** (`rbac-manager`) with action-based routing.
-
-### Functions to Merge
-
-| Current Function | Purpose | Status |
-|-----------------|---------|--------|
-| `auto-role-assignment` | Assign/revoke roles, auto-approval | Active |
-| `role-request-notification` | Send role request emails | Active |
-| `validate-permission` | Check permissions/delegations | Active |
-| `approve-delegation` | Approve/reject delegations | Active |
-| `run-rbac-security-audit` | Security audits | Active |
-| `budget-approval` | Budget approvals (role-gated) | Active |
+### Critical Bug Found
+🚨 **RoleRequestApprovalQueue.jsx writes approved roles to `user_functional_roles` instead of `user_roles`, causing approved users to have NO ACCESS.**
 
 ---
 
-## Current State Analysis
+## Part 1: Current State Analysis
 
-### 1. `auto-role-assignment/index.ts`
-**Lines:** 216  
+### 1.1 Edge Functions Inventory
+
+| Function Name | Lines | Purpose | Status |
+|---------------|-------|---------|--------|
+| `auto-role-assignment` | 216 | Assign/revoke roles, check auto-approval rules | **Active** |
+| `role-request-notification` | 341 | Send email notifications for role request lifecycle | **Active** |
+| `validate-permission` | 124 | Validate user permissions with delegation support | **Active** |
+| `approve-delegation` | 79 | Approve/reject delegation requests | **Active** |
+| `run-rbac-security-audit` | 147 | Run security audits on RBAC configuration | **Active** |
+| `budget-approval` | 121 | Approve pilot budgets (partial RBAC overlap) | **Keep Separate** |
+
+### 1.2 Detailed Function Analysis
+
+---
+
+#### 1.2.1 `auto-role-assignment` (supabase/functions/auto-role-assignment/index.ts)
+
 **Actions Supported:**
-- `assign` - Direct role assignment to `user_roles`
-- `revoke` - Revoke a role
-- `check_auto_approve` - Check auto-approval rules
-- `auto_assign` - Legacy organization-based assignment
-- (default) - Get user roles
-
-**Database Tables Used:**
-- `user_roles` (READ/WRITE)
-- `auto_approval_rules` (READ)
-- `municipalities` (READ)
-- `organization_members` (READ)
-
-**Dependencies:**
-- None (standalone)
-
----
-
-### 2. `role-request-notification/index.ts`
-**Lines:** 341  
-**Actions Supported:**
-- `submitted` - Notify user of pending request
-- `approved` - Notify user of approval
-- `rejected` - Notify user of rejection
-- Notify admins of new requests
-
-**Database Tables Used:**
-- `user_roles` (READ - for admin lookup)
-- `user_profiles` (READ - for admin emails)
-- `citizen_notifications` (WRITE)
-
-**External Services:**
-- Resend (email)
-
-**Dependencies:**
-- `RESEND_API_KEY` secret
-
----
-
-### 3. `validate-permission/index.ts`
-**Lines:** 124  
-**Actions Supported:**
-- Permission validation for users
-- Delegation checking
-- Role-based permission mapping
-
-**Database Tables Used:**
-- `user_roles` (READ)
-- `delegation_rules` (READ)
-
-**Dependencies:**
-- None
-
----
-
-### 4. `approve-delegation/index.ts`
-**Lines:** 79  
-**Actions Supported:**
-- `approve` - Approve delegation
-- `reject` - Reject delegation
-
-**Database Tables Used:**
-- `delegation_rules` (READ/WRITE)
-
-**Dependencies:**
-- None
-
----
-
-### 5. `run-rbac-security-audit/index.ts`
-**Lines:** 147  
-**Actions Supported:**
-- Run security audit
-- Generate findings
-- Calculate security score
-
-**Database Tables Used:**
-- `user_roles` (READ)
-- `access_logs` (READ)
-- `security_audits` (WRITE)
-
-**Dependencies:**
-- None
-
----
-
-### 6. `budget-approval/index.ts` (Partial merge - approval workflow only)
-**Lines:** 121  
-**Actions Supported:**
-- `approve` - Approve pilot budget
-- `reject` - Reject pilot budget
-
-**Database Tables Used:**
-- `pilots` (READ/WRITE)
-- `approval_requests` (WRITE)
-- `system_activities` (WRITE)
-
-**Note:** This function handles budgets but uses the same approval workflow pattern. Consider keeping separate or merging approval workflow only.
-
----
-
-## Target Architecture
-
-### New Unified Function: `rbac-manager`
-
-```
-supabase/functions/rbac-manager/
-├── index.ts              # Main router
-├── handlers/
-│   ├── roles.ts         # Role assignment operations
-│   ├── permissions.ts   # Permission validation
-│   ├── delegations.ts   # Delegation management
-│   ├── notifications.ts # Role-related notifications
-│   ├── audit.ts         # Security audits
-│   └── approvals.ts     # Approval workflows
-├── utils/
-│   ├── email.ts         # Email templates
-│   ├── validators.ts    # Input validation
-│   └── permissions.ts   # Permission maps
-└── types.ts             # TypeScript types
+```typescript
+switch (action) {
+  case 'assign':             // Direct role assignment to user_roles table
+  case 'revoke':             // Revoke role (set is_active = false)  
+  case 'check_auto_approve': // Check auto-approval rules
+  case 'auto_assign':        // Legacy: Auto-assign based on org membership
+  default:                   // Get user roles
+}
 ```
 
-### Action Routing Schema
+**Database Tables Used:**
+- `user_roles` - ✅ Writes to correct table
+- `auto_approval_rules` - Read for auto-approval logic
+- `municipalities` - Read approved_email_domains
+- `organization_members` - Legacy auto-assign
 
+**Frontend Consumers:**
+| File | Location | Usage |
+|------|----------|-------|
+| `src/hooks/useAutoRoleAssignment.js` | Lines 35, 127 | `checkAndAssignRole()`, `assignRole()` |
+| `src/components/onboarding/MunicipalityStaffOnboardingWizard.jsx` | Line 273 | check_auto_approve |
+| `src/api/base44Client.js` | Line 271 | autoRoleAssignment mapping |
+
+---
+
+#### 1.2.2 `role-request-notification` (supabase/functions/role-request-notification/index.ts)
+
+**Notification Types:**
+```typescript
+type: 'submitted' | 'approved' | 'rejected'
+```
+
+**Features:**
+- Sends bilingual email templates (EN/AR)
+- Creates in-app notifications via `citizen_notifications` table
+- Notifies admins when `notify_admins = true`
+- Uses Resend API for email delivery
+
+**External Dependencies:**
+- `RESEND_API_KEY` secret required
+
+**Frontend Consumers:**
+| File | Location | Usage |
+|------|----------|-------|
+| `src/hooks/useAutoRoleAssignment.js` | Line 90 | Submit notification |
+| `src/components/onboarding/MunicipalityStaffOnboardingWizard.jsx` | Lines 305, 332 | Notifications |
+| `src/components/onboarding/OnboardingWizard.jsx` | Line 66 | Submit notification |
+
+---
+
+#### 1.2.3 `validate-permission` (supabase/functions/validate-permission/index.ts)
+
+**Validation Logic:**
+1. Check if user has admin role → Allow all
+2. Check active delegations matching permission
+3. Fall back to role-based permission map
+
+**Database Tables Used:**
+- `user_roles` - Read roles
+- `delegation_rules` - Check active delegations
+
+**Frontend Consumers:**
+| File | Location | Usage |
+|------|----------|-------|
+| `src/api/base44Client.js` | Line 249 | validatePermission mapping |
+
+---
+
+#### 1.2.4 `approve-delegation` (supabase/functions/approve-delegation/index.ts)
+
+**Purpose:** Approve or reject delegation requests
+
+**Database Operations:**
+- Updates `delegation_rules.approval_status`
+- Sets `is_active = true` on approval
+
+**Frontend Consumers:**
+| File | Location | Usage |
+|------|----------|-------|
+| `src/api/base44Client.js` | Line 248 | approveDelegation mapping |
+
+---
+
+#### 1.2.5 `run-rbac-security-audit` (supabase/functions/run-rbac-security-audit/index.ts)
+
+**Audit Checks:**
+1. Excessive admins (>5 per org)
+2. Inactive users with active roles (30+ days)
+3. Orphaned permissions (null user_id)
+4. Sensitive data access patterns
+
+**Frontend Consumers:**
+| File | Location | Usage |
+|------|----------|-------|
+| `src/api/base44Client.js` | Line 277 | runRBACSecurityAudit mapping |
+
+---
+
+#### 1.2.6 `budget-approval` (supabase/functions/budget-approval/index.ts)
+
+**Purpose:** Pilot budget approval (domain-specific, not core RBAC)
+
+**Recommendation:** Keep separate - not merging
+
+---
+
+## Part 2: Critical Bugs Discovered
+
+### 🚨 BUG #1: RoleRequestApprovalQueue Writes to Wrong Table (CRITICAL)
+
+**Location:** `src/components/access/RoleRequestApprovalQueue.jsx` (Lines 84-94)
+
+**Current Code (BROKEN):**
+```javascript
+// Line 85-86
+const { error: roleError } = await supabase
+  .from('user_functional_roles')  // ❌ WRONG TABLE
+  .upsert({
+    user_id: targetUser.user_id,
+    role_id: role.id,           // Uses role ID
+    assigned_by: user?.id,
+    assigned_at: new Date().toISOString(),
+    is_active: true
+  }, {
+    onConflict: 'user_id,role_id'
+  });
+```
+
+**Impact:**
+- ❌ Approved role requests do NOT grant actual access
+- ❌ `is_admin()` database function reads from `user_roles`, returns FALSE
+- ❌ All RLS policies check `user_roles` table
+- ❌ `get_user_permissions()` reads from `user_roles`
+- ❌ User appears "approved" but has NO ACCESS
+
+**Correct Fix:**
+```javascript
+// Should write to user_roles table
+const { error: roleError } = await supabase
+  .from('user_roles')  // ✅ CORRECT TABLE
+  .upsert({
+    user_id: targetUser.user_id,
+    user_email: userEmail,
+    role: role.name,    // Note: user_roles uses role NAME, not ID
+    is_active: true,
+    assigned_at: new Date().toISOString()
+  }, {
+    onConflict: 'user_id,role'
+  });
+```
+
+---
+
+### 🚨 BUG #2: Dual Table System Creates Confusion
+
+**Problem:** Two separate tables for roles with no synchronization:
+
+| Table | Used By | Writes From |
+|-------|---------|-------------|
+| `user_roles` | DB functions, RLS, edge functions | `auto-role-assignment` ✅ |
+| `user_functional_roles` | Almost nothing | `RoleRequestApprovalQueue` ❌ |
+
+**Solution:** Deprecate `user_functional_roles` and consolidate to `user_roles` only.
+
+---
+
+## Part 3: Usage Flow Diagrams
+
+### 3.1 Role Request Flow (Current - BROKEN)
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                        ROLE REQUEST FLOW (CURRENT)                       │
+└──────────────────────────────────────────────────────────────────────────┘
+
+User Onboarding                                     Admin Review
+     │                                                   │
+     ▼                                                   ▼
+┌─────────────────┐                            ┌─────────────────┐
+│ OnboardingWizard │                            │RoleRequestQueue │
+└────────┬────────┘                            └────────┬────────┘
+         │                                              │
+         ▼                                              ▼
+┌─────────────────────────┐                   ┌─────────────────────────┐
+│useAutoRoleAssignment.js │                   │ approveMutation()       │
+└────────┬────────────────┘                   └────────┬────────────────┘
+         │                                              │
+         │ invoke('auto-role-assignment')               │
+         ▼                                              │
+┌─────────────────────────┐                             │
+│ auto-role-assignment    │                             │
+│ (Edge Function)         │                             │
+│                         │                             │
+│ action: check_auto_approve                            │
+└────────┬────────────────┘                             │
+         │                                              │
+         ├── If auto-approved ──┐                       │
+         │                      ▼                       │
+         │        ┌─────────────────────┐               │
+         │        │ Writes to user_roles│ ✅ CORRECT    │
+         │        └─────────────────────┘               │
+         │                                              │
+         ├── If NOT auto-approved                       │
+         │                                              │
+         ▼                                              ▼
+┌─────────────────────────┐              ┌─────────────────────────────┐
+│ Creates role_requests   │──────────────▶│ Admin approves request      │
+│ (status: pending)       │              │                             │
+└─────────────────────────┘              │ Writes to user_functional_  │
+                                         │ roles ❌ WRONG TABLE         │
+                                         └─────────────────────────────┘
+                                                        │
+                                                        ▼
+                                         ┌─────────────────────────────┐
+                                         │ is_admin() checks user_roles│
+                                         │ → Returns FALSE ❌           │
+                                         │                             │
+                                         │ User has NO ACCESS despite  │
+                                         │ "approved" role request     │
+                                         └─────────────────────────────┘
+```
+
+### 3.2 Auto-Approval Flow (WORKING)
+
+```
+     User Signup (Matching Domain)
+                │
+                ▼
+     ┌─────────────────────────┐
+     │ auto-role-assignment    │
+     │ action: check_auto_approve│
+     └────────┬────────────────┘
+              │
+              ▼
+     ┌─────────────────────────┐
+     │ Query auto_approval_rules│
+     │ Check email domain match │
+     └────────┬────────────────┘
+              │
+              ├── Match Found
+              │
+              ▼
+     ┌─────────────────────────┐
+     │ Writes to user_roles    │ ✅ CORRECT
+     │ Returns auto_approved:true│
+     └────────┬────────────────┘
+              │
+              ▼
+     ┌─────────────────────────┐
+     │ is_admin() / RLS        │
+     │ → Returns TRUE ✅        │
+     │ User has FULL ACCESS    │
+     └─────────────────────────┘
+```
+
+---
+
+## Part 4: Consolidation Plan
+
+### 4.1 New Unified Edge Function: `rbac-manager`
+
+**Location:** `supabase/functions/rbac-manager/index.ts`
+
+**Action Routing:**
 ```typescript
 interface RBACRequest {
-  action: 
-    // Role Operations
-    | 'role.assign'
-    | 'role.revoke'
-    | 'role.check_auto_approve'
-    | 'role.get_user_roles'
-    | 'role.request.submit'
-    | 'role.request.approve'
-    | 'role.request.reject'
-    
-    // Permission Operations
-    | 'permission.validate'
-    | 'permission.get_user_permissions'
-    
-    // Delegation Operations
-    | 'delegation.approve'
-    | 'delegation.reject'
-    | 'delegation.check_active'
-    
-    // Notification Operations
-    | 'notification.role_request'
-    | 'notification.role_approved'
-    | 'notification.role_rejected'
-    
-    // Audit Operations
-    | 'audit.run_security_audit'
-    | 'audit.get_findings'
-    
-    // Approval Workflows (optional)
-    | 'approval.process';
-    
+  action: string;
   payload: Record<string, unknown>;
 }
-```
 
----
-
-## Detailed Implementation Plan
-
-### Phase 1: Create New Unified Function (Day 1-2)
-
-#### Step 1.1: Create Base Structure
-
-```typescript
-// supabase/functions/rbac-manager/index.ts
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { Resend } from "https://esm.sh/resend@2.0.0";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const ACTIONS = {
+  // Role Management
+  'role.assign':          handleRoleAssign,
+  'role.revoke':          handleRoleRevoke,
+  'role.check_auto':      handleCheckAutoApprove,
+  'role.list':            handleListUserRoles,
+  'role.approve_request': handleApproveRoleRequest,  // FIXES BUG #1
+  'role.reject_request':  handleRejectRoleRequest,
+  
+  // Notifications
+  'notify.role_submitted': handleNotifyRoleSubmitted,
+  'notify.role_approved':  handleNotifyRoleApproved,
+  'notify.role_rejected':  handleNotifyRoleRejected,
+  
+  // Permission Validation
+  'permission.validate':  handleValidatePermission,
+  
+  // Delegation
+  'delegation.approve':   handleApproveDelegation,
+  'delegation.reject':    handleRejectDelegation,
+  
+  // Security Audit
+  'audit.rbac':           handleRunRBACAudit
 };
-
-// Handler imports (inline for edge function)
-// ... all handlers defined in single file
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const { action, payload } = await req.json();
-    
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    
-    const resendKey = Deno.env.get("RESEND_API_KEY");
-    const resend = resendKey ? new Resend(resendKey) : null;
-
-    console.log(`[rbac-manager] Action: ${action}`);
-
-    let result;
-
-    switch (action) {
-      // ========== ROLE OPERATIONS ==========
-      case 'role.assign':
-        result = await handleRoleAssign(supabase, payload);
-        break;
-      case 'role.revoke':
-        result = await handleRoleRevoke(supabase, payload);
-        break;
-      case 'role.check_auto_approve':
-        result = await handleCheckAutoApprove(supabase, payload);
-        break;
-      case 'role.get_user_roles':
-        result = await handleGetUserRoles(supabase, payload);
-        break;
-      case 'role.request.approve':
-        result = await handleRoleRequestApprove(supabase, payload);
-        break;
-      case 'role.request.reject':
-        result = await handleRoleRequestReject(supabase, payload);
-        break;
-
-      // ========== PERMISSION OPERATIONS ==========
-      case 'permission.validate':
-        result = await handlePermissionValidate(supabase, payload);
-        break;
-      case 'permission.get_user_permissions':
-        result = await handleGetUserPermissions(supabase, payload);
-        break;
-
-      // ========== DELEGATION OPERATIONS ==========
-      case 'delegation.approve':
-        result = await handleDelegationApprove(supabase, payload);
-        break;
-      case 'delegation.reject':
-        result = await handleDelegationReject(supabase, payload);
-        break;
-
-      // ========== NOTIFICATION OPERATIONS ==========
-      case 'notification.role_request':
-      case 'notification.role_approved':
-      case 'notification.role_rejected':
-        result = await handleRoleNotification(supabase, resend, action, payload);
-        break;
-
-      // ========== AUDIT OPERATIONS ==========
-      case 'audit.run_security_audit':
-        result = await handleSecurityAudit(supabase, payload);
-        break;
-
-      default:
-        return new Response(JSON.stringify({ 
-          success: false, 
-          error: `Unknown action: ${action}` 
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-    }
-
-    return new Response(JSON.stringify({ success: true, ...result }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch (err) {
-    const error = err instanceof Error ? err : new Error(String(err));
-    console.error("[rbac-manager] Error:", error);
-    return new Response(JSON.stringify({ success: false, error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-});
 ```
 
-#### Step 1.2: Implement All Handlers
+### 4.2 Files to Update After Creation
 
-Each handler will be a function that takes `supabase` client and `payload`:
+| File | Current | New |
+|------|---------|-----|
+| `src/components/access/RoleRequestApprovalQueue.jsx` | Uses inline mutation | Use rbac-manager `role.approve_request` |
+| `src/hooks/useAutoRoleAssignment.js` | Calls `auto-role-assignment` | Call rbac-manager |
+| `src/components/onboarding/MunicipalityStaffOnboardingWizard.jsx` | Calls old functions | Call rbac-manager |
+| `src/components/onboarding/OnboardingWizard.jsx` | Calls `role-request-notification` | Call rbac-manager |
+| `src/api/base44Client.js` | Multiple mappings | Single rbacManager mapping |
 
-```typescript
-// ========== ROLE HANDLERS ==========
+### 4.3 New Frontend Service Layer
 
-async function handleRoleAssign(supabase: SupabaseClient, payload: {
-  user_id: string;
-  user_email: string;
-  role: string;
-  organization_id?: string;
-  municipality_id?: string;
-}) {
-  const { user_id, user_email, role, organization_id, municipality_id } = payload;
-  
-  const { data, error } = await supabase
-    .from('user_roles')
-    .upsert({
-      user_id,
-      user_email,
-      role,
-      organization_id: organization_id || null,
-      municipality_id: municipality_id || null,
-      assigned_at: new Date().toISOString(),
-      is_active: true
-    }, { onConflict: 'user_id,role' })
-    .select()
-    .single();
-
-  if (error) throw error;
-  return { assigned: true, role: data };
-}
-
-async function handleRoleRevoke(supabase: SupabaseClient, payload: {
-  user_email: string;
-  role: string;
-}) {
-  const { user_email, role } = payload;
-  
-  const { error } = await supabase
-    .from('user_roles')
-    .update({ 
-      is_active: false, 
-      revoked_at: new Date().toISOString() 
-    })
-    .eq('user_email', user_email)
-    .eq('role', role);
-
-  if (error) throw error;
-  return { revoked: true };
-}
-
-async function handleCheckAutoApprove(supabase: SupabaseClient, payload: {
-  user_email: string;
-  user_id: string;
-  persona_type: string;
-  municipality_id?: string;
-  organization_id?: string;
-  institution_domain?: string;
-}) {
-  // ... implementation from auto-role-assignment
-}
-
-async function handleGetUserRoles(supabase: SupabaseClient, payload: {
-  user_email?: string;
-  user_id?: string;
-}) {
-  const { user_email, user_id } = payload;
-  
-  let query = supabase.from('user_roles').select('*').eq('is_active', true);
-  
-  if (user_id) query = query.eq('user_id', user_id);
-  else if (user_email) query = query.eq('user_email', user_email);
-  else throw new Error('user_id or user_email required');
-
-  const { data, error } = await query;
-  if (error) throw error;
-  return { roles: data || [] };
-}
-
-// ========== PERMISSION HANDLERS ==========
-
-async function handlePermissionValidate(supabase: SupabaseClient, payload: {
-  user_id: string;
-  user_email?: string;
-  permission: string;
-  resource?: string;
-  action?: string;
-}) {
-  // ... implementation from validate-permission
-}
-
-// ========== DELEGATION HANDLERS ==========
-
-async function handleDelegationApprove(supabase: SupabaseClient, payload: {
-  delegation_id: string;
-}) {
-  const { delegation_id } = payload;
-  
-  const { data, error } = await supabase
-    .from('delegation_rules')
-    .update({
-      approval_status: 'approved',
-      approval_date: new Date().toISOString(),
-      is_active: true
-    })
-    .eq('id', delegation_id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return { approved: true, delegation: data };
-}
-
-async function handleDelegationReject(supabase: SupabaseClient, payload: {
-  delegation_id: string;
-  reason?: string;
-}) {
-  // ... implementation
-}
-
-// ========== NOTIFICATION HANDLERS ==========
-
-async function handleRoleNotification(
-  supabase: SupabaseClient, 
-  resend: Resend | null, 
-  action: string, 
-  payload: {
-    user_id: string;
-    user_email: string;
-    user_name: string;
-    requested_role: string;
-    justification?: string;
-    rejection_reason?: string;
-    language?: string;
-    notify_admins?: boolean;
-  }
-) {
-  if (!resend) {
-    console.warn("Resend not configured, skipping email");
-    return { email_sent: false, notification_created: true };
-  }
-  
-  // ... implementation from role-request-notification
-}
-
-// ========== AUDIT HANDLERS ==========
-
-async function handleSecurityAudit(supabase: SupabaseClient, payload: {
-  organization_id?: string;
-  scope?: string;
-}) {
-  // ... implementation from run-rbac-security-audit
-}
-```
-
----
-
-### Phase 2: Create Frontend Service Layer (Day 2-3)
-
-#### Step 2.1: Create Unified RBAC Service
-
-```typescript
-// src/services/rbac/rbacService.ts
+```javascript
+// src/services/rbac/rbacService.js
 
 import { supabase } from '@/integrations/supabase/client';
 
-type RBACAction = 
-  | 'role.assign'
-  | 'role.revoke'
-  | 'role.check_auto_approve'
-  | 'role.get_user_roles'
-  | 'role.request.approve'
+const invokeRBAC = async (action, payload) => {
+  const { data, error } = await supabase.functions.invoke('rbac-manager', {
+    body: { action, payload }
+  });
+  if (error) throw error;
+  return data;
+};
+
+export const rbacService = {
+  // Role Management
+  async assignRole(userId, userEmail, role, options = {}) {
+    return invokeRBAC('role.assign', { user_id: userId, user_email: userEmail, role, ...options });
+  },
+  
+  async revokeRole(userEmail, role) {
+    return invokeRBAC('role.revoke', { user_email: userEmail, role });
+  },
+  
+  async checkAutoApproval(params) {
+    return invokeRBAC('role.check_auto', params);
+  },
+  
+  async approveRoleRequest(requestId, roleName, userEmail, userId, approverEmail) {
+    return invokeRBAC('role.approve_request', { 
+      request_id: requestId, 
+      role_name: roleName,
+      user_email: userEmail,
+      user_id: userId,
+      approver_email: approverEmail
+    });
+  },
+  
+  async rejectRoleRequest(requestId, reason, approverEmail) {
+    return invokeRBAC('role.reject_request', { 
+      request_id: requestId, 
+      reason, 
+      approver_email: approverEmail 
+    });
+  },
+  
+  // Permission Validation
+  async validatePermission(userId, permission, resource) {
+    return invokeRBAC('permission.validate', { user_id: userId, permission, resource });
+  },
+  
+  // Delegation
+  async approveDelegation(delegationId) {
+    return invokeRBAC('delegation.approve', { delegation_id: delegationId });
+  },
+  
+  async rejectDelegation(delegationId, reason) {
+    return invokeRBAC('delegation.reject', { delegation_id: delegationId, reason });
+  },
+  
+  // Audit
+  async runSecurityAudit(organizationId, scope) {
+    return invokeRBAC('audit.rbac', { organization_id: organizationId, scope });
+  }
+};
+```
+
+---
+
+## Part 5: Implementation Timeline
+
+### Phase 1: Create rbac-manager (Day 1)
+- [ ] Create `supabase/functions/rbac-manager/index.ts`
+- [ ] Implement all action handlers
+- [ ] **CRITICAL:** Implement `role.approve_request` to write to `user_roles`
+- [ ] Update `supabase/config.toml`
+- [ ] Deploy and test basic actions
+
+### Phase 2: Create Frontend Service (Day 1-2)
+- [ ] Create `src/services/rbac/rbacService.js`
+- [ ] Create `src/hooks/useRBACManager.js`
+- [ ] Add TypeScript types
+
+### Phase 3: Migrate Consumers (Day 2-3)
+- [ ] **PRIORITY:** Update `RoleRequestApprovalQueue.jsx` (Fixes Bug #1)
+- [ ] Update `useAutoRoleAssignment.js`
+- [ ] Update `MunicipalityStaffOnboardingWizard.jsx`
+- [ ] Update `OnboardingWizard.jsx`
+- [ ] Update `base44Client.js`
+
+### Phase 4: Testing (Day 3-4)
+- [ ] Test: Role request → Admin approval → User gets access
+- [ ] Test: Auto-approval flow continues working
+- [ ] Test: Delegation approval/rejection
+- [ ] Test: Permission validation
+- [ ] Verify `is_admin()` returns correct values
+
+### Phase 5: Cleanup (Day 4-5)
+- [ ] Remove old edge functions
+- [ ] Update `supabase/config.toml`
+- [ ] Update documentation
+
+---
+
+## Part 6: Edge Functions to Delete After Migration
+
+```
+DELETE:
+├── supabase/functions/auto-role-assignment/
+├── supabase/functions/role-request-notification/
+├── supabase/functions/validate-permission/
+├── supabase/functions/approve-delegation/
+└── supabase/functions/run-rbac-security-audit/
+
+KEEP (domain-specific):
+└── supabase/functions/budget-approval/
+```
+
+---
+
+## Part 7: Critical Fix Detail - Role Approval
+
+### Current Code (BROKEN) - RoleRequestApprovalQueue.jsx
+
+```javascript
+// Lines 84-94
+const { error: roleError } = await supabase
+  .from('user_functional_roles')  // ❌ WRONG
+  .upsert({
+    user_id: targetUser.user_id,
+    role_id: role.id,              // ❌ Uses ID
+    assigned_by: user?.id,
+    assigned_at: new Date().toISOString(),
+    is_active: true
+  }, {
+    onConflict: 'user_id,role_id'
+  });
+```
+
+### Fixed Code (in rbac-manager)
+
+```javascript
+// Action: role.approve_request
+async function handleApproveRoleRequest(supabase, payload) {
+  const { request_id, role_name, user_email, user_id, approver_email } = payload;
+  
+  // 1. Update request status
+  await supabase
+    .from('role_requests')
+    .update({
+      status: 'approved',
+      reviewed_by: approver_email,
+      reviewed_date: new Date().toISOString()
+    })
+    .eq('id', request_id);
+  
+  // 2. Write to CORRECT table (user_roles)
+  const { data, error } = await supabase
+    .from('user_roles')  // ✅ CORRECT TABLE
+    .upsert({
+      user_id: user_id,
+      user_email: user_email,
+      role: role_name,  // ✅ Uses role NAME, not ID
+      is_active: true,
+      assigned_at: new Date().toISOString()
+    }, { 
+      onConflict: 'user_id,role' 
+    })
+    .select()
+    .single();
+  
+  if (error) throw error;
+  
+  return { approved: true, role: data };
+}
+```
+
+---
+
+## Part 8: Rollback Plan
+
+1. **Keep old functions deployed initially** (do not delete for 48 hours)
+2. **Add feature flag** in frontend for new vs old:
+   ```javascript
+   const USE_NEW_RBAC = true; // Toggle if issues
+   ```
+3. **Monitor logs** for errors
+4. **Quick rollback:** Change feature flag to false
+
+---
+
+## Appendix A: Database Function Dependencies
+
+| DB Function | Reads From | Critical For |
+|-------------|------------|--------------|
+| `is_admin(email)` | `user_roles` | All RLS policies |
+| `get_user_permissions(user_id)` | `user_roles`, `role_permissions` | Frontend permission checks |
+| `get_user_functional_roles(user_id)` | `user_functional_roles` | ❌ Almost never used |
+| `can_view_entity(entity, id)` | `user_roles` | Entity visibility |
+
+---
+
+## Appendix B: Table Schema
+
+### user_roles (PRIMARY - Used by RLS/DB Functions)
+```sql
+CREATE TABLE user_roles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users,
+  user_email TEXT,
+  role TEXT NOT NULL,  -- Role NAME (e.g., 'admin', 'municipality_staff')
+  municipality_id UUID,
+  organization_id UUID,
+  is_active BOOLEAN DEFAULT true,
+  assigned_at TIMESTAMPTZ DEFAULT now(),
+  revoked_at TIMESTAMPTZ,
+  UNIQUE(user_id, role)
+);
+```
+
+### user_functional_roles (DEPRECATED - Do not use)
+```sql
+CREATE TABLE user_functional_roles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users,
+  role_id UUID REFERENCES roles(id),  -- Uses role ID, not name
+  assigned_by UUID,
+  assigned_at TIMESTAMPTZ DEFAULT now(),
+  is_active BOOLEAN DEFAULT true,
+  UNIQUE(user_id, role_id)
+);
+```
+
+---
+
+## Confirmation Required
+
+Before proceeding:
+
+- [x] Deep analysis complete
+- [x] Critical bugs documented
+- [x] All consumers identified
+- [x] Implementation plan ready
+
+**Ready to proceed with implementation?**
+
+---
+
+*Document Version: 2.0*  
+*Last Updated: December 18, 2024*
   | 'role.request.reject'
   | 'permission.validate'
   | 'permission.get_user_permissions'
