@@ -1,36 +1,53 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../LanguageContext';
+import { useApproveDelegation, useRejectDelegation } from '@/hooks/useRBACManager';
 
 export default function DelegationApprovalQueue() {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
+  
+  // Use unified RBAC hooks
+  const { mutateAsync: approveDelegation, isPending: isApproving } = useApproveDelegation();
+  const { mutateAsync: rejectDelegation, isPending: isRejecting } = useRejectDelegation();
 
   const { data: pendingDelegations = [] } = useQuery({
     queryKey: ['pending-delegations'],
-    queryFn: () => base44.entities.DelegationRule.filter({ 
-      approval_status: 'pending' 
-    }, '-created_date')
-  });
-
-  const approveMutation = useMutation({
-    mutationFn: async ({ id, approved }) => {
-      await base44.functions.invoke('approveDelegation', {
-        delegationId: id,
-        approved
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['pending-delegations']);
-      toast.success(t({ en: 'Delegation updated', ar: 'تم التحديث' }));
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('delegation_rules')
+        .select('*')
+        .eq('approval_status', 'pending')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
     }
   });
+
+  const handleApprove = async (id) => {
+    try {
+      await approveDelegation(id);
+      queryClient.invalidateQueries(['pending-delegations']);
+    } catch (error) {
+      console.error('Approve error:', error);
+    }
+  };
+
+  const handleReject = async (id) => {
+    try {
+      await rejectDelegation({ delegationId: id, reason: 'Rejected by admin' });
+      queryClient.invalidateQueries(['pending-delegations']);
+    } catch (error) {
+      console.error('Reject error:', error);
+    }
+  };
 
   if (pendingDelegations.length === 0) return null;
 
@@ -62,15 +79,17 @@ export default function DelegationApprovalQueue() {
               <div className="flex gap-1">
                 <Button
                   size="sm"
-                  onClick={() => approveMutation.mutate({ id: delegation.id, approved: true })}
+                  onClick={() => handleApprove(delegation.id)}
                   className="bg-green-600"
+                  disabled={isApproving}
                 >
                   <CheckCircle2 className="h-3 w-3" />
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => approveMutation.mutate({ id: delegation.id, approved: false })}
+                  onClick={() => handleReject(delegation.id)}
+                  disabled={isRejecting}
                 >
                   <XCircle className="h-3 w-3 text-red-600" />
                 </Button>
