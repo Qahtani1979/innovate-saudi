@@ -85,37 +85,20 @@ export default function Approvals() {
     setCurrentBriefId(id);
     const item = entity === 'Challenge' ? challenges.find(c => c.id === id) : pilots.find(p => p.id === id);
     
+    // Import centralized prompt modules
+    const { 
+      CHALLENGE_APPROVAL_PROMPT_TEMPLATE, 
+      PILOT_APPROVAL_PROMPT_TEMPLATE, 
+      APPROVAL_RESPONSE_SCHEMA 
+    } = await import('@/lib/ai/prompts/approvals/decisionBrief');
+    
     const prompt = entity === 'Challenge' 
-      ? `Generate approval decision brief for this challenge:
-Title: ${item.title_en}
-Sector: ${item.sector}
-Priority: ${item.priority}
-Description: ${item.description_en?.substring(0, 300)}
-Score: ${item.overall_score}
-
-Provide: approval recommendation (approve/reject/conditional), rationale, key risks, required actions, suggested track (pilot/R&D/policy)`
-      : `Generate approval decision brief for this pilot:
-Title: ${item.title_en}
-Sector: ${item.sector}
-Budget: ${item.budget} ${item.budget_currency}
-Duration: ${item.duration_weeks} weeks
-Success Probability: ${item.success_probability}%
-KPIs: ${item.kpis?.length || 0} defined
-
-Provide: approval recommendation, budget assessment, risk analysis, readiness score, required conditions`;
+      ? CHALLENGE_APPROVAL_PROMPT_TEMPLATE(item)
+      : PILOT_APPROVAL_PROMPT_TEMPLATE(item);
 
     const response = await invokeAI({
       prompt,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          recommendation: { type: "string", enum: ["approve", "reject", "conditional"] },
-          rationale: { type: "string" },
-          key_risks: { type: "array", items: { type: "string" } },
-          conditions: { type: "array", items: { type: "string" } },
-          readiness_score: { type: "number" }
-        }
-      }
+      response_json_schema: APPROVAL_RESPONSE_SCHEMA
     });
     
     if (response.success) {

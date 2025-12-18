@@ -128,35 +128,21 @@ function MunicipalityProfile() {
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
+    
+    // Import centralized prompt module
+    const { 
+      MUNICIPALITY_INSIGHTS_PROMPT_TEMPLATE, 
+      MUNICIPALITY_INSIGHTS_RESPONSE_SCHEMA 
+    } = await import('@/lib/ai/prompts/municipalities/profileAnalysis');
+    
     const result = await invokeAI({
-      prompt: `Analyze this Saudi municipality for innovation performance and provide strategic insights in BOTH English AND Arabic:
-
-Municipality: ${municipality.name_en}
-Region: ${municipality.region}
-City Type: ${municipality.city_type}
-Population: ${municipality.population || 'N/A'}
-MII Score: ${municipality.mii_score || 'N/A'}
-MII Rank: ${municipality.mii_rank || 'N/A'}
-Active Challenges: ${municipality.active_challenges || challenges.length}
-Active Pilots: ${municipality.active_pilots || pilots.filter(p => p.stage === 'active').length}
-Completed Pilots: ${municipality.completed_pilots || pilots.filter(p => p.stage === 'completed').length}
-
-Provide bilingual insights (each item should have both English and Arabic versions):
-1. MII improvement recommendations
-2. Sector-specific focus areas for innovation
-3. Capacity building needs
-4. Partnership opportunities with other municipalities
-5. Quick wins for score improvement`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          mii_improvements: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          sector_focus: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          capacity_building: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          partnership_opportunities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          quick_wins: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-        }
-      }
+      prompt: MUNICIPALITY_INSIGHTS_PROMPT_TEMPLATE({
+        municipality,
+        challengesCount: challenges.length,
+        activePilotsCount: pilots.filter(p => p.stage === 'active').length,
+        completedPilotsCount: pilots.filter(p => p.stage === 'completed').length
+      }),
+      response_json_schema: MUNICIPALITY_INSIGHTS_RESPONSE_SCHEMA
     });
     
     if (result.success && result.data) {
