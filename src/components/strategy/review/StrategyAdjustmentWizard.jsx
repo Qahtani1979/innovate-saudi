@@ -21,6 +21,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  ADJUSTMENT_JUSTIFICATION_SYSTEM_PROMPT,
+  buildAdjustmentJustificationPrompt,
+  ADJUSTMENT_JUSTIFICATION_SCHEMA,
+  ADJUSTMENT_IMPACT_SYSTEM_PROMPT,
+  buildAdjustmentImpactPrompt,
+  ADJUSTMENT_IMPACT_SCHEMA
+} from '@/lib/ai/prompts/strategy/adjustment';
 
 const STEPS = [
   { id: 'select', label: { en: 'Select Elements', ar: 'اختيار العناصر' }, icon: Target },
@@ -125,26 +133,15 @@ export default function StrategyAdjustmentWizard({ strategicPlanId, strategicPla
 
     try {
       const result = await invokeAI({
-        system_prompt: 'You are a strategic planning expert. Help draft a professional justification for a strategy adjustment.',
-        prompt: `Draft a professional justification for this strategy adjustment:
-
-Element Type: ${adjustmentData.elementType}
-Element: ${adjustmentData.elementName || 'Not specified'}
-Change Type: ${adjustmentData.changeType}
-Current Value: ${adjustmentData.currentValue || 'Not specified'}
-New Value: ${adjustmentData.newValue || 'Not specified'}
-
-Provide a well-structured justification (2-3 paragraphs) that:
-1. Explains why this change is necessary
-2. Describes expected benefits
-3. Addresses potential risks`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            justification: { type: 'string' }
-          },
-          required: ['justification']
-        }
+        system_prompt: ADJUSTMENT_JUSTIFICATION_SYSTEM_PROMPT,
+        prompt: buildAdjustmentJustificationPrompt({
+          elementType: adjustmentData.elementType,
+          elementName: adjustmentData.elementName,
+          changeType: adjustmentData.changeType,
+          currentValue: adjustmentData.currentValue,
+          newValue: adjustmentData.newValue
+        }),
+        response_json_schema: ADJUSTMENT_JUSTIFICATION_SCHEMA
       });
 
       if (result.success && result.data?.justification) {
@@ -160,33 +157,16 @@ Provide a well-structured justification (2-3 paragraphs) that:
   const handleAIImpactAnalysis = async () => {
     try {
       const result = await invokeAI({
-        system_prompt: 'You are a strategic planning expert. Analyze the potential impact of a strategy adjustment.',
-        prompt: `Analyze the impact of this strategy adjustment:
-
-Element Type: ${adjustmentData.elementType}
-Element: ${adjustmentData.elementName || 'Not specified'}
-Change Type: ${adjustmentData.changeType}
-Current Value: ${adjustmentData.currentValue}
-New Value: ${adjustmentData.newValue}
-Justification: ${adjustmentData.justification}
-
-Provide:
-1. Affected entities (list of areas/teams impacted)
-2. Budget impact estimate
-3. Timeline impact
-4. Risk assessment
-5. Recommended impact level (low/medium/high)`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            affected_entities: { type: 'array', items: { type: 'string' } },
-            budget_impact: { type: 'string' },
-            timeline_impact: { type: 'string' },
-            risks: { type: 'array', items: { type: 'string' } },
-            recommended_level: { type: 'string', enum: ['low', 'medium', 'high'] }
-          },
-          required: ['affected_entities', 'budget_impact', 'timeline_impact', 'recommended_level']
-        }
+        system_prompt: ADJUSTMENT_IMPACT_SYSTEM_PROMPT,
+        prompt: buildAdjustmentImpactPrompt({
+          elementType: adjustmentData.elementType,
+          elementName: adjustmentData.elementName,
+          changeType: adjustmentData.changeType,
+          currentValue: adjustmentData.currentValue,
+          newValue: adjustmentData.newValue,
+          justification: adjustmentData.justification
+        }),
+        response_json_schema: ADJUSTMENT_IMPACT_SCHEMA
       });
 
       if (result.success && result.data) {
