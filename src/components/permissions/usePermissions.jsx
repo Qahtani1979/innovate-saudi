@@ -1,14 +1,41 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+// Safe defaults for when queries are loading or fail
+const SAFE_DEFAULTS = {
+  user: null,
+  userId: null,
+  userEmail: null,
+  profile: null,
+  roles: [],
+  userRoles: [],
+  userMunicipality: null,
+  functionalRoles: [],
+  permissions: [],
+  hasPermission: () => false,
+  hasAnyPermission: () => false,
+  hasAllPermissions: () => false,
+  canAccessEntity: () => false,
+  hasRole: () => false,
+  hasFunctionalRole: () => false,
+  isAdmin: false,
+  isDeputyship: false,
+  isMunicipality: false,
+  isStaffUser: false,
+  isNationalEntity: false,
+  getVisibilityScope: () => ({ type: 'public', sectorIds: [], municipalityId: null }),
+};
+
 export function usePermissions() {
-  // Get current user
-  const { data: session } = useQuery({
+  // Get current user session
+  const { data: session, isError: sessionError } = useQuery({
     queryKey: ['session'],
     queryFn: async () => {
       const { data } = await supabase.auth.getSession();
       return data.session;
-    }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 1,
   });
 
   const userId = session?.user?.id;
@@ -30,7 +57,8 @@ export function usePermissions() {
       }
       return data;
     },
-    enabled: !!userId
+    enabled: !!userId,
+    retry: 1,
   });
 
   // Get user's roles from user_roles table (Phase 4: role_id only, enum removed)
@@ -53,10 +81,14 @@ export function usePermissions() {
         `)
         .eq('user_id', userId)
         .eq('is_active', true);
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching user roles:', error);
+        return [];
+      }
       return data || [];
     },
-    enabled: !!userId
+    enabled: !!userId,
+    retry: 1,
   });
 
   // Get user's municipality details (including region for national check)
@@ -78,7 +110,8 @@ export function usePermissions() {
       if (error) return null;
       return data;
     },
-    enabled: !!userRoles[0]?.municipality_id
+    enabled: !!userRoles[0]?.municipality_id,
+    retry: 1,
   });
 
   // Get permissions using the new database function
@@ -94,7 +127,8 @@ export function usePermissions() {
       }
       return data || [];
     },
-    enabled: !!userId
+    enabled: !!userId,
+    retry: 1,
   });
 
   // Get functional roles using the new database function
@@ -110,14 +144,15 @@ export function usePermissions() {
       }
       return data || [];
     },
-    enabled: !!userId
+    enabled: !!userId,
+    retry: 1,
   });
 
   // Extract role names for easier checking (Phase 4: role name only, enum removed)
-  const roleNames = userRoles.map(r => r.roles?.name).filter(Boolean);
+  const roleNames = (userRoles || []).map(r => r.roles?.name).filter(Boolean);
   
   // Admin check - use role name from join only (Phase 4: no enum fallback)
-  const isAdmin = userRoles.some(r => 
+  const isAdmin = (userRoles || []).some(r => 
     r.roles?.name?.toLowerCase() === 'admin'
   );
   
@@ -126,30 +161,30 @@ export function usePermissions() {
   
   // Deputyship user check (Phase 4: role name only)
   const isDeputyship = isNationalEntity || 
-    userRoles.some(r => r.roles?.name?.toLowerCase().includes('deputyship'));
+    (userRoles || []).some(r => r.roles?.name?.toLowerCase().includes('deputyship'));
   
   // Municipality user check (Phase 4: role name only)
   const isMunicipality = !isNationalEntity && 
-    userRoles.some(r => r.roles?.name?.toLowerCase().includes('municipality'));
+    (userRoles || []).some(r => r.roles?.name?.toLowerCase().includes('municipality'));
 
   // Staff user (either municipality or deputyship)
   const isStaffUser = isMunicipality || isDeputyship;
 
   const hasPermission = (permission) => {
     // Admin wildcard
-    if (isAdmin || permissions.includes('*')) return true;
+    if (isAdmin || (permissions || []).includes('*')) return true;
     // Check exact permission
-    return permissions.includes(permission);
+    return (permissions || []).includes(permission);
   };
 
   const hasAnyPermission = (permissionList) => {
-    if (isAdmin || permissions.includes('*')) return true;
-    return permissionList.some(p => permissions.includes(p));
+    if (isAdmin || (permissions || []).includes('*')) return true;
+    return (permissionList || []).some(p => (permissions || []).includes(p));
   };
 
   const hasAllPermissions = (permissionList) => {
-    if (isAdmin || permissions.includes('*')) return true;
-    return permissionList.every(p => permissions.includes(p));
+    if (isAdmin || (permissions || []).includes('*')) return true;
+    return (permissionList || []).every(p => (permissions || []).includes(p));
   };
 
   const canAccessEntity = (entityType, action) => {
@@ -167,7 +202,7 @@ export function usePermissions() {
 
   const hasFunctionalRole = (roleName) => {
     if (isAdmin) return true;
-    return functionalRoles.some(r => r.role_name === roleName);
+    return (functionalRoles || []).some(r => r.role_name === roleName);
   };
 
   // Get visibility scope for the user
@@ -208,10 +243,10 @@ export function usePermissions() {
     userEmail,
     profile,
     roles: roleNames,
-    userRoles, // Full role objects with municipality_id/organization_id
+    userRoles: userRoles || [], // Full role objects with municipality_id/organization_id
     userMunicipality,
-    functionalRoles,
-    permissions,
+    functionalRoles: functionalRoles || [],
+    permissions: permissions || [],
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,
@@ -226,4 +261,4 @@ export function usePermissions() {
     isNationalEntity,
     getVisibilityScope
   };
-};
+}
