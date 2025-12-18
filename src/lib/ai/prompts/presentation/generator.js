@@ -4,7 +4,7 @@
  * @module prompts/presentation/generator
  */
 
-import { SAUDI_CONTEXT } from '../common/saudiContext';
+import { SAUDI_CONTEXT } from '@/lib/ai/prompts/common/saudiContext';
 
 /**
  * Presentation slides generation prompt

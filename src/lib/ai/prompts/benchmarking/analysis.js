@@ -4,7 +4,7 @@
  * @module prompts/benchmarking/analysis
  */
 
-import { SAUDI_CONTEXT } from '../common/saudiContext';
+import { SAUDI_CONTEXT } from '@/lib/ai/prompts/common/saudiContext';
 
 /**
  * Benchmarking analysis prompt
