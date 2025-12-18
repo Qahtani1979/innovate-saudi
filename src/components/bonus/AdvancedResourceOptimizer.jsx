@@ -6,36 +6,22 @@ import { Sparkles, Loader2, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  RESOURCE_OPTIMIZER_SYSTEM_PROMPT, 
+  buildResourceOptimizerPrompt, 
+  RESOURCE_OPTIMIZER_SCHEMA 
+} from '@/lib/ai/prompts/bonus/resourceOptimizer';
 
-export default function AdvancedResourceOptimizer() {
+export default function AdvancedResourceOptimizer({ resources, currentAllocation }) {
   const { language, t } = useLanguage();
   const [recommendations, setRecommendations] = useState(null);
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const optimize = async () => {
     const result = await invokeAI({
-      prompt: `Optimize resource allocation across platform:
-
-Resources:
-- Budget: 50M SAR
-- Expert mentors: 15 available
-- Living lab slots: 20 per quarter
-- Sandbox zones: 3 active
-
-Current allocation:
-- Pilots: 30M, 8 mentors, 12 lab slots
-- R&D: 15M, 5 mentors, 8 lab slots
-- Programs: 5M, 2 mentors, 0 lab slots
-
-Recommend reallocation for maximum ROI and suggest conflicts to resolve.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          reallocations: { type: "array", items: { type: "string" } },
-          expected_roi_gain: { type: "string" },
-          conflicts: { type: "array", items: { type: "string" } }
-        }
-      }
+      system_prompt: RESOURCE_OPTIMIZER_SYSTEM_PROMPT,
+      prompt: buildResourceOptimizerPrompt({ resources, currentAllocation }),
+      response_json_schema: RESOURCE_OPTIMIZER_SCHEMA
     });
 
     if (result.success) {
