@@ -6,13 +6,13 @@
 
 The AI Prompt Modules System provides a structured approach to managing AI prompts across the platform. All prompts are centralized in `src/lib/ai/prompts/` with consistent patterns for easy maintenance, testing, and reuse.
 
-### Current Migration Status (Updated: December 18, 2024 - Session 32)
+### Current Migration Status (Updated: December 18, 2024 - Session 33)
 
 | Metric | Value | Status |
 |--------|-------|--------|
-| Total Prompt Modules Created | **256+** | ✅ Complete |
+| Total Prompt Modules Created | **258+** | ✅ Complete |
 | Prompt Module Categories | **100+ directories** | ✅ Organized |
-| **Components Migrated** | **83/94 files** | 🔄 In Progress (88%) |
+| **Components Migrated** | **85/94 files** | 🔄 In Progress (90%) |
 | **Pages Migrated** | **32/102 files** | 🔄 In Progress (31%) |
 | Edge Functions with Inline Prompts | 2 files | ⚠️ Partial |
 | **Overall Migration Progress** | **~97%** | 🔄 In Progress |
@@ -25,8 +25,8 @@ The AI Prompt Modules System provides a structured approach to managing AI promp
 
 | Phase | Description | Status | Progress |
 |-------|-------------|--------|----------|
-| **Phase 1** | Create Prompt Modules | ✅ Complete | 256+/210 (100%) |
-| **Phase 2** | Migrate Components | 🔄 In Progress | 83/94 (88%) |
+| **Phase 1** | Create Prompt Modules | ✅ Complete | 258+/210 (100%) |
+| **Phase 2** | Migrate Components | 🔄 In Progress | 85/94 (90%) |
 | **Phase 3** | Migrate Pages | 🔄 In Progress | 32/102 (31%) |
 | **Phase 4** | Migrate Edge Functions | ⏳ Pending | 0/2 (0%) |
 | **Phase 5** | Quality Enhancement | ⏳ Future | 0% |
@@ -35,12 +35,12 @@ The AI Prompt Modules System provides a structured approach to managing AI promp
 
 | Phase | Items | Est. Sessions | Status |
 |-------|-------|---------------|--------|
-| Prompt Module Creation | 256+ modules | ✅ Complete | Done |
-| Component Migration | 11 remaining | 2-3 sessions | In Progress |
+| Prompt Module Creation | 258+ modules | ✅ Complete | Done |
+| Component Migration | 9 remaining | 2-3 sessions | In Progress |
 | Page Migration | 70 files | 12-14 sessions | In Progress |
 | Edge Functions | 2 files | 1 session | Pending |
 | Quality Enhancement | All modules | 3-4 sessions | Future |
-| **Total Remaining** | | **~18-22 sessions** | |
+| **Total Remaining** | | **~17-21 sessions** | |
 
 ---
 
@@ -85,7 +85,17 @@ src/lib/ai/prompts/
 
 ## ✅ RECENTLY CREATED MODULES BY SESSION
 
-### Session 32 (Latest)
+### Session 33 (Latest)
+| Module | Description |
+|--------|-------------|
+| `hub/programsEventsInsights.js` | AI-powered insights for programs & events hub |
+| `communications/templateEditor.js` | Enhanced email template generation & analysis |
+
+**Components Migrated in Session 33:**
+- `ProgramsEventsHub.jsx` → `PROGRAMS_EVENTS_INSIGHTS_PROMPT_TEMPLATE`
+- `EmailTemplateEditorContent.jsx` → `buildTemplateGeneratePrompt`, `buildTemplateAnalysisPrompt`
+
+### Session 32
 | Module | Description |
 |--------|-------------|
 | `gaps/analysisEngine.js` | Comprehensive gap analysis for innovation ecosystem |

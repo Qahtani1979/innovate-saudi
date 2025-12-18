@@ -15,6 +15,10 @@ import ProtectedPage from '@/components/permissions/ProtectedPage';
 import { AIProgramEventCorrelator } from '@/components/ai/AIProgramEventCorrelator';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  PROGRAMS_EVENTS_INSIGHTS_PROMPT_TEMPLATE, 
+  PROGRAMS_EVENTS_INSIGHTS_RESPONSE_SCHEMA 
+} from '@/lib/ai/prompts/hub/programsEventsInsights';
 
 // Lazy imports for tab content
 const ProgramsContent = React.lazy(() => import('@/pages/Programs'));
@@ -62,31 +66,13 @@ function ProgramsEventsHub() {
     if (!isAvailable || programs.length === 0) return;
     
     const response = await invokeAI({
-      prompt: `Analyze these programs and events for a Saudi municipal innovation platform:
-
-Programs (${programs.length}): ${JSON.stringify(programs.slice(0, 5).map(p => ({ name: p.name_en || p.name_ar, type: p.program_type, status: p.status })))}
-
-Events (${events.length}): ${JSON.stringify(events.slice(0, 5).map(e => ({ title: e.title_en || e.title_ar, type: e.event_type, date: e.start_date })))}
-
-Provide 3 actionable insights with type (recommendation/alert/insight), title, and description in both English and Arabic.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          insights: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                type: { type: 'string', enum: ['recommendation', 'alert', 'insight'] },
-                title_en: { type: 'string' },
-                title_ar: { type: 'string' },
-                description_en: { type: 'string' },
-                description_ar: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+      prompt: PROGRAMS_EVENTS_INSIGHTS_PROMPT_TEMPLATE({
+        programCount: programs.length,
+        programsSample: programs.slice(0, 5).map(p => ({ name: p.name_en || p.name_ar, type: p.program_type, status: p.status })),
+        eventCount: events.length,
+        eventsSample: events.slice(0, 5).map(e => ({ title: e.title_en || e.title_ar, type: e.event_type, date: e.start_date }))
+      }),
+      response_json_schema: PROGRAMS_EVENTS_INSIGHTS_RESPONSE_SCHEMA
     });
     
     if (response.success && response.data?.insights) {
