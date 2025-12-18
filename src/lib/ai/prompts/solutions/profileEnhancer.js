@@ -1,7 +1,7 @@
 /**
  * Solution Profile Enhancer Prompts
  * @module solutions/profileEnhancer
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { getSystemPrompt } from '@/lib/saudiContext';
@@ -16,50 +16,60 @@ export function buildProfileEnhancerPrompt({ solution }) {
   return `Analyze this solution profile and suggest improvements:
 
 SOLUTION: ${solution.name_en}
-DESCRIPTION: ${solution.description_en || 'Not provided'}
-CATEGORY: ${solution.category}
-SECTOR: ${solution.sector}
-TAGS: ${(solution.tags || []).join(', ')}
-TRL: ${solution.trl_level || 'Not specified'}
-PRICING: ${solution.pricing_model || 'Not specified'}
+PROVIDER: ${solution.provider_name || 'N/A'}
+DESCRIPTION: ${solution.description_en || 'N/A'}
+FEATURES: ${solution.features?.length || 0}
+CASE STUDIES: ${solution.case_studies?.length || 0}
+CERTIFICATIONS: ${solution.certifications?.length || 0}
+DEPLOYMENTS: ${solution.deployment_count || 0}
 
-Analyze and suggest:
-1. Profile completeness score (0-100)
-2. Missing critical fields
-3. Description improvements
-4. Keyword suggestions for better matching
-5. Competitive positioning tips
-6. Vision 2030 alignment opportunities`;
+Provide:
+1. Missing critical fields
+2. Weak areas needing improvement
+3. Competitive gaps (compared to top solutions)
+4. Specific content suggestions
+5. Impact of improvements on visibility/matching`;
 }
 
 export const PROFILE_ENHANCER_SCHEMA = {
-  type: 'object',
+  type: "object",
   properties: {
-    completeness_score: { type: 'number', minimum: 0, maximum: 100 },
-    missing_fields: { type: 'array', items: { type: 'string' } },
-    description_suggestions: {
-      type: 'object',
-      properties: {
-        current_issues: { type: 'array', items: { type: 'string' } },
-        improved_description_en: { type: 'string' },
-        improved_description_ar: { type: 'string' }
-      }
-    },
-    keyword_suggestions: { type: 'array', items: { type: 'string' } },
-    competitive_tips: { type: 'array', items: { type: 'string' } },
-    vision_2030_alignment: {
-      type: 'array',
+    completeness_score: { type: "number", minimum: 0, maximum: 100 },
+    missing_fields: {
+      type: "array",
       items: {
-        type: 'object',
+        type: "object",
         properties: {
-          pillar: { type: 'string' },
-          alignment_suggestion: { type: 'string' }
+          field: { type: "string" },
+          importance: { type: "string" },
+          impact: { type: "string" }
         }
       }
     },
-    priority_improvements: { type: 'array', items: { type: 'string' } }
+    weak_areas: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          area: { type: "string" },
+          issue: { type: "string" },
+          suggestion: { type: "string" }
+        }
+      }
+    },
+    competitive_gaps: { type: "array", items: { type: "string" } },
+    quick_wins: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          action: { type: "string" },
+          estimated_impact: { type: "string" }
+        }
+      }
+    }
   },
-  required: ['completeness_score', 'missing_fields', 'priority_improvements']
+  required: ["completeness_score", "missing_fields"]
 };
 
 export const PROFILE_ENHANCER_PROMPTS = {

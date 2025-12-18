@@ -43,3 +43,11 @@ export {
   MARKET_INTELLIGENCE_SCHEMA,
   MARKET_INTELLIGENCE_PROMPTS
 } from './marketIntelligence';
+
+// Profile Enhancer
+export {
+  PROFILE_ENHANCER_SYSTEM_PROMPT,
+  buildProfileEnhancerPrompt,
+  PROFILE_ENHANCER_SCHEMA,
+  PROFILE_ENHANCER_PROMPTS
+} from './profileEnhancer';
