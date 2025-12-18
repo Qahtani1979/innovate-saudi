@@ -42,59 +42,22 @@ function ExecutiveBriefGenerator() {
   const generateBrief = async () => {
     const activePlan = strategicPlans.find(p => p.status === 'active') || strategicPlans[0];
     
+    // Import centralized prompt module
+    const { EXECUTIVE_BRIEF_PROMPT_TEMPLATE, EXECUTIVE_BRIEF_RESPONSE_SCHEMA } = await import('@/lib/ai/prompts/executive/briefGenerator');
+    
+    const promptData = {
+      activeChallenges: challenges.filter(c => c.status !== 'archived').length,
+      activePilots: pilots.filter(p => p.stage === 'active' || p.stage === 'in_progress').length,
+      scaledSolutions: pilots.filter(p => p.stage === 'scaled').length,
+      municipalityCount: municipalities.length,
+      avgMiiScore: (municipalities.reduce((sum, m) => sum + (m.mii_score || 0), 0) / municipalities.length).toFixed(1),
+      strategicPlanName: activePlan?.name_en || 'N/A',
+      highRiskChallenges: challenges.filter(c => c.severity_score > 75).slice(0, 5).map(c => `- ${c.title_en} (Score: ${c.severity_score})`).join('\n')
+    };
+
     const response = await invokeAI({
-      prompt: `Generate a comprehensive 2-page executive brief for Saudi National Municipal Innovation Platform.
-
-CURRENT STATE:
-- Active Challenges: ${challenges.filter(c => c.status !== 'archived').length}
-- Active Pilots: ${pilots.filter(p => p.stage === 'active' || p.stage === 'in_progress').length}
-- Scaled Solutions: ${pilots.filter(p => p.stage === 'scaled').length}
-- Municipalities Participating: ${municipalities.length}
-- Average MII Score: ${(municipalities.reduce((sum, m) => sum + (m.mii_score || 0), 0) / municipalities.length).toFixed(1)}
-
-STRATEGIC PLAN: ${activePlan?.name_en || 'N/A'}
-
-HIGH-RISK AREAS:
-${challenges.filter(c => c.severity_score > 75).slice(0, 5).map(c => `- ${c.title_en} (Score: ${c.severity_score})`).join('\n')}
-
-Generate a professional executive brief with these sections:
-1. Executive Summary (3-4 sentences)
-2. Progress Highlights (5 bullet points - achievements this quarter)
-3. Risk Alerts (3-5 critical risks requiring attention)
-4. Next Quarter Priorities (4-6 strategic priorities)
-5. Strategic Recommendations (3 key actions)
-
-Make it concise, data-driven, bilingual-ready.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          executive_summary_en: { type: "string" },
-          executive_summary_ar: { type: "string" },
-          progress_highlights: {
-            type: "array",
-            items: { type: "string" }
-          },
-          risk_alerts: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                risk: { type: "string" },
-                severity: { type: "string" },
-                mitigation: { type: "string" }
-              }
-            }
-          },
-          next_quarter_priorities: {
-            type: "array",
-            items: { type: "string" }
-          },
-          strategic_recommendations: {
-            type: "array",
-            items: { type: "string" }
-          }
-        }
-      }
+      prompt: EXECUTIVE_BRIEF_PROMPT_TEMPLATE(promptData),
+      response_json_schema: EXECUTIVE_BRIEF_RESPONSE_SCHEMA
     });
 
     if (response.success) {
