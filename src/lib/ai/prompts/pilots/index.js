@@ -58,6 +58,14 @@ export {
   ADAPTIVE_ADJUSTMENT_SCHEMA
 } from './adaptiveManagement';
 
+// Pilot to R&D Workflow
+export {
+  PILOT_TO_RD_SYSTEM_PROMPT,
+  buildPilotToRDPrompt,
+  PILOT_TO_RD_SCHEMA,
+  PILOT_TO_RD_PROMPTS
+} from './pilotToRD';
+
 /**
  * Pilots module prompt configuration
  */

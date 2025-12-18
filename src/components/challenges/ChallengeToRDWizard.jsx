@@ -11,6 +11,7 @@ import { Megaphone, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { buildChallengeToRDPrompt, CHALLENGE_TO_RD_SCHEMA } from '@/lib/ai/prompts/challenges/challengeToRD';
 
 export default function ChallengeToRDWizard({ challenge, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
@@ -42,41 +43,8 @@ export default function ChallengeToRDWizard({ challenge, onClose, onSuccess }) {
 
   const generateRDCall = async () => {
     const response = await invokeAI({
-      prompt: `You are a research program manager. Generate an R&D call from this municipal challenge:
-
-Challenge Title: ${challenge.title_en}
-Problem Statement: ${challenge.problem_statement_en}
-Desired Outcome: ${challenge.desired_outcome_en}
-Sector: ${challenge.sector}
-Root Causes: ${JSON.stringify(challenge.root_causes || [])}
-Keywords: ${JSON.stringify(challenge.keywords || [])}
-
-Generate:
-1. R&D call title (EN + AR) - compelling and research-focused
-2. Research objectives (EN + AR) - what research questions to investigate
-3. Research scope (EN + AR) - what areas to explore
-4. Expected deliverables (EN + AR)
-5. Research themes (keywords)
-6. Budget range estimate
-
-Make it compelling for academic researchers while addressing the municipal challenge.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          title_en: { type: 'string' },
-          title_ar: { type: 'string' },
-          research_area_ar: { type: 'string' },
-          objectives_en: { type: 'string' },
-          objectives_ar: { type: 'string' },
-          scope_en: { type: 'string' },
-          scope_ar: { type: 'string' },
-          expected_deliverables_en: { type: 'string' },
-          expected_deliverables_ar: { type: 'string' },
-          research_themes: { type: 'array', items: { type: 'string' } },
-          budget_range_min: { type: 'number' },
-          budget_range_max: { type: 'number' }
-        }
-      }
+      prompt: buildChallengeToRDPrompt(challenge),
+      response_json_schema: CHALLENGE_TO_RD_SCHEMA
     });
 
     if (response.success) {

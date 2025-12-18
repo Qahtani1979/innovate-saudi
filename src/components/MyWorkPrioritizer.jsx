@@ -11,6 +11,7 @@ import { createPageUrl } from '../utils';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useAuth } from '@/lib/AuthContext';
+import { buildWorkPrioritizerPrompt, WORK_PRIORITIZER_SCHEMA } from '@/lib/ai/prompts/core/workPrioritizer';
 
 export default function MyWorkPrioritizer() {
   const { language, isRTL, t } = useLanguage();
@@ -76,39 +77,8 @@ export default function MyWorkPrioritizer() {
     };
 
     const { success, data } = await invokeAI({
-      prompt: `You are an AI work prioritization assistant for a municipal innovation platform. Analyze the user's current work context and provide actionable priorities for today.
-
-Context:
-- Challenges: ${JSON.stringify(context.challenges)}
-- Pilots: ${JSON.stringify(context.pilots)}
-- Tasks: ${JSON.stringify(context.tasks)}
-
-Based on urgency, impact, and dependencies, suggest the TOP 3 PRIORITIES for today. For each priority:
-1. What to focus on (be specific)
-2. Why it matters (brief explanation)
-3. Quick action they can take (one sentence)
-
-Format as a practical to-do list. Be concise and actionable.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          priorities: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                title: { type: "string" },
-                reason: { type: "string" },
-                action: { type: "string" },
-                urgency: { type: "string", enum: ["high", "medium", "low"] },
-                entity_type: { type: "string" },
-                entity_id: { type: "string" }
-              }
-            }
-          },
-          summary: { type: "string" }
-        }
-      }
+      prompt: buildWorkPrioritizerPrompt(context),
+      response_json_schema: WORK_PRIORITIZER_SCHEMA
     });
 
     if (success && data) {

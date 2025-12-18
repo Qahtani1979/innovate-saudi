@@ -11,6 +11,7 @@ import { CheckCircle2, Circle, ArrowRight, ArrowLeft, Sparkles, MapPin, Calendar
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { buildScalingEstimatesPrompt, SCALING_ESTIMATES_SCHEMA } from '@/lib/ai/prompts/scaling/planningWizard';
 
 export default function ScalingPlanningWizard({ pilot, onComplete, onCancel }) {
   const { t, isRTL } = useLanguage();
@@ -40,42 +41,8 @@ export default function ScalingPlanningWizard({ pilot, onComplete, onCancel }) {
 
   const generateAIEstimates = async () => {
     const result = await invokeAI({
-      prompt: `You are a scaling expert. Based on this pilot information, provide estimates:
-        
-Pilot: ${pilot?.title_en}
-Sector: ${pilot?.sector}
-Budget: ${pilot?.budget} SAR
-Duration: ${pilot?.duration_weeks} weeks
-Success metrics: ${JSON.stringify(pilot?.success_criteria || [])}
-Target municipalities: ${planData.target_municipalities.length}
-
-Estimate:
-1. Total budget needed for scaling (in SAR)
-2. Timeline in months
-3. Budget per municipality
-4. Phased rollout plan (3 phases)
-5. Key risk factors`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          total_budget: { type: 'number' },
-          timeline_months: { type: 'number' },
-          budget_per_municipality: { type: 'number' },
-          phases: { 
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                name: { type: 'string' },
-                duration_months: { type: 'number' },
-                municipalities_count: { type: 'number' },
-                activities: { type: 'array', items: { type: 'string' } }
-              }
-            }
-          },
-          risk_factors: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      prompt: buildScalingEstimatesPrompt(pilot, planData.target_municipalities.length),
+      response_json_schema: SCALING_ESTIMATES_SCHEMA
     });
 
     if (result.success) {

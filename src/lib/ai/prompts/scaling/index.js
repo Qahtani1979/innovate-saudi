@@ -23,6 +23,14 @@ export {
   SCALING_STRATEGY_SCHEMA
 } from './readiness';
 
+// Planning Wizard
+export {
+  SCALING_PLANNING_SYSTEM_PROMPT,
+  buildScalingEstimatesPrompt,
+  SCALING_ESTIMATES_SCHEMA,
+  SCALING_PLANNING_PROMPTS
+} from './planningWizard';
+
 export const SCALING_PROMPT_MANIFEST = {
   scalingReadiness: {
     file: 'scalingReadiness.js',

@@ -11,6 +11,7 @@ import { Microscope, Sparkles, Loader2, TestTube } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { buildPilotToRDPrompt, PILOT_TO_RD_SCHEMA } from '@/lib/ai/prompts/pilots/pilotToRD';
 
 export default function PilotToRDWorkflow({ pilot, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
@@ -37,44 +38,8 @@ export default function PilotToRDWorkflow({ pilot, onClose, onSuccess }) {
 
   const generateResearchProposal = async () => {
     const { success, data } = await invokeAI({
-      prompt: `You are a research methodology expert. Generate an R&D project proposal from this completed pilot:
-
-Pilot Title: ${pilot.title_en}
-Sector: ${pilot.sector}
-Results: ${JSON.stringify(pilot.kpis || [])}
-Lessons Learned: ${JSON.stringify(pilot.lessons_learned || [])}
-Recommendation: ${pilot.recommendation}
-Issues: ${JSON.stringify(pilot.risks || [])}
-
-Generate:
-1. Research abstract (EN + AR) - what research questions emerged from pilot
-2. Research methodology (EN + AR) - how to investigate further
-3. Expected outputs (publications, patents, datasets)
-4. Research themes and keywords
-
-Focus on advancing TRL from ${pilot.trl_current || 6} to 8-9.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          abstract_en: { type: 'string' },
-          abstract_ar: { type: 'string' },
-          research_area_ar: { type: 'string' },
-          methodology_en: { type: 'string' },
-          methodology_ar: { type: 'string' },
-          expected_outputs: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                output_en: { type: 'string' },
-                output_ar: { type: 'string' },
-                type: { type: 'string' }
-              }
-            }
-          },
-          research_themes: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      prompt: buildPilotToRDPrompt(pilot),
+      response_json_schema: PILOT_TO_RD_SCHEMA
     });
 
     if (success) {
