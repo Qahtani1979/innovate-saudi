@@ -6,6 +6,11 @@ import { useLanguage } from '../LanguageContext';
 import { Activity, Sparkles, Loader2, Send } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  ENGAGEMENT_QUALITY_SYSTEM_PROMPT, 
+  buildEngagementQualityPrompt, 
+  ENGAGEMENT_QUALITY_SCHEMA 
+} from '@/lib/ai/prompts/matchmaker/engagementQuality';
 
 export default function EngagementQualityAnalytics({ matchId, engagementHistory }) {
   const { language, t } = useLanguage();
@@ -24,31 +29,19 @@ export default function EngagementQualityAnalytics({ matchId, engagementHistory 
 
   const analyzeEngagement = async () => {
     const response = await invokeAI({
-      prompt: `Analyze matchmaker engagement quality and predict conversion:
-
-ENGAGEMENT DATA:
-- Meetings: ${meetings}
-- Documents shared: ${documents}
-- Days since last contact: ${daysSinceLastContact}
-- History: ${engagementHistory?.slice(0, 5).map(e => `${e.type} on ${e.date}`).join(', ')}
-
-Predict:
-1. Conversion probability (0-100%)
-2. Engagement quality score (0-100)
-3. Status (healthy/at_risk/stalled)
-4. Next recommended action
-5. Intervention needed (yes/no)`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          conversion_probability: { type: "number" },
-          quality_score: { type: "number" },
-          status: { type: "string" },
-          next_action: { type: "string" },
-          intervention_needed: { type: "boolean" },
-          recommendations: { type: "array", items: { type: "string" } }
-        }
-      }
+      system_prompt: ENGAGEMENT_QUALITY_SYSTEM_PROMPT,
+      prompt: buildEngagementQualityPrompt({
+        engagements: engagementHistory?.map(e => ({
+          type: e.type,
+          date: e.date,
+          meetings,
+          documents,
+          daysSinceLastContact
+        })),
+        conversions: [],
+        timeframe: 'Last 30 days'
+      }),
+      response_json_schema: ENGAGEMENT_QUALITY_SCHEMA
     });
 
     if (response.success) {
