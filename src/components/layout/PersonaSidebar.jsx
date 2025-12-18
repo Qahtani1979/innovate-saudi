@@ -10,10 +10,11 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 export default function PersonaSidebar({ isOpen, onClose }) {
   const { t, language, isRTL } = useLanguage();
-  const { persona } = usePersonaRouting();
+  const { persona, hasMultiplePersonas, availablePersonas } = usePersonaRouting();
   const { hasPermission, hasAnyPermission, roles, userMunicipality, isAdmin } = usePermissions();
   const location = useLocation();
 
+  // Use the active persona from routing (which respects session storage)
   const menuConfig = SIDEBAR_MENUS[persona] || SIDEBAR_MENUS.user;
   const MenuIcon = menuConfig.icon;
 

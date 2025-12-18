@@ -31,6 +31,7 @@ import AIAssistant from './components/AIAssistant';
 import PortalSwitcher from './components/layout/PortalSwitcher';
 import PersonaHeader from './components/layout/PersonaHeader';
 import PersonaSidebar from './components/layout/PersonaSidebar';
+import PersonaSwitcher from './components/layout/PersonaSwitcher';
 import UserAvatarMenu from './components/shared/UserAvatarMenu';
 import { Badge } from "@/components/ui/badge";
 import { usePermissions } from './components/permissions/usePermissions';
@@ -266,9 +267,9 @@ function LayoutContent({ children, currentPageName }) {
               </Button>
             </Link>
 
-            {/* Persona Badge */}
-            <div className="hidden lg:block">
-              <PersonaHeader size="small" />
+            {/* Persona Switcher for multi-role users */}
+            <div className="hidden md:block">
+              <PersonaSwitcher compact={true} showLabel={true} />
             </div>
 
             {/* Shared User Avatar Menu - same style as PublicHeader */}
