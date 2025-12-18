@@ -1,8 +1,8 @@
 # Admin & Platform System Inventory
 
-> **Version:** 2.0  
+> **Version:** 3.0  
 > **Last Updated:** 2025-12-18  
-> **Total Assets:** 110 files (65 pages, 45 components, 8 hooks)  
+> **Total Assets:** 125 files (65 pages, 52 components, 8 hooks)  
 > **Parent System:** Platform Administration  
 > **Hub Page:** `/admin-portal`
 
@@ -18,7 +18,93 @@
 
 ## Overview
 
-The Admin System provides platform administration including user management, RBAC, data management, system configuration, monitoring, compliance, and platform auditing.
+The Admin System provides platform administration including user management, RBAC (Role-Based Access Control), data management, system configuration, monitoring, compliance, and platform auditing.
+
+---
+
+## 🔐 RBAC System Architecture
+
+### Database Schema (Phase 4 Migration Complete)
+
+```mermaid
+erDiagram
+    roles ||--o{ role_permissions : has
+    roles ||--o{ user_roles : assigned_to
+    permissions ||--o{ role_permissions : granted_in
+    user_roles }o--|| users : belongs_to
+    roles ||--o| roles : parent_role_id
+    
+    roles {
+        uuid id PK
+        text name
+        text name_ar
+        text description
+        uuid parent_role_id FK
+        boolean is_system_role
+        boolean is_active
+    }
+    
+    permissions {
+        uuid id PK
+        text code
+        text name
+        text entity_type
+        text action
+        boolean is_active
+    }
+    
+    role_permissions {
+        uuid id PK
+        uuid role_id FK
+        uuid permission_id FK
+    }
+    
+    user_roles {
+        uuid id PK
+        uuid user_id FK
+        uuid role_id FK
+        uuid municipality_id FK
+        uuid organization_id FK
+        boolean is_active
+    }
+    
+    delegation_rules {
+        uuid id PK
+        text delegator_email
+        text delegate_email
+        array permission_types
+        date start_date
+        date end_date
+    }
+```
+
+### Database Tables
+
+| Table | Purpose | Key Columns |
+|-------|---------|-------------|
+| `roles` | Role definitions (Admin, Municipality Admin, Citizen, etc.) | `id`, `name`, `name_ar`, `parent_role_id`, `is_system_role` |
+| `permissions` | Granular permissions (challenge_create, pilot_edit, etc.) | `id`, `code`, `name`, `entity_type`, `action` |
+| `role_permissions` | Junction table linking roles → permissions | `role_id`, `permission_id` |
+| `user_roles` | User → Role assignments with scope | `user_id`, `role_id`, `municipality_id`, `organization_id`, `is_active` |
+| `delegation_rules` | Temporary permission delegation between users | `delegator_email`, `delegate_email`, `permission_types`, `start_date`, `end_date` |
+
+### Database Functions
+
+| Function | Purpose | Security |
+|----------|---------|----------|
+| `get_user_permissions(_user_id)` | Get all user permissions via role_permissions join | SECURITY DEFINER |
+| `get_user_functional_roles(_user_id)` | Get user roles via role_id join | SECURITY DEFINER |
+| `has_role(_user_id, _role_name)` | Check if user has specific role | SECURITY DEFINER |
+| `is_admin(_user_id)` | Check admin status via role_id join | SECURITY DEFINER |
+
+### Migration History
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| Phase 1 | Add `role_id` FK to `user_roles` table | ✅ Complete |
+| Phase 2 | Populate `role_id` from role enum/name | ✅ Complete |
+| Phase 3 | Make `role_id` NOT NULL, update functions | ✅ Complete |
+| Phase 4 | Remove `role` enum column, update all queries | ✅ Complete |
 
 ---
 
@@ -33,7 +119,7 @@ The Admin System provides platform administration including user management, RBA
 | System Health Dashboard | `SystemHealthDashboard.jsx` | `/system-health-dashboard` | `admin` | Admin Portal |
 | Platform Audit | `PlatformAudit.jsx` | `/platform-audit` | `admin` | Admin Portal |
 
-### Platform Audit Pages (NEW - moved from orphans)
+### Platform Audit Pages
 
 | Page | File | Route | Permission | Parent |
 |------|------|-------|------------|--------|
@@ -66,19 +152,26 @@ The Admin System provides platform administration including user management, RBA
 | User Profile Multi Identity | `UserProfileMultiIdentity.jsx` | `/user-profile-multi-identity` | `authenticated` | Personal |
 | Team Overview | `TeamOverview.jsx` | `/team-overview` | `team_manage` | User Management |
 | Team Workspace | `TeamWorkspace.jsx` | `/team-workspace` | `team_manage` | User Management |
+| Team Management | `TeamManagement.jsx` | `/team-management` | `team_manage` | User Management |
 | Delegation Manager | `DelegationManager.jsx` | `/delegation-manager` | `authenticated` | Personal |
 | Session Device Manager | `SessionDeviceManager.jsx` | `/session-device-manager` | `authenticated` | Personal |
 | My Delegation | `MyDelegation.jsx` | `/my-delegation` | `authenticated` | Personal |
 
-### RBAC Pages
+### RBAC Pages (11)
 
 | Page | File | Route | Permission | Parent |
 |------|------|-------|------------|--------|
-| RBAC Hub | `RBACHub.jsx` | `/rbac-hub` | `rbac_admin` | Admin Portal |
+| **RBAC Hub** | `RBACHub.jsx` | `/rbac-hub` | `rbac_admin` | Admin Portal |
 | Role Permission Manager | `RolePermissionManager.jsx` | `/role-permission-manager` | `rbac_admin` | RBAC Hub |
+| RBAC Dashboard | `RBACDashboard.jsx` | `/rbac-dashboard` | `rbac_admin` | RBAC Hub |
+| RBAC Audit Report | `RBACAuditReport.jsx` | `/rbac-audit-report` | `rbac_admin` | RBAC Hub |
 | Role Request Center | `RoleRequestCenter.jsx` | `/role-request-center` | `rbac_admin` | RBAC Hub |
+| Role Manager | `RoleManager.jsx` | `/role-manager` | `rbac_admin` | RBAC Hub |
+| RBAC Implementation Tracker | `RBACImplementationTracker.jsx` | `/rbac-implementation-tracker` | `admin` | RBAC Hub |
+| RBAC Comprehensive Audit | `RBACComprehensiveAudit.jsx` | `/rbac-comprehensive-audit` | `admin` | RBAC Hub |
 | Conditional Access Rules | `ConditionalAccessRules.jsx` | `/conditional-access-rules` | `rbac_admin` | RBAC Hub |
 | Menu RBAC Coverage Report | `MenuRBACCoverageReport.jsx` | `/menu-rbac-coverage-report` | `admin` | Reports |
+| Expert Registry | `ExpertRegistry.jsx` | `/expert-registry` | `rbac_admin` | RBAC Hub |
 
 ### Data Management Pages
 
@@ -137,112 +230,147 @@ The Admin System provides platform administration including user management, RBA
 
 ---
 
-## 🧩 Components (35)
+## 🧩 Components (52)
 
-### Admin Components
-**Location:** `src/components/admin/`
+### Permission Components (8)
+**Location:** `src/components/permissions/`
 
-| Component | Description |
-|-----------|-------------|
-| `LookupDataManager.jsx` | Lookup data management |
+| Component | File | Description |
+|-----------|------|-------------|
+| usePermissions | `usePermissions.jsx` | Core hook for permission checks - queries `user_roles`, `role_permissions` |
+| PermissionGate | `PermissionGate.jsx` | Conditional rendering wrapper based on permissions |
+| ProtectedAction | `ProtectedAction.jsx` | Action button protection with lock icon fallback |
+| ProtectedPage | `ProtectedPage.jsx` | Page-level protection HOC |
+| FieldPermission | `FieldPermissions.jsx` | Field-level access control |
+| PermissionSelector | `PermissionSelector.jsx` | Permission picker UI component |
+| RowLevelSecurity | `RowLevelSecurity.jsx` | RLS helper utilities |
+| withEntityAccess | `withEntityAccess.jsx` | HOC for entity-level access control |
 
-**Location:** `src/components/admin/lookup/`
-
-| Component | Description |
-|-----------|-------------|
-| Various lookup management components | - |
-
-### RBAC Components
+### RBAC Dashboard Components (7)
 **Location:** `src/components/rbac/`
 
-| Component | Description |
-|-----------|-------------|
-| `DelegationApprovalQueue.jsx` | Delegation approvals |
-| `MenuRBACContent.jsx` | Menu RBAC content |
-| `MobileDelegationManager.jsx` | Mobile delegation |
-| `PermissionAuditTrail.jsx` | Permission audit |
-| `RBACAuditContent.jsx` | RBAC audit |
-| `RBACCoverageContent.jsx` | RBAC coverage |
-| `RBACDashboardContent.jsx` | RBAC dashboard |
+| Component | File | Description |
+|-----------|------|-------------|
+| RBACDashboardContent | `RBACDashboardContent.jsx` | Main RBAC dashboard content |
+| RBACAuditContent | `RBACAuditContent.jsx` | RBAC audit reporting content |
+| RBACCoverageContent | `RBACCoverageContent.jsx` | RBAC coverage analysis |
+| DelegationApprovalQueue | `DelegationApprovalQueue.jsx` | Delegation approval workflow |
+| PermissionAuditTrail | `PermissionAuditTrail.jsx` | Permission change audit trail |
+| MenuRBACContent | `MenuRBACContent.jsx` | Menu-level RBAC configuration |
+| MobileDelegationManager | `MobileDelegationManager.jsx` | Mobile-friendly delegation UI |
 
-### Workflow Components
-**Location:** `src/components/workflows/`
+### Access Control Components (37)
+**Location:** `src/components/access/`
 
-| Component | Description |
-|-----------|-------------|
-| `AIWorkflowOptimizer.jsx` | AI workflow optimization |
-| `ApprovalMatrixEditor.jsx` | Approval matrix editing |
-| `GateTemplateLibrary.jsx` | Gate templates |
-| `SLARuleBuilder.jsx` | SLA rule building |
-| `VisualWorkflowBuilder.jsx` | Visual workflow builder |
-
-### Data Management Components
-**Location:** `src/components/data-management/`
-
-| Component | Description |
-|-----------|-------------|
-| `CitiesTab.jsx` | Cities data |
-| `EntityTable.jsx` | Entity table display |
-| `IntegrityTab.jsx` | Data integrity |
-| `MunicipalitiesTab.jsx` | Municipalities data |
-| `OrganizationsTab.jsx` | Organizations data |
-| `RegionsTab.jsx` | Regions data |
-| `index.js` | Exports |
-
-### Root-Level Admin Components
-**Location:** `src/components/`
-
-| Component | Description |
-|-----------|-------------|
-| `EntityPermissions.jsx` | Entity permissions |
-| `EscalationPathsConfig.jsx` | Escalation paths |
-| `FeatureFlagsManager.jsx` | Feature flags |
-| `PermissionMatrix.jsx` | Permission matrix |
-| `SystemConfiguration.jsx` | System config |
-| `TaxonomyManager.jsx` | Taxonomy management |
-| `TemplateLibrary.jsx` | Template library |
-| `UserImpersonation.jsx` | User impersonation |
-| `UserRoleManager.jsx` | Role management |
-
----
-
-## 🪝 Hooks (5)
-
-| Hook | Description |
-|------|-------------|
-| `useUserRoles.js` | User roles management |
-| `useAuditLog.js` | Audit logging |
-| `useAutoRoleAssignment.js` | Auto role assignment |
-| `useUsersWithVisibility.js` | Users with visibility |
+| Component | File | Description |
+|-----------|------|-------------|
+| RolePermissionMatrix | `RolePermissionMatrix.jsx` | Visual role/permission grid |
+| RoleAuditDetail | `RoleAuditDetail.jsx` | Detailed role audit view |
+| RoleAuditDialog | `RoleAuditDialog.jsx` | Role audit modal dialog |
+| BulkRoleActions | `BulkRoleActions.jsx` | Bulk role operations |
+| BulkRoleAssignment | `BulkRoleAssignment.jsx` | Mass role assignment |
+| RoleHierarchyBuilder | `RoleHierarchyBuilder.jsx` | Role inheritance configuration |
+| RoleTemplateLibrary | `RoleTemplateLibrary.jsx` | Pre-defined role templates |
+| RoleRequestDialog | `RoleRequestDialog.jsx` | Role request modal |
+| RoleRequestApprovalQueue | `RoleRequestApprovalQueue.jsx` | Role request approval workflow |
+| AutoRoleAssignment | `AutoRoleAssignment.jsx` | Automatic role assignment rules |
+| PermissionInheritanceVisualizer | `PermissionInheritanceVisualizer.jsx` | Permission inheritance tree view |
+| PermissionTestingTool | `PermissionTestingTool.jsx` | Permission testing/simulation |
+| PermissionTemplateManager | `PermissionTemplateManager.jsx` | Permission templates |
+| PermissionUsageAnalytics | `PermissionUsageAnalytics.jsx` | Permission usage statistics |
+| DelegationApprovalQueue | `DelegationApprovalQueue.jsx` | Delegation approvals |
+| FieldLevelPermissions | `FieldLevelPermissions.jsx` | Field-level permission config |
+| FieldSecurityRulesEditor | `FieldSecurityRulesEditor.jsx` | Field security rules editor |
+| ConditionalAccessRules | `ConditionalAccessRules.jsx` | Conditional access configuration |
+| SessionTimeoutConfig | `SessionTimeoutConfig.jsx` | Session timeout settings |
+| MultiDevicePolicyBuilder | `MultiDevicePolicyBuilder.jsx` | Multi-device policies |
+| BulkUserImport | `BulkUserImport.jsx` | Bulk user import |
+| BulkUserActions | `BulkUserActions.jsx` | Bulk user operations |
+| AdvancedUserFilters | `AdvancedUserFilters.jsx` | Advanced user filtering |
+| UserHealthScores | `UserHealthScores.jsx` | User health metrics |
+| UserJourneyMapper | `UserJourneyMapper.jsx` | User journey visualization |
+| PredictiveChurnAnalysis | `PredictiveChurnAnalysis.jsx` | Churn prediction |
+| FeatureUsageHeatmap | `FeatureUsageHeatmap.jsx` | Feature usage visualization |
+| TeamWorkspace | `TeamWorkspace.jsx` | Team workspace management |
+| TeamPerformanceAnalytics | `TeamPerformanceAnalytics.jsx` | Team performance metrics |
+| CrossTeamCollaboration | `CrossTeamCollaboration.jsx` | Cross-team collaboration |
+| ImpersonationAuditLog | `ImpersonationAuditLog.jsx` | Impersonation audit trail |
+| ImpersonationRequestWorkflow | `ImpersonationRequestWorkflow.jsx` | Impersonation request flow |
+| AutomatedAuditScheduler | `AutomatedAuditScheduler.jsx` | Scheduled audit configuration |
+| AuditExporter | `AuditExporter.jsx` | Audit data export |
+| ComplianceReportTemplates | `ComplianceReportTemplates.jsx` | Compliance report templates |
+| BackendPermissionValidator | `BackendPermissionValidator.jsx` | Backend permission validation |
+| WelcomeEmailCustomizer | `WelcomeEmailCustomizer.jsx` | Welcome email customization |
 
 ---
 
-## 🗄️ Database Tables
+## 🪝 Hooks (8)
 
-| Table | Purpose |
-|-------|---------|
-| `users` | User accounts |
-| `user_roles` | Role assignments |
-| `roles` | Role definitions |
-| `permissions` | Permission definitions |
-| `role_permissions` | Role-permission mapping |
-| `access_logs` | Access logging |
-| `auto_approval_rules` | Auto-approval rules |
-| `approval_requests` | Approval requests |
+| Hook | File | Description |
+|------|------|-------------|
+| usePermissions | `src/components/permissions/usePermissions.jsx` | Core permission hook - queries DB functions |
+| useUserRoles | `src/hooks/useUserRoles.js` | User roles fetching (legacy) |
+| useRBACManager | `src/hooks/useRBACManager.js` | RBAC operations (approve, revoke, etc.) |
+| useAuditLog | `src/hooks/useAuditLog.js` | Audit logging |
+| useAutoRoleAssignment | `src/hooks/useAutoRoleAssignment.js` | Auto role assignment |
+| useUsersWithVisibility | `src/hooks/useUsersWithVisibility.js` | Users with visibility filtering |
+| useEntityVisibility | `src/hooks/useEntityVisibility.js` | Entity visibility based on permissions |
+| useEntityAccessCheck | `src/hooks/useEntityAccessCheck.js` | Single entity access verification |
+
+---
+
+## 🔌 Services
+
+| Service | File | Description |
+|---------|------|-------------|
+| rbacService | `src/services/rbac/rbacService.ts` | Edge function client for RBAC operations |
+
+### RBAC Service Actions
+
+| Action | Description |
+|--------|-------------|
+| `role.grant` | Grant role to user |
+| `role.revoke` | Revoke role from user |
+| `role.check_auto_approve` | Check auto-approval rules |
+| `role.get_user_roles` | Get user's roles |
+| `role.request.approve` | Approve role request |
+| `role.request.reject` | Reject role request |
 
 ---
 
 ## 🔐 RBAC Permissions
 
+### System Permissions
+
 | Permission | Description |
 |------------|-------------|
-| `admin` | Full admin access |
-| `user_manage` | User management |
+| `admin` | Full admin access (wildcard) |
 | `rbac_admin` | RBAC administration |
+| `user_manage` | User management |
 | `data_admin` | Data administration |
 | `team_manage` | Team management |
-| `platform_admin` | Platform admin |
+| `platform_admin` | Platform administration |
 | `security_manage` | Security management |
+
+### Entity Permissions Pattern
+
+| Pattern | Example | Description |
+|---------|---------|-------------|
+| `{entity}_create` | `challenge_create` | Create entity |
+| `{entity}_edit` | `challenge_edit` | Edit entity |
+| `{entity}_view` | `challenge_view` | View entity |
+| `{entity}_delete` | `challenge_delete` | Delete entity |
+| `{entity}_approve` | `challenge_approve` | Approve entity |
+| `{entity}_publish` | `challenge_publish` | Publish entity |
+
+### Visibility Permissions
+
+| Permission | Description |
+|------------|-------------|
+| `visibility_all_municipalities` | View all municipalities |
+| `visibility_all_sectors` | View all sectors |
+| `visibility_national` | National-level visibility |
+| `visibility_cross_region` | Cross-region visibility |
 
 ---
 
@@ -250,4 +378,7 @@ The Admin System provides platform administration including user management, RBA
 
 | System | Relationship |
 |--------|--------------|
-| All Systems | Administers all |
+| All Systems | RBAC controls access to all system features |
+| Authentication | Provides user identity for permission checks |
+| Visibility System | Uses permissions for data filtering |
+| Audit System | Logs permission changes and access |
