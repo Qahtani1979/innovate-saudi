@@ -342,16 +342,16 @@ Return a list of permission codes this role should have.`,
           {filters?.map(filter => (
             <Select 
               key={filter.key} 
-              value={localFilters[filter.key] || ''} 
-              onValueChange={(val) => setLocalFilters({...localFilters, [filter.key]: val})}
+              value={localFilters[filter.key] || 'all'} 
+              onValueChange={(val) => setLocalFilters({...localFilters, [filter.key]: val === 'all' ? '' : val})}
             >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder={filter.label[language]} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={null}>All</SelectItem>
+                <SelectItem value="all">All</SelectItem>
                 {filter.options.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  <SelectItem key={opt.value} value={opt.value || `option-${opt.label}`}>{opt.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
