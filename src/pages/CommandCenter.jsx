@@ -15,6 +15,7 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader, PersonaButton } from '@/components/layout/PersonaPageLayout';
+import { COMMAND_CENTER_PROMPT_TEMPLATE, COMMAND_CENTER_SCHEMA } from '@/lib/ai/prompts/command/strategicRecommendations';
 
 function CommandCenterPage() {
   const { language, isRTL, t } = useLanguage();
@@ -67,27 +68,13 @@ function CommandCenterPage() {
 
   const generateAIRecommendations = async () => {
     const result = await invokeAI({
-      prompt: `Analyze this innovation platform status and provide strategic recommendations:
-
-Critical challenges: ${challenges.filter(c => c.priority === 'tier_1').length}
-High-risk pilots: ${pilots.filter(p => p.risk_level === 'high').length}
-Active operations: ${activeOperations.length}
-Pending approvals: ${pendingApprovals.length}
-
-Provide:
-1. Top 3 priority actions for platform leadership
-2. Resource allocation recommendations
-3. Risk mitigation priorities
-4. Opportunities to accelerate`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          priority_actions: { type: 'array', items: { type: 'string' } },
-          resource_recommendations: { type: 'array', items: { type: 'string' } },
-          risk_priorities: { type: 'array', items: { type: 'string' } },
-          opportunities: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      prompt: COMMAND_CENTER_PROMPT_TEMPLATE({
+        criticalChallenges: challenges.filter(c => c.priority === 'tier_1').length,
+        highRiskPilots: pilots.filter(p => p.risk_level === 'high').length,
+        activeOperations: activeOperations.length,
+        pendingApprovals: pendingApprovals.length
+      }),
+      response_json_schema: COMMAND_CENTER_SCHEMA
     });
     if (result.success) {
       setAiRecommendations(result.data);

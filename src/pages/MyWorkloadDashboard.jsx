@@ -17,6 +17,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import MyWeekAhead from '../components/MyWeekAhead';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { WORKLOAD_PRIORITIES_PROMPT_TEMPLATE, WORKLOAD_PRIORITIES_SCHEMA, formatWorkItemsForPrioritization } from '@/lib/ai/prompts/workload/prioritization';
 
 function MyWorkloadDashboard() {
   const { language, isRTL, t } = useLanguage();
@@ -61,39 +62,15 @@ function MyWorkloadDashboard() {
   });
 
   const generateAIPriorities = async () => {
-    const workItems = [
-      ...myChallenges.map(c => ({ type: 'challenge', code: c.code, title: c.title_en, status: c.status, priority: c.priority })),
-      ...myPilots.map(p => ({ type: 'pilot', code: p.code, title: p.title_en, stage: p.stage })),
-      ...myTasks.filter(t => t.status !== 'completed').map(t => ({ type: 'task', title: t.title, due_date: t.due_date, priority: t.priority }))
-    ];
+    const workItems = formatWorkItemsForPrioritization({
+      challenges: myChallenges,
+      pilots: myPilots,
+      tasks: myTasks
+    });
 
     const { success, data } = await invokeAI({
-      prompt: `Analyze this user's workload and identify top 3 priorities for TODAY with clear reasoning:
-
-Work items: ${JSON.stringify(workItems.slice(0, 20))}
-
-For each priority, provide:
-1. What item needs attention
-2. Why it's urgent/important
-3. Recommended action
-4. Estimated time needed`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          priorities: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                item: { type: 'string' },
-                urgency_reason: { type: 'string' },
-                recommended_action: { type: 'string' },
-                estimated_minutes: { type: 'number' }
-              }
-            }
-          }
-        }
-      }
+      prompt: WORKLOAD_PRIORITIES_PROMPT_TEMPLATE({ workItems }),
+      response_json_schema: WORKLOAD_PRIORITIES_SCHEMA
     });
 
     if (success) {
