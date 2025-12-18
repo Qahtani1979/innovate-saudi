@@ -6,6 +6,11 @@ import { useLanguage } from '../LanguageContext';
 import { Users, Sparkles, Loader2 } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  MULTI_INSTITUTION_SYSTEM_PROMPT,
+  buildMultiInstitutionPrompt,
+  MULTI_INSTITUTION_SCHEMA
+} from '@/lib/ai/prompts/rd/multiInstitution';
 
 export default function MultiInstitutionCollaboration({ projectId }) {
   const { language, t } = useLanguage();
@@ -18,34 +23,15 @@ export default function MultiInstitutionCollaboration({ projectId }) {
 
   const findPartners = async () => {
     const response = await invokeAI({
-      prompt: `Suggest research institution partners for multi-institution collaboration:
-
-Project needs: Advanced AI research, smart city deployment expertise, civic tech experience
-
-Available institutions: King Saud University, KAUST, King Fahd University, KACST, Aramco Research
-
-Recommend 3-4 institutions with complementary capabilities and collaboration synergy.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          recommendations: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                institution: { type: "string" },
-                role: { type: "string" },
-                expertise: { type: "string" },
-                synergy_score: { type: "number" }
-              }
-            }
-          }
-        }
-      }
+      system_prompt: MULTI_INSTITUTION_SYSTEM_PROMPT,
+      prompt: buildMultiInstitutionPrompt({ 
+        projectNeeds: 'Advanced AI research, smart city deployment expertise, civic tech experience' 
+      }),
+      response_json_schema: MULTI_INSTITUTION_SCHEMA
     });
 
-    if (response.success && response.data?.recommendations) {
-      setPartners(response.data.recommendations);
+    if (response.success && response.data?.partners) {
+      setPartners(response.data.partners);
     }
   };
 
@@ -71,11 +57,11 @@ Recommend 3-4 institutions with complementary capabilities and collaboration syn
             {partners.map((p, i) => (
               <div key={i} className="p-4 bg-white rounded-lg border-2 border-indigo-200">
                 <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-bold text-slate-900">{p.institution}</h4>
-                  <Badge className="bg-indigo-600">{p.synergy_score}% match</Badge>
+                  <h4 className="font-bold text-slate-900">{p.institution_name}</h4>
+                  <Badge className="bg-indigo-600">{p.collaboration_potential}</Badge>
                 </div>
-                <p className="text-sm text-slate-700 mb-2"><strong>Role:</strong> {p.role}</p>
-                <p className="text-xs text-slate-600">{p.expertise}</p>
+                <p className="text-sm text-slate-700 mb-2"><strong>Expertise:</strong> {p.expertise}</p>
+                <p className="text-xs text-slate-600">{p.rationale}</p>
               </div>
             ))}
           </div>
