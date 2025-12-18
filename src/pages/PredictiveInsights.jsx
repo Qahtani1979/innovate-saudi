@@ -15,27 +15,13 @@ function PredictiveInsights() {
   const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const generateInsights = async () => {
+    const { PREDICTIVE_INSIGHTS_PROMPT_TEMPLATE } = await import('@/lib/ai/prompts/insights/predictive');
+    const promptConfig = PREDICTIVE_INSIGHTS_PROMPT_TEMPLATE();
+
     const result = await invokeAI({
-      prompt: `Analyze the Saudi municipal innovation platform and provide strategic predictive insights in both English and Arabic:
-
-Generate predictions for:
-1. Emerging challenge areas (next 6 months)
-2. High-potential pilot opportunities
-3. Sectors likely to see breakthrough innovations
-4. Risk areas requiring attention
-5. Scaling opportunities
-
-Provide bilingual insights (both EN and AR for each item).`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          emerging_challenges: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          pilot_opportunities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          breakthrough_sectors: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          risk_areas: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          scaling_opportunities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-        }
-      }
+      prompt: promptConfig.prompt,
+      system_prompt: promptConfig.system,
+      response_json_schema: promptConfig.schema
     });
     if (result.success) {
       setInsights(result.data);

@@ -30,40 +30,13 @@ function PresentationMode() {
       return;
     }
 
+    const { PRESENTATION_GENERATOR_PROMPT_TEMPLATE } = await import('@/lib/ai/prompts/presentation/generator');
+    const promptConfig = PRESENTATION_GENERATOR_PROMPT_TEMPLATE(activePlan);
+
     const result = await invokeAI({
-      prompt: `Convert this strategic plan to presentation slides:
-
-Plan: ${activePlan.name_en}
-Vision: ${activePlan.vision_en || 'N/A'}
-Period: ${activePlan.start_year}-${activePlan.end_year}
-Themes: ${activePlan.strategic_themes?.length || 0}
-
-Generate 10-15 slides with:
-1. Title slide
-2. Vision & Mission
-3. Strategic themes overview
-4. One slide per major theme (key objectives, KPIs)
-5. Progress highlights
-6. Next steps
-7. Closing
-
-Each slide: {title, key_points: [3-5 bullets], speaker_notes}`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          slides: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                title: { type: "string" },
-                key_points: { type: "array", items: { type: "string" } },
-                speaker_notes: { type: "string" }
-              }
-            }
-          }
-        }
-      }
+      prompt: promptConfig.prompt,
+      system_prompt: promptConfig.system,
+      response_json_schema: promptConfig.schema
     });
 
     if (result.success) {
