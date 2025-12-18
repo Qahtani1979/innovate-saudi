@@ -141,7 +141,7 @@ function RBACAuditContentInner() {
 
     // Duplicate assignments check
     const roleAssignmentMap = new Map();
-    userRolesData.forEach(ur => {
+    userRoles.forEach(ur => {
       const key = `${ur.user_id}-${ur.role_id}`;
       if (roleAssignmentMap.has(key)) roleAssignmentMap.get(key).push(ur);
       else roleAssignmentMap.set(key, [ur]);
@@ -155,7 +155,7 @@ function RBACAuditContentInner() {
 
     // Users with excessive permissions
     const userPermissionCounts = {};
-    userRolesData.filter(ur => ur.is_active).forEach(ur => {
+    userRoles.filter(ur => ur.is_active).forEach(ur => {
       const permCount = rolePermissions.filter(rp => rp.role_id === ur.role_id).length;
       userPermissionCounts[ur.user_id] = (userPermissionCounts[ur.user_id] || 0) + permCount;
     });
@@ -205,9 +205,9 @@ function RBACAuditContentInner() {
       excessivePermissionRoles, excessivePermissionUsers, risks, recommendations,
       healthScore, highRisks, mediumRisks, denialRate, deniedAttempts: deniedAttempts.length,
       totalUsers: allUsers.length, totalRoles: roles.length, totalPermissions: permissions.length, 
-      totalAssignments: userRolesData.length, totalAccessAttempts: accessLogs.length
+      totalAssignments: userRoles.length, totalAccessAttempts: accessLogs.length
     };
-  }, [allUsers, userRoles, roles, permissions, userRolesData, rolePermissions, delegations, accessLogs]);
+  }, [allUsers, userRoles, roles, permissions, rolePermissions, delegations, accessLogs]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -528,9 +528,8 @@ function RBACAuditContentInner() {
             <TabsContent value="users">
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {allUsers.map(user => {
-                  const userAppRoles = userRoles.filter(ur => ur.user_id === user.user_id);
-                  const userDataRoles = userRolesData.filter(ur => ur.user_id === user.user_id && ur.is_active);
-                  const hasAnyRole = userAppRoles.length > 0 || userDataRoles.length > 0;
+                  const userActiveRoles = userRoles.filter(ur => ur.user_id === user.user_id && ur.is_active);
+                  const hasAnyRole = userActiveRoles.length > 0;
                   
                   return (
                     <div key={user.user_id} className={`p-3 rounded border ${!hasAnyRole ? 'border-red-200 bg-red-50' : ''}`}>
@@ -540,12 +539,9 @@ function RBACAuditContentInner() {
                           <p className="text-xs text-muted-foreground">{user.user_email}</p>
                         </div>
                         <div className="flex gap-1 flex-wrap justify-end">
-                          {userAppRoles.map(ur => (
-                            <Badge key={ur.id} variant="default" className="text-xs">{ur.role}</Badge>
-                          ))}
-                          {userDataRoles.map(ur => {
-                            const role = roles.find(r => r.id === ur.role_id);
-                            return <Badge key={ur.id} variant="outline" className="text-xs">{role?.name || ur.roles?.name || 'Unknown'}</Badge>;
+                          {userActiveRoles.map(ur => {
+                            const roleName = ur.roles?.name || roles.find(r => r.id === ur.role_id)?.name || 'Unknown';
+                            return <Badge key={ur.id} variant="outline" className="text-xs">{roleName}</Badge>;
                           })}
                           {!hasAnyRole && <Badge variant="destructive" className="text-xs">{t({ en: 'No Roles', ar: 'بدون أدوار' })}</Badge>}
                         </div>
@@ -560,7 +556,7 @@ function RBACAuditContentInner() {
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {roles.map(role => {
                   const permCount = rolePermissions.filter(rp => rp.role_id === role.id).length;
-                  const userCount = userRolesData.filter(ur => ur.role_id === role.id && ur.is_active).length;
+                  const userCount = userRoles.filter(ur => ur.role_id === role.id && ur.is_active).length;
                   
                   return (
                     <div key={role.id} className={`p-3 rounded border ${userCount === 0 ? 'border-yellow-200 bg-yellow-50' : ''}`}>
