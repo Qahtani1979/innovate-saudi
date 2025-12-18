@@ -1,9 +1,9 @@
 # System Inventories Master Index
 
-> **Last Updated:** 2025-12-14  
-> **Total Systems:** 19 documented  
+> **Last Updated:** 2025-12-18  
+> **Total Systems:** 20 documented (19 core + 1 shared)  
 > **Total Files Tracked:** 1200+ (Pages: 581, Components: 520+, Hooks: 120+)  
-> **Coverage Status:** ~70% assigned, ~30% orphaned (pending integration)
+> **Coverage Status:** ~85% assigned, ~15% orphaned (pending integration)
 
 ---
 
@@ -13,7 +13,8 @@ All inventories include navigation links for easy traversal.
 
 | # | System | Inventory File | Pages | Components | Status |
 |---|--------|----------------|-------|------------|--------|
-| 1 | **Strategy** | [strategy-system-inventory.md](strategy/strategy-system-inventory.md) | 35 | 65 | ✅ |
+| 0 | **Shared/Common** | [shared-system-inventory.md](shared/shared-system-inventory.md) | 5 | 10 | ✅ NEW |
+| 1 | **Strategy** | [strategy-system-inventory.md](strategy/strategy-system-inventory.md) | 47 | 75 | ✅ |
 | 2 | **Challenges** | [challenges-system-inventory.md](challenges/challenges-system-inventory.md) | 22 | 51 | ✅ |
 | 3 | **Pilots** | [pilots-system-inventory.md](pilots/pilots-system-inventory.md) | 20 | 27 | ✅ |
 | 4 | **Programs** | [programs-system-inventory.md](programs/programs-system-inventory.md) | 25 | 40 | ✅ |
@@ -21,12 +22,12 @@ All inventories include navigation links for easy traversal.
 | 6 | **Solutions** | [solutions-system-inventory.md](solutions/solutions-system-inventory.md) | 15 | 37 | ✅ |
 | 7 | **Sandboxes & Living Labs** | [sandboxes-livinglabs-system-inventory.md](sandboxes-livinglabs/sandboxes-livinglabs-system-inventory.md) | 14 | 31 | ✅ |
 | 8 | **Municipalities** | [municipalities-system-inventory.md](municipalities/municipalities-system-inventory.md) | 18 | 18 | ✅ |
-| 9 | **Citizens** | [citizens-system-inventory.md](citizens/citizens-system-inventory.md) | 18 | 34 | ✅ |
+| 9 | **Citizens** | [citizens-system-inventory.md](citizens/citizens-system-inventory.md) | 30 | 45 | ✅ UPDATED |
 | 10 | **Partnerships** | [partnerships-system-inventory.md](partnerships/partnerships-system-inventory.md) | 12 | 22 | ✅ |
 | 11 | **Scaling** | [scaling-system-inventory.md](scaling/scaling-system-inventory.md) | 8 | 18 | ✅ |
 | 12 | **Events** | [events-system-inventory.md](events/events-system-inventory.md) | 8 | 8 | ✅ |
 | 13 | **Matchmaker** | [matchmaker-system-inventory.md](matchmaker/matchmaker-system-inventory.md) | 10 | 20 | ✅ |
-| 14 | **Admin** | [admin-system-inventory.md](admin/admin-system-inventory.md) | 45 | 35 | ✅ |
+| 14 | **Admin** | [admin-system-inventory.md](admin/admin-system-inventory.md) | 65 | 45 | ✅ UPDATED |
 | 15 | **Communications** | [communications-system-inventory.md](communications/communications-system-inventory.md) | 12 | 17 | ✅ |
 | 16 | **Knowledge** | [knowledge-system-inventory.md](knowledge/knowledge-system-inventory.md) | 10 | 12 | ✅ |
 | 17 | **Startups & Academia** | [startups-academia-system-inventory.md](personas/startups-academia-system-inventory.md) | 10 | 20 | ✅ |
