@@ -33,15 +33,27 @@ export function usePermissions() {
     enabled: !!userId
   });
 
-  // Get user's app_role from user_roles table
+  // Get user's roles from user_roles table (Phase 3: uses role_id join)
   const { data: userRoles = [] } = useQuery({
     queryKey: ['user-app-roles', userId],
     queryFn: async () => {
       if (!userId) return [];
       const { data, error } = await supabase
         .from('user_roles')
-        .select('role, municipality_id, organization_id')
-        .eq('user_id', userId);
+        .select(`
+          role,
+          role_id,
+          municipality_id,
+          organization_id,
+          is_active,
+          roles:role_id (
+            id,
+            name,
+            description
+          )
+        `)
+        .eq('user_id', userId)
+        .eq('is_active', true);
       if (error) throw error;
       return data || [];
     },
@@ -102,24 +114,32 @@ export function usePermissions() {
     enabled: !!userId
   });
 
-  // Extract role names for easier checking
-  const roleNames = userRoles.map(r => r.role);
+  // Extract role names for easier checking (Phase 3: prefer role name from join)
+  const roleNames = userRoles.map(r => r.roles?.name || r.role);
+  const roleEnums = userRoles.map(r => r.role); // Keep enum for backward compat
   
-  const isAdmin = roleNames.includes('admin');
+  // Admin check - use role name from join (case-insensitive)
+  const isAdmin = userRoles.some(r => 
+    r.roles?.name?.toLowerCase() === 'admin' || r.role === 'admin'
+  );
   
   // Check if user belongs to a national deputyship
   const isNationalEntity = userMunicipality?.region?.code === 'NATIONAL';
   
-  // Deputyship user check
+  // Deputyship user check (Phase 3: check both role name and enum)
   const isDeputyship = isNationalEntity || 
-    roleNames.includes('deputyship_admin') || 
-    roleNames.includes('deputyship_staff');
+    userRoles.some(r => 
+      r.roles?.name?.toLowerCase().includes('deputyship') ||
+      r.role === 'deputyship_admin' || 
+      r.role === 'deputyship_staff'
+    );
   
-  // Municipality user check
-  const isMunicipality = !isNationalEntity && (
-    roleNames.includes('municipality_admin') || 
-    roleNames.includes('municipality_staff') || 
-    roleNames.includes('municipality_coordinator')
+  // Municipality user check (Phase 3: check both role name and enum)
+  const isMunicipality = !isNationalEntity && userRoles.some(r =>
+    r.roles?.name?.toLowerCase().includes('municipality') ||
+    r.role === 'municipality_admin' || 
+    r.role === 'municipality_staff' || 
+    r.role === 'municipality_coordinator'
   );
 
   // Staff user (either municipality or deputyship)
@@ -147,9 +167,13 @@ export function usePermissions() {
     return hasPermission(permissionKey);
   };
 
+  // Phase 3: Check role by name (from join) or enum
   const hasRole = (role) => {
     if (isAdmin) return true;
-    return roleNames.includes(role);
+    // Check both role name (from join) and enum for backward compatibility
+    return roleNames.some(name => 
+      name?.toLowerCase() === role?.toLowerCase()
+    ) || roleEnums.includes(role);
   };
 
   const hasFunctionalRole = (roleName) => {

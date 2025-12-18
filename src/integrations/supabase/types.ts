@@ -9208,7 +9208,6 @@ export type Database = {
           name: string
           name_ar: string | null
           parent_role_id: string | null
-          permissions: string[] | null
           required_certifications: string[] | null
           required_expertise_areas: string[] | null
           updated_at: string | null
@@ -9232,7 +9231,6 @@ export type Database = {
           name: string
           name_ar?: string | null
           parent_role_id?: string | null
-          permissions?: string[] | null
           required_certifications?: string[] | null
           required_expertise_areas?: string[] | null
           updated_at?: string | null
@@ -9256,7 +9254,6 @@ export type Database = {
           name?: string
           name_ar?: string | null
           parent_role_id?: string | null
-          permissions?: string[] | null
           required_certifications?: string[] | null
           required_expertise_areas?: string[] | null
           updated_at?: string | null
@@ -12589,7 +12586,7 @@ export type Database = {
           organization_id: string | null
           revoked_at: string | null
           role: Database["public"]["Enums"]["app_role"]
-          role_id: string | null
+          role_id: string
           user_email: string | null
           user_id: string
         }
@@ -12602,7 +12599,7 @@ export type Database = {
           organization_id?: string | null
           revoked_at?: string | null
           role: Database["public"]["Enums"]["app_role"]
-          role_id?: string | null
+          role_id: string
           user_email?: string | null
           user_id: string
         }
@@ -12615,7 +12612,7 @@ export type Database = {
           organization_id?: string | null
           revoked_at?: string | null
           role?: Database["public"]["Enums"]["app_role"]
-          role_id?: string | null
+          role_id?: string
           user_email?: string | null
           user_id?: string
         }
