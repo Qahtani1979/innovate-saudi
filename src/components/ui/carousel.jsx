@@ -11,7 +11,17 @@ function useCarousel() {
   const context = React.useContext(CarouselContext)
 
   if (!context) {
-    throw new Error("useCarousel must be used within a <Carousel />")
+    // Return safe defaults instead of throwing to prevent crashes
+    return {
+      carouselRef: () => {},
+      api: null,
+      opts: {},
+      orientation: "horizontal",
+      scrollPrev: () => {},
+      scrollNext: () => {},
+      canScrollPrev: false,
+      canScrollNext: false,
+    }
   }
 
   return context
