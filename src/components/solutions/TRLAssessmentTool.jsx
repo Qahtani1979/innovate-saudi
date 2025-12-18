@@ -11,6 +11,11 @@ import { Beaker, Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  TRL_ASSESSMENT_SYSTEM_PROMPT,
+  buildTRLAssessmentPrompt,
+  TRL_ASSESSMENT_SCHEMA
+} from '@/lib/ai/prompts/solutions/trlAssessment';
 
 export default function TRLAssessmentTool({ solution, onAssessmentComplete }) {
   const { t } = useLanguage();
@@ -30,54 +35,9 @@ export default function TRLAssessmentTool({ solution, onAssessmentComplete }) {
 
   const assessTRL = async () => {
     const result = await invokeAI({
-      prompt: `Assess Technology Readiness Level (TRL) for this solution following NASA TRL scale (1-9).
-
-SOLUTION:
-Name: ${solution.name_en}
-Description: ${solution.description_en}
-Maturity Level: ${solution.maturity_level}
-Current TRL: ${solution.trl || 'Not assessed'}
-Features: ${solution.features?.join(', ') || 'N/A'}
-Deployments: ${solution.deployment_count || 0}
-Technical Specs: ${JSON.stringify(solution.technical_specifications || {})}
-
-USER PROVIDED EVIDENCE:
-${evidence || 'No additional evidence provided'}
-
-TRL SCALE:
-TRL 1: Basic principles observed
-TRL 2: Technology concept formulated
-TRL 3: Experimental proof of concept
-TRL 4: Technology validated in lab
-TRL 5: Technology validated in relevant environment
-TRL 6: Technology demonstrated in relevant environment
-TRL 7: System prototype demonstration in operational environment
-TRL 8: System complete and qualified
-TRL 9: Actual system proven in operational environment
-
-Provide:
-1. Assessed TRL level (1-9)
-2. Confidence score (0-100%)
-3. Evidence supporting assessment
-4. Next steps to advance TRL
-5. Gaps preventing higher TRL
-6. Estimated timeline to next level
-7. Detailed reasoning for assessment
-
-Be rigorous and evidence-based.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          assessed_trl: { type: 'number' },
-          confidence_score: { type: 'number' },
-          supporting_evidence: { type: 'array', items: { type: 'string' } },
-          next_steps: { type: 'array', items: { type: 'string' } },
-          trl_gaps: { type: 'array', items: { type: 'string' } },
-          timeline_to_next_level_months: { type: 'number' },
-          assessment_reasoning: { type: 'string' },
-          readiness_for_pilot: { type: 'string', enum: ['ready', 'nearly_ready', 'not_ready'] }
-        }
-      }
+      prompt: buildTRLAssessmentPrompt({ solution, evidence }),
+      system_prompt: TRL_ASSESSMENT_SYSTEM_PROMPT,
+      response_json_schema: TRL_ASSESSMENT_SCHEMA
     });
 
     if (result.success && result.data) {

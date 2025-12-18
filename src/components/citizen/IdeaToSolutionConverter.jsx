@@ -11,6 +11,11 @@ import { Lightbulb, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  IDEA_TO_SOLUTION_SYSTEM_PROMPT,
+  buildIdeaToSolutionPrompt,
+  IDEA_TO_SOLUTION_SCHEMA
+} from '@/lib/ai/prompts/citizen/ideaToSolution';
 
 export default function IdeaToSolutionConverter({ idea, onClose }) {
   const { language, isRTL, t } = useLanguage();
@@ -34,36 +39,9 @@ export default function IdeaToSolutionConverter({ idea, onClose }) {
 
   const enhanceWithAI = async () => {
     const result = await invokeAI({
-      prompt: `Convert this citizen idea into a structured solution entry:
-
-Title: ${idea.title}
-Description: ${idea.description}
-Category: ${idea.category}
-
-Generate:
-1. Professional solution name (EN & AR)
-2. Detailed solution description (EN & AR)
-3. Value proposition
-4. Key features (5-7 items)
-5. Estimated maturity level
-6. Suggested TRL
-7. Target sectors
-
-Format as JSON matching Solution entity schema.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          name_en: { type: 'string' },
-          name_ar: { type: 'string' },
-          description_en: { type: 'string' },
-          description_ar: { type: 'string' },
-          value_proposition: { type: 'string' },
-          features: { type: 'array', items: { type: 'string' } },
-          maturity_level: { type: 'string' },
-          trl: { type: 'number' },
-          sectors: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      prompt: buildIdeaToSolutionPrompt({ idea }),
+      system_prompt: IDEA_TO_SOLUTION_SYSTEM_PROMPT,
+      response_json_schema: IDEA_TO_SOLUTION_SCHEMA
     });
 
     if (result.success && result.data) {

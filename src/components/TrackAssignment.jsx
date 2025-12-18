@@ -10,6 +10,11 @@ import { toast } from 'sonner';
 import useAIWithFallback, { AI_STATUS } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator, { AIOptionalBadge } from '@/components/ai/AIStatusIndicator';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import {
+  TRACK_ASSIGNMENT_SYSTEM_PROMPT,
+  buildTrackAssignmentPrompt,
+  TRACK_ASSIGNMENT_SCHEMA
+} from '@/lib/ai/prompts/challenges/trackAssignment';
 
 export default function TrackAssignment({ challenge }) {
   const { t } = useLanguage();
@@ -59,29 +64,9 @@ export default function TrackAssignment({ challenge }) {
 
   const analyzeTrack = async () => {
     const { success, data } = await invokeAI({
-      prompt: `Analyze this municipal challenge and recommend the best treatment track:
-Title: ${challenge.title_en}
-Description: ${challenge.description_en}
-Severity Score: ${challenge.severity_score}
-Impact Score: ${challenge.impact_score}
-
-Tracks available:
-- pilot: Test solution through controlled pilot project
-- r_and_d: Requires research & development
-- program: Suitable for program/event format (hackathon, accelerator)
-- procurement: Standard procurement solution
-- policy: Requires policy/regulatory change
-- none: No specific track
-
-Return JSON with: recommended_track, confidence (0-100), reasoning (array of strings)`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          recommended_track: { type: 'string' },
-          confidence: { type: 'number' },
-          reasoning: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      prompt: buildTrackAssignmentPrompt({ challenge }),
+      system_prompt: TRACK_ASSIGNMENT_SYSTEM_PROMPT,
+      response_json_schema: TRACK_ASSIGNMENT_SCHEMA
     });
 
     if (success && data) {
