@@ -9,6 +9,7 @@ import { Network, Building2, Rocket, GraduationCap, Sparkles, Loader2 } from 'lu
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { buildPartnershipNetworkPrompt, PARTNERSHIP_NETWORK_SCHEMA } from '@/lib/ai/prompts/partnerships';
 
 export default function PartnershipNetwork() {
   const { language, isRTL, t } = useLanguage();
@@ -71,35 +72,8 @@ export default function PartnershipNetwork() {
 
   const generateAISuggestions = async () => {
     const response = await invokeAI({
-      prompt: `Analyze partnership network for Saudi municipal innovation and suggest new collaboration opportunities:
-
-Current Network:
-- Organizations: ${uniqueOrgs.length}
-- Active Collaborations: ${totalCollaborations}
-- Pilots: ${pilots.length}
-- R&D Projects: ${rdProjects.length}
-
-Suggest 5 specific partnership opportunities in format:
-"[Org A] + [Org B] could collaborate on [Challenge/Opportunity]"`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          suggestions: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                partner1: { type: 'string' },
-                partner2: { type: 'string' },
-                opportunity_en: { type: 'string' },
-                opportunity_ar: { type: 'string' },
-                rationale_en: { type: 'string' },
-                rationale_ar: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+      prompt: buildPartnershipNetworkPrompt(uniqueOrgs, totalCollaborations, pilots, rdProjects),
+      response_json_schema: PARTNERSHIP_NETWORK_SCHEMA
     });
 
     if (response.success && response.data?.suggestions) {

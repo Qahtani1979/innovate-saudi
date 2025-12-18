@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from '../LanguageContext';
 import { Target, Sparkles, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { buildStrategicAlignmentPrompt, STRATEGIC_ALIGNMENT_SCHEMA } from '@/lib/ai/prompts/challenges';
 
 export default function StrategicAlignmentSelector({ challenge, onUpdate }) {
   const { language, isRTL, t } = useLanguage();
@@ -30,13 +31,11 @@ export default function StrategicAlignmentSelector({ challenge, onUpdate }) {
 
   const updateMutation = useMutation({
     mutationFn: async () => {
-      // For creation wizard (no challenge.id yet), just callback
       if (!challenge.id || challenge.id === 'preview') {
         if (onUpdate) onUpdate(selectedPlans);
         return;
       }
 
-      // For existing challenge - full update
       await base44.entities.Challenge.update(challenge.id, {
         strategic_plan_ids: selectedPlans
       });
@@ -79,44 +78,9 @@ export default function StrategicAlignmentSelector({ challenge, onUpdate }) {
     try {
       const selectedPlanObjects = strategicPlans.filter(p => selectedPlans.includes(p.id));
       
-      const prompt = `Validate strategic alignment between challenge and objectives:
-
-Challenge: ${challenge.title_en}
-Description: ${challenge.description_en}
-Sector: ${challenge.sector}
-
-Strategic Objectives Selected:
-${selectedPlanObjects.map(p => `- ${p.objective_en || p.title_en}: ${p.description_en}`).join('\n')}
-
-Analyze:
-1. Alignment score (0-100) for each objective
-2. How this challenge contributes to objectives
-3. Potential gaps or misalignments
-4. Recommendations to strengthen alignment`;
-
       const response = await invokeAI({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            alignments: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  objective: { type: 'string' },
-                  score: { type: 'number' },
-                  contribution: { type: 'string' },
-                  gaps: { type: 'string' }
-                }
-              }
-            },
-            recommendations: {
-              type: 'array',
-              items: { type: 'string' }
-            }
-          }
-        }
+        prompt: buildStrategicAlignmentPrompt(challenge, selectedPlanObjects),
+        response_json_schema: STRATEGIC_ALIGNMENT_SCHEMA
       });
 
       if (response.success) {

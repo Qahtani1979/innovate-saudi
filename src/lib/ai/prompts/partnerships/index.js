@@ -6,3 +6,4 @@
 export * from './partnerDiscovery';
 export * from './agreementGenerator';
 export * from './synergyDetector';
+export * from './network';
