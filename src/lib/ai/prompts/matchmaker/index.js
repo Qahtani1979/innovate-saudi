@@ -1,6 +1,6 @@
 /**
  * Matchmaker Module AI Prompts Index
- * @version 1.1.0
+ * @version 1.2.0
  */
 
 // Match Success Predictor
@@ -31,6 +31,16 @@ export {
   DEAL_FLOW_SYSTEM_PROMPT, buildDealFlowPrompt, DEAL_FLOW_SCHEMA,
   PROVIDER_RANKING_SYSTEM_PROMPT, buildProviderRankingPrompt, PROVIDER_RANKING_SCHEMA
 } from './matchNotifier';
+
+// Executive Review Gate
+export {
+  EXECUTIVE_REVIEW_SYSTEM_PROMPT,
+  buildExecutiveBriefPrompt,
+  EXECUTIVE_BRIEF_SCHEMA,
+  buildBatchReviewPrompt,
+  BATCH_REVIEW_SCHEMA,
+  EXECUTIVE_REVIEW_PROMPTS
+} from './executiveReview';
 
 /**
  * Matchmaker module prompt configuration
@@ -75,6 +85,11 @@ export const MATCHMAKER_PROMPTS = {
     promptFn: 'buildProviderRankingPrompt',
     schema: 'PROVIDER_RANKING_SCHEMA',
     description: 'Ranks providers for challenges'
+  },
+  executiveReview: {
+    promptFn: 'buildExecutiveBriefPrompt',
+    schema: 'EXECUTIVE_BRIEF_SCHEMA',
+    description: 'Generates executive briefings for applications'
   }
 };
 
