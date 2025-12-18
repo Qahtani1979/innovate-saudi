@@ -6,16 +6,16 @@
 
 The AI Prompt Modules System provides a structured approach to managing AI prompts across the platform. All prompts are centralized in `src/lib/ai/prompts/` with consistent patterns for easy maintenance, testing, and reuse.
 
-### Current Migration Status (Updated: December 18, 2024 - Session 16)
+### Current Migration Status (Updated: December 18, 2024 - Session 17)
 
 | Metric | Value | Status |
 |--------|-------|--------|
-| Total Prompt Modules Created | 168+ | ✅ Created |
-| Prompt Module Categories | 102 directories | ✅ Organized |
-| **Components Migrated** | **74+/94 files** | 🔄 In Progress (79%) |
+| Total Prompt Modules Created | 172+ | ✅ Created |
+| Prompt Module Categories | 105 directories | ✅ Organized |
+| **Components Migrated** | **78+/94 files** | 🔄 In Progress (83%) |
 | **Pages Migrated** | **0/85 files** | ⏳ Pending |
 | Edge Functions with Inline Prompts | 2 files | ⚠️ Partial |
-| **Overall Migration Progress** | **~87%** | 🔄 In Progress |
+| **Overall Migration Progress** | **~89%** | 🔄 In Progress |
 
 ### Recently Migrated Components ✅
 - `AINotificationRouter.jsx` → `communications/notificationRouter`
@@ -81,6 +81,9 @@ The AI Prompt Modules System provides a structured approach to managing AI promp
 - `AdaptiveRolloutSequencing.jsx` → `scaling/rolloutSequencing`
 - `ProgramToPilotWorkflow.jsx` → `programs/pilotWorkflow`
 - `AdvancedResourceOptimizer.jsx` → `bonus/resourceOptimizer` ⭐ NEW
+- `PortfolioReviewGate.jsx` → `gates/portfolioReview` ⭐ NEW
+- `PartnershipProposalWizard.jsx` → `collaboration/partnershipProposal` ⭐ NEW
+- `ChallengeSubmissionWizard.jsx` → `challenges/submissionBrief` ⭐ NEW
 - `ChallengeToRDWizard.jsx` → `challenges/challengeToRD` (pre-existing)
 - `AIProposalScorer.jsx` → `rd/proposalScorer` (pre-existing)
 - `AIProposalWriter.jsx` → `rd/proposalWriter` (pre-existing)
@@ -88,7 +91,12 @@ The AI Prompt Modules System provides a structured approach to managing AI promp
 - `ResearcherMunicipalityMatcher.jsx` → `rd/researcherMatcher` (pre-existing)
 - `FailedMatchLearningEngine.jsx` → `matchmaker/failedMatchLearning` (pre-existing)
 
-### New Prompt Modules (This Session)
+### New Prompt Modules (Session 17)
+- `gates/portfolioReview.js` - Portfolio review analysis
+- `collaboration/partnershipProposal.js` - Partnership proposal generation
+- `bonus/conflictDetector.js` - Resource conflict detection
+
+### New Prompt Modules (Session 16)
 - `bonus/resourceOptimizer.js` - Resource allocation optimization
 - `rd/ipValuation.js` - IP value estimation
 - `rd/grantProposal.js` - Grant proposal assistance

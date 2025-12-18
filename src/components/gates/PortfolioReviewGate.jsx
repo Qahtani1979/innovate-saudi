@@ -9,6 +9,11 @@ import { BarChart3, CheckCircle2, Sparkles, Loader2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  PORTFOLIO_REVIEW_SYSTEM_PROMPT,
+  buildPortfolioReviewPrompt,
+  PORTFOLIO_REVIEW_SCHEMA
+} from '@/lib/ai/prompts/gates/portfolioReview';
 
 export default function PortfolioReviewGate({ portfolioData, onApprove, onClose }) {
   const { language, isRTL, t } = useLanguage();
@@ -35,22 +40,9 @@ export default function PortfolioReviewGate({ portfolioData, onApprove, onClose 
 
   const generateAIReview = async () => {
     const result = await invokeAI({
-      prompt: `Perform quarterly portfolio review for Saudi municipal innovation:
-
-Performance: ${JSON.stringify(performanceMetrics)}
-
-Provide bilingual review:
-1. Key achievements this quarter
-2. Areas of concern
-3. Recommendations for next quarter`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          achievements: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          concerns: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-        }
-      }
+      system_prompt: PORTFOLIO_REVIEW_SYSTEM_PROMPT,
+      prompt: buildPortfolioReviewPrompt({ performanceMetrics }),
+      response_json_schema: PORTFOLIO_REVIEW_SCHEMA
     });
 
     if (result.success) {
