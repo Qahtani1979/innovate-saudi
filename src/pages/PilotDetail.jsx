@@ -49,7 +49,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Textarea } from "@/components/ui/textarea";
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { usePrompt } from '@/hooks/usePrompt';
+import { PILOT_DETAIL_PROMPT_TEMPLATE } from '@/lib/ai/prompts/pilots/pilotDetail';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import CloneEntity from '../components/CloneEntity';
 import PDFExport from '../components/PDFExport';
@@ -86,7 +87,7 @@ function PilotDetailPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const pilotId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
-  const { invokeAI, status: aiStatus, isLoading: aiLoadingHook, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invoke: invokeAI, status: aiStatus, isLoading: aiLoadingHook, isAvailable, rateLimitInfo } = usePrompt(null);
 
   const { data: pilot, isLoading } = useQuery({
     queryKey: ['pilot', pilotId],
@@ -249,37 +250,18 @@ function PilotDetailPage() {
     setShowAIInsights(true);
     setAiLoading(true);
     try {
+      // Use centralized prompt template
+      const promptConfig = PILOT_DETAIL_PROMPT_TEMPLATE({
+        ...pilot,
+        municipality_name: municipality?.name_en,
+        challenge_title: challenge?.title_en,
+        solution_name: solution?.name_en
+      });
+      
       const result = await invokeAI({
-        prompt: `Analyze this pilot project for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
-
-Pilot: ${pilot.title_en}
-Municipality: ${municipality?.name_en || pilot.municipality_id}
-Sector: ${pilot.sector}
-Stage: ${pilot.stage}
-Challenge: ${challenge?.title_en || 'N/A'}
-Solution: ${solution?.name_en || 'N/A'}
-TRL Current: ${pilot.trl_current || pilot.trl_start || 'N/A'}
-Budget: ${pilot.budget || 'N/A'} SAR
-Duration: ${pilot.duration_weeks || 'N/A'} weeks
-Success Probability: ${pilot.success_probability || 'N/A'}%
-Risk Level: ${pilot.risk_level || 'N/A'}
-
-Provide bilingual insights (each item should have both English and Arabic versions):
-1. Success factors and optimization recommendations
-2. Risk mitigation strategies specific to this pilot
-3. KPI improvement suggestions
-4. Scaling potential assessment
-5. Stakeholder engagement recommendations`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            success_factors: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            risk_mitigation: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            kpi_suggestions: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            scaling_potential: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            stakeholder_engagement: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-          }
-        }
+        prompt: promptConfig.prompt,
+        system_prompt: promptConfig.system,
+        response_json_schema: promptConfig.schema
       });
       if (result.success) {
         setAiInsights(result.data);
