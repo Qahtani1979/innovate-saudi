@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { NETWORK_INTELLIGENCE_PROMPT_TEMPLATE, NETWORK_INTELLIGENCE_RESPONSE_SCHEMA } from '@/lib/ai/prompts/network/intelligence';
 
 function NetworkIntelligence() {
   const { language, isRTL, t } = useLanguage();
@@ -39,71 +40,13 @@ function NetworkIntelligence() {
     }));
 
     const { success, data } = await invokeAI({
-      prompt: `Analyze the innovation network and detect patterns:
-
-Organizations: ${organizations.length}
-Active Pilots: ${pilots.length}
-R&D Projects: ${rdProjects.length}
-
-Sample Collaboration Data:
-${JSON.stringify(collaborationData.slice(0, 10), null, 2)}
-
-Provide:
-1. Top 5 most connected organizations (centrality analysis)
-2. Emerging collaboration clusters (which orgs work together frequently)
-3. Network gaps (sectors/cities lacking connections)
-4. Strategic connector recommendations (who to introduce to whom)
-5. Collaboration health score (0-100)`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          top_connectors: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                organization: { type: "string" },
-                connection_count: { type: "number" },
-                influence_score: { type: "number" }
-              }
-            }
-          },
-          clusters: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                cluster_name: { type: "string" },
-                members: { type: "array", items: { type: "string" } },
-                focus: { type: "string" }
-              }
-            }
-          },
-          gaps: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                area: { type: "string" },
-                issue: { type: "string" },
-                recommendation: { type: "string" }
-              }
-            }
-          },
-          introductions: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                party_a: { type: "string" },
-                party_b: { type: "string" },
-                synergy: { type: "string" }
-              }
-            }
-          },
-          health_score: { type: "number" }
-        }
-      }
+      prompt: NETWORK_INTELLIGENCE_PROMPT_TEMPLATE({
+        organizationCount: organizations.length,
+        pilotCount: pilots.length,
+        rdProjectCount: rdProjects.length,
+        collaborationData: collaborationData.slice(0, 10)
+      }),
+      response_json_schema: NETWORK_INTELLIGENCE_RESPONSE_SCHEMA
     });
 
     if (success) {
