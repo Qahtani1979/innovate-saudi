@@ -207,12 +207,12 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
             <label className="text-sm font-medium">
               {t({ en: 'Select Pillar (Optional)', ar: 'اختر الركيزة (اختياري)' })}
             </label>
-            <Select value={selectedPillar} onValueChange={setSelectedPillar}>
+            <Select value={selectedPillar || 'all'} onValueChange={(val) => setSelectedPillar(val === 'all' ? '' : val)}>
               <SelectTrigger>
                 <SelectValue placeholder={t({ en: 'All Pillars', ar: 'جميع الركائز' })} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{t({ en: 'All Pillars', ar: 'جميع الركائز' })}</SelectItem>
+                <SelectItem value="all">{t({ en: 'All Pillars', ar: 'جميع الركائز' })}</SelectItem>
                 {pillars.map((pillar, index) => (
                   <SelectItem key={index} value={pillar.name_en}>
                     {language === 'ar' ? pillar.name_ar : pillar.name_en}

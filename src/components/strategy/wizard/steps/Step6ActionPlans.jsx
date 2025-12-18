@@ -613,15 +613,15 @@ export default function Step6ActionPlans({
                 <div className="space-y-1">
                   <Label className="text-xs">{t({ en: 'Linked Objective', ar: 'الهدف المرتبط' })}</Label>
                   <Select 
-                    value={String(ap.objective_index ?? '')} 
-                    onValueChange={(v) => updateActionPlan(apIndex, { objective_index: v === '' ? null : parseInt(v) })}
+                    value={ap.objective_index !== null && ap.objective_index !== undefined ? String(ap.objective_index) : 'none'} 
+                    onValueChange={(v) => updateActionPlan(apIndex, { objective_index: v === 'none' ? null : parseInt(v) })}
                     disabled={isReadOnly}
                   >
                     <SelectTrigger className={`h-9 ${isFieldComplete(ap.objective_index, (v) => v !== null && v !== undefined) ? 'border-green-300 bg-green-50/50' : ''}`}>
                       <SelectValue placeholder="Select..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">
+                      <SelectItem value="none">
                         {t({ en: 'No objective', ar: 'بدون هدف' })}
                       </SelectItem>
                       {objectives.map((obj, i) => (
@@ -705,26 +705,23 @@ export default function Step6ActionPlans({
                 <div className="space-y-1">
                   <Label className="text-xs">{t({ en: 'Linked Risks', ar: 'المخاطر المرتبطة' })}</Label>
                   <Select 
-                    value={(ap.linked_risks || [])[0] || ''} 
-                    onValueChange={(v) => updateActionPlan(apIndex, { linked_risks: v ? [v] : [] })}
+                    value={(ap.linked_risks || [])[0] || 'none'} 
+                    onValueChange={(v) => updateActionPlan(apIndex, { linked_risks: v === 'none' ? [] : [v] })}
                     disabled={isReadOnly}
                   >
                     <SelectTrigger className="h-9">
                       <SelectValue placeholder={t({ en: 'Select risk...', ar: 'اختر المخاطر...' })} />
                     </SelectTrigger>
                     <SelectContent>
-                      {risks.length === 0 ? (
-                        <SelectItem value="" disabled>
-                          {t({ en: 'No risks defined (Step 7)', ar: 'لم يتم تحديد مخاطر (الخطوة 7)' })}
+                      <SelectItem value="none">
+                        {t({ en: 'No risk linked', ar: 'لا توجد مخاطر مرتبطة' })}
+                      </SelectItem>
+                      {risks.slice(0, 10).map((risk, i) => (
+                        <SelectItem key={i} value={risk.id || String(i)}>
+                          <AlertTriangle className="h-3 w-3 inline mr-1" />
+                          {(language === 'ar' ? risk.title_ar : risk.title_en)?.substring(0, 30)}...
                         </SelectItem>
-                      ) : (
-                        risks.slice(0, 10).map((risk, i) => (
-                          <SelectItem key={i} value={risk.id || String(i)}>
-                            <AlertTriangle className="h-3 w-3 inline mr-1" />
-                            {(language === 'ar' ? risk.title_ar : risk.title_en)?.substring(0, 30)}...
-                          </SelectItem>
-                        ))
-                      )}
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
