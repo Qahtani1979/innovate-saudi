@@ -70,26 +70,24 @@ async function handleRoleAssign(supabase: ReturnType<typeof getSupabaseClient>, 
   
   console.log(`[rbac-manager] Assigning role '${role}' to ${user_email}`);
   
-  // PHASE 2: Lookup role_id for dual-mode operation
+  // PHASE 4: Lookup role_id (REQUIRED - no fallback to enum)
   const roleId = await lookupRoleId(supabase, role as string);
-  if (roleId) {
-    console.log(`[rbac-manager] Found role_id: ${roleId} for role '${role}'`);
-  } else {
-    console.warn(`[rbac-manager] No role_id found for role '${role}', continuing with enum only`);
+  if (!roleId) {
+    throw new Error(`Role '${role}' not found in roles table. Please ensure the role exists.`);
   }
+  console.log(`[rbac-manager] Found role_id: ${roleId} for role '${role}'`);
   
   const { data, error } = await supabase
     .from('user_roles')
     .upsert({
       user_id,
       user_email,
-      role,                              // Keep enum (backward compat)
-      role_id: roleId,                   // NEW: FK to roles table
+      role_id: roleId,                   // Phase 4: role_id only (enum removed)
       organization_id: organization_id || null,
       municipality_id: municipality_id || null,
       assigned_at: new Date().toISOString(),
       is_active: true
-    }, { onConflict: 'user_id,role' })
+    }, { onConflict: 'user_id,role_id' })
     .select()
     .single();
 
@@ -104,6 +102,12 @@ async function handleRoleRevoke(supabase: ReturnType<typeof getSupabaseClient>, 
   
   console.log(`[rbac-manager] Revoking role '${role}' from ${user_email}`);
   
+  // PHASE 4: Lookup role_id to revoke by
+  const roleId = await lookupRoleId(supabase, role as string);
+  if (!roleId) {
+    throw new Error(`Role '${role}' not found in roles table.`);
+  }
+  
   const { error } = await supabase
     .from('user_roles')
     .update({ 
@@ -111,7 +115,7 @@ async function handleRoleRevoke(supabase: ReturnType<typeof getSupabaseClient>, 
       revoked_at: new Date().toISOString() 
     })
     .eq('user_email', user_email)
-    .eq('role', role);
+    .eq('role_id', roleId);  // Phase 4: Use role_id instead of enum
 
   if (error) throw error;
   
@@ -187,33 +191,35 @@ async function handleCheckAutoApprove(supabase: ReturnType<typeof getSupabaseCli
   }
 
   if (autoApproved && assignedRole) {
-    // PHASE 2: Lookup role_id for the assigned role
+    // PHASE 4: Lookup role_id (REQUIRED)
     const roleId = await lookupRoleId(supabase, assignedRole);
-    if (roleId) {
-      console.log(`[rbac-manager] Auto-approve: Found role_id ${roleId} for '${assignedRole}'`);
+    if (!roleId) {
+      console.error(`[rbac-manager] Auto-approve failed: Role '${assignedRole}' not found`);
+      return { auto_approved: false, error: `Role '${assignedRole}' not found in roles table` };
     }
+    console.log(`[rbac-manager] Auto-approve: Found role_id ${roleId} for '${assignedRole}'`);
     
-    // Auto-assign the role to user_roles table with role_id
+    // Auto-assign the role to user_roles table (Phase 4: role_id only)
     const { data: autoAssigned, error: autoAssignError } = await supabase
       .from('user_roles')
       .upsert({
         user_id,
         user_email,
-        role: assignedRole,              // Keep enum (backward compat)
-        role_id: roleId,                 // NEW: FK to roles table
+        role_id: roleId,                 // Phase 4: role_id only
         organization_id: organization_id || null,
         municipality_id: municipality_id || null,
         assigned_at: new Date().toISOString(),
         is_active: true
-      }, { onConflict: 'user_id,role' })
+      }, { onConflict: 'user_id,role_id' })
       .select()
       .single();
 
     if (autoAssignError) {
       console.error('[rbac-manager] Auto-assign error:', autoAssignError);
+      throw autoAssignError;
     }
 
-    console.log(`[rbac-manager] Auto-approved with role: ${assignedRole}, role_id: ${roleId}`);
+    console.log(`[rbac-manager] Auto-approved with role_id: ${roleId}`);
     return { 
       auto_approved: true, 
       role: assignedRole,
@@ -274,26 +280,26 @@ async function handleApproveRoleRequest(supabase: ReturnType<typeof getSupabaseC
   
   if (updateError) throw updateError;
   
-  // PHASE 2: Lookup role_id for the approved role
+  // PHASE 4: Lookup role_id (REQUIRED)
   const roleId = await lookupRoleId(supabase, role as string);
-  if (roleId) {
-    console.log(`[rbac-manager] Approve: Found role_id ${roleId} for '${role}'`);
+  if (!roleId) {
+    throw new Error(`Role '${role}' not found in roles table.`);
   }
+  console.log(`[rbac-manager] Approve: Found role_id ${roleId} for '${role}'`);
   
-  // 2. CRITICAL: Write to user_roles table with role_id
+  // 2. CRITICAL: Write to user_roles table (Phase 4: role_id only)
   const { data: roleData, error: roleError } = await supabase
     .from('user_roles')
     .upsert({
       user_id,
       user_email,
-      role,                              // Keep enum (backward compat)
-      role_id: roleId,                   // NEW: FK to roles table
+      role_id: roleId,                   // Phase 4: role_id only
       municipality_id: municipality_id || null,
       organization_id: organization_id || null,
       is_active: true,
       assigned_at: new Date().toISOString()
     }, { 
-      onConflict: 'user_id,role' 
+      onConflict: 'user_id,role_id' 
     })
     .select()
     .single();
@@ -303,7 +309,7 @@ async function handleApproveRoleRequest(supabase: ReturnType<typeof getSupabaseC
     throw roleError;
   }
   
-  console.log(`[rbac-manager] Role '${role}' assigned with role_id: ${roleId} to ${user_email}`);
+  console.log(`[rbac-manager] Role assigned with role_id: ${roleId} to ${user_email}`);
   
   return { 
     approved: true, 
