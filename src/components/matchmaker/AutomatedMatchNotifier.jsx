@@ -11,6 +11,7 @@ import { Mail, Send, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { buildMatchNotifierPrompt, MATCH_NOTIFIER_SCHEMA } from '@/lib/ai/prompts/matchmaker';
 
 export default function AutomatedMatchNotifier({ match, provider, challenge }) {
   const { language, t } = useLanguage();
@@ -20,28 +21,8 @@ export default function AutomatedMatchNotifier({ match, provider, challenge }) {
 
   const generateEmail = async () => {
     const result = await invokeAI({
-      prompt: `Generate personalized email to startup about new match:
-
-PROVIDER: ${provider.name_en}
-CHALLENGE: ${challenge.title_en}
-SECTOR: ${challenge.sector}
-MUNICIPALITY: ${challenge.municipality_id}
-MATCH SCORE: ${match.match_score}%
-
-Create professional email:
-- Congratulate on match
-- Summarize challenge
-- Highlight why they're a fit
-- Clear next steps
-- Professional but engaging tone
-- In English (Arabic can follow)`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          subject: { type: "string" },
-          body: { type: "string" }
-        }
-      }
+      prompt: buildMatchNotifierPrompt(provider, challenge, match),
+      response_json_schema: MATCH_NOTIFIER_SCHEMA
     });
 
     if (result.success) {

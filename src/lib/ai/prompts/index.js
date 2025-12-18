@@ -255,6 +255,12 @@ export * from './generation';
 // Classification prompts
 export * from './classification';
 
+// Finance prompts
+export * from './finance';
+
+// Startup prompts
+export * from './startup';
+
 /**
  * Prompt module status tracking
  * Updated as modules are implemented
@@ -266,16 +272,16 @@ export const PROMPT_MODULE_STATUS = {
   events: { status: 'complete', promptCount: 3 },
   challenges: { status: 'complete', promptCount: 11 },
   pilots: { status: 'complete', promptCount: 18 },
-  matchmaker: { status: 'complete', promptCount: 10 },
+  matchmaker: { status: 'complete', promptCount: 11 },
   sandbox: { status: 'complete', promptCount: 10 },
   rd: { status: 'complete', promptCount: 11 },
   scaling: { status: 'complete', promptCount: 7 },
   solution: { status: 'complete', promptCount: 9 },
-  citizen: { status: 'complete', promptCount: 9 },
+  citizen: { status: 'complete', promptCount: 10 },
   livinglab: { status: 'complete', promptCount: 5 },
   profiles: { status: 'complete', promptCount: 3 },
-  programs: { status: 'complete', promptCount: 9 },
-  core: { status: 'complete', promptCount: 11 },
+  programs: { status: 'complete', promptCount: 10 },
+  core: { status: 'complete', promptCount: 12 },
   taxonomy: { status: 'complete', promptCount: 2 },
   mii: { status: 'complete', promptCount: 2 },
   executive: { status: 'complete', promptCount: 3 },
@@ -284,7 +290,7 @@ export const PROMPT_MODULE_STATUS = {
   bonus: { status: 'complete', promptCount: 1 },
   smart: { status: 'complete', promptCount: 1 },
   data: { status: 'complete', promptCount: 2 },
-  gates: { status: 'complete', promptCount: 2 },
+  gates: { status: 'complete', promptCount: 3 },
   approval: { status: 'complete', promptCount: 2 },
   content: { status: 'complete', promptCount: 1 },
   uploader: { status: 'complete', promptCount: 1 },
@@ -340,7 +346,9 @@ export const PROMPT_MODULE_STATUS = {
   extraction: { status: 'complete', promptCount: 3 },
   comparison: { status: 'complete', promptCount: 3 },
   generation: { status: 'complete', promptCount: 3 },
-  classification: { status: 'complete', promptCount: 3 }
+  classification: { status: 'complete', promptCount: 3 },
+  finance: { status: 'complete', promptCount: 1 },
+  startup: { status: 'complete', promptCount: 1 }
 };
 
 /**
