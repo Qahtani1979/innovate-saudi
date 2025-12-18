@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { IDEA_RESPONSE_PROMPT_TEMPLATE, IDEA_RESPONSE_SCHEMA } from '@/lib/ai/prompts/citizen/ideaResponse';
 
 const STEPS = [
   { id: 1, title: { en: 'Select Challenge', ar: 'اختر التحدي' }, icon: Target },
@@ -95,46 +96,11 @@ function ChallengeIdeaResponse() {
     }
 
     const result = await invokeAI({
-      prompt: `You are helping a citizen create a formal innovation proposal for a municipal challenge.
-
-CHALLENGE CONTEXT:
-Title: ${selectedChallenge.title_en}
-${selectedChallenge.title_ar ? `Arabic Title: ${selectedChallenge.title_ar}` : ''}
-Description: ${selectedChallenge.description_en}
-Desired Outcome: ${selectedChallenge.desired_outcome_en || 'Not specified'}
-Sector: ${selectedChallenge.sector || 'General'}
-KPIs: ${JSON.stringify(selectedChallenge.kpis || [])}
-
-USER'S INITIAL IDEA:
-${initialDescription}
-
-Generate a comprehensive innovation proposal with:
-1. Professional title (EN & AR) - Clear, descriptive proposal title
-2. Detailed description (EN & AR, 200+ words) - Explain the proposed solution approach
-3. Implementation plan - Step-by-step phases with timeline
-4. Expected outcomes - Measurable benefits aligned with challenge KPIs
-5. Resources needed - What would be required
-6. Team requirements - Skills/expertise needed
-7. Budget estimate (SAR) - Rough cost estimate
-8. Timeline - Realistic duration
-
-Make the proposal professional but accessible to non-technical reviewers.
-Focus on HOW the idea solves the challenge, not just WHAT it is.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          title_en: { type: 'string' },
-          title_ar: { type: 'string' },
-          description_en: { type: 'string' },
-          description_ar: { type: 'string' },
-          implementation_plan: { type: 'string' },
-          expected_outcomes: { type: 'string' },
-          resources_needed: { type: 'string' },
-          team_description: { type: 'string' },
-          budget_estimate: { type: 'number' },
-          timeline_proposal: { type: 'string' },
-        }
-      }
+      prompt: IDEA_RESPONSE_PROMPT_TEMPLATE({
+        challenge: selectedChallenge,
+        initialDescription
+      }),
+      response_json_schema: IDEA_RESPONSE_SCHEMA
     });
 
     if (result.success && result.data) {
