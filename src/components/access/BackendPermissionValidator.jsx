@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import rbacService from '@/services/rbac/rbacService';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -31,13 +31,12 @@ export const useBackendPermission = () => {
 
   const validateFieldAccess = async (entity_type, field_name, operation) => {
     try {
-      const response = await base44.functions.invoke('checkFieldSecurity', {
-        entity_type,
-        field_name,
-        operation
+      const { data, error } = await supabase.functions.invoke('check-field-security', {
+        body: { entity_type, field_name, operation }
       });
 
-      return response.data;
+      if (error) throw error;
+      return data;
     } catch (error) {
       console.error('Field security check error:', error);
       return { allowed: false, reason: 'Validation failed' };
