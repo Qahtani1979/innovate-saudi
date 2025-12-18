@@ -143,6 +143,8 @@ export const SIDEBAR_MENUS = {
       { name: 'NationalInnovationMap', icon: Map, label: { en: 'Innovation Map', ar: 'خريطة الابتكار' } },
       { name: 'ApprovalCenter', icon: CheckCircle, label: { en: 'Approvals', ar: 'الموافقات' } },
       { name: 'ReportsBuilder', icon: BarChart3, label: { en: 'Analytics & Reports', ar: 'التحليلات والتقارير' } },
+      { name: 'WhatsNewHub', icon: Sparkles, label: { en: "What's New", ar: 'ما الجديد' } },
+      { name: 'MyProfilesHub', icon: UserCircle, label: { en: 'My Profiles', ar: 'ملفاتي الشخصية' } },
     ]
   },
 
@@ -172,6 +174,8 @@ export const SIDEBAR_MENUS = {
       { name: 'EventCalendar', icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' } },
       { name: 'ApprovalCenter', icon: CheckCircle, label: { en: 'Approvals', ar: 'الموافقات' } },
       { name: 'ReportsBuilder', icon: BarChart3, label: { en: 'Analytics', ar: 'التحليلات' } },
+      { name: 'WhatsNewHub', icon: Sparkles, label: { en: "What's New", ar: 'ما الجديد' } },
+      { name: 'MyProfilesHub', icon: UserCircle, label: { en: 'My Profiles', ar: 'ملفاتي الشخصية' } },
     ]
   },
 
@@ -222,6 +226,8 @@ export const SIDEBAR_MENUS = {
       // Team & Settings
       { name: 'UserManagementHub', icon: Users, label: { en: 'Team', ar: 'الفريق' }, permission: 'team_manage' },
       { name: 'MunicipalityEdit', icon: Settings, label: { en: 'Settings', ar: 'الإعدادات' }, permission: 'settings_manage', useMyMunicipality: true },
+      { name: 'WhatsNewHub', icon: Sparkles, label: { en: "What's New", ar: 'ما الجديد' } },
+      { name: 'MyProfilesHub', icon: UserCircle, label: { en: 'My Profiles', ar: 'ملفاتي الشخصية' } },
     ]
   },
 
@@ -248,6 +254,8 @@ export const SIDEBAR_MENUS = {
       { name: 'EventCalendar', icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' } },
       { name: 'Programs', icon: Calendar, label: { en: 'Programs', ar: 'البرامج' } },
       { name: 'Messaging', icon: MessageSquare, label: { en: 'Messages', ar: 'الرسائل' } },
+      { name: 'WhatsNewHub', icon: Sparkles, label: { en: "What's New", ar: 'ما الجديد' } },
+      { name: 'MyProfilesHub', icon: UserCircle, label: { en: 'My Profiles', ar: 'ملفاتي الشخصية' } },
     ]
   },
 
@@ -272,6 +280,8 @@ export const SIDEBAR_MENUS = {
       { name: 'Knowledge', icon: BookOpen, label: { en: 'Knowledge Hub', ar: 'مركز المعرفة' } },
       { name: 'MyDeadlines', icon: Clock, label: { en: 'Deadlines', ar: 'المواعيد' } },
       { name: 'Messaging', icon: MessageSquare, label: { en: 'Messages', ar: 'الرسائل' } },
+      { name: 'WhatsNewHub', icon: Sparkles, label: { en: "What's New", ar: 'ما الجديد' } },
+      { name: 'MyProfilesHub', icon: UserCircle, label: { en: 'My Profiles', ar: 'ملفاتي الشخصية' } },
     ]
   },
 
@@ -296,6 +306,8 @@ export const SIDEBAR_MENUS = {
       { name: 'Knowledge', icon: BookOpen, label: { en: 'Knowledge Hub', ar: 'مركز المعرفة' } },
       { name: 'MyDeadlines', icon: Clock, label: { en: 'Deadlines', ar: 'المواعيد' } },
       { name: 'Messaging', icon: MessageSquare, label: { en: 'Messages', ar: 'الرسائل' } },
+      { name: 'WhatsNewHub', icon: Sparkles, label: { en: "What's New", ar: 'ما الجديد' } },
+      { name: 'MyProfilesHub', icon: UserCircle, label: { en: 'My Profiles', ar: 'ملفاتي الشخصية' } },
     ]
   },
 
@@ -320,6 +332,8 @@ export const SIDEBAR_MENUS = {
       { name: 'EventCalendar', icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' } },
       { name: 'News', icon: Newspaper, label: { en: 'News', ar: 'الأخبار' } },
       { name: 'CitizenLeaderboard', icon: Award, label: { en: 'Leaderboard', ar: 'المتصدرين' } },
+      { name: 'WhatsNewHub', icon: Sparkles, label: { en: "What's New", ar: 'ما الجديد' } },
+      { name: 'MyProfilesHub', icon: UserCircle, label: { en: 'My Profiles', ar: 'ملفاتي الشخصية' } },
     ]
   },
 
@@ -341,6 +355,8 @@ export const SIDEBAR_MENUS = {
       { name: 'Programs', icon: Calendar, label: { en: 'Programs', ar: 'البرامج' } },
       { name: 'EventCalendar', icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' } },
       { name: 'News', icon: Newspaper, label: { en: 'News', ar: 'الأخبار' } },
+      { name: 'WhatsNewHub', icon: Sparkles, label: { en: "What's New", ar: 'ما الجديد' } },
+      { name: 'MyProfilesHub', icon: UserCircle, label: { en: 'My Profiles', ar: 'ملفاتي الشخصية' } },
     ]
   },
 
@@ -358,6 +374,8 @@ export const SIDEBAR_MENUS = {
       { name: 'EventCalendar', icon: Calendar, label: { en: 'Events', ar: 'الفعاليات' } },
       { name: 'PublicIdeasBoard', icon: Lightbulb, label: { en: 'Ideas', ar: 'الأفكار' } },
       { name: 'PublicPilotTracker', icon: TestTube, label: { en: 'Pilots', ar: 'التجارب' } },
+      { name: 'WhatsNewHub', icon: Sparkles, label: { en: "What's New", ar: 'ما الجديد' } },
+      { name: 'MyProfilesHub', icon: UserCircle, label: { en: 'My Profiles', ar: 'ملفاتي الشخصية' } },
     ]
   }
 };
