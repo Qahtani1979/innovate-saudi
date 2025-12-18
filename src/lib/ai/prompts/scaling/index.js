@@ -1,7 +1,7 @@
 /**
  * Scaling Module Prompts Index
  * Central export for all scaling-related AI prompts
- * @version 1.1.0
+ * @version 1.2.0
  */
 
 export { SCALING_READINESS_PROMPTS } from './scalingReadiness';
@@ -13,6 +13,15 @@ export {
   createAdaptiveRolloutPrompt,
   ADAPTIVE_ROLLOUT_SCHEMA
 } from './adaptiveRollout';
+
+// Readiness Checker Prompts
+export {
+  SCALING_READINESS_SYSTEM_PROMPT,
+  buildScalingReadinessPrompt,
+  SCALING_READINESS_SCHEMA,
+  buildScalingStrategyPrompt,
+  SCALING_STRATEGY_SCHEMA
+} from './readiness';
 
 export const SCALING_PROMPT_MANIFEST = {
   scalingReadiness: {
@@ -39,5 +48,10 @@ export const SCALING_PROMPT_MANIFEST = {
     file: 'adaptiveRollout.js',
     purpose: 'Optimize rollout sequence adaptively',
     component: 'AdaptiveRolloutSequencing'
+  },
+  readinessChecker: {
+    file: 'readiness.js',
+    purpose: 'Check and improve pilot scaling readiness',
+    component: 'ScalingReadinessChecker'
   }
 };
