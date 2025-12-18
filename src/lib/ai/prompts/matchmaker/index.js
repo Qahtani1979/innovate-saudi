@@ -42,6 +42,17 @@ export {
   EXECUTIVE_REVIEW_PROMPTS
 } from './executiveReview';
 
+// Solution Matcher
+export {
+  SOLUTION_MATCHER_SYSTEM_PROMPT,
+  buildSolutionMatcherPrompt,
+  SOLUTION_MATCHER_SCHEMA,
+  SOLUTION_MATCHER_PROMPTS
+} from './solutionMatcher';
+
+// Engagement Hub
+export * from './engagementHub';
+
 /**
  * Matchmaker module prompt configuration
  */
