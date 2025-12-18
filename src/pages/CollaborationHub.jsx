@@ -58,22 +58,18 @@ function CollaborationHub() {
       const myChallenges = challenges.filter(c => c.created_by === user?.email);
       const myPilots = pilots.filter(p => p.created_by === user?.email);
 
+      // Import centralized prompt module
+      const { 
+        COLLABORATION_SUGGESTIONS_PROMPT_TEMPLATE, 
+        COLLABORATION_RESPONSE_SCHEMA 
+      } = await import('@/lib/ai/prompts/collaboration/suggestions');
+
       const response = await invokeAI({
-        prompt: `Based on this user's activities, suggest strategic collaboration opportunities:
-
-My Challenges (${myChallenges.length}):
-${myChallenges.slice(0, 5).map(c => `- ${c.title_en} (${c.sector})`).join('\n')}
-
-My Pilots (${myPilots.length}):
-${myPilots.slice(0, 5).map(p => `- ${p.title_en} (${p.sector})`).join('\n')}
-
-Available Organizations (${organizations.length}):
-${organizations.slice(0, 15).map(o => `- ${o.name_en} (${o.organization_type})`).join('\n')}
-
-Suggest:
-1. 5 potential collaboration partners (from organizations list) with specific collaboration opportunities
-2. 3 cross-sector collaboration ideas
-3. 2 networking events/meetings to organize`,
+        prompt: COLLABORATION_SUGGESTIONS_PROMPT_TEMPLATE({
+          myChallenges,
+          myPilots,
+          organizations
+        }),
         response_json_schema: {
           type: "object",
           properties: {
