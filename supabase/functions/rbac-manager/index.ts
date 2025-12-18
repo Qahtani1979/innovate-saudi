@@ -371,16 +371,17 @@ async function handleValidatePermission(supabase: ReturnType<typeof getSupabaseC
 // ========== DELEGATION HANDLERS ==========
 
 async function handleApproveDelegation(supabase: ReturnType<typeof getSupabaseClient>, payload: Record<string, unknown>) {
-  const { delegation_id } = payload;
+  const { delegation_id, approver_email } = payload;
   
   console.log(`[rbac-manager] Approving delegation ${delegation_id}`);
   
   const { data, error } = await supabase
     .from('delegation_rules')
     .update({
-      approval_status: 'approved',
+      is_active: true,
+      approved_by: approver_email || 'admin',
       approval_date: new Date().toISOString(),
-      is_active: true
+      updated_at: new Date().toISOString()
     })
     .eq('id', delegation_id)
     .select()
@@ -392,16 +393,20 @@ async function handleApproveDelegation(supabase: ReturnType<typeof getSupabaseCl
 }
 
 async function handleRejectDelegation(supabase: ReturnType<typeof getSupabaseClient>, payload: Record<string, unknown>) {
-  const { delegation_id, reason } = payload;
+  const { delegation_id, reason, approver_email } = payload;
   
   console.log(`[rbac-manager] Rejecting delegation ${delegation_id}`);
   
+  // For rejection, we keep is_active = false and set approved_by to mark it as processed
+  // The reason is stored in the 'reason' column which already exists
   const { data, error } = await supabase
     .from('delegation_rules')
     .update({
-      approval_status: 'rejected',
+      is_active: false,
+      approved_by: approver_email || 'admin',
       approval_date: new Date().toISOString(),
-      rejection_reason: reason
+      reason: reason || 'Rejected by administrator',
+      updated_at: new Date().toISOString()
     })
     .eq('id', delegation_id)
     .select()

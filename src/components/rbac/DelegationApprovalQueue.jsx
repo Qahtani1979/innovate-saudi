@@ -20,10 +20,12 @@ export default function DelegationApprovalQueue() {
   const { data: pendingDelegations = [] } = useQuery({
     queryKey: ['pending-delegations'],
     queryFn: async () => {
+      // Query delegations that are not yet active and haven't been approved/rejected
       const { data, error } = await supabase
         .from('delegation_rules')
         .select('*')
-        .eq('approval_status', 'pending')
+        .eq('is_active', false)
+        .is('approved_by', null)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -66,13 +68,13 @@ export default function DelegationApprovalQueue() {
             <div className="flex items-start justify-between mb-2">
               <div className="flex-1">
                 <p className="font-medium text-sm">{delegation.delegator_email}</p>
-                <p className="text-xs text-slate-600">→ {delegation.delegatee_email}</p>
+                <p className="text-xs text-slate-600">→ {delegation.delegate_email}</p>
                 <div className="flex gap-1 mt-1">
-                  {delegation.delegated_permissions?.slice(0, 3).map((perm, i) => (
+                  {delegation.permission_types?.slice(0, 3).map((perm, i) => (
                     <Badge key={i} variant="outline" className="text-xs">{perm}</Badge>
                   ))}
-                  {delegation.delegated_permissions?.length > 3 && (
-                    <Badge variant="outline" className="text-xs">+{delegation.delegated_permissions.length - 3}</Badge>
+                  {delegation.permission_types?.length > 3 && (
+                    <Badge variant="outline" className="text-xs">+{delegation.permission_types.length - 3}</Badge>
                   )}
                 </div>
               </div>
