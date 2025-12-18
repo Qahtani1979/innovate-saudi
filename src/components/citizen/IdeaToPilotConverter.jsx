@@ -11,6 +11,11 @@ import { TestTube, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  IDEA_TO_PILOT_SYSTEM_PROMPT,
+  buildIdeaToPilotPrompt,
+  IDEA_TO_PILOT_SCHEMA
+} from '@/lib/ai/prompts/citizen';
 
 export default function IdeaToPilotConverter({ idea, onClose }) {
   const { language, isRTL, t } = useLanguage();
@@ -38,32 +43,9 @@ export default function IdeaToPilotConverter({ idea, onClose }) {
 
   const enhanceWithAI = async () => {
     const response = await invokeAI({
-      prompt: `Convert this citizen idea into a pilot proposal:
-
-Idea: ${idea.title}
-Description: ${idea.description}
-
-Generate:
-1. Pilot title (EN & AR)
-2. Detailed pilot description (EN & AR)
-3. Hypothesis to test
-4. Methodology
-5. Success criteria
-6. Estimated duration (weeks)
-7. Estimated budget (SAR)`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          title_en: { type: 'string' },
-          title_ar: { type: 'string' },
-          description_en: { type: 'string' },
-          description_ar: { type: 'string' },
-          hypothesis: { type: 'string' },
-          methodology: { type: 'string' },
-          duration_weeks: { type: 'number' },
-          budget: { type: 'number' }
-        }
-      }
+      system_prompt: IDEA_TO_PILOT_SYSTEM_PROMPT,
+      prompt: buildIdeaToPilotPrompt({ idea }),
+      response_json_schema: IDEA_TO_PILOT_SCHEMA
     });
 
     if (response.success) {
