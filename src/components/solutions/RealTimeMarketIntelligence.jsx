@@ -9,6 +9,11 @@ import { TrendingUp, AlertCircle, Sparkles, Loader2, Eye, DollarSign, Users } fr
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  buildMarketIntelligencePrompt, 
+  MARKET_INTELLIGENCE_SYSTEM_PROMPT, 
+  MARKET_INTELLIGENCE_SCHEMA 
+} from '@/lib/ai/prompts/solutions/marketIntelligence';
 
 export default function RealTimeMarketIntelligence({ solution }) {
   const { t } = useLanguage();
@@ -32,51 +37,10 @@ export default function RealTimeMarketIntelligence({ solution }) {
 
   const fetchIntelligence = async () => {
     const result = await invokeAI({
-      prompt: `Provide real-time market intelligence for this solution in Saudi municipal tech market.
-
-SOLUTION:
-Name: ${solution.name_en}
-Sectors: ${solution.sectors?.join(', ')}
-Maturity: ${solution.maturity_level}
-Pricing: ${solution.pricing_model || 'N/A'}
-Deployments: ${solution.deployment_count || 0}
-
-DIRECT COMPETITORS (${competitors.length}):
-${competitors.slice(0, 5).map(c => `- ${c.name_en} (${c.provider_name}, TRL ${c.trl || 'N/A'}, ${c.deployment_count || 0} deployments)`).join('\n')}
-
-Analyze using web search for current market data:
-1. Market size & growth (Saudi municipal tech in this sector)
-2. Pricing trends (are we competitive?)
-3. Competitor movements (new deployments, partnerships)
-4. Emerging threats (new entrants, technology shifts)
-5. Market opportunities (underserved municipalities, new use cases)
-6. Strategic positioning (where do we stand vs competitors)
-7. Pricing recommendation (adjust up/down based on market)
-
-Use add_context_from_internet for real-time data.`,
+      system_prompt: MARKET_INTELLIGENCE_SYSTEM_PROMPT,
+      prompt: buildMarketIntelligencePrompt({ solution, competitors }),
       add_context_from_internet: true,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          market_size_sar: { type: 'number' },
-          market_growth_rate: { type: 'number' },
-          competitive_position: { type: 'string', enum: ['leader', 'strong', 'moderate', 'weak'] },
-          pricing_analysis: {
-            type: 'object',
-            properties: {
-              market_average_monthly: { type: 'number' },
-              our_position: { type: 'string', enum: ['premium', 'competitive', 'value'] },
-              recommendation: { type: 'string' }
-            }
-          },
-          competitor_movements: { type: 'array', items: { type: 'string' } },
-          emerging_threats: { type: 'array', items: { type: 'string' } },
-          market_opportunities: { type: 'array', items: { type: 'string' } },
-          strategic_recommendations: { type: 'array', items: { type: 'string' } },
-          trend_analysis: { type: 'string' },
-          last_updated: { type: 'string' }
-        }
-      }
+      response_json_schema: MARKET_INTELLIGENCE_SCHEMA
     });
 
     if (result.success) {

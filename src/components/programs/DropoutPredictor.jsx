@@ -6,6 +6,11 @@ import { useLanguage } from '../LanguageContext';
 import { AlertTriangle, Sparkles, Loader2, Send } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  buildDropoutPredictorPrompt, 
+  DROPOUT_PREDICTOR_SYSTEM_PROMPT, 
+  DROPOUT_PREDICTOR_SCHEMA 
+} from '@/lib/ai/prompts/programs/dropoutPredictor';
 
 export default function DropoutPredictor({ programId, participants }) {
   const { language, isRTL, t } = useLanguage();
@@ -18,36 +23,13 @@ export default function DropoutPredictor({ programId, participants }) {
 
   const analyzeDropoutRisk = async () => {
     const response = await invokeAI({
-      prompt: `Predict dropout risk for program participants:
-
-PROGRAM: Accelerator
-PARTICIPANTS: ${participants.length}
-
-Sample data:
-${participants.slice(0, 10).map(p => `- ${p.startup_name}: Attendance ${p.attendance_rate || 85}%, Participation ${p.participation_score || 70}%, Last active: ${p.last_active_days || 3} days ago`).join('\n')}
-
-For each at-risk participant, provide:
-1. Dropout probability (0-100%)
-2. Risk factors
-3. Intervention recommendations`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          at_risk_count: { type: "number" },
-          predictions: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                participant: { type: "string" },
-                dropout_probability: { type: "number" },
-                risk_factors: { type: "array", items: { type: "string" } },
-                interventions: { type: "array", items: { type: "string" } }
-              }
-            }
-          }
-        }
-      }
+      system_prompt: DROPOUT_PREDICTOR_SYSTEM_PROMPT,
+      prompt: buildDropoutPredictorPrompt({
+        programName: 'Accelerator',
+        participantCount: participants.length,
+        participantSamples: participants
+      }),
+      response_json_schema: DROPOUT_PREDICTOR_SCHEMA
     });
 
     if (response.success && response.data?.predictions) {
