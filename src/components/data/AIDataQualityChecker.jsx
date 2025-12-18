@@ -7,6 +7,11 @@ import { useLanguage } from '../LanguageContext';
 import { Shield, Sparkles, Loader2, AlertTriangle } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  buildDataQualityPrompt, 
+  DATA_QUALITY_SYSTEM_PROMPT, 
+  DATA_QUALITY_SCHEMA 
+} from '@/lib/ai/prompts/data/qualityChecker';
 
 export default function AIDataQualityChecker({ entityType, data }) {
   const { language, t } = useLanguage();
@@ -19,37 +24,9 @@ export default function AIDataQualityChecker({ entityType, data }) {
 
   const checkQuality = async () => {
     const response = await invokeAI({
-      prompt: `Assess data quality for ${entityType}:
-
-DATA: ${JSON.stringify(data).substring(0, 1000)}
-
-Check:
-1. Completeness (% fields filled)
-2. Consistency (contradictions, format issues)
-3. Accuracy (realistic values, proper ranges)
-4. Missing critical fields
-5. Data quality score (0-100)
-6. Specific issues with recommendations`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          quality_score: { type: "number" },
-          completeness: { type: "number" },
-          issues: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                field: { type: "string" },
-                issue: { type: "string" },
-                severity: { type: "string" },
-                recommendation: { type: "string" }
-              }
-            }
-          },
-          strengths: { type: "array", items: { type: "string" } }
-        }
-      }
+      system_prompt: DATA_QUALITY_SYSTEM_PROMPT,
+      prompt: buildDataQualityPrompt({ entityType, data }),
+      response_json_schema: DATA_QUALITY_SCHEMA
     });
 
     if (response.success) {

@@ -11,6 +11,11 @@ import { createPageUrl } from '../../utils';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { 
+  buildFirstActionPrompt, 
+  FIRST_ACTION_SYSTEM_PROMPT, 
+  FIRST_ACTION_SCHEMA 
+} from '@/lib/ai/prompts/onboarding/firstAction';
 
 export default function FirstActionRecommender({ user }) {
   const { language, t } = useLanguage();
@@ -37,56 +42,14 @@ export default function FirstActionRecommender({ user }) {
   
   const getRecommendations = async () => {
     const { success, data } = await invokeAI({
-      prompt: `Recommend the most impactful first action for this specific user:
-
-User Role: ${userRole}
-User Email Domain: ${user?.email?.split('@')[1] || 'unknown'}
-Available Challenges: ${challenges.slice(0, 3).map(c => c.title_en).join(', ') || 'None'}
-Available R&D Calls: ${rdCalls.map(r => r.title_en).join(', ') || 'None'}
-
-IMPORTANT: Tailor recommendations specifically for "${userRole}" role:
-- citizen/user: Submit ideas, vote on community ideas, browse public pilots, attend events
-- viewer: Browse public content, view events, read news
-- municipality_admin: Submit challenges, manage pilots, review city data
-- startup_user: Browse challenges, submit proposals, complete solution profiles
-- researcher: Explore R&D calls, join living labs, complete researcher profile
-- admin: Review pending submissions, check system health, view analytics
-
-Return page names from this list only:
-- CitizenIdeaSubmission, PublicIdeasBoard, PublicPilotTracker, EventCalendar (for citizens/users)
-- Challenges, SolutionCreate, MatchmakerJourney (for startups)
-- RDCalls, ResearcherProfile, LivingLabs (for researchers)
-- ChallengeCreate, Pilots, MunicipalityDashboard (for municipality)
-- ChallengeReviewQueue, SystemHealthDashboard, ExecutiveDashboard (for admins)`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          primary: {
-            type: "object",
-            properties: {
-              action: { type: "string" },
-              reason: { type: "string" },
-              page: { type: "string" }
-            }
-          },
-          secondary: {
-            type: "object",
-            properties: {
-              action: { type: "string" },
-              reason: { type: "string" },
-              page: { type: "string" }
-            }
-          },
-          quick_win: {
-            type: "object",
-            properties: {
-              action: { type: "string" },
-              reason: { type: "string" },
-              page: { type: "string" }
-            }
-          }
-        }
-      }
+      system_prompt: FIRST_ACTION_SYSTEM_PROMPT,
+      prompt: buildFirstActionPrompt({
+        userRole,
+        emailDomain: user?.email?.split('@')[1],
+        challenges: challenges.slice(0, 3).map(c => c.title_en).join(', '),
+        rdCalls: rdCalls.map(r => r.title_en).join(', ')
+      }),
+      response_json_schema: FIRST_ACTION_SCHEMA
     });
 
     if (success && data) {
