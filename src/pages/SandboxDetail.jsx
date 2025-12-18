@@ -27,7 +27,8 @@ import SandboxProjectExitWizard from '../components/SandboxProjectExitWizard';
 import SandboxInfrastructureReadinessGate from '../components/SandboxInfrastructureReadinessGate';
 import { Progress } from "@/components/ui/progress";
 import { toast } from 'sonner';
-import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { usePrompt } from '@/hooks/usePrompt';
+import { SANDBOX_DETAIL_PROMPT_TEMPLATE } from '@/lib/ai/prompts/sandbox/sandboxDetail';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function SandboxDetail() {
@@ -41,7 +42,7 @@ export default function SandboxDetail() {
   const [showInfrastructureGate, setShowInfrastructureGate] = useState(false);
   const [selectedPilotForExit, setSelectedPilotForExit] = useState(null);
   
-  const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invoke: invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = usePrompt(null);
 
   const { data: sandbox, isLoading } = useQuery({
     queryKey: ['sandbox', sandboxId],
@@ -95,34 +96,13 @@ export default function SandboxDetail() {
   const handleAIInsights = async () => {
     setShowAIInsights(true);
     try {
+      // Use centralized prompt template
+      const promptConfig = SANDBOX_DETAIL_PROMPT_TEMPLATE(sandbox);
+      
       const result = await invokeAI({
-        prompt: `Analyze this regulatory sandbox for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
-
-Sandbox: ${sandbox.name_en}
-Domain: ${sandbox.domain}
-Status: ${sandbox.status}
-Capacity: ${sandbox.capacity}
-Current Pilots: ${sandbox.current_pilots || 0}
-Utilization: ${utilizationPercent.toFixed(0)}%
-Success Rate: ${sandbox.success_rate || 'N/A'}%
-Available Exemptions: ${sandbox.available_exemptions?.length || 0}
-
-Provide bilingual insights (each item should have both English and Arabic versions):
-1. Capacity optimization recommendations
-2. Regulatory risk assessment
-3. Success factors for sandbox pilots
-4. Potential new pilot opportunities
-5. Resource allocation suggestions`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            capacity_optimization: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            regulatory_risks: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            success_factors: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            pilot_opportunities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            resource_allocation: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-          }
-        }
+        prompt: promptConfig.prompt,
+        system_prompt: promptConfig.system,
+        response_json_schema: promptConfig.schema
       });
       if (result.success && result.data) {
         setAiInsights(result.data);
