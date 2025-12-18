@@ -24,13 +24,32 @@ export default defineConfig(({ mode }) => {
         // This prevents "Cannot read properties of null (reading 'useContext')" caused by mixed React runtimes.
         react: path.resolve(__dirname, "./node_modules/react"),
         "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
+        "react-dom/client": path.resolve(__dirname, "./node_modules/react-dom/client"),
+        "react-dom/server": path.resolve(__dirname, "./node_modules/react-dom/server"),
         "react/jsx-runtime": path.resolve(__dirname, "./node_modules/react/jsx-runtime"),
         "react/jsx-dev-runtime": path.resolve(__dirname, "./node_modules/react/jsx-dev-runtime"),
+        scheduler: path.resolve(__dirname, "./node_modules/scheduler"),
       },
-      dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime"],
+      dedupe: [
+        "react",
+        "react-dom",
+        "react-dom/client",
+        "react-dom/server",
+        "react/jsx-runtime",
+        "react/jsx-dev-runtime",
+        "scheduler",
+      ],
     },
     optimizeDeps: {
-      include: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
+      include: [
+        "react",
+        "react-dom",
+        "react-dom/client",
+        "react-dom/server",
+        "react/jsx-runtime",
+        "react/jsx-dev-runtime",
+        "scheduler",
+      ],
       force: true, // Force rebuild of deps cache
     },
     define: {
