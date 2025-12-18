@@ -1,7 +1,7 @@
 /**
  * R&D Module Prompts Index
  * Central export for all R&D-related AI prompts
- * @version 1.2.0
+ * @version 1.3.0
  */
 
 export { PROPOSAL_SCORER_PROMPTS } from './proposalScorer';
@@ -21,6 +21,9 @@ export {
   PATENT_LANDSCAPE_SYSTEM_PROMPT, buildPatentLandscapePrompt, PATENT_LANDSCAPE_SCHEMA,
   TECH_TRANSFER_SYSTEM_PROMPT, buildTechTransferPrompt, TECH_TRANSFER_SCHEMA
 } from './rdSpinoff';
+export {
+  RD_PORTFOLIO_SYSTEM_PROMPT, createRDPortfolioPlanPrompt, RD_PORTFOLIO_SCHEMA
+} from './portfolioPlanner';
 
 export const RD_PROMPT_MANIFEST = {
   proposalScorer: {
@@ -77,5 +80,10 @@ export const RD_PROMPT_MANIFEST = {
     file: 'rdSpinoff.js',
     purpose: 'Guide technology transfer',
     component: 'TechTransferAdvisor'
+  },
+  portfolioPlanner: {
+    file: 'portfolioPlanner.js',
+    purpose: 'Strategic R&D portfolio planning',
+    component: 'RDPortfolioPlanner'
   }
 };

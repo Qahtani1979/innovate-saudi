@@ -1,6 +1,6 @@
 /**
  * Pilots Module AI Prompts Index
- * @version 1.1.0
+ * @version 1.2.0
  */
 
 // Success Pattern Analyzer
@@ -27,6 +27,20 @@ export {
   PILOT_RETROSPECTIVE_SYSTEM_PROMPT, buildPilotRetrospectivePrompt, PILOT_RETROSPECTIVE_SCHEMA,
   PILOT_LEARNING_SYSTEM_PROMPT, buildPilotLearningPrompt, PILOT_LEARNING_SCHEMA
 } from './pilotPolicy';
+
+// Pre-flight Risk & Team
+export {
+  PREFLIGHT_RISK_SYSTEM_PROMPT, createPreflightRiskPrompt, PREFLIGHT_RISK_SCHEMA,
+  createTeamCompositionPrompt, TEAM_COMPOSITION_SCHEMA,
+  createStakeholderIdentificationPrompt, STAKEHOLDER_SCHEMA,
+  createTechStackPrompt, TECH_STACK_SCHEMA,
+  createBudgetOptimizationPrompt, BUDGET_OPTIMIZATION_SCHEMA
+} from './preflightRisk';
+
+// Pilot Analysis
+export {
+  PILOT_ANALYSIS_SYSTEM_PROMPT, createPilotAnalysisPrompt, PILOT_ANALYSIS_SCHEMA
+} from './pilotAnalysis';
 
 /**
  * Pilots module prompt configuration
@@ -66,6 +80,16 @@ export const PILOTS_PROMPTS = {
     promptFn: 'buildPilotLearningPrompt',
     schema: 'PILOT_LEARNING_SCHEMA',
     description: 'Extracts transferable learnings from similar pilots'
+  },
+  preflightRisk: {
+    promptFn: 'createPreflightRiskPrompt',
+    schema: 'PREFLIGHT_RISK_SCHEMA',
+    description: 'Generate mitigation strategies for pilot launch'
+  },
+  pilotAnalysis: {
+    promptFn: 'createPilotAnalysisPrompt',
+    schema: 'PILOT_ANALYSIS_SCHEMA',
+    description: 'Strategic insights for pilot projects'
   }
 };
 

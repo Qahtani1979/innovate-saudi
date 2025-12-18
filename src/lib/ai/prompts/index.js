@@ -126,6 +126,12 @@ export * from './translation';
 // Policy prompts
 export * from './policy';
 
+// Organizations prompts
+export * from './organizations';
+
+// Knowledge prompts
+export * from './knowledge';
+
 /**
  * Prompt module status tracking
  * Updated as modules are implemented
@@ -136,14 +142,14 @@ export const PROMPT_MODULE_STATUS = {
   portfolio: { status: 'complete', promptCount: 3 },
   events: { status: 'complete', promptCount: 3 },
   challenges: { status: 'complete', promptCount: 9 },
-  pilots: { status: 'complete', promptCount: 6 },
+  pilots: { status: 'complete', promptCount: 12 },
   matchmaker: { status: 'complete', promptCount: 6 },
-  sandbox: { status: 'complete', promptCount: 8 },
-  rd: { status: 'complete', promptCount: 10 },
-  scaling: { status: 'complete', promptCount: 4 },
+  sandbox: { status: 'complete', promptCount: 10 },
+  rd: { status: 'complete', promptCount: 11 },
+  scaling: { status: 'complete', promptCount: 5 },
   solution: { status: 'complete', promptCount: 9 },
-  citizen: { status: 'complete', promptCount: 6 },
-  livinglab: { status: 'complete', promptCount: 4 },
+  citizen: { status: 'complete', promptCount: 8 },
+  livinglab: { status: 'complete', promptCount: 5 },
   profiles: { status: 'complete', promptCount: 3 },
   programs: { status: 'complete', promptCount: 7 },
   core: { status: 'complete', promptCount: 7 },
@@ -154,7 +160,7 @@ export const PROMPT_MODULE_STATUS = {
   geography: { status: 'complete', promptCount: 1 },
   bonus: { status: 'complete', promptCount: 1 },
   smart: { status: 'complete', promptCount: 1 },
-  data: { status: 'complete', promptCount: 1 },
+  data: { status: 'complete', promptCount: 2 },
   approval: { status: 'complete', promptCount: 2 },
   content: { status: 'complete', promptCount: 1 },
   uploader: { status: 'complete', promptCount: 1 },
@@ -162,13 +168,15 @@ export const PROMPT_MODULE_STATUS = {
   media: { status: 'complete', promptCount: 1 },
   workflows: { status: 'complete', promptCount: 1 },
   onboarding: { status: 'complete', promptCount: 1 },
-  solutions: { status: 'complete', promptCount: 2 },
+  solutions: { status: 'complete', promptCount: 3 },
   evaluation: { status: 'complete', promptCount: 2 },
   hub: { status: 'complete', promptCount: 2 },
   work: { status: 'complete', promptCount: 1 },
   feedback: { status: 'complete', promptCount: 1 },
   translation: { status: 'complete', promptCount: 2 },
-  policy: { status: 'complete', promptCount: 1 }
+  policy: { status: 'complete', promptCount: 1 },
+  organizations: { status: 'complete', promptCount: 1 },
+  knowledge: { status: 'complete', promptCount: 1 }
 };
 
 /**
@@ -180,7 +188,7 @@ export function getImplementationProgress() {
   const completed = modules.filter(([, v]) => v.status === 'complete').length;
   const total = modules.length;
   const promptsComplete = modules.reduce((sum, [, v]) => sum + (v.status === 'complete' ? v.promptCount : 0), 0);
-  const promptsTotal = 120; // Updated target
+  const promptsTotal = 180; // Updated target
 
   return {
     modulesComplete: completed,

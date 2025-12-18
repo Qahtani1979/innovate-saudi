@@ -1,6 +1,6 @@
 /**
  * Solutions AI prompts index
- * @version 1.1.0
+ * @version 1.2.0
  */
 
 export {
@@ -23,3 +23,9 @@ export {
   buildIdeaToSolutionPrompt,
   IDEA_TO_SOLUTION_SCHEMA
 } from './deploymentSuccess';
+
+export {
+  SOLUTION_TO_PILOT_SYSTEM_PROMPT,
+  createSolutionToPilotPrompt,
+  SOLUTION_TO_PILOT_SCHEMA
+} from './solutionToPilot';
