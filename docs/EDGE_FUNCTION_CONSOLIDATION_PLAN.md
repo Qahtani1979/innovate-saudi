@@ -1,16 +1,16 @@
-# Edge Function Consolidation Plan - Deep Analysis v2.1
+# Edge Function Consolidation Plan - Deep Analysis v2.2
 
 **Created:** December 18, 2024  
-**Updated:** December 18, 2024 (Final Verification)  
+**Updated:** December 18, 2024 (QUADRUPLE-CHECK VERIFICATION COMPLETE)  
 **Status:** ✅ **PHASE 5 READY** - All Consumers Migrated, Old Functions Ready for Deletion  
 **Objective:** Merge all RBAC-related edge functions into a unified `rbac-manager` function
 
-## ✅ IMPLEMENTATION COMPLETE
+## ✅ IMPLEMENTATION COMPLETE - VERIFIED 4x
 
 | Phase | Status | Notes |
 |-------|--------|-------|
 | Phase 1: Create rbac-manager | ✅ **DONE** | `supabase/functions/rbac-manager/index.ts` (703 lines) |
-| Phase 2: Frontend Service | ✅ **DONE** | `src/services/rbac/rbacService.ts` (232 lines), `src/hooks/useRBACManager.js` (203 lines) |
+| Phase 2: Frontend Service | ✅ **DONE** | `src/services/rbac/rbacService.ts` (232 lines), `src/hooks/useRBACManager.js` (205 lines) |
 | Phase 3: Update Consumers | ✅ **DONE** | All 7 consumers migrated (see below) |
 | Phase 4: Verification | ✅ **DONE** | All code paths verified, validation guards added, deployed |
 | Phase 5: Delete Old Functions | 🟡 **READY** | Old functions can be safely deleted |
@@ -41,6 +41,9 @@
 - `DelegationApprovalQueue.jsx`: Fixed query to use actual columns (`is_active`, `approved_by`) instead of non-existent `approval_status`
 - `rbac-manager` edge function: Fixed delegation handlers to use correct column names
 - Field name mapping: `delegate_email` (not `delegatee_email`), `permission_types` (not `delegated_permissions`)
+
+### Query Cache Invalidation Fixed ✅
+- `useApproveDelegation` and `useRejectDelegation` now invalidate both `['delegations']` and `['pending-delegations']` query keys
 
 ---
 
