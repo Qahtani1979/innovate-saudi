@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
+import { usePersonaRouting } from '@/hooks/usePersonaRouting';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -14,9 +15,8 @@ export default function PublicHeader() {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   
-  // Use safe defaults for public header
-  const defaultDashboard = '/citizen-dashboard';
-  const dashboardLabel = { en: 'Dashboard', ar: 'لوحة التحكم' };
+  // Get role-based dashboard from persona routing
+  const { defaultDashboard, dashboardLabel } = usePersonaRouting();
 
   const navLinks = [
     { href: '/', label: t({ en: 'Home', ar: 'الرئيسية' }) },
