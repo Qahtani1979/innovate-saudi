@@ -739,3 +739,133 @@ supabase functions serve function-name --env-file .env.local
 - **Metrics**: Function invocations, errors, latency
 - **Rate Limits**: Tracked in `ai_usage_tracking` table
 - **Errors**: Logged with `console.error()` for debugging
+
+---
+
+## AI Prompt Architecture
+
+All AI prompts are centralized in `src/lib/ai/prompts/` for maintainability and consistency.
+
+### Migration Status: ✅ 100% Complete
+
+| Metric | Count |
+|--------|-------|
+| **Prompt Modules** | 85 directories |
+| **Total Prompts** | ~340 prompts |
+| **Inline Prompts Remaining** | 0 |
+| **Components Using Centralized Prompts** | 100% |
+
+### Prompt Module Structure
+
+Each module follows a consistent pattern:
+
+```
+src/lib/ai/prompts/
+├── {module}/
+│   ├── index.js           # Module exports
+│   ├── {feature}.js       # Feature-specific prompts
+│   └── ...
+└── index.js               # Central export point
+```
+
+### Prompt File Pattern
+
+```javascript
+/**
+ * {Feature} AI Prompts
+ * @module {module}/{feature}
+ */
+
+export const {FEATURE}_SYSTEM_PROMPT = `System instructions...`;
+
+export function build{Feature}Prompt(context) {
+  return `User prompt with ${context}...`;
+}
+
+export const {FEATURE}_SCHEMA = {
+  type: 'object',
+  properties: { ... }
+};
+```
+
+### Key Prompt Modules by Category
+
+| Category | Modules | Prompt Count |
+|----------|---------|--------------|
+| **Strategy** | strategyWizard, strategyModule | 45 |
+| **Innovation Pipeline** | challenges, pilots, rd, scaling | 50 |
+| **Matchmaking** | matchmaker, solution, solutions | 24 |
+| **Citizen Engagement** | citizen, feedback, onboarding | 15 |
+| **Programs** | programs, sandbox, livinglab | 26 |
+| **Analytics** | data, reports, benchmarks, forecasting | 11 |
+| **Communications** | communications, notifications, translation | 13 |
+| **Governance** | approval, gates, compliance, security | 11 |
+| **Content** | content, documents, media, templates | 8 |
+| **Utilities** | core, profiles, geography, taxonomy | 19 |
+| **Other** | 40+ specialized modules | ~118 |
+
+### Using Prompts in Code
+
+```javascript
+// Import from central index
+import { 
+  CHALLENGE_ANALYSIS_SYSTEM_PROMPT,
+  buildChallengeAnalysisPrompt,
+  CHALLENGE_ANALYSIS_SCHEMA 
+} from '@/lib/ai/prompts';
+
+// Or import from specific module
+import { 
+  buildChallengeAnalysisPrompt 
+} from '@/lib/ai/prompts/challenges';
+
+// Use with AI hook
+const { data } = await invokeAI({
+  systemPrompt: CHALLENGE_ANALYSIS_SYSTEM_PROMPT,
+  prompt: buildChallengeAnalysisPrompt(challengeData),
+  schema: CHALLENGE_ANALYSIS_SCHEMA
+});
+```
+
+### Saudi Context Integration
+
+All prompts integrate with Saudi municipal context:
+
+```javascript
+import { getSystemPrompt, buildPromptWithContext } from '@/lib/saudiContext';
+
+export const MY_SYSTEM_PROMPT = getSystemPrompt('feature_name', `
+  Base system prompt here...
+`);
+
+export function buildMyPrompt(data) {
+  return buildPromptWithContext(`
+    Prompt text...
+  `, data);
+}
+```
+
+### Bilingual Output Support
+
+Many prompts generate bilingual (EN/AR) output:
+
+```javascript
+export const SCHEMA = {
+  type: 'object',
+  properties: {
+    title_en: { type: 'string' },
+    title_ar: { type: 'string' },
+    description_en: { type: 'string' },
+    description_ar: { type: 'string' }
+  }
+};
+```
+
+---
+
+## Version History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0.0 | Initial | 47 edge functions documented |
+| 1.1.0 | Dec 2025 | AI prompt architecture added (340 prompts, 85 modules) |
