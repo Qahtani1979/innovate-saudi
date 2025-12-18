@@ -1,8 +1,6 @@
-import React from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { usePermissions } from '@/components/permissions/usePermissions';
 import { SIDEBAR_MENUS } from '@/config/sidebarMenus';
-
-const { useState, useEffect, useCallback, useMemo } = React;
 
 // Role priority order (highest privilege first)
 const ROLE_PRIORITY = {

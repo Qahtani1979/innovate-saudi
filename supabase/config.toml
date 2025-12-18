@@ -275,3 +275,6 @@ verify_jwt = false
 
 [functions.analyze-step]
 verify_jwt = false
+
+[functions.rbac-manager]
+verify_jwt = false
