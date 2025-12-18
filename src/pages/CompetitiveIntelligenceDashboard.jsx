@@ -5,13 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, Loader2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { usePrompt } from '@/hooks/usePrompt';
+import { COMPETITIVE_ANALYSIS_PROMPT_TEMPLATE } from '@/lib/ai/prompts/competitive/intelligence';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function CompetitiveIntelligenceDashboard() {
   const { language, isRTL, t } = useLanguage();
   const [insights, setInsights] = useState(null);
-  const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invoke: invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = usePrompt(null);
 
   const competitors = [
     { city: 'Dubai', pilots: 234, mii: 81, scaling: 35 },
@@ -27,25 +28,17 @@ function CompetitiveIntelligenceDashboard() {
   ];
 
   const generateInsights = async () => {
+    const promptConfig = COMPETITIVE_ANALYSIS_PROMPT_TEMPLATE({
+      competitors,
+      metrics: radarData,
+      saudiPosition: competitors.find(c => c.city === 'Saudi (Avg)'),
+      language
+    });
+
     const result = await invokeAI({
-      prompt: `Analyze competitive landscape:
-
-Competitors: ${JSON.stringify(competitors)}
-
-Provide:
-1. Strengths where Saudi leads
-2. Critical gaps vs best-in-class
-3. Best practices to adopt
-4. Strategic recommendations`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          strengths: { type: 'array', items: { type: 'string' } },
-          gaps: { type: 'array', items: { type: 'string' } },
-          best_practices: { type: 'array', items: { type: 'string' } },
-          recommendations: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      prompt: promptConfig.prompt,
+      system_prompt: promptConfig.system,
+      response_json_schema: promptConfig.schema
     });
     
     if (result.success) {

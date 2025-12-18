@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 import { Activity, AlertTriangle, TrendingUp, Zap, Target, Loader2, Sparkles, Users } from 'lucide-react';
-import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { usePrompt } from '@/hooks/usePrompt';
+import { PIPELINE_HEALTH_ANALYSIS_PROMPT_TEMPLATE } from '@/lib/ai/prompts/pipeline/health';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import ProtectedPage from '../components/permissions/ProtectedPage';
@@ -14,7 +15,7 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 function PipelineHealthDashboardPage() {
   const { language, isRTL, t } = useLanguage();
   const [aiAnalysis, setAiAnalysis] = useState(null);
-  const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invoke: invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = usePrompt(null);
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges-pipeline'],
@@ -85,28 +86,20 @@ function PipelineHealthDashboardPage() {
   ];
 
   const generateAIAnalysis = async () => {
+    const promptConfig = PIPELINE_HEALTH_ANALYSIS_PROMPT_TEMPLATE({
+      stages,
+      conversionRate,
+      scalingRate,
+      totalSolutions: solutions.length,
+      expertUtilization,
+      pendingAssignments: expertAssignments.filter(a => a.status === 'pending').length,
+      language
+    });
+
     const result = await invokeAI({
-      prompt: `Analyze this innovation pipeline health and provide recommendations:
-
-Pipeline stages: ${JSON.stringify(stages)}
-Conversion rate (Challenge→Pilot): ${conversionRate}%
-Scaling rate (Pilot→Scaled): ${scalingRate}%
-Total solutions: ${solutions.length}
-
-Provide:
-1. Overall pipeline health score (0-100)
-2. Top 3 bottlenecks identified
-3. Recommended actions to improve flow
-4. Risk areas requiring attention`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          health_score: { type: 'number' },
-          bottlenecks: { type: 'array', items: { type: 'string' } },
-          recommendations: { type: 'array', items: { type: 'string' } },
-          risks: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      prompt: promptConfig.prompt,
+      system_prompt: promptConfig.system,
+      response_json_schema: promptConfig.schema
     });
     
     if (result.success) {
