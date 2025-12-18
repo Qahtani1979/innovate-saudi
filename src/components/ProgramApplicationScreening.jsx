@@ -10,6 +10,7 @@ import { Sparkles, CheckCircle2, X, Loader2, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { buildApplicationScreeningPrompt, APPLICATION_SCREENING_SCHEMA } from '@/lib/ai/prompts/programs/applicationScreening';
 
 export default function ProgramApplicationScreening({ program, onClose }) {
   const { t, isRTL } = useLanguage();
@@ -28,61 +29,11 @@ export default function ProgramApplicationScreening({ program, onClose }) {
   });
 
   const handleAIScreening = async () => {
-    const prompt = `You are an expert application screener for Saudi municipal innovation programs.
-
-Program: ${program.name_en}
-Type: ${program.program_type}
-Focus Areas: ${program.focus_areas?.join(', ') || 'N/A'}
-Eligibility: ${program.eligibility_criteria?.join(', ') || 'N/A'}
-Max Participants: ${program.target_participants?.max_participants || 'N/A'}
-
-Applications to Score (${applications.length}):
-${applications.map((app, i) => 
-  `${i+1}. Applicant: ${app.applicant_name}
-   Organization: ${app.organization_name}
-   Type: ${app.organization_type}
-   Motivation: ${app.motivation?.substring(0, 150) || 'N/A'}
-   Experience: ${app.relevant_experience?.substring(0, 100) || 'N/A'}
-`).join('\n')}
-
-SCORING CRITERIA (0-100 each):
-1. Eligibility compliance
-2. Alignment with program focus
-3. Organization readiness
-4. Innovation potential
-5. Commitment level
-
-Return scored applications with total scores, reasoning, and recommendation (accept/waitlist/reject).`;
+    const prompt = buildApplicationScreeningPrompt(program, applications);
 
     const result = await invokeAI({
       prompt,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          scored_applications: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                applicant_name: { type: 'string' },
-                scores: {
-                  type: 'object',
-                  properties: {
-                    eligibility: { type: 'number' },
-                    alignment: { type: 'number' },
-                    readiness: { type: 'number' },
-                    innovation: { type: 'number' },
-                    commitment: { type: 'number' }
-                  }
-                },
-                total_score: { type: 'number' },
-                reasoning: { type: 'string' },
-                recommendation: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+      response_json_schema: APPLICATION_SCREENING_SCHEMA
     });
 
     if (result.success) {

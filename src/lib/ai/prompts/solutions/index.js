@@ -1,6 +1,6 @@
 /**
  * Solutions AI prompts index
- * @version 1.3.0
+ * @version 1.4.0
  */
 
 export {
@@ -36,3 +36,10 @@ export {
   CONTRACT_TEMPLATE_SCHEMA,
   CONTRACT_TEMPLATE_PROMPTS
 } from './contractTemplate';
+
+export {
+  MARKET_INTELLIGENCE_SYSTEM_PROMPT,
+  buildMarketIntelligencePrompt,
+  MARKET_INTELLIGENCE_SCHEMA,
+  MARKET_INTELLIGENCE_PROMPTS
+} from './marketIntelligence';
