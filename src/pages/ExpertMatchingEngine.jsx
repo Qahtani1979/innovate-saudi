@@ -35,6 +35,7 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { EXPERT_MATCHING_PROMPT_TEMPLATE, EXPERT_MATCHING_SCHEMA, formatExpertsForMatching } from '@/lib/ai/prompts/experts/matchingEngine';
 
 function ExpertMatchingEnginePage() {
   const [entityType, setEntityType] = useState('challenge');
@@ -228,45 +229,17 @@ function ExpertMatchingEnginePage() {
       expertWorkload[a.expert_email] = (expertWorkload[a.expert_email] || 0) + (a.hours_estimated || 0);
     });
 
-    const prompt = `Match experts to this ${entityType}:
-
-Entity: ${entityDesc.substring(0, 400)}
-Sector: ${entitySector}
-
-Available Experts:
-${experts.filter(e => e.is_active && e.is_verified).map(e => {
-  const workload = expertWorkload[e.user_email] || 0;
-  return `- ${e.user_email}: ${e.expertise_areas?.join(', ')} | Sectors: ${e.sector_specializations?.join(', ')} | Available: ${Math.max(0, (e.availability_hours_per_month || 20) - workload)}h/month`;
-}).join('\n')}
-
-Return top 10 most relevant experts considering:
-1. Expertise-entity alignment
-2. Sector specialization match
-3. Availability (prefer experts with >5h/month available)
-4. Past performance (rating if >0)
-
-Include match scores (0-100) and reasons.`;
+    const entityDesc = entity.title_en || entity.name_en || entity.description_en || entity.abstract_en || '';
+    const entitySector = entity.sector || entity.research_area_en || '';
 
     const result = await invokeAI({
-      prompt,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          matches: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                expert_email: { type: 'string' },
-                match_score: { type: 'number' },
-                reason: { type: 'string' },
-                availability_ok: { type: 'boolean' },
-                potential_conflict: { type: 'boolean' }
-              }
-            }
-          }
-        }
-      }
+      prompt: EXPERT_MATCHING_PROMPT_TEMPLATE({
+        entityType,
+        entityDesc,
+        entitySector,
+        expertsInfo: formatExpertsForMatching(experts, expertWorkload)
+      }),
+      response_json_schema: EXPERT_MATCHING_SCHEMA
     });
 
     if (result.success && result.data?.matches) {
