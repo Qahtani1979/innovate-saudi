@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { Component } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/components/LanguageContext';
 import { useActivePersona } from '@/hooks/useActivePersona';
 import { SIDEBAR_MENUS } from '@/config/sidebarMenus';
 import { cn } from '@/lib/utils';
-import { ChevronDown, Check, RefreshCw } from 'lucide-react';
+import { ChevronDown, Check, RefreshCw, AlertCircle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +17,32 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 /**
+ * Error boundary wrapper for PersonaSwitcher
+ */
+class PersonaSwitcherErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('PersonaSwitcher error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      // Return null to hide the component on error instead of crashing
+      return null;
+    }
+    return this.props.children;
+  }
+}
+
+/**
  * PersonaSwitcher - Allows users with multiple roles to switch between personas
  * 
  * Features:
@@ -25,17 +51,31 @@ import { Badge } from '@/components/ui/badge';
  * - Indicates primary role with badge
  * - Persists selection in session storage
  */
-export default function PersonaSwitcher({ compact = false, showLabel = true }) {
-  const { t, language, isRTL } = useLanguage();
+function PersonaSwitcherContent({ compact = false, showLabel = true }) {
+  const languageContext = useLanguage();
   const navigate = useNavigate();
+  
+  // Safe access to language context
+  const language = languageContext?.language || 'en';
+  const isRTL = languageContext?.isRTL || false;
+  
+  // Use persona hook with error handling
+  let personaData;
+  try {
+    personaData = useActivePersona();
+  } catch (error) {
+    console.error('useActivePersona error:', error);
+    return null;
+  }
+  
   const {
-    activePersona,
-    setActivePersona,
-    availablePersonas,
-    primaryPersona,
-    activePersonaDetails,
-    hasMultiplePersonas,
-  } = useActivePersona();
+    activePersona = 'user',
+    setActivePersona = () => {},
+    availablePersonas = [],
+    primaryPersona = 'user',
+    activePersonaDetails = null,
+    hasMultiplePersonas = false,
+  } = personaData || {};
 
   // Don't render if user has no personas or only one
   if (!hasMultiplePersonas) {
@@ -46,7 +86,7 @@ export default function PersonaSwitcher({ compact = false, showLabel = true }) {
     return (
       <div className={cn(
         "flex items-center gap-2 px-3 py-1.5 rounded-lg",
-        `bg-gradient-to-r ${activePersonaDetails.color} text-white`,
+        `bg-gradient-to-r ${activePersonaDetails.color || 'from-gray-500 to-gray-600'} text-white`,
         isRTL && "flex-row-reverse"
       )}>
         {Icon && <Icon className="h-4 w-4" />}
@@ -60,14 +100,16 @@ export default function PersonaSwitcher({ compact = false, showLabel = true }) {
   }
 
   const handlePersonaSwitch = (persona) => {
-    setActivePersona(persona);
+    if (typeof setActivePersona === 'function') {
+      setActivePersona(persona);
+    }
     
     // Navigate to the default dashboard for the selected persona
-    const menu = SIDEBAR_MENUS[persona];
-    if (menu) {
+    const menu = SIDEBAR_MENUS?.[persona];
+    if (menu && menu.items) {
       // Find the dashboard item (usually the first non-home item)
       const dashboardItem = menu.items.find(item => 
-        item.name.toLowerCase().includes('dashboard') && item.name !== 'PublicPortal'
+        item?.name?.toLowerCase().includes('dashboard') && item.name !== 'PublicPortal'
       );
       if (dashboardItem) {
         const path = dashboardItem.path || `/${dashboardItem.name.toLowerCase().replace(/([A-Z])/g, '-$1').slice(1)}`;
@@ -86,7 +128,7 @@ export default function PersonaSwitcher({ compact = false, showLabel = true }) {
           size={compact ? "sm" : "default"}
           className={cn(
             "gap-2 border-2 transition-all",
-            `hover:bg-gradient-to-r hover:${activePersonaDetails?.color} hover:text-white hover:border-transparent`,
+            `hover:bg-gradient-to-r hover:${activePersonaDetails?.color || 'from-gray-500 to-gray-600'} hover:text-white hover:border-transparent`,
             isRTL && "flex-row-reverse"
           )}
         >
@@ -96,7 +138,7 @@ export default function PersonaSwitcher({ compact = false, showLabel = true }) {
           )}>
             <div className={cn(
               "p-1 rounded-md bg-gradient-to-r",
-              activePersonaDetails?.color
+              activePersonaDetails?.color || 'from-gray-500 to-gray-600'
             )}>
               {ActiveIcon && <ActiveIcon className="h-3.5 w-3.5 text-white" />}
             </div>
@@ -124,15 +166,15 @@ export default function PersonaSwitcher({ compact = false, showLabel = true }) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         
-        {availablePersonas.map((personaItem) => {
-          const Icon = personaItem.icon;
-          const isActive = personaItem.persona === activePersona;
-          const isPrimary = personaItem.persona === primaryPersona;
+        {(availablePersonas || []).map((personaItem) => {
+          const Icon = personaItem?.icon;
+          const isActive = personaItem?.persona === activePersona;
+          const isPrimary = personaItem?.persona === primaryPersona;
           
           return (
             <DropdownMenuItem
-              key={personaItem.persona}
-              onClick={() => handlePersonaSwitch(personaItem.persona)}
+              key={personaItem?.persona || Math.random()}
+              onClick={() => handlePersonaSwitch(personaItem?.persona)}
               className={cn(
                 "flex items-center gap-3 py-2.5 cursor-pointer",
                 isActive && "bg-muted",
@@ -141,7 +183,7 @@ export default function PersonaSwitcher({ compact = false, showLabel = true }) {
             >
               <div className={cn(
                 "p-1.5 rounded-lg bg-gradient-to-r",
-                personaItem.color
+                personaItem?.color || 'from-gray-500 to-gray-600'
               )}>
                 {Icon && <Icon className="h-4 w-4 text-white" />}
               </div>
@@ -149,7 +191,7 @@ export default function PersonaSwitcher({ compact = false, showLabel = true }) {
               <div className={cn("flex-1", isRTL && "text-right")}>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">
-                    {language === 'en' ? personaItem.label?.en : personaItem.label?.ar}
+                    {language === 'en' ? personaItem?.label?.en : personaItem?.label?.ar}
                   </span>
                   {isPrimary && (
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
@@ -175,5 +217,16 @@ export default function PersonaSwitcher({ compact = false, showLabel = true }) {
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+/**
+ * Main export with error boundary wrapper
+ */
+export default function PersonaSwitcher(props) {
+  return (
+    <PersonaSwitcherErrorBoundary>
+      <PersonaSwitcherContent {...props} />
+    </PersonaSwitcherErrorBoundary>
   );
 }
