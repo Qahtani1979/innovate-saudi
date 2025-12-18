@@ -5,8 +5,6 @@
  */
 
 import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS, getSystemPrompt } from '@/lib/saudiContext';
-import { buildBilingualResponseSchema } from '../../bilingualSchemaBuilder';
-
 /**
  * System prompt for reviewer analysis
  */
