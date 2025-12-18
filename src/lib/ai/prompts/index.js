@@ -135,6 +135,21 @@ export * from './knowledge';
 // Admin prompts
 export * from './admin';
 
+// Reports prompts
+export * from './reports';
+
+// Procurement prompts
+export * from './procurement';
+
+// Surveys prompts
+export * from './surveys';
+
+// Notifications prompts
+export * from './notifications';
+
+// Training prompts
+export * from './training';
+
 /**
  * Prompt module status tracking
  * Updated as modules are implemented
@@ -180,7 +195,12 @@ export const PROMPT_MODULE_STATUS = {
   policy: { status: 'complete', promptCount: 1 },
   organizations: { status: 'complete', promptCount: 1 },
   knowledge: { status: 'complete', promptCount: 1 },
-  admin: { status: 'complete', promptCount: 1 }
+  admin: { status: 'complete', promptCount: 1 },
+  reports: { status: 'complete', promptCount: 2 },
+  procurement: { status: 'complete', promptCount: 2 },
+  surveys: { status: 'complete', promptCount: 2 },
+  notifications: { status: 'complete', promptCount: 2 },
+  training: { status: 'complete', promptCount: 2 }
 };
 
 /**
@@ -192,7 +212,7 @@ export function getImplementationProgress() {
   const completed = modules.filter(([, v]) => v.status === 'complete').length;
   const total = modules.length;
   const promptsComplete = modules.reduce((sum, [, v]) => sum + (v.status === 'complete' ? v.promptCount : 0), 0);
-  const promptsTotal = 200; // Updated target
+  const promptsTotal = 220; // Updated target
 
   return {
     modulesComplete: completed,
