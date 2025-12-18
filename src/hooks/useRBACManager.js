@@ -31,7 +31,7 @@ export function useAssignRole() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: rbacService.assignRole,
+    mutationFn: (params) => rbacService.assignRole(params),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['rbac-roles', variables.user_id] });
       queryClient.invalidateQueries({ queryKey: ['role-requests'] });
@@ -50,7 +50,7 @@ export function useRevokeRole() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: rbacService.revokeRole,
+    mutationFn: (params) => rbacService.revokeRole(params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rbac-roles'] });
       queryClient.invalidateQueries({ queryKey: ['role-requests'] });
@@ -67,7 +67,7 @@ export function useRevokeRole() {
  */
 export function useCheckAutoApproval() {
   return useMutation({
-    mutationFn: rbacService.checkAutoApproval,
+    mutationFn: (params) => rbacService.checkAutoApproval(params),
   });
 }
 
@@ -79,8 +79,8 @@ export function useApproveRoleRequest() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: rbacService.approveRoleRequest,
-    onSuccess: (data) => {
+    mutationFn: (params) => rbacService.approveRoleRequest(params),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['role-requests'] });
       queryClient.invalidateQueries({ queryKey: ['rbac-roles'] });
       queryClient.invalidateQueries({ queryKey: ['user-functional-roles'] });
@@ -99,7 +99,7 @@ export function useRejectRoleRequest() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: rbacService.rejectRoleRequest,
+    mutationFn: (params) => rbacService.rejectRoleRequest(params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['role-requests'] });
       toast.success('Role request rejected');
@@ -115,7 +115,7 @@ export function useRejectRoleRequest() {
  */
 export function useValidatePermission() {
   return useMutation({
-    mutationFn: rbacService.validatePermission
+    mutationFn: (params) => rbacService.validatePermission(params)
   });
 }
 
@@ -160,7 +160,7 @@ export function useRejectDelegation() {
  */
 export function useSendRoleNotification() {
   return useMutation({
-    mutationFn: rbacService.sendRoleNotification,
+    mutationFn: (params) => rbacService.sendRoleNotification(params),
     onError: (error) => {
       console.error('Failed to send notification:', error);
     }
@@ -172,7 +172,7 @@ export function useSendRoleNotification() {
  */
 export function useSecurityAudit() {
   return useMutation({
-    mutationFn: rbacService.runSecurityAudit,
+    mutationFn: (params) => rbacService.runSecurityAudit(params),
     onSuccess: (data) => {
       if (data.security_score >= 80) {
         toast.success(`Security audit complete. Score: ${data.security_score}/100`);
