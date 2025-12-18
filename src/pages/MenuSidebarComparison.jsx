@@ -547,7 +547,7 @@ export default function MenuSidebarComparison() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Database className="h-5 w-5 text-primary" />
-                System Roles (Database app_role enum)
+                System Roles (Database roles table)
               </CardTitle>
             </CardHeader>
             <CardContent>

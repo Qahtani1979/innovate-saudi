@@ -283,9 +283,11 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
   SELECT EXISTS (
-    SELECT 1 FROM public.user_roles
-    WHERE user_roles.user_id = $1
-    AND role = 'admin'::app_role
+    SELECT 1 FROM public.user_roles ur
+    JOIN public.roles r ON ur.role_id = r.id
+    WHERE ur.user_id = $1
+    AND r.name = 'admin'
+    AND ur.is_active = true
   )
 $$;
 ```

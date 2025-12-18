@@ -399,7 +399,7 @@ flowchart TB
 | `role_requests.status` | 'pending' initially | ✅ |
 | `role_requests.justification` | Stored | ✅ |
 | `user_roles` | Created for auto roles | ✅ |
-| `user_roles.role` | Correct app_role enum | ✅ |
+| `user_roles.role_id` | FK to roles table | ✅ |
 | `user_roles.is_active` | true | ✅ |
 
 ### 7.6 Analytics Tracking

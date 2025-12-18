@@ -112,7 +112,6 @@ export default function RBACCoverageContent() {
       { name: 'Role', table: 'roles', status: 'complete', coverage: 100 },
       { name: 'Permission', table: 'permissions', status: 'complete', coverage: 100 },
       { name: 'UserRole', table: 'user_roles', status: 'complete', coverage: 100 },
-      { name: 'UserFunctionalRole', table: 'user_functional_roles', status: 'complete', coverage: 100 },
       { name: 'RolePermission', table: 'role_permissions', status: 'complete', coverage: 100 },
       { name: 'DelegationRule', table: 'delegation_rules', status: 'complete', coverage: 100 },
       { name: 'AccessLog', table: 'access_logs', status: 'complete', coverage: 100 }
@@ -127,10 +126,10 @@ export default function RBACCoverageContent() {
     ],
     dbFunctions: [
       { name: 'has_permission', status: 'complete', description: 'Check user permission' },
-      { name: 'has_role', status: 'complete', description: 'Check user role' },
-      { name: 'is_admin', status: 'complete', description: 'Check admin status' },
+      { name: 'has_role', status: 'complete', description: 'Check user role via role_id' },
+      { name: 'is_admin', status: 'complete', description: 'Check admin status via role_id join' },
       { name: 'get_user_permissions', status: 'complete', description: 'Get all user permissions' },
-      { name: 'get_user_functional_roles', status: 'complete', description: 'Get user functional roles' }
+      { name: 'get_user_functional_roles', status: 'complete', description: 'Get user roles via role_id join' }
     ],
     features: [
       { name: 'Role-based access control', status: 'complete' },

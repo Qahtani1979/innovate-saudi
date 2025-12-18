@@ -56,10 +56,14 @@ function RBACAuditContentInner() {
     }
   });
 
+  // Query user_roles with role_id join (Phase 4 architecture)
   const { data: userRoles = [], isLoading: loadingUserRoles } = useQuery({
     queryKey: ['audit-user-roles'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('user_roles').select('*');
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('*, roles:role_id(id, name)')
+        .eq('is_active', true);
       if (error) throw error;
       return data || [];
     }
@@ -78,19 +82,6 @@ function RBACAuditContentInner() {
     queryKey: ['audit-permissions'],
     queryFn: async () => {
       const { data, error } = await supabase.from('permissions').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  // Phase 4: Query user_roles with role_id join instead of dropped user_functional_roles
-  const { data: userRolesData = [], isLoading: loadingUserRoles } = useQuery({
-    queryKey: ['audit-user-roles'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('*, roles:role_id(id, name)')
-        .eq('is_active', true);
       if (error) throw error;
       return data || [];
     }
@@ -130,22 +121,21 @@ function RBACAuditContentInner() {
     }
   });
 
-  const isLoading = loadingUsers || loadingUserRoles || loadingRoles || loadingPermissions || loadingUserRoles || loadingRP || loadingDelegations || loadingLogs;
+  const isLoading = loadingUsers || loadingUserRoles || loadingRoles || loadingPermissions || loadingRP || loadingDelegations || loadingLogs;
 
   // Generate comprehensive audit report
   const auditResults = useMemo(() => {
     const userIdsWithRoles = new Set(userRoles.map(ur => ur.user_id));
-    const userIdsWithUserRolesData = new Set(userRolesData.map(ur => ur.user_id));
     
-    const usersWithoutRoles = allUsers.filter(u => !userIdsWithRoles.has(u.user_id) && !userIdsWithUserRolesData.has(u.user_id));
-    const roleIdsWithUsers = new Set(userRolesData.map(ur => ur.role_id));
+    const usersWithoutRoles = allUsers.filter(u => !userIdsWithRoles.has(u.user_id));
+    const roleIdsWithUsers = new Set(userRoles.map(ur => ur.role_id));
     const rolesWithoutUsers = roles.filter(r => !roleIdsWithUsers.has(r.id));
     const permissionIdsInRoles = new Set(rolePermissions.map(rp => rp.permission_id));
     const orphanedPermissions = permissions.filter(p => !permissionIdsInRoles.has(p.id));
     
     const now = new Date();
-    const expiredAssignments = userRolesData.filter(ur => ur.expires_at && new Date(ur.expires_at) < now);
-    const inactiveAssignments = userRolesData.filter(ur => !ur.is_active);
+    const expiredAssignments = userRoles.filter(ur => ur.expires_at && new Date(ur.expires_at) < now);
+    const inactiveAssignments = userRoles.filter(ur => !ur.is_active);
     const expiredDelegations = delegations.filter(d => d.end_date && new Date(d.end_date) < now && d.is_active);
     const activeDelegations = delegations.filter(d => d.is_active && (!d.end_date || new Date(d.end_date) >= now));
 

@@ -57,9 +57,10 @@
 |--------|------|--------|-------|
 | `id` | uuid | ✅ | PK |
 | `user_id` | uuid | ✅ | NOT NULL |
-| `role` | app_role | ✅ | USER-DEFINED enum |
+| `role_id` | uuid | ✅ | FK to roles table |
 | `municipality_id` | uuid | ✅ | Optional |
 | `organization_id` | uuid | ✅ | Optional |
+| `is_active` | boolean | ✅ | |
 | `created_at` | timestamp | ✅ | |
 
 ### 1.3 Storage Buckets ✅

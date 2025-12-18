@@ -93,7 +93,7 @@
 | ID | Check | Expected | Priority |
 |----|-------|----------|----------|
 | A9-053 | Page loads with admin | Auth check | Critical |
-| A9-054 | All roles displayed | From app_role enum | High |
+| A9-054 | All roles displayed | From roles table | High |
 | A9-055 | Role descriptions shown | What each does | High |
 | A9-056 | Assign role to user | user_roles insert | Critical |
 | A9-057 | Remove role from user | user_roles delete | Critical |
