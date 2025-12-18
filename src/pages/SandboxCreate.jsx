@@ -89,31 +89,15 @@ function SandboxCreate() {
       return;
     }
     try {
+      // Import centralized prompt module
+      const { 
+        SANDBOX_CREATE_PROMPT_TEMPLATE, 
+        SANDBOX_CREATE_RESPONSE_SCHEMA 
+      } = await import('@/lib/ai/prompts/sandbox/creation');
+      
       const result = await invokeAI({
-        prompt: `Enhance this regulatory sandbox proposal:
-
-Sandbox Name: ${formData.name_en}
-Domain: ${formData.domain}
-Current Description: ${formData.description_en || 'N/A'}
-
-Provide bilingual enhancements:
-1. Professional tagline (AR + EN)
-2. Expanded description highlighting regulatory innovation (AR + EN)
-3. Clear objectives for regulatory testing (AR + EN)
-4. Suggested exemption categories (3-5 items)
-5. Safety protocol recommendations`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            tagline_en: { type: 'string' },
-            tagline_ar: { type: 'string' },
-            description_en: { type: 'string' },
-            description_ar: { type: 'string' },
-            objectives_en: { type: 'string' },
-            objectives_ar: { type: 'string' },
-            exemption_suggestions: { type: 'array', items: { type: 'string' } }
-          }
-        }
+        prompt: SANDBOX_CREATE_PROMPT_TEMPLATE(formData),
+        response_json_schema: SANDBOX_CREATE_RESPONSE_SCHEMA
       });
 
       if (result.success) {

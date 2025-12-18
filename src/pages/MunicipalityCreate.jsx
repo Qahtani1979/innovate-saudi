@@ -45,26 +45,15 @@ function MunicipalityCreate() {
       return;
     }
     try {
+      // Import centralized prompt module
+      const { 
+        MUNICIPALITY_CREATE_PROMPT_TEMPLATE, 
+        MUNICIPALITY_CREATE_RESPONSE_SCHEMA 
+      } = await import('@/lib/ai/prompts/municipalities/creation');
+      
       const result = await invokeAI({
-        prompt: `Provide AI enhancement for this Saudi municipality:
-
-Municipality: ${formData.name_en} ${formData.name_ar ? `(${formData.name_ar})` : ''}
-Region: ${formData.region}
-Population: ${formData.population || 'N/A'}
-
-Generate:
-1. Professional description (AR + EN)
-2. Innovation focus areas (3-5 suggestions)
-3. Estimated MII baseline score (if known) with brief rationale`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            description_en: { type: 'string' },
-            description_ar: { type: 'string' },
-            focus_areas: { type: 'array', items: { type: 'string' } },
-            mii_estimate: { type: 'number' }
-          }
-        }
+        prompt: MUNICIPALITY_CREATE_PROMPT_TEMPLATE(formData),
+        response_json_schema: MUNICIPALITY_CREATE_RESPONSE_SCHEMA
       });
 
       if (result.success && result.data) {
