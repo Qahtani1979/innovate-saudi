@@ -60,14 +60,15 @@ const sendWelcomeEmail = async (userId, userEmail, userName, persona, language) 
   }
 };
 
-// Send role request notification via edge function
+// Send role request notification via unified rbac-manager
 const sendRoleRequestNotification = async (type, requestData) => {
   try {
-    const { data, error } = await supabase.functions.invoke('role-request-notification', {
-      body: { type, ...requestData }
+    const rbacService = (await import('@/services/rbac/rbacService')).default;
+    await rbacService.sendRoleNotification({
+      type,
+      ...requestData
     });
-    if (error) console.warn('Role notification failed:', error);
-    else console.log('Role notification sent:', data);
+    console.log('Role notification sent via rbac-manager');
   } catch (err) {
     console.warn('Failed to send role notification:', err);
   }

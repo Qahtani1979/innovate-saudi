@@ -269,26 +269,31 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
       const isEmailDomainApproved = checkEmailDomainApproval(user.email, formData.municipality_id);
 
       if (isStaffRole && isEmailDomainApproved) {
-        // Auto-approve staff role via edge function
-        const { data: roleResult, error: roleError } = await supabase.functions.invoke('auto-role-assignment', {
-          body: {
-            user_id: user.id,
-            user_email: user.email,
-            role: 'municipality_staff',
-            municipality_id: formData.municipality_id,
-            action: 'assign'
-          }
-        });
-        
-        if (roleError) {
-          console.error('Role assignment error:', roleError);
-        } else {
+        // Auto-approve staff role via unified rbac-manager
+        try {
+          const { assignRole } = await import('@/services/rbac/rbacService');
+          await assignRole.default ? 
+            assignRole.default.assignRole({
+              user_id: user.id,
+              user_email: user.email,
+              role: 'municipality_staff',
+              municipality_id: formData.municipality_id
+            }) :
+            (await import('@/services/rbac/rbacService')).default.assignRole({
+              user_id: user.id,
+              user_email: user.email,
+              role: 'municipality_staff',
+              municipality_id: formData.municipality_id
+            });
+          
           // Mark staff profile as verified since domain matched
           await supabase.from('municipality_staff_profiles')
             .update({ is_verified: true })
             .eq('user_id', user.id);
           
           toast.success(t({ en: 'Staff role automatically approved!', ar: 'تم الموافقة على دور الموظف تلقائياً!' }));
+        } catch (roleError) {
+          console.error('Role assignment error:', roleError);
         }
       } else if (isStaffRole && !isEmailDomainApproved) {
         // Staff role but email domain not approved - submit for review
@@ -301,9 +306,10 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
           status: 'pending'
         });
         
-        // Notify via edge function
-        await supabase.functions.invoke('role-request-notification', {
-          body: {
+        // Notify via unified rbac-manager
+        try {
+          const rbacService = (await import('@/services/rbac/rbacService')).default;
+          await rbacService.sendRoleNotification({
             type: 'submitted',
             user_id: user.id,
             user_email: user.email,
@@ -311,8 +317,10 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
             requested_role: 'municipality_staff',
             justification: formData.justification,
             language
-          }
-        });
+          });
+        } catch (notifErr) {
+          console.warn('Notification error:', notifErr);
+        }
         
         toast.info(t({ en: 'Staff role request submitted for approval', ar: 'تم تقديم طلب دور الموظف للموافقة' }));
       } else if (!isStaffRole && formData.justification) {
@@ -328,9 +336,10 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
           status: 'pending'
         });
         
-        // Notify via edge function
-        await supabase.functions.invoke('role-request-notification', {
-          body: {
+        // Notify via unified rbac-manager
+        try {
+          const rbacService = (await import('@/services/rbac/rbacService')).default;
+          await rbacService.sendRoleNotification({
             type: 'submitted',
             user_id: user.id,
             user_email: user.email,
@@ -339,8 +348,10 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
             justification: formData.justification,
             language,
             notify_admins: true
-          }
-        });
+          });
+        } catch (notifErr) {
+          console.warn('Notification error:', notifErr);
+        }
         
         toast.info(t({ en: 'Role request submitted for admin approval', ar: 'تم تقديم طلب الدور لموافقة المسؤول' }));
       }
