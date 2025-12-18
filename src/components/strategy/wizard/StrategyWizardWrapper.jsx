@@ -590,10 +590,13 @@ export default function StrategyWizardWrapper() {
         // Use generic invoke-llm for this step
         console.log(`[Wizard AI] Using generic invoke-llm for step ${step}`);
         
+        // Import system prompt from centralized module
+        const { STRATEGY_WIZARD_SYSTEM_PROMPT } = await import('@/lib/ai/prompts/strategy/wizard');
+        
         const result = await invokeAI({
           prompt,
           response_json_schema: schema,
-          system_prompt: `${SAUDI_CONTEXT.FULL}\n\nYou are an expert in Saudi Arabian strategic planning and Vision 2030. Generate professional content in both English and Arabic. Use formal language appropriate for government documents.`
+          system_prompt: STRATEGY_WIZARD_SYSTEM_PROMPT
         });
         
         success = result.success;
