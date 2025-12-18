@@ -35,6 +35,20 @@ export default function RoleRequestCard() {
   const [selectedRole, setSelectedRole] = useState('');
   const [justification, setJustification] = useState('');
 
+  // Fetch user's actual roles from user_roles table
+  const { data: userRoles = [] } = useQuery({
+    queryKey: ['user-roles-settings', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role, municipality_id, organization_id')
+        .eq('user_id', user?.id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id
+  });
+
   // Fetch existing role requests
   const { data: roleRequests = [], isLoading } = useQuery({
     queryKey: ['my-role-requests', user?.email],
@@ -144,13 +158,28 @@ export default function RoleRequestCard() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Current Role */}
+        {/* Current Roles - from user_roles table */}
         <div className="p-4 bg-muted/50 rounded-lg">
-          <p className="text-sm font-medium mb-1">{t({ en: 'Current Account Type', ar: 'نوع الحساب الحالي' })}</p>
-          <div className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-muted-foreground" />
-            <span className="font-semibold capitalize">{userProfile?.selected_persona || 'Citizen'}</span>
-          </div>
+          <p className="text-sm font-medium mb-2">{t({ en: 'Current Roles', ar: 'الأدوار الحالية' })}</p>
+          {userRoles.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {userRoles.map((ur, idx) => (
+                <Badge key={idx} variant="secondary" className="capitalize">
+                  {ur.role === 'admin' && <Shield className="h-3 w-3 mr-1" />}
+                  {ur.role?.includes('municipality') && <Building2 className="h-3 w-3 mr-1" />}
+                  {ur.role?.includes('provider') && <Briefcase className="h-3 w-3 mr-1" />}
+                  {ur.role?.includes('expert') && <GraduationCap className="h-3 w-3 mr-1" />}
+                  {ur.role?.includes('researcher') && <Microscope className="h-3 w-3 mr-1" />}
+                  {ur.role?.replace(/_/g, ' ')}
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-muted-foreground" />
+              <span className="text-muted-foreground">{t({ en: 'Citizen (Default)', ar: 'مواطن (افتراضي)' })}</span>
+            </div>
+          )}
         </div>
 
         {/* Pending Request Warning */}
