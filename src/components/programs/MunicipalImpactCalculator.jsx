@@ -9,6 +9,11 @@ import { Building2, Sparkles, Loader2, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  IMPACT_CALCULATOR_SYSTEM_PROMPT,
+  buildImpactCalculatorPrompt,
+  IMPACT_CALCULATOR_SCHEMA
+} from '@/lib/ai/prompts/programs';
 
 export default function MunicipalImpactCalculator({ programId }) {
   const { t, language } = useLanguage();
@@ -65,52 +70,25 @@ export default function MunicipalImpactCalculator({ programId }) {
       });
     });
 
+    const municipalityCount = Object.keys(municipalityCounts).length;
+    const durationMonths = program.duration_weeks ? Math.round(program.duration_weeks / 4) : 12;
+
     const result = await invokeAI({
-      prompt: `Analyze the municipal capacity impact of this innovation program for Saudi municipalities:
-
-Program: ${program.name_en}
-Duration: ${program.duration_weeks} weeks
-Participants: ${applications.length} (from ${Object.keys(municipalityCounts).length} municipalities)
-
-Alumni Outputs:
-- Pilots launched: ${alumniPilots.length}
-- Solutions created: ${alumniSolutions.length}
-
-Municipal distribution:
-${Object.entries(municipalityCounts).map(([munId, data]) => 
-  `- Municipality ${munId}: ${data.pilots} pilots, ${data.solutions} solutions`
-).join('\n')}
-
-Calculate and provide:
-1. Capacity building score per municipality (0-100)
-2. Innovation ecosystem strengthening assessment
-3. Long-term capability enhancement predictions
-4. Recommendations for maximizing municipal impact`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          municipal_impacts: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                municipality_id: { type: 'string' },
-                capacity_score: { type: 'number' },
-                innovation_readiness_gain: { type: 'number' },
-                recommendation: { type: 'string' }
-              }
-            }
-          },
-          overall_ecosystem_score: { type: 'number' },
-          predictions: { type: 'array', items: { type: 'string' } },
-          recommendations: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      systemPrompt: IMPACT_CALCULATOR_SYSTEM_PROMPT,
+      prompt: buildImpactCalculatorPrompt(program, municipalityCount, durationMonths),
+      response_json_schema: IMPACT_CALCULATOR_SCHEMA
     });
 
     if (result.success) {
       setImpact({
-        ...result.data,
+        overall_ecosystem_score: result.data.capacity_score,
+        municipal_impacts: [{
+          municipality_id: 'aggregated',
+          capacity_score: result.data.capacity_score,
+          innovation_readiness_gain: result.data.innovation_readiness?.projected - result.data.innovation_readiness?.current,
+          recommendation: language === 'ar' ? result.data.sustainability?.factors_ar?.[0] : result.data.sustainability?.factors_en?.[0]
+        }],
+        recommendations: language === 'ar' ? result.data.staff_competency?.skills_gained_ar : result.data.staff_competency?.skills_gained_en,
         raw_data: { municipalityCounts, alumniPilots: alumniPilots.length, alumniSolutions: alumniSolutions.length }
       });
       toast.success(t({ en: 'Impact calculated', ar: 'تم حساب التأثير' }));

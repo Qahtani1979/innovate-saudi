@@ -93,6 +93,9 @@ export * from './smart';
 // Data analytics prompts
 export * from './data';
 
+// Gates prompts
+export * from './gates';
+
 // Approval prompts
 export * from './approval';
 
@@ -258,21 +261,21 @@ export * from './classification';
  */
 export const PROMPT_MODULE_STATUS = {
   strategyWizard: { status: 'complete', promptCount: 24 },
-  strategyModule: { status: 'complete', promptCount: 10 },
+  strategyModule: { status: 'complete', promptCount: 12 },
   portfolio: { status: 'complete', promptCount: 3 },
   events: { status: 'complete', promptCount: 3 },
-  challenges: { status: 'complete', promptCount: 9 },
+  challenges: { status: 'complete', promptCount: 11 },
   pilots: { status: 'complete', promptCount: 18 },
-  matchmaker: { status: 'complete', promptCount: 8 },
+  matchmaker: { status: 'complete', promptCount: 10 },
   sandbox: { status: 'complete', promptCount: 10 },
   rd: { status: 'complete', promptCount: 11 },
-  scaling: { status: 'complete', promptCount: 5 },
+  scaling: { status: 'complete', promptCount: 7 },
   solution: { status: 'complete', promptCount: 9 },
-  citizen: { status: 'complete', promptCount: 8 },
+  citizen: { status: 'complete', promptCount: 9 },
   livinglab: { status: 'complete', promptCount: 5 },
   profiles: { status: 'complete', promptCount: 3 },
-  programs: { status: 'complete', promptCount: 7 },
-  core: { status: 'complete', promptCount: 9 },
+  programs: { status: 'complete', promptCount: 9 },
+  core: { status: 'complete', promptCount: 11 },
   taxonomy: { status: 'complete', promptCount: 2 },
   mii: { status: 'complete', promptCount: 2 },
   executive: { status: 'complete', promptCount: 3 },
@@ -281,10 +284,11 @@ export const PROMPT_MODULE_STATUS = {
   bonus: { status: 'complete', promptCount: 1 },
   smart: { status: 'complete', promptCount: 1 },
   data: { status: 'complete', promptCount: 2 },
+  gates: { status: 'complete', promptCount: 2 },
   approval: { status: 'complete', promptCount: 2 },
   content: { status: 'complete', promptCount: 1 },
   uploader: { status: 'complete', promptCount: 1 },
-  communications: { status: 'complete', promptCount: 7 },
+  communications: { status: 'complete', promptCount: 9 },
   media: { status: 'complete', promptCount: 1 },
   workflows: { status: 'complete', promptCount: 1 },
   onboarding: { status: 'complete', promptCount: 1 },
@@ -295,7 +299,7 @@ export const PROMPT_MODULE_STATUS = {
   feedback: { status: 'complete', promptCount: 1 },
   translation: { status: 'complete', promptCount: 2 },
   policy: { status: 'complete', promptCount: 1 },
-  organizations: { status: 'complete', promptCount: 1 },
+  organizations: { status: 'complete', promptCount: 2 },
   knowledge: { status: 'complete', promptCount: 1 },
   admin: { status: 'complete', promptCount: 1 },
   reports: { status: 'complete', promptCount: 2 },
@@ -332,7 +336,7 @@ export const PROMPT_MODULE_STATUS = {
   linking: { status: 'complete', promptCount: 3 },
   summarization: { status: 'complete', promptCount: 3 },
   templates: { status: 'complete', promptCount: 3 },
-  recommendations: { status: 'complete', promptCount: 3 },
+  recommendations: { status: 'complete', promptCount: 5 },
   extraction: { status: 'complete', promptCount: 3 },
   comparison: { status: 'complete', promptCount: 3 },
   generation: { status: 'complete', promptCount: 3 },

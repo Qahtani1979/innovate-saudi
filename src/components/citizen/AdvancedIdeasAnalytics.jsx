@@ -9,6 +9,11 @@ import { TrendingUp, Sparkles, Loader2, Brain, Target } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  IDEAS_ANALYTICS_SYSTEM_PROMPT,
+  buildIdeasAnalyticsPrompt,
+  IDEAS_ANALYTICS_SCHEMA
+} from '@/lib/ai/prompts/citizen';
 
 export default function AdvancedIdeasAnalytics({ ideas }) {
   const { language, isRTL, t } = useLanguage();
@@ -23,33 +28,20 @@ export default function AdvancedIdeasAnalytics({ ideas }) {
       return acc;
     }, {});
 
-    const topIdeas = ideas.sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0)).slice(0, 10);
+    const categories = Object.keys(categoryCounts);
 
     const result = await invokeAI({
-      prompt: `Analyze citizen ideas data:
-
-Total Ideas: ${ideas.length}
-Categories: ${JSON.stringify(categoryCounts)}
-Top Voted Ideas: ${topIdeas.map(i => i.title).join(', ')}
-
-Generate:
-1. Top 3 emerging themes/trends
-2. 3 strategic recommendations
-3. Risk areas to monitor
-4. Predicted trends for next quarter`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          emerging_themes: { type: 'array', items: { type: 'string' } },
-          recommendations: { type: 'array', items: { type: 'string' } },
-          risk_areas: { type: 'array', items: { type: 'string' } },
-          predictions: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      systemPrompt: IDEAS_ANALYTICS_SYSTEM_PROMPT,
+      prompt: buildIdeasAnalyticsPrompt(ideas, categories),
+      response_json_schema: IDEAS_ANALYTICS_SCHEMA
     });
 
     if (result.success && result.data) {
-      setInsights(result.data);
+      setInsights({
+        emerging_themes: result.data.trending_themes_en || result.data.trending_themes_ar,
+        recommendations: result.data.recommendations?.map(r => language === 'ar' ? r.action_ar : r.action_en),
+        risk_areas: result.data.emerging_priorities_en || result.data.emerging_priorities_ar
+      });
     }
   };
 
