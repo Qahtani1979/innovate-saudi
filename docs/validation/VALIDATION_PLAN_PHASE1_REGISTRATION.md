@@ -86,14 +86,14 @@ flowchart LR
 |-----------|------|----------|---------|------------|
 | `id` | uuid | Yes | gen_random_uuid() | - |
 | `user_id` | uuid | Yes | - | FK to auth.users |
-| `role` | app_role | Yes | - | Enum value |
+| `role_id` | uuid | Yes | - | FK to roles table |
 | `municipality_id` | uuid | No | null | FK to municipalities |
 | `organization_id` | uuid | No | null | FK to organizations |
-| `granted_by` | uuid | No | null | FK to auth.users |
-| `granted_at` | timestamp | Yes | now() | - |
+| `assigned_by` | text | No | null | Email of assigner |
+| `assigned_at` | timestamp | Yes | now() | - |
 | `is_active` | boolean | Yes | true | - |
 
-### 3.4 app_role Enum Values
+### 3.4 Role Values (from roles table)
 - [ ] `admin`
 - [ ] `citizen`
 - [ ] `municipality_staff`

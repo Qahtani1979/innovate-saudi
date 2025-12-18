@@ -57,19 +57,22 @@ This document describes the comprehensive visibility and permissions system for 
 ```sql
 - id: uuid
 - user_id: uuid
-- role: app_role  -- Enum
+- role_id: uuid  -- FK to roles table
 - municipality_id: uuid
 - organization_id: uuid
+- is_active: boolean
+- expires_at: timestamp
 - created_at: timestamp
 ```
 
-#### `app_role` enum values:
+#### `roles` table (replaces app_role enum)
+Role names stored in `roles.name`:
 - `admin` - Platform super admin
 - `municipality_admin` - Municipality full access
 - `municipality_staff` - Municipality standard access
 - `municipality_coordinator` - Municipality coordination
-- `deputyship_admin` - National deputyship full access (NEW)
-- `deputyship_staff` - National deputyship standard access (NEW)
+- `deputyship_admin` - National deputyship full access
+- `deputyship_staff` - National deputyship standard access
 - `provider` - Solution provider/startup
 - `researcher` - Research institution
 - `expert` - Domain expert
@@ -272,7 +275,7 @@ $$ LANGUAGE sql STABLE;
 
 ### Phase 1: Database Changes
 1. Add `sector_id` and `focus_sectors` to municipalities table
-2. Add `deputyship_admin` and `deputyship_staff` to app_role enum
+2. Add new roles to `roles` table (deputyship_admin, deputyship_staff)
 3. Create helper database functions
 
 ### Phase 2: Backend Updates
