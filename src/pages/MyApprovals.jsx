@@ -70,26 +70,20 @@ function MyApprovals() {
   });
 
   const getAIRecommendation = async (item, type) => {
+    // Import centralized prompt module
+    const { 
+      MY_APPROVALS_CHALLENGE_PROMPT_TEMPLATE,
+      MY_APPROVALS_PILOT_PROMPT_TEMPLATE,
+      MY_APPROVALS_RESPONSE_SCHEMA 
+    } = await import('@/lib/ai/prompts/approvals/myApprovals');
+    
+    const prompt = type === 'challenge' 
+      ? MY_APPROVALS_CHALLENGE_PROMPT_TEMPLATE(item)
+      : MY_APPROVALS_PILOT_PROMPT_TEMPLATE(item);
+    
     const result = await invokeAI({
-      prompt: `Analyze this ${type} and provide approval recommendation:
-
-${type === 'challenge' ? `Title: ${item.title_en}
-Sector: ${item.sector}
-Priority: ${item.priority}
-Description: ${item.description_en}` : `Title: ${item.title_en}
-Stage: ${item.stage}
-Budget: ${item.budget}
-Success Probability: ${item.success_probability}`}
-
-Provide: 1) Recommendation (APPROVE/DEFER/REJECT), 2) Reasoning, 3) Conditions (if any)`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          recommendation: { type: 'string' },
-          reasoning: { type: 'string' },
-          conditions: { type: 'string' }
-        }
-      }
+      prompt,
+      response_json_schema: MY_APPROVALS_RESPONSE_SCHEMA
     });
 
     if (result.success) {
