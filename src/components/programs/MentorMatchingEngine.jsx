@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +7,11 @@ import { Heart, Sparkles, Loader2, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  MENTOR_MATCHING_SYSTEM_PROMPT,
+  buildMentorMatchingPrompt,
+  MENTOR_MATCHING_SCHEMA
+} from '@/lib/ai/prompts/programs/mentorMatching';
 
 export default function MentorMatchingEngine({ participants, mentors }) {
   const { language, t } = useLanguage();
@@ -16,38 +20,9 @@ export default function MentorMatchingEngine({ participants, mentors }) {
 
   const generateMatches = async () => {
     const result = await invokeAI({
-      prompt: `Match ${participants.length} startups with ${mentors.length} mentors:
-
-STARTUPS (sample):
-${participants.slice(0, 10).map(p => `- ${p.startup_name}: ${p.sector}, ${p.startup_stage}, Needs: ${p.mentorship_needs || 'general guidance'}`).join('\n')}
-
-MENTORS (sample):
-${mentors.slice(0, 10).map(m => `- ${m.name}: Expertise in ${m.expertise_areas?.join(', ')}, ${m.years_experience} years`).join('\n')}
-
-For each startup, suggest best 2 mentors considering:
-1. Sector alignment
-2. Stage expertise
-3. Specific needs match
-4. Mentor availability`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          matches: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                startup: { type: "string" },
-                mentor_1: { type: "string" },
-                mentor_2: { type: "string" },
-                rationale_1: { type: "string" },
-                rationale_2: { type: "string" },
-                match_score: { type: "number" }
-              }
-            }
-          }
-        }
-      }
+      prompt: buildMentorMatchingPrompt({ participants, mentors }),
+      system_prompt: MENTOR_MATCHING_SYSTEM_PROMPT,
+      response_json_schema: MENTOR_MATCHING_SCHEMA
     });
 
     if (result.success) {
@@ -75,6 +50,8 @@ For each startup, suggest best 2 mentors considering:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+        
         {!matches.length && !matching && (
           <div className="text-center py-8">
             <Heart className="h-12 w-12 text-pink-300 mx-auto mb-3" />

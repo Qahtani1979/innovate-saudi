@@ -1,74 +1,62 @@
 /**
  * Data Enrichment Prompts
  * @module data/enrichment
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { getSystemPrompt } from '@/lib/saudiContext';
 
 export const DATA_ENRICHMENT_SYSTEM_PROMPT = getSystemPrompt('data_enrichment', `
 You are a data enrichment specialist for Saudi Arabia's municipal innovation platform.
-Your role is to analyze entity data and suggest enrichments, corrections, and additional context.
-Consider Saudi market context, industry standards, and Vision 2030 classifications.
+Your role is to add missing translations, tags, classifications, and metadata to entities.
+Ensure bilingual content quality aligned with Vision 2030 objectives.
 `);
 
-export function buildDataEnrichmentPrompt({ entityType, entity }) {
+/**
+ * Build data enrichment prompt
+ * @param {Object} params - Entity and type
+ * @returns {string} Formatted prompt
+ */
+export function buildDataEnrichmentPrompt({ entity, entityType }) {
   return `Enrich ${entityType} data with AI insights:
 
 CURRENT DATA: ${JSON.stringify(entity).substring(0, 800)}
 
-Analyze and enrich:
-1. Missing fields that should be populated
-2. Data quality issues to correct
-3. Additional metadata suggestions
-4. Classification improvements
-5. Related entity suggestions
-6. Confidence score for suggestions`;
+Provide enrichments:
+1. Missing translations (if title_en exists but not title_ar, suggest Arabic)
+2. Suggested tags/keywords (5-10 relevant terms)
+3. Sector classification (if ambiguous)
+4. Related entities (suggest connections to other challenges/pilots/solutions)
+5. Recommended KPIs (if not defined)
+6. Estimated complexity/priority (if missing)`;
 }
 
 export const DATA_ENRICHMENT_SCHEMA = {
   type: 'object',
   properties: {
-    suggested_fields: {
+    translations: {
+      type: 'object',
+      properties: {
+        title_ar: { type: 'string' },
+        description_ar: { type: 'string' }
+      }
+    },
+    tags: { type: 'array', items: { type: 'string' } },
+    sector: { type: 'string' },
+    related_codes: { type: 'array', items: { type: 'string' } },
+    kpis: {
       type: 'array',
       items: {
         type: 'object',
         properties: {
-          field_name: { type: 'string' },
-          suggested_value: { type: 'string' },
-          confidence: { type: 'number' },
-          source: { type: 'string' }
+          name: { type: 'string' },
+          baseline: { type: 'string' },
+          target: { type: 'string' }
         }
       }
     },
-    quality_corrections: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          field_name: { type: 'string' },
-          current_value: { type: 'string' },
-          corrected_value: { type: 'string' },
-          reason: { type: 'string' }
-        }
-      }
-    },
-    additional_metadata: { type: 'object' },
-    classification_suggestions: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          category: { type: 'string' },
-          suggested_value: { type: 'string' },
-          confidence: { type: 'number' }
-        }
-      }
-    },
-    related_entities: { type: 'array', items: { type: 'string' } },
-    overall_quality_score: { type: 'number', minimum: 0, maximum: 100 }
-  },
-  required: ['suggested_fields', 'quality_corrections', 'overall_quality_score']
+    priority: { type: 'string' }
+  }
 };
 
 export const DATA_ENRICHMENT_PROMPTS = {

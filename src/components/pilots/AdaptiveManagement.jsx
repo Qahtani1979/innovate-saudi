@@ -7,6 +7,11 @@ import { RefreshCw, Sparkles, Loader2, AlertCircle } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  ADAPTIVE_MANAGEMENT_SYSTEM_PROMPT,
+  buildAdaptiveManagementPrompt,
+  ADAPTIVE_MANAGEMENT_SCHEMA
+} from '@/lib/ai/prompts/pilots/adaptiveManagement';
 
 export default function AdaptiveManagement({ pilot }) {
   const { language, t } = useLanguage();
@@ -23,38 +28,9 @@ export default function AdaptiveManagement({ pilot }) {
 
   const getAdjustments = async () => {
     const response = await invokeAI({
-      prompt: `Pilot adaptive management analysis:
-
-PILOT: ${pilot.title_en}
-PROGRESS: ${completedMilestones}/${totalMilestones} milestones (${velocity}%)
-TIMELINE: ${pilot.duration_weeks} weeks planned
-BUDGET: ${pilot.budget} SAR
-
-MILESTONES STATUS:
-${pilot.milestones?.slice(0, 5).map(m => `${m.name}: ${m.status}`).join('\n')}
-
-Velocity is ${velocity < 80 ? 'BELOW' : 'ON'} target.
-
-Recommend:
-1. Should we adjust scope, timeline, or resources?
-2. Specific changes to milestones
-3. Resource reallocation suggestions
-4. Impact assessment of changes
-5. Risk mitigation`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          recommendation_type: { 
-            type: "string",
-            enum: ["continue_as_planned", "reduce_scope", "extend_timeline", "add_resources", "pivot_approach"]
-          },
-          rationale: { type: "string" },
-          proposed_changes: { type: "array", items: { type: "string" } },
-          impact_assessment: { type: "string" },
-          new_velocity_estimate: { type: "number" },
-          risks: { type: "array", items: { type: "string" } }
-        }
-      }
+      prompt: buildAdaptiveManagementPrompt({ pilot, velocity, completedMilestones, totalMilestones }),
+      system_prompt: ADAPTIVE_MANAGEMENT_SYSTEM_PROMPT,
+      response_json_schema: ADAPTIVE_MANAGEMENT_SCHEMA
     });
 
     if (response.success) {
