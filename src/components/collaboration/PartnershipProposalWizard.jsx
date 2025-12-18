@@ -11,6 +11,11 @@ import { Handshake, Sparkles, ChevronRight, ChevronLeft, Check, Loader2 } from '
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import {
+  PARTNERSHIP_PROPOSAL_SYSTEM_PROMPT,
+  buildPartnershipProposalPrompt,
+  PARTNERSHIP_PROPOSAL_SCHEMA
+} from '@/lib/ai/prompts/collaboration/partnershipProposal';
 
 export default function PartnershipProposalWizard({ onClose, prefilledData }) {
   const { language, isRTL, t } = useLanguage();
@@ -30,29 +35,9 @@ export default function PartnershipProposalWizard({ onClose, prefilledData }) {
 
   const generateAIDraft = async () => {
     const result = await invokeAI({
-      prompt: `Generate a professional partnership proposal draft:
-
-Type: ${data.partnership_type}
-Partner: ${data.partner_organization}
-Title: ${data.proposal_title}
-Objectives: ${data.objectives}
-
-Create a structured proposal with:
-1. Executive summary
-2. Partnership scope and objectives
-3. Expected outcomes and KPIs
-4. Governance structure
-5. Timeline and milestones`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          executive_summary: { type: "string" },
-          detailed_scope: { type: "string" },
-          kpis: { type: "array", items: { type: "string" } },
-          governance: { type: "string" },
-          milestones: { type: "array", items: { type: "string" } }
-        }
-      }
+      system_prompt: PARTNERSHIP_PROPOSAL_SYSTEM_PROMPT,
+      prompt: buildPartnershipProposalPrompt(data),
+      response_json_schema: PARTNERSHIP_PROPOSAL_SCHEMA
     });
 
     if (result.success) {
