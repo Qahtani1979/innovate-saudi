@@ -10,6 +10,7 @@ import { DollarSign, TrendingUp, Calendar, Sparkles, AlertCircle, Target } from 
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { buildROICalculatorPrompt, ROI_CALCULATOR_SCHEMA } from '@/lib/ai/prompts/finance';
 
 export default function ROICalculator({ initiativeType, onCalculated }) {
   const { language, isRTL, t } = useLanguage();
@@ -30,34 +31,8 @@ export default function ROICalculator({ initiativeType, onCalculated }) {
     }
 
     const result = await invokeAI({
-      prompt: `Calculate expected ROI and impact for this initiative:
-
-Type: ${inputs.type}
-Budget: ${inputs.budget} SAR
-Sector: ${inputs.sector}
-Duration: ${inputs.duration_months} months
-Expected Outcome: ${inputs.expected_outcome}
-
-Based on similar initiatives in municipal innovation, provide:
-1. Expected ROI (%)
-2. Payback period (months)
-3. Impact score (0-100)
-4. Cost per citizen served (SAR)
-5. Benchmark comparison (how does this compare to similar initiatives)
-6. Risk factors (3 key risks)
-
-Be realistic and data-driven.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          roi_percentage: { type: "number" },
-          payback_months: { type: "number" },
-          impact_score: { type: "number" },
-          cost_per_citizen: { type: "number" },
-          benchmark: { type: "string" },
-          risks: { type: "array", items: { type: "string" } }
-        }
-      }
+      prompt: buildROICalculatorPrompt(inputs),
+      response_json_schema: ROI_CALCULATOR_SCHEMA
     });
 
     if (result.success) {

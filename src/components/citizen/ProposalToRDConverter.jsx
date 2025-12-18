@@ -10,6 +10,7 @@ import { Sparkles, Microscope, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { buildProposalToRDPrompt, PROPOSAL_TO_RD_SCHEMA } from '@/lib/ai/prompts/citizen';
 
 export default function ProposalToRDConverter({ proposal, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
@@ -57,42 +58,8 @@ export default function ProposalToRDConverter({ proposal, onClose, onSuccess }) 
     if (!isAvailable) return;
     
     const response = await invokeAI({
-      prompt: `Convert this innovation proposal into an R&D research project.
-
-PROPOSAL:
-${proposal.title_en}
-${proposal.description_en}
-Implementation Plan: ${proposal.implementation_plan_en}
-Sector: ${proposal.sector || 'General'}
-
-Generate R&D project structure:
-- Research questions (3-5 specific questions)
-- Methodology (detailed research approach in both AR and EN)
-- Expected outputs (publications, data, tools - bilingual)
-- Research themes/keywords`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          title_en: { type: "string" },
-          title_ar: { type: "string" },
-          abstract_en: { type: "string" },
-          abstract_ar: { type: "string" },
-          methodology_en: { type: "string" },
-          methodology_ar: { type: "string" },
-          expected_outputs: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                output_en: { type: "string" },
-                output_ar: { type: "string" },
-                type: { type: "string" }
-              }
-            }
-          },
-          research_themes: { type: "array", items: { type: "string" } }
-        }
-      }
+      prompt: buildProposalToRDPrompt(proposal),
+      response_json_schema: PROPOSAL_TO_RD_SCHEMA
     });
 
     if (response.success && response.data) {

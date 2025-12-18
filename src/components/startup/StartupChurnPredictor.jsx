@@ -8,6 +8,7 @@ import { useLanguage } from '../LanguageContext';
 import { AlertTriangle, Sparkles, TrendingDown, Loader2 } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { buildChurnPredictorPrompt, CHURN_PREDICTOR_SCHEMA } from '@/lib/ai/prompts/startup';
 
 export default function StartupChurnPredictor({ startupId }) {
   const { t } = useLanguage();
@@ -49,33 +50,8 @@ export default function StartupChurnPredictor({ startupId }) {
 
   const runPrediction = async () => {
     const result = await invokeAI({
-      prompt: `Predict churn risk for this startup on municipal innovation platform:
-
-STARTUP: ${startup?.name_en}
-DAYS ACTIVE: ${startup?.created_date ? Math.floor((new Date() - new Date(startup.created_date)) / (1000*60*60*24)) : 'N/A'}
-SOLUTIONS: ${solutions.length}
-PILOT SUCCESS RATE: ${startup?.pilot_success_rate || 0}%
-MUNICIPAL CLIENTS: ${startup?.municipal_clients_count || 0}
-RECENT ACTIVITY (30d): ${activities.length} events
-VERIFICATION: ${startup?.is_verified ? 'Yes' : 'No'}
-
-Analyze churn risk factors:
-1. Low platform engagement
-2. No successful pilots
-3. No municipal clients
-4. Declining activity
-5. Unverified status
-
-Return: churn_risk (low/medium/high), churn_probability (0-100), risk_factors, retention_recommendations`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          churn_risk: { type: "string" },
-          churn_probability: { type: "number" },
-          risk_factors: { type: "array", items: { type: "string" } },
-          retention_recommendations: { type: "array", items: { type: "string" } }
-        }
-      }
+      prompt: buildChurnPredictorPrompt(startup, solutions, activities),
+      response_json_schema: CHURN_PREDICTOR_SCHEMA
     });
 
     if (result.success) {
