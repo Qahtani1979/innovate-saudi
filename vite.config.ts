@@ -30,6 +30,7 @@ export default defineConfig(({ mode }) => {
         "react/jsx-runtime",
         "react/jsx-dev-runtime",
         "scheduler",
+        "@tanstack/react-query",
       ],
     },
     optimizeDeps: {
@@ -40,6 +41,7 @@ export default defineConfig(({ mode }) => {
         "react/jsx-runtime",
         "react/jsx-dev-runtime",
         "scheduler",
+        "@tanstack/react-query",
       ],
       force: true,
     },
