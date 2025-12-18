@@ -16,16 +16,31 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
+        // Force a single React instance across the entire app.
+        // Use directory paths (not files) so subpath imports like react/jsx-runtime work correctly.
+        react: path.resolve(__dirname, "./node_modules/react"),
+        "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
+        scheduler: path.resolve(__dirname, "./node_modules/scheduler"),
       },
-      // Force all React-related packages to resolve to the same copy
       dedupe: [
         "react",
         "react-dom",
+        "react-dom/client",
+        "react-dom/server",
+        "react/jsx-runtime",
+        "react/jsx-dev-runtime",
         "scheduler",
       ],
     },
     optimizeDeps: {
-      // Force Vite to re-bundle dependencies on each restart
+      include: [
+        "react",
+        "react-dom",
+        "react-dom/client",
+        "react/jsx-runtime",
+        "react/jsx-dev-runtime",
+        "scheduler",
+      ],
       force: true,
     },
     define: {

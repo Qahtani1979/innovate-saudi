@@ -1,11 +1,14 @@
-/* @refresh reset */
 import React from 'react'
-import { createRoot } from 'react-dom/client'
+import ReactDOM from 'react-dom/client'
 import App from '@/App.jsx'
 import '@/index.css'
 
-console.info('[runtime] React version:', React.version);
+// Force React to be available globally for HMR
+if (typeof window !== 'undefined') {
+  window.React = React;
+}
 
+// Error boundary for the entire app
 class AppErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -39,7 +42,7 @@ class AppErrorBoundary extends React.Component {
   }
 }
 
-createRoot(document.getElementById('root')).render(
+ReactDOM.createRoot(document.getElementById('root')).render(
   <AppErrorBoundary>
     <App />
   </AppErrorBoundary>

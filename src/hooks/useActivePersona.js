@@ -1,4 +1,3 @@
-/* @refresh reset */
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { usePermissions } from '@/components/permissions/usePermissions.jsx';
 import { SIDEBAR_MENUS } from '@/config/sidebarMenus';

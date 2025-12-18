@@ -1,4 +1,3 @@
-/* @refresh reset */
 /**
  * Hook for AI calls with graceful degradation
  * Handles rate limits, failures, and provides fallback behavior
