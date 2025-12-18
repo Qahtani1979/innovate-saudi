@@ -1,5 +1,6 @@
 /**
  * Evaluation AI prompts index
+ * @version 1.1.0
  */
 
 export {
@@ -10,3 +11,9 @@ export {
   buildComparativeAnalysisPrompt,
   COMPARATIVE_ANALYSIS_SCHEMA
 } from './impactEvaluation';
+
+export {
+  EVALUATION_ASSIST_SYSTEM_PROMPT,
+  buildEvaluationAssistPrompt,
+  EVALUATION_ASSIST_SCHEMA
+} from './evaluationAssist';

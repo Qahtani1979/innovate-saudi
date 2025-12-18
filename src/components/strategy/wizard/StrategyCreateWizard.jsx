@@ -9,7 +9,7 @@ import { useLanguage } from '../../LanguageContext';
 import { toast } from 'sonner';
 import ProtectedPage from '../../permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-
+import { buildStrategyWizardPrompt, STRATEGY_WIZARD_SYSTEM_PROMPT } from '@/lib/ai/prompts/strategy/wizardPrompts';
 import { WIZARD_STEPS, initialWizardData } from './StrategyWizardSteps';
 import WizardStepIndicator from './WizardStepIndicator';
 import Step1Context from './steps/Step1Context';
@@ -92,21 +92,21 @@ export default function StrategyCreateWizard() {
     };
     
     const prompts = {
-      vision: `Generate vision and mission for: ${context.planName}. Sectors: ${context.sectors.join(', ')}. Provide in English and Arabic.`,
-      stakeholders: `Identify stakeholders for: ${context.planName}. Vision: ${context.vision}`,
-      pestel: `PESTEL analysis for: ${context.planName} in Saudi Arabia context.`,
-      swot: `SWOT analysis for: ${context.planName}`,
-      scenarios: `Scenario planning for: ${context.planName}`,
-      risks: `Risk assessment for: ${context.planName}`,
-      objectives: `Strategic objectives for: ${context.planName}. Vision: ${context.vision}`,
-      kpis: `KPIs for: ${context.planName}. Objectives: ${context.objectives.map(o => o.title_en).join(', ')}`,
-      actions: `Action plans for: ${context.planName}`
+      vision: buildStrategyWizardPrompt('vision', context),
+      stakeholders: buildStrategyWizardPrompt('stakeholders', context),
+      pestel: buildStrategyWizardPrompt('pestel', context),
+      swot: buildStrategyWizardPrompt('swot', context),
+      scenarios: buildStrategyWizardPrompt('scenarios', context),
+      risks: buildStrategyWizardPrompt('risks', context),
+      objectives: buildStrategyWizardPrompt('objectives', context),
+      kpis: buildStrategyWizardPrompt('kpis', context),
+      actions: buildStrategyWizardPrompt('actions', context)
     };
     
     try {
       const { success, data } = await invokeAI({
-        prompt: prompts[stepKey] || `Generate content for ${stepKey} step of: ${context.planName}`,
-        system_prompt: 'You are a Saudi strategic planning expert. Provide content in English and Arabic.'
+        prompt: prompts[stepKey] || buildStrategyWizardPrompt(stepKey, context),
+        system_prompt: STRATEGY_WIZARD_SYSTEM_PROMPT
       });
       
       if (success && data) {
