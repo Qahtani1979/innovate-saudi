@@ -37,6 +37,11 @@
 - `handleRoleAssign`: Validates `user_id` and `role` are present
 - `handleApproveRoleRequest`: Validates `request_id`, `user_id`, `user_email`, and `role` are present
 
+### Database Schema Alignment Fixed ✅
+- `DelegationApprovalQueue.jsx`: Fixed query to use actual columns (`is_active`, `approved_by`) instead of non-existent `approval_status`
+- `rbac-manager` edge function: Fixed delegation handlers to use correct column names
+- Field name mapping: `delegate_email` (not `delegatee_email`), `permission_types` (not `delegated_permissions`)
+
 ---
 
 ## Executive Summary
