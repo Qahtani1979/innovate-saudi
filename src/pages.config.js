@@ -267,6 +267,7 @@ import FeatureUsageHeatmap from './pages/FeatureUsageHeatmap';
 import MyRDProjects from './pages/MyRDProjects';
 import MyPartnershipsPage from './pages/MyPartnershipsPage';
 import WhatsNewHub from './pages/WhatsNewHub';
+import MyProfilesHub from './pages/MyProfilesHub';
 import CrossEntityActivityStream from './pages/CrossEntityActivityStream';
 import UserProfileMultiIdentity from './pages/UserProfileMultiIdentity';
 import PilotSuccessPatterns from './pages/PilotSuccessPatterns';
@@ -783,6 +784,7 @@ export const PAGES = {
     "MyRDProjects": MyRDProjects,
     "MyPartnershipsPage": MyPartnershipsPage,
     "WhatsNewHub": WhatsNewHub,
+    "MyProfilesHub": MyProfilesHub,
     "CrossEntityActivityStream": CrossEntityActivityStream,
     "UserProfileMultiIdentity": UserProfileMultiIdentity,
     "PilotSuccessPatterns": PilotSuccessPatterns,
