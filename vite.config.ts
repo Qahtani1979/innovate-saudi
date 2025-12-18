@@ -5,30 +5,28 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '');
-  
+  const env = loadEnv(mode, process.cwd(), "");
+
   return {
     server: {
       host: "::",
       port: 8080,
     },
-    plugins: [
-      react(),
-      mode === 'development' && componentTagger(),
-    ].filter(Boolean),
+    plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
 
         // Force a single React instance across the entire app.
-        // This prevents "Cannot read properties of null (reading 'useContext')" caused by mixed React runtimes.
-        react: path.resolve(__dirname, "./node_modules/react"),
-        "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
-        "react-dom/client": path.resolve(__dirname, "./node_modules/react-dom/client"),
-        "react-dom/server": path.resolve(__dirname, "./node_modules/react-dom/server"),
-        "react/jsx-runtime": path.resolve(__dirname, "./node_modules/react/jsx-runtime"),
-        "react/jsx-dev-runtime": path.resolve(__dirname, "./node_modules/react/jsx-dev-runtime"),
-        scheduler: path.resolve(__dirname, "./node_modules/scheduler"),
+        // Important: point aliases to REAL files (with extensions) so Vite cannot fall back
+        // to normal resolution (which can reintroduce mixed runtimes).
+        react: path.resolve(__dirname, "./node_modules/react/index.js"),
+        "react-dom": path.resolve(__dirname, "./node_modules/react-dom/index.js"),
+        "react-dom/client": path.resolve(__dirname, "./node_modules/react-dom/client.js"),
+        "react-dom/server": path.resolve(__dirname, "./node_modules/react-dom/server.browser.js"),
+        "react/jsx-runtime": path.resolve(__dirname, "./node_modules/react/jsx-runtime.js"),
+        "react/jsx-dev-runtime": path.resolve(__dirname, "./node_modules/react/jsx-dev-runtime.js"),
+        scheduler: path.resolve(__dirname, "./node_modules/scheduler/index.js"),
       },
       dedupe: [
         "react",
@@ -53,9 +51,16 @@ export default defineConfig(({ mode }) => {
       force: true, // Force rebuild of deps cache
     },
     define: {
-      'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(env.VITE_SUPABASE_URL || 'https://wneorgiqyvkkjmqootpe.supabase.co'),
-      'import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY': JSON.stringify(env.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZW9yZ2lxeXZra2ptcW9vdHBlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMDc3NDksImV4cCI6MjA4MDc4Mzc0OX0.sG8en2_gRniPGgxdUETZy0N592mQ8YtSPyp8zcbPkAE'),
-      'import.meta.env.VITE_SUPABASE_PROJECT_ID': JSON.stringify(env.VITE_SUPABASE_PROJECT_ID || 'wneorgiqyvkkjmqootpe'),
+      "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(
+        env.VITE_SUPABASE_URL || "https://wneorgiqyvkkjmqootpe.supabase.co"
+      ),
+      "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
+        env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZW9yZ2lxeXZra2ptcW9vdHBlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMDc3NDksImV4cCI6MjA4MDc4Mzc0OX0.sG8en2_gRniPGgxdUETZy0N592mQ8YtSPyp8zcbPkAE"
+      ),
+      "import.meta.env.VITE_SUPABASE_PROJECT_ID": JSON.stringify(
+        env.VITE_SUPABASE_PROJECT_ID || "wneorgiqyvkkjmqootpe"
+      ),
     },
   };
 });
