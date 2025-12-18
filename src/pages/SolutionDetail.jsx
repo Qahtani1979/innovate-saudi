@@ -47,7 +47,8 @@ import ComplianceValidationAI from '../components/solutions/ComplianceValidation
 import RealTimeMarketIntelligence from '../components/solutions/RealTimeMarketIntelligence';
 import TRLAssessmentTool from '../components/solutions/TRLAssessmentTool';
 import SolutionRDCollaborationProposal from '../components/solutions/SolutionRDCollaborationProposal';
-import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { usePrompt } from '@/hooks/usePrompt';
+import { SOLUTION_DETAIL_PROMPT_TEMPLATE } from '@/lib/ai/prompts/solutions/solutionDetail';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
@@ -59,7 +60,7 @@ function SolutionDetailPage() {
   const [comment, setComment] = React.useState('');
   const [showAIInsights, setShowAIInsights] = React.useState(false);
   const [aiInsights, setAiInsights] = React.useState(null);
-  const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invoke: invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = usePrompt(null);
   const [showVerification, setShowVerification] = React.useState(false);
   const [showDeployment, setShowDeployment] = React.useState(false);
   const [showReview, setShowReview] = React.useState(false);
@@ -120,35 +121,13 @@ function SolutionDetailPage() {
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
+    // Use centralized prompt template
+    const promptConfig = SOLUTION_DETAIL_PROMPT_TEMPLATE(solution);
+    
     const result = await invokeAI({
-      prompt: `Analyze this solution for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
-
-Solution: ${solution.name_en}
-Provider: ${solution.provider_name}
-Provider Type: ${solution.provider_type}
-Maturity Level: ${solution.maturity_level}
-TRL: ${solution.trl || 'N/A'}
-Sectors: ${solution.sectors?.join(', ') || 'N/A'}
-Deployments: ${solution.deployment_count || 0}
-Success Rate: ${solution.success_rate || 'N/A'}%
-Features: ${solution.features?.slice(0, 5).join(', ') || 'N/A'}
-
-Provide bilingual insights (each item should have both English and Arabic versions):
-1. Market fit analysis for Saudi municipalities
-2. Competitive advantages
-3. Implementation recommendations
-4. Potential challenges and municipalities that would benefit
-5. Scaling and partnership opportunities`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          market_fit: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          competitive_advantages: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          implementation_recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          potential_municipalities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          scaling_opportunities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-        }
-      }
+      prompt: promptConfig.prompt,
+      system_prompt: promptConfig.system,
+      response_json_schema: promptConfig.schema
     });
     if (result.success) {
       setAiInsights(result.data);

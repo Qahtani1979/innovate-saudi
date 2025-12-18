@@ -35,7 +35,8 @@ import ImpactReportGenerator from '../components/challenges/ImpactReportGenerato
 import RelationManager from '../components/RelationManager';
 import PolicyRecommendationManager from '../components/challenges/PolicyRecommendationManager';
 import ChallengeActivityLog from '../components/challenges/ChallengeActivityLog';
-import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { usePrompt } from '@/hooks/usePrompt';
+import { CHALLENGE_DETAIL_PROMPT_TEMPLATE } from '@/lib/ai/prompts/challenges/challengeDetail';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { usePermissions } from '@/components/permissions/usePermissions';
 import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
@@ -57,7 +58,7 @@ export default function ChallengeDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const challengeId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
-  const { invokeAI, status: aiStatus, isLoading: generatingInsights, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invoke: invokeAI, status: aiStatus, isLoading: generatingInsights, isAvailable, rateLimitInfo } = usePrompt(null);
 
   const { data: challenge, isLoading } = useQuery({
     queryKey: ['challenge', challengeId],
@@ -214,112 +215,14 @@ export default function ChallengeDetail() {
       return;
     }
     
-    setGeneratingInsights(true);
     try {
-      const prompt = `Analyze this Saudi municipal challenge and provide COMPLETE BILINGUAL (Arabic + English) strategic insights:
-
-Challenge Details:
-- Code: ${challenge.code}
-- Title EN: ${challenge.title_en}
-- Title AR: ${challenge.title_ar}
-- Description EN: ${challenge.description_en}
-- Description AR: ${challenge.description_ar}
-- Problem EN: ${challenge.problem_statement_en}
-- Problem AR: ${challenge.problem_statement_ar}
-- Current EN: ${challenge.current_situation_en}
-- Current AR: ${challenge.current_situation_ar}
-- Desired EN: ${challenge.desired_outcome_en}
-- Desired AR: ${challenge.desired_outcome_ar}
-- Sector: ${challenge.sector}, Sub: ${challenge.sub_sector}
-- Type: ${challenge.challenge_type}
-- Municipality: ${challenge.municipality_id}
-- City/Region: ${challenge.city_id} / ${challenge.region_id}
-- Current Status: ${challenge.status}
-- Priority: ${challenge.priority}
-- Tracks: ${JSON.stringify(challenge.tracks || [])}
-- Affected Population: ${JSON.stringify(challenge.affected_population || {})}
-- Budget Est: ${challenge.budget_estimate}
-- Timeline Est: ${challenge.timeline_estimate}
-- Root Causes: ${JSON.stringify(challenge.root_causes || [])}
-- KPIs: ${JSON.stringify(challenge.kpis || [])}
-- Stakeholders: ${JSON.stringify(challenge.stakeholders || [])}
-
-Provide BILINGUAL (AR+EN) analysis:
-1. Strategic importance (why this matters now) - AR + EN
-2. Recommended treatment approach (pilot/r_and_d/program/procurement/policy) - with reasoning
-3. Expected complexity (low/medium/high) with detailed justification
-4. Potential partners (specific organization types + why)
-5. Success indicators (4-6 measurable outcomes) - bilingual
-6. Risk factors (4-5 key risks to watch) - bilingual
-7. Next steps (4-5 immediate actions) - bilingual, prioritized
-8. Timeline estimate (detailed breakdown in weeks/months)
-9. Resource requirements (team, budget, tech)
-10. Dependencies (what needs to happen first)`;
-
+      // Use centralized prompt template
+      const promptConfig = CHALLENGE_DETAIL_PROMPT_TEMPLATE(challenge);
+      
       const result = await invokeAI({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            strategic_importance_en: { type: 'string' },
-            strategic_importance_ar: { type: 'string' },
-            recommended_approach: { type: 'string' },
-            approach_reasoning: { type: 'string' },
-            complexity: { type: 'string' },
-            complexity_reason: { type: 'string' },
-            potential_partners: { 
-              type: 'array', 
-              items: { 
-                type: 'object',
-                properties: {
-                  type: { type: 'string' },
-                  reason: { type: 'string' }
-                }
-              }
-            },
-            success_indicators: { 
-              type: 'array', 
-              items: { 
-                type: 'object',
-                properties: {
-                  en: { type: 'string' },
-                  ar: { type: 'string' }
-                }
-              }
-            },
-            risk_factors: { 
-              type: 'array', 
-              items: { 
-                type: 'object',
-                properties: {
-                  en: { type: 'string' },
-                  ar: { type: 'string' }
-                }
-              }
-            },
-            next_steps: { 
-              type: 'array', 
-              items: { 
-                type: 'object',
-                properties: {
-                  en: { type: 'string' },
-                  ar: { type: 'string' },
-                  priority: { type: 'number' }
-                }
-              }
-            },
-            timeline_estimate: { type: 'string' },
-            resource_requirements: {
-              type: 'object',
-              properties: {
-                team_size: { type: 'string' },
-                budget_range: { type: 'string' },
-                tech_needs: { type: 'array', items: { type: 'string' } }
-              }
-            },
-            dependencies: { type: 'array', items: { type: 'string' } }
-          }
-        }
+        prompt: promptConfig.prompt,
+        system_prompt: promptConfig.system,
+        response_json_schema: promptConfig.schema
       });
 
       if (result.success) {
