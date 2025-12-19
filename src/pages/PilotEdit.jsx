@@ -42,6 +42,7 @@ function PilotEditPage() {
         .from('pilots')
         .select('*')
         .eq('id', pilotId)
+        .eq('is_deleted', false)
         .single();
       if (error) throw error;
       return data;

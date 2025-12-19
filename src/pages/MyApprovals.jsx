@@ -24,7 +24,7 @@ function MyApprovals() {
   const { data: pendingChallenges = [] } = useQuery({
     queryKey: ['pending-challenge-reviews', user?.email],
     queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*').eq('review_assigned_to', user?.email).eq('status', 'under_review');
+      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false).eq('review_assigned_to', user?.email).eq('status', 'under_review');
       return data || [];
     },
     enabled: !!user

@@ -44,7 +44,8 @@ export default function MentorDashboard() {
       const { data, error } = await supabase
         .from('programs')
         .select('*')
-        .in('id', programIds);
+        .in('id', programIds)
+        .eq('is_deleted', false);
       if (error) throw error;
       return data || [];
     },

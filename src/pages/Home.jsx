@@ -65,6 +65,8 @@ function Home() {
       const { data } = await supabase
         .from('pilots')
         .select('*')
+        .eq('is_deleted', false)
+        .eq('is_published', true)
         .order('created_at', { ascending: false })
         .limit(10);
       return data || [];
