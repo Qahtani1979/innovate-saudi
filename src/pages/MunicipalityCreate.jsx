@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -22,9 +22,17 @@ function MunicipalityCreate() {
   const { language, isRTL, t } = useLanguage();
   const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: regions = [] } = useQuery({
+  const { data: regions = [], isLoading: regionsLoading } = useQuery({
     queryKey: ['regions'],
-    queryFn: () => base44.entities.Region.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('regions')
+        .select('*')
+        .order('name_en');
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000
   });
 
   const [formData, setFormData] = useState({
@@ -69,11 +77,35 @@ function MunicipalityCreate() {
   };
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Municipality.create(data),
+    mutationFn: async (formDataInput) => {
+      const { data, error } = await supabase
+        .from('municipalities')
+        .insert({
+          name_en: formDataInput.name_en,
+          name_ar: formDataInput.name_ar,
+          region: formDataInput.region,
+          city_type: formDataInput.city_type,
+          population: formDataInput.population || null,
+          contact_person: formDataInput.contact_person || null,
+          contact_email: formDataInput.contact_email || null,
+          mii_score: formDataInput.mii_score || 50,
+          mii_rank: formDataInput.mii_rank || 0,
+          is_active: true,
+          is_deleted: false
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries(['municipalities']);
+      queryClient.invalidateQueries({ queryKey: ['municipalities'] });
       toast.success(t({ en: 'Municipality created', ar: 'تم إنشاء البلدية' }));
       navigate(createPageUrl('MunicipalityDashboard'));
+    },
+    onError: (error) => {
+      toast.error(t({ en: 'Failed to create municipality', ar: 'فشل إنشاء البلدية' }));
+      console.error('Create error:', error);
     }
   });
 
