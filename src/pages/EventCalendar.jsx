@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,6 +13,7 @@ import {
   CitizenPageHeader, 
   CitizenEmptyState 
 } from '@/components/citizen/CitizenPageLayout';
+import { useEventsWithVisibility } from '@/hooks/useEventsWithVisibility';
 
 function EventCalendar({ embedded = false }) {
   const { t, isRTL, language } = useLanguage();
@@ -24,17 +23,8 @@ function EventCalendar({ embedded = false }) {
   const canCreateEvents = hasAnyPermission(['event_create', 'admin']) || 
     roles?.some(r => ['admin', 'super_admin', 'municipality_admin', 'gdibs_internal', 'event_manager'].includes(r));
 
-  const { data: events = [], isLoading } = useQuery({
-    queryKey: ['events'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .order('start_date', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // Use visibility-aware hook for events
+  const { data: events = [], isLoading } = useEventsWithVisibility({ limit: 200 });
 
   const upcomingEvents = events.filter(e => 
     e.start_date && new Date(e.start_date) >= new Date()

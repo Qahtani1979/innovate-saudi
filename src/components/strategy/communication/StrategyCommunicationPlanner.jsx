@@ -101,6 +101,7 @@ export default function StrategyCommunicationPlanner({ strategicPlanId }) {
         .from('events')
         .select('id, title_en, title_ar, start_date, event_type')
         .gte('start_date', new Date().toISOString())
+        .eq('is_deleted', false)
         .order('start_date', { ascending: true })
         .limit(10);
       
