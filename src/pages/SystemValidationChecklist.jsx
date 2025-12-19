@@ -13,7 +13,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { useLanguage } from '@/components/LanguageContext';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
-import { useSystemValidation, PLATFORM_SYSTEMS } from '@/hooks/useSystemValidation';
+import { useSystemValidation } from '@/hooks/useSystemValidation';
+import { PLATFORM_SYSTEMS } from '@/constants/platformSystems';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   ClipboardCheck, Database, Shield, Code, Users, GitBranch, Bell, 
