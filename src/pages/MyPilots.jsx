@@ -29,6 +29,7 @@ function MyPilots() {
       const { data, error } = await supabase
         .from('pilots')
         .select('*')
+        .eq('is_deleted', false)
         .eq('created_by', user.email)
         .order('created_at', { ascending: false });
       if (error) throw error;

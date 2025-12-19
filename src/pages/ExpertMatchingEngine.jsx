@@ -70,7 +70,12 @@ function ExpertMatchingEnginePage() {
   const { data: solutions = [] } = useQuery({
     queryKey: ['solutions'],
     queryFn: async () => {
-      const { data } = await supabase.from('solutions').select('*').order('created_at', { ascending: false }).limit(100);
+      const { data } = await supabase
+        .from('solutions')
+        .select('*')
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false })
+        .limit(100);
       return data || [];
     }
   });

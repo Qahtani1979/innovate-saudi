@@ -39,7 +39,10 @@ export default function ProviderPortfolioDashboard() {
   const { data: solutions = [], isLoading } = useQuery({
     queryKey: ['my-solutions', user?.email, myOrg?.id],
     queryFn: async () => {
-      const { data } = await supabase.from('solutions').select('*');
+      const { data } = await supabase
+        .from('solutions')
+        .select('*')
+        .eq('is_deleted', false);
       return data?.filter(s => 
         s.created_by === user?.email || 
         (myOrg && s.provider_id === myOrg.id)
@@ -52,7 +55,10 @@ export default function ProviderPortfolioDashboard() {
     queryKey: ['pilots-for-solutions', solutions.map(s => s.id)],
     queryFn: async () => {
       const solutionIds = solutions.map(s => s.id);
-      const { data } = await supabase.from('pilots').select('*');
+      const { data } = await supabase
+        .from('pilots')
+        .select('*')
+        .eq('is_deleted', false);
       return data?.filter(p => solutionIds.includes(p.solution_id)) || [];
     },
     enabled: solutions.length > 0

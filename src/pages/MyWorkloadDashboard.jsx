@@ -37,7 +37,10 @@ function MyWorkloadDashboard() {
   const { data: myPilots = [] } = useQuery({
     queryKey: ['my-pilots', user?.email],
     queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*');
+      const { data } = await supabase
+        .from('pilots')
+        .select('*')
+        .eq('is_deleted', false);
       return data?.filter(p => p.created_by === user?.email || p.team?.some(t => t.email === user?.email)) || [];
     },
     enabled: !!user
