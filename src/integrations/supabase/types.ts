@@ -1029,6 +1029,13 @@ export type Database = {
             referencedRelation: "challenges"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "challenge_activities_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges_public_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       challenge_attachments: {
@@ -1082,6 +1089,13 @@ export type Database = {
             referencedRelation: "challenges"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "challenge_attachments_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges_public_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       challenge_interests: {
@@ -1121,6 +1135,13 @@ export type Database = {
             columns: ["challenge_id"]
             isOneToOne: false
             referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_interests_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -1208,6 +1229,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "challenge_proposals_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges_public_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "challenge_proposals_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -1269,6 +1297,13 @@ export type Database = {
             columns: ["challenge_id"]
             isOneToOne: false
             referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_solution_matches_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -3019,6 +3054,13 @@ export type Database = {
             columns: ["challenge_id"]
             isOneToOne: false
             referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_campaigns_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -7447,6 +7489,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "pilots_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges_public_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "pilots_municipality_id_fkey"
             columns: ["municipality_id"]
             isOneToOne: false
@@ -7889,6 +7938,13 @@ export type Database = {
             columns: ["related_challenge_id"]
             isOneToOne: false
             referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_applications_related_challenge_id_fkey"
+            columns: ["related_challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges_public_view"
             referencedColumns: ["id"]
           },
         ]
@@ -11014,6 +11070,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "strategic_plan_challenge_links_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges_public_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "strategic_plan_challenge_links_strategic_plan_id_fkey"
             columns: ["strategic_plan_id"]
             isOneToOne: false
@@ -12908,7 +12971,80 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      challenges_public_view: {
+        Row: {
+          category: string | null
+          citizen_votes_count: number | null
+          created_at: string | null
+          description_ar: string | null
+          description_en: string | null
+          id: string | null
+          image_url: string | null
+          is_featured: boolean | null
+          municipality_id: string | null
+          owner_email_masked: string | null
+          priority: string | null
+          reviewer_masked: string | null
+          sector_id: string | null
+          status: string | null
+          tagline_ar: string | null
+          tagline_en: string | null
+          title_ar: string | null
+          title_en: string | null
+          view_count: number | null
+        }
+        Insert: {
+          category?: string | null
+          citizen_votes_count?: number | null
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          id?: string | null
+          image_url?: string | null
+          is_featured?: boolean | null
+          municipality_id?: string | null
+          owner_email_masked?: never
+          priority?: string | null
+          reviewer_masked?: never
+          sector_id?: string | null
+          status?: string | null
+          tagline_ar?: string | null
+          tagline_en?: string | null
+          title_ar?: string | null
+          title_en?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          category?: string | null
+          citizen_votes_count?: number | null
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          id?: string | null
+          image_url?: string | null
+          is_featured?: boolean | null
+          municipality_id?: string | null
+          owner_email_masked?: never
+          priority?: string | null
+          reviewer_masked?: never
+          sector_id?: string | null
+          status?: string | null
+          tagline_ar?: string | null
+          tagline_en?: string | null
+          title_ar?: string | null
+          title_en?: string | null
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenges_municipality_id_fkey"
+            columns: ["municipality_id"]
+            isOneToOne: false
+            referencedRelation: "municipalities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       can_delete_media: { Args: { p_media_file_id: string }; Returns: Json }
@@ -12928,6 +13064,10 @@ export type Database = {
           p_user_type?: string
         }
         Returns: Json
+      }
+      cleanup_old_audit_logs: {
+        Args: { retention_days?: number }
+        Returns: number
       }
       delete_media_with_cascade: {
         Args: { p_cascade_action?: string; p_media_file_id: string }
