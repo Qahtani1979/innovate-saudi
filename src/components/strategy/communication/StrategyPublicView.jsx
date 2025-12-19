@@ -116,6 +116,7 @@ export default function StrategyPublicView({ strategicPlanId: propPlanId }) {
       const { data, error } = await supabase
         .from('events')
         .select('id, title_en, title_ar, start_date')
+        .eq('is_deleted', false)
         .contains('strategic_plan_ids', [strategicPlanId])
         .gte('start_date', new Date().toISOString())
         .order('start_date', { ascending: true })

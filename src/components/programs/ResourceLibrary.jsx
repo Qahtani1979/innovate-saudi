@@ -27,7 +27,7 @@ export default function ResourceLibrary({ programId }) {
   const { data: program } = useQuery({
     queryKey: ['program', programId],
     queryFn: async () => {
-      const { data } = await supabase.from('programs').select('*').eq('id', programId).single();
+      const { data } = await supabase.from('programs').select('*').eq('id', programId).eq('is_deleted', false).maybeSingle();
       return data;
     },
     enabled: !!programId

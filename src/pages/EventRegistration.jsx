@@ -23,7 +23,7 @@ function EventRegistration() {
   const { data: event, isLoading } = useQuery({
     queryKey: ['event-registration', eventId],
     queryFn: async () => {
-      const { data } = await supabase.from('events').select('*').eq('id', eventId).single();
+      const { data } = await supabase.from('events').select('*').eq('id', eventId).eq('is_deleted', false).maybeSingle();
       return data;
     },
     enabled: !!eventId

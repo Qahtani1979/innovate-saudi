@@ -21,12 +21,14 @@ export function useStrategyRecalibration(planId) {
       const { data: challenges } = await supabase
         .from('challenges')
         .select('id, title_en, lessons_learned, status, resolution_date')
+        .eq('is_deleted', false)
         .contains('strategic_plan_ids', [planId]);
 
       // Get lessons from pilots
       const { data: pilots } = await supabase
         .from('pilots')
         .select('id, name_en, lessons_learned, status, end_date')
+        .eq('is_deleted', false)
         .contains('strategic_plan_ids', [planId]);
 
       // Get expert evaluations

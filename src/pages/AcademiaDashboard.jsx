@@ -100,6 +100,7 @@ function AcademiaDashboard() {
     queryKey: ['research-programs'],
     queryFn: async () => {
       const { data } = await supabase.from('programs').select('*')
+        .eq('is_deleted', false)
         .eq('is_published', true)
         .in('program_type', ['fellowship', 'training', 'challenge'])
         .in('status', ['applications_open', 'active']);

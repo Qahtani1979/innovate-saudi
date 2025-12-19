@@ -124,6 +124,7 @@ export function useChallengeIntegrations(challengeId) {
       const { data, error } = await supabase
         .from('pilots')
         .select('id, name_en, name_ar, status, municipality_id')
+        .eq('is_deleted', false)
         .in('id', pilotIds);
       
       if (error) throw error;
@@ -213,6 +214,7 @@ export function useChallengeIntegrations(challengeId) {
       const { data, error } = await supabase
         .from('programs')
         .select('id, name_en, name_ar, status, program_type')
+        .eq('is_deleted', false)
         .in('id', programIds);
       
       if (error) throw error;

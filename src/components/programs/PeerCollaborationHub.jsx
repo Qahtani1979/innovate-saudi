@@ -45,7 +45,8 @@ export default function PeerCollaborationHub({ programId }) {
         .from('programs')
         .select('*')
         .eq('id', programId)
-        .single();
+        .eq('is_deleted', false)
+        .maybeSingle();
       if (error) throw error;
       return data;
     },

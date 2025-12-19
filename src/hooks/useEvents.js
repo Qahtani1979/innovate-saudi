@@ -77,7 +77,8 @@ export function useEvents(options = {}) {
           .from('events')
           .select('*')
           .eq('id', eventId)
-          .single();
+          .eq('is_deleted', false)
+          .maybeSingle();
         
         if (error) throw error;
         return data;

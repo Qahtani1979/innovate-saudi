@@ -26,6 +26,7 @@ export default function ExpressInterestButton({ solution, challenge = null, vari
       const { data } = await supabase
         .from('challenges')
         .select('*')
+        .eq('is_deleted', false)
         .in('status', ['approved', 'in_treatment'])
         .order('created_at', { ascending: false })
         .limit(50);

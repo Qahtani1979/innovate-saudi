@@ -51,8 +51,8 @@ const BaselineDataCollector = ({ strategicPlanId, strategicPlan, onSave }) => {
       const [miiRes, challengesRes, pilotsRes, partnershipsRes] = await Promise.all([
         supabase.from('mii_results').select('overall_score, municipality_id, dimension_scores').eq('is_published', true).limit(50),
         supabase.from('challenges').select('id, status').eq('is_deleted', false),
-        supabase.from('pilots').select('id, status, success_score'),
-        supabase.from('partnerships').select('id, status')
+        supabase.from('pilots').select('id, status, success_score').eq('is_deleted', false),
+        supabase.from('partnerships').select('id, status').eq('is_deleted', false)
       ]);
       
       const avgMII = miiRes.data?.length ? 
