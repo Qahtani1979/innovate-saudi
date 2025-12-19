@@ -2912,7 +2912,11 @@ export type Database = {
       deputyships: {
         Row: {
           code: string
+          contact_email: string | null
+          contact_phone: string | null
           created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           description_ar: string | null
           description_en: string | null
           display_order: number | null
@@ -2920,13 +2924,18 @@ export type Database = {
           icon: string | null
           id: string
           is_active: boolean | null
+          is_deleted: boolean | null
           name_ar: string | null
           name_en: string
           updated_at: string | null
         }
         Insert: {
           code: string
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description_ar?: string | null
           description_en?: string | null
           display_order?: number | null
@@ -2934,13 +2943,18 @@ export type Database = {
           icon?: string | null
           id?: string
           is_active?: boolean | null
+          is_deleted?: boolean | null
           name_ar?: string | null
           name_en: string
           updated_at?: string | null
         }
         Update: {
           code?: string
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description_ar?: string | null
           description_en?: string | null
           display_order?: number | null
@@ -2948,6 +2962,7 @@ export type Database = {
           icon?: string | null
           id?: string
           is_active?: boolean | null
+          is_deleted?: boolean | null
           name_ar?: string | null
           name_en?: string
           updated_at?: string | null
@@ -2966,12 +2981,15 @@ export type Database = {
         Row: {
           code: string
           created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           description_ar: string | null
           description_en: string | null
           display_order: number | null
           icon: string | null
           id: string
           is_active: boolean | null
+          is_deleted: boolean | null
           name_ar: string | null
           name_en: string
           updated_at: string | null
@@ -2979,12 +2997,15 @@ export type Database = {
         Insert: {
           code: string
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description_ar?: string | null
           description_en?: string | null
           display_order?: number | null
           icon?: string | null
           id?: string
           is_active?: boolean | null
+          is_deleted?: boolean | null
           name_ar?: string | null
           name_en: string
           updated_at?: string | null
@@ -2992,12 +3013,15 @@ export type Database = {
         Update: {
           code?: string
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description_ar?: string | null
           description_en?: string | null
           display_order?: number | null
           icon?: string | null
           id?: string
           is_active?: boolean | null
+          is_deleted?: boolean | null
           name_ar?: string | null
           name_en?: string
           updated_at?: string | null
@@ -10289,6 +10313,8 @@ export type Database = {
         Row: {
           code: string | null
           created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           deputyship_id: string | null
           description_ar: string | null
           description_en: string | null
@@ -10296,6 +10322,7 @@ export type Database = {
           icon: string | null
           id: string
           is_active: boolean | null
+          is_deleted: boolean | null
           name_ar: string | null
           name_en: string
           updated_at: string | null
@@ -10303,6 +10330,8 @@ export type Database = {
         Insert: {
           code?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           deputyship_id?: string | null
           description_ar?: string | null
           description_en?: string | null
@@ -10310,6 +10339,7 @@ export type Database = {
           icon?: string | null
           id?: string
           is_active?: boolean | null
+          is_deleted?: boolean | null
           name_ar?: string | null
           name_en: string
           updated_at?: string | null
@@ -10317,6 +10347,8 @@ export type Database = {
         Update: {
           code?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           deputyship_id?: string | null
           description_ar?: string | null
           description_en?: string | null
@@ -10324,6 +10356,7 @@ export type Database = {
           icon?: string | null
           id?: string
           is_active?: boolean | null
+          is_deleted?: boolean | null
           name_ar?: string | null
           name_en?: string
           updated_at?: string | null
@@ -10342,10 +10375,15 @@ export type Database = {
         Row: {
           code: string | null
           created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           description_ar: string | null
           description_en: string | null
+          display_order: number | null
+          icon: string | null
           id: string
           is_active: boolean | null
+          is_deleted: boolean | null
           name_ar: string | null
           name_en: string
           sector_id: string | null
@@ -10355,10 +10393,15 @@ export type Database = {
         Insert: {
           code?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description_ar?: string | null
           description_en?: string | null
+          display_order?: number | null
+          icon?: string | null
           id?: string
           is_active?: boolean | null
+          is_deleted?: boolean | null
           name_ar?: string | null
           name_en: string
           sector_id?: string | null
@@ -10368,10 +10411,15 @@ export type Database = {
         Update: {
           code?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description_ar?: string | null
           description_en?: string | null
+          display_order?: number | null
+          icon?: string | null
           id?: string
           is_active?: boolean | null
+          is_deleted?: boolean | null
           name_ar?: string | null
           name_en?: string
           sector_id?: string | null
@@ -12114,11 +12162,15 @@ export type Database = {
         Row: {
           code: string | null
           created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           description_ar: string | null
           description_en: string | null
           display_order: number | null
+          icon: string | null
           id: string
           is_active: boolean | null
+          is_deleted: boolean | null
           name_ar: string | null
           name_en: string
           sector_id: string | null
@@ -12127,11 +12179,15 @@ export type Database = {
         Insert: {
           code?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description_ar?: string | null
           description_en?: string | null
           display_order?: number | null
+          icon?: string | null
           id?: string
           is_active?: boolean | null
+          is_deleted?: boolean | null
           name_ar?: string | null
           name_en: string
           sector_id?: string | null
@@ -12140,11 +12196,15 @@ export type Database = {
         Update: {
           code?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description_ar?: string | null
           description_en?: string | null
           display_order?: number | null
+          icon?: string | null
           id?: string
           is_active?: boolean | null
+          is_deleted?: boolean | null
           name_ar?: string | null
           name_en?: string
           sector_id?: string | null
