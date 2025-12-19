@@ -24,7 +24,7 @@ export default function ProgressTab() {
         .from('user_profiles')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
       return data;
     },
     enabled: !!user?.id

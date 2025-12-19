@@ -27,7 +27,7 @@ export function UserProfileLink({
           .from('user_profiles')
           .select('user_id, full_name, full_name_en, avatar_url, is_public, verified')
           .eq('user_id', userId)
-          .single();
+          .maybeSingle();
         return data;
       }
       if (userEmail) {
@@ -35,7 +35,7 @@ export function UserProfileLink({
           .from('user_profiles')
           .select('user_id, full_name, full_name_en, avatar_url, is_public, verified')
           .eq('user_email', userEmail)
-          .single();
+          .maybeSingle();
         return data;
       }
       return null;
@@ -131,7 +131,7 @@ export function UserProfileAvatar({
           .from('user_profiles')
           .select('user_id, avatar_url, is_public')
           .eq('user_id', userId)
-          .single();
+          .maybeSingle();
         return data;
       }
       if (userEmail) {
@@ -139,7 +139,7 @@ export function UserProfileAvatar({
           .from('user_profiles')
           .select('user_id, avatar_url, is_public')
           .eq('user_email', userEmail)
-          .single();
+          .maybeSingle();
         return data;
       }
       return null;
