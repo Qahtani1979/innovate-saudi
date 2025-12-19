@@ -91,7 +91,9 @@ export default function StrategyToEventGenerator({ strategicPlanId, strategicPla
           strategy_derivation_date: new Date().toISOString(),
           status: submitForApproval ? 'pending' : 'planning',
           estimated_attendees: event.estimated_attendees,
-          suggested_agenda: event.agenda
+          suggested_agenda: event.agenda,
+          is_deleted: false,
+          is_published: false
         })
         .select()
         .single();
