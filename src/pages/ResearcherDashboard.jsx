@@ -74,6 +74,7 @@ function ResearcherDashboard() {
       const { data, error } = await supabase
         .from('living_labs')
         .select('*')
+        .eq('is_deleted', false)
         .eq('is_published', true)
         .order('created_at', { ascending: false })
         .limit(5);

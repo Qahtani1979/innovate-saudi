@@ -26,6 +26,7 @@ function SandboxOperatorPortal() {
       const { data, error } = await supabase
         .from('sandboxes')
         .select('*')
+        .eq('is_deleted', false)
         .or(`manager_email.eq.${user?.email},created_by.eq.${user?.email}`);
       if (error) throw error;
       return data || [];

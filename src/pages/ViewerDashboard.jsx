@@ -68,6 +68,7 @@ const ViewerDashboard = () => {
       const { data } = await supabase
         .from('events')
         .select('id, title_en, title_ar, start_date, location')
+        .eq('is_deleted', false)
         .eq('is_published', true)
         .gte('start_date', new Date().toISOString())
         .order('start_date', { ascending: true })

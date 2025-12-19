@@ -55,6 +55,7 @@ function ProviderProposalWizard() {
       const { data, error } = await supabase
         .from('solutions')
         .select('*')
+        .eq('is_deleted', false)
         .eq('created_by', user?.email)
         .order('created_at', { ascending: false });
       if (error) throw error;

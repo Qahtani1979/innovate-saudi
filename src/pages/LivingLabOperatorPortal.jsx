@@ -23,7 +23,7 @@ function LivingLabOperatorPortal() {
   const { data: myLabs = [] } = useQuery({
     queryKey: ['my-labs', user?.email],
     queryFn: async () => {
-      const { data } = await supabase.from('living_labs').select('*');
+      const { data } = await supabase.from('living_labs').select('*').eq('is_deleted', false);
       return data?.filter(l => 
         l.director_email === user?.email || 
         l.manager_email === user?.email ||
@@ -38,7 +38,7 @@ function LivingLabOperatorPortal() {
     queryKey: ['my-lab-projects', myLabs.map(l => l.id)],
     queryFn: async () => {
       const myLabIds = myLabs.map(l => l.id);
-      const { data } = await supabase.from('rd_projects').select('*');
+      const { data } = await supabase.from('rd_projects').select('*').eq('is_deleted', false);
       return data?.filter(p => myLabIds.includes(p.living_lab_id)) || [];
     },
     enabled: myLabs.length > 0

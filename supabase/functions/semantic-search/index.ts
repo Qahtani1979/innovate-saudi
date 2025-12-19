@@ -92,6 +92,7 @@ serve(async (req) => {
       const { data: entityResults, error } = await supabase
         .from(entityTable)
         .select('id, ' + searchColumn + ', description_en, keywords, tags')
+        .eq('is_deleted', false)
         .or(`${searchColumn}.ilike.%${query}%,description_en.ilike.%${query}%`)
         .limit(limit);
       

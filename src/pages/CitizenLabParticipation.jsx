@@ -34,7 +34,7 @@ export default function CitizenLabParticipation() {
   const { data: livingLabs = [] } = useQuery({
     queryKey: ['living-labs-citizen'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('living_labs').select('*');
+      const { data, error } = await supabase.from('living_labs').select('*').eq('is_deleted', false);
       if (error) throw error;
       return data || [];
     }

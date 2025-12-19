@@ -70,6 +70,7 @@ function ExecutiveDashboard() {
       const { data } = await supabase
         .from('rd_projects')
         .select('*')
+        .eq('is_deleted', false)
         .order('trl_current', { ascending: false })
         .limit(100);
       return data || [];
@@ -79,7 +80,7 @@ function ExecutiveDashboard() {
   const { data: rdCalls = [] } = useQuery({
     queryKey: ['rd-calls-executive'],
     queryFn: async () => {
-      const { data } = await supabase.from('rd_calls').select('*');
+      const { data } = await supabase.from('rd_calls').select('*').eq('is_deleted', false);
       return data || [];
     }
   });

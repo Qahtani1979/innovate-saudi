@@ -20,6 +20,7 @@ export default function PublicSolutions() {
       const { data, error } = await supabase
         .from('solutions')
         .select('*, providers(name_en, name_ar)')
+        .eq('is_deleted', false)
         .eq('is_published', true)
         .order('created_at', { ascending: false });
       if (error) throw error;
