@@ -88,7 +88,7 @@ const reviewTools = [
 const treatmentTools = [
   { icon: Target, label: { en: 'Track Assignment', ar: 'تعيين المسار' }, path: '/challenges?tab=track-assignment', desc: { en: 'Assign treatment track', ar: 'تعيين مسار المعالجة' }, permission: 'challenge_manage' },
   { icon: FlaskConical, label: { en: 'Pilot Conversion', ar: 'التحويل لتجربة' }, path: '/pilot-create', desc: { en: 'Convert to pilot project', ar: 'تحويل إلى مشروع تجريبي' }, permission: 'pilot_create' },
-  { icon: Microscope, label: { en: 'R&D Call', ar: 'دعوة البحث' }, path: '/rd-call-create', desc: { en: 'Create R&D call', ar: 'إنشاء دعوة بحث وتطوير' }, permission: 'rd_manage' },
+  { icon: Microscope, label: { en: 'R&D Call Matcher', ar: 'مطابقة دعوات البحث' }, path: '/challenge-rd-call-matcher', desc: { en: 'Match challenges to R&D calls', ar: 'مطابقة التحديات مع دعوات البحث' }, permission: 'rd_manage' },
   { icon: Building2, label: { en: 'Solution Matching', ar: 'مطابقة الحلول' }, path: '/challenge-solution-matching', desc: { en: 'Match with existing solutions', ar: 'مطابقة مع الحلول الموجودة' }, permission: 'challenge_manage' },
   { icon: FileText, label: { en: 'Proposal Review', ar: 'مراجعة المقترحات' }, path: '/challenge-proposal-review', desc: { en: 'Review provider proposals', ar: 'مراجعة مقترحات مقدمي الحلول' }, permission: 'challenge_manage' },
   { icon: Megaphone, label: { en: 'RFP Generator', ar: 'مولد طلب العروض' }, path: '/challenges?tab=rfp', desc: { en: 'Generate RFP documents', ar: 'إنشاء مستندات طلب العروض' }, permission: 'challenge_manage' },
@@ -101,6 +101,8 @@ const resolutionTools = [
   { icon: FileBarChart, label: { en: 'Impact Report', ar: 'تقرير الأثر' }, path: '/challenges?tab=impact', desc: { en: 'Generate impact reports', ar: 'إنشاء تقارير الأثر' }, permission: 'challenge_view' },
   { icon: Archive, label: { en: 'Archive', ar: 'الأرشفة' }, path: '/challenges?status=archived', desc: { en: 'Archived challenges', ar: 'التحديات المؤرشفة' }, permission: 'challenge_view' },
   { icon: Award, label: { en: 'Case Studies', ar: 'دراسات الحالة' }, path: '/case-study-create', desc: { en: 'Create case studies', ar: 'إنشاء دراسات حالة' }, permission: 'knowledge_create' },
+  { icon: Shield, label: { en: 'Full Audit', ar: 'التدقيق الكامل' }, path: '/challenge-detail-full-audit', desc: { en: 'Complete challenge audit', ar: 'تدقيق شامل للتحديات' }, permission: 'admin_access' },
+  { icon: Network, label: { en: 'Cross-Reference', ar: 'المراجع المتقاطعة' }, path: '/challenge-system-cross-reference', desc: { en: 'System cross-reference', ar: 'المراجع المتقاطعة للنظام' }, permission: 'admin_access' },
 ];
 
 // Analytics Tools
