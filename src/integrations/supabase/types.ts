@@ -13358,6 +13358,10 @@ export type Database = {
         Args: { retention_days?: number }
         Returns: number
       }
+      cleanup_old_solution_audit_logs: {
+        Args: { retention_days?: number }
+        Returns: number
+      }
       cleanup_orphaned_pilot_files: { Args: never; Returns: number }
       delete_media_with_cascade: {
         Args: { p_cascade_action?: string; p_media_file_id: string }
@@ -13421,6 +13425,23 @@ export type Database = {
         Returns: undefined
       }
       log_pilot_export: {
+        Args: {
+          p_export_type: string
+          p_filters: Json
+          p_record_count: number
+          p_user_email: string
+        }
+        Returns: undefined
+      }
+      log_solution_bulk_operation: {
+        Args: {
+          p_entity_ids: string[]
+          p_operation: string
+          p_user_email: string
+        }
+        Returns: undefined
+      }
+      log_solution_export: {
         Args: {
           p_export_type: string
           p_filters: Json
