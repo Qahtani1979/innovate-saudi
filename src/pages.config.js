@@ -789,7 +789,8 @@ export const PAGES = {
     "MyRDProjects": MyRDProjects,
     "MyPartnershipsPage": MyPartnershipsPage,
     "WhatsNewHub": WhatsNewHub,
-    "MyProfilesHub": MyProfilesHub,
+    // MyProfilesHub - Now part of UserProfileHub (profiles tab)
+    "MyProfilesHub": UserProfileHub,
     "CrossEntityActivityStream": CrossEntityActivityStream,
     // UserProfileMultiIdentity - Now part of UserProfileHub
     "UserProfileMultiIdentity": UserProfileHub,

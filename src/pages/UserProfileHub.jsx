@@ -2,7 +2,7 @@ import React, { useState, lazy, Suspense } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
 import { useSearchParams } from 'react-router-dom';
-import { User, Activity, Trophy, TrendingUp, Users2, Loader2 } from 'lucide-react';
+import { User, Activity, Trophy, TrendingUp, Users2, UserCircle, Loader2 } from 'lucide-react';
 
 // Import components directly (not lazy) to avoid HOC issues with lazy loading
 import UserProfile from './UserProfile';
@@ -10,6 +10,7 @@ import UserActivityDashboard from './UserActivityDashboard';
 import UserGamification from './UserGamification';
 import UserExperienceProgress from './UserExperienceProgress';
 import UserProfileMultiIdentity from './UserProfileMultiIdentity';
+import MyProfilesHub from './MyProfilesHub';
 
 const LoadingFallback = () => (
   <div className="flex items-center justify-center p-12">
@@ -32,6 +33,12 @@ function UserProfileHubContent() {
       label: { en: 'My Profile', ar: 'ملفي الشخصي' }, 
       icon: User,
       description: { en: 'View and edit your profile', ar: 'عرض وتحرير ملفك' }
+    },
+    { 
+      id: 'profiles', 
+      label: { en: 'My Profiles', ar: 'ملفاتي' }, 
+      icon: UserCircle,
+      description: { en: 'Manage your platform profiles', ar: 'إدارة ملفاتك على المنصة' }
     },
     { 
       id: 'activity', 
@@ -92,6 +99,10 @@ function UserProfileHubContent() {
         {/* Tab Content */}
         <TabsContent value="profile" className="mt-6">
           <UserProfile />
+        </TabsContent>
+
+        <TabsContent value="profiles" className="mt-6">
+          <MyProfilesHub />
         </TabsContent>
 
         <TabsContent value="activity" className="mt-6">
