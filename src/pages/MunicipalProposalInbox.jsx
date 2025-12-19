@@ -48,7 +48,7 @@ export default function MunicipalProposalInbox() {
     queryKey: ['proposals-for-my-challenges', myChallenges.map(c => c.id)],
     queryFn: async () => {
       const challengeIds = myChallenges.map(c => c.id);
-      const { data } = await supabase.from('challenge_proposals').select('*');
+      const { data } = await supabase.from('challenge_proposals').select('*').eq('is_deleted', false);
       return data?.filter(p => challengeIds.includes(p.challenge_id)) || [];
     },
     enabled: myChallenges.length > 0

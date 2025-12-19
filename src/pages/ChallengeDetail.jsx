@@ -65,7 +65,7 @@ export default function ChallengeDetail() {
   const { data: challenge, isLoading } = useQuery({
     queryKey: ['challenge', challengeId],
     queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*').eq('id', challengeId).maybeSingle();
+      const { data } = await supabase.from('challenges').select('*').eq('id', challengeId).eq('is_deleted', false).maybeSingle();
       return data;
     },
     enabled: !!challengeId
@@ -118,7 +118,7 @@ export default function ChallengeDetail() {
   const { data: proposals = [] } = useQuery({
     queryKey: ['challenge-proposals', challengeId],
     queryFn: async () => {
-      const { data } = await supabase.from('challenge_proposals').select('*').eq('challenge_id', challengeId);
+      const { data } = await supabase.from('challenge_proposals').select('*').eq('challenge_id', challengeId).eq('is_deleted', false);
       return data || [];
     },
     enabled: !!challengeId

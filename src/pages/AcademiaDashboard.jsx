@@ -68,6 +68,7 @@ function AcademiaDashboard() {
     queryKey: ['research-challenges-public'],
     queryFn: async () => {
       const { data } = await supabase.from('challenges').select('*')
+        .eq('is_deleted', false)
         .eq('is_published', true)
         .in('status', ['approved', 'in_treatment']);
       return data || [];

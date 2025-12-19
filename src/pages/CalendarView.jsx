@@ -40,6 +40,7 @@ function CalendarView({ embedded = false }) {
       const { data, error } = await supabase
         .from('programs')
         .select('*')
+        .eq('is_deleted', false)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];

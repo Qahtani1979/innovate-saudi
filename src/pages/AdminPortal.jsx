@@ -20,11 +20,11 @@ function AdminPortal() {
   const { language, isRTL, t } = useLanguage();
   const { user } = useAuth();
 
-  // RLS: Admin sees EVERYTHING - no filters
+  // RLS: Admin sees EVERYTHING - but still exclude soft-deleted
   const { data: challenges = [] } = useQuery({
     queryKey: ['all-challenges-admin'],
     queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*').order('created_at', { ascending: false }).limit(500);
+      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false).order('created_at', { ascending: false }).limit(500);
       return data || [];
     }
   });
@@ -56,7 +56,7 @@ function AdminPortal() {
   const { data: programs = [] } = useQuery({
     queryKey: ['all-programs-admin'],
     queryFn: async () => {
-      const { data } = await supabase.from('programs').select('*');
+      const { data } = await supabase.from('programs').select('*').eq('is_deleted', false);
       return data || [];
     }
   });
