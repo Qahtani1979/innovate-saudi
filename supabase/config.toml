@@ -278,3 +278,6 @@ verify_jwt = false
 
 [functions.rbac-manager]
 verify_jwt = false
+
+[functions.log-auth-event]
+verify_jwt = false
