@@ -1,4 +1,4 @@
-// Platform systems configuration - all 38 systems for validation
+// Platform systems configuration - all 48 systems for validation
 
 export const PLATFORM_SYSTEMS = [
   // Core Innovation Hubs (6)
@@ -78,4 +78,30 @@ export const PLATFORM_SYSTEMS = [
   { id: 'provider-dashboard', name: { en: 'Provider Dashboard', ar: 'لوحة المزود' }, tables: ['providers', 'solutions', 'challenge_proposals'] },
   { id: 'startup-dashboard', name: { en: 'Startup Dashboard', ar: 'لوحة الشركات الناشئة' }, tables: ['organizations', 'program_applications'] },
   { id: 'academia-dashboard', name: { en: 'Academia Dashboard', ar: 'لوحة الأكاديميين' }, tables: ['researcher_profiles', 'rd_proposals'] },
+  
+  // NEW: Onboarding & Authentication (2)
+  { id: 'onboarding', name: { en: 'Onboarding System', ar: 'نظام التسجيل' }, tables: ['user_profiles', 'onboarding_events', 'progressive_profiling_prompts'] },
+  { id: 'authentication', name: { en: 'Authentication', ar: 'المصادقة' }, tables: ['user_profiles', 'user_roles'] },
+  
+  // NEW: Profile & Settings (2)
+  { id: 'profile', name: { en: 'Profile Management', ar: 'إدارة الملف الشخصي' }, tables: ['user_profiles', 'citizen_profiles', 'expert_profiles', 'researcher_profiles', 'municipality_staff_profiles'] },
+  { id: 'settings', name: { en: 'User Settings', ar: 'إعدادات المستخدم' }, tables: ['user_profiles', 'email_settings', 'notification_preferences'] },
+  
+  // NEW: Dashboard Aggregations (1)
+  { id: 'dashboards', name: { en: 'Dashboard System', ar: 'نظام لوحات المعلومات' }, tables: ['platform_insights', 'mii_results', 'coverage_snapshots'] },
+  
+  // NEW: Search & Discovery (1)
+  { id: 'search', name: { en: 'Search & Discovery', ar: 'البحث والاكتشاف' }, tables: ['challenges', 'solutions', 'pilots', 'programs', 'events', 'knowledge_documents'] },
+  
+  // NEW: Public Portal (1)
+  { id: 'public-portal', name: { en: 'Public Portal', ar: 'البوابة العامة' }, tables: ['challenges', 'solutions', 'events', 'news_articles', 'case_studies'] },
+  
+  // NEW: Mentorship System (1)
+  { id: 'mentorship', name: { en: 'Mentorship System', ar: 'نظام الإرشاد' }, tables: ['program_mentorships', 'expert_profiles', 'expert_assignments'] },
+  
+  // NEW: Reporting & Export (1)
+  { id: 'reporting', name: { en: 'Reporting & Export', ar: 'التقارير والتصدير' }, tables: ['platform_insights', 'mii_results', 'audits'] },
+  
+  // NEW: Import System (1)
+  { id: 'import-export', name: { en: 'Import/Export', ar: 'الاستيراد والتصدير' }, tables: ['media_files', 'knowledge_documents'] },
 ];
