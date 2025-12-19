@@ -17,11 +17,13 @@ import { useSystemValidation } from '@/hooks/useSystemValidation';
 import { PLATFORM_SYSTEMS } from '@/constants/platformSystems';
 import { VALIDATION_CATEGORIES } from '@/constants/validationCategories';
 import { useIsMobile } from '@/hooks/use-mobile';
+import ImplementationPlanViewer from '@/components/validation/ImplementationPlanViewer';
+import { getImplementationPlan } from '@/constants/implementationPlans';
 import { 
   ClipboardCheck, Database, Shield, Code, Users, GitBranch, Bell, 
   FileText, Eye, Lock, Search, Download, RefreshCw, CheckCircle2,
   AlertTriangle, XCircle, Layers, Activity, Settings, Server, 
-  Globe, FolderOpen, BookOpen, Zap, Menu, Save, ChevronRight
+  Globe, FolderOpen, BookOpen, Zap, Menu, Save, ChevronRight, FileCode
 } from 'lucide-react';
 // Use validation categories from constants with icon mapping
 const categoryIcons = {
@@ -390,6 +392,17 @@ function SystemValidationChecklist() {
                     <Download className="h-3 w-3 sm:h-4 sm:w-4" />
                     {t({ en: 'Export', ar: 'تصدير' })}
                   </Button>
+                  {getImplementationPlan(selectedSystemId) && (
+                    <ImplementationPlanViewer 
+                      systemId={selectedSystemId}
+                      trigger={
+                        <Button variant="outline" size="sm" className="gap-1.5 text-xs sm:text-sm">
+                          <FileCode className="h-3 w-3 sm:h-4 sm:w-4" />
+                          {t({ en: 'View Implementation Plan', ar: 'عرض خطة التنفيذ' })}
+                        </Button>
+                      }
+                    />
+                  )}
                   <Button size="sm" onClick={handleSaveProgress} className="gap-1.5 text-xs sm:text-sm" disabled={updateSummary.isPending}>
                     <Save className="h-3 w-3 sm:h-4 sm:w-4" />
                     {t({ en: 'Save Progress', ar: 'حفظ التقدم' })}
