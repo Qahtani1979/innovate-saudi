@@ -38,13 +38,14 @@ function OrganizationDetail() {
   const orgId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
 
-  const { data: organization, isLoading } = useQuery({
+  const { data: organization, isLoading, error: orgError } = useQuery({
     queryKey: ['organization', orgId],
     queryFn: async () => {
       const orgs = await base44.entities.Organization.list();
       return orgs.find(o => o.id === orgId);
     },
-    enabled: !!orgId
+    enabled: !!orgId,
+    staleTime: 5 * 60 * 1000
   });
 
   const { data: solutions = [] } = useQuery({
@@ -53,7 +54,8 @@ function OrganizationDetail() {
       const allSolutions = await base44.entities.Solution.list();
       return allSolutions.filter(s => s.provider_name === organization?.name_en);
     },
-    enabled: !!organization
+    enabled: !!organization,
+    staleTime: 5 * 60 * 1000
   });
 
   const { data: pilots = [] } = useQuery({
@@ -62,14 +64,41 @@ function OrganizationDetail() {
       const allPilots = await base44.entities.Pilot.list();
       return allPilots.filter(p => solutions.some(s => s.id === p.solution_id));
     },
-    enabled: solutions.length > 0
+    enabled: solutions.length > 0,
+    staleTime: 5 * 60 * 1000
   });
+
+  if (orgError) {
+    return (
+      <PageLayout>
+        <Card className="border-destructive">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              <span>{t({ en: 'Error loading organization', ar: 'خطأ في تحميل الجهة' })}</span>
+            </div>
+          </CardContent>
+        </Card>
+      </PageLayout>
+    );
+  }
 
   if (isLoading || !organization) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
-      </div>
+      <PageLayout>
+        <div className="space-y-6">
+          <div className="h-48 bg-muted animate-pulse rounded-2xl" />
+          <div className="grid grid-cols-4 gap-4">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="h-24 bg-muted animate-pulse rounded-lg" />
+            ))}
+          </div>
+          <div className="grid grid-cols-3 gap-6">
+            <div className="col-span-2 h-64 bg-muted animate-pulse rounded-lg" />
+            <div className="h-64 bg-muted animate-pulse rounded-lg" />
+          </div>
+        </div>
+      </PageLayout>
     );
   }
 

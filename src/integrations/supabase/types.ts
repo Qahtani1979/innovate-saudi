@@ -6650,21 +6650,48 @@ export type Database = {
       organizations: {
         Row: {
           address: string | null
+          annual_revenue_range: string | null
+          capabilities: string[] | null
+          certifications: string[] | null
           city_id: string | null
+          code: string | null
           contact_email: string | null
           contact_name: string | null
           contact_phone: string | null
           created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           description_ar: string | null
           description_en: string | null
+          employee_count: number | null
+          founding_year: number | null
+          funding_rounds: Json | null
+          funding_stage: string | null
           id: string
+          intellectual_property: Json | null
           is_active: boolean | null
+          is_deleted: boolean | null
+          is_partner: boolean | null
           is_verified: boolean | null
+          key_investors: Json | null
+          licenses: string[] | null
+          location: string | null
           logo_url: string | null
+          maturity_level: string | null
+          municipality_id: string | null
           name_ar: string | null
           name_en: string
+          org_type: string | null
+          partnership_agreements: Json | null
+          partnership_date: string | null
+          partnership_status: string | null
+          partnership_type: string | null
           region_id: string | null
+          regulatory_compliance: Json | null
           sector_id: string | null
+          sectors: string[] | null
+          specializations: string[] | null
+          team_size: string | null
           type: string | null
           updated_at: string | null
           verification_date: string | null
@@ -6672,21 +6699,48 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          annual_revenue_range?: string | null
+          capabilities?: string[] | null
+          certifications?: string[] | null
           city_id?: string | null
+          code?: string | null
           contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description_ar?: string | null
           description_en?: string | null
+          employee_count?: number | null
+          founding_year?: number | null
+          funding_rounds?: Json | null
+          funding_stage?: string | null
           id?: string
+          intellectual_property?: Json | null
           is_active?: boolean | null
+          is_deleted?: boolean | null
+          is_partner?: boolean | null
           is_verified?: boolean | null
+          key_investors?: Json | null
+          licenses?: string[] | null
+          location?: string | null
           logo_url?: string | null
+          maturity_level?: string | null
+          municipality_id?: string | null
           name_ar?: string | null
           name_en: string
+          org_type?: string | null
+          partnership_agreements?: Json | null
+          partnership_date?: string | null
+          partnership_status?: string | null
+          partnership_type?: string | null
           region_id?: string | null
+          regulatory_compliance?: Json | null
           sector_id?: string | null
+          sectors?: string[] | null
+          specializations?: string[] | null
+          team_size?: string | null
           type?: string | null
           updated_at?: string | null
           verification_date?: string | null
@@ -6694,21 +6748,48 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          annual_revenue_range?: string | null
+          capabilities?: string[] | null
+          certifications?: string[] | null
           city_id?: string | null
+          code?: string | null
           contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description_ar?: string | null
           description_en?: string | null
+          employee_count?: number | null
+          founding_year?: number | null
+          funding_rounds?: Json | null
+          funding_stage?: string | null
           id?: string
+          intellectual_property?: Json | null
           is_active?: boolean | null
+          is_deleted?: boolean | null
+          is_partner?: boolean | null
           is_verified?: boolean | null
+          key_investors?: Json | null
+          licenses?: string[] | null
+          location?: string | null
           logo_url?: string | null
+          maturity_level?: string | null
+          municipality_id?: string | null
           name_ar?: string | null
           name_en?: string
+          org_type?: string | null
+          partnership_agreements?: Json | null
+          partnership_date?: string | null
+          partnership_status?: string | null
+          partnership_type?: string | null
           region_id?: string | null
+          regulatory_compliance?: Json | null
           sector_id?: string | null
+          sectors?: string[] | null
+          specializations?: string[] | null
+          team_size?: string | null
           type?: string | null
           updated_at?: string | null
           verification_date?: string | null
@@ -6720,6 +6801,13 @@ export type Database = {
             columns: ["city_id"]
             isOneToOne: false
             referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organizations_municipality_id_fkey"
+            columns: ["municipality_id"]
+            isOneToOne: false
+            referencedRelation: "municipalities"
             referencedColumns: ["id"]
           },
           {
