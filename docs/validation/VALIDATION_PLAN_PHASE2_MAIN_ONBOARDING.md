@@ -900,3 +900,4 @@ flowchart TB
 - [Phase 1: Registration & Authentication](./VALIDATION_PLAN_PHASE1_REGISTRATION.md)
 - [Onboarding Flow Tracking](../ONBOARDING_FLOW_TRACKING.md)
 - [Platform Flows & Personas](../PLATFORM_FLOWS_AND_PERSONAS.md)
+- [Profile System Documentation](../shared/PROFILE_SYSTEM.md) - Profile tables, RLS, components

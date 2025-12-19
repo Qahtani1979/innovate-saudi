@@ -1,12 +1,12 @@
 # Citizens & Engagement System Inventory
 
-> **Version:** 2.0  
-> **Last Updated:** 2025-12-18  
+> **Version:** 2.1  
+> **Last Updated:** 2025-12-19  
 > **Total Assets:** 75 files (30 pages, 45 components, 5 hooks)  
 > **Parent System:** Citizen Engagement Platform  
 > **Hub Page:** `/citizen-dashboard`
-
----
+> 
+> 📖 **Related:** [Profile System Documentation](../shared/PROFILE_SYSTEM.md) - User profiles, gamification, and achievements
 
 ## 🔗 Navigation
 
@@ -183,3 +183,14 @@ The Citizens System enables citizen participation in innovation through idea sub
 | Living Labs | Participates in labs |
 | Solutions | Browses solutions |
 | Municipalities | Location-based engagement |
+| **Profile System** | User profiles, gamification, badges |
+
+---
+
+## 📚 Related Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [Profile System](../shared/PROFILE_SYSTEM.md) | User profiles, gamification, achievements |
+| [Visibility System](../VISIBILITY_SYSTEM.md) | Entity visibility rules |
+| [RBAC System](../RBAC_SYSTEM.md) | Role-based access control |

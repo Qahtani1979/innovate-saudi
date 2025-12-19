@@ -952,6 +952,9 @@ No open RBAC migration blockers are known at this time.
 | `src/hooks/useMunicipalitiesWithVisibility.js` | Municipalities visibility |
 | `src/hooks/useOrganizationsWithVisibility.js` | Organizations visibility |
 | `src/hooks/useVisibilityAwareSearch.js` | Search with visibility |
+| `src/hooks/useProfileData.js` | Profile data management |
+
+> 📖 **See Also:** [Profile System Documentation](shared/PROFILE_SYSTEM.md) for complete profile visibility and security details.
 
 ### Frontend - Components
 
@@ -988,6 +991,17 @@ No open RBAC migration blockers are known at this time.
 
 ### Open Items (If Applicable)
 - Ensure each non-admin role has the intended `role_permissions` mappings.
+
+---
+
+## 📚 Related Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [Profile System](shared/PROFILE_SYSTEM.md) | User profiles and profile-role integration |
+| [RBAC System](RBAC_SYSTEM.md) | Role-based access control |
+| [Visibility System](VISIBILITY_SYSTEM.md) | Entity visibility rules |
+| [Shared System Inventory](shared/shared-system-inventory.md) | Platform-wide features |
 
 ---
 

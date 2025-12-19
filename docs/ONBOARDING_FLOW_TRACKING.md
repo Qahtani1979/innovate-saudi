@@ -8,7 +8,7 @@ The Saudi Innovates platform implements a comprehensive **2-Phase Onboarding Sys
 
 This ensures proper user verification, role-based access control, and a personalized experience for each user type.
 
----
+> 📖 **Related:** [Profile System Documentation](shared/PROFILE_SYSTEM.md) - Complete profile tables, RLS, and components
 
 ## Key Concepts
 
@@ -616,5 +616,15 @@ Each dashboard includes post-onboarding enhancement components:
 
 ---
 
-*Last Updated: 2025-12-10*
+## 📚 Related Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [Profile System](shared/PROFILE_SYSTEM.md) | User profiles, gamification, achievements |
+| [RBAC System](RBAC_SYSTEM.md) | Role-based access control |
+| [Visibility System](VISIBILITY_SYSTEM.md) | Entity visibility rules |
+
+---
+
+*Last Updated: 2025-12-19*
 *Validation Status: ✅ DEEP VALIDATED against codebase with all menu/portal links verified*
