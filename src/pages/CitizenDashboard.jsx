@@ -61,6 +61,7 @@ function CitizenDashboard() {
         .select('id, title_en, title_ar, start_date, event_type')
         .gte('start_date', new Date().toISOString())
         .eq('is_published', true)
+        .eq('is_deleted', false)
         .order('start_date')
         .limit(3);
       return data || [];

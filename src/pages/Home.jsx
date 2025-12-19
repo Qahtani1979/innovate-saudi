@@ -97,6 +97,8 @@ function Home() {
       const { data } = await supabase
         .from('programs')
         .select('*')
+        .eq('is_published', true)
+        .eq('is_deleted', false)
         .order('created_at', { ascending: false })
         .limit(10);
       return data || [];

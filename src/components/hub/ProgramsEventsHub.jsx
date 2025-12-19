@@ -1,7 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +16,8 @@ import {
   PROGRAMS_EVENTS_INSIGHTS_PROMPT_TEMPLATE, 
   PROGRAMS_EVENTS_INSIGHTS_RESPONSE_SCHEMA 
 } from '@/lib/ai/prompts/hub/programsEventsInsights';
+import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
+import { useEventsWithVisibility } from '@/hooks/useEventsWithVisibility';
 
 // Lazy imports for tab content
 const ProgramsContent = React.lazy(() => import('@/pages/Programs'));
@@ -33,28 +32,9 @@ function ProgramsEventsHub() {
   
   const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  // Fetch programs
-  const { data: programs = [], isLoading: programsLoading } = useQuery({
-    queryKey: ['hub-programs'],
-    queryFn: async () => {
-      const data = await base44.entities.Program.list();
-      return data.filter(p => !p.is_deleted);
-    }
-  });
-
-  // Fetch events
-  const { data: events = [], isLoading: eventsLoading } = useQuery({
-    queryKey: ['hub-events'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .eq('is_deleted', false)
-        .order('start_date', { ascending: true });
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // Use visibility-aware hooks for programs and events
+  const { data: programs = [], isLoading: programsLoading } = useProgramsWithVisibility({ limit: 200 });
+  const { data: events = [], isLoading: eventsLoading } = useEventsWithVisibility({ limit: 200 });
 
   // Filter campaigns from programs
   const campaigns = programs.filter(p => p.program_type === 'campaign' || p.program_type === 'challenge');

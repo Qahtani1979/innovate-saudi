@@ -30,6 +30,7 @@ export function useEvents(options = {}) {
       let query = supabase
         .from('events')
         .select('*')
+        .eq('is_deleted', false)
         .order('start_date', { ascending: true });
 
       // Apply filters

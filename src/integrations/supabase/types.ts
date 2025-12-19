@@ -3655,12 +3655,16 @@ export type Database = {
           budget_currency: string | null
           budget_estimate: number | null
           created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           description_ar: string | null
           description_en: string | null
           end_date: string | null
           event_type: string | null
           id: string
           image_url: string | null
+          is_deleted: boolean | null
           is_published: boolean | null
           is_strategy_derived: boolean | null
           is_virtual: boolean | null
@@ -3673,6 +3677,7 @@ export type Database = {
           program_synced: boolean | null
           registration_deadline: string | null
           reminder_sent_at: string | null
+          sector_id: string | null
           start_date: string | null
           status: string | null
           strategic_alignment_score: number | null
@@ -3690,12 +3695,16 @@ export type Database = {
           budget_currency?: string | null
           budget_estimate?: number | null
           created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description_ar?: string | null
           description_en?: string | null
           end_date?: string | null
           event_type?: string | null
           id?: string
           image_url?: string | null
+          is_deleted?: boolean | null
           is_published?: boolean | null
           is_strategy_derived?: boolean | null
           is_virtual?: boolean | null
@@ -3708,6 +3717,7 @@ export type Database = {
           program_synced?: boolean | null
           registration_deadline?: string | null
           reminder_sent_at?: string | null
+          sector_id?: string | null
           start_date?: string | null
           status?: string | null
           strategic_alignment_score?: number | null
@@ -3725,12 +3735,16 @@ export type Database = {
           budget_currency?: string | null
           budget_estimate?: number | null
           created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description_ar?: string | null
           description_en?: string | null
           end_date?: string | null
           event_type?: string | null
           id?: string
           image_url?: string | null
+          is_deleted?: boolean | null
           is_published?: boolean | null
           is_strategy_derived?: boolean | null
           is_virtual?: boolean | null
@@ -3743,6 +3757,7 @@ export type Database = {
           program_synced?: boolean | null
           registration_deadline?: string | null
           reminder_sent_at?: string | null
+          sector_id?: string | null
           start_date?: string | null
           status?: string | null
           strategic_alignment_score?: number | null
@@ -3768,6 +3783,13 @@ export type Database = {
             columns: ["program_id"]
             isOneToOne: false
             referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "sectors"
             referencedColumns: ["id"]
           },
         ]
@@ -8244,6 +8266,7 @@ export type Database = {
           mentors: Json | null
           mii_dimension_targets: string[] | null
           municipal_capacity_impact: Json | null
+          municipality_id: string | null
           municipality_targets: string[] | null
           name_ar: string | null
           name_en: string
@@ -8326,6 +8349,7 @@ export type Database = {
           mentors?: Json | null
           mii_dimension_targets?: string[] | null
           municipal_capacity_impact?: Json | null
+          municipality_id?: string | null
           municipality_targets?: string[] | null
           name_ar?: string | null
           name_en: string
@@ -8408,6 +8432,7 @@ export type Database = {
           mentors?: Json | null
           mii_dimension_targets?: string[] | null
           municipal_capacity_impact?: Json | null
+          municipality_id?: string | null
           municipality_targets?: string[] | null
           name_ar?: string | null
           name_en?: string
@@ -8447,7 +8472,15 @@ export type Database = {
           website?: string | null
           workflow_stage?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "programs_municipality_id_fkey"
+            columns: ["municipality_id"]
+            isOneToOne: false
+            referencedRelation: "municipalities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       progressive_profiling_prompts: {
         Row: {
