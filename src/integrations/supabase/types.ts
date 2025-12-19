@@ -1365,7 +1365,7 @@ export type Database = {
           tags: string[] | null
           theme: string | null
           timeline_estimate: string | null
-          title_ar: string | null
+          title_ar: string
           title_en: string
           tracks: string[] | null
           treatment_plan: Json | null
@@ -1466,7 +1466,7 @@ export type Database = {
           tags?: string[] | null
           theme?: string | null
           timeline_estimate?: string | null
-          title_ar?: string | null
+          title_ar: string
           title_en: string
           tracks?: string[] | null
           treatment_plan?: Json | null
@@ -1567,7 +1567,7 @@ export type Database = {
           tags?: string[] | null
           theme?: string | null
           timeline_estimate?: string | null
-          title_ar?: string | null
+          title_ar?: string
           title_en?: string
           tracks?: string[] | null
           treatment_plan?: Json | null

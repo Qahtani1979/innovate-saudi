@@ -2,3 +2,8 @@ export { default as ChallengeOverviewTab } from './ChallengeOverviewTab';
 export { default as ChallengeProblemTab } from './ChallengeProblemTab';
 export { default as ChallengeKPIsTab } from './ChallengeKPIsTab';
 export { default as ChallengeDataTab } from './ChallengeDataTab';
+export { default as ChallengeAITab } from './ChallengeAITab';
+export { default as ChallengeSolutionsTab } from './ChallengeSolutionsTab';
+export { default as ChallengePilotsTab } from './ChallengePilotsTab';
+export { default as ChallengeRDTab } from './ChallengeRDTab';
+export { default as ChallengeStakeholdersTab } from './ChallengeStakeholdersTab';
