@@ -1925,6 +1925,13 @@ export type Database = {
             referencedRelation: "pilots"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "citizen_pilot_enrollments_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "pilots_public_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       citizen_points: {
@@ -2501,6 +2508,13 @@ export type Database = {
             columns: ["pilot_id"]
             isOneToOne: false
             referencedRelation: "pilots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "pilots_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -4417,6 +4431,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "incident_reports_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "pilots_public_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "incident_reports_sandbox_id_fkey"
             columns: ["sandbox_id"]
             isOneToOne: false
@@ -4623,6 +4644,13 @@ export type Database = {
             columns: ["pilot_id"]
             isOneToOne: false
             referencedRelation: "pilots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "pilots_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -4839,6 +4867,13 @@ export type Database = {
             columns: ["pilot_id"]
             isOneToOne: false
             referencedRelation: "pilots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "living_lab_bookings_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "pilots_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -5423,6 +5458,13 @@ export type Database = {
             columns: ["converted_pilot_id"]
             isOneToOne: false
             referencedRelation: "pilots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matchmaker_applications_converted_pilot_id_fkey"
+            columns: ["converted_pilot_id"]
+            isOneToOne: false
+            referencedRelation: "pilots_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -6875,6 +6917,13 @@ export type Database = {
             referencedRelation: "pilots"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "pilot_approvals_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "pilots_public_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       pilot_collaborations: {
@@ -6938,6 +6987,13 @@ export type Database = {
             referencedRelation: "pilots"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "pilot_collaborations_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "pilots_public_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       pilot_documents: {
@@ -6989,6 +7045,13 @@ export type Database = {
             columns: ["pilot_id"]
             isOneToOne: false
             referencedRelation: "pilots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_documents_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "pilots_public_view"
             referencedColumns: ["id"]
           },
         ]
@@ -7086,6 +7149,13 @@ export type Database = {
             referencedRelation: "pilots"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "pilot_expenses_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "pilots_public_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       pilot_issues: {
@@ -7145,6 +7215,13 @@ export type Database = {
             referencedRelation: "pilots"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "pilot_issues_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "pilots_public_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       pilot_kpi_datapoints: {
@@ -7191,6 +7268,13 @@ export type Database = {
             columns: ["pilot_id"]
             isOneToOne: false
             referencedRelation: "pilots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_kpi_datapoints_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "pilots_public_view"
             referencedColumns: ["id"]
           },
         ]
@@ -7250,6 +7334,13 @@ export type Database = {
             columns: ["pilot_id"]
             isOneToOne: false
             referencedRelation: "pilots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilot_kpis_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "pilots_public_view"
             referencedColumns: ["id"]
           },
         ]
@@ -8079,6 +8170,13 @@ export type Database = {
             columns: ["pilot_id"]
             isOneToOne: false
             referencedRelation: "pilots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_pilot_links_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "pilots_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -9841,6 +9939,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "scaling_plans_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "pilots_public_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "scaling_plans_rd_project_id_fkey"
             columns: ["rd_project_id"]
             isOneToOne: false
@@ -9929,6 +10034,13 @@ export type Database = {
             columns: ["pilot_id"]
             isOneToOne: false
             referencedRelation: "pilots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scaling_readiness_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "pilots_public_view"
             referencedColumns: ["id"]
           },
         ]
@@ -10245,6 +10357,13 @@ export type Database = {
             columns: ["pilot_id"]
             isOneToOne: false
             referencedRelation: "pilots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solution_cases_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "pilots_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -10812,6 +10931,13 @@ export type Database = {
             columns: ["pilot_id"]
             isOneToOne: false
             referencedRelation: "pilots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stakeholder_feedback_pilot_id_fkey"
+            columns: ["pilot_id"]
+            isOneToOne: false
+            referencedRelation: "pilots_public_view"
             referencedColumns: ["id"]
           },
         ]
@@ -13045,6 +13171,164 @@ export type Database = {
           },
         ]
       }
+      pilots_public_view: {
+        Row: {
+          budget: number | null
+          budget_currency: string | null
+          budget_released: number | null
+          budget_spent: number | null
+          challenge_id: string | null
+          city_id: string | null
+          code: string | null
+          created_at: string | null
+          created_by_masked: string | null
+          description_ar: string | null
+          description_en: string | null
+          duration_weeks: number | null
+          hypothesis: string | null
+          id: string | null
+          is_archived: boolean | null
+          is_flagship: boolean | null
+          is_published: boolean | null
+          kpis: Json | null
+          living_lab_id: string | null
+          methodology: string | null
+          milestones: Json | null
+          municipality_id: string | null
+          objective_ar: string | null
+          objective_en: string | null
+          region_id: string | null
+          risk_level: string | null
+          risks: Json | null
+          sandbox_id: string | null
+          scope: string | null
+          sector: string | null
+          solution_id: string | null
+          stage: string | null
+          sub_sector: string | null
+          success_probability: number | null
+          title_ar: string | null
+          title_en: string | null
+          trl_current: number | null
+          trl_start: number | null
+          trl_target: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          budget?: number | null
+          budget_currency?: string | null
+          budget_released?: number | null
+          budget_spent?: number | null
+          challenge_id?: string | null
+          city_id?: string | null
+          code?: string | null
+          created_at?: string | null
+          created_by_masked?: never
+          description_ar?: string | null
+          description_en?: string | null
+          duration_weeks?: number | null
+          hypothesis?: string | null
+          id?: string | null
+          is_archived?: boolean | null
+          is_flagship?: boolean | null
+          is_published?: boolean | null
+          kpis?: Json | null
+          living_lab_id?: string | null
+          methodology?: string | null
+          milestones?: Json | null
+          municipality_id?: string | null
+          objective_ar?: string | null
+          objective_en?: string | null
+          region_id?: string | null
+          risk_level?: string | null
+          risks?: Json | null
+          sandbox_id?: string | null
+          scope?: string | null
+          sector?: string | null
+          solution_id?: string | null
+          stage?: string | null
+          sub_sector?: string | null
+          success_probability?: number | null
+          title_ar?: string | null
+          title_en?: string | null
+          trl_current?: number | null
+          trl_start?: number | null
+          trl_target?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          budget?: number | null
+          budget_currency?: string | null
+          budget_released?: number | null
+          budget_spent?: number | null
+          challenge_id?: string | null
+          city_id?: string | null
+          code?: string | null
+          created_at?: string | null
+          created_by_masked?: never
+          description_ar?: string | null
+          description_en?: string | null
+          duration_weeks?: number | null
+          hypothesis?: string | null
+          id?: string | null
+          is_archived?: boolean | null
+          is_flagship?: boolean | null
+          is_published?: boolean | null
+          kpis?: Json | null
+          living_lab_id?: string | null
+          methodology?: string | null
+          milestones?: Json | null
+          municipality_id?: string | null
+          objective_ar?: string | null
+          objective_en?: string | null
+          region_id?: string | null
+          risk_level?: string | null
+          risks?: Json | null
+          sandbox_id?: string | null
+          scope?: string | null
+          sector?: string | null
+          solution_id?: string | null
+          stage?: string | null
+          sub_sector?: string | null
+          success_probability?: number | null
+          title_ar?: string | null
+          title_en?: string | null
+          trl_current?: number | null
+          trl_start?: number | null
+          trl_target?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pilots_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilots_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilots_municipality_id_fkey"
+            columns: ["municipality_id"]
+            isOneToOne: false
+            referencedRelation: "municipalities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilots_solution_id_fkey"
+            columns: ["solution_id"]
+            isOneToOne: false
+            referencedRelation: "solutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       can_delete_media: { Args: { p_media_file_id: string }; Returns: Json }
@@ -13069,6 +13353,11 @@ export type Database = {
         Args: { retention_days?: number }
         Returns: number
       }
+      cleanup_old_pilot_audit_logs: {
+        Args: { retention_days?: number }
+        Returns: number
+      }
+      cleanup_orphaned_pilot_files: { Args: never; Returns: number }
       delete_media_with_cascade: {
         Args: { p_cascade_action?: string; p_media_file_id: string }
         Returns: Json
@@ -13121,6 +13410,23 @@ export type Database = {
       is_national_entity: {
         Args: { p_municipality_id: string }
         Returns: boolean
+      }
+      log_pilot_bulk_operation: {
+        Args: {
+          p_entity_ids: string[]
+          p_operation: string
+          p_user_email: string
+        }
+        Returns: undefined
+      }
+      log_pilot_export: {
+        Args: {
+          p_export_type: string
+          p_filters: Json
+          p_record_count: number
+          p_user_email: string
+        }
+        Returns: undefined
       }
       map_enum_to_role_id: { Args: { _enum_role: string }; Returns: string }
       mask_email: { Args: { email: string }; Returns: string }
