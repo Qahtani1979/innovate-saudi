@@ -384,3 +384,14 @@ $$;
 - Single assignment path: `user_roles.role_id` → `roles`
 - No duplicate role definitions
 - No enum types for roles
+
+---
+
+## 📚 Related Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [Profile System](shared/PROFILE_SYSTEM.md) | User profiles and profile-role integration |
+| [Visibility System](VISIBILITY_SYSTEM.md) | Entity visibility rules based on roles |
+| [Role Permission Visibility System](ROLE_PERMISSION_VISIBILITY_SYSTEM.md) | Comprehensive RBAC + visibility documentation |
+| [Shared System Inventory](shared/shared-system-inventory.md) | Platform-wide features including profiles |
