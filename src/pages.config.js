@@ -676,7 +676,8 @@ export const PAGES = {
     // RoleManager, TeamManagement - DELETED (migrated to UserManagementHub)
     "RoleManager": UserManagementHub,
     "TeamManagement": UserManagementHub,
-    "UserActivityDashboard": UserActivityDashboard,
+    // UserActivityDashboard - Now part of UserProfileHub
+    "UserActivityDashboard": UserProfileHub,
     "SessionDeviceManager": SessionDeviceManager,
     "TeamWorkspace": TeamWorkspace,
     "BrandingSettings": BrandingSettings,
