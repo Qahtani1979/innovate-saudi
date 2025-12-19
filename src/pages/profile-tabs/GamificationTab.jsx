@@ -42,7 +42,7 @@ export default function GamificationTab() {
         .from('citizen_points')
         .select('*')
         .eq('user_email', user.email)
-        .single();
+        .maybeSingle();
       return data;
     },
     enabled: !!user?.email
@@ -259,7 +259,11 @@ export default function GamificationTab() {
                       {idx < 3 ? (idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉') : `#${idx + 1}`}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{entry.user_email}</p>
+                      <p className="font-medium text-sm truncate">
+                        {entry.user_email === user?.email 
+                          ? entry.user_email 
+                          : entry.user_email?.replace(/(.{2})(.*)(@.*)/, '$1***$3')}
+                      </p>
                       <p className="text-xs text-muted-foreground">Level {entry.level || 1}</p>
                     </div>
                     <div className="text-right">
