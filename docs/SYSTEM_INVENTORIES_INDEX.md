@@ -1,9 +1,9 @@
 # System Inventories Master Index
 
-> **Last Updated:** 2025-12-18  
-> **Total Systems:** 20 documented (19 core + 1 shared)  
-> **Total Files Tracked:** 1200+ (Pages: 581, Components: 520+, Hooks: 120+)  
-> **Coverage Status:** ~65% assigned, ~35% orphaned (pending integration)
+> **Last Updated:** 2025-12-19  
+> **Total Systems:** 21 documented (19 core + 1 shared + 1 profile)  
+> **Total Files Tracked:** 1220+ (Pages: 588, Components: 537+, Hooks: 122+)  
+> **Coverage Status:** ~67% assigned, ~33% orphaned (pending integration)
 
 ---
 
@@ -13,7 +13,8 @@ All inventories include navigation links for easy traversal.
 
 | # | System | Inventory File | Pages | Components | Status |
 |---|--------|----------------|-------|------------|--------|
-| 0 | **Shared/Common** | [shared-system-inventory.md](shared/shared-system-inventory.md) | 5 | 10 | ✅ Active |
+| 0 | **Shared/Common** | [shared-system-inventory.md](shared/shared-system-inventory.md) | 12 | 17 | ✅ Updated |
+| 0.1 | **Profile System** | [PROFILE_SYSTEM.md](shared/PROFILE_SYSTEM.md) | 7 | 7 | ✅ **NEW** |
 | 1 | **Strategy** | [strategy-system-inventory.md](strategy/strategy-system-inventory.md) | 47 | 75 | ✅ Complete |
 | 2 | **Challenges** | [challenges-system-inventory.md](challenges/challenges-system-inventory.md) | 22 | 51 | ✅ Complete |
 | 3 | **Pilots** | [pilots-system-inventory.md](pilots/pilots-system-inventory.md) | 20 | 27 | ✅ Complete |

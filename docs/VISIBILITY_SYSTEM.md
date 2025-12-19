@@ -109,12 +109,23 @@ The visibility system provides consistent access control across all entity types
 | Municipalities | `municipalities` | `useMunicipalitiesWithVisibility` | ✅ Implemented |
 | Organizations | `organizations` | `useOrganizationsWithVisibility` | ✅ Implemented |
 
+### Profile System Hooks
+
+| Entity | Table | Hook | Status |
+|--------|-------|------|--------|
+| User Profiles | `user_profiles` | `useProfileData` | ✅ Implemented |
+| Public Profiles | `user_profiles` | RLS (is_public=true) | ✅ Implemented |
+| Citizen Profiles | `citizen_profiles` | RLS (user_id match) | ✅ Implemented |
+
+> 📖 **See Also:** [Profile System Documentation](shared/PROFILE_SYSTEM.md) for complete profile visibility details.
+
 ### Utility Hooks
 
 | Hook | Purpose | Status |
 |------|---------|--------|
 | `useVisibilityAwareSearch` | Cross-entity search with visibility | ✅ Implemented |
 | `useEntityAccessCheck` | Single entity access validation | ✅ Implemented |
+| `useRowLevelSecurity` | Client-side RLS helpers | ✅ Implemented |
 
 ---
 
