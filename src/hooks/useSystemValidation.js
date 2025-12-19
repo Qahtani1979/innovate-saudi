@@ -3,16 +3,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
 import { PLATFORM_SYSTEMS } from '@/constants/platformSystems';
+import { VALIDATION_CATEGORIES, getAllChecks } from '@/constants/validationCategories';
 
 // Re-export for backward compatibility
 export { PLATFORM_SYSTEMS };
+export { VALIDATION_CATEGORIES };
 
 export function useSystemValidation(systemId) {
   const { user, userEmail } = useAuth();
   const queryClient = useQueryClient();
 
   // Fetch validations for a specific system
-  const { data: validations, isLoading } = useQuery({
+  const { data: validations, isLoading, refetch: refetchValidations } = useQuery({
     queryKey: ['system-validations', systemId],
     queryFn: async () => {
       if (!systemId) return [];
@@ -41,6 +43,55 @@ export function useSystemValidation(systemId) {
     }
   });
 
+  // Initialize all checks for a system (auto-create rows)
+  const initializeSystem = useMutation({
+    mutationFn: async ({ systemId, systemName }) => {
+      // Get all checks
+      const allChecks = getAllChecks();
+      
+      // Check which checks already exist
+      const { data: existing } = await supabase
+        .from('system_validations')
+        .select('check_id')
+        .eq('system_id', systemId);
+      
+      const existingCheckIds = new Set((existing || []).map(e => e.check_id));
+      
+      // Create rows for checks that don't exist
+      const newChecks = allChecks.filter(check => !existingCheckIds.has(check.id));
+      
+      if (newChecks.length > 0) {
+        const rows = newChecks.map(check => ({
+          system_id: systemId,
+          system_name: systemName,
+          category_id: check.categoryId,
+          check_id: check.id,
+          is_checked: false,
+          checked_by: null,
+          checked_at: null
+        }));
+        
+        const { error } = await supabase
+          .from('system_validations')
+          .insert(rows);
+        
+        if (error) throw error;
+      }
+      
+      return { created: newChecks.length, total: allChecks.length };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['system-validations', systemId] });
+      if (result.created > 0) {
+        toast.success(`Initialized ${result.created} checks`);
+      }
+    },
+    onError: (error) => {
+      console.error('Failed to initialize system:', error);
+      toast.error('Failed to initialize checks');
+    }
+  });
+
   // Toggle a check
   const toggleCheck = useMutation({
     mutationFn: async ({ systemId, systemName, categoryId, checkId, isChecked }) => {
@@ -48,7 +99,6 @@ export function useSystemValidation(systemId) {
         .from('system_validations')
         .select('id')
         .eq('system_id', systemId)
-        .eq('category_id', categoryId)
         .eq('check_id', checkId)
         .single();
 
@@ -165,6 +215,9 @@ export function useSystemValidation(systemId) {
     toggleCheck,
     updateSummary,
     resetSystem,
-    systems: PLATFORM_SYSTEMS
+    initializeSystem,
+    refetchValidations,
+    systems: PLATFORM_SYSTEMS,
+    categories: VALIDATION_CATEGORIES
   };
 }
