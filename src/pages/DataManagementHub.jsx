@@ -39,6 +39,7 @@ import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { RegionsTab } from '@/components/data-management/RegionsTab';
 import { CitiesTab } from '@/components/data-management/CitiesTab';
 import { MunicipalitiesTab } from '@/components/data-management/MunicipalitiesTab';
+import { MinistriesTab } from '@/components/data-management/MinistriesTab';
 import { OrganizationsTab } from '@/components/data-management/OrganizationsTab';
 import { IntegrityTab } from '@/components/data-management/IntegrityTab';
 
@@ -585,7 +586,7 @@ Using web search:
       </div>
 
       <Tabs defaultValue="regions" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-9">
+        <TabsList className="grid w-full grid-cols-10">
           <TabsTrigger value="regions">
             <MapPin className="h-4 w-4 mr-2" />
             {t({ en: 'Regions', ar: 'المناطق' })}
@@ -597,6 +598,10 @@ Using web search:
           <TabsTrigger value="municipalities">
             <Landmark className="h-4 w-4 mr-2" />
             {t({ en: 'Municipalities', ar: 'البلديات' })}
+          </TabsTrigger>
+          <TabsTrigger value="ministries">
+            <Building2 className="h-4 w-4 mr-2" />
+            {t({ en: 'Ministries', ar: 'الوزارات' })}
           </TabsTrigger>
           <TabsTrigger value="organizations">
             <Building2 className="h-4 w-4 mr-2" />
@@ -646,6 +651,15 @@ Using web search:
         <TabsContent value="municipalities">
           <MunicipalitiesTab
             regions={regions}
+            onEdit={handleEdit}
+            onDelete={(entity, id) => deleteMutation.mutate({ entity, id })}
+            onAdd={handleCreate}
+          />
+        </TabsContent>
+
+        <TabsContent value="ministries">
+          <MinistriesTab
+            sectors={[]}
             onEdit={handleEdit}
             onDelete={(entity, id) => deleteMutation.mutate({ entity, id })}
             onAdd={handleCreate}
