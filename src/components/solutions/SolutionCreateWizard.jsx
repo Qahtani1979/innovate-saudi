@@ -24,6 +24,7 @@ import AIPricingSuggester from './AIPricingSuggester';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { solutionStep1Schema, solutionStep2Schema, solutionStep4Schema, validateSolution } from '@/lib/validations/solutionSchema';
 
 export default function SolutionCreateWizard({ onComplete }) {
   const { language, isRTL, t } = useLanguage();
@@ -273,20 +274,32 @@ Generate:
     }
   };
 
+  // Zod validation for each step (fc-1)
+  const [validationErrors, setValidationErrors] = useState({});
+
   const canProceed = (step) => {
+    let result;
     switch (step) {
       case 1:
-        return formData.name_en && formData.provider_name && formData.provider_type;
+        result = validateSolution(formData, solutionStep1Schema);
+        setValidationErrors(result.errors);
+        return result.success;
       case 2:
-        return formData.trl && formData.maturity_level;
+        result = validateSolution(formData, solutionStep2Schema);
+        setValidationErrors(result.errors);
+        return result.success;
       case 3:
         return true; // AI step is optional
       case 4:
-        return formData.contact_email;
+        result = validateSolution(formData, solutionStep4Schema);
+        setValidationErrors(result.errors);
+        return result.success;
       case 5:
         return true; // Media is optional
       case 6:
-        return formData.name_en && formData.provider_name && formData.provider_type;
+        result = validateSolution(formData, solutionStep1Schema);
+        setValidationErrors(result.errors);
+        return result.success;
       default:
         return false;
     }
@@ -294,15 +307,18 @@ Generate:
 
   const handleNext = () => {
     if (canProceed(currentStep)) {
+      setValidationErrors({});
       setCurrentStep(currentStep + 1);
     } else {
-      toast.error(t({ en: 'Please complete required fields', ar: 'يرجى إكمال الحقول المطلوبة' }));
+      const errorMessages = Object.values(validationErrors).join(', ');
+      toast.error(errorMessages || t({ en: 'Please complete required fields', ar: 'يرجى إكمال الحقول المطلوبة' }));
     }
   };
 
   const handleSubmit = () => {
     if (!canProceed(6)) {
-      toast.error(t({ en: 'Please complete required fields', ar: 'يرجى إكمال الحقول المطلوبة' }));
+      const errorMessages = Object.values(validationErrors).join(', ');
+      toast.error(errorMessages || t({ en: 'Please complete required fields', ar: 'يرجى إكمال الحقول المطلوبة' }));
       return;
     }
     
