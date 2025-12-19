@@ -78,18 +78,24 @@ export function useSystemValidation(systemId) {
     }
   });
 
-  // Initialize all checks for a system (auto-create rows) - ALWAYS creates 356 checks
+  // Initialize all checks for a system - skips if already has 356 checks
   const initializeSystem = useMutation({
     mutationFn: async ({ systemId, systemName, notApplicableChecks = [] }) => {
-      // Get all checks from VALIDATION_CATEGORIES (should be 356)
-      const allChecks = getAllChecks();
-      
-      // Check which checks already exist
+      // Check how many checks already exist
       const { data: existing } = await supabase
         .from('system_validations')
         .select('check_id')
         .eq('system_id', systemId);
       
+      const existingCount = (existing || []).length;
+      
+      // Skip initialization if already has expected checks
+      if (existingCount >= EXPECTED_CHECK_COUNT) {
+        return { created: 0, total: existingCount, expected: EXPECTED_CHECK_COUNT, skipped: true };
+      }
+      
+      // Get all checks from VALIDATION_CATEGORIES (should be 356)
+      const allChecks = getAllChecks();
       const existingCheckIds = new Set((existing || []).map(e => e.check_id));
       const notApplicableSet = new Set(notApplicableChecks);
       
@@ -115,7 +121,7 @@ export function useSystemValidation(systemId) {
         if (error) throw error;
       }
       
-      return { created: newChecks.length, total: allChecks.length, expected: 356 };
+      return { created: newChecks.length, total: allChecks.length, expected: EXPECTED_CHECK_COUNT };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['system-validations', systemId] });
