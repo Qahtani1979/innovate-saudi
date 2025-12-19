@@ -54,6 +54,7 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useChallengeListRealtime } from '@/hooks/useChallengeRealtime';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import { useVirtualList } from '@/hooks/useVirtualList';
@@ -80,6 +81,8 @@ function Challenges() {
     limit: 100
   });
 
+  // Enable realtime updates (rt-1, live-1)
+  const { isConnected: realtimeConnected } = useChallengeListRealtime();
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Challenge.delete(id),
     onSuccess: () => {

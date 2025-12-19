@@ -43,6 +43,7 @@ import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
 import { useSolutionsWithVisibility, usePilotsWithVisibility, useContractsWithVisibility } from '@/hooks/visibility';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
 import { ChallengeHero, ChallengeStatsCards, ChallengeWorkflowModals } from '@/components/challenges/detail';
+import { useChallengeDetailRealtime } from '@/hooks/useChallengeRealtime';
 
 export default function ChallengeDetail() {
   const { hasPermission, isAdmin } = usePermissions();
@@ -69,6 +70,9 @@ export default function ChallengeDetail() {
     },
     enabled: !!challengeId
   });
+
+  // Enable realtime updates for this challenge (rt-1, live-2)
+  const { isConnected: realtimeConnected } = useChallengeDetailRealtime(challengeId);
 
   // Visibility access check for the challenge
   const accessCheck = useEntityAccessCheck(challenge, {
