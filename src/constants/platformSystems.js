@@ -2,10 +2,10 @@
 
 export const PLATFORM_SYSTEMS = [
   // Core Innovation Hubs (6)
-  { id: 'challenges', name: { en: 'Challenges Hub', ar: 'مركز التحديات' }, tables: ['challenges', 'challenge_proposals', 'challenge_interests', 'challenge_activities', 'challenge_attachments', 'challenge_solution_matches'] },
-  { id: 'pilots', name: { en: 'Pilots Hub', ar: 'مركز التجارب' }, tables: ['pilots', 'pilot_approvals', 'pilot_collaborations', 'pilot_documents', 'pilot_expenses', 'pilot_issues', 'pilot_kpis', 'pilot_kpi_datapoints'] },
-  { id: 'solutions', name: { en: 'Solutions Hub', ar: 'مركز الحلول' }, tables: ['solutions', 'solution_cases', 'solution_interests', 'solution_reviews', 'solution_version_history'] },
-  { id: 'programs', name: { en: 'Programs Hub', ar: 'مركز البرامج' }, tables: ['programs', 'program_applications', 'program_mentorships', 'program_pilot_links'] },
+  { id: 'challenges', name: { en: 'Challenges', ar: 'التحديات' }, tables: ['challenges', 'challenge_proposals', 'challenge_interests', 'challenge_activities', 'challenge_attachments', 'challenge_solution_matches'] },
+  { id: 'pilots', name: { en: 'Pilots', ar: 'التجارب' }, tables: ['pilots', 'pilot_approvals', 'pilot_collaborations', 'pilot_documents', 'pilot_expenses', 'pilot_issues', 'pilot_kpis', 'pilot_kpi_datapoints'] },
+  { id: 'solutions', name: { en: 'Solutions', ar: 'الحلول' }, tables: ['solutions', 'solution_cases', 'solution_interests', 'solution_reviews', 'solution_version_history'] },
+  { id: 'programs', name: { en: 'Programs', ar: 'البرامج' }, tables: ['programs', 'program_applications', 'program_mentorships', 'program_pilot_links'] },
   { id: 'living-labs', name: { en: 'Living Labs', ar: 'المختبرات الحية' }, tables: ['living_labs', 'living_lab_bookings', 'living_lab_resource_bookings'] },
   { id: 'sandboxes', name: { en: 'Regulatory Sandboxes', ar: 'البيئات التجريبية' }, tables: ['sandboxes', 'sandbox_applications', 'sandbox_collaborators', 'sandbox_incidents', 'sandbox_monitoring_data', 'sandbox_project_milestones'] },
   
@@ -24,7 +24,7 @@ export const PLATFORM_SYSTEMS = [
   { id: 'citizen-engagement', name: { en: 'Citizen Engagement', ar: 'مشاركة المواطنين' }, tables: ['citizen_ideas', 'citizen_feedback', 'citizen_votes', 'citizen_profiles', 'citizen_badges', 'citizen_points', 'citizen_notifications', 'citizen_pilot_enrollments'] },
   
   // Experts & Evaluations (2)
-  { id: 'experts', name: { en: 'Experts Hub', ar: 'مركز الخبراء' }, tables: ['expert_profiles', 'expert_panels', 'expert_assignments', 'expert_evaluations', 'custom_expertise_areas'] },
+  { id: 'experts', name: { en: 'Experts', ar: 'الخبراء' }, tables: ['expert_profiles', 'expert_panels', 'expert_assignments', 'expert_evaluations', 'custom_expertise_areas'] },
   { id: 'evaluations', name: { en: 'Evaluations', ar: 'التقييمات' }, tables: ['evaluation_templates', 'matchmaker_evaluation_sessions'] },
   
   // Knowledge & Content (4)
