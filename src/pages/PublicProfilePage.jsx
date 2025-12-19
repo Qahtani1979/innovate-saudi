@@ -54,10 +54,11 @@ export default function PublicProfilePage() {
           is_public,
           contribution_count,
           profile_completion_percentage,
-          created_at
+          created_at,
+          user_email
         `)
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
       return data;
@@ -66,7 +67,7 @@ export default function PublicProfilePage() {
   });
 
   const { data: achievements = [] } = useQuery({
-    queryKey: ['public-profile-achievements', profile?.user_id],
+    queryKey: ['public-profile-achievements', profile?.user_email],
     queryFn: async () => {
       const { data } = await supabase
         .from('user_achievements')
@@ -74,22 +75,22 @@ export default function PublicProfilePage() {
           *,
           achievement:achievements(*)
         `)
-        .eq('user_id', profile.user_id);
+        .eq('user_email', profile.user_email);
       return data || [];
     },
-    enabled: !!profile?.user_id
+    enabled: !!profile?.user_email
   });
 
   const { data: citizenBadges = [] } = useQuery({
-    queryKey: ['public-profile-badges', profile?.user_id],
+    queryKey: ['public-profile-badges', profile?.user_email],
     queryFn: async () => {
       const { data } = await supabase
         .from('citizen_badges')
         .select('*')
-        .eq('user_id', profile.user_id);
+        .eq('user_email', profile.user_email);
       return data || [];
     },
-    enabled: !!profile?.user_id
+    enabled: !!profile?.user_email
   });
 
   if (isLoading) {

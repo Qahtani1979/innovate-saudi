@@ -64,7 +64,7 @@ export function useProfileData() {
         .from('citizen_points')
         .select('*')
         .eq('user_email', user.email)
-        .single();
+        .maybeSingle();
       return data;
     },
     enabled: !!user?.email
