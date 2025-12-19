@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import BatchProcessor from '../components/challenges/BatchProcessor';
 import ChallengeClustering from '../components/challenges/ChallengeClustering';
 import ChallengeToProgramWorkflow from '../components/challenges/ChallengeToProgramWorkflow';
@@ -56,6 +56,8 @@ import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { useVirtualList } from '@/hooks/useVirtualList';
+import VirtualizedChallengeGrid from '@/components/challenges/VirtualizedChallengeGrid';
 
 function Challenges() {
   const { hasPermission, isAdmin, isDeputyship, isMunicipality, isStaffUser } = usePermissions();
@@ -602,65 +604,15 @@ function Challenges() {
       </Card>
 
         <TabsContent value="grid">
-          {/* Grid View */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredChallenges.map((challenge) => (
-            <Card key={challenge.id} className="hover:shadow-lg transition-shadow overflow-hidden">
-              {challenge.image_url && (
-                <div className="h-48 overflow-hidden">
-                  <img src={challenge.image_url} alt={challenge.title_en} className="w-full h-full object-cover" />
-                </div>
-              )}
-              <CardHeader>
-                <div className="flex items-start justify-between mb-2">
-                  <Badge variant="outline" className="font-mono text-xs">
-                    {challenge.code}
-                  </Badge>
-                  <Badge className={statusColors[challenge.status]}>
-                    {challenge.status?.replace(/_/g, ' ')}
-                  </Badge>
-                </div>
-                <CardTitle className="text-lg">
-                  {language === 'ar' && challenge.title_ar ? challenge.title_ar : challenge.title_en}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-slate-600 line-clamp-2">
-                  {language === 'ar' && challenge.description_ar ? challenge.description_ar : challenge.description_en}
-                </p>
-                
-                <div className="flex items-center gap-2">
-                  <Badge className={priorityColors[challenge.priority]}>
-                    {challenge.priority?.replace('tier_', 'T')}
-                  </Badge>
-                  <Badge variant="outline" className="capitalize">
-                    {challenge.sector?.replace(/_/g, ' ')}
-                  </Badge>
-                </div>
-
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-600">{t({ en: 'Score', ar: 'النقاط' })}</span>
-                  <span className="font-bold text-blue-600">{challenge.overall_score || 0}</span>
-                </div>
-
-                <div className="flex gap-2 pt-2 border-t">
-                  <Link to={createPageUrl(`ChallengeDetail?id=${challenge.id}`)} className="flex-1">
-                    <Button variant="outline" className="w-full">
-                      {t({ en: 'View', ar: 'عرض' })}
-                    </Button>
-                  </Link>
-                  {hasPermission('challenge_edit') && (
-                    <Link to={createPageUrl(`ChallengeEdit?id=${challenge.id}`)}>
-                      <Button variant="ghost" size="icon">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+          {/* Grid View - With Virtualization for large lists */}
+          <VirtualizedChallengeGrid 
+            challenges={filteredChallenges}
+            statusColors={statusColors}
+            priorityColors={priorityColors}
+            language={language}
+            t={t}
+            hasPermission={hasPermission}
+          />
         </TabsContent>
 
         <TabsContent value="table">
