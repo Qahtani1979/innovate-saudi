@@ -15,16 +15,18 @@ import { createPageUrl } from '@/utils';
 export function MunicipalitiesTab({ regions, onEdit, onDelete, onAdd }) {
   const { language, t } = useLanguage();
 
-  const { data: municipalities = [], isLoading } = useQuery({
+  const { data: municipalities = [], isLoading, error } = useQuery({
     queryKey: ['municipalities-management'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('municipalities')
         .select('*')
+        .eq('is_deleted', false)
         .order('name_en');
       if (error) throw error;
       return data || [];
-    }
+    },
+    staleTime: 5 * 60 * 1000
   });
 
   const columns = [
@@ -109,6 +111,18 @@ export function MunicipalitiesTab({ regions, onEdit, onDelete, onAdd }) {
         <CardContent className="py-12">
           <div className="flex items-center justify-center">
             <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="py-12">
+          <div className="flex items-center justify-center text-destructive">
+            <p>Error loading municipalities: {error.message}</p>
           </div>
         </CardContent>
       </Card>

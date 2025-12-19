@@ -1,5 +1,4 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,31 +66,49 @@ function MunicipalityProfile() {
   // Use URL param if provided, otherwise fallback to user's municipality
   const municipalityId = urlMunicipalityId || userProfile?.municipality_id;
 
-  const { data: municipality, isLoading } = useQuery({
+  const { data: municipality, isLoading, error: municipalityError } = useQuery({
     queryKey: ['municipality', municipalityId],
     queryFn: async () => {
-      const municipalities = await base44.entities.Municipality.list();
-      return municipalities.find(m => m.id === municipalityId);
+      const { data, error } = await supabase
+        .from('municipalities')
+        .select('*')
+        .eq('id', municipalityId)
+        .single();
+      if (error) throw error;
+      return data;
     },
-    enabled: !!municipalityId
+    enabled: !!municipalityId,
+    staleTime: 5 * 60 * 1000
   });
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['municipality-challenges', municipalityId],
     queryFn: async () => {
-      const all = await base44.entities.Challenge.list();
-      return all.filter(c => c.municipality_id === municipalityId);
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('*')
+        .eq('municipality_id', municipalityId)
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!municipalityId
+    enabled: !!municipalityId,
+    staleTime: 5 * 60 * 1000
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['municipality-pilots', municipalityId],
     queryFn: async () => {
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => p.municipality_id === municipalityId);
+      const { data, error } = await supabase
+        .from('pilots')
+        .select('*')
+        .eq('municipality_id', municipalityId)
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!municipalityId
+    enabled: !!municipalityId,
+    staleTime: 5 * 60 * 1000
   });
 
   // Use centralized useMIIData hook for all MII data
@@ -110,10 +127,32 @@ function MunicipalityProfile() {
     isLoading: miiLoading
   } = useMIIData(municipalityId);
 
-  if (isLoading || !municipality) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  if (municipalityError) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center text-destructive">
+          <AlertCircle className="h-12 w-12 mx-auto mb-4" />
+          <p>Error loading municipality data</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!municipality) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center text-muted-foreground">
+          <Building2 className="h-12 w-12 mx-auto mb-4" />
+          <p>Municipality not found</p>
+        </div>
       </div>
     );
   }
