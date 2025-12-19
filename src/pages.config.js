@@ -213,6 +213,10 @@ import ExecutiveBriefGenerator from './pages/ExecutiveBriefGenerator';
 import QuarterlyReviewWizard from './pages/QuarterlyReviewWizard';
 import PresentationMode from './pages/PresentationMode';
 import ChallengeAnalyticsDashboard from './pages/ChallengeAnalyticsDashboard';
+import ChallengeRDCallMatcher from './pages/ChallengeRDCallMatcher';
+import ChallengeResolutionTracker from './pages/ChallengeResolutionTracker';
+import ChallengeDetailFullAudit from './pages/ChallengeDetailFullAudit';
+import ChallengeSystemCrossReference from './pages/ChallengeSystemCrossReference';
 import PartnershipRegistry from './pages/PartnershipRegistry';
 import PublicIdeaSubmission from './pages/PublicIdeaSubmission';
 import CitizenEngagementDashboard from './pages/CitizenEngagementDashboard';
@@ -904,6 +908,10 @@ export const PAGES = {
     "ChallengesHub": ChallengesHub,
     "ExecutiveStrategicChallengeQueue": ExecutiveStrategicChallengeQueue,
     "MyChallengeTracker": MyChallengeTracker,
+    "ChallengeRDCallMatcher": ChallengeRDCallMatcher,
+    "ChallengeResolutionTracker": ChallengeResolutionTracker,
+    "ChallengeDetailFullAudit": ChallengeDetailFullAudit,
+    "ChallengeSystemCrossReference": ChallengeSystemCrossReference,
     "ProviderNotificationPreferences": ProviderNotificationPreferences,
     "RBACCoverageReport": RBACCoverageReport,
     "CitizenDashboard": CitizenDashboard,
