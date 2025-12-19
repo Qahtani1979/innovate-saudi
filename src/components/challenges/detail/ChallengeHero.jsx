@@ -1,12 +1,14 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '@/components/LanguageContext';
 import {
   FileText, Send, CheckCircle2, Activity, TestTube, Microscope,
-  Clock, Award, MapPin, Target, BarChart3, Archive
+  Clock, Award, MapPin, Target, BarChart3, Archive, Edit
 } from 'lucide-react';
 import SmartActionButton from '@/components/SmartActionButton';
+import { createPageUrl } from '@/utils';
 
 const statusConfig = {
   draft: { color: 'bg-slate-100 text-slate-700', icon: FileText },
@@ -139,11 +141,12 @@ export default function ChallengeHero({
               </Button>
             )}
             {challengeId && (
-              <a href={`/challenge-edit?id=${challengeId}`}>
+              <Link to={createPageUrl(`ChallengeEdit?id=${challengeId}`)}>
                 <Button variant="outline" className="bg-white/20 border-white/40 text-white hover:bg-white/30">
+                  <Edit className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                   {t({ en: 'Edit', ar: 'تعديل' })}
                 </Button>
-              </a>
+              </Link>
             )}
           </div>
         </div>
