@@ -50,9 +50,13 @@ function ExpertRegistry() {
     toast.info(t({ en: 'Export feature coming soon', ar: 'التصدير قريباً' }));
   };
 
+  const [page, setPage] = useState(1);
+  const pageSize = 24;
+
   const { data: experts = [], isLoading } = useQuery({
     queryKey: ['expert-profiles'],
-    queryFn: () => base44.entities.ExpertProfile.list('-created_date', 100)
+    queryFn: () => base44.entities.ExpertProfile.list('-created_date', 500),
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   const filteredExperts = experts.filter(expert => {
@@ -62,6 +66,10 @@ function ExpertRegistry() {
     const matchesSector = sectorFilter === 'all' || expert.sector_specializations?.includes(sectorFilter);
     return matchesSearch && matchesSector && expert.is_active && !expert.is_deleted;
   });
+
+  // Pagination
+  const totalPages = Math.ceil(filteredExperts.length / pageSize);
+  const paginatedExperts = filteredExperts.slice((page - 1) * pageSize, page * pageSize);
 
   const totalExperts = experts.filter(e => e.is_active && !e.is_deleted).length;
   const verifiedExperts = experts.filter(e => e.is_verified && e.is_active).length;
@@ -184,17 +192,30 @@ function ExpertRegistry() {
           Array(6).fill(0).map((_, i) => (
             <Card key={i} className="animate-pulse">
               <CardContent className="pt-6">
-                <div className="h-32 bg-slate-200 rounded" />
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="h-16 w-16 bg-slate-200 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-32 bg-slate-200 rounded" />
+                    <div className="h-3 w-24 bg-slate-200 rounded" />
+                    <div className="h-3 w-20 bg-slate-200 rounded" />
+                  </div>
+                </div>
+                <div className="h-10 bg-slate-200 rounded mb-3" />
+                <div className="flex gap-1">
+                  <div className="h-5 w-16 bg-slate-200 rounded" />
+                  <div className="h-5 w-20 bg-slate-200 rounded" />
+                  <div className="h-5 w-14 bg-slate-200 rounded" />
+                </div>
               </CardContent>
             </Card>
           ))
-        ) : filteredExperts.length === 0 ? (
+        ) : paginatedExperts.length === 0 ? (
           <div className="col-span-full text-center py-12">
             <Users className="h-12 w-12 text-slate-400 mx-auto mb-3" />
             <p className="text-slate-600">{t({ en: 'No experts found', ar: 'لم يتم العثور على خبراء' })}</p>
           </div>
         ) : (
-          filteredExperts.map((expert) => (
+          paginatedExperts.map((expert) => (
             <Link key={expert.id} to={createPageUrl(`ExpertDetail?id=${expert.id}`)}>
               <Card className="hover:shadow-lg transition-shadow h-full">
                 <CardContent className="pt-6">
@@ -259,6 +280,31 @@ function ExpertRegistry() {
           ))
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+          >
+            {t({ en: 'Previous', ar: 'السابق' })}
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            {t({ en: `Page ${page} of ${totalPages}`, ar: `صفحة ${page} من ${totalPages}` })}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+          >
+            {t({ en: 'Next', ar: 'التالي' })}
+          </Button>
+        </div>
+      )}
     </PageLayout>
   );
 }

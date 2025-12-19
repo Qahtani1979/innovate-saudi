@@ -3845,6 +3845,7 @@ export type Database = {
           due_date: string | null
           entity_id: string
           entity_type: string
+          expert_email: string | null
           expert_id: string | null
           id: string
           is_deleted: boolean | null
@@ -3861,6 +3862,7 @@ export type Database = {
           due_date?: string | null
           entity_id: string
           entity_type: string
+          expert_email?: string | null
           expert_id?: string | null
           id?: string
           is_deleted?: boolean | null
@@ -3877,6 +3879,7 @@ export type Database = {
           due_date?: string | null
           entity_id?: string
           entity_type?: string
+          expert_email?: string | null
           expert_id?: string | null
           id?: string
           is_deleted?: boolean | null
@@ -4013,6 +4016,7 @@ export type Database = {
           expertise_areas: string[] | null
           id: string
           is_active: boolean | null
+          is_deleted: boolean | null
           is_verified: boolean | null
           languages: string[] | null
           linkedin_url: string | null
@@ -4041,6 +4045,7 @@ export type Database = {
           expertise_areas?: string[] | null
           id?: string
           is_active?: boolean | null
+          is_deleted?: boolean | null
           is_verified?: boolean | null
           languages?: string[] | null
           linkedin_url?: string | null
@@ -4069,6 +4074,7 @@ export type Database = {
           expertise_areas?: string[] | null
           id?: string
           is_active?: boolean | null
+          is_deleted?: boolean | null
           is_verified?: boolean | null
           languages?: string[] | null
           linkedin_url?: string | null
