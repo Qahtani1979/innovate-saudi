@@ -4514,13 +4514,18 @@ export type Database = {
         Row: {
           attachments: string[] | null
           budget_estimate: number | null
+          code: string | null
           created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           description_ar: string | null
           description_en: string | null
           expected_impact: string | null
           feedback: string | null
           id: string
           is_deleted: boolean | null
+          is_published: boolean | null
+          municipality_id: string | null
           organization_id: string | null
           proposal_type: string | null
           proposed_solution: string | null
@@ -4532,6 +4537,7 @@ export type Database = {
           submitted_at: string | null
           submitter_email: string | null
           submitter_id: string | null
+          tags: string[] | null
           target_challenges: string[] | null
           team_info: Json | null
           timeline: string | null
@@ -4542,13 +4548,18 @@ export type Database = {
         Insert: {
           attachments?: string[] | null
           budget_estimate?: number | null
+          code?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description_ar?: string | null
           description_en?: string | null
           expected_impact?: string | null
           feedback?: string | null
           id?: string
           is_deleted?: boolean | null
+          is_published?: boolean | null
+          municipality_id?: string | null
           organization_id?: string | null
           proposal_type?: string | null
           proposed_solution?: string | null
@@ -4560,6 +4571,7 @@ export type Database = {
           submitted_at?: string | null
           submitter_email?: string | null
           submitter_id?: string | null
+          tags?: string[] | null
           target_challenges?: string[] | null
           team_info?: Json | null
           timeline?: string | null
@@ -4570,13 +4582,18 @@ export type Database = {
         Update: {
           attachments?: string[] | null
           budget_estimate?: number | null
+          code?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description_ar?: string | null
           description_en?: string | null
           expected_impact?: string | null
           feedback?: string | null
           id?: string
           is_deleted?: boolean | null
+          is_published?: boolean | null
+          municipality_id?: string | null
           organization_id?: string | null
           proposal_type?: string | null
           proposed_solution?: string | null
@@ -4588,6 +4605,7 @@ export type Database = {
           submitted_at?: string | null
           submitter_email?: string | null
           submitter_id?: string | null
+          tags?: string[] | null
           target_challenges?: string[] | null
           team_info?: Json | null
           timeline?: string | null
@@ -4596,6 +4614,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "innovation_proposals_municipality_id_fkey"
+            columns: ["municipality_id"]
+            isOneToOne: false
+            referencedRelation: "municipalities"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "innovation_proposals_organization_id_fkey"
             columns: ["organization_id"]
@@ -5011,11 +5036,15 @@ export type Database = {
       }
       living_labs: {
         Row: {
+          code: string | null
           contact_email: string | null
           contact_name: string | null
           contact_phone: string | null
           coordinates: Json | null
           created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           description_ar: string | null
           description_en: string | null
           domain: string | null
@@ -5024,6 +5053,8 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean | null
+          is_deleted: boolean | null
+          is_published: boolean | null
           is_strategy_derived: boolean | null
           location: string | null
           municipality_id: string | null
@@ -5031,19 +5062,25 @@ export type Database = {
           name_en: string
           region_id: string | null
           research_priorities: string[] | null
+          sector_id: string | null
           status: string | null
           strategic_objective_ids: string[] | null
           strategic_plan_ids: string[] | null
           strategic_taxonomy_codes: string[] | null
           strategy_derivation_date: string | null
+          tags: string[] | null
           updated_at: string | null
         }
         Insert: {
+          code?: string | null
           contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
           coordinates?: Json | null
           created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description_ar?: string | null
           description_en?: string | null
           domain?: string | null
@@ -5052,6 +5089,8 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          is_deleted?: boolean | null
+          is_published?: boolean | null
           is_strategy_derived?: boolean | null
           location?: string | null
           municipality_id?: string | null
@@ -5059,19 +5098,25 @@ export type Database = {
           name_en: string
           region_id?: string | null
           research_priorities?: string[] | null
+          sector_id?: string | null
           status?: string | null
           strategic_objective_ids?: string[] | null
           strategic_plan_ids?: string[] | null
           strategic_taxonomy_codes?: string[] | null
           strategy_derivation_date?: string | null
+          tags?: string[] | null
           updated_at?: string | null
         }
         Update: {
+          code?: string | null
           contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
           coordinates?: Json | null
           created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description_ar?: string | null
           description_en?: string | null
           domain?: string | null
@@ -5080,6 +5125,8 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          is_deleted?: boolean | null
+          is_published?: boolean | null
           is_strategy_derived?: boolean | null
           location?: string | null
           municipality_id?: string | null
@@ -5087,11 +5134,13 @@ export type Database = {
           name_en?: string
           region_id?: string | null
           research_priorities?: string[] | null
+          sector_id?: string | null
           status?: string | null
           strategic_objective_ids?: string[] | null
           strategic_plan_ids?: string[] | null
           strategic_taxonomy_codes?: string[] | null
           strategy_derivation_date?: string | null
+          tags?: string[] | null
           updated_at?: string | null
         }
         Relationships: [
@@ -5107,6 +5156,13 @@ export type Database = {
             columns: ["region_id"]
             isOneToOne: false
             referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "living_labs_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "sectors"
             referencedColumns: ["id"]
           },
         ]
@@ -9917,21 +9973,32 @@ export type Database = {
       sandboxes: {
         Row: {
           capacity: number | null
+          code: string | null
+          contact_email: string | null
+          contact_phone: string | null
           created_at: string | null
+          created_by: string | null
           current_projects: number | null
+          deleted_at: string | null
+          deleted_by: string | null
           description: string | null
           description_ar: string | null
           domain: string | null
           end_date: string | null
           exemptions_granted: string[] | null
+          gallery_urls: string[] | null
           id: string
+          image_url: string | null
           is_active: boolean | null
+          is_deleted: boolean | null
+          is_published: boolean | null
           is_strategy_derived: boolean | null
           living_lab_id: string | null
           municipality_id: string | null
           name: string
           name_ar: string | null
           regulatory_framework: Json | null
+          sector_id: string | null
           start_date: string | null
           status: string | null
           strategic_gaps_addressed: string[] | null
@@ -9939,25 +10006,37 @@ export type Database = {
           strategic_plan_ids: string[] | null
           strategic_taxonomy_codes: string[] | null
           strategy_derivation_date: string | null
+          tags: string[] | null
           updated_at: string | null
         }
         Insert: {
           capacity?: number | null
+          code?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string | null
+          created_by?: string | null
           current_projects?: number | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           description_ar?: string | null
           domain?: string | null
           end_date?: string | null
           exemptions_granted?: string[] | null
+          gallery_urls?: string[] | null
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
+          is_deleted?: boolean | null
+          is_published?: boolean | null
           is_strategy_derived?: boolean | null
           living_lab_id?: string | null
           municipality_id?: string | null
           name: string
           name_ar?: string | null
           regulatory_framework?: Json | null
+          sector_id?: string | null
           start_date?: string | null
           status?: string | null
           strategic_gaps_addressed?: string[] | null
@@ -9965,25 +10044,37 @@ export type Database = {
           strategic_plan_ids?: string[] | null
           strategic_taxonomy_codes?: string[] | null
           strategy_derivation_date?: string | null
+          tags?: string[] | null
           updated_at?: string | null
         }
         Update: {
           capacity?: number | null
+          code?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string | null
+          created_by?: string | null
           current_projects?: number | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           description_ar?: string | null
           domain?: string | null
           end_date?: string | null
           exemptions_granted?: string[] | null
+          gallery_urls?: string[] | null
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
+          is_deleted?: boolean | null
+          is_published?: boolean | null
           is_strategy_derived?: boolean | null
           living_lab_id?: string | null
           municipality_id?: string | null
           name?: string
           name_ar?: string | null
           regulatory_framework?: Json | null
+          sector_id?: string | null
           start_date?: string | null
           status?: string | null
           strategic_gaps_addressed?: string[] | null
@@ -9991,6 +10082,7 @@ export type Database = {
           strategic_plan_ids?: string[] | null
           strategic_taxonomy_codes?: string[] | null
           strategy_derivation_date?: string | null
+          tags?: string[] | null
           updated_at?: string | null
         }
         Relationships: [
@@ -10006,6 +10098,13 @@ export type Database = {
             columns: ["municipality_id"]
             isOneToOne: false
             referencedRelation: "municipalities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sandboxes_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "sectors"
             referencedColumns: ["id"]
           },
         ]
