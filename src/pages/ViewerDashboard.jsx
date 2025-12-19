@@ -33,9 +33,9 @@ const ViewerDashboard = () => {
     queryKey: ['viewer-platform-stats'],
     queryFn: async () => {
       const [challenges, pilots, solutions, municipalities] = await Promise.all([
-        supabase.from('challenges').select('*', { count: 'exact', head: true }).eq('is_published', true),
-        supabase.from('pilots').select('*', { count: 'exact', head: true }).eq('is_published', true),
-        supabase.from('solutions').select('*', { count: 'exact', head: true }).eq('is_published', true),
+        supabase.from('challenges').select('*', { count: 'exact', head: true }).eq('is_deleted', false).eq('is_published', true),
+        supabase.from('pilots').select('*', { count: 'exact', head: true }).eq('is_deleted', false).eq('is_published', true),
+        supabase.from('solutions').select('*', { count: 'exact', head: true }).eq('is_deleted', false).eq('is_published', true),
         supabase.from('municipalities').select('*', { count: 'exact', head: true }).eq('is_active', true)
       ]);
       return {

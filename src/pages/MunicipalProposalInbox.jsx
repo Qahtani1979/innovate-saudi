@@ -35,7 +35,7 @@ export default function MunicipalProposalInbox() {
   const { data: myChallenges = [] } = useQuery({
     queryKey: ['my-challenges', myMunicipality?.id, user?.email],
     queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*');
+      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false);
       return data?.filter(c => 
         c.municipality_id === myMunicipality?.id || 
         c.created_by === user?.email

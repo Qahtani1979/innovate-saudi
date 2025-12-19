@@ -26,7 +26,7 @@ function PilotEvaluations() {
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots-for-evaluation'],
     queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*').in('stage', ['monitoring', 'active', 'completed']);
+      const { data } = await supabase.from('pilots').select('*').eq('is_deleted', false).in('stage', ['monitoring', 'active', 'completed']);
       return data || [];
     }
   });

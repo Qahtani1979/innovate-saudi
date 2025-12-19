@@ -31,7 +31,7 @@ function MyChallengeTracker() {
     queryFn: async () => {
       const myIdeaIds = myIdeas.map(i => i.id);
       if (myIdeaIds.length === 0) return [];
-      const { data } = await supabase.from('challenges').select('*').in('citizen_origin_idea_id', myIdeaIds);
+      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false).in('citizen_origin_idea_id', myIdeaIds);
       return data || [];
     },
     enabled: myIdeas.length > 0

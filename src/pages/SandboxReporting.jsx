@@ -53,7 +53,7 @@ function SandboxReporting() {
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('pilots').select('*');
+      const { data, error } = await supabase.from('pilots').select('*').eq('is_deleted', false);
       if (error) throw error;
       return data || [];
     }

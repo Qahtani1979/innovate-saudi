@@ -16,9 +16,9 @@ function News() {
   const { language, isRTL, t } = useLanguage();
 
   const { data: pilots = [], isLoading: pilotsLoading } = useQuery({
-    queryKey: ['pilots-news'],
+  queryKey: ['pilots-news'],
     queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*').limit(20);
+      const { data } = await supabase.from('pilots').select('*').eq('is_deleted', false).eq('is_published', true).limit(20);
       return data || [];
     }
   });

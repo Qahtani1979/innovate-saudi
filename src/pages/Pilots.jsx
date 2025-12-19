@@ -71,7 +71,7 @@ function PilotsPage() {
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
     queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*');
+      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false);
       return data || [];
     }
   });
