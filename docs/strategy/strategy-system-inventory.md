@@ -1,12 +1,11 @@
 # Strategy System Inventory
 
-> **Version:** 6.0  
-> **Last Updated:** 2025-12-15  
+> **Version:** 6.1  
+> **Last Updated:** 2025-12-19  
 > **Total Assets:** 180+ files (47+ pages, 75+ components, 35 hooks + 3 contexts)  
 > **Parent System:** Strategic Planning & Execution Framework  
 > **Hub Page:** `/strategy-hub`
-
----
+> **Status:** ✅ Deep Validated
 
 ## Overview
 
@@ -374,7 +373,7 @@ The Strategy Hub (`/strategy-hub`) serves as the **central command center** for 
 
 ---
 
-## Related Documentation
+## 📚 Related Documentation
 
 | Document | Purpose |
 |----------|---------|
@@ -382,3 +381,6 @@ The Strategy Hub (`/strategy-hub`) serves as the **central command center** for 
 | [strategy-integration-matrix.md](./strategy-integration-matrix.md) | Entity integrations |
 | [wizard-implementation-status.md](./wizard-implementation-status.md) | 18-step wizard status |
 | [demand-driven-implementation-plan.md](./demand-driven-implementation-plan.md) | Cascade demand system |
+| [Profile System](../shared/PROFILE_SYSTEM.md) | User profiles integration |
+| [RBAC System](../RBAC_SYSTEM.md) | Role-based access control |
+| [Visibility System](../VISIBILITY_SYSTEM.md) | Entity visibility rules |
