@@ -34,7 +34,10 @@ function ScalingWorkflow() {
   const { data: completedPilots = [] } = useQuery({
     queryKey: ['completed-pilots', user?.email, user?.role],
     queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*')
+      const { data } = await supabase
+        .from('pilots')
+        .select('*')
+        .eq('is_deleted', false)
         .eq('stage', 'completed')
         .eq('recommendation', 'scale');
       return data || [];
@@ -45,7 +48,11 @@ function ScalingWorkflow() {
   const { data: scaledPilots = [] } = useQuery({
     queryKey: ['scaled-pilots', user?.email, user?.role],
     queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*').eq('stage', 'scaled');
+      const { data } = await supabase
+        .from('pilots')
+        .select('*')
+        .eq('is_deleted', false)
+        .eq('stage', 'scaled');
       return data || [];
     },
     enabled: !!user

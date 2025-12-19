@@ -32,6 +32,7 @@ export default function MyWeekAhead() {
       const { data } = await supabase
         .from('pilots')
         .select('*')
+        .eq('is_deleted', false)
         .eq('created_by', user?.email);
       return data || [];
     },

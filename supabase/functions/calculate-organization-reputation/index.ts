@@ -42,19 +42,22 @@ serve(async (req) => {
       const { data: solutions } = await supabase
         .from('solutions')
         .select('id, status, rating, review_count')
-        .eq('provider_id', org.id);
+        .eq('provider_id', org.id)
+        .eq('is_deleted', false);
 
       // Get pilots involving this organization
       const { data: pilots } = await supabase
         .from('pilots')
         .select('id, status, success_metrics')
-        .eq('provider_id', org.id);
+        .eq('provider_id', org.id)
+        .eq('is_deleted', false);
 
       // Get contracts
       const { data: contracts } = await supabase
         .from('contracts')
         .select('id, status, contract_value')
-        .eq('provider_id', org.id);
+        .eq('provider_id', org.id)
+        .eq('is_deleted', false);
 
       // Calculate metrics
       const totalSolutions = solutions?.length || 0;

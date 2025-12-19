@@ -24,7 +24,10 @@ function CollaborationHub() {
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
     queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*');
+      const { data } = await supabase
+        .from('challenges')
+        .select('*')
+        .eq('is_deleted', false);
       return data || [];
     }
   });
@@ -32,7 +35,10 @@ function CollaborationHub() {
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
     queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*');
+      const { data } = await supabase
+        .from('pilots')
+        .select('*')
+        .eq('is_deleted', false);
       return data || [];
     }
   });
