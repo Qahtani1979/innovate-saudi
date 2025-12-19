@@ -6,4 +6,8 @@ function SolutionCreate() {
   return <SolutionCreateWizard />;
 }
 
-export default ProtectedPage(SolutionCreate, { requiredPermissions: ['solution_create'] });
+// pc-3: Added requiredRoles for role-based access control
+export default ProtectedPage(SolutionCreate, { 
+  requiredPermissions: ['solution_create'],
+  requiredRoles: ['provider', 'admin', 'municipality_staff', 'deputyship_staff', 'solution_provider']
+});

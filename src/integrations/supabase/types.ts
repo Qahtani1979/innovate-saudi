@@ -10520,6 +10520,53 @@ export type Database = {
           },
         ]
       }
+      solution_version_history: {
+        Row: {
+          change_summary: string | null
+          change_type: string
+          changed_at: string
+          changed_by: string | null
+          id: string
+          metadata: Json | null
+          new_data: Json | null
+          previous_data: Json | null
+          solution_id: string
+          version_number: number
+        }
+        Insert: {
+          change_summary?: string | null
+          change_type: string
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          metadata?: Json | null
+          new_data?: Json | null
+          previous_data?: Json | null
+          solution_id: string
+          version_number?: number
+        }
+        Update: {
+          change_summary?: string | null
+          change_type?: string
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          metadata?: Json | null
+          new_data?: Json | null
+          previous_data?: Json | null
+          solution_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solution_version_history_solution_id_fkey"
+            columns: ["solution_id"]
+            isOneToOne: false
+            referencedRelation: "solutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       solutions: {
         Row: {
           achievement_badges: string[] | null
@@ -13350,6 +13397,7 @@ export type Database = {
         Returns: Json
       }
       check_pilot_sla_escalation: { Args: never; Returns: undefined }
+      check_solution_sla_escalation: { Args: never; Returns: undefined }
       cleanup_old_audit_logs: {
         Args: { retention_days?: number }
         Returns: number
@@ -13363,6 +13411,7 @@ export type Database = {
         Returns: number
       }
       cleanup_orphaned_pilot_files: { Args: never; Returns: number }
+      cleanup_orphaned_solution_files: { Args: never; Returns: number }
       delete_media_with_cascade: {
         Args: { p_cascade_action?: string; p_media_file_id: string }
         Returns: Json

@@ -92,18 +92,34 @@ export default function SolutionCreateWizard({ onComplete }) {
     { num: 6, title: { en: 'Review & Submit', ar: 'المراجعة والإرسال' }, icon: CheckCircle2 }
   ];
 
+  // ext-3: Retry logic with exponential backoff for embeddings
+  const generateEmbeddingsWithRetry = async (params, maxRetries = 3) => {
+    let lastError;
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        return await base44.functions.invoke('generateEmbeddings', params);
+      } catch (err) {
+        lastError = err;
+        if (i < maxRetries - 1) {
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+        }
+      }
+    }
+    throw lastError;
+  };
+
   const createMutation = useMutation({
     mutationFn: async (data) => {
       const solution = await base44.entities.Solution.create(data);
       
-      // Auto-generate embedding
+      // Auto-generate embedding with retry
       try {
-        await base44.functions.invoke('generateEmbeddings', {
+        await generateEmbeddingsWithRetry({
           entity_name: 'Solution',
           entity_ids: [solution.id]
         });
       } catch (err) {
-        console.error('Embedding generation failed:', err);
+        console.error('Embedding generation failed after retries:', err);
       }
 
       // Log creation
@@ -384,93 +400,130 @@ Generate:
             <>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Solution Name (English) *</Label>
+                  <Label htmlFor="name_en">
+                    {t({ en: 'Solution Name (English)', ar: 'اسم الحل (انجليزي)' })} <span className="text-destructive">*</span>
+                  </Label>
                   <Input
+                    id="name_en"
                     value={formData.name_en}
                     onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
                     placeholder="Smart Waste Management System"
+                    maxLength={200}
+                    aria-required="true"
                   />
+                  {validationErrors.name_en && (
+                    <p className="text-sm text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" /> {validationErrors.name_en}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label>اسم الحل (عربي)</Label>
+                  <Label htmlFor="name_ar">{t({ en: 'Solution Name (Arabic)', ar: 'اسم الحل (عربي)' })}</Label>
                   <Input
+                    id="name_ar"
                     value={formData.name_ar}
                     onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
                     placeholder="نظام إدارة النفايات الذكي"
                     dir="rtl"
+                    maxLength={200}
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Tagline (English)</Label>
+                  <Label htmlFor="tagline_en">{t({ en: 'Tagline (English)', ar: 'الشعار (انجليزي)' })}</Label>
                   <Input
+                    id="tagline_en"
                     value={formData.tagline_en}
                     onChange={(e) => setFormData({ ...formData, tagline_en: e.target.value })}
                     placeholder="Revolutionizing waste collection with AI"
+                    maxLength={300}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>الشعار (عربي)</Label>
+                  <Label htmlFor="tagline_ar">{t({ en: 'Tagline (Arabic)', ar: 'الشعار (عربي)' })}</Label>
                   <Input
+                    id="tagline_ar"
                     value={formData.tagline_ar}
                     onChange={(e) => setFormData({ ...formData, tagline_ar: e.target.value })}
                     placeholder="ثورة في جمع النفايات بالذكاء الاصطناعي"
                     dir="rtl"
+                    maxLength={300}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>Description (English)</Label>
+                <Label htmlFor="description_en">{t({ en: 'Description (English)', ar: 'الوصف (انجليزي)' })}</Label>
                 <Textarea
+                  id="description_en"
                   value={formData.description_en}
                   onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
                   rows={4}
                   placeholder="Comprehensive solution description highlighting value proposition and key benefits..."
+                  maxLength={5000}
                 />
+                <p className="text-xs text-muted-foreground">{formData.description_en?.length || 0}/5000</p>
               </div>
 
               <div className="space-y-2">
-                <Label>الوصف (عربي)</Label>
+                <Label htmlFor="description_ar">{t({ en: 'Description (Arabic)', ar: 'الوصف (عربي)' })}</Label>
                 <Textarea
+                  id="description_ar"
                   value={formData.description_ar}
                   onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
                   rows={4}
                   dir="rtl"
                   placeholder="وصف شامل للحل يبرز القيمة المقترحة والفوائد الرئيسية..."
+                  maxLength={5000}
                 />
+                <p className="text-xs text-muted-foreground">{formData.description_ar?.length || 0}/5000</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Provider/Company Name *</Label>
+                  <Label htmlFor="provider_name">
+                    {t({ en: 'Provider/Company Name', ar: 'اسم المزود/الشركة' })} <span className="text-destructive">*</span>
+                  </Label>
                   <Input
+                    id="provider_name"
                     value={formData.provider_name}
                     onChange={(e) => setFormData({ ...formData, provider_name: e.target.value })}
                     placeholder="Smart Cities KSA"
+                    maxLength={200}
+                    aria-required="true"
                   />
+                  {validationErrors.provider_name && (
+                    <p className="text-sm text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" /> {validationErrors.provider_name}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label>Provider Type *</Label>
+                  <Label htmlFor="provider_type">
+                    {t({ en: 'Provider Type', ar: 'نوع المزود' })} <span className="text-destructive">*</span>
+                  </Label>
                   <Select
                     value={formData.provider_type}
                     onValueChange={(v) => setFormData({ ...formData, provider_type: v })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger id="provider_type">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="startup">Startup</SelectItem>
-                      <SelectItem value="sme">SME</SelectItem>
-                      <SelectItem value="corporate">Corporate</SelectItem>
-                      <SelectItem value="university">University</SelectItem>
-                      <SelectItem value="research_center">Research Center</SelectItem>
-                      <SelectItem value="government">Government</SelectItem>
-                      <SelectItem value="ngo">NGO</SelectItem>
+                      <SelectItem value="startup">{t({ en: 'Startup', ar: 'شركة ناشئة' })}</SelectItem>
+                      <SelectItem value="sme">{t({ en: 'SME', ar: 'منشأة صغيرة/متوسطة' })}</SelectItem>
+                      <SelectItem value="corporate">{t({ en: 'Corporate', ar: 'شركة كبرى' })}</SelectItem>
+                      <SelectItem value="university">{t({ en: 'University', ar: 'جامعة' })}</SelectItem>
+                      <SelectItem value="research_center">{t({ en: 'Research Center', ar: 'مركز بحثي' })}</SelectItem>
                     </SelectContent>
                   </Select>
+                  {validationErrors.provider_type && (
+                    <p className="text-sm text-destructive flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" /> {validationErrors.provider_type}
+                    </p>
+                  )}
                 </div>
               </div>
             </>
