@@ -257,8 +257,10 @@ function ChallengeCreatePage() {
       // Generate embedding via edge function
       supabase.functions.invoke('generateEmbeddings', {
         body: {
-          entity_name: 'Challenge',
-          entity_ids: [challenge.id]
+          entity_type: 'challenge',
+          entity_id: challenge.id,
+          title: challenge.title_en,
+          content: challenge.description_en || challenge.problem_statement_en || ''
         }
       }).catch(err => console.error('Embedding generation failed:', err));
       
