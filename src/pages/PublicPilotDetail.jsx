@@ -30,7 +30,7 @@ function PublicPilotDetail() {
   const { data: pilot, isLoading } = useQuery({
     queryKey: ['pilot-public', pilotId],
     queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*').eq('id', pilotId).eq('is_published', true).eq('is_confidential', false).single();
+      const { data } = await supabase.from('pilots').select('*').eq('id', pilotId).eq('is_deleted', false).eq('is_published', true).eq('is_confidential', false).single();
       return data;
     },
     enabled: !!pilotId

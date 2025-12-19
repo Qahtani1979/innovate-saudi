@@ -79,9 +79,9 @@ export default function StrategyPublicView({ strategicPlanId: propPlanId }) {
       if (!strategicPlanId) return { challenges: 0, pilots: 0, partnerships: 0 };
       
       const [challengesRes, pilotsRes, partnershipsRes] = await Promise.all([
-        supabase.from('challenges').select('id', { count: 'exact', head: true }).contains('strategic_plan_ids', [strategicPlanId]),
-        supabase.from('pilots').select('id', { count: 'exact', head: true }).contains('strategic_plan_ids', [strategicPlanId]),
-        supabase.from('partnerships').select('id', { count: 'exact', head: true }).contains('strategic_plan_ids', [strategicPlanId])
+        supabase.from('challenges').select('id', { count: 'exact', head: true }).eq('is_deleted', false).contains('strategic_plan_ids', [strategicPlanId]),
+        supabase.from('pilots').select('id', { count: 'exact', head: true }).eq('is_deleted', false).contains('strategic_plan_ids', [strategicPlanId]),
+        supabase.from('partnerships').select('id', { count: 'exact', head: true }).eq('is_deleted', false).contains('strategic_plan_ids', [strategicPlanId])
       ]);
       
       return {

@@ -54,7 +54,7 @@ function ExpertMatchingEnginePage() {
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
     queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*').order('created_at', { ascending: false }).limit(100);
+      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false).order('created_at', { ascending: false }).limit(100);
       return data || [];
     }
   });
@@ -62,7 +62,7 @@ function ExpertMatchingEnginePage() {
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
     queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*').order('created_at', { ascending: false }).limit(100);
+      const { data } = await supabase.from('pilots').select('*').eq('is_deleted', false).order('created_at', { ascending: false }).limit(100);
       return data || [];
     }
   });

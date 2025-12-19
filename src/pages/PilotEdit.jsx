@@ -52,7 +52,7 @@ function PilotEditPage() {
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
     queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*');
+      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false);
       return data || [];
     }
   });
@@ -60,7 +60,7 @@ function PilotEditPage() {
   const { data: solutions = [] } = useQuery({
     queryKey: ['solutions'],
     queryFn: async () => {
-      const { data } = await supabase.from('solutions').select('*');
+      const { data } = await supabase.from('solutions').select('*').eq('is_deleted', false);
       return data || [];
     }
   });

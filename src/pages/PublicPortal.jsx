@@ -26,6 +26,7 @@ function PublicPortal() {
       const { data, error } = await supabase
         .from('pilots')
         .select('*')
+        .eq('is_deleted', false)
         .in('stage', ['completed', 'scaled'])
         .eq('is_published', true)
         .eq('recommendation', 'scale')
@@ -41,6 +42,7 @@ function PublicPortal() {
       const { data, error } = await supabase
         .from('challenges')
         .select('*')
+        .eq('is_deleted', false)
         .eq('is_published', true)
         .order('created_at', { ascending: false })
         .limit(6);
@@ -55,6 +57,7 @@ function PublicPortal() {
       const { data, error } = await supabase
         .from('solutions')
         .select('*')
+        .eq('is_deleted', false)
         .eq('is_published', true)
         .eq('is_verified', true)
         .in('maturity_level', ['market_ready', 'proven'])
@@ -102,10 +105,10 @@ function PublicPortal() {
         { count: solutionCount },
         { count: municipalityCount }
       ] = await Promise.all([
-        supabase.from('challenges').select('*', { count: 'exact', head: true }),
-        supabase.from('pilots').select('*', { count: 'exact', head: true }),
-        supabase.from('solutions').select('*', { count: 'exact', head: true }),
-        supabase.from('municipalities').select('*', { count: 'exact', head: true })
+        supabase.from('challenges').select('*', { count: 'exact', head: true }).eq('is_deleted', false).eq('is_published', true),
+        supabase.from('pilots').select('*', { count: 'exact', head: true }).eq('is_deleted', false).eq('is_published', true),
+        supabase.from('solutions').select('*', { count: 'exact', head: true }).eq('is_deleted', false).eq('is_published', true),
+        supabase.from('municipalities').select('*', { count: 'exact', head: true }).eq('is_active', true)
       ]);
       return {
         challenges: challengeCount || 0,

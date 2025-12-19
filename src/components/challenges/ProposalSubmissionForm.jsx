@@ -22,7 +22,7 @@ export default function ProposalSubmissionForm({ challenge, onSuccess, onCancel 
   const { data: solutions = [] } = useQuery({
     queryKey: ['my-solutions', user?.email],
     queryFn: async () => {
-      const { data } = await supabase.from('solutions').select('*').eq('created_by', user?.email);
+      const { data } = await supabase.from('solutions').select('*').eq('is_deleted', false).eq('created_by', user?.email);
       return data || [];
     },
     enabled: !!user

@@ -32,7 +32,7 @@ function MyDeadlines() {
   const { data: myPilots = [] } = useQuery({
     queryKey: ['my-pilots-milestones', user?.email],
     queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*');
+      const { data } = await supabase.from('pilots').select('*').eq('is_deleted', false);
       return data?.filter(p => 
         (p.created_by === user?.email || p.team?.some(t => t.email === user?.email)) &&
         p.milestones?.some(m => m.status !== 'completed')
@@ -44,8 +44,8 @@ function MyDeadlines() {
   const { data: myChallenges = [] } = useQuery({
     queryKey: ['my-challenges-deadlines', user?.email],
     queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*');
-      return challenges.filter(c => 
+      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false);
+      return (data || []).filter(c => 
         c.created_by === user?.email && 
         c.submission_date && 
         c.status === 'draft'

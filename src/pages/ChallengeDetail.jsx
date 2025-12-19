@@ -212,7 +212,7 @@ export default function ChallengeDetail() {
   const { data: allChallenges = [] } = useQuery({
     queryKey: ['all-challenges'],
     queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*');
+      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false);
       return data || [];
     }
   });

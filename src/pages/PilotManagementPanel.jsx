@@ -25,7 +25,7 @@ function PilotManagementPanel() {
   const { data: pilots = [], isLoading } = useQuery({
     queryKey: ['all-pilots', user?.email],
     queryFn: async () => {
-      const { data: all } = await supabase.from('pilots').select('*');
+      const { data: all } = await supabase.from('pilots').select('*').eq('is_deleted', false);
       const { data: userRoles } = await supabase.from('user_roles').select('role').eq('user_id', user?.id);
       const isAdmin = userRoles?.some(r => r.role === 'admin');
       if (isAdmin) return all || [];

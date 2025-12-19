@@ -28,7 +28,7 @@ function MyWorkloadDashboard() {
   const { data: myChallenges = [] } = useQuery({
     queryKey: ['my-challenges', user?.email],
     queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*');
+      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false);
       return data?.filter(c => c.created_by === user?.email || c.reviewer === user?.email) || [];
     },
     enabled: !!user

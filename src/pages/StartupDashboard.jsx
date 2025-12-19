@@ -51,7 +51,7 @@ function StartupDashboard() {
   const { data: openChallenges = [] } = useQuery({
     queryKey: ['published-challenges'],
     queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*').eq('is_published', true);
+      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false).eq('is_published', true);
       return data?.filter(c =>
         ['approved', 'in_treatment'].includes(c.status)
       );

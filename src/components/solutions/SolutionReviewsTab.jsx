@@ -36,6 +36,7 @@ export default function SolutionReviewsTab({ solution }) {
     queryFn: async () => {
       if (!user) return [];
       const { data } = await supabase.from('pilots').select('*')
+        .eq('is_deleted', false)
         .eq('solution_id', solution.id)
         .eq('created_by', user.email)
         .in('stage', ['completed', 'scaled']);

@@ -35,7 +35,7 @@ export default function StrategyImpactAssessment({ strategicPlanId, strategicPla
       const [kpisRes, challengesRes, pilotsRes, budgetsRes, miiRes] = await Promise.all([
         supabase.from('strategy_kpis').select('*').eq('strategic_plan_id', activePlanId),
         supabase.from('challenges').select('id, status, municipality_id').eq('is_deleted', false),
-        supabase.from('pilots').select('id, status, success_score, municipality_id'),
+        supabase.from('pilots').select('id, status, success_score, municipality_id').eq('is_deleted', false),
         supabase.from('budgets').select('*').eq('strategic_plan_id', activePlanId),
         supabase.from('mii_results').select('overall_score, dimension_scores').eq('is_published', true).limit(20)
       ]);

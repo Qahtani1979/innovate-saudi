@@ -31,7 +31,7 @@ function MyLearning() {
   const { data: myChallenges = [] } = useQuery({
     queryKey: ['my-challenges-learning', user?.email],
     queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*').eq('created_by', user?.email);
+      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false).eq('created_by', user?.email);
       return data || [];
     },
     enabled: !!user
@@ -40,7 +40,7 @@ function MyLearning() {
   const { data: myPilots = [] } = useQuery({
     queryKey: ['my-pilots-learning', user?.email],
     queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*').eq('created_by', user?.email);
+      const { data } = await supabase.from('pilots').select('*').eq('is_deleted', false).eq('created_by', user?.email);
       return data || [];
     },
     enabled: !!user

@@ -33,7 +33,7 @@ function MyApprovals() {
   const { data: pendingPilots = [] } = useQuery({
     queryKey: ['pending-pilot-approvals', user?.email],
     queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*');
+      const { data } = await supabase.from('pilots').select('*').eq('is_deleted', false);
       return (data || []).filter(p => 
         p.milestones?.some(m => m.requires_approval && m.approval_status === 'pending') ||
         p.budget_approvals?.some(b => !b.approved && b.approved_by === user?.email)
