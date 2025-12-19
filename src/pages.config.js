@@ -490,6 +490,8 @@ import StartupOnboarding from './pages/StartupOnboarding';
 import DeputyshipOnboarding from './pages/DeputyshipOnboarding';
 import Onboarding from './pages/Onboarding';
 import StrategyFeedbackDashboard from './pages/StrategyFeedbackDashboard';
+import FinalRDAssessment from './pages/FinalRDAssessment';
+import FinalUsersAccessAssessment from './pages/FinalUsersAccessAssessment';
 import StrategyHub from './pages/StrategyHub';
 // Strategy System Pages
 import StrategyReviewPage from './pages/StrategyReviewPage';
@@ -1054,6 +1056,8 @@ export const PAGES = {
     "ActionPlanPage": ActionPlanPage,
     "SectorStrategyPage": SectorStrategyPage,
     "SystemValidationChecklist": SystemValidationChecklist,
+    "FinalRDAssessment": FinalRDAssessment,
+    "FinalUsersAccessAssessment": FinalUsersAccessAssessment,
 }
 
 export const pagesConfig = {
