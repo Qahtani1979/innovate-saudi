@@ -245,12 +245,21 @@ function ChallengeCreatePage() {
       cleanData.entry_date = new Date().toISOString().split('T')[0];
       cleanData.overall_score = Math.round((data.severity_score + data.impact_score) / 2);
       
-      const challenge = await base44.entities.Challenge.create(cleanData);
+      // Use Supabase client instead of base44
+      const { data: challenge, error } = await supabase
+        .from('challenges')
+        .insert(cleanData)
+        .select()
+        .single();
       
-      // Generate embedding
-      base44.functions.invoke('generateEmbeddings', {
-        entity_name: 'Challenge',
-        entity_ids: [challenge.id]
+      if (error) throw error;
+      
+      // Generate embedding via edge function
+      supabase.functions.invoke('generateEmbeddings', {
+        body: {
+          entity_name: 'Challenge',
+          entity_ids: [challenge.id]
+        }
       }).catch(err => console.error('Embedding generation failed:', err));
       
       return challenge;
