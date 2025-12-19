@@ -27,9 +27,11 @@ const priorityColors = {
 
 export default function ChallengeHero({ 
   challenge, 
+  challengeId,
   onShowSubmission, 
   onShowReview, 
   onShowTreatment, 
+  onShowResolution,
   onShowRDConversion,
   onShowArchive 
 }) {
@@ -124,11 +126,24 @@ export default function ChallengeHero({
                 )}
               </>
             )}
-            {(challenge.status === 'resolved' || challenge.status === 'in_treatment') && (
-              <Button onClick={onShowArchive} variant="outline" className="text-white border-white hover:bg-white/20">
+            {challenge.status === 'in_treatment' && (
+              <Button onClick={onShowResolution} className="bg-green-600 hover:bg-green-700">
+                <CheckCircle2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                {t({ en: 'Resolve', ar: 'حل' })}
+              </Button>
+            )}
+            {!['archived', 'resolved'].includes(challenge.status) && (
+              <Button onClick={onShowArchive} variant="outline" className="bg-white/20 border-white/40 text-white hover:bg-white/30">
                 <Archive className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                 {t({ en: 'Archive', ar: 'أرشفة' })}
               </Button>
+            )}
+            {challengeId && (
+              <a href={`/challenge-edit?id=${challengeId}`}>
+                <Button variant="outline" className="bg-white/20 border-white/40 text-white hover:bg-white/30">
+                  {t({ en: 'Edit', ar: 'تعديل' })}
+                </Button>
+              </a>
             )}
           </div>
         </div>

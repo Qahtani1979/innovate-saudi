@@ -42,6 +42,7 @@ import { usePermissions } from '@/components/permissions/usePermissions';
 import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
 import { useSolutionsWithVisibility, usePilotsWithVisibility, useContractsWithVisibility } from '@/hooks/visibility';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
+import { ChallengeHero, ChallengeStatsCards, ChallengeWorkflowModals } from '@/components/challenges/detail';
 
 export default function ChallengeDetail() {
   const { hasPermission, isAdmin } = usePermissions();
@@ -277,157 +278,34 @@ export default function ChallengeDetail() {
 
   return (
     <PageLayout>
-      {/* Workflow Modals */}
-      {showSubmission && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="max-w-2xl w-full max-h-[90vh] overflow-auto">
-            <ChallengeSubmissionWizard challenge={challenge} onClose={() => setShowSubmission(false)} />
-          </div>
-        </div>
-      )}
-      {showReview && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="max-w-2xl w-full max-h-[90vh] overflow-auto">
-            <ChallengeReviewWorkflow challenge={challenge} onClose={() => setShowReview(false)} />
-          </div>
-        </div>
-      )}
-      {showTreatment && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="max-w-3xl w-full max-h-[90vh] overflow-auto">
-            <ChallengeTreatmentPlan challenge={challenge} onClose={() => setShowTreatment(false)} />
-          </div>
-        </div>
-      )}
-      {showResolution && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="max-w-3xl w-full max-h-[90vh] overflow-auto">
-            <ChallengeResolutionWorkflow challenge={challenge} onClose={() => setShowResolution(false)} />
-          </div>
-        </div>
-      )}
-      {showRDConversion && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="max-w-3xl w-full max-h-[90vh] overflow-auto">
-            <ChallengeToRDWizard challenge={challenge} onClose={() => setShowRDConversion(false)} />
-          </div>
-        </div>
-      )}
-      {showArchive && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="max-w-2xl w-full max-h-[90vh] overflow-auto">
-            <ChallengeArchiveWorkflow challenge={challenge} onClose={() => setShowArchive(false)} />
-          </div>
-        </div>
-      )}
+      {/* Workflow Modals - Using refactored component */}
+      <ChallengeWorkflowModals
+        challenge={challenge}
+        showSubmission={showSubmission}
+        showReview={showReview}
+        showTreatment={showTreatment}
+        showResolution={showResolution}
+        showRDConversion={showRDConversion}
+        showArchive={showArchive}
+        onCloseSubmission={() => setShowSubmission(false)}
+        onCloseReview={() => setShowReview(false)}
+        onCloseTreatment={() => setShowTreatment(false)}
+        onCloseResolution={() => setShowResolution(false)}
+        onCloseRDConversion={() => setShowRDConversion(false)}
+        onCloseArchive={() => setShowArchive(false)}
+      />
 
-      {/* Hero Section */}
-      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-red-600 via-orange-600 to-amber-600 p-8 text-white">
-        <div className="relative z-10">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-3">
-                {challenge.code && (
-                  <Badge variant="outline" className="bg-white/20 text-white border-white/40 font-mono">
-                    {challenge.code}
-                  </Badge>
-                )}
-                <Badge className={`${statusInfo.color} flex items-center gap-1`}>
-                  <StatusIcon className="h-3 w-3" />
-                  {challenge.status?.replace(/_/g, ' ')}
-                </Badge>
-                <Badge className={priorityColors[challenge.priority]}>
-                  {challenge.priority}
-                </Badge>
-                {challenge.is_featured && (
-                  <Badge className="bg-amber-500 text-white">
-                    <Award className="h-3 w-3 mr-1" />
-                    Featured
-                  </Badge>
-                )}
-              </div>
-              <h1 className="text-5xl font-bold mb-2">
-                {language === 'ar' && challenge.title_ar ? challenge.title_ar : challenge.title_en}
-              </h1>
-              {(challenge.tagline_en || challenge.tagline_ar) && (
-                <p className="text-xl text-white/90">
-                  {language === 'ar' && challenge.tagline_ar ? challenge.tagline_ar : challenge.tagline_en}
-                </p>
-              )}
-              <div className="flex items-center gap-4 mt-4 text-sm">
-                <div className="flex items-center gap-1">
-                  <MapPin className="h-4 w-4" />
-                  <span>{challenge.municipality_id}</span>
-                </div>
-                {challenge.sector && (
-                  <div className="flex items-center gap-1">
-                    <Target className="h-4 w-4" />
-                    <span>{challenge.sector.replace(/_/g, ' ')}</span>
-                  </div>
-                )}
-                {challenge.overall_score && (
-                  <div className="flex items-center gap-1">
-                    <BarChart3 className="h-4 w-4" />
-                    <span>Score: {challenge.overall_score}/100</span>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              {challenge.status === 'draft' && (
-                <Button onClick={() => setShowSubmission(true)} className="bg-blue-600 hover:bg-blue-700">
-                  <Send className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                  {t({ en: 'Submit', ar: 'تقديم' })}
-                </Button>
-              )}
-              {challenge.status === 'submitted' && (
-                <Button onClick={() => setShowReview(true)} className="bg-yellow-600 hover:bg-yellow-700">
-                  <CheckCircle2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                  {t({ en: 'Review', ar: 'مراجعة' })}
-                </Button>
-              )}
-              {challenge.status === 'approved' && (
-                <>
-                  <Button onClick={() => setShowTreatment(true)} className="bg-purple-600 hover:bg-purple-700">
-                    <Activity className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                    {t({ en: 'Plan Treatment', ar: 'تخطيط المعالجة' })}
-                  </Button>
-                  <SmartActionButton 
-                    context="challenge_to_pilot"
-                    entity={{ ...challenge, entity_type: 'challenge' }}
-                    icon={TestTube}
-                    label={t({ en: 'Design Pilot', ar: 'تصميم تجربة' })}
-                    variant="default"
-                  />
-                  {challenge.track === 'r_and_d' && (
-                    <Button onClick={() => setShowRDConversion(true)} className="bg-blue-600 hover:bg-blue-700">
-                      <Microscope className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                      {t({ en: 'Create R&D', ar: 'إنشاء بحث' })}
-                    </Button>
-                  )}
-                </>
-              )}
-              {challenge.status === 'in_treatment' && (
-                <Button onClick={() => setShowResolution(true)} className="bg-green-600 hover:bg-green-700">
-                  <CheckCircle2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                  {t({ en: 'Resolve', ar: 'حل' })}
-                </Button>
-              )}
-              {!['archived', 'resolved'].includes(challenge.status) && (
-                <Button onClick={() => setShowArchive(true)} variant="outline" className="bg-white/20 border-white/40 text-white hover:bg-white/30">
-                  <Archive className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                  {t({ en: 'Archive', ar: 'أرشفة' })}
-                </Button>
-              )}
-              <Link to={createPageUrl(`ChallengeEdit?id=${challengeId}`)}>
-                <Button variant="outline" className="bg-white/20 border-white/40 text-white hover:bg-white/30">
-                  {t({ en: 'Edit', ar: 'تعديل' })}
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Hero Section - Using refactored component */}
+      <ChallengeHero
+        challenge={challenge}
+        onShowSubmission={() => setShowSubmission(true)}
+        onShowReview={() => setShowReview(true)}
+        onShowTreatment={() => setShowTreatment(true)}
+        onShowRDConversion={() => setShowRDConversion(true)}
+        onShowArchive={() => setShowArchive(true)}
+        onShowResolution={() => setShowResolution(true)}
+        challengeId={challengeId}
+      />
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
