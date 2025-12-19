@@ -617,6 +617,8 @@ function SystemValidationChecklist() {
               </div>
             </CardContent>
           </Card>
+            </>
+          )}
         </>
       )}
 
