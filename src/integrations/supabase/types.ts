@@ -11836,6 +11836,93 @@ export type Database = {
         }
         Relationships: []
       }
+      system_validation_summaries: {
+        Row: {
+          completed_checks: number | null
+          created_at: string | null
+          critical_completed: number | null
+          critical_total: number | null
+          id: string
+          last_validated_at: string | null
+          last_validated_by: string | null
+          status: string | null
+          system_id: string
+          system_name: string
+          total_checks: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          completed_checks?: number | null
+          created_at?: string | null
+          critical_completed?: number | null
+          critical_total?: number | null
+          id?: string
+          last_validated_at?: string | null
+          last_validated_by?: string | null
+          status?: string | null
+          system_id: string
+          system_name: string
+          total_checks?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          completed_checks?: number | null
+          created_at?: string | null
+          critical_completed?: number | null
+          critical_total?: number | null
+          id?: string
+          last_validated_at?: string | null
+          last_validated_by?: string | null
+          status?: string | null
+          system_id?: string
+          system_name?: string
+          total_checks?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      system_validations: {
+        Row: {
+          category_id: string
+          check_id: string
+          checked_at: string | null
+          checked_by: string | null
+          created_at: string | null
+          id: string
+          is_checked: boolean | null
+          notes: string | null
+          system_id: string
+          system_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          category_id: string
+          check_id: string
+          checked_at?: string | null
+          checked_by?: string | null
+          created_at?: string | null
+          id?: string
+          is_checked?: boolean | null
+          notes?: string | null
+          system_id: string
+          system_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          category_id?: string
+          check_id?: string
+          checked_at?: string | null
+          checked_by?: string | null
+          created_at?: string | null
+          id?: string
+          is_checked?: boolean | null
+          notes?: string | null
+          system_id?: string
+          system_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       tags: {
         Row: {
           color: string | null
