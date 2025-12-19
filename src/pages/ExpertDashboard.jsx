@@ -36,7 +36,8 @@ function ExpertDashboard() {
       if (error) throw error;
       return data;
     },
-    enabled: !!user?.id
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Fetch my assignments
@@ -50,11 +51,13 @@ function ExpertDashboard() {
           expert_panel:expert_panels(name_en, name_ar)
         `)
         .eq('expert_email', user?.email)
+        .eq('is_deleted', false)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];
     },
-    enabled: !!user?.email
+    enabled: !!user?.email,
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
   // Fetch my evaluations
@@ -69,7 +72,8 @@ function ExpertDashboard() {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!user?.email
+    enabled: !!user?.email,
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
   // Fetch upcoming deadlines

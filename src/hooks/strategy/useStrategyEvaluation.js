@@ -26,7 +26,8 @@ export function useStrategyEvaluation(entityType, entityId) {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!entityType && !!entityId
+    enabled: !!entityType && !!entityId,
+    staleTime: 3 * 60 * 1000, // 3 minutes
   });
 
   // Calculate consensus score from multiple evaluations
