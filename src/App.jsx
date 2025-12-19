@@ -31,6 +31,7 @@ import PublicIdeaSubmission from './pages/PublicIdeaSubmission';
 import CitizenChallengesBrowser from './pages/CitizenChallengesBrowser';
 import CitizenSolutionsBrowser from './pages/CitizenSolutionsBrowser';
 import CitizenLivingLabsBrowser from './pages/CitizenLivingLabsBrowser';
+import PublicProfilePage from './pages/PublicProfilePage';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -93,6 +94,9 @@ const AuthenticatedApp = () => {
       <Route path="/privacy" element={<PublicLayout><Privacy /></PublicLayout>} />
       <Route path="/terms" element={<PublicLayout><Terms /></PublicLayout>} />
       <Route path="/public-idea-submission" element={<PublicLayout><PublicIdeaSubmission /></PublicLayout>} />
+      
+      {/* Public Profile Page - accessible to everyone */}
+      <Route path="/profile/:userId" element={<PublicLayout><PublicProfilePage /></PublicLayout>} />
       
       {/* Legacy route redirects */}
       <Route path="/profile-settings" element={<Navigate to="/settings" replace />} />
