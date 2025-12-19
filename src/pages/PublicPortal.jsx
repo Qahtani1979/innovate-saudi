@@ -84,6 +84,7 @@ function PublicPortal() {
       const { data, error } = await supabase
         .from('programs')
         .select('*')
+        .eq('is_deleted', false)
         .eq('is_published', true)
         .eq('status', 'applications_open')
         .limit(3);

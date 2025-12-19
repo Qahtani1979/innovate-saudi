@@ -31,7 +31,10 @@ function MyPrograms() {
   const { data: programs = [] } = useQuery({
     queryKey: ['programs-detail'],
     queryFn: async () => {
-      const { data } = await supabase.from('programs').select('*');
+      const { data } = await supabase
+        .from('programs')
+        .select('*')
+        .eq('is_deleted', false);
       return data || [];
     }
   });

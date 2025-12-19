@@ -118,7 +118,12 @@ function ExpertMatchingEnginePage() {
   const { data: events = [] } = useQuery({
     queryKey: ['events-for-matching'],
     queryFn: async () => {
-      const { data } = await supabase.from('events').select('*').order('created_at', { ascending: false }).limit(100);
+      const { data } = await supabase
+        .from('events')
+        .select('*')
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false })
+        .limit(100);
       return data || [];
     }
   });
