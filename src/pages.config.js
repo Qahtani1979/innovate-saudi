@@ -810,8 +810,6 @@ export const PAGES = {
     "UserDirectory": UserManagementHub,
     // UserGamification - Now part of UserProfileHub
     "UserGamification": UserProfileHub,
-    // UserActivityDashboard - Now part of UserProfileHub
-    "UserActivityDashboard": UserProfileHub,
     "NotificationPreferences": NotificationPreferences,
     // DelegationManager, RolePermissionManager, RoleRequestCenter, ConditionalAccessRules - DELETED (migrated to RBACHub)
     "DelegationManager": RBACHub,
