@@ -281,7 +281,15 @@ export const VALIDATION_CATEGORIES = [
           { id: 'audit-4', text: { en: 'Status changes logged', ar: 'تغييرات الحالة مسجلة' }, priority: 'medium' },
           { id: 'audit-5', text: { en: 'Login/logout logged', ar: 'تسجيل الدخول/الخروج مسجل' }, priority: 'high' },
           { id: 'audit-6', text: { en: 'Sensitive actions logged', ar: 'الإجراءات الحساسة مسجلة' }, priority: 'high' },
-          { id: 'audit-7', text: { en: 'Logs include user, timestamp, entity info', ar: 'السجلات تتضمن المستخدم والوقت ومعلومات الكيان' }, priority: 'medium' }
+          { id: 'audit-7', text: { en: 'Logs include user, timestamp, entity info', ar: 'السجلات تتضمن المستخدم والوقت ومعلومات الكيان' }, priority: 'medium' },
+          { id: 'audit-8', text: { en: 'Failed login attempts logged', ar: 'محاولات تسجيل الدخول الفاشلة مسجلة' }, priority: 'high' },
+          { id: 'audit-9', text: { en: 'Permission/role changes logged', ar: 'تغييرات الصلاحيات/الأدوار مسجلة' }, priority: 'critical' },
+          { id: 'audit-10', text: { en: 'Bulk operations logged', ar: 'العمليات الجماعية مسجلة' }, priority: 'high' },
+          { id: 'audit-11', text: { en: 'Data exports logged', ar: 'تصدير البيانات مسجل' }, priority: 'high' },
+          { id: 'audit-12', text: { en: 'IP address captured', ar: 'عنوان IP مسجل' }, priority: 'medium' },
+          { id: 'audit-13', text: { en: 'Audit logs immutable (cannot be deleted)', ar: 'سجلات التدقيق غير قابلة للتغيير' }, priority: 'critical' },
+          { id: 'audit-14', text: { en: 'Audit log retention policy defined', ar: 'سياسة الاحتفاظ بسجلات التدقيق محددة' }, priority: 'medium' },
+          { id: 'audit-15', text: { en: 'Admin actions separately tracked', ar: 'إجراءات المسؤول يتم تتبعها بشكل منفصل' }, priority: 'high' }
         ]
       }
     ]
