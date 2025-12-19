@@ -32,34 +32,16 @@ export function useSystemValidation(systemId) {
     enabled: !!systemId
   });
 
-  // Fetch dynamic progress for all systems (real-time calculation)
-  const { data: dynamicProgress, isLoading: progressLoading } = useQuery({
+  // Fetch dynamic progress for all systems from summaries table (efficient - only 52 rows)
+  const { data: dynamicProgress, isLoading: progressLoading, refetch: refetchProgress } = useQuery({
     queryKey: ['system-validation-progress'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('system_validations')
-        .select('system_id, system_name, is_checked');
+        .from('system_validation_summaries')
+        .select('system_id, system_name, total_checks, completed_checks');
       
       if (error) throw error;
-      
-      // Group by system and calculate progress
-      const progressMap = {};
-      (data || []).forEach(item => {
-        if (!progressMap[item.system_id]) {
-          progressMap[item.system_id] = {
-            system_id: item.system_id,
-            system_name: item.system_name,
-            total_checks: 0,
-            completed_checks: 0
-          };
-        }
-        progressMap[item.system_id].total_checks++;
-        if (item.is_checked) {
-          progressMap[item.system_id].completed_checks++;
-        }
-      });
-      
-      return Object.values(progressMap);
+      return data || [];
     },
     staleTime: 5000 // Refresh every 5 seconds
   });
@@ -142,15 +124,18 @@ export function useSystemValidation(systemId) {
       
       const { data: existing } = await supabase
         .from('system_validations')
-        .select('id, status')
+        .select('id, status, is_checked')
         .eq('system_id', systemId)
         .eq('check_id', checkId)
-        .single();
+        .maybeSingle();
 
       // Don't allow changing not_applicable status unless explicitly setting it
       if (existing?.status === 'not_applicable' && !status) {
-        return; // Skip update for N/A checks
+        return { changed: false }; // Skip update for N/A checks
       }
+
+      const wasChecked = existing?.is_checked || false;
+      const delta = isChecked && !wasChecked ? 1 : (!isChecked && wasChecked ? -1 : 0);
 
       if (existing) {
         const { error } = await supabase
@@ -178,6 +163,34 @@ export function useSystemValidation(systemId) {
           });
         if (error) throw error;
       }
+
+      // Update the summary's completed_checks count
+      if (delta !== 0) {
+        const { data: summary } = await supabase
+          .from('system_validation_summaries')
+          .select('id, completed_checks, total_checks')
+          .eq('system_id', systemId)
+          .maybeSingle();
+
+        if (summary) {
+          const newCompleted = Math.max(0, Math.min(summary.total_checks, (summary.completed_checks || 0) + delta));
+          const newStatusStr = newCompleted === 0 ? 'not_started' : 
+                              newCompleted === summary.total_checks ? 'complete' : 'in_progress';
+          
+          await supabase
+            .from('system_validation_summaries')
+            .update({ 
+              completed_checks: newCompleted,
+              status: newStatusStr,
+              last_validated_at: new Date().toISOString(),
+              last_validated_by: userEmail,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', summary.id);
+        }
+      }
+
+      return { changed: true, delta };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['system-validations', systemId] });
