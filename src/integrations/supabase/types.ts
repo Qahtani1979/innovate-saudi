@@ -6146,39 +6146,74 @@ export type Database = {
       }
       ministries: {
         Row: {
+          address: string | null
           code: string | null
+          contact_email: string | null
+          contact_phone: string | null
           created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          description_ar: string | null
+          description_en: string | null
           id: string
           is_active: boolean | null
+          is_deleted: boolean | null
           logo_url: string | null
           name_ar: string | null
           name_en: string
+          sector_id: string | null
           updated_at: string | null
           website: string | null
         }
         Insert: {
+          address?: string | null
           code?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description_ar?: string | null
+          description_en?: string | null
           id?: string
           is_active?: boolean | null
+          is_deleted?: boolean | null
           logo_url?: string | null
           name_ar?: string | null
           name_en: string
+          sector_id?: string | null
           updated_at?: string | null
           website?: string | null
         }
         Update: {
+          address?: string | null
           code?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description_ar?: string | null
+          description_en?: string | null
           id?: string
           is_active?: boolean | null
+          is_deleted?: boolean | null
           logo_url?: string | null
           name_ar?: string | null
           name_en?: string
+          sector_id?: string | null
           updated_at?: string | null
           website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ministries_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "sectors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       municipalities: {
         Row: {
