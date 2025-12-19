@@ -202,6 +202,127 @@ export function useSystemValidation(systemId) {
     }
   });
 
+  // Bulk status change for multiple checks
+  const bulkStatusChange = useMutation({
+    mutationFn: async (updates) => {
+      if (!updates || updates.length === 0) return { changed: 0 };
+      
+      const firstUpdate = updates[0];
+      const sysId = firstUpdate.systemId;
+      const sysName = firstUpdate.systemName;
+      
+      // Get all existing validations for this system
+      const { data: existingValidations } = await supabase
+        .from('system_validations')
+        .select('id, check_id, is_checked, status')
+        .eq('system_id', sysId);
+      
+      const existingMap = {};
+      (existingValidations || []).forEach(v => {
+        existingMap[v.check_id] = v;
+      });
+      
+      const toInsert = [];
+      const toUpdate = [];
+      let checkedDelta = 0;
+      
+      for (const update of updates) {
+        const existing = existingMap[update.checkId];
+        const newStatus = update.status || (update.isChecked ? 'checked' : 'pending');
+        const isNowChecked = newStatus === 'checked';
+        
+        if (existing) {
+          const wasChecked = existing.is_checked || false;
+          if (isNowChecked && !wasChecked) checkedDelta++;
+          else if (!isNowChecked && wasChecked) checkedDelta--;
+          
+          toUpdate.push({
+            id: existing.id,
+            is_checked: update.isChecked,
+            status: newStatus,
+            checked_by: userEmail,
+            checked_at: update.isChecked ? new Date().toISOString() : null
+          });
+        } else {
+          if (isNowChecked) checkedDelta++;
+          toInsert.push({
+            system_id: sysId,
+            system_name: sysName,
+            category_id: update.categoryId,
+            check_id: update.checkId,
+            is_checked: update.isChecked,
+            status: newStatus,
+            checked_by: userEmail,
+            checked_at: update.isChecked ? new Date().toISOString() : null
+          });
+        }
+      }
+      
+      // Batch insert new records
+      if (toInsert.length > 0) {
+        const { error } = await supabase
+          .from('system_validations')
+          .insert(toInsert);
+        if (error) throw error;
+      }
+      
+      // Batch update existing records (Supabase doesn't support batch update, so we do it in parallel)
+      if (toUpdate.length > 0) {
+        await Promise.all(toUpdate.map(async (record) => {
+          const { error } = await supabase
+            .from('system_validations')
+            .update({
+              is_checked: record.is_checked,
+              status: record.status,
+              checked_by: record.checked_by,
+              checked_at: record.checked_at
+            })
+            .eq('id', record.id);
+          if (error) console.error('Update error:', error);
+        }));
+      }
+      
+      // Update summary
+      if (checkedDelta !== 0) {
+        const { data: summary } = await supabase
+          .from('system_validation_summaries')
+          .select('id, completed_checks, total_checks')
+          .eq('system_id', sysId)
+          .maybeSingle();
+
+        if (summary) {
+          const newCompleted = Math.max(0, Math.min(summary.total_checks, (summary.completed_checks || 0) + checkedDelta));
+          const newStatusStr = newCompleted === 0 ? 'not_started' : 
+                              newCompleted === summary.total_checks ? 'complete' : 'in_progress';
+          
+          await supabase
+            .from('system_validation_summaries')
+            .update({ 
+              completed_checks: newCompleted,
+              status: newStatusStr,
+              last_validated_at: new Date().toISOString(),
+              last_validated_by: userEmail,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', summary.id);
+        }
+      }
+      
+      return { changed: toInsert.length + toUpdate.length };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['system-validations', systemId] });
+      queryClient.invalidateQueries({ queryKey: ['system-validation-progress'] });
+      if (result.changed > 0) {
+        toast.success(`Updated ${result.changed} checks`);
+      }
+    },
+    onError: (error) => {
+      toast.error('Failed to update checks');
+      console.error(error);
+    }
+  });
+
   // Update summary for a system
   const updateSummary = useMutation({
     mutationFn: async ({ systemId, systemName, totalChecks, completedChecks, criticalTotal, criticalCompleted }) => {
@@ -280,6 +401,7 @@ export function useSystemValidation(systemId) {
     dynamicProgress, // Real-time progress from actual checks
     isLoading: isLoading || summariesLoading || progressLoading,
     toggleCheck,
+    bulkStatusChange,
     updateSummary,
     resetSystem,
     initializeSystem,

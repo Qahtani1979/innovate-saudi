@@ -17,12 +17,13 @@ import { useSystemValidation } from '@/hooks/useSystemValidation';
 import { PLATFORM_SYSTEMS } from '@/constants/platformSystems';
 import { VALIDATION_CATEGORIES } from '@/constants/validationCategories';
 import { useIsMobile } from '@/hooks/use-mobile';
+import ExpertValidationPanel from '@/components/validation/ExpertValidationPanel';
 import { 
   ClipboardCheck, Database, Shield, Code, Users, GitBranch, Bell, 
   FileText, Eye, Lock, Search, Download, RefreshCw, CheckCircle2,
   AlertTriangle, XCircle, Layers, Activity, Settings, Server, 
   Globe, FolderOpen, BookOpen, Zap, Menu, Save, ChevronRight,
-  LayoutGrid, Navigation, UserCog, Palette
+  LayoutGrid, Navigation, UserCog, Palette, Sparkles
 } from 'lucide-react';
 // Use validation categories from constants with icon mapping
 const categoryIcons = {
@@ -55,6 +56,7 @@ function SystemValidationChecklist() {
   const [selectedSystemId, setSelectedSystemId] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showMobileNav, setShowMobileNav] = useState(false);
+  const [validationMode, setValidationMode] = useState('standard'); // 'standard' or 'expert'
   
   const { 
     validationMap, 
@@ -62,6 +64,7 @@ function SystemValidationChecklist() {
     dynamicProgress, // Use dynamic progress for real-time updates
     isLoading, 
     toggleCheck, 
+    bulkStatusChange,
     updateSummary, 
     resetSystem,
     initializeSystem,
@@ -420,43 +423,69 @@ function SystemValidationChecklist() {
                     <Save className="h-3 w-3 sm:h-4 sm:w-4" />
                     {t({ en: 'Save Progress', ar: 'حفظ التقدم' })}
                   </Button>
+                  <Button 
+                    variant={validationMode === 'expert' ? 'default' : 'outline'} 
+                    size="sm" 
+                    onClick={() => setValidationMode(validationMode === 'expert' ? 'standard' : 'expert')} 
+                    className="gap-1.5 text-xs sm:text-sm"
+                  >
+                    <Sparkles className="h-3 w-3 sm:h-4 sm:w-4" />
+                    {t({ en: 'Open Expert', ar: 'وضع الخبير' })}
+                  </Button>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder={t({ en: 'Search checks...', ar: 'البحث في الفحوصات...' })}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+          {/* Expert Mode Panel */}
+          {validationMode === 'expert' ? (
+            <ExpertValidationPanel
+              systemId={selectedSystemId}
+              systemName={selectedSystem ? t(selectedSystem.name) : ''}
+              validationMap={validationMap}
+              onStatusChange={async (update) => {
+                await toggleCheck.mutateAsync(update);
+              }}
+              onBulkStatusChange={async (updates) => {
+                await bulkStatusChange.mutateAsync(updates);
+              }}
+              onSaveProgress={handleSaveProgress}
+              isLoading={toggleCheck.isPending || bulkStatusChange?.isPending || isLoading}
             />
-          </div>
+          ) : (
+            <>
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={t({ en: 'Search checks...', ar: 'البحث في الفحوصات...' })}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
 
-          {/* Category Progress Overview - Scrollable on mobile */}
-          <div className="overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
-            <div className="flex sm:grid sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-12 gap-2 min-w-max sm:min-w-0">
-              {validationCategories.map(cat => {
-                const Icon = cat.icon;
-                const progress = getCategoryProgress(cat);
-                return (
-                  <Card key={cat.id} className="hover:shadow-md transition-shadow w-24 sm:w-auto shrink-0">
-                    <CardContent className="p-2 sm:pt-3 sm:pb-3">
-                      <div className="flex items-center gap-1.5 mb-1.5">
-                        <Icon className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
-                        <span className="text-[10px] sm:text-xs font-medium truncate">{cat.id.slice(0, 4).toUpperCase()}</span>
-                      </div>
-                      <Progress value={progress} className="h-1.5" />
-                      <p className="text-[10px] text-muted-foreground text-right mt-1">{progress}%</p>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
+              {/* Category Progress Overview - Scrollable on mobile */}
+              <div className="overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+                <div className="flex sm:grid sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-12 gap-2 min-w-max sm:min-w-0">
+                  {validationCategories.map(cat => {
+                    const Icon = cat.icon;
+                    const progress = getCategoryProgress(cat);
+                    return (
+                      <Card key={cat.id} className="hover:shadow-md transition-shadow w-24 sm:w-auto shrink-0">
+                        <CardContent className="p-2 sm:pt-3 sm:pb-3">
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <Icon className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+                            <span className="text-[10px] sm:text-xs font-medium truncate">{cat.id.slice(0, 4).toUpperCase()}</span>
+                          </div>
+                          <Progress value={progress} className="h-1.5" />
+                          <p className="text-[10px] text-muted-foreground text-right mt-1">{progress}%</p>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
 
           {/* Validation Categories */}
           <ScrollArea className="h-[calc(100vh-580px)] min-h-[300px] sm:min-h-[400px]">
