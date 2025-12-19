@@ -401,6 +401,176 @@ export const VALIDATION_CATEGORIES = [
         ]
       }
     ]
+  },
+  {
+    id: 'pages',
+    name: { en: '13. Pages & Hubs', ar: '13. الصفحات والمحاور' },
+    color: 'emerald',
+    subcategories: [
+      {
+        id: 'hub-pages',
+        name: { en: '13.1 Hub Pages', ar: '13.1 صفحات المحور' },
+        checks: [
+          { id: 'hub-1', text: { en: 'Hub landing page exists', ar: 'صفحة المحور الرئيسية موجودة' }, priority: 'high' },
+          { id: 'hub-2', text: { en: 'Hub has consistent card layout', ar: 'المحور له تخطيط بطاقات متسق' }, priority: 'medium' },
+          { id: 'hub-3', text: { en: 'Hub has working search/filter', ar: 'المحور له بحث/فلتر يعمل' }, priority: 'medium' },
+          { id: 'hub-4', text: { en: 'Hub has create action button', ar: 'المحور له زر إنشاء' }, priority: 'medium' },
+          { id: 'hub-5', text: { en: 'Hub stats/summary section exists', ar: 'قسم الإحصائيات موجود' }, priority: 'low' },
+          { id: 'hub-6', text: { en: 'Hub has proper empty state', ar: 'المحور له حالة فارغة مناسبة' }, priority: 'medium' }
+        ]
+      },
+      {
+        id: 'single-pages',
+        name: { en: '13.2 Single/Detail Pages', ar: '13.2 الصفحات الفردية' },
+        checks: [
+          { id: 'single-1', text: { en: 'Detail page exists for entity', ar: 'صفحة التفاصيل موجودة' }, priority: 'high' },
+          { id: 'single-2', text: { en: 'Detail page shows all relevant fields', ar: 'صفحة التفاصيل تعرض جميع الحقول' }, priority: 'medium' },
+          { id: 'single-3', text: { en: 'Detail page has edit/delete actions', ar: 'صفحة التفاصيل لها إجراءات تحرير/حذف' }, priority: 'high' },
+          { id: 'single-4', text: { en: 'Detail page shows related entities', ar: 'صفحة التفاصيل تعرض الكيانات المرتبطة' }, priority: 'medium' },
+          { id: 'single-5', text: { en: 'Detail page has breadcrumb navigation', ar: 'صفحة التفاصيل لها مسار التنقل' }, priority: 'low' },
+          { id: 'single-6', text: { en: 'Detail page handles 404 gracefully', ar: 'صفحة التفاصيل تعالج 404 بشكل مناسب' }, priority: 'medium' }
+        ]
+      },
+      {
+        id: 'create-edit-pages',
+        name: { en: '13.3 Create/Edit Pages', ar: '13.3 صفحات الإنشاء/التعديل' },
+        checks: [
+          { id: 'form-page-1', text: { en: 'Create form page exists', ar: 'صفحة نموذج الإنشاء موجودة' }, priority: 'high' },
+          { id: 'form-page-2', text: { en: 'Edit form page exists', ar: 'صفحة نموذج التعديل موجودة' }, priority: 'high' },
+          { id: 'form-page-3', text: { en: 'Form has proper validation', ar: 'النموذج له تحقق مناسب' }, priority: 'high' },
+          { id: 'form-page-4', text: { en: 'Form pre-fills data on edit', ar: 'النموذج يملأ البيانات عند التعديل' }, priority: 'medium' },
+          { id: 'form-page-5', text: { en: 'Form shows success/error feedback', ar: 'النموذج يعرض رسائل النجاح/الخطأ' }, priority: 'medium' },
+          { id: 'form-page-6', text: { en: 'Form has cancel/back navigation', ar: 'النموذج له إلغاء/رجوع' }, priority: 'low' }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'navigation',
+    name: { en: '14. Navigation & Routing', ar: '14. التنقل والتوجيه' },
+    color: 'sky',
+    subcategories: [
+      {
+        id: 'menu-links',
+        name: { en: '14.1 Menu & Links', ar: '14.1 القوائم والروابط' },
+        checks: [
+          { id: 'nav-1', text: { en: 'System appears in sidebar menu', ar: 'النظام يظهر في القائمة الجانبية' }, priority: 'high' },
+          { id: 'nav-2', text: { en: 'Menu item has correct icon', ar: 'عنصر القائمة له أيقونة صحيحة' }, priority: 'low' },
+          { id: 'nav-3', text: { en: 'Menu respects user permissions', ar: 'القائمة تحترم صلاحيات المستخدم' }, priority: 'critical' },
+          { id: 'nav-4', text: { en: 'Sub-menu items work correctly', ar: 'عناصر القائمة الفرعية تعمل' }, priority: 'medium' },
+          { id: 'nav-5', text: { en: 'Active menu state highlighted', ar: 'حالة القائمة النشطة مميزة' }, priority: 'low' },
+          { id: 'nav-6', text: { en: 'Menu collapses properly on mobile', ar: 'القائمة تطوى على الجوال' }, priority: 'medium' }
+        ]
+      },
+      {
+        id: 'routing',
+        name: { en: '14.2 Routes & URLs', ar: '14.2 المسارات والروابط' },
+        checks: [
+          { id: 'route-1', text: { en: 'Routes follow naming convention', ar: 'المسارات تتبع اتفاقية التسمية' }, priority: 'medium' },
+          { id: 'route-2', text: { en: 'Routes have proper guards', ar: 'المسارات لها حراسة مناسبة' }, priority: 'critical' },
+          { id: 'route-3', text: { en: 'Deep links work correctly', ar: 'الروابط العميقة تعمل' }, priority: 'medium' },
+          { id: 'route-4', text: { en: 'Route params validated', ar: 'معاملات المسار محققة' }, priority: 'high' },
+          { id: 'route-5', text: { en: 'Unauthorized redirects to login', ar: 'غير المصرح يُعاد توجيهه' }, priority: 'high' },
+          { id: 'route-6', text: { en: 'Not found shows 404 page', ar: 'غير موجود يعرض صفحة 404' }, priority: 'medium' }
+        ]
+      },
+      {
+        id: 'breadcrumbs',
+        name: { en: '14.3 Breadcrumbs & Back', ar: '14.3 مسار التنقل والرجوع' },
+        checks: [
+          { id: 'bread-1', text: { en: 'Breadcrumbs show correct path', ar: 'مسار التنقل يعرض المسار الصحيح' }, priority: 'low' },
+          { id: 'bread-2', text: { en: 'Breadcrumb links are clickable', ar: 'روابط مسار التنقل قابلة للنقر' }, priority: 'low' },
+          { id: 'bread-3', text: { en: 'Back button works correctly', ar: 'زر الرجوع يعمل' }, priority: 'medium' },
+          { id: 'bread-4', text: { en: 'Browser back/forward works', ar: 'رجوع/تقدم المتصفح يعمل' }, priority: 'medium' }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'roles',
+    name: { en: '15. Roles & Access', ar: '15. الأدوار والوصول' },
+    color: 'pink',
+    subcategories: [
+      {
+        id: 'role-assignments',
+        name: { en: '15.1 Role Assignments', ar: '15.1 تعيينات الأدوار' },
+        checks: [
+          { id: 'role-1', text: { en: 'System has defined roles', ar: 'النظام له أدوار محددة' }, priority: 'high' },
+          { id: 'role-2', text: { en: 'Admin role has full access', ar: 'دور المسؤول له وصول كامل' }, priority: 'high' },
+          { id: 'role-3', text: { en: 'Staff role has appropriate access', ar: 'دور الموظف له وصول مناسب' }, priority: 'high' },
+          { id: 'role-4', text: { en: 'Public/viewer role is restricted', ar: 'دور العارض مقيد' }, priority: 'high' },
+          { id: 'role-5', text: { en: 'Role hierarchy is correct', ar: 'تسلسل الأدوار صحيح' }, priority: 'medium' },
+          { id: 'role-6', text: { en: 'Role assignment UI works', ar: 'واجهة تعيين الأدوار تعمل' }, priority: 'medium' }
+        ]
+      },
+      {
+        id: 'role-visibility',
+        name: { en: '15.2 Role-Based Visibility', ar: '15.2 الرؤية المبنية على الدور' },
+        checks: [
+          { id: 'vis-1', text: { en: 'Admin sees all records', ar: 'المسؤول يرى جميع السجلات' }, priority: 'high' },
+          { id: 'vis-2', text: { en: 'Staff sees scoped records', ar: 'الموظف يرى السجلات المحددة' }, priority: 'high' },
+          { id: 'vis-3', text: { en: 'Owner sees own records', ar: 'المالك يرى سجلاته' }, priority: 'high' },
+          { id: 'vis-4', text: { en: 'Public sees published only', ar: 'العام يرى المنشور فقط' }, priority: 'high' },
+          { id: 'vis-5', text: { en: 'PII hidden from unauthorized', ar: 'البيانات الشخصية مخفية' }, priority: 'critical' },
+          { id: 'vis-6', text: { en: 'Sensitive fields masked', ar: 'الحقول الحساسة مقنعة' }, priority: 'high' }
+        ]
+      },
+      {
+        id: 'role-actions',
+        name: { en: '15.3 Role-Based Actions', ar: '15.3 الإجراءات المبنية على الدور' },
+        checks: [
+          { id: 'act-1', text: { en: 'Create action respects role', ar: 'إجراء الإنشاء يحترم الدور' }, priority: 'high' },
+          { id: 'act-2', text: { en: 'Edit action respects role', ar: 'إجراء التعديل يحترم الدور' }, priority: 'high' },
+          { id: 'act-3', text: { en: 'Delete action respects role', ar: 'إجراء الحذف يحترم الدور' }, priority: 'high' },
+          { id: 'act-4', text: { en: 'Approve action respects role', ar: 'إجراء الموافقة يحترم الدور' }, priority: 'high' },
+          { id: 'act-5', text: { en: 'Export action respects role', ar: 'إجراء التصدير يحترم الدور' }, priority: 'medium' },
+          { id: 'act-6', text: { en: 'Bulk actions respect role', ar: 'الإجراءات الجماعية تحترم الدور' }, priority: 'medium' }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'design',
+    name: { en: '16. UI Design & Layout', ar: '16. التصميم والتخطيط' },
+    color: 'fuchsia',
+    subcategories: [
+      {
+        id: 'design-system',
+        name: { en: '16.1 Design System', ar: '16.1 نظام التصميم' },
+        checks: [
+          { id: 'ds-1', text: { en: 'Uses design system tokens', ar: 'يستخدم رموز نظام التصميم' }, priority: 'high' },
+          { id: 'ds-2', text: { en: 'Colors from theme variables', ar: 'الألوان من متغيرات الثيم' }, priority: 'high' },
+          { id: 'ds-3', text: { en: 'Typography consistent', ar: 'الخط متسق' }, priority: 'medium' },
+          { id: 'ds-4', text: { en: 'Spacing follows system', ar: 'التباعد يتبع النظام' }, priority: 'medium' },
+          { id: 'ds-5', text: { en: 'Icons from icon library', ar: 'الأيقونات من المكتبة' }, priority: 'low' },
+          { id: 'ds-6', text: { en: 'Shadows/borders consistent', ar: 'الظلال/الحدود متسقة' }, priority: 'low' }
+        ]
+      },
+      {
+        id: 'layout-consistency',
+        name: { en: '16.2 Layout Consistency', ar: '16.2 اتساق التخطيط' },
+        checks: [
+          { id: 'lay-1', text: { en: 'Page header consistent', ar: 'عنوان الصفحة متسق' }, priority: 'medium' },
+          { id: 'lay-2', text: { en: 'Card layouts consistent', ar: 'تخطيطات البطاقات متسقة' }, priority: 'medium' },
+          { id: 'lay-3', text: { en: 'Form layouts consistent', ar: 'تخطيطات النماذج متسقة' }, priority: 'medium' },
+          { id: 'lay-4', text: { en: 'Table layouts consistent', ar: 'تخطيطات الجداول متسقة' }, priority: 'medium' },
+          { id: 'lay-5', text: { en: 'Modal/dialog layouts consistent', ar: 'تخطيطات النوافذ متسقة' }, priority: 'medium' },
+          { id: 'lay-6', text: { en: 'Empty states consistent', ar: 'الحالات الفارغة متسقة' }, priority: 'low' }
+        ]
+      },
+      {
+        id: 'visual-polish',
+        name: { en: '16.3 Visual Polish', ar: '16.3 التلميع البصري' },
+        checks: [
+          { id: 'polish-1', text: { en: 'Loading states styled', ar: 'حالات التحميل مصممة' }, priority: 'medium' },
+          { id: 'polish-2', text: { en: 'Error states styled', ar: 'حالات الخطأ مصممة' }, priority: 'medium' },
+          { id: 'polish-3', text: { en: 'Success states styled', ar: 'حالات النجاح مصممة' }, priority: 'low' },
+          { id: 'polish-4', text: { en: 'Animations smooth', ar: 'الحركات سلسة' }, priority: 'low' },
+          { id: 'polish-5', text: { en: 'Hover states work', ar: 'حالات التمرير تعمل' }, priority: 'low' },
+          { id: 'polish-6', text: { en: 'Dark mode supported', ar: 'الوضع الداكن مدعوم' }, priority: 'medium' }
+        ]
+      }
+    ]
   }
 ];
 
