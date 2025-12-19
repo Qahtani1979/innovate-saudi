@@ -71,11 +71,12 @@ function SolutionDetailPage() {
   const [showRDCollaboration, setShowRDCollaboration] = React.useState(false);
   const queryClient = useQueryClient();
 
+  // Fixed N+1 query (dc-4/api-14) - direct filter instead of fetching all
   const { data: solution, isLoading } = useQuery({
     queryKey: ['solution', solutionId],
     queryFn: async () => {
-      const solutions = await base44.entities.Solution.list();
-      return solutions.find(s => s.id === solutionId);
+      const solutions = await base44.entities.Solution.filter({ id: solutionId });
+      return solutions?.[0] || null;
     },
     enabled: !!solutionId
   });

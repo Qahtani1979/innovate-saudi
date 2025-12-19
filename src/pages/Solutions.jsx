@@ -28,7 +28,10 @@ import {
   Sparkles,
   Loader2,
   X,
-  Trash2
+  Trash2,
+  ArrowUpDown,
+  SortAsc,
+  SortDesc
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
@@ -40,11 +43,16 @@ import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
 import SolutionErrorBoundary from '../components/solutions/SolutionErrorBoundary';
 import SolutionDeleteDialog from '../components/solutions/SolutionDeleteDialog';
 
+// Pluralization helper (i18n-4)
+const pluralize = (count, singular, plural) => count === 1 ? singular : plural;
+
 function SolutionsPage() {
   const { hasPermission, isAdmin, isDeputyship, isMunicipality, isStaffUser, user } = usePermissions();
   const [searchTerm, setSearchTerm] = useState('');
   const [sectorFilter, setSectorFilter] = useState('all');
   const [maturityFilter, setMaturityFilter] = useState('all');
+  const [sortField, setSortField] = useState('created_at'); // lc-3: Sort state
+  const [sortOrder, setSortOrder] = useState('desc'); // lc-3: Sort order
   const [viewMode, setViewMode] = useState('grid');
   const [selectedSolutions, setSelectedSolutions] = useState([]);
   const [showAIInsights, setShowAIInsights] = useState(false);
@@ -63,17 +71,29 @@ function SolutionsPage() {
     limit: 100
   });
 
+  // mh-2: Optimistic updates for delete
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Solution.delete(id),
-    onSuccess: () => {
+    onMutate: async (deletedId) => {
+      await queryClient.cancelQueries(['solutions-with-visibility']);
+      const previousSolutions = queryClient.getQueryData(['solutions-with-visibility']);
+      queryClient.setQueryData(['solutions-with-visibility'], (old) => 
+        old?.filter(s => s.id !== deletedId) || []
+      );
+      return { previousSolutions };
+    },
+    onError: (err, deletedId, context) => {
+      queryClient.setQueryData(['solutions-with-visibility'], context.previousSolutions);
+      toast.error(t({ en: 'Failed to delete solution', ar: 'فشل حذف الحل' }));
+    },
+    onSettled: () => {
       queryClient.invalidateQueries(['solutions']);
       queryClient.invalidateQueries(['solutions-with-visibility']);
       setDeleteDialogOpen(false);
       setSolutionToDelete(null);
-      toast.success(t({ en: 'Solution deleted successfully', ar: 'تم حذف الحل بنجاح' }));
     },
-    onError: () => {
-      toast.error(t({ en: 'Failed to delete solution', ar: 'فشل حذف الحل' }));
+    onSuccess: () => {
+      toast.success(t({ en: 'Solution deleted successfully', ar: 'تم حذف الحل بنجاح' }));
     }
   });
 
@@ -111,6 +131,7 @@ function SolutionsPage() {
     }
   });
 
+  // lc-3: Filter and sort solutions
   const filteredSolutions = solutions.filter(solution => {
     const matchesSearch = solution.name_en?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          solution.provider_name?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -118,6 +139,16 @@ function SolutionsPage() {
     const matchesMaturity = maturityFilter === 'all' || solution.maturity_level === maturityFilter;
     const notArchived = !solution.is_archived;
     return matchesSearch && matchesSector && matchesMaturity && notArchived;
+  }).sort((a, b) => {
+    let aVal = a[sortField];
+    let bVal = b[sortField];
+    if (sortField === 'name_en') {
+      aVal = aVal?.toLowerCase() || '';
+      bVal = bVal?.toLowerCase() || '';
+    }
+    if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
+    if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+    return 0;
   });
 
   const maturityColors = {
@@ -370,8 +401,41 @@ function SolutionsPage() {
               <SelectItem value="proven">Proven</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* lc-3: Sort controls */}
+          <Select value={sortField} onValueChange={setSortField}>
+            <SelectTrigger className="w-40">
+              <ArrowUpDown className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="created_at">{t({ en: 'Date Created', ar: 'تاريخ الإنشاء' })}</SelectItem>
+              <SelectItem value="name_en">{t({ en: 'Name', ar: 'الاسم' })}</SelectItem>
+              <SelectItem value="deployment_count">{t({ en: 'Deployments', ar: 'عمليات النشر' })}</SelectItem>
+              <SelectItem value="trl">{t({ en: 'TRL Level', ar: 'مستوى TRL' })}</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')}
+            title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+          >
+            {sortOrder === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
+          </Button>
         </div>
       </Card>
+
+      {/* Results count with pluralization (i18n-4) */}
+      <div className="flex justify-between items-center text-sm text-muted-foreground">
+        <span>
+          {t({ 
+            en: `${filteredSolutions.length} ${pluralize(filteredSolutions.length, 'solution', 'solutions')} found`, 
+            ar: `تم العثور على ${filteredSolutions.length} ${pluralize(filteredSolutions.length, 'حل', 'حلول')}` 
+          })}
+        </span>
+      </div>
 
       {/* Solutions Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -398,7 +462,17 @@ function SolutionsPage() {
           filteredSolutions.map((solution) => (
             <Card
               key={solution.id}
-              className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer overflow-hidden"
+              className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer overflow-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+              tabIndex={0}
+              role="article"
+              aria-label={`${solution.name_en} by ${solution.provider_name}`}
+              onKeyDown={(e) => {
+                // a11y-3: Keyboard navigation
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  window.location.href = createPageUrl(`SolutionDetail?id=${solution.id}`);
+                }
+              }}
             >
               {solution.image_url && (
                 <div className="h-48 overflow-hidden">
