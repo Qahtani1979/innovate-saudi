@@ -34,13 +34,15 @@ function InnovationProposalsManagement() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: proposals = [], isLoading } = useQuery({
+  const { data: proposals = [], isLoading, error: proposalsError } = useQuery({
     queryKey: ['innovation-proposals'],
     queryFn: async () => {
-      const { data } = await supabase.from('innovation_proposals').select('*').order('created_at', { ascending: false }).limit(200);
+      const { data, error } = await supabase.from('innovation_proposals').select('*').order('created_at', { ascending: false }).limit(200);
+      if (error) throw error;
       return data || [];
     },
-    enabled: !!user
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000
   });
 
   const updateProposalMutation = useMutation({
@@ -91,6 +93,14 @@ function InnovationProposalsManagement() {
     rejected: 'bg-red-100 text-red-700',
     converted: 'bg-purple-100 text-purple-700'
   };
+
+  if (proposalsError) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-destructive">{t({ en: 'Error loading proposals', ar: 'خطأ في تحميل المقترحات' })}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
