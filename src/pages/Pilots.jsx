@@ -84,14 +84,28 @@ function PilotsPage() {
     }
   });
 
+  // Gap mh-2: Optimistic updates for mutations
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
       const { error } = await supabase.from('pilots').delete().eq('id', id);
       if (error) throw error;
+      return id;
+    },
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['pilots'] });
+      const previousPilots = queryClient.getQueryData(['pilots']);
+      queryClient.setQueryData(['pilots'], (old) => old?.filter(p => p.id !== id) || []);
+      return { previousPilots };
+    },
+    onError: (err, id, context) => {
+      queryClient.setQueryData(['pilots'], context?.previousPilots);
+      toast.error(t({ en: 'Failed to delete pilot', ar: 'فشل حذف التجربة' }));
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['pilots'] });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['pilots']);
-      toast.success('Pilot deleted');
+      toast.success(t({ en: 'Pilot deleted', ar: 'تم حذف التجربة' }));
     }
   });
 
@@ -99,10 +113,25 @@ function PilotsPage() {
     mutationFn: async (id) => {
       const { error } = await supabase.from('pilots').update({ stage: 'terminated' }).eq('id', id);
       if (error) throw error;
+      return id;
+    },
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['pilots'] });
+      const previousPilots = queryClient.getQueryData(['pilots']);
+      queryClient.setQueryData(['pilots'], (old) => 
+        old?.map(p => p.id === id ? { ...p, stage: 'terminated' } : p) || []
+      );
+      return { previousPilots };
+    },
+    onError: (err, id, context) => {
+      queryClient.setQueryData(['pilots'], context?.previousPilots);
+      toast.error(t({ en: 'Failed to archive pilot', ar: 'فشل أرشفة التجربة' }));
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['pilots'] });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['pilots']);
-      toast.success('Pilot archived');
+      toast.success(t({ en: 'Pilot archived', ar: 'تم أرشفة التجربة' }));
     }
   });
 
@@ -186,10 +215,14 @@ function PilotsPage() {
       <PilotsAIInsights pilots={pilots} challenges={challenges} municipalities={municipalities} />
 
       {/* Bulk Actions */}
+      {/* Gap i18n-4: Pluralization with count */}
       {selectedIds.length > 0 && (hasPermission('pilot_edit') || hasPermission('pilot_delete')) && (
-        <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg" role="status" aria-live="polite">
           <span className="text-sm font-medium text-blue-900">
-            {selectedIds.length} selected
+            {t({ 
+              en: selectedIds.length === 1 ? '1 pilot selected' : `${selectedIds.length} pilots selected`,
+              ar: selectedIds.length === 1 ? 'تجربة واحدة محددة' : `${selectedIds.length} تجارب محددة`
+            })}
           </span>
           {hasPermission('pilot_edit') && (
             <Button size="sm" variant="outline" onClick={() => handleBulkAction('archive')}>
@@ -248,11 +281,17 @@ function PilotsPage() {
             </SelectContent>
           </Select>
 
-          <div className="flex items-center gap-1 border rounded-lg p-1">
+          {/* Gap a11y-3: Keyboard navigation for view mode buttons */}
+          <div className="flex items-center gap-1 border rounded-lg p-1" role="tablist" aria-label={t({ en: 'View mode', ar: 'وضع العرض' })}>
             <Button
               variant={viewMode === 'table' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('table')}
+              onKeyDown={(e) => e.key === 'Enter' && setViewMode('table')}
+              tabIndex={0}
+              role="tab"
+              aria-selected={viewMode === 'table'}
+              aria-label={t({ en: 'Table view', ar: 'عرض جدول' })}
             >
               <List className="h-4 w-4" />
             </Button>
@@ -260,6 +299,11 @@ function PilotsPage() {
               variant={viewMode === 'kanban' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('kanban')}
+              onKeyDown={(e) => e.key === 'Enter' && setViewMode('kanban')}
+              tabIndex={0}
+              role="tab"
+              aria-selected={viewMode === 'kanban'}
+              aria-label={t({ en: 'Kanban view', ar: 'عرض كانبان' })}
             >
               <LayoutGrid className="h-4 w-4" />
             </Button>
@@ -267,6 +311,11 @@ function PilotsPage() {
               variant={viewMode === 'grid' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('grid')}
+              onKeyDown={(e) => e.key === 'Enter' && setViewMode('grid')}
+              tabIndex={0}
+              role="tab"
+              aria-selected={viewMode === 'grid'}
+              aria-label={t({ en: 'Grid view', ar: 'عرض شبكة' })}
             >
               <LayoutGrid className="h-4 w-4" />
             </Button>
@@ -507,4 +556,7 @@ function PilotsPage() {
   );
 }
 
-export default ProtectedPage(PilotsPage, { requiredPermissions: ['pilot_view_all', 'pilot_view_own', 'pilot_view', 'pilot_create', 'pilot_support'] });
+export default ProtectedPage(PilotsPage, { 
+  requiredPermissions: ['pilot_view_all', 'pilot_view_own', 'pilot_view', 'pilot_create', 'pilot_support'],
+  requiredRoles: ['Executive Leadership', 'Program Director', 'Innovation Manager', 'Municipality Staff', 'Deputyship User', 'Provider']
+});

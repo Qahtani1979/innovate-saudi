@@ -13349,6 +13349,7 @@ export type Database = {
         }
         Returns: Json
       }
+      check_pilot_sla_escalation: { Args: never; Returns: undefined }
       cleanup_old_audit_logs: {
         Args: { retention_days?: number }
         Returns: number
@@ -13434,6 +13435,7 @@ export type Database = {
         Args: { p_rating: number; p_template_id: string; p_user_email: string }
         Returns: Json
       }
+      schedule_pilot_cleanup_jobs: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

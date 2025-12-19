@@ -120,6 +120,36 @@ CREATE TABLE public.pilots (
 );
 ```
 
+## Nullable Columns Reference (db-6)
+
+The following columns are nullable and should be handled appropriately in code:
+
+| Column | Type | Default | Notes |
+|--------|------|---------|-------|
+| `code` | TEXT | NULL | Auto-generated on create |
+| `title_ar` | TEXT | NULL | Arabic translation |
+| `tagline_en`, `tagline_ar` | TEXT | NULL | Short descriptions |
+| `solution_id` | UUID | NULL | May not have matched solution |
+| `city_id`, `region_id` | UUID | NULL | Optional location refinement |
+| `living_lab_id`, `sandbox_id` | UUID | NULL | Optional deployment context |
+| `sub_sector` | TEXT | NULL | Optional classification |
+| `description_*`, `objective_*` | TEXT | NULL | Extended content |
+| `hypothesis`, `methodology`, `scope` | TEXT | NULL | Design details |
+| `target_population` | JSONB | NULL | JSON structure |
+| `timeline` | JSONB | NULL | JSON structure |
+| `duration_weeks` | INTEGER | NULL | Calculated or set |
+| `trl_*` | INTEGER | NULL | Technology readiness |
+| `budget` | NUMERIC | NULL | May be TBD |
+| `success_probability` | NUMERIC | NULL | AI-calculated |
+| `risk_level` | TEXT | NULL | Assessment result |
+| `team`, `stakeholders`, `risks`, `milestones` | JSONB | NULL | Arrays as JSON |
+| `ai_insights`, `recommendation` | TEXT | NULL | AI-generated |
+| `image_url`, `video_url` | TEXT | NULL | Optional media |
+| `gallery_urls`, `tags` | TEXT[] | NULL | Optional arrays |
+| `deleted_date`, `deleted_by` | TIMESTAMPTZ/UUID | NULL | Set on soft delete |
+| `previous_version_id` | UUID | NULL | For versioning |
+| `strategy_derivation_date` | TIMESTAMPTZ | NULL | When derived |
+
 ## Views
 
 ### pilots_public_view
@@ -174,6 +204,14 @@ Logs data exports for compliance.
 
 Retention policy function for audit logs.
 
+### check_pilot_sla_escalation()
+
+Checks for SLA violations and escalates pending approvals.
+
+### schedule_pilot_cleanup_jobs()
+
+Runs scheduled cleanup tasks (orphaned files, audit log retention).
+
 ## Indexes
 
 ```sql
@@ -225,3 +263,12 @@ USING (has_role_by_name(auth.uid(), 'admin'));
 ALTER TABLE public.pilots REPLICA IDENTITY FULL;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.pilots;
 ```
+
+## Email Bounce Handler (email-5)
+
+> **Note for Future Implementation**: Email bounce handling should be implemented via webhook endpoint. When Resend or SendGrid reports bounces, the system should:
+> 1. Log the bounce in `email_logs` table
+> 2. Update user preferences to mark email as invalid
+> 3. Optionally notify admins of persistent bounce issues
+> 
+> This requires edge function: `handle-email-bounce` to process webhook payloads.
