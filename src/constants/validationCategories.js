@@ -831,6 +831,104 @@ export const VALIDATION_CATEGORIES = [
         ]
       }
     ]
+  },
+  {
+    id: 'code-integrity',
+    name: { en: '23. Code Integrity', ar: '23. سلامة الكود' },
+    color: 'fuchsia',
+    subcategories: [
+      {
+        id: 'import-exports',
+        name: { en: '23.1 Import/Export Validation', ar: '23.1 التحقق من الاستيراد/التصدير' },
+        checks: [
+          { id: 'imp-1', text: { en: 'Index file exports resolve to existing files', ar: 'تصدير ملف الفهرس يشير لملفات موجودة' }, priority: 'critical' },
+          { id: 'imp-2', text: { en: 'Relative import paths are correct (../ vs ./)', ar: 'مسارات الاستيراد النسبية صحيحة' }, priority: 'critical' },
+          { id: 'imp-3', text: { en: 'No circular dependencies in hooks', ar: 'لا توجد تبعيات دائرية في الـ hooks' }, priority: 'high' },
+          { id: 'imp-4', text: { en: 'All named exports exist in source', ar: 'جميع الصادرات المسماة موجودة في المصدر' }, priority: 'high' },
+          { id: 'imp-5', text: { en: 'Default exports match file purpose', ar: 'الصادرات الافتراضية تطابق الغرض' }, priority: 'medium' }
+        ]
+      },
+      {
+        id: 'hook-usage',
+        name: { en: '23.2 Hook Usage Verification', ar: '23.2 التحقق من استخدام الـ Hooks' },
+        checks: [
+          { id: 'hu-1', text: { en: 'Created hooks are imported in components', ar: 'الـ Hooks المنشأة مستوردة في المكونات' }, priority: 'high' },
+          { id: 'hu-2', text: { en: 'Realtime hooks used in list/detail pages', ar: 'hooks الوقت الحقيقي مستخدمة في صفحات القوائم' }, priority: 'medium' },
+          { id: 'hu-3', text: { en: 'Delegation hooks integrated in workflows', ar: 'hooks التفويض مدمجة في سير العمل' }, priority: 'medium' },
+          { id: 'hu-4', text: { en: 'Notification hooks called on state changes', ar: 'hooks الإشعارات تُستدعى عند تغيير الحالة' }, priority: 'medium' },
+          { id: 'hu-5', text: { en: 'Audit hooks called in mutations', ar: 'hooks التدقيق تُستدعى في التعديلات' }, priority: 'high' }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'schema-sync',
+    name: { en: '24. Schema Synchronization', ar: '24. تزامن المخطط' },
+    color: 'lime',
+    subcategories: [
+      {
+        id: 'code-schema-match',
+        name: { en: '24.1 Code↔DB Schema Match', ar: '24.1 تطابق الكود مع مخطط قاعدة البيانات' },
+        checks: [
+          { id: 'csm-1', text: { en: 'Hook insert() uses only existing columns', ar: 'hook insert() يستخدم أعمدة موجودة فقط' }, priority: 'critical' },
+          { id: 'csm-2', text: { en: 'Hook update() uses only existing columns', ar: 'hook update() يستخدم أعمدة موجودة فقط' }, priority: 'critical' },
+          { id: 'csm-3', text: { en: 'Hook select() columns exist in table', ar: 'أعمدة select() موجودة في الجدول' }, priority: 'critical' },
+          { id: 'csm-4', text: { en: 'Filter conditions reference valid columns', ar: 'شروط الفلترة تشير لأعمدة صالحة' }, priority: 'high' },
+          { id: 'csm-5', text: { en: 'Types file matches actual schema', ar: 'ملف الأنواع يطابق المخطط الفعلي' }, priority: 'high' },
+          { id: 'csm-6', text: { en: 'Required columns have values on insert', ar: 'الأعمدة المطلوبة لها قيم عند الإدراج' }, priority: 'critical' }
+        ]
+      },
+      {
+        id: 'realtime-config',
+        name: { en: '24.2 Realtime Configuration', ar: '24.2 تكوين الوقت الحقيقي' },
+        checks: [
+          { id: 'rtc-1', text: { en: 'Main table in supabase_realtime publication', ar: 'الجدول الرئيسي في نشر supabase_realtime' }, priority: 'high' },
+          { id: 'rtc-2', text: { en: 'Activity table in supabase_realtime publication', ar: 'جدول النشاط في نشر supabase_realtime' }, priority: 'medium' },
+          { id: 'rtc-3', text: { en: 'Proposals/comments table in publication', ar: 'جدول المقترحات في النشر' }, priority: 'medium' },
+          { id: 'rtc-4', text: { en: 'Realtime filter matches table structure', ar: 'فلتر الوقت الحقيقي يطابق بنية الجدول' }, priority: 'high' },
+          { id: 'rtc-5', text: { en: 'Channel names follow naming convention', ar: 'أسماء القنوات تتبع اتفاقية التسمية' }, priority: 'low' }
+        ]
+      },
+      {
+        id: 'fk-integrity',
+        name: { en: '24.3 Foreign Key Integrity', ar: '24.3 سلامة المفاتيح الخارجية' },
+        checks: [
+          { id: 'fk-1', text: { en: 'FK references valid tables', ar: 'المفاتيح الخارجية تشير لجداول صالحة' }, priority: 'critical' },
+          { id: 'fk-2', text: { en: 'FK columns match referenced PK type', ar: 'أعمدة المفاتيح الخارجية تطابق نوع المفتاح الأساسي' }, priority: 'critical' },
+          { id: 'fk-3', text: { en: 'Cascade rules appropriate for relationship', ar: 'قواعد التسلسل مناسبة للعلاقة' }, priority: 'high' },
+          { id: 'fk-4', text: { en: 'Index exists on FK columns', ar: 'فهرس موجود على أعمدة المفاتيح الخارجية' }, priority: 'medium' }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'automated-tests',
+    name: { en: '25. Automated Verification', ar: '25. التحقق الآلي' },
+    color: 'amber',
+    subcategories: [
+      {
+        id: 'runtime-checks',
+        name: { en: '25.1 Runtime Checks', ar: '25.1 فحوصات وقت التشغيل' },
+        checks: [
+          { id: 'run-1', text: { en: 'Console has no import errors', ar: 'الكونسول ليس به أخطاء استيراد' }, priority: 'critical' },
+          { id: 'run-2', text: { en: 'No undefined hook return values', ar: 'لا توجد قيم إرجاع غير معرفة من الـ hooks' }, priority: 'high' },
+          { id: 'run-3', text: { en: 'No React hooks rules violations', ar: 'لا توجد انتهاكات لقواعد React hooks' }, priority: 'critical' },
+          { id: 'run-4', text: { en: 'Network requests return 2xx/4xx (not 5xx)', ar: 'طلبات الشبكة ترجع 2xx/4xx' }, priority: 'high' },
+          { id: 'run-5', text: { en: 'Supabase queries execute without errors', ar: 'استعلامات Supabase تنفذ بدون أخطاء' }, priority: 'critical' }
+        ]
+      },
+      {
+        id: 'db-verification',
+        name: { en: '25.2 Database Verification', ar: '25.2 التحقق من قاعدة البيانات' },
+        checks: [
+          { id: 'dbv-1', text: { en: 'All referenced tables exist', ar: 'جميع الجداول المشار إليها موجودة' }, priority: 'critical' },
+          { id: 'dbv-2', text: { en: 'All referenced columns exist', ar: 'جميع الأعمدة المشار إليها موجودة' }, priority: 'critical' },
+          { id: 'dbv-3', text: { en: 'RLS policies allow expected operations', ar: 'سياسات RLS تسمح بالعمليات المتوقعة' }, priority: 'critical' },
+          { id: 'dbv-4', text: { en: 'Indexes exist for filter columns', ar: 'فهارس موجودة لأعمدة الفلترة' }, priority: 'medium' },
+          { id: 'dbv-5', text: { en: 'Test data can be inserted/retrieved', ar: 'بيانات الاختبار يمكن إدراجها/استرجاعها' }, priority: 'high' }
+        ]
+      }
+    ]
   }
 ];
 
