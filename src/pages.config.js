@@ -2,6 +2,7 @@ import Home from './pages/Home';
 import Auth from './pages/Auth';
 import ResetPassword from './pages/ResetPassword';
 import Challenges from './pages/Challenges';
+import ChallengesHub from './pages/ChallengesHub';
 import ChallengeCreate from './pages/ChallengeCreate';
 import ChallengeDetail from './pages/ChallengeDetail';
 import Pilots from './pages/Pilots';
@@ -900,6 +901,7 @@ export const PAGES = {
     "ExpertEvaluationWorkflow": ExpertEvaluationWorkflow,
     "ScalingPlanDetail": ScalingPlanDetail,
     "ChallengeProposalReview": ChallengeProposalReview,
+    "ChallengesHub": ChallengesHub,
     "ExecutiveStrategicChallengeQueue": ExecutiveStrategicChallengeQueue,
     "MyChallengeTracker": MyChallengeTracker,
     "ProviderNotificationPreferences": ProviderNotificationPreferences,
