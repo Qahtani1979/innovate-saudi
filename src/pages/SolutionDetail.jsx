@@ -51,6 +51,9 @@ import { usePrompt } from '@/hooks/usePrompt';
 import { SOLUTION_DETAIL_PROMPT_TEMPLATE } from '@/lib/ai/prompts/solutions/solutionDetail';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import SolutionNotFound from '../components/solutions/SolutionNotFound';
+import SolutionAccessDenied from '../components/solutions/SolutionAccessDenied';
+import SolutionErrorBoundary from '../components/solutions/SolutionErrorBoundary';
 
 function SolutionDetailPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -134,12 +137,23 @@ function SolutionDetailPage() {
     }
   };
 
-  if (isLoading || !solution) {
+  // Loading state
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
       </div>
     );
+  }
+
+  // 404 - Solution not found (dc-1)
+  if (!solution && !isLoading) {
+    return <SolutionNotFound solutionId={solutionId} />;
+  }
+
+  // Access denied check (dc-2) - unpublished solutions require permission
+  if (solution && !solution.is_published && !hasPermission('solution_view_all') && solution.created_by !== user?.email) {
+    return <SolutionAccessDenied />;
   }
 
   const maturityColors = {

@@ -27,7 +27,8 @@ import {
   Edit,
   Sparkles,
   Loader2,
-  X
+  X,
+  Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
@@ -36,9 +37,11 @@ import { usePrompt } from '@/hooks/usePrompt';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
+import SolutionErrorBoundary from '../components/solutions/SolutionErrorBoundary';
+import SolutionDeleteDialog from '../components/solutions/SolutionDeleteDialog';
 
 function SolutionsPage() {
-  const { hasPermission, isAdmin, isDeputyship, isMunicipality, isStaffUser } = usePermissions();
+  const { hasPermission, isAdmin, isDeputyship, isMunicipality, isStaffUser, user } = usePermissions();
   const [searchTerm, setSearchTerm] = useState('');
   const [sectorFilter, setSectorFilter] = useState('all');
   const [maturityFilter, setMaturityFilter] = useState('all');
@@ -46,6 +49,8 @@ function SolutionsPage() {
   const [selectedSolutions, setSelectedSolutions] = useState([]);
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [solutionToDelete, setSolutionToDelete] = useState(null);
   const { invoke: invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = usePrompt(null);
   const { language, isRTL, t } = useLanguage();
 
@@ -62,8 +67,28 @@ function SolutionsPage() {
     mutationFn: (id) => base44.entities.Solution.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries(['solutions']);
+      queryClient.invalidateQueries(['solutions-with-visibility']);
+      setDeleteDialogOpen(false);
+      setSolutionToDelete(null);
+      toast.success(t({ en: 'Solution deleted successfully', ar: 'تم حذف الحل بنجاح' }));
+    },
+    onError: () => {
+      toast.error(t({ en: 'Failed to delete solution', ar: 'فشل حذف الحل' }));
     }
   });
+
+  const handleDeleteClick = (solution, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSolutionToDelete(solution);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (solutionToDelete) {
+      deleteMutation.mutate(solutionToDelete.id);
+    }
+  };
 
   const bulkArchiveMutation = useMutation({
     mutationFn: async (ids) => {
@@ -464,6 +489,16 @@ function SolutionsPage() {
                       </Button>
                     </Link>
                   )}
+                  {(hasPermission('solution_delete') || solution.created_by === user?.email) && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={(e) => handleDeleteClick(solution, e)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                   {solution.website && (
                     <Button variant="ghost" size="icon" asChild>
                       <a href={solution.website} target="_blank" rel="noopener noreferrer">
@@ -477,8 +512,26 @@ function SolutionsPage() {
           ))
         )}
       </div>
+
+      {/* Delete Confirmation Dialog (lc-5) */}
+      <SolutionDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        solution={solutionToDelete}
+        onConfirm={confirmDelete}
+        isDeleting={deleteMutation.isPending}
+      />
     </PageLayout>
   );
 }
 
-export default ProtectedPage(SolutionsPage, { requiredPermissions: ['solution_view_all', 'solution_view', 'dashboard_view'] });
+// Wrap with ErrorBoundary (pc-6)
+function SolutionsPageWithErrorBoundary(props) {
+  return (
+    <SolutionErrorBoundary>
+      <SolutionsPage {...props} />
+    </SolutionErrorBoundary>
+  );
+}
+
+export default ProtectedPage(SolutionsPageWithErrorBoundary, { requiredPermissions: ['solution_view_all', 'solution_view', 'dashboard_view'] });
