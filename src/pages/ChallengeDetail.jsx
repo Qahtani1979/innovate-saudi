@@ -190,7 +190,7 @@ export default function ChallengeDetail() {
     queryKey: ['challenge-rd', challengeId],
     queryFn: async () => {
       if (!challenge?.linked_rd_ids || challenge.linked_rd_ids.length === 0) return [];
-      const { data } = await supabase.from('rd_projects').select('*');
+      const { data } = await supabase.from('rd_projects').select('*').eq('is_deleted', false);
       return data?.filter(rd => challenge.linked_rd_ids.includes(rd.id)) || [];
     },
     enabled: !!challenge

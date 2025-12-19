@@ -53,6 +53,7 @@ function CalendarView({ embedded = false }) {
       const { data, error } = await supabase
         .from('events')
         .select('*')
+        .eq('is_deleted', false)
         .eq('is_published', true)
         .order('start_date', { ascending: true });
       if (error) throw error;

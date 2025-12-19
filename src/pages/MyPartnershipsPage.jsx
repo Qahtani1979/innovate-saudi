@@ -35,7 +35,7 @@ function MyPartnershipsPage() {
   const { data: partnerships = [], isLoading } = useQuery({
     queryKey: ['my-partnerships', user?.email, userProfile?.organization_id],
     queryFn: async () => {
-      const { data } = await supabase.from('partnerships').select('*');
+      const { data } = await supabase.from('partnerships').select('*').eq('is_deleted', false);
       return (data || []).filter(p => 
         p.parties?.includes(userProfile?.organization_id) ||
         p.contact_email === user?.email ||

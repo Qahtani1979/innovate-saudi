@@ -39,7 +39,8 @@ export default function ParticipantDashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('programs')
-        .select('*');
+        .select('*')
+        .eq('is_deleted', false);
       if (error) throw error;
       return data || [];
     }

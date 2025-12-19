@@ -32,7 +32,7 @@ function AdminPortal() {
   const { data: pilots = [] } = useQuery({
     queryKey: ['all-pilots-admin'],
     queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*').order('created_at', { ascending: false }).limit(300);
+      const { data } = await supabase.from('pilots').select('*').eq('is_deleted', false).order('created_at', { ascending: false }).limit(300);
       return data || [];
     }
   });
@@ -40,7 +40,7 @@ function AdminPortal() {
   const { data: solutions = [] } = useQuery({
     queryKey: ['all-solutions-admin'],
     queryFn: async () => {
-      const { data } = await supabase.from('solutions').select('*');
+      const { data } = await supabase.from('solutions').select('*').eq('is_deleted', false);
       return data || [];
     }
   });

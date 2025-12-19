@@ -22,7 +22,7 @@ export default function ResourceAllocationView() {
   const { data: labs = [] } = useQuery({
     queryKey: ['living-labs'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('living_labs').select('*');
+      const { data, error } = await supabase.from('living_labs').select('*').eq('is_deleted', false);
       if (error) throw error;
       return data || [];
     }
@@ -31,7 +31,7 @@ export default function ResourceAllocationView() {
   const { data: sandboxes = [] } = useQuery({
     queryKey: ['sandboxes'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('sandboxes').select('*');
+      const { data, error } = await supabase.from('sandboxes').select('*').eq('is_deleted', false);
       if (error) throw error;
       return data || [];
     }

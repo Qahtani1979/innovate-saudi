@@ -30,6 +30,7 @@ function MyRDProjects() {
       const { data, error } = await supabase
         .from('rd_projects')
         .select('*')
+        .eq('is_deleted', false)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return (data || []).filter(p => 

@@ -46,7 +46,7 @@ function AcademiaDashboard() {
   const { data: myRDProjects = [] } = useQuery({
     queryKey: ['my-rd-projects-researcher', user?.email],
     queryFn: async () => {
-      const { data } = await supabase.from('rd_projects').select('*').eq('created_by', user?.email);
+      const { data } = await supabase.from('rd_projects').select('*').eq('is_deleted', false).eq('created_by', user?.email);
       return data || [];
     },
     enabled: !!user
@@ -79,6 +79,7 @@ function AcademiaDashboard() {
     queryKey: ['living-labs-public'],
     queryFn: async () => {
       const { data } = await supabase.from('living_labs').select('*')
+        .eq('is_deleted', false)
         .eq('is_active', true)
         .eq('is_public', true);
       return data || [];

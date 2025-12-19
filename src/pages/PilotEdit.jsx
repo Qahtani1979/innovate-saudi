@@ -92,7 +92,7 @@ function PilotEditPage() {
   const { data: livingLabs = [] } = useQuery({
     queryKey: ['livingLabs'],
     queryFn: async () => {
-      const { data } = await supabase.from('living_labs').select('*');
+      const { data } = await supabase.from('living_labs').select('*').eq('is_deleted', false);
       return data || [];
     }
   });
@@ -100,7 +100,7 @@ function PilotEditPage() {
   const { data: sandboxes = [] } = useQuery({
     queryKey: ['sandboxes'],
     queryFn: async () => {
-      const { data } = await supabase.from('sandboxes').select('*');
+      const { data } = await supabase.from('sandboxes').select('*').eq('is_deleted', false);
       return data || [];
     }
   });

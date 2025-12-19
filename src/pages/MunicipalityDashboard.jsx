@@ -265,6 +265,7 @@ function MunicipalityDashboard() {
       const { data, error } = await supabase
         .from('programs')
         .select('*')
+        .eq('is_deleted', false)
         .eq('is_published', true);
       if (error) return [];
       return (data || []).filter(p => 

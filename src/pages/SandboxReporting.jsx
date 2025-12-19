@@ -24,7 +24,7 @@ function SandboxReporting() {
   const { data: sandboxes = [] } = useQuery({
     queryKey: ['sandboxes', user?.email, user?.role],
     queryFn: async () => {
-      let query = supabase.from('sandboxes').select('*');
+      let query = supabase.from('sandboxes').select('*').eq('is_deleted', false);
       if (user?.role !== 'admin') {
         query = query.or(`manager_email.eq.${user?.email},created_by.eq.${user?.email}`);
       }
