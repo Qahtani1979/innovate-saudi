@@ -160,7 +160,7 @@ import ProfilesIdentityCoverageReport from './pages/ProfilesIdentityCoverageRepo
 import UserSettingsCoverageReport from './pages/UserSettingsCoverageReport';
 import PlatformSettingsCoverageReport from './pages/PlatformSettingsCoverageReport';
 import UserAccessManagementCoverageReport from './pages/UserAccessManagementCoverageReport';
-import UserActivityDashboard from './pages/UserActivityDashboard';
+// UserActivityDashboard - DELETED (now part of UserProfileHub)
 import SessionDeviceManager from './pages/SessionDeviceManager';
 import TeamWorkspace from './pages/TeamWorkspace';
 import BrandingSettings from './pages/BrandingSettings';
@@ -169,7 +169,7 @@ import SecurityPolicyManager from './pages/SecurityPolicyManager';
 import DataRetentionConfig from './pages/DataRetentionConfig';
 import CommunicationsHub from './pages/CommunicationsHub';
 import FeatureFlagsDashboard from './pages/FeatureFlagsDashboard';
-import UserProfile from './pages/UserProfile';
+// UserProfile - DELETED (now part of UserProfileHub)
 import StartupProfile from './pages/StartupProfile';
 import ResearcherProfile from './pages/ResearcherProfile';
 import TechnologyRoadmap from './pages/TechnologyRoadmap';
@@ -267,9 +267,9 @@ import FeatureUsageHeatmap from './pages/FeatureUsageHeatmap';
 import MyRDProjects from './pages/MyRDProjects';
 import MyPartnershipsPage from './pages/MyPartnershipsPage';
 import WhatsNewHub from './pages/WhatsNewHub';
-import MyProfilesHub from './pages/MyProfilesHub';
+// MyProfilesHub - DELETED (now part of UserProfileHub)
 import CrossEntityActivityStream from './pages/CrossEntityActivityStream';
-import UserProfileMultiIdentity from './pages/UserProfileMultiIdentity';
+// UserProfileMultiIdentity - DELETED (now part of UserProfileHub)
 import PilotSuccessPatterns from './pages/PilotSuccessPatterns';
 import CrossCityLearningHub from './pages/CrossCityLearningHub';
 import UserJourneyValidation from './pages/UserJourneyValidation';
@@ -281,9 +281,10 @@ import ApplicationReviewHub from './pages/ApplicationReviewHub';
 import DataManagementHub from './pages/DataManagementHub';
 import UserManagementHub from './pages/UserManagementHub';
 import UserProfileHub from './pages/UserProfileHub';
+import PublicProfilePage from './pages/PublicProfilePage';
 import TeamOverview from './pages/TeamOverview';
-import UserExperienceProgress from './pages/UserExperienceProgress';
-import UserGamification from './pages/UserGamification';
+// UserExperienceProgress - Now part of UserProfileHub
+// UserGamification - Now part of UserProfileHub
 import NotificationPreferences from './pages/NotificationPreferences';
 // DelegationManager - DELETED (merged into RBACHub)
 import PersonalizedDashboard from './pages/PersonalizedDashboard';
@@ -690,6 +691,7 @@ export const PAGES = {
     // UserProfile - Now part of UserProfileHub
     "UserProfile": UserProfileHub,
     "UserProfileHub": UserProfileHub,
+    "PublicProfilePage": PublicProfilePage,
     "StartupProfile": StartupProfile,
     "ResearcherProfile": ResearcherProfile,
     "TechnologyRoadmap": TechnologyRoadmap,
