@@ -94,8 +94,25 @@ function SystemValidationChecklist() {
     return total;
   };
 
+  // Helper to check if a validation is checked (handles new structure)
+  const isChecked = (checkId) => {
+    const val = validationMap[checkId];
+    if (!val) return false;
+    // Handle both old (boolean) and new ({ isChecked, status }) structure
+    return typeof val === 'boolean' ? val : val.isChecked;
+  };
+
+  // Helper to check if N/A
+  const isNotApplicable = (checkId) => {
+    const val = validationMap[checkId];
+    return val?.status === 'not_applicable';
+  };
+
   const getCompletedChecks = () => {
-    return Object.values(validationMap).filter(Boolean).length;
+    return Object.entries(validationMap).filter(([_, val]) => {
+      if (typeof val === 'boolean') return val;
+      return val?.isChecked && val?.status !== 'not_applicable';
+    }).length;
   };
 
   const getCategoryProgress = (category) => {
@@ -104,7 +121,7 @@ function SystemValidationChecklist() {
     category.subcategories.forEach(sub => {
       sub.checks.forEach(check => {
         total++;
-        if (validationMap[check.id]) completed++;
+        if (isChecked(check.id)) completed++;
       });
     });
     return total > 0 ? Math.round((completed / total) * 100) : 0;
@@ -118,7 +135,7 @@ function SystemValidationChecklist() {
         sub.checks.forEach(check => {
           if (check.priority === 'critical') {
             total++;
-            if (validationMap[check.id]) completed++;
+            if (isChecked(check.id)) completed++;
           }
         });
       });
@@ -129,7 +146,10 @@ function SystemValidationChecklist() {
   const handleCheck = async (checkId, categoryId) => {
     if (!selectedSystemId || !selectedSystem) return;
     
-    const newValue = !validationMap[checkId];
+    // Don't allow changing N/A checks
+    if (isNotApplicable(checkId)) return;
+    
+    const newValue = !isChecked(checkId);
     await toggleCheck.mutateAsync({
       systemId: selectedSystemId,
       systemName: t(selectedSystem.name),
@@ -172,7 +192,8 @@ function SystemValidationChecklist() {
           checks: sub.checks.map(check => ({
             text: t(check.text),
             priority: check.priority,
-            completed: !!validationMap[check.id]
+            completed: isChecked(check.id),
+            notApplicable: isNotApplicable(check.id)
           }))
         }))
       }))
@@ -468,43 +489,52 @@ function SystemValidationChecklist() {
                               <div className="flex items-center gap-2">
                                 <span className="truncate">{t(subcat.name)}</span>
                                 <Badge variant="outline" className="text-[10px] sm:text-xs shrink-0">
-                                  {subcat.checks.filter(c => validationMap[c.id]).length}/{subcat.checks.length}
+                                  {subcat.checks.filter(c => isChecked(c.id)).length}/{subcat.checks.length}
                                 </Badge>
                               </div>
                             </AccordionTrigger>
                             <AccordionContent>
                               <div className="space-y-2 pt-2">
-                                {subcat.checks.map(check => (
-                                  <div 
-                                    key={check.id} 
-                                    className={`flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border transition-colors ${
-                                      validationMap[check.id] 
-                                        ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800' 
-                                        : 'bg-background hover:bg-muted/50'
-                                    }`}
-                                  >
-                                    <Checkbox
-                                      id={`${selectedSystemId}-${check.id}`}
-                                      checked={!!validationMap[check.id]}
-                                      onCheckedChange={() => handleCheck(check.id, category.id)}
-                                      disabled={toggleCheck.isPending}
-                                      className="mt-0.5"
-                                    />
-                                    <div className="flex-1 min-w-0">
-                                      <label 
-                                        htmlFor={`${selectedSystemId}-${check.id}`}
-                                        className={`text-xs sm:text-sm cursor-pointer block ${
-                                          validationMap[check.id] ? 'line-through text-muted-foreground' : ''
-                                        }`}
-                                      >
-                                        {t(check.text)}
-                                      </label>
+                                {subcat.checks.map(check => {
+                                  const checkIsNA = isNotApplicable(check.id);
+                                  const checkIsChecked = isChecked(check.id);
+                                  
+                                  return (
+                                    <div 
+                                      key={check.id} 
+                                      className={`flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border transition-colors ${
+                                        checkIsNA 
+                                          ? 'bg-muted/50 border-muted opacity-60'
+                                          : checkIsChecked 
+                                            ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800' 
+                                            : 'bg-background hover:bg-muted/50'
+                                      }`}
+                                    >
+                                      <Checkbox
+                                        id={`${selectedSystemId}-${check.id}`}
+                                        checked={checkIsChecked}
+                                        onCheckedChange={() => handleCheck(check.id, category.id)}
+                                        disabled={toggleCheck.isPending || checkIsNA}
+                                        className="mt-0.5"
+                                      />
+                                      <div className="flex-1 min-w-0">
+                                        <label 
+                                          htmlFor={`${selectedSystemId}-${check.id}`}
+                                          className={`text-xs sm:text-sm cursor-pointer block ${
+                                            checkIsNA ? 'text-muted-foreground italic' :
+                                            checkIsChecked ? 'line-through text-muted-foreground' : ''
+                                          }`}
+                                        >
+                                          {t(check.text)}
+                                          {checkIsNA && <span className="ml-2 text-xs">(N/A)</span>}
+                                        </label>
+                                      </div>
+                                      <Badge className={`text-[10px] sm:text-xs shrink-0 ${getPriorityColor(check.priority)}`}>
+                                        {getPriorityLabel(check.priority)}
+                                      </Badge>
                                     </div>
-                                    <Badge className={`text-[10px] sm:text-xs shrink-0 ${getPriorityColor(check.priority)}`}>
-                                      {getPriorityLabel(check.priority)}
-                                    </Badge>
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </div>
                             </AccordionContent>
                           </AccordionItem>

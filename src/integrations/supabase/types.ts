@@ -12148,6 +12148,7 @@ export type Database = {
           id: string
           is_checked: boolean | null
           notes: string | null
+          status: string | null
           system_id: string
           system_name: string
           updated_at: string | null
@@ -12161,6 +12162,7 @@ export type Database = {
           id?: string
           is_checked?: boolean | null
           notes?: string | null
+          status?: string | null
           system_id: string
           system_name: string
           updated_at?: string | null
@@ -12174,6 +12176,7 @@ export type Database = {
           id?: string
           is_checked?: boolean | null
           notes?: string | null
+          status?: string | null
           system_id?: string
           system_name?: string
           updated_at?: string | null

@@ -3,7 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
 import { PLATFORM_SYSTEMS } from '@/constants/platformSystems';
-import { VALIDATION_CATEGORIES, getAllChecks } from '@/constants/validationCategories';
+import { VALIDATION_CATEGORIES, getAllChecks, getTotalCheckCount } from '@/constants/validationCategories';
+
+// Expected check count - all systems should have this many checks
+export const EXPECTED_CHECK_COUNT = 356;
 
 // Re-export for backward compatibility
 export { PLATFORM_SYSTEMS };
@@ -75,10 +78,10 @@ export function useSystemValidation(systemId) {
     }
   });
 
-  // Initialize all checks for a system (auto-create rows)
+  // Initialize all checks for a system (auto-create rows) - ALWAYS creates 356 checks
   const initializeSystem = useMutation({
-    mutationFn: async ({ systemId, systemName }) => {
-      // Get all checks
+    mutationFn: async ({ systemId, systemName, notApplicableChecks = [] }) => {
+      // Get all checks from VALIDATION_CATEGORIES (should be 356)
       const allChecks = getAllChecks();
       
       // Check which checks already exist
@@ -88,6 +91,7 @@ export function useSystemValidation(systemId) {
         .eq('system_id', systemId);
       
       const existingCheckIds = new Set((existing || []).map(e => e.check_id));
+      const notApplicableSet = new Set(notApplicableChecks);
       
       // Create rows for checks that don't exist
       const newChecks = allChecks.filter(check => !existingCheckIds.has(check.id));
@@ -98,7 +102,8 @@ export function useSystemValidation(systemId) {
           system_name: systemName,
           category_id: check.categoryId,
           check_id: check.id,
-          is_checked: false,
+          is_checked: notApplicableSet.has(check.id),
+          status: notApplicableSet.has(check.id) ? 'not_applicable' : 'pending',
           checked_by: null,
           checked_at: null
         }));
@@ -110,7 +115,7 @@ export function useSystemValidation(systemId) {
         if (error) throw error;
       }
       
-      return { created: newChecks.length, total: allChecks.length };
+      return { created: newChecks.length, total: allChecks.length, expected: 356 };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['system-validations', systemId] });
@@ -126,19 +131,27 @@ export function useSystemValidation(systemId) {
 
   // Toggle a check
   const toggleCheck = useMutation({
-    mutationFn: async ({ systemId, systemName, categoryId, checkId, isChecked }) => {
+    mutationFn: async ({ systemId, systemName, categoryId, checkId, isChecked, status }) => {
+      const newStatus = status || (isChecked ? 'checked' : 'pending');
+      
       const { data: existing } = await supabase
         .from('system_validations')
-        .select('id')
+        .select('id, status')
         .eq('system_id', systemId)
         .eq('check_id', checkId)
         .single();
+
+      // Don't allow changing not_applicable status unless explicitly setting it
+      if (existing?.status === 'not_applicable' && !status) {
+        return; // Skip update for N/A checks
+      }
 
       if (existing) {
         const { error } = await supabase
           .from('system_validations')
           .update({ 
             is_checked: isChecked, 
+            status: newStatus,
             checked_by: userEmail,
             checked_at: isChecked ? new Date().toISOString() : null
           })
@@ -153,6 +166,7 @@ export function useSystemValidation(systemId) {
             category_id: categoryId,
             check_id: checkId,
             is_checked: isChecked,
+            status: newStatus,
             checked_by: userEmail,
             checked_at: isChecked ? new Date().toISOString() : null
           });
@@ -234,9 +248,9 @@ export function useSystemValidation(systemId) {
     }
   });
 
-  // Convert validations array to a map for easy lookup
+  // Convert validations array to a map for easy lookup (includes status)
   const validationMap = (validations || []).reduce((acc, v) => {
-    acc[v.check_id] = v.is_checked;
+    acc[v.check_id] = { isChecked: v.is_checked, status: v.status || 'pending' };
     return acc;
   }, {});
 
