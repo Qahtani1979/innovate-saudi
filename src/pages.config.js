@@ -40,7 +40,7 @@ import NotificationCenter from './pages/NotificationCenter';
 import ReportsBuilder from './pages/ReportsBuilder';
 import SectorDashboard from './pages/SectorDashboard';
 import CalendarView from './pages/CalendarView';
-import UserManagement from './pages/UserManagement';
+// UserManagement - DELETED (duplicate of UserManagementHub)
 import AuditTrail from './pages/AuditTrail';
 import PublicPortal from './pages/PublicPortal';
 import MunicipalityDashboard from './pages/MunicipalityDashboard';
@@ -280,6 +280,7 @@ import ApprovalCenter from './pages/ApprovalCenter';
 import ApplicationReviewHub from './pages/ApplicationReviewHub';
 import DataManagementHub from './pages/DataManagementHub';
 import UserManagementHub from './pages/UserManagementHub';
+import UserProfileHub from './pages/UserProfileHub';
 import TeamOverview from './pages/TeamOverview';
 import UserExperienceProgress from './pages/UserExperienceProgress';
 import UserGamification from './pages/UserGamification';
@@ -547,7 +548,8 @@ export const PAGES = {
     "ReportsBuilder": ReportsBuilder,
     "SectorDashboard": SectorDashboard,
     "CalendarView": CalendarView,
-    "UserManagement": UserManagement,
+    // UserManagement - DELETED (duplicate of UserManagementHub)
+    "UserManagement": UserManagementHub,
     "AuditTrail": AuditTrail,
     "PublicPortal": PublicPortal,
     "MunicipalityDashboard": MunicipalityDashboard,
@@ -684,7 +686,9 @@ export const PAGES = {
     "EmailTemplateEditor": CommunicationsHub, // Redirect to CommunicationsHub
     "CommunicationsHub": CommunicationsHub,
     "FeatureFlagsDashboard": FeatureFlagsDashboard,
-    "UserProfile": UserProfile,
+    // UserProfile - Now part of UserProfileHub
+    "UserProfile": UserProfileHub,
+    "UserProfileHub": UserProfileHub,
     "StartupProfile": StartupProfile,
     "ResearcherProfile": ResearcherProfile,
     "TechnologyRoadmap": TechnologyRoadmap,
@@ -786,7 +790,8 @@ export const PAGES = {
     "WhatsNewHub": WhatsNewHub,
     "MyProfilesHub": MyProfilesHub,
     "CrossEntityActivityStream": CrossEntityActivityStream,
-    "UserProfileMultiIdentity": UserProfileMultiIdentity,
+    // UserProfileMultiIdentity - Now part of UserProfileHub
+    "UserProfileMultiIdentity": UserProfileHub,
     "PilotSuccessPatterns": PilotSuccessPatterns,
     "CrossCityLearningHub": CrossCityLearningHub,
     "UserJourneyValidation": UserJourneyValidation,
@@ -798,10 +803,14 @@ export const PAGES = {
     "DataManagementHub": DataManagementHub,
     "UserManagementHub": UserManagementHub,
     "TeamOverview": TeamOverview,
-    "UserExperienceProgress": UserExperienceProgress,
+    // UserExperienceProgress - Now part of UserProfileHub
+    "UserExperienceProgress": UserProfileHub,
     // UserDirectory - DELETED (migrated to UserManagementHub)
     "UserDirectory": UserManagementHub,
-    "UserGamification": UserGamification,
+    // UserGamification - Now part of UserProfileHub
+    "UserGamification": UserProfileHub,
+    // UserActivityDashboard - Now part of UserProfileHub
+    "UserActivityDashboard": UserProfileHub,
     "NotificationPreferences": NotificationPreferences,
     // DelegationManager, RolePermissionManager, RoleRequestCenter, ConditionalAccessRules - DELETED (migrated to RBACHub)
     "DelegationManager": RBACHub,
