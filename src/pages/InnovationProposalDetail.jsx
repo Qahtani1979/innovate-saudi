@@ -19,19 +19,34 @@ function InnovationProposalDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const proposalId = urlParams.get('id');
 
-  const { data: proposal, isLoading } = useQuery({
+  const { data: proposal, isLoading, error: proposalError } = useQuery({
     queryKey: ['innovation-proposal', proposalId],
     queryFn: async () => {
       const proposals = await base44.entities.InnovationProposal.list();
       return proposals.find(p => p.id === proposalId);
     },
-    enabled: !!proposalId
+    enabled: !!proposalId,
+    staleTime: 5 * 60 * 1000
   });
 
-  if (isLoading || !proposal) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600" />
+      <div className="max-w-5xl mx-auto space-y-6">
+        <div className="h-40 bg-muted animate-pulse rounded-lg" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-2 space-y-4">
+            {[1,2,3].map(i => <div key={i} className="h-32 bg-muted animate-pulse rounded-lg" />)}
+          </div>
+          <div className="h-64 bg-muted animate-pulse rounded-lg" />
+        </div>
+      </div>
+    );
+  }
+
+  if (proposalError || !proposal) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-destructive">{t({ en: 'Error loading proposal or proposal not found', ar: 'خطأ في تحميل المقترح' })}</p>
       </div>
     );
   }
