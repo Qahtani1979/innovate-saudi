@@ -41,6 +41,7 @@ import { CitiesTab } from '@/components/data-management/CitiesTab';
 import { MunicipalitiesTab } from '@/components/data-management/MunicipalitiesTab';
 import { MinistriesTab } from '@/components/data-management/MinistriesTab';
 import { OrganizationsTab } from '@/components/data-management/OrganizationsTab';
+import { SectorsTab } from '@/components/data-management/SectorsTab';
 import { IntegrityTab } from '@/components/data-management/IntegrityTab';
 
 function DataManagementHub() {
@@ -607,6 +608,10 @@ Using web search:
             <Building2 className="h-4 w-4 mr-2" />
             {t({ en: 'Organizations', ar: 'المنظمات' })}
           </TabsTrigger>
+          <TabsTrigger value="sectors">
+            <Briefcase className="h-4 w-4 mr-2" />
+            {t({ en: 'Sectors', ar: 'القطاعات' })}
+          </TabsTrigger>
           <TabsTrigger value="lookups">
             <Briefcase className="h-4 w-4 mr-2" />
             {t({ en: 'Lookups', ar: 'القوائم' })}
@@ -674,6 +679,10 @@ Using web search:
             onAdd={handleCreate}
             calculateDataScore={calculateDataScore}
           />
+        </TabsContent>
+
+        <TabsContent value="sectors">
+          <SectorsTab />
         </TabsContent>
 
         <TabsContent value="lookups">
