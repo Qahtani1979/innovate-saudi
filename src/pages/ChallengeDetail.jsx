@@ -168,7 +168,10 @@ export default function ChallengeDetail() {
   const { data: events = [] } = useQuery({
     queryKey: ['challenge-events', challengeId],
     queryFn: async () => {
-      const { data } = await supabase.from('events').select('*');
+      const { data } = await supabase
+        .from('events')
+        .select('*')
+        .eq('is_deleted', false);
       return data?.filter(e => e.challenge_id === challengeId) || [];
     },
     enabled: !!challengeId

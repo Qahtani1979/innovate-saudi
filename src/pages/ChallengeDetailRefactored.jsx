@@ -84,7 +84,10 @@ function useChallengeData(challengeId) {
     queryKey: ['challenge-programs', challengeId],
     queryFn: async () => {
       if (!challenge?.linked_program_ids || challenge.linked_program_ids.length === 0) return [];
-      const { data } = await supabase.from('programs').select('*');
+      const { data } = await supabase
+        .from('programs')
+        .select('*')
+        .eq('is_deleted', false);
       return data?.filter(p => challenge.linked_program_ids.includes(p.id)) || [];
     },
     enabled: !!challenge

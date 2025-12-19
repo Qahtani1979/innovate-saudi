@@ -26,7 +26,12 @@ function News() {
   const { data: programs = [], isLoading: programsLoading } = useQuery({
     queryKey: ['programs-news'],
     queryFn: async () => {
-      const { data } = await supabase.from('programs').select('*').limit(20);
+      const { data } = await supabase
+        .from('programs')
+        .select('*')
+        .eq('is_deleted', false)
+        .eq('is_published', true)
+        .limit(20);
       return data || [];
     }
   });
