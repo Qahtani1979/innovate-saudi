@@ -22,6 +22,7 @@ export default function StrategyChallengeRouter({ challengeId }) {
         .from('challenges')
         .select('*')
         .eq('id', challengeId)
+        .eq('is_deleted', false)
         .maybeSingle();
       if (error) throw error;
       return data;

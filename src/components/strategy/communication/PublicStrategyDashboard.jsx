@@ -90,6 +90,7 @@ export default function PublicStrategyDashboard({ strategicPlanId: propPlanId })
       const { data, error } = await supabase
         .from('challenges')
         .select('id, title_en, title_ar, status, created_at')
+        .eq('is_deleted', false)
         .contains('strategic_plan_ids', [strategicPlanId])
         .order('created_at', { ascending: false })
         .limit(5);

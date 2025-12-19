@@ -64,7 +64,8 @@ export function ChallengeDetailView({ challengeId, onClose, onUpdate }) {
           regions:region_id(id, name_en, name_ar)
         `)
         .eq('id', challengeId)
-        .single();
+        .eq('is_deleted', false)
+        .maybeSingle();
       
       if (error) throw error;
       return data;

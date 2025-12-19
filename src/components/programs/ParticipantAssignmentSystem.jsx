@@ -30,7 +30,8 @@ export default function ParticipantAssignmentSystem({ programId }) {
         .from('programs')
         .select('*')
         .eq('id', programId)
-        .single();
+        .eq('is_deleted', false)
+        .maybeSingle();
       if (error) throw error;
       return data;
     },

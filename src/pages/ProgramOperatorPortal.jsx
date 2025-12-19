@@ -33,7 +33,7 @@ function ProgramOperatorPortal() {
   const { data: myPrograms = [] } = useQuery({
     queryKey: ['my-operated-programs', myOrganization?.id],
     queryFn: async () => {
-      const { data } = await supabase.from('programs').select('*');
+      const { data } = await supabase.from('programs').select('*').eq('is_deleted', false);
       return (data || []).filter(p => 
         p.operator_organization_id === myOrganization?.id || 
         p.created_by === user?.email
