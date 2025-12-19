@@ -53,34 +53,26 @@ export function useChallengesWithVisibility(options = {}) {
       publishedOnly
     }],
     queryFn: async () => {
-      let query = supabase
-        .from('challenges')
-        .select(`
-          *,
-          municipality:municipalities(id, name_en, name_ar, region_id, region:regions(id, code, name_en)),
-          sector:sectors(id, name_en, name_ar, code)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-      // Apply deleted filter
-      if (!includeDeleted) {
-        query = query.eq('is_deleted', false);
-      }
-
-      // Apply status filter if provided
-      if (status) {
-        query = query.eq('status', status);
-      }
-
-      // Apply sector filter if provided
-      if (sectorId) {
-        query = query.eq('sector_id', sectorId);
-      }
+      // Base select with related entities
+      const selectQuery = `
+        *,
+        municipality:municipalities(id, name_en, name_ar, region_id, region:regions(id, code, name_en)),
+        sector:sectors(id, name_en, name_ar, code)
+      `;
 
       // Non-staff users only see published
       if (publishedOnly || !isStaffUser) {
-        query = query.eq('is_published', true);
+        let query = supabase
+          .from('challenges')
+          .select(selectQuery)
+          .eq('is_published', true)
+          .eq('is_deleted', false)
+          .order('created_at', { ascending: false })
+          .limit(limit);
+
+        if (status) query = query.eq('status', status);
+        if (sectorId) query = query.eq('sector_id', sectorId);
+
         const { data, error } = await query;
         if (error) throw error;
         return data || [];
@@ -88,6 +80,16 @@ export function useChallengesWithVisibility(options = {}) {
 
       // Admin or full visibility users see everything
       if (hasFullVisibility) {
+        let query = supabase
+          .from('challenges')
+          .select(selectQuery)
+          .order('created_at', { ascending: false })
+          .limit(limit);
+
+        if (!includeDeleted) query = query.eq('is_deleted', false);
+        if (status) query = query.eq('status', status);
+        if (sectorId) query = query.eq('sector_id', sectorId);
+
         const { data, error } = await query;
         if (error) throw error;
         return data || [];
@@ -95,55 +97,61 @@ export function useChallengesWithVisibility(options = {}) {
 
       // National deputyship: Filter by sector
       if (isNational && sectorIds?.length > 0) {
-        query = query.in('sector_id', sectorIds);
+        let query = supabase
+          .from('challenges')
+          .select(selectQuery)
+          .in('sector_id', sectorIds)
+          .eq('is_deleted', false)
+          .order('created_at', { ascending: false })
+          .limit(limit);
+
+        if (status) query = query.eq('status', status);
+        if (sectorId) query = query.eq('sector_id', sectorId);
+
         const { data, error } = await query;
         if (error) throw error;
         return data || [];
       }
 
-      // Geographic municipality: Own + national
+      // Geographic municipality: Own + national challenges
       if (userMunicipalityId) {
-        // First get own municipality challenges
-        const { data: ownChallenges, error: ownError } = await supabase
-          .from('challenges')
-          .select(`
-            *,
-            municipality:municipalities(id, name_en, name_ar, region_id, region:regions(id, code, name_en)),
-            sector:sectors(id, name_en, name_ar, code)
-          `)
-          .eq('municipality_id', userMunicipalityId)
-          .eq('is_deleted', false)
-          .order('created_at', { ascending: false });
-
-        if (ownError) throw ownError;
-
-        // Then get national challenges (from national region)
-        let nationalChallenges = [];
-        if (nationalMunicipalityIds?.length > 0) {
-          const { data: natChallenges, error: natError } = await supabase
+        // Use Promise.all for parallel fetching
+        const [ownResult, nationalResult] = await Promise.all([
+          // Own municipality challenges
+          supabase
             .from('challenges')
-            .select(`
-              *,
-              municipality:municipalities(id, name_en, name_ar, region_id, region:regions(id, code, name_en)),
-              sector:sectors(id, name_en, name_ar, code)
-            `)
-            .in('municipality_id', nationalMunicipalityIds)
+            .select(selectQuery)
+            .eq('municipality_id', userMunicipalityId)
             .eq('is_deleted', false)
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false }),
+          
+          // National challenges (if national municipality IDs exist)
+          nationalMunicipalityIds?.length > 0
+            ? supabase
+                .from('challenges')
+                .select(selectQuery)
+                .in('municipality_id', nationalMunicipalityIds)
+                .eq('is_deleted', false)
+                .order('created_at', { ascending: false })
+            : Promise.resolve({ data: [], error: null })
+        ]);
 
-          if (!natError) {
-            nationalChallenges = natChallenges || [];
+        if (ownResult.error) throw ownResult.error;
+
+        const ownChallenges = ownResult.data || [];
+        const nationalChallenges = nationalResult.error ? [] : (nationalResult.data || []);
+
+        // Combine and deduplicate using Map for O(n) performance
+        const challengeMap = new Map();
+        [...ownChallenges, ...nationalChallenges].forEach(challenge => {
+          if (!challengeMap.has(challenge.id)) {
+            challengeMap.set(challenge.id, challenge);
           }
-        }
+        });
 
-        // Combine and deduplicate
-        const allChallenges = [...(ownChallenges || []), ...nationalChallenges];
-        const uniqueChallenges = allChallenges.filter((challenge, index, self) =>
-          index === self.findIndex(c => c.id === challenge.id)
-        );
+        let filtered = Array.from(challengeMap.values());
 
         // Apply additional filters
-        let filtered = uniqueChallenges;
         if (status) {
           filtered = filtered.filter(c => c.status === status);
         }
@@ -151,11 +159,23 @@ export function useChallengesWithVisibility(options = {}) {
           filtered = filtered.filter(c => c.sector_id === sectorId);
         }
 
+        // Sort by created_at descending and apply limit
+        filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         return filtered.slice(0, limit);
       }
 
       // Fallback: published only
-      query = query.eq('is_published', true);
+      let query = supabase
+        .from('challenges')
+        .select(selectQuery)
+        .eq('is_published', true)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (status) query = query.eq('status', status);
+      if (sectorId) query = query.eq('sector_id', sectorId);
+
       const { data, error } = await query;
       if (error) throw error;
       return data || [];
