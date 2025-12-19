@@ -1,4 +1,5 @@
 // Validation categories for system validation checklist
+// 22 categories with 300+ checks for comprehensive platform validation
 
 export const VALIDATION_CATEGORIES = [
   {
@@ -84,6 +85,18 @@ export const VALIDATION_CATEGORIES = [
           { id: 'vh-3', text: { en: 'Public users see only published items', ar: 'المستخدمون العامون يرون العناصر المنشورة فقط' }, priority: 'high' },
           { id: 'vh-4', text: { en: 'Visibility loading state prevents premature queries', ar: 'حالة تحميل الرؤية تمنع الاستعلامات المبكرة' }, priority: 'medium' },
           { id: 'vh-5', text: { en: 'National vs Geographic visibility logic correct', ar: 'منطق الرؤية الوطنية مقابل الجغرافية صحيح' }, priority: 'high' }
+        ]
+      },
+      {
+        id: 'hook-composition',
+        name: { en: '2.4 Hook Composition & Dependencies', ar: '2.4 تكوين الـ Hooks' },
+        checks: [
+          { id: 'hc-1', text: { en: 'Hooks follow single responsibility principle', ar: 'الـ Hooks تتبع مبدأ المسؤولية الواحدة' }, priority: 'medium' },
+          { id: 'hc-2', text: { en: 'Hook dependencies are correctly specified', ar: 'تبعيات الـ Hooks محددة بشكل صحيح' }, priority: 'high' },
+          { id: 'hc-3', text: { en: 'Hooks have proper cleanup on unmount', ar: 'الـ Hooks لها تنظيف عند الإزالة' }, priority: 'medium' },
+          { id: 'hc-4', text: { en: 'Hooks are reusable across components', ar: 'الـ Hooks قابلة لإعادة الاستخدام' }, priority: 'low' },
+          { id: 'hc-5', text: { en: 'Hooks handle race conditions', ar: 'الـ Hooks تعالج حالات السباق' }, priority: 'medium' },
+          { id: 'hc-6', text: { en: 'Hooks use proper memoization', ar: 'الـ Hooks تستخدم التخزين المؤقت المناسب' }, priority: 'medium' }
         ]
       }
     ]
@@ -251,7 +264,7 @@ export const VALIDATION_CATEGORIES = [
           { id: 'email-2', text: { en: 'Variables interpolated correctly', ar: 'المتغيرات مستبدلة بشكل صحيح' }, priority: 'medium' },
           { id: 'email-3', text: { en: 'Unsubscribe option works', ar: 'خيار إلغاء الاشتراك يعمل' }, priority: 'medium' },
           { id: 'email-4', text: { en: 'Email logs captured', ar: 'سجلات البريد الإلكتروني مسجلة' }, priority: 'medium' },
-          { id: 'email-5', text: { en: 'Bounce handling', ar: 'معالجة الرسائل المرتدة' }, priority: 'low' }
+          { id: 'email-5', text: { en: 'Bounce handling configured', ar: 'معالجة الرسائل المرتدة مكونة' }, priority: 'low' }
         ]
       },
       {
@@ -261,7 +274,7 @@ export const VALIDATION_CATEGORIES = [
           { id: 'notif-1', text: { en: 'Notifications created on key events', ar: 'الإشعارات تُنشأ عند الأحداث الرئيسية' }, priority: 'medium' },
           { id: 'notif-2', text: { en: 'Read/unread status tracked', ar: 'حالة القراءة/عدم القراءة يتم تتبعها' }, priority: 'medium' },
           { id: 'notif-3', text: { en: 'Mark all as read works', ar: 'تحديد الكل كمقروء يعمل' }, priority: 'low' },
-          { id: 'notif-4', text: { en: 'Real-time updates', ar: 'التحديثات الفورية' }, priority: 'low' }
+          { id: 'notif-4', text: { en: 'Real-time updates via WebSocket', ar: 'التحديثات الفورية عبر WebSocket' }, priority: 'low' }
         ]
       }
     ]
@@ -368,14 +381,14 @@ export const VALIDATION_CATEGORIES = [
     subcategories: [
       {
         id: 'docs',
-        name: { en: '11.1 Documentation', ar: '11.1 التوثيق' },
+        name: { en: '11.1 Documentation Files', ar: '11.1 ملفات التوثيق' },
         checks: [
-          { id: 'doc-1', text: { en: 'README exists with setup instructions', ar: 'README موجود مع تعليمات الإعداد' }, priority: 'medium' },
-          { id: 'doc-2', text: { en: 'API documentation current', ar: 'توثيق API محدث' }, priority: 'medium' },
-          { id: 'doc-3', text: { en: 'Component documentation exists', ar: 'توثيق المكونات موجود' }, priority: 'low' },
-          { id: 'doc-4', text: { en: 'Database schema documented', ar: 'مخطط قاعدة البيانات موثق' }, priority: 'medium' },
-          { id: 'doc-5', text: { en: 'Workflow diagrams exist', ar: 'مخططات سير العمل موجودة' }, priority: 'low' },
-          { id: 'doc-6', text: { en: 'Permission matrix documented', ar: 'مصفوفة الصلاحيات موثقة' }, priority: 'medium' }
+          { id: 'doc-1', text: { en: 'README.md exists with overview', ar: 'README.md موجود مع نظرة عامة' }, priority: 'medium' },
+          { id: 'doc-2', text: { en: 'API.md documents hooks and functions', ar: 'API.md يوثق الـ hooks والدوال' }, priority: 'medium' },
+          { id: 'doc-3', text: { en: 'COMPONENTS.md lists all components', ar: 'COMPONENTS.md يسرد جميع المكونات' }, priority: 'low' },
+          { id: 'doc-4', text: { en: 'SCHEMA.md documents database tables', ar: 'SCHEMA.md يوثق جداول قاعدة البيانات' }, priority: 'medium' },
+          { id: 'doc-5', text: { en: 'WORKFLOWS.md has Mermaid diagrams', ar: 'WORKFLOWS.md لديه مخططات Mermaid' }, priority: 'low' },
+          { id: 'doc-6', text: { en: 'PERMISSIONS.md documents role matrix', ar: 'PERMISSIONS.md يوثق مصفوفة الأدوار' }, priority: 'medium' }
         ]
       }
     ]
@@ -500,31 +513,31 @@ export const VALIDATION_CATEGORIES = [
           { id: 'role-3', text: { en: 'Staff role has appropriate access', ar: 'دور الموظف له وصول مناسب' }, priority: 'high' },
           { id: 'role-4', text: { en: 'Public/viewer role is restricted', ar: 'دور العارض مقيد' }, priority: 'high' },
           { id: 'role-5', text: { en: 'Role hierarchy is correct', ar: 'تسلسل الأدوار صحيح' }, priority: 'medium' },
-          { id: 'role-6', text: { en: 'Role assignment UI works', ar: 'واجهة تعيين الأدوار تعمل' }, priority: 'medium' }
+          { id: 'role-6', text: { en: 'Role requests workflow works', ar: 'سير عمل طلبات الأدوار يعمل' }, priority: 'medium' }
         ]
       },
       {
         id: 'role-visibility',
-        name: { en: '15.2 Role-Based Visibility', ar: '15.2 الرؤية المبنية على الدور' },
+        name: { en: '15.2 Role Visibility', ar: '15.2 رؤية الأدوار' },
         checks: [
-          { id: 'vis-1', text: { en: 'Admin sees all records', ar: 'المسؤول يرى جميع السجلات' }, priority: 'high' },
-          { id: 'vis-2', text: { en: 'Staff sees scoped records', ar: 'الموظف يرى السجلات المحددة' }, priority: 'high' },
-          { id: 'vis-3', text: { en: 'Owner sees own records', ar: 'المالك يرى سجلاته' }, priority: 'high' },
-          { id: 'vis-4', text: { en: 'Public sees published only', ar: 'العام يرى المنشور فقط' }, priority: 'high' },
-          { id: 'vis-5', text: { en: 'PII hidden from unauthorized', ar: 'البيانات الشخصية مخفية' }, priority: 'critical' },
-          { id: 'vis-6', text: { en: 'Sensitive fields masked', ar: 'الحقول الحساسة مقنعة' }, priority: 'high' }
+          { id: 'vis-1', text: { en: 'UI adapts to user role', ar: 'الواجهة تتكيف مع دور المستخدم' }, priority: 'high' },
+          { id: 'vis-2', text: { en: 'Actions hidden for non-permitted roles', ar: 'الإجراءات مخفية للأدوار غير المسموحة' }, priority: 'high' },
+          { id: 'vis-3', text: { en: 'Data filtered by role scope', ar: 'البيانات مفلترة حسب نطاق الدور' }, priority: 'high' },
+          { id: 'vis-4', text: { en: 'Menu items filtered by role', ar: 'عناصر القائمة مفلترة حسب الدور' }, priority: 'high' },
+          { id: 'vis-5', text: { en: 'Dashboard widgets respect roles', ar: 'عناصر لوحة القيادة تحترم الأدوار' }, priority: 'medium' },
+          { id: 'vis-6', text: { en: 'Reports respect role data scope', ar: 'التقارير تحترم نطاق بيانات الدور' }, priority: 'high' }
         ]
       },
       {
         id: 'role-actions',
-        name: { en: '15.3 Role-Based Actions', ar: '15.3 الإجراءات المبنية على الدور' },
+        name: { en: '15.3 Role-Based Actions', ar: '15.3 الإجراءات المبنية على الأدوار' },
         checks: [
           { id: 'act-1', text: { en: 'Create action respects role', ar: 'إجراء الإنشاء يحترم الدور' }, priority: 'high' },
           { id: 'act-2', text: { en: 'Edit action respects role', ar: 'إجراء التعديل يحترم الدور' }, priority: 'high' },
           { id: 'act-3', text: { en: 'Delete action respects role', ar: 'إجراء الحذف يحترم الدور' }, priority: 'high' },
           { id: 'act-4', text: { en: 'Approve action respects role', ar: 'إجراء الموافقة يحترم الدور' }, priority: 'high' },
-          { id: 'act-5', text: { en: 'Export action respects role', ar: 'إجراء التصدير يحترم الدور' }, priority: 'medium' },
-          { id: 'act-6', text: { en: 'Bulk actions respect role', ar: 'الإجراءات الجماعية تحترم الدور' }, priority: 'medium' }
+          { id: 'act-5', text: { en: 'Publish action respects role', ar: 'إجراء النشر يحترم الدور' }, priority: 'high' },
+          { id: 'act-6', text: { en: 'Export action respects role', ar: 'إجراء التصدير يحترم الدور' }, priority: 'medium' }
         ]
       }
     ]
@@ -538,42 +551,310 @@ export const VALIDATION_CATEGORIES = [
         id: 'design-system',
         name: { en: '16.1 Design System', ar: '16.1 نظام التصميم' },
         checks: [
-          { id: 'ds-1', text: { en: 'Uses design system tokens', ar: 'يستخدم رموز نظام التصميم' }, priority: 'high' },
-          { id: 'ds-2', text: { en: 'Colors from theme variables', ar: 'الألوان من متغيرات الثيم' }, priority: 'high' },
-          { id: 'ds-3', text: { en: 'Typography consistent', ar: 'الخط متسق' }, priority: 'medium' },
-          { id: 'ds-4', text: { en: 'Spacing follows system', ar: 'التباعد يتبع النظام' }, priority: 'medium' },
-          { id: 'ds-5', text: { en: 'Icons from icon library', ar: 'الأيقونات من المكتبة' }, priority: 'low' },
-          { id: 'ds-6', text: { en: 'Shadows/borders consistent', ar: 'الظلال/الحدود متسقة' }, priority: 'low' }
+          { id: 'ds-1', text: { en: 'Uses semantic color tokens', ar: 'يستخدم رموز الألوان الدلالية' }, priority: 'high' },
+          { id: 'ds-2', text: { en: 'Uses consistent spacing scale', ar: 'يستخدم مقياس مسافات متسق' }, priority: 'medium' },
+          { id: 'ds-3', text: { en: 'Uses design system components', ar: 'يستخدم مكونات نظام التصميم' }, priority: 'high' },
+          { id: 'ds-4', text: { en: 'Typography follows hierarchy', ar: 'الطباعة تتبع التسلسل' }, priority: 'medium' },
+          { id: 'ds-5', text: { en: 'Icons are consistent style', ar: 'الأيقونات بنمط متسق' }, priority: 'low' },
+          { id: 'ds-6', text: { en: 'No hardcoded colors', ar: 'لا توجد ألوان مضمنة' }, priority: 'high' }
         ]
       },
       {
         id: 'layout-consistency',
         name: { en: '16.2 Layout Consistency', ar: '16.2 اتساق التخطيط' },
         checks: [
-          { id: 'lay-1', text: { en: 'Page header consistent', ar: 'عنوان الصفحة متسق' }, priority: 'medium' },
-          { id: 'lay-2', text: { en: 'Card layouts consistent', ar: 'تخطيطات البطاقات متسقة' }, priority: 'medium' },
-          { id: 'lay-3', text: { en: 'Form layouts consistent', ar: 'تخطيطات النماذج متسقة' }, priority: 'medium' },
-          { id: 'lay-4', text: { en: 'Table layouts consistent', ar: 'تخطيطات الجداول متسقة' }, priority: 'medium' },
-          { id: 'lay-5', text: { en: 'Modal/dialog layouts consistent', ar: 'تخطيطات النوافذ متسقة' }, priority: 'medium' },
-          { id: 'lay-6', text: { en: 'Empty states consistent', ar: 'الحالات الفارغة متسقة' }, priority: 'low' }
+          { id: 'layout-1', text: { en: 'Page headers consistent', ar: 'رؤوس الصفحات متسقة' }, priority: 'medium' },
+          { id: 'layout-2', text: { en: 'Card layouts consistent', ar: 'تخطيط البطاقات متسق' }, priority: 'medium' },
+          { id: 'layout-3', text: { en: 'Form layouts consistent', ar: 'تخطيط النماذج متسق' }, priority: 'medium' },
+          { id: 'layout-4', text: { en: 'Table layouts consistent', ar: 'تخطيط الجداول متسق' }, priority: 'medium' },
+          { id: 'layout-5', text: { en: 'Modal/dialog layouts consistent', ar: 'تخطيط النوافذ المنبثقة متسق' }, priority: 'medium' },
+          { id: 'layout-6', text: { en: 'Action buttons positioned consistently', ar: 'أزرار الإجراءات موضوعة بشكل متسق' }, priority: 'low' }
         ]
       },
       {
         id: 'visual-polish',
         name: { en: '16.3 Visual Polish', ar: '16.3 التلميع البصري' },
         checks: [
-          { id: 'polish-1', text: { en: 'Loading states styled', ar: 'حالات التحميل مصممة' }, priority: 'medium' },
-          { id: 'polish-2', text: { en: 'Error states styled', ar: 'حالات الخطأ مصممة' }, priority: 'medium' },
-          { id: 'polish-3', text: { en: 'Success states styled', ar: 'حالات النجاح مصممة' }, priority: 'low' },
-          { id: 'polish-4', text: { en: 'Animations smooth', ar: 'الحركات سلسة' }, priority: 'low' },
-          { id: 'polish-5', text: { en: 'Hover states work', ar: 'حالات التمرير تعمل' }, priority: 'low' },
-          { id: 'polish-6', text: { en: 'Dark mode supported', ar: 'الوضع الداكن مدعوم' }, priority: 'medium' }
+          { id: 'polish-1', text: { en: 'Loading states have skeletons', ar: 'حالات التحميل لها هياكل' }, priority: 'medium' },
+          { id: 'polish-2', text: { en: 'Transitions are smooth', ar: 'الانتقالات سلسة' }, priority: 'low' },
+          { id: 'polish-3', text: { en: 'Hover states are defined', ar: 'حالات التحويم محددة' }, priority: 'low' },
+          { id: 'polish-4', text: { en: 'Error states are styled', ar: 'حالات الخطأ منسقة' }, priority: 'medium' },
+          { id: 'polish-5', text: { en: 'Success feedback is visible', ar: 'رسائل النجاح مرئية' }, priority: 'medium' },
+          { id: 'polish-6', text: { en: 'Empty states are styled', ar: 'الحالات الفارغة منسقة' }, priority: 'medium' }
+        ]
+      }
+    ]
+  },
+  // NEW CATEGORIES FOR PLATFORM INTEGRATION
+  {
+    id: 'persona',
+    name: { en: '17. Persona System', ar: '17. نظام الشخصيات' },
+    color: 'lime',
+    subcategories: [
+      {
+        id: 'persona-selection',
+        name: { en: '17.1 Persona Selection', ar: '17.1 اختيار الشخصية' },
+        checks: [
+          { id: 'persona-1', text: { en: 'Persona selection page exists', ar: 'صفحة اختيار الشخصية موجودة' }, priority: 'high' },
+          { id: 'persona-2', text: { en: 'All personas are selectable', ar: 'جميع الشخصيات قابلة للاختيار' }, priority: 'high' },
+          { id: 'persona-3', text: { en: 'Persona change workflow exists', ar: 'سير عمل تغيير الشخصية موجود' }, priority: 'medium' },
+          { id: 'persona-4', text: { en: 'Persona stored in user profile', ar: 'الشخصية مخزنة في ملف المستخدم' }, priority: 'high' },
+          { id: 'persona-5', text: { en: 'Persona affects available features', ar: 'الشخصية تؤثر على الميزات المتاحة' }, priority: 'high' }
+        ]
+      },
+      {
+        id: 'persona-dashboards',
+        name: { en: '17.2 Persona Dashboards', ar: '17.2 لوحات الشخصيات' },
+        checks: [
+          { id: 'dash-1', text: { en: 'Persona has dedicated dashboard', ar: 'الشخصية لها لوحة قيادة مخصصة' }, priority: 'high' },
+          { id: 'dash-2', text: { en: 'Dashboard shows relevant widgets', ar: 'لوحة القيادة تعرض عناصر ذات صلة' }, priority: 'medium' },
+          { id: 'dash-3', text: { en: 'Dashboard respects data scope', ar: 'لوحة القيادة تحترم نطاق البيانات' }, priority: 'high' },
+          { id: 'dash-4', text: { en: 'Dashboard has quick actions', ar: 'لوحة القيادة لها إجراءات سريعة' }, priority: 'low' },
+          { id: 'dash-5', text: { en: 'Dashboard loads efficiently', ar: 'لوحة القيادة تحمل بكفاءة' }, priority: 'medium' }
+        ]
+      },
+      {
+        id: 'persona-onboarding',
+        name: { en: '17.3 Persona Onboarding', ar: '17.3 إعداد الشخصية' },
+        checks: [
+          { id: 'onb-1', text: { en: 'Persona-specific onboarding exists', ar: 'إعداد خاص بالشخصية موجود' }, priority: 'medium' },
+          { id: 'onb-2', text: { en: 'Onboarding collects required data', ar: 'الإعداد يجمع البيانات المطلوبة' }, priority: 'high' },
+          { id: 'onb-3', text: { en: 'Onboarding progress tracked', ar: 'تقدم الإعداد يتم تتبعه' }, priority: 'medium' },
+          { id: 'onb-4', text: { en: 'Onboarding can be resumed', ar: 'الإعداد يمكن استئنافه' }, priority: 'low' },
+          { id: 'onb-5', text: { en: 'Onboarding completion triggers role assignment', ar: 'اكتمال الإعداد يعين الدور' }, priority: 'high' }
+        ]
+      },
+      {
+        id: 'persona-routing',
+        name: { en: '17.4 Persona Routing', ar: '17.4 توجيه الشخصية' },
+        checks: [
+          { id: 'proute-1', text: { en: 'Routes filtered by persona', ar: 'المسارات مفلترة حسب الشخصية' }, priority: 'high' },
+          { id: 'proute-2', text: { en: 'Redirect to persona dashboard', ar: 'إعادة توجيه إلى لوحة الشخصية' }, priority: 'medium' },
+          { id: 'proute-3', text: { en: 'Persona-specific URLs work', ar: 'عناوين URL الخاصة بالشخصية تعمل' }, priority: 'medium' },
+          { id: 'proute-4', text: { en: 'Cross-persona navigation handled', ar: 'التنقل بين الشخصيات يتم معالجته' }, priority: 'low' }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'inner-integration',
+    name: { en: '18. Inner Systems Integration', ar: '18. تكامل الأنظمة الداخلية' },
+    color: 'yellow',
+    subcategories: [
+      {
+        id: 'notification-integration',
+        name: { en: '18.1 Notification Integration', ar: '18.1 تكامل الإشعارات' },
+        checks: [
+          { id: 'ni-1', text: { en: 'System triggers notifications on create', ar: 'النظام يطلق إشعارات عند الإنشاء' }, priority: 'medium' },
+          { id: 'ni-2', text: { en: 'System triggers notifications on status change', ar: 'النظام يطلق إشعارات عند تغيير الحالة' }, priority: 'medium' },
+          { id: 'ni-3', text: { en: 'System triggers notifications on approval', ar: 'النظام يطلق إشعارات عند الموافقة' }, priority: 'high' },
+          { id: 'ni-4', text: { en: 'System triggers notifications on assignment', ar: 'النظام يطلق إشعارات عند التعيين' }, priority: 'medium' },
+          { id: 'ni-5', text: { en: 'useNotification hook integrated', ar: 'hook useNotification مدمج' }, priority: 'medium' },
+          { id: 'ni-6', text: { en: 'Email notifications configured', ar: 'إشعارات البريد الإلكتروني مكونة' }, priority: 'medium' }
+        ]
+      },
+      {
+        id: 'approval-integration',
+        name: { en: '18.2 Approval System Integration', ar: '18.2 تكامل نظام الموافقات' },
+        checks: [
+          { id: 'ai-1', text: { en: 'useApprovalRequest hook integrated', ar: 'hook useApprovalRequest مدمج' }, priority: 'high' },
+          { id: 'ai-2', text: { en: 'Approval requests created automatically', ar: 'طلبات الموافقة تُنشأ تلقائياً' }, priority: 'high' },
+          { id: 'ai-3', text: { en: 'Approval status displayed in UI', ar: 'حالة الموافقة تُعرض في الواجهة' }, priority: 'medium' },
+          { id: 'ai-4', text: { en: 'Pending approvals queue works', ar: 'قائمة الموافقات المعلقة تعمل' }, priority: 'medium' },
+          { id: 'ai-5', text: { en: 'Approval triggers status change', ar: 'الموافقة تحفز تغيير الحالة' }, priority: 'high' },
+          { id: 'ai-6', text: { en: 'Rejection workflow implemented', ar: 'سير عمل الرفض مطبق' }, priority: 'medium' }
+        ]
+      },
+      {
+        id: 'audit-integration',
+        name: { en: '18.3 Audit System Integration', ar: '18.3 تكامل نظام التدقيق' },
+        checks: [
+          { id: 'aui-1', text: { en: 'useAuditLog hook integrated', ar: 'hook useAuditLog مدمج' }, priority: 'high' },
+          { id: 'aui-2', text: { en: 'All CRUD operations logged', ar: 'جميع عمليات CRUD مسجلة' }, priority: 'high' },
+          { id: 'aui-3', text: { en: 'Audit trail visible in detail page', ar: 'سجل التدقيق مرئي في صفحة التفاصيل' }, priority: 'medium' },
+          { id: 'aui-4', text: { en: 'Sensitive fields masked in logs', ar: 'الحقول الحساسة مخفية في السجلات' }, priority: 'high' },
+          { id: 'aui-5', text: { en: 'User context captured in logs', ar: 'سياق المستخدم مسجل في السجلات' }, priority: 'medium' }
+        ]
+      },
+      {
+        id: 'communication-integration',
+        name: { en: '18.4 Communication Integration', ar: '18.4 تكامل الاتصالات' },
+        checks: [
+          { id: 'ci-1', text: { en: 'useEmailTrigger hook integrated', ar: 'hook useEmailTrigger مدمج' }, priority: 'medium' },
+          { id: 'ci-2', text: { en: 'Email templates configured for entity', ar: 'قوالب البريد مكونة للكيان' }, priority: 'medium' },
+          { id: 'ci-3', text: { en: 'Email trigger events defined', ar: 'أحداث محفزات البريد محددة' }, priority: 'medium' },
+          { id: 'ci-4', text: { en: 'Digest emails include entity updates', ar: 'رسائل الملخص تتضمن تحديثات الكيان' }, priority: 'low' },
+          { id: 'ci-5', text: { en: 'Communication preferences respected', ar: 'تفضيلات الاتصال محترمة' }, priority: 'medium' }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'realtime',
+    name: { en: '19. Realtime & WebSocket', ar: '19. الوقت الحقيقي والـ WebSocket' },
+    color: 'orange',
+    subcategories: [
+      {
+        id: 'realtime-subscriptions',
+        name: { en: '19.1 Realtime Subscriptions', ar: '19.1 اشتراكات الوقت الحقيقي' },
+        checks: [
+          { id: 'rt-1', text: { en: 'Realtime enabled on main table', ar: 'الوقت الحقيقي مفعل على الجدول الرئيسي' }, priority: 'low' },
+          { id: 'rt-2', text: { en: 'Subscription cleans up on unmount', ar: 'الاشتراك ينظف عند الإزالة' }, priority: 'medium' },
+          { id: 'rt-3', text: { en: 'Realtime updates merge with cache', ar: 'تحديثات الوقت الحقيقي تدمج مع التخزين المؤقت' }, priority: 'medium' },
+          { id: 'rt-4', text: { en: 'Connection state handled', ar: 'حالة الاتصال يتم معالجتها' }, priority: 'low' },
+          { id: 'rt-5', text: { en: 'Reconnection logic exists', ar: 'منطق إعادة الاتصال موجود' }, priority: 'low' }
+        ]
+      },
+      {
+        id: 'live-updates',
+        name: { en: '19.2 Live Updates', ar: '19.2 التحديثات المباشرة' },
+        checks: [
+          { id: 'live-1', text: { en: 'List view updates in realtime', ar: 'عرض القائمة يتحدث في الوقت الحقيقي' }, priority: 'low' },
+          { id: 'live-2', text: { en: 'Detail view updates in realtime', ar: 'عرض التفاصيل يتحدث في الوقت الحقيقي' }, priority: 'low' },
+          { id: 'live-3', text: { en: 'Notification badge updates live', ar: 'شارة الإشعارات تتحدث مباشرة' }, priority: 'medium' },
+          { id: 'live-4', text: { en: 'Collaboration indicators work', ar: 'مؤشرات التعاون تعمل' }, priority: 'low' }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'activity',
+    name: { en: '20. Activity & Timeline', ar: '20. النشاط والجدول الزمني' },
+    color: 'indigo',
+    subcategories: [
+      {
+        id: 'activity-logging',
+        name: { en: '20.1 Activity Logging', ar: '20.1 تسجيل النشاط' },
+        checks: [
+          { id: 'actlog-1', text: { en: 'Entity has activity table', ar: 'الكيان له جدول نشاط' }, priority: 'medium' },
+          { id: 'actlog-2', text: { en: 'Activity logged on all actions', ar: 'النشاط يسجل عند جميع الإجراءات' }, priority: 'medium' },
+          { id: 'actlog-3', text: { en: 'Activity includes user info', ar: 'النشاط يتضمن معلومات المستخدم' }, priority: 'medium' },
+          { id: 'actlog-4', text: { en: 'Activity includes timestamp', ar: 'النشاط يتضمن الطابع الزمني' }, priority: 'medium' },
+          { id: 'actlog-5', text: { en: 'Activity includes metadata', ar: 'النشاط يتضمن البيانات الوصفية' }, priority: 'low' }
+        ]
+      },
+      {
+        id: 'timeline-display',
+        name: { en: '20.2 Timeline Display', ar: '20.2 عرض الجدول الزمني' },
+        checks: [
+          { id: 'time-1', text: { en: 'Timeline component exists', ar: 'مكون الجدول الزمني موجود' }, priority: 'low' },
+          { id: 'time-2', text: { en: 'Timeline shows all activities', ar: 'الجدول الزمني يعرض جميع الأنشطة' }, priority: 'low' },
+          { id: 'time-3', text: { en: 'Timeline is paginated', ar: 'الجدول الزمني مقسم' }, priority: 'low' },
+          { id: 'time-4', text: { en: 'Timeline is filterable', ar: 'الجدول الزمني قابل للفلترة' }, priority: 'low' }
+        ]
+      },
+      {
+        id: 'cross-entity-streams',
+        name: { en: '20.3 Cross-Entity Activity Streams', ar: '20.3 تيارات النشاط المشتركة' },
+        checks: [
+          { id: 'ces-1', text: { en: 'User activity stream exists', ar: 'تيار نشاط المستخدم موجود' }, priority: 'low' },
+          { id: 'ces-2', text: { en: 'Organization activity stream exists', ar: 'تيار نشاط المنظمة موجود' }, priority: 'low' },
+          { id: 'ces-3', text: { en: 'Global activity feed exists', ar: 'تغذية النشاط العالمية موجودة' }, priority: 'low' },
+          { id: 'ces-4', text: { en: 'Activity stream respects permissions', ar: 'تيار النشاط يحترم الصلاحيات' }, priority: 'medium' }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'delegation',
+    name: { en: '21. Delegation & Escalation', ar: '21. التفويض والتصعيد' },
+    color: 'rose',
+    subcategories: [
+      {
+        id: 'delegation-rules',
+        name: { en: '21.1 Delegation Rules', ar: '21.1 قواعد التفويض' },
+        checks: [
+          { id: 'del-1', text: { en: 'Delegation rules table exists', ar: 'جدول قواعد التفويض موجود' }, priority: 'medium' },
+          { id: 'del-2', text: { en: 'Delegation can be temporary', ar: 'التفويض يمكن أن يكون مؤقت' }, priority: 'low' },
+          { id: 'del-3', text: { en: 'Delegation requires approval', ar: 'التفويض يتطلب موافقة' }, priority: 'medium' },
+          { id: 'del-4', text: { en: 'Delegation audit trail exists', ar: 'سجل تدقيق التفويض موجود' }, priority: 'medium' },
+          { id: 'del-5', text: { en: 'Delegation scope is limited', ar: 'نطاق التفويض محدود' }, priority: 'medium' }
+        ]
+      },
+      {
+        id: 'auto-approval',
+        name: { en: '21.2 Auto-Approval Rules', ar: '21.2 قواعد الموافقة التلقائية' },
+        checks: [
+          { id: 'auto-1', text: { en: 'Auto-approval rules configurable', ar: 'قواعد الموافقة التلقائية قابلة للتكوين' }, priority: 'low' },
+          { id: 'auto-2', text: { en: 'Auto-approval by persona type', ar: 'موافقة تلقائية حسب نوع الشخصية' }, priority: 'low' },
+          { id: 'auto-3', text: { en: 'Auto-approval by organization', ar: 'موافقة تلقائية حسب المنظمة' }, priority: 'low' },
+          { id: 'auto-4', text: { en: 'Auto-approval logged', ar: 'الموافقة التلقائية مسجلة' }, priority: 'medium' }
+        ]
+      },
+      {
+        id: 'escalation-chains',
+        name: { en: '21.3 Escalation Chains', ar: '21.3 سلاسل التصعيد' },
+        checks: [
+          { id: 'esc-1', text: { en: 'Escalation levels defined', ar: 'مستويات التصعيد محددة' }, priority: 'medium' },
+          { id: 'esc-2', text: { en: 'Escalation triggers on SLA breach', ar: 'التصعيد يُحفز عند خرق SLA' }, priority: 'medium' },
+          { id: 'esc-3', text: { en: 'Escalation notifications sent', ar: 'إشعارات التصعيد تُرسل' }, priority: 'medium' },
+          { id: 'esc-4', text: { en: 'Escalation visual indicator', ar: 'مؤشر بصري للتصعيد' }, priority: 'low' },
+          { id: 'esc-5', text: { en: 'Escalation de-escalation logic', ar: 'منطق إلغاء التصعيد' }, priority: 'low' }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'cross-entity',
+    name: { en: '22. Cross-Entity Linking', ar: '22. ربط الكيانات المتقاطعة' },
+    color: 'teal',
+    subcategories: [
+      {
+        id: 'entity-references',
+        name: { en: '22.1 Entity References', ar: '22.1 مراجع الكيانات' },
+        checks: [
+          { id: 'ref-1', text: { en: 'Linked entities displayed', ar: 'الكيانات المرتبطة معروضة' }, priority: 'medium' },
+          { id: 'ref-2', text: { en: 'Links are navigable', ar: 'الروابط قابلة للتنقل' }, priority: 'medium' },
+          { id: 'ref-3', text: { en: 'Reverse links shown', ar: 'الروابط العكسية معروضة' }, priority: 'low' },
+          { id: 'ref-4', text: { en: 'Link creation UI exists', ar: 'واجهة إنشاء الروابط موجودة' }, priority: 'low' },
+          { id: 'ref-5', text: { en: 'Link removal respects permissions', ar: 'إزالة الروابط تحترم الصلاحيات' }, priority: 'medium' }
+        ]
+      },
+      {
+        id: 'cascade-updates',
+        name: { en: '22.2 Cascade Updates', ar: '22.2 التحديثات المتسلسلة' },
+        checks: [
+          { id: 'cas-1', text: { en: 'Status changes cascade correctly', ar: 'تغييرات الحالة تتسلسل بشكل صحيح' }, priority: 'medium' },
+          { id: 'cas-2', text: { en: 'Delete cascades handled', ar: 'حذف التسلسل يُعالج' }, priority: 'high' },
+          { id: 'cas-3', text: { en: 'Orphan records prevented', ar: 'السجلات اليتيمة ممنوعة' }, priority: 'medium' },
+          { id: 'cas-4', text: { en: 'Cascade notifications sent', ar: 'إشعارات التسلسل تُرسل' }, priority: 'low' }
+        ]
+      },
+      {
+        id: 'dependency-checks',
+        name: { en: '22.3 Dependency Checks', ar: '22.3 فحوصات التبعيات' },
+        checks: [
+          { id: 'dep-1', text: { en: 'Delete blocked if dependencies exist', ar: 'الحذف يُحظر إذا وجدت تبعيات' }, priority: 'high' },
+          { id: 'dep-2', text: { en: 'Dependencies listed before delete', ar: 'التبعيات تُسرد قبل الحذف' }, priority: 'medium' },
+          { id: 'dep-3', text: { en: 'Impact analysis available', ar: 'تحليل التأثير متاح' }, priority: 'low' },
+          { id: 'dep-4', text: { en: 'Dependency graph visualized', ar: 'رسم بياني للتبعيات معروض' }, priority: 'low' }
         ]
       }
     ]
   }
 ];
 
+// Helper function to get total check count
+export const getTotalCheckCount = () => {
+  return VALIDATION_CATEGORIES.reduce((total, category) => {
+    return total + category.subcategories.reduce((subTotal, sub) => {
+      return subTotal + sub.checks.length;
+    }, 0);
+  }, 0);
+};
+
+// Helper function to get checks by priority
+export const getChecksByPriority = (priority) => {
+  const checks = [];
+  VALIDATION_CATEGORIES.forEach(category => {
+    category.subcategories.forEach(sub => {
+      sub.checks.filter(c => c.priority === priority).forEach(check => {
+        checks.push({ ...check, category: category.id, subcategory: sub.id });
+      });
+    });
+  });
+  return checks;
+};
 // Helper to get all checks from categories
 export function getAllChecks() {
   const checks = [];
