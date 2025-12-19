@@ -300,7 +300,7 @@ function SystemValidationChecklist() {
     <PageLayout>
       <PageHeader
         title={t({ en: 'System Validation Checklist', ar: 'قائمة التحقق من النظام' })}
-        description={t({ en: 'Comprehensive 16-layer deep validation for all 38 platform systems', ar: 'قائمة تحقق شاملة من 16 طبقة لجميع 38 نظام في المنصة' })}
+        description={t({ en: `Comprehensive 16-layer deep validation for all ${systems.length} platform systems`, ar: `قائمة تحقق شاملة من 16 طبقة لجميع ${systems.length} نظام في المنصة` })}
         icon={<ClipboardCheck className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />}
       />
 
