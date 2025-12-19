@@ -233,20 +233,75 @@ export function useAuditLog() {
         export_scope: exportData.scope,
         record_count: exportData.count,
         filters_applied: exportData.filters,
-        ...exportData
-      }
-    });
-  }, [logActivity]);
+      ...exportData
+    }
+  });
+}, [logActivity]);
 
-  return {
-    logActivity,
-    logProgramActivity,
-    logEventActivity,
-    logApprovalActivity,
-    logRegistrationActivity,
-    logBulkActivity,
-    logExportActivity
+/**
+ * Log challenge-specific activities with rich metadata
+ */
+const logChallengeActivity = useCallback(async (action, challenge, additionalMetadata = {}) => {
+  const actionMap = {
+    'created': 'challenge_created',
+    'updated': 'challenge_updated',
+    'deleted': 'challenge_deleted',
+    'published': 'challenge_published',
+    'unpublished': 'challenge_unpublished',
+    'submitted': 'challenge_submitted_for_review',
+    'approved': 'challenge_approved',
+    'rejected': 'challenge_rejected',
+    'status_changed': 'challenge_status_changed',
+    'archived': 'challenge_archived',
+    'unarchived': 'challenge_unarchived',
+    'assigned': 'challenge_assigned',
+    'priority_changed': 'challenge_priority_changed',
+    'track_assigned': 'challenge_track_assigned',
+    'pilot_linked': 'challenge_pilot_linked',
+    'rd_linked': 'challenge_rd_linked',
+    'solution_matched': 'challenge_solution_matched',
+    'proposal_received': 'challenge_proposal_received',
+    'proposal_reviewed': 'challenge_proposal_reviewed',
+    'resolved': 'challenge_resolved',
+    'escalated': 'challenge_escalated',
+    'viewed': 'challenge_viewed',
+    'exported': 'challenge_exported'
   };
+
+  const metadata = {
+    challenge_title: challenge?.title_en || challenge?.title_ar,
+    challenge_code: challenge?.code,
+    challenge_status: challenge?.status,
+    challenge_priority: challenge?.priority,
+    municipality_id: challenge?.municipality_id,
+    sector_id: challenge?.sector_id,
+    is_published: challenge?.is_published,
+    is_featured: challenge?.is_featured,
+    is_strategy_derived: challenge?.is_strategy_derived,
+    tracks: challenge?.tracks,
+    linked_pilot_ids: challenge?.linked_pilot_ids,
+    linked_rd_ids: challenge?.linked_rd_ids,
+    ...additionalMetadata
+  };
+
+  return logActivity({
+    action: actionMap[action] || `challenge_${action}`,
+    entityType: 'challenge',
+    entityId: challenge?.id,
+    metadata
+  });
+}, [logActivity]);
+
+return {
+  logActivity,
+  logProgramActivity,
+  logEventActivity,
+  logChallengeActivity,
+  logApprovalActivity,
+  logRegistrationActivity,
+  logBulkActivity,
+  logExportActivity
+};
 }
 
 export default useAuditLog;
