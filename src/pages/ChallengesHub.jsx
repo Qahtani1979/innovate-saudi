@@ -57,6 +57,7 @@ import {
 } from 'lucide-react';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useChallengeListRealtime } from '@/hooks/useChallengeRealtime';
 
 // Workflow phases for challenges
 const workflowPhases = [
@@ -146,6 +147,8 @@ function ChallengesHub() {
   // Fetch challenge metrics
   const { data: challenges = [], isLoading: challengesLoading } = useChallengesWithVisibility({ limit: 1000 });
 
+  // Enable realtime updates for challenge list (rt-1, live-1)
+  const { isConnected: realtimeConnected } = useChallengeListRealtime();
   // Fetch pending approvals
   const { data: pendingApprovals = [] } = useQuery({
     queryKey: ['pending-challenge-approvals'],

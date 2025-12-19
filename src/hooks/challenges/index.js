@@ -4,23 +4,23 @@
  */
 
 // Core CRUD & Data Hooks
-export { useChallengesWithVisibility } from './useChallengesWithVisibility';
-export { useChallengeMutations } from './useChallengeMutations';
-export { useChallengeCreateForm } from './useChallengeCreateForm';
-export { useChallengeStorage } from './useChallengeStorage';
+export { useChallengesWithVisibility } from '../useChallengesWithVisibility';
+export { useChallengeMutations } from '../useChallengeMutations';
+export { useChallengeCreateForm } from '../useChallengeCreateForm';
+export { useChallengeStorage } from '../useChallengeStorage';
 
 // Integration Hooks
-export { useChallengeIntegrations } from './useChallengeIntegrations';
-export { useChallengeNotifications } from './useChallengeNotifications';
+export { useChallengeIntegrations } from '../useChallengeIntegrations';
+export { useChallengeNotifications } from '../useChallengeNotifications';
 
-// Realtime & Delegation (NEW)
+// Realtime & Delegation
 export { 
   useChallengeRealtime, 
   useChallengeListRealtime, 
   useChallengeDetailRealtime 
-} from './useChallengeRealtime';
+} from '../useChallengeRealtime';
 
 export { 
   useChallengeDelegation,
   CHALLENGE_PERMISSIONS 
-} from './useChallengeDelegation';
+} from '../useChallengeDelegation';
