@@ -4,3 +4,5 @@
  */
 
 export * from './networkAnalysis';
+export * from './profileGenerator';
+export * from './organizationDetail';

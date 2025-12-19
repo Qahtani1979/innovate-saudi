@@ -33,11 +33,17 @@ export function useOrganizationsWithVisibility(options = {}) {
       if (isAdmin || hasFullVisibility || isNational) {
         let query = supabase
           .from('organizations')
-          .select('*')
-          .eq('is_deleted', false);
+          .select('*');
+        
+        // Only filter is_deleted if column exists (graceful handling)
+        try {
+          query = query.or('is_deleted.eq.false,is_deleted.is.null');
+        } catch (e) {
+          // Column might not exist yet
+        }
         
         if (orgType) {
-          query = query.eq('org_type', orgType);
+          query = query.or(`org_type.eq.${orgType},type.eq.${orgType}`);
         }
         
         const { data, error } = await query.order('name_en');
@@ -50,11 +56,11 @@ export function useOrganizationsWithVisibility(options = {}) {
         let query = supabase
           .from('organizations')
           .select('*')
-          .eq('is_deleted', false)
+          .or('is_deleted.eq.false,is_deleted.is.null')
           .or(`is_active.eq.true,municipality_id.eq.${userMunicipalityId}`);
         
         if (orgType) {
-          query = query.eq('org_type', orgType);
+          query = query.or(`org_type.eq.${orgType},type.eq.${orgType}`);
         }
         
         const { data, error } = await query.order('name_en');
@@ -67,11 +73,11 @@ export function useOrganizationsWithVisibility(options = {}) {
         let query = supabase
           .from('organizations')
           .select('*')
-          .eq('is_deleted', false)
+          .or('is_deleted.eq.false,is_deleted.is.null')
           .or(`is_active.eq.true,id.eq.${organizationId}`);
         
         if (orgType) {
-          query = query.eq('org_type', orgType);
+          query = query.or(`org_type.eq.${orgType},type.eq.${orgType}`);
         }
         
         const { data, error } = await query.order('name_en');
@@ -83,11 +89,11 @@ export function useOrganizationsWithVisibility(options = {}) {
       let query = supabase
         .from('organizations')
         .select('*')
-        .eq('is_deleted', false)
+        .or('is_deleted.eq.false,is_deleted.is.null')
         .eq('is_active', true);
       
       if (orgType) {
-        query = query.eq('org_type', orgType);
+        query = query.or(`org_type.eq.${orgType},type.eq.${orgType}`);
       }
       
       const { data, error } = await query.order('name_en');

@@ -10,7 +10,7 @@ import { EntityTable } from './EntityTable';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 
-export function OrganizationsTab({ organizations, onEdit, onDelete, onAdd, calculateDataScore }) {
+export function OrganizationsTab({ organizations, isLoading, error, onEdit, onDelete, onAdd, calculateDataScore }) {
   const { t } = useLanguage();
 
   const columns = [
@@ -27,13 +27,16 @@ export function OrganizationsTab({ organizations, onEdit, onDelete, onAdd, calcu
     {
       key: 'org_type',
       label: { en: 'Type', ar: 'النوع' },
-      render: (item) => <Badge variant="outline">{item.org_type?.replace(/_/g, ' ')}</Badge>
+      render: (item) => {
+        const orgType = item.org_type || item.type;
+        return <Badge variant="outline">{orgType?.replace(/_/g, ' ') || '-'}</Badge>;
+      }
     },
     {
       key: 'data_score',
       label: { en: 'Data Score', ar: 'درجة البيانات' },
       render: (item) => {
-        const score = calculateDataScore(item);
+        const score = calculateDataScore?.(item) || 0;
         const color = score >= 80 ? 'bg-green-100 text-green-700' :
                       score >= 60 ? 'bg-yellow-100 text-yellow-700' :
                       'bg-red-100 text-red-700';
@@ -75,6 +78,42 @@ export function OrganizationsTab({ organizations, onEdit, onDelete, onAdd, calcu
       ]
     }
   ];
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5 text-purple-600" />
+            {t({ en: 'Organizations Management', ar: 'إدارة المنظمات' })}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {[1,2,3,4,5].map(i => (
+              <div key={i} className="h-12 bg-muted animate-pulse rounded" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="border-destructive">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-destructive">
+            <Building2 className="h-5 w-5" />
+            {t({ en: 'Error Loading Organizations', ar: 'خطأ في تحميل المنظمات' })}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">{error.message || 'Unknown error'}</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
