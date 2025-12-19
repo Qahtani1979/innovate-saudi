@@ -217,6 +217,7 @@ import ChallengeRDCallMatcher from './pages/ChallengeRDCallMatcher';
 import ChallengeResolutionTracker from './pages/ChallengeResolutionTracker';
 import ChallengeDetailFullAudit from './pages/ChallengeDetailFullAudit';
 import ChallengeSystemCrossReference from './pages/ChallengeSystemCrossReference';
+import SystemValidationChecklist from './pages/SystemValidationChecklist';
 import PartnershipRegistry from './pages/PartnershipRegistry';
 import PublicIdeaSubmission from './pages/PublicIdeaSubmission';
 import CitizenEngagementDashboard from './pages/CitizenEngagementDashboard';
@@ -1052,6 +1053,7 @@ export const PAGES = {
     "StrategyRecalibrationPage": StrategyRecalibrationPage,
     "ActionPlanPage": ActionPlanPage,
     "SectorStrategyPage": SectorStrategyPage,
+    "SystemValidationChecklist": SystemValidationChecklist,
 }
 
 export const pagesConfig = {

@@ -159,6 +159,7 @@ function AdminPortal() {
         { name: t({ en: 'Approvals', ar: 'الموافقات' }), count: (pendingApprovals?.challenges?.length || 0) + (pendingApprovals?.pilots?.length || 0) + (pendingApprovals?.programs?.length || 0), page: 'ApprovalCenter', icon: CheckCircle2, color: 'green' },
         { name: t({ en: 'Audit Trail', ar: 'سجل التدقيق' }), page: 'PlatformAudit', icon: FileText, color: 'slate' },
         { name: t({ en: 'System Health', ar: 'صحة النظام' }), page: 'SystemHealthDashboard', icon: Activity, color: 'teal' },
+        { name: t({ en: 'Validation Checklist', ar: 'قائمة التحقق' }), page: 'SystemValidationChecklist', icon: Shield, color: 'red' },
         { name: t({ en: 'Settings', ar: 'الإعدادات' }), page: 'SystemDefaultsConfig', icon: Settings, color: 'blue' }
       ]
     }
