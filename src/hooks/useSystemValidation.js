@@ -29,7 +29,39 @@ export function useSystemValidation(systemId) {
     enabled: !!systemId
   });
 
-  // Fetch all summaries
+  // Fetch dynamic progress for all systems (real-time calculation)
+  const { data: dynamicProgress, isLoading: progressLoading } = useQuery({
+    queryKey: ['system-validation-progress'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('system_validations')
+        .select('system_id, system_name, is_checked');
+      
+      if (error) throw error;
+      
+      // Group by system and calculate progress
+      const progressMap = {};
+      (data || []).forEach(item => {
+        if (!progressMap[item.system_id]) {
+          progressMap[item.system_id] = {
+            system_id: item.system_id,
+            system_name: item.system_name,
+            total_checks: 0,
+            completed_checks: 0
+          };
+        }
+        progressMap[item.system_id].total_checks++;
+        if (item.is_checked) {
+          progressMap[item.system_id].completed_checks++;
+        }
+      });
+      
+      return Object.values(progressMap);
+    },
+    staleTime: 5000 // Refresh every 5 seconds
+  });
+
+  // Fetch all summaries (for additional metadata like critical counts)
   const { data: summaries, isLoading: summariesLoading } = useQuery({
     queryKey: ['system-validation-summaries'],
     queryFn: async () => {
@@ -129,6 +161,7 @@ export function useSystemValidation(systemId) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['system-validations', systemId] });
+      queryClient.invalidateQueries({ queryKey: ['system-validation-progress'] });
     },
     onError: (error) => {
       toast.error('Failed to save check status');
@@ -211,7 +244,8 @@ export function useSystemValidation(systemId) {
     validations,
     validationMap,
     summaries,
-    isLoading: isLoading || summariesLoading,
+    dynamicProgress, // Real-time progress from actual checks
+    isLoading: isLoading || summariesLoading || progressLoading,
     toggleCheck,
     updateSummary,
     resetSystem,

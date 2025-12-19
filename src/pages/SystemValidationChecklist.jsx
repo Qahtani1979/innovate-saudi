@@ -53,7 +53,8 @@ function SystemValidationChecklist() {
   
   const { 
     validationMap, 
-    summaries, 
+    summaries,
+    dynamicProgress, // Use dynamic progress for real-time updates
     isLoading, 
     toggleCheck, 
     updateSummary, 
@@ -228,8 +229,12 @@ function SystemValidationChecklist() {
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[60vh] overflow-y-auto">
         {systems.map(system => {
-          const summary = summaries?.find(s => s.system_id === system.id);
-          const progress = summary ? Math.round((summary.completed_checks / summary.total_checks) * 100) : 0;
+          // Use dynamic progress for real-time updates
+          const dynamicSummary = dynamicProgress?.find(s => s.system_id === system.id);
+          const progress = dynamicSummary && dynamicSummary.total_checks > 0 
+            ? Math.round((dynamicSummary.completed_checks / dynamicSummary.total_checks) * 100) 
+            : 0;
+          const hasData = dynamicSummary && dynamicSummary.total_checks > 0;
           
           return (
             <button
@@ -246,13 +251,13 @@ function SystemValidationChecklist() {
             >
               <div className="flex items-center justify-between mb-1">
                 <span className="font-medium text-sm">{t(system.name)}</span>
-                {summary && (
+                {hasData && (
                   <Badge variant={progress === 100 ? 'default' : 'secondary'} className="text-xs">
                     {progress}%
                   </Badge>
                 )}
               </div>
-              {summary && (
+              {hasData && (
                 <Progress value={progress} className="h-1" />
               )}
             </button>
@@ -298,8 +303,12 @@ function SystemValidationChecklist() {
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
               {systems.map(system => {
-                const summary = summaries?.find(s => s.system_id === system.id);
-                const progress = summary ? Math.round((summary.completed_checks / summary.total_checks) * 100) : 0;
+                // Use dynamic progress for real-time updates
+                const dynamicSummary = dynamicProgress?.find(s => s.system_id === system.id);
+                const progress = dynamicSummary && dynamicSummary.total_checks > 0 
+                  ? Math.round((dynamicSummary.completed_checks / dynamicSummary.total_checks) * 100) 
+                  : 0;
+                const hasData = dynamicSummary && dynamicSummary.total_checks > 0;
                 
                 return (
                   <button
@@ -313,13 +322,13 @@ function SystemValidationChecklist() {
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-medium text-xs truncate">{t(system.name)}</span>
-                      {summary && (
+                      {hasData && (
                         <Badge variant={progress === 100 ? 'default' : 'secondary'} className="text-[10px] px-1">
                           {progress}%
                         </Badge>
                       )}
                     </div>
-                    {summary && (
+                    {hasData && (
                       <Progress value={progress} className="h-1" />
                     )}
                   </button>
