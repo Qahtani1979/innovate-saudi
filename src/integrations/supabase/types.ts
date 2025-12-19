@@ -7640,6 +7640,7 @@ export type Database = {
           scaling_plan: Json | null
           scope: string | null
           sector: string
+          sector_id: string | null
           solution_id: string | null
           source_program_id: string | null
           source_rd_project_id: string | null
@@ -7715,6 +7716,7 @@ export type Database = {
           scaling_plan?: Json | null
           scope?: string | null
           sector: string
+          sector_id?: string | null
           solution_id?: string | null
           source_program_id?: string | null
           source_rd_project_id?: string | null
@@ -7790,6 +7792,7 @@ export type Database = {
           scaling_plan?: Json | null
           scope?: string | null
           sector?: string
+          sector_id?: string | null
           solution_id?: string | null
           source_program_id?: string | null
           source_rd_project_id?: string | null
@@ -7834,6 +7837,13 @@ export type Database = {
             columns: ["municipality_id"]
             isOneToOne: false
             referencedRelation: "municipalities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pilots_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "sectors"
             referencedColumns: ["id"]
           },
           {
@@ -8846,6 +8856,8 @@ export type Database = {
           challenge_ids: string[] | null
           code: string | null
           created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           description_ar: string | null
           description_en: string | null
           eligibility_criteria: Json | null
@@ -8853,6 +8865,7 @@ export type Database = {
           evaluation_criteria: Json | null
           focus_areas: string[] | null
           id: string
+          is_deleted: boolean | null
           is_published: boolean | null
           is_strategy_derived: boolean | null
           program_id: string | null
@@ -8874,6 +8887,8 @@ export type Database = {
           challenge_ids?: string[] | null
           code?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description_ar?: string | null
           description_en?: string | null
           eligibility_criteria?: Json | null
@@ -8881,6 +8896,7 @@ export type Database = {
           evaluation_criteria?: Json | null
           focus_areas?: string[] | null
           id?: string
+          is_deleted?: boolean | null
           is_published?: boolean | null
           is_strategy_derived?: boolean | null
           program_id?: string | null
@@ -8902,6 +8918,8 @@ export type Database = {
           challenge_ids?: string[] | null
           code?: string | null
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description_ar?: string | null
           description_en?: string | null
           eligibility_criteria?: Json | null
@@ -8909,6 +8927,7 @@ export type Database = {
           evaluation_criteria?: Json | null
           focus_areas?: string[] | null
           id?: string
+          is_deleted?: boolean | null
           is_published?: boolean | null
           is_strategy_derived?: boolean | null
           program_id?: string | null
@@ -8991,6 +9010,7 @@ export type Database = {
           lessons_learned: Json | null
           methodology: string | null
           milestones: Json | null
+          municipality_id: string | null
           partner_institutions: Json | null
           patents: Json | null
           pilot_opportunities: string[] | null
@@ -9077,6 +9097,7 @@ export type Database = {
           lessons_learned?: Json | null
           methodology?: string | null
           milestones?: Json | null
+          municipality_id?: string | null
           partner_institutions?: Json | null
           patents?: Json | null
           pilot_opportunities?: string[] | null
@@ -9163,6 +9184,7 @@ export type Database = {
           lessons_learned?: Json | null
           methodology?: string | null
           milestones?: Json | null
+          municipality_id?: string | null
           partner_institutions?: Json | null
           patents?: Json | null
           pilot_opportunities?: string[] | null
@@ -9198,7 +9220,15 @@ export type Database = {
           video_url?: string | null
           workflow_stage?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "rd_projects_municipality_id_fkey"
+            columns: ["municipality_id"]
+            isOneToOne: false
+            referencedRelation: "municipalities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rd_proposals: {
         Row: {
@@ -10950,6 +10980,7 @@ export type Database = {
           publishing_date: string | null
           ratings: Json | null
           reviewer_assigned_to: string | null
+          sector_id: string | null
           sectors: string[] | null
           sla_due_date: string | null
           source_idea_id: string | null
@@ -11039,6 +11070,7 @@ export type Database = {
           publishing_date?: string | null
           ratings?: Json | null
           reviewer_assigned_to?: string | null
+          sector_id?: string | null
           sectors?: string[] | null
           sla_due_date?: string | null
           source_idea_id?: string | null
@@ -11128,6 +11160,7 @@ export type Database = {
           publishing_date?: string | null
           ratings?: Json | null
           reviewer_assigned_to?: string | null
+          sector_id?: string | null
           sectors?: string[] | null
           sla_due_date?: string | null
           source_idea_id?: string | null
@@ -11156,7 +11189,15 @@ export type Database = {
           website?: string | null
           workflow_stage?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "solutions_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "sectors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stakeholder_analyses: {
         Row: {
