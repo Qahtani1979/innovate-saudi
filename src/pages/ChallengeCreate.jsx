@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -47,47 +47,79 @@ function ChallengeCreatePage() {
     description_ar: false
   });
 
-  // Fetch data
+  // Fetch data using Supabase
   const { data: municipalities = [] } = useQuery({
     queryKey: ['municipalities'],
-    queryFn: () => base44.entities.Municipality.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('municipalities').select('*').order('name_en');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: citizenIdeas = [] } = useQuery({
-    queryKey: ['citizen-ideas'],
-    queryFn: () => base44.entities.CitizenIdea.filter({ status: 'approved' }),
+    queryKey: ['citizen-ideas-approved'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('citizen_ideas').select('*').eq('status', 'approved');
+      if (error) throw error;
+      return data || [];
+    },
     enabled: !ideaId
   });
 
   const { data: selectedIdea } = useQuery({
     queryKey: ['citizen-idea', ideaId],
-    queryFn: () => base44.entities.CitizenIdea.filter({ id: ideaId }).then(r => r[0]),
+    queryFn: async () => {
+      const { data, error } = await supabase.from('citizen_ideas').select('*').eq('id', ideaId).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
     enabled: !!ideaId
   });
 
   const { data: sectors = [] } = useQuery({
     queryKey: ['sectors'],
-    queryFn: () => base44.entities.Sector.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('sectors').select('*').order('name_en');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: subsectors = [] } = useQuery({
     queryKey: ['subsectors'],
-    queryFn: () => base44.entities.Subsector.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('subsectors').select('*').order('name_en');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: services = [] } = useQuery({
     queryKey: ['services'],
-    queryFn: () => base44.entities.Service.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('services').select('*').order('name_en');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: regions = [] } = useQuery({
     queryKey: ['regions'],
-    queryFn: () => base44.entities.Region.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('regions').select('*').order('name_en');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: cities = [] } = useQuery({
     queryKey: ['cities'],
-    queryFn: () => base44.entities.City.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('cities').select('*').order('name_en');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const [formData, setFormData] = useState({
