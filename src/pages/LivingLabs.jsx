@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../components/LanguageContext';
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Microscope, 
   TrendingUp, 
@@ -23,7 +24,8 @@ import {
   List,
   Map,
   Sparkles,
-  Loader2
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
@@ -35,6 +37,29 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { useLivingLabsWithVisibility } from '@/hooks/useLivingLabsWithVisibility';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+// Loading skeleton component
+const LivingLabSkeleton = () => (
+  <Card className="h-full">
+    <div className="h-48">
+      <Skeleton className="h-full w-full" />
+    </div>
+    <CardHeader>
+      <div className="flex items-center gap-2 mb-2">
+        <Skeleton className="h-5 w-16" />
+        <Skeleton className="h-5 w-16" />
+      </div>
+      <Skeleton className="h-6 w-3/4" />
+    </CardHeader>
+    <CardContent className="space-y-4">
+      <Skeleton className="h-5 w-24" />
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-2/3" />
+      <Skeleton className="h-2 w-full" />
+    </CardContent>
+  </Card>
+);
 
 function LivingLabsPage() {
   const { hasPermission } = usePermissions();
@@ -48,19 +73,21 @@ function LivingLabsPage() {
   const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   // Use visibility-aware hook
-  const { data: labs = [], isLoading: labsLoading } = useLivingLabsWithVisibility({
+  const { data: labs = [], isLoading: labsLoading, error: labsError } = useLivingLabsWithVisibility({
     status: statusFilter !== 'all' ? statusFilter : undefined
   });
 
-  const { data: bookings = [] } = useQuery({
+  const { data: bookings = [], error: bookingsError } = useQuery({
     queryKey: ['lab-bookings'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('living_lab_bookings')
-        .select('*');
-      if (error) return [];
+        .select('*')
+        .eq('is_deleted', false);
+      if (error) throw error;
       return data || [];
-    }
+    },
+    staleTime: 5 * 60 * 1000 // 5 minutes
   });
 
   const handleAIInsights = async () => {
@@ -107,10 +134,12 @@ Provide:
     queryFn: async () => {
       const { data, error } = await supabase
         .from('pilots')
-        .select('id, living_lab_id');
-      if (error) return [];
+        .select('id, living_lab_id')
+        .eq('is_deleted', false);
+      if (error) throw error;
       return data || [];
-    }
+    },
+    staleTime: 5 * 60 * 1000 // 5 minutes
   });
 
   const filteredLabs = labs.filter(lab => {
@@ -373,8 +402,24 @@ Provide:
         </CardContent>
       </Card>
 
+      {/* Error state */}
+      {(labsError || bookingsError) && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {t({ en: 'Failed to load living labs data. Please try again.', ar: 'فشل تحميل بيانات المختبرات. يرجى المحاولة مرة أخرى.' })}
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Labs Display */}
-      {viewMode === 'grid' ? (
+      {labsLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <LivingLabSkeleton key={i} />
+          ))}
+        </div>
+      ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredLabs.map((lab) => {
             const labBookings = bookings.filter(b => b.living_lab_id === lab.id && b.status === 'active');

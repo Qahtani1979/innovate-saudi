@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLanguage } from '../components/LanguageContext';
 import {
   Shield,
@@ -38,6 +40,28 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
+// Loading skeleton component
+const SandboxSkeleton = () => (
+  <Card className="h-full">
+    <CardHeader>
+      <div className="flex items-center gap-2 mb-2">
+        <Skeleton className="h-5 w-16" />
+        <Skeleton className="h-5 w-20" />
+      </div>
+      <Skeleton className="h-6 w-3/4" />
+    </CardHeader>
+    <CardContent className="space-y-4">
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-2/3" />
+      <Skeleton className="h-2 w-full" />
+      <div className="flex gap-2">
+        <Skeleton className="h-8 w-20" />
+        <Skeleton className="h-8 w-20" />
+      </div>
+    </CardContent>
+  </Card>
+);
+
 function SandboxesPage() {
   const { hasPermission } = usePermissions();
   const { language, isRTL, t } = useLanguage();
@@ -51,21 +75,27 @@ function SandboxesPage() {
 
   const queryClient = useQueryClient();
 
-  const { data: sandboxes = [], isLoading } = useQuery({
+  const { data: sandboxes = [], isLoading, error: sandboxError } = useQuery({
     queryKey: ['sandboxes'],
-    queryFn: () => base44.entities.Sandbox.list('-created_date')
+    queryFn: () => base44.entities.Sandbox.list('-created_date'),
+    staleTime: 5 * 60 * 1000 // 5 minutes
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Sandbox.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries(['sandboxes']);
+      toast.success(t({ en: 'Sandbox deleted', ar: 'تم حذف المنطقة' }));
+    },
+    onError: (error) => {
+      toast.error(t({ en: 'Failed to delete sandbox', ar: 'فشل حذف المنطقة' }));
     }
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryFn: () => base44.entities.Pilot.list(),
+    staleTime: 5 * 60 * 1000 // 5 minutes
   });
 
   const filteredSandboxes = sandboxes.filter(sandbox => {
@@ -127,16 +157,27 @@ function SandboxesPage() {
     general: 'bg-slate-100 text-slate-700'
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* Error state */}
+      {sandboxError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {t({ en: 'Failed to load sandboxes. Please try again.', ar: 'فشل تحميل المناطق. يرجى المحاولة مرة أخرى.' })}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Loading state */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <SandboxSkeleton key={i} />
+          ))}
+        </div>
+      ) : (
+        <>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -615,6 +656,8 @@ function SandboxesPage() {
             <p className="text-slate-500">{t({ en: 'No sandboxes found', ar: 'لا توجد مناطق' })}</p>
           </CardContent>
         </Card>
+      )}
+      </>
       )}
     </div>
   );
