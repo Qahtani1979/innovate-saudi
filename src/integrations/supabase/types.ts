@@ -150,7 +150,10 @@ export type Database = {
           entity_type: string | null
           id: string
           ip_address: string | null
+          is_admin_action: boolean | null
           metadata: Json | null
+          new_values: Json | null
+          old_values: Json | null
           user_agent: string | null
           user_email: string | null
           user_id: string | null
@@ -162,7 +165,10 @@ export type Database = {
           entity_type?: string | null
           id?: string
           ip_address?: string | null
+          is_admin_action?: boolean | null
           metadata?: Json | null
+          new_values?: Json | null
+          old_values?: Json | null
           user_agent?: string | null
           user_email?: string | null
           user_id?: string | null
@@ -174,7 +180,10 @@ export type Database = {
           entity_type?: string | null
           id?: string
           ip_address?: string | null
+          is_admin_action?: boolean | null
           metadata?: Json | null
+          new_values?: Json | null
+          old_values?: Json | null
           user_agent?: string | null
           user_email?: string | null
           user_id?: string | null
@@ -12974,6 +12983,7 @@ export type Database = {
         Returns: boolean
       }
       map_enum_to_role_id: { Args: { _enum_role: string }; Returns: string }
+      mask_email: { Args: { email: string }; Returns: string }
       rate_template: {
         Args: { p_rating: number; p_template_id: string; p_user_email: string }
         Returns: Json
