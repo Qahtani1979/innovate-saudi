@@ -984,94 +984,107 @@ function PilotCreatePage() {
             <CardTitle>Step 2: Design & KPIs | التصميم ومؤشرات الأداء</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Gap fc-3: Add maxLength to form inputs */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Pilot Title (English)</Label>
+                <Label>Pilot Title (English) <span className="text-xs text-muted-foreground">(max 200)</span></Label>
                 <Input
                   value={formData.title_en}
                   onChange={(e) => setFormData({...formData, title_en: e.target.value})}
                   placeholder="Smart Drainage Monitoring Pilot"
+                  maxLength={200}
+                  aria-describedby="title-en-count"
                 />
+                <span id="title-en-count" className="text-xs text-muted-foreground">{formData.title_en?.length || 0}/200</span>
               </div>
               <div className="space-y-2">
-                <Label>عنوان التجربة (عربي)</Label>
+                <Label>عنوان التجربة (عربي) <span className="text-xs text-muted-foreground">(max 200)</span></Label>
                 <Input
                   value={formData.title_ar}
                   onChange={(e) => setFormData({...formData, title_ar: e.target.value})}
                   placeholder="تجربة مراقبة التصريف الذكي"
                   dir="rtl"
+                  maxLength={200}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Tagline (English)</Label>
+                <Label>Tagline (English) <span className="text-xs text-muted-foreground">(max 150)</span></Label>
                 <Input
                   value={formData.tagline_en}
                   onChange={(e) => setFormData({...formData, tagline_en: e.target.value})}
                   placeholder="Brief one-liner description"
+                  maxLength={150}
                 />
               </div>
               <div className="space-y-2">
-                <Label>الشعار (عربي)</Label>
+                <Label>الشعار (عربي) <span className="text-xs text-muted-foreground">(max 150)</span></Label>
                 <Input
                   value={formData.tagline_ar}
                   onChange={(e) => setFormData({...formData, tagline_ar: e.target.value})}
                   placeholder="وصف مختصر"
                   dir="rtl"
+                  maxLength={150}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label>Description (English)</Label>
+              <Label>Description (English) <span className="text-xs text-muted-foreground">(max 2000)</span></Label>
               <Textarea
                 value={formData.description_en}
                 onChange={(e) => setFormData({...formData, description_en: e.target.value})}
                 placeholder="Detailed pilot approach and methodology..."
                 rows={4}
+                maxLength={2000}
               />
+              <span className="text-xs text-muted-foreground">{formData.description_en?.length || 0}/2000</span>
             </div>
 
             <div className="space-y-2">
-              <Label>الوصف (عربي)</Label>
+              <Label>الوصف (عربي) <span className="text-xs text-muted-foreground">(max 2000)</span></Label>
               <Textarea
                 value={formData.description_ar}
                 onChange={(e) => setFormData({...formData, description_ar: e.target.value})}
                 placeholder="نهج التجربة التفصيلي والمنهجية..."
                 rows={4}
                 dir="rtl"
+                maxLength={2000}
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Objective (English)</Label>
+              <Label>Objective (English) <span className="text-xs text-muted-foreground">(max 1000)</span></Label>
               <Textarea
                 value={formData.objective_en}
                 onChange={(e) => setFormData({...formData, objective_en: e.target.value})}
                 placeholder="What this pilot aims to achieve..."
                 rows={2}
+                maxLength={1000}
               />
             </div>
 
             <div className="space-y-2">
-              <Label>الهدف (عربي)</Label>
+              <Label>الهدف (عربي) <span className="text-xs text-muted-foreground">(max 1000)</span></Label>
               <Textarea
                 value={formData.objective_ar}
                 onChange={(e) => setFormData({...formData, objective_ar: e.target.value})}
                 placeholder="ما تهدف هذه التجربة إلى تحقيقه..."
                 rows={2}
                 dir="rtl"
+                maxLength={1000}
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Sub-Sector | القطاع الفرعي</Label>
+              <Label>Sub-Sector | القطاع الفرعي <span className="text-xs text-muted-foreground">(max 100)</span></Label>
               <Input
                 value={formData.sub_sector}
                 onChange={(e) => setFormData({...formData, sub_sector: e.target.value})}
                 placeholder="e.g., Public Parks, Road Safety"
+                maxLength={100}
               />
             </div>
 
@@ -2916,5 +2929,6 @@ Ensure total equals ${formData.budget}. Return JSON array with: category, amount
 }
 
 export default ProtectedPage(PilotCreatePage, {
-  requiredPermissions: ['pilot_create']
+  requiredPermissions: ['pilot_create'],
+  requiredRoles: ['Executive Leadership', 'Program Director', 'Innovation Manager', 'Municipality Staff', 'Provider']
 });
