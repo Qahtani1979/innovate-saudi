@@ -52,9 +52,10 @@ function RDProjectsPage() {
   const queryClient = useQueryClient();
 
   // Use visibility-aware hook for R&D projects
-  const { data: projects = [], isLoading } = useRDProjectsWithVisibility({
+  const { data: projects = [], isLoading, error: projectsError } = useRDProjectsWithVisibility({
     status: filterStatus !== 'all' ? filterStatus : undefined,
-    limit: 100
+    limit: 100,
+    staleTime: 5 * 60 * 1000
   });
 
   const deleteMutation = useMutation({
@@ -143,8 +144,24 @@ Return each insight with both _en and _ar versions.`,
   if (isLoading) {
     return (
       <PageLayout>
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+        <div className="space-y-6">
+          <div className="h-24 bg-muted animate-pulse rounded-lg" />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[1,2,3,4].map(i => <div key={i} className="h-28 bg-muted animate-pulse rounded-lg" />)}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[1,2,3,4,5,6].map(i => <div key={i} className="h-64 bg-muted animate-pulse rounded-lg" />)}
+          </div>
+        </div>
+      </PageLayout>
+    );
+  }
+
+  if (projectsError) {
+    return (
+      <PageLayout>
+        <div className="text-center py-12">
+          <p className="text-destructive">{t({ en: 'Error loading R&D projects', ar: 'خطأ في تحميل المشاريع' })}</p>
         </div>
       </PageLayout>
     );

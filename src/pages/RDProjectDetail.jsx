@@ -63,13 +63,14 @@ export default function RDProjectDetail() {
   const queryClient = useQueryClient();
   const { invoke: invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = usePrompt(null);
 
-  const { data: project, isLoading } = useQuery({
+  const { data: project, isLoading, error: projectError } = useQuery({
     queryKey: ['rd-project', projectId],
     queryFn: async () => {
       const projects = await base44.entities.RDProject.list();
       return projects.find(p => p.id === projectId);
     },
-    enabled: !!projectId
+    enabled: !!projectId,
+    staleTime: 5 * 60 * 1000
   });
 
   const { data: comments = [] } = useQuery({
@@ -99,11 +100,27 @@ export default function RDProjectDetail() {
     }
   });
 
-  if (isLoading || !project) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
-      </div>
+      <PageLayout>
+        <div className="space-y-6">
+          <div className="h-48 bg-muted animate-pulse rounded-2xl" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[1,2,3].map(i => <div key={i} className="h-32 bg-muted animate-pulse rounded-lg" />)}
+          </div>
+          <div className="h-96 bg-muted animate-pulse rounded-lg" />
+        </div>
+      </PageLayout>
+    );
+  }
+
+  if (projectError || !project) {
+    return (
+      <PageLayout>
+        <div className="text-center py-12">
+          <p className="text-destructive">{t({ en: 'Error loading project or project not found', ar: 'خطأ في تحميل المشروع' })}</p>
+        </div>
+      </PageLayout>
     );
   }
 

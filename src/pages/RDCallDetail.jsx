@@ -50,13 +50,14 @@ function RDCallDetailPage() {
   const queryClient = useQueryClient();
   const { invoke: invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = usePrompt(null);
 
-  const { data: call, isLoading } = useQuery({
+  const { data: call, isLoading, error: callError } = useQuery({
     queryKey: ['rd-call', callId],
     queryFn: async () => {
       const calls = await base44.entities.RDCall.list();
       return calls.find(c => c.id === callId);
     },
-    enabled: !!callId
+    enabled: !!callId,
+    staleTime: 5 * 60 * 1000
   });
 
   const { data: proposals = [] } = useQuery({
@@ -86,11 +87,27 @@ function RDCallDetailPage() {
     }
   });
 
-  if (isLoading || !call) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
-      </div>
+      <PageLayout>
+        <div className="space-y-6">
+          <div className="h-48 bg-muted animate-pulse rounded-2xl" />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[1,2,3,4].map(i => <div key={i} className="h-28 bg-muted animate-pulse rounded-lg" />)}
+          </div>
+          <div className="h-96 bg-muted animate-pulse rounded-lg" />
+        </div>
+      </PageLayout>
+    );
+  }
+
+  if (callError || !call) {
+    return (
+      <PageLayout>
+        <div className="text-center py-12">
+          <p className="text-destructive">{t({ en: 'Error loading call or call not found', ar: 'خطأ في تحميل الدعوة' })}</p>
+        </div>
+      </PageLayout>
     );
   }
 

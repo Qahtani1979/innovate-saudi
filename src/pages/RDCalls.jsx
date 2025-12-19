@@ -49,14 +49,16 @@ function RDCallsPage() {
   const [aiInsights, setAiInsights] = useState(null);
   const { invokeAI, status: aiStatus, isLoading: aiLoading, rateLimitInfo, isAvailable } = useAIWithFallback();
 
-  const { data: calls = [], isLoading: callsLoading } = useQuery({
+  const { data: calls = [], isLoading: callsLoading, error: callsError } = useQuery({
     queryKey: ['rd-calls'],
-    queryFn: () => base44.entities.RDCall.list('-created_date')
+    queryFn: () => base44.entities.RDCall.list('-created_date'),
+    staleTime: 5 * 60 * 1000
   });
 
-  const { data: proposals = [], isLoading: proposalsLoading } = useQuery({
+  const { data: proposals = [], isLoading: proposalsLoading, error: proposalsError } = useQuery({
     queryKey: ['rd-proposals'],
-    queryFn: () => base44.entities.RDProposal.list('-created_date')
+    queryFn: () => base44.entities.RDProposal.list('-created_date'),
+    staleTime: 5 * 60 * 1000
   });
 
   const filteredCalls = calls.filter(call => {
@@ -113,9 +115,27 @@ function RDCallsPage() {
 
   if (callsLoading || proposalsLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
-      </div>
+      <PageLayout>
+        <div className="space-y-6">
+          <div className="h-24 bg-muted animate-pulse rounded-lg" />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[1,2,3,4].map(i => <div key={i} className="h-28 bg-muted animate-pulse rounded-lg" />)}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[1,2,3,4].map(i => <div key={i} className="h-64 bg-muted animate-pulse rounded-lg" />)}
+          </div>
+        </div>
+      </PageLayout>
+    );
+  }
+
+  if (callsError || proposalsError) {
+    return (
+      <PageLayout>
+        <div className="text-center py-12">
+          <p className="text-destructive">{t({ en: 'Error loading R&D calls', ar: 'خطأ في تحميل الدعوات' })}</p>
+        </div>
+      </PageLayout>
     );
   }
 
