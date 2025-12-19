@@ -2705,10 +2705,14 @@ export type Database = {
           delegate_email: string
           delegator_email: string
           end_date: string
+          entity_id: string | null
+          entity_type: string | null
           id: string
           is_active: boolean | null
           permission_types: string[] | null
           reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
           start_date: string
           updated_at: string | null
         }
@@ -2719,10 +2723,14 @@ export type Database = {
           delegate_email: string
           delegator_email: string
           end_date: string
+          entity_id?: string | null
+          entity_type?: string | null
           id?: string
           is_active?: boolean | null
           permission_types?: string[] | null
           reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
           start_date: string
           updated_at?: string | null
         }
@@ -2733,10 +2741,14 @@ export type Database = {
           delegate_email?: string
           delegator_email?: string
           end_date?: string
+          entity_id?: string | null
+          entity_type?: string | null
           id?: string
           is_active?: boolean | null
           permission_types?: string[] | null
           reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
           start_date?: string
           updated_at?: string | null
         }
