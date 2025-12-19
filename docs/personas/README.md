@@ -135,4 +135,15 @@ graph TD
 
 ---
 
-*Last Updated: 2025-12-10*
+## 📚 Related Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [Profile System](../shared/PROFILE_SYSTEM.md) | User profiles, gamification, achievements |
+| [Onboarding Flow Tracking](../ONBOARDING_FLOW_TRACKING.md) | Complete onboarding documentation |
+| [RBAC System](../RBAC_SYSTEM.md) | Role-based access control |
+| [Visibility System](../VISIBILITY_SYSTEM.md) | Entity visibility rules |
+
+---
+
+*Last Updated: 2025-12-19*
