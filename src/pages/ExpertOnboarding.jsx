@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -33,6 +34,7 @@ function ExpertOnboarding() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { invokeAI } = useAIWithFallback();
 
   const [formData, setFormData] = useState({
     user_email: '',
@@ -69,19 +71,30 @@ function ExpertOnboarding() {
     }
   });
 
-  const handleCVUpload = async (file) => {
-    if (!file) return;
+  const handleCVUpload = async (fileUrl) => {
+    if (!fileUrl) {
+      setFormData(prev => ({ ...prev, cv_url: '' }));
+      return;
+    }
     
-    setCvFile(file);
+    setFormData(prev => ({ ...prev, cv_url: fileUrl }));
     setExtracting(true);
     
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setFormData(prev => ({ ...prev, cv_url: file_url }));
+      // Use AI-powered extraction instead of base44
+      const result = await invokeAI({
+        prompt: `Analyze this expert/consultant CV and extract professional information. CV URL: ${fileUrl}
 
-      const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
-        file_url,
-        json_schema: {
+Extract the following in JSON format:
+- name: Full name
+- title: Professional title (Dr., Prof., etc.)
+- position: Current position/role
+- years_of_experience: Number of years of experience
+- expertise_areas: Array of 3-5 expertise areas
+- bio: Brief professional biography
+- linkedin_url: LinkedIn profile URL if found
+- google_scholar_url: Google Scholar URL if found`,
+        response_json_schema: {
           type: 'object',
           properties: {
             name: { type: 'string' },
@@ -95,6 +108,8 @@ function ExpertOnboarding() {
           }
         }
       });
+
+      const extracted = result.success ? { status: 'success', output: result.data } : { status: 'error' };
 
       if (extracted.status === 'success' && extracted.output) {
         setFormData(prev => ({
@@ -110,7 +125,8 @@ function ExpertOnboarding() {
         toast.success(t({ en: 'CV data extracted successfully', ar: 'تم استخراج بيانات السيرة الذاتية بنجاح' }));
       }
     } catch (error) {
-      toast.error(t({ en: 'Failed to process CV', ar: 'فشل معالجة السيرة الذاتية' }));
+      console.error('CV extraction error:', error);
+      toast.info(t({ en: 'CV uploaded. Please fill in details manually.', ar: 'تم رفع السيرة الذاتية. يرجى ملء التفاصيل يدوياً.' }));
     } finally {
       setExtracting(false);
     }
@@ -189,8 +205,10 @@ function ExpertOnboarding() {
           <CardContent className="space-y-4">
             <div className="p-6 bg-blue-50 border-2 border-dashed border-blue-300 rounded-lg text-center">
               <FileUploader
-                onFileSelect={handleCVUpload}
+                onUploadComplete={handleCVUpload}
+                type="document"
                 label={t({ en: 'Upload CV (PDF, DOCX)', ar: 'رفع السيرة الذاتية (PDF, DOCX)' })}
+                maxSize={10}
               />
               {extracting && (
                 <div className="flex items-center justify-center gap-2 mt-4">
