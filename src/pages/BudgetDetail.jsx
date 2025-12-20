@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,8 +18,13 @@ function BudgetDetail() {
   const { data: budget, isLoading } = useQuery({
     queryKey: ['budget', budgetId],
     queryFn: async () => {
-      const budgets = await base44.entities.Budget.filter({ id: budgetId });
-      return budgets[0];
+      const { data, error } = await supabase
+        .from('budgets')
+        .select('*')
+        .eq('id', budgetId)
+        .single();
+      if (error) throw error;
+      return data;
     },
     enabled: !!budgetId
   });
@@ -32,11 +37,10 @@ function BudgetDetail() {
     );
   }
 
-  const utilizationRate = budget.utilization_rate || 
-    (budget.total_allocated > 0 ? (budget.total_spent / budget.total_allocated * 100) : 0);
-  
-  const variance = budget.variance_percentage || 
-    (budget.total_allocated > 0 ? ((budget.total_spent - budget.total_allocated) / budget.total_allocated * 100) : 0);
+  const allocated = budget.total_amount || budget.allocated_amount || 0;
+  const spent = budget.spent_amount || 0;
+  const utilizationRate = allocated > 0 ? (spent / allocated * 100) : 0;
+  const variance = allocated > 0 ? ((spent - allocated) / allocated * 100) : 0;
 
   const lineItemsData = (budget.line_items || []).map(item => ({
     name: item.name || item.category,
@@ -78,7 +82,7 @@ function BudgetDetail() {
           <CardContent className="pt-6 text-center">
             <DollarSign className="h-10 w-10 text-blue-600 mx-auto mb-2" />
             <p className="text-2xl font-bold text-blue-600">
-              {budget.total_allocated?.toLocaleString()} {budget.currency || 'SAR'}
+              {allocated.toLocaleString()} {budget.currency || 'SAR'}
             </p>
             <p className="text-xs text-slate-600">{t({ en: 'Allocated', ar: 'المخصص' })}</p>
           </CardContent>
@@ -88,7 +92,7 @@ function BudgetDetail() {
           <CardContent className="pt-6 text-center">
             <TrendingUp className="h-10 w-10 text-green-600 mx-auto mb-2" />
             <p className="text-2xl font-bold text-green-600">
-              {budget.total_spent?.toLocaleString()} {budget.currency || 'SAR'}
+              {spent.toLocaleString()} {budget.currency || 'SAR'}
             </p>
             <p className="text-xs text-slate-600">{t({ en: 'Spent', ar: 'المصروف' })}</p>
           </CardContent>

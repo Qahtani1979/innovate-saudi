@@ -27,17 +27,17 @@ function BudgetManagement() {
 
   const filteredBudgets = budgets.filter(b => {
     const matchesSearch = !search || 
-      b.budget_name?.toLowerCase().includes(search.toLowerCase()) ||
+      b.name_en?.toLowerCase().includes(search.toLowerCase()) ||
       b.budget_code?.toLowerCase().includes(search.toLowerCase());
     const matchesEntity = entityFilter === 'all' || b.entity_type === entityFilter;
     return matchesSearch && matchesEntity;
   });
 
   const stats = {
-    total_allocated: budgets.reduce((sum, b) => sum + (b.total_allocated || 0), 0),
-    total_spent: budgets.reduce((sum, b) => sum + (b.total_spent || 0), 0),
+    total_allocated: budgets.reduce((sum, b) => sum + (b.total_amount || b.allocated_amount || 0), 0),
+    total_spent: budgets.reduce((sum, b) => sum + (b.spent_amount || 0), 0),
     active_budgets: budgets.filter(b => b.status === 'active').length,
-    over_budget: budgets.filter(b => (b.total_spent || 0) > (b.total_allocated || 0)).length
+    over_budget: budgets.filter(b => (b.spent_amount || 0) > (b.total_amount || 0)).length
   };
 
   const utilizationRate = stats.total_allocated > 0 
@@ -47,7 +47,7 @@ function BudgetManagement() {
   const byEntityType = budgets.reduce((acc, b) => {
     const type = b.entity_type || 'other';
     if (!acc[type]) acc[type] = 0;
-    acc[type] += b.total_allocated || 0;
+    acc[type] += b.total_amount || b.allocated_amount || 0;
     return acc;
   }, {});
 
@@ -182,13 +182,14 @@ function BudgetManagement() {
           <CardContent>
             <div className="space-y-4">
               {budgets.slice(0, 5).map(budget => {
-                const utilization = budget.total_allocated > 0 
-                  ? ((budget.total_spent || 0) / budget.total_allocated) * 100 
+                const allocated = budget.total_amount || budget.allocated_amount || 0;
+                const utilization = allocated > 0 
+                  ? ((budget.spent_amount || 0) / allocated) * 100 
                   : 0;
                 return (
                   <div key={budget.id} className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium">{budget.budget_name}</span>
+                      <span className="font-medium">{budget.name_en}</span>
                       <span className="text-slate-600">{utilization.toFixed(0)}%</span>
                     </div>
                     <Progress 
@@ -232,14 +233,15 @@ function BudgetManagement() {
               </thead>
               <tbody>
                 {filteredBudgets.map(budget => {
-                  const utilization = budget.total_allocated > 0 
-                    ? ((budget.total_spent || 0) / budget.total_allocated) * 100 
+                  const allocated = budget.total_amount || budget.allocated_amount || 0;
+                  const utilization = allocated > 0 
+                    ? ((budget.spent_amount || 0) / allocated) * 100 
                     : 0;
                   return (
                     <tr key={budget.id} className="border-b hover:bg-slate-50">
                       <td className="py-3 px-4">
                         <div>
-                          <p className="font-medium text-slate-900">{budget.budget_name}</p>
+                          <p className="font-medium text-slate-900">{budget.name_en}</p>
                           <p className="text-xs text-slate-500">{budget.budget_code}</p>
                         </div>
                       </td>
@@ -247,10 +249,10 @@ function BudgetManagement() {
                         {budget.entity_type?.replace(/_/g, ' ')}
                       </td>
                       <td className="py-3 px-4 text-right font-medium">
-                        {(budget.total_allocated / 1000000).toFixed(2)}M
+                        {(allocated / 1000000).toFixed(2)}M
                       </td>
                       <td className="py-3 px-4 text-right font-medium">
-                        {((budget.total_spent || 0) / 1000000).toFixed(2)}M
+                        {((budget.spent_amount || 0) / 1000000).toFixed(2)}M
                       </td>
                       <td className="py-3 px-4 text-center">
                         <Badge className={statusColors[budget.status] || 'bg-slate-200'}>

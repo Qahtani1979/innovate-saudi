@@ -5,13 +5,44 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
-import { DollarSign, CheckCircle2, XCircle, Sparkles } from 'lucide-react';
+import { DollarSign, CheckCircle2, XCircle, Sparkles, Loader2 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { toast } from 'sonner';
+import { useMutation } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function BudgetAllocationApprovalGate({ allocation, onApprove, onReject, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const [comments, setComments] = useState('');
+  const [decision, setDecision] = useState('');
+  const { user } = useAuth();
+
+  const approvalMutation = useMutation({
+    mutationFn: async () => {
+      // Log the approval decision
+      const { error } = await supabase.from('system_activities').insert({
+        activity_type: decision === 'approve' ? 'budget_allocation_approved' : 'budget_allocation_rejected',
+        entity_type: 'Budget',
+        description: `Budget allocation ${decision === 'approve' ? 'approved' : 'rejected'}`,
+        metadata: { allocation, comments, decision }
+      });
+      if (error) throw error;
+      return { success: true };
+    },
+    onSuccess: () => {
+      if (decision === 'approve') {
+        onApprove?.({ comments });
+        toast.success(t({ en: 'Budget allocation approved', ar: 'تمت الموافقة على توزيع الميزانية' }));
+      } else {
+        onReject?.({ comments });
+        toast.success(t({ en: 'Revision requested', ar: 'تم طلب التنقيح' }));
+      }
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    }
+  });
 
   const categories = [
     { id: 'pilots', name_en: 'Pilot Programs', color: '#3b82f6' },
@@ -24,16 +55,17 @@ export default function BudgetAllocationApprovalGate({ allocation, onApprove, on
 
   const pieData = categories.map(cat => ({
     name: cat.name_en,
-    value: allocation[cat.id] || 0,
+    value: allocation?.[cat.id] || 0,
     color: cat.color
   })).filter(d => d.value > 0);
 
   const totalBudget = 50000000;
+  const allocationValues = allocation || {};
   const validationChecks = [
-    { check: 'Total = 100%', passed: Object.values(allocation).reduce((a, b) => a + b, 0) === 100 },
-    { check: 'Pilots ≥ 30%', passed: allocation.pilots >= 30 },
-    { check: 'R&D ≥ 15%', passed: allocation.rd >= 15 },
-    { check: 'All categories > 0%', passed: Object.values(allocation).every(v => v > 0) }
+    { check: 'Total = 100%', passed: Object.values(allocationValues).reduce((a, b) => a + (Number(b) || 0), 0) === 100 },
+    { check: 'Pilots ≥ 30%', passed: (allocationValues.pilots || 0) >= 30 },
+    { check: 'R&D ≥ 15%', passed: (allocationValues.rd || 0) >= 15 },
+    { check: 'All categories > 0%', passed: Object.values(allocationValues).every(v => (Number(v) || 0) > 0) }
   ];
 
   return (
@@ -72,7 +104,7 @@ export default function BudgetAllocationApprovalGate({ allocation, onApprove, on
           <div className="space-y-2">
             <p className="font-semibold text-slate-900 mb-3">{t({ en: 'Amounts', ar: 'المبالغ' })}</p>
             {categories.map(cat => {
-              const percentage = allocation[cat.id] || 0;
+              const percentage = allocationValues[cat.id] || 0;
               const amount = (percentage / 100) * totalBudget;
               return (
                 <div key={cat.id} className="flex items-center justify-between p-2 border rounded">
