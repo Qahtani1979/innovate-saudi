@@ -184,8 +184,8 @@ export default function FinalStrategySystemAssessment() {
       ]
     },
     {
-      id: 'ai-prompts',
-      title: t({ en: 'AI Prompts', ar: 'موجهات الذكاء الاصطناعي' }),
+      id: 'ai-prompts-core',
+      title: t({ en: 'Core AI Prompts (lib/ai/prompts/strategy)', ar: 'موجهات الذكاء الاصطناعي الأساسية' }),
       icon: Cpu,
       status: 'complete',
       items: [
@@ -211,6 +211,37 @@ export default function FinalStrategySystemAssessment() {
         { name: 'kpis', status: 'implemented', details: 'KPI generation prompts' },
         { name: 'copilot', status: 'implemented', details: 'Strategic advisor chat prompts' },
         { name: 'adjustment', status: 'implemented', details: 'Strategy adjustment prompts' }
+      ]
+    },
+    {
+      id: 'ai-prompts-wizard',
+      title: t({ en: 'Wizard Step Prompts (components/strategy/wizard/prompts)', ar: 'موجهات خطوات المعالج' }),
+      icon: Cpu,
+      status: 'complete',
+      items: [
+        { name: 'step1Context', status: 'implemented', details: 'Context and basic info prompts' },
+        { name: 'step2Vision', status: 'implemented', details: 'Vision/mission generation' },
+        { name: 'step3Stakeholders', status: 'implemented', details: 'Stakeholder identification' },
+        { name: 'step3StakeholdersSingle', status: 'implemented', details: 'Single stakeholder analysis' },
+        { name: 'step4Pestel', status: 'implemented', details: 'PESTEL factor generation' },
+        { name: 'step5Swot', status: 'implemented', details: 'SWOT analysis generation' },
+        { name: 'step6Scenarios', status: 'implemented', details: 'Scenario planning prompts' },
+        { name: 'step7Risks', status: 'implemented', details: 'Risk identification prompts' },
+        { name: 'step7RisksSingle', status: 'implemented', details: 'Single risk analysis' },
+        { name: 'step8Dependencies', status: 'implemented', details: 'Dependency mapping prompts' },
+        { name: 'step9Objectives', status: 'implemented', details: 'Objective generation' },
+        { name: 'step9ObjectivesSingle', status: 'implemented', details: 'Single objective refinement' },
+        { name: 'step10National', status: 'implemented', details: 'National alignment prompts' },
+        { name: 'step11Kpis', status: 'implemented', details: 'KPI generation prompts' },
+        { name: 'step11KpisSingle', status: 'implemented', details: 'Single KPI refinement' },
+        { name: 'step12Actions', status: 'implemented', details: 'Action plan generation' },
+        { name: 'step12ActionsSingle', status: 'implemented', details: 'Single action refinement' },
+        { name: 'step13Resources', status: 'implemented', details: 'Resource planning prompts' },
+        { name: 'step14Timeline', status: 'implemented', details: 'Timeline generation' },
+        { name: 'step15Governance', status: 'implemented', details: 'Governance structure prompts' },
+        { name: 'step16Communication', status: 'implemented', details: 'Communication plan prompts' },
+        { name: 'step17Change', status: 'implemented', details: 'Change management prompts' },
+        { name: 'step18Review', status: 'implemented', details: 'Final review prompts' }
       ]
     },
     {
@@ -447,7 +478,7 @@ export default function FinalStrategySystemAssessment() {
           <p>✓ {t({ en: '32 strategy-specific pages implemented', ar: '32 صفحة خاصة بالاستراتيجية منفذة' })}</p>
           <p>✓ {t({ en: '9 cascade generator pages for entity creation', ar: '9 صفحات مولد تتابع لإنشاء الكيانات' })}</p>
           <p>✓ {t({ en: '23 wizard step components for plan creation', ar: '23 مكون خطوة معالج لإنشاء الخطة' })}</p>
-          <p>✓ {t({ en: '22 AI prompts for strategic guidance', ar: '22 موجه ذكاء اصطناعي للتوجيه الاستراتيجي' })}</p>
+          <p>✓ {t({ en: '22 core AI prompts + 23 wizard step prompts (45 total)', ar: '22 موجه أساسي + 23 موجه خطوة معالج (45 إجمالي)' })}</p>
           <p>✓ {t({ en: '39 edge functions for backend automation', ar: '39 وظيفة حافة للأتمتة الخلفية' })}</p>
           <p>✓ {t({ en: '35 React hooks for state management', ar: '35 خطاف React لإدارة الحالة' })}</p>
           <p>✓ {t({ en: '12 cross-system integrations verified', ar: '12 تكامل عبر الأنظمة تم التحقق منها' })}</p>
