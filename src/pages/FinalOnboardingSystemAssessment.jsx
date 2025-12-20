@@ -50,7 +50,8 @@ export default function FinalOnboardingSystemAssessment() {
           { name: 'ResearcherOnboarding.jsx', status: 'verified', details: 'Page wrapper for ResearcherOnboardingWizard' },
           { name: 'MunicipalityStaffOnboarding.jsx', status: 'verified', details: 'Page wrapper for MunicipalityStaffOnboardingWizard' },
           { name: 'StartupOnboarding.jsx', status: 'verified', details: 'Page wrapper for StartupOnboardingWizard' },
-          { name: 'DeputyshipOnboarding.jsx', status: 'verified', details: 'Page wrapper for DeputyshipOnboardingWizard' }
+          { name: 'DeputyshipOnboarding.jsx', status: 'verified', details: 'Page wrapper for DeputyshipOnboardingWizard' },
+          { name: 'ExpertOnboarding.jsx', status: 'fixed', details: 'Standalone expert onboarding page. Fixed: broken base44 reference → useAIWithFallback' }
         ]
       },
       {
@@ -139,15 +140,16 @@ export default function FinalOnboardingSystemAssessment() {
       'MunicipalityStaffOnboardingWizard.jsx: Migrated CV extraction from base44 to invokeAI',
       'ResearcherOnboardingWizard.jsx: Migrated CV extraction from base44 to invokeAI',
       'ExpertOnboardingWizard.jsx: Migrated CV extraction from base44 to invokeAI',
+      'ExpertOnboarding.jsx (PAGE): Fixed broken base44 reference - migrated to useAIWithFallback',
       'All wizards now use Lovable AI gateway (ai.gateway.lovable.dev) via invoke-llm edge function'
     ],
 
     validationResult: {
       totalCategories: 9,
       verifiedCategories: 9,
-      totalItems: 51,
-      verifiedItems: 47,
-      fixedItems: 4,
+      totalItems: 52,
+      verifiedItems: 46,
+      fixedItems: 6,
       pendingItems: 0
     }
   };
