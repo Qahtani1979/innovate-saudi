@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,28 +13,40 @@ export default function PlatformStatsWidget() {
 
   const { data: municipalities = [] } = useQuery({
     queryKey: ['municipalities-count'],
-    queryFn: () => base44.entities.Municipality.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('municipalities').select('id');
+      return data || [];
+    }
   });
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges-count'],
-    queryFn: () => base44.entities.Challenge.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('challenges').select('id, created_at').eq('is_deleted', false);
+      return data || [];
+    }
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots-count'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('pilots').select('id').eq('is_deleted', false);
+      return data || [];
+    }
   });
 
   const { data: solutions = [] } = useQuery({
     queryKey: ['solutions-count'],
-    queryFn: () => base44.entities.Solution.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('solutions').select('id').eq('is_deleted', false);
+      return data || [];
+    }
   });
 
   const thisMonth = new Date().getMonth();
   const thisYear = new Date().getFullYear();
   const challengesThisMonth = challenges.filter(c => {
-    const created = new Date(c.created_date);
+    const created = new Date(c.created_at);
     return created.getMonth() === thisMonth && created.getFullYear() === thisYear;
   }).length;
 

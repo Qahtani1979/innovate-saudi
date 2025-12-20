@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -58,32 +58,54 @@ export default function SystemHealthDashboard() {
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges-health'],
-    queryFn: () => base44.entities.Challenge.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('challenges').select('id').eq('is_deleted', false);
+      return data || [];
+    }
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots-health'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('pilots').select('id').eq('is_deleted', false);
+      return data || [];
+    }
   });
 
   const { data: activities = [] } = useQuery({
     queryKey: ['activities-health'],
-    queryFn: () => base44.entities.SystemActivity.list('-created_date', 100)
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('system_activities')
+        .select('id, activity_type, description, created_at')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      return data || [];
+    }
   });
 
   const { data: expertProfiles = [] } = useQuery({
     queryKey: ['experts-health'],
-    queryFn: () => base44.entities.ExpertProfile.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('expert_profiles').select('id, is_active');
+      return data || [];
+    }
   });
 
   const { data: expertAssignments = [] } = useQuery({
     queryKey: ['assignments-health'],
-    queryFn: () => base44.entities.ExpertAssignment.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('expert_assignments').select('id, status, due_date');
+      return data || [];
+    }
   });
 
   const { data: expertEvaluations = [] } = useQuery({
     queryKey: ['evaluations-health'],
-    queryFn: () => base44.entities.ExpertEvaluation.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('expert_evaluations').select('id');
+      return data || [];
+    }
   });
 
   const activeExperts = expertProfiles.filter(e => e.is_active).length;
@@ -198,9 +220,9 @@ export default function SystemHealthDashboard() {
         <CardContent>
           <div className="space-y-2">
             {activities.slice(0, 10).map((activity, i) => (
-              <div key={i} className="flex items-center justify-between text-sm p-2 bg-slate-50 rounded">
-                <span className="text-slate-700">{activity.description}</span>
-                <span className="text-slate-500 text-xs">{activity.created_date}</span>
+              <div key={activity.id || i} className="flex items-center justify-between text-sm p-2 bg-slate-50 rounded">
+                <span className="text-slate-700">{activity.description || activity.activity_type}</span>
+                <span className="text-slate-500 text-xs">{activity.created_at ? new Date(activity.created_at).toLocaleDateString() : '-'}</span>
               </div>
             ))}
           </div>
