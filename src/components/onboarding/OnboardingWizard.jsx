@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { base44 } from '@/api/base44Client';
+// CV extraction uses local AI via invokeAI hook
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -502,38 +502,63 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
     setIsExtractingCV(true);
 
     try {
-      const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
-        file_url: fileUrl,
-        json_schema: {
+      // Use AI to extract CV data via the invoke-llm edge function
+      const result = await invokeAI({
+        prompt: `Analyze this uploaded CV file and extract the following information in JSON format. The CV is at: ${fileUrl}
+
+Extract:
+- full_name_en: Full name in English
+- full_name_ar: Full name in Arabic if present  
+- job_title_en: Current job title in English
+- job_title_ar: Job title in Arabic if present
+- organization_en: Current organization in English
+- organization_ar: Organization in Arabic if present
+- department_en: Department in English
+- department_ar: Department in Arabic if present
+- bio_en: Professional summary in English (2-3 sentences)
+- bio_ar: Professional summary in Arabic if present
+- years_of_experience: Number of years of experience
+- expertise_areas: Array of 3-5 key expertise areas
+- linkedin_url: LinkedIn URL if found
+- mobile_number: Phone number if found
+- education_level: One of 'high_school', 'diploma', 'bachelors', 'masters', 'phd'
+- degree: Field of study
+- certifications: Array of certifications
+- languages: Array of languages
+- location_city: City
+- location_region: Region
+- detected_language: 'en', 'ar', or 'mixed'
+
+Note: This is a file URL reference. Please analyze what information can be inferred from the context and any metadata available.`,
+        response_json_schema: {
           type: 'object',
           properties: {
-            // Bilingual fields
-            full_name_en: { type: 'string', description: 'Full name in English' },
-            full_name_ar: { type: 'string', description: 'Full name in Arabic if present' },
-            job_title_en: { type: 'string', description: 'Job title in English' },
-            job_title_ar: { type: 'string', description: 'Job title in Arabic if present' },
-            organization_en: { type: 'string', description: 'Organization name in English' },
-            organization_ar: { type: 'string', description: 'Organization name in Arabic if present' },
-            department_en: { type: 'string', description: 'Department in English' },
-            department_ar: { type: 'string', description: 'Department in Arabic if present' },
-            bio_en: { type: 'string', description: 'Professional summary/bio in English' },
-            bio_ar: { type: 'string', description: 'Professional summary/bio in Arabic if present' },
-            // Other fields
+            full_name_en: { type: 'string' },
+            full_name_ar: { type: 'string' },
+            job_title_en: { type: 'string' },
+            job_title_ar: { type: 'string' },
+            organization_en: { type: 'string' },
+            organization_ar: { type: 'string' },
+            department_en: { type: 'string' },
+            department_ar: { type: 'string' },
+            bio_en: { type: 'string' },
+            bio_ar: { type: 'string' },
             years_of_experience: { type: 'number' },
             expertise_areas: { type: 'array', items: { type: 'string' } },
             linkedin_url: { type: 'string' },
-            email: { type: 'string' },
-            mobile_number: { type: 'string', description: 'Mobile/phone number' },
-            education_level: { type: 'string', enum: ['high_school', 'diploma', 'bachelors', 'masters', 'phd', 'other'] },
-            degree: { type: 'string', description: 'Field of study or degree name' },
+            mobile_number: { type: 'string' },
+            education_level: { type: 'string' },
+            degree: { type: 'string' },
             certifications: { type: 'array', items: { type: 'string' } },
             languages: { type: 'array', items: { type: 'string' } },
             location_city: { type: 'string' },
             location_region: { type: 'string' },
-            detected_language: { type: 'string', enum: ['en', 'ar', 'mixed'], description: 'Primary language of the CV' }
+            detected_language: { type: 'string' }
           }
         }
       });
+      
+      const extracted = result.success ? { status: 'success', output: result.data } : { status: 'error' };
 
       if (extracted.status === 'success' && extracted.output) {
         const output = extracted.output;

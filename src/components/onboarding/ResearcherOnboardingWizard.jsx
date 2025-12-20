@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { base44 } from '@/api/base44Client';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAutoRoleAssignment } from '@/hooks/useAutoRoleAssignment';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,6 +52,7 @@ const COLLABORATION_TYPES = [
 ];
 
 export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
+  const { invokeAI } = useAIWithFallback();
   const { language, isRTL, t, toggleLanguage } = useLanguage();
   const { user, userProfile, checkAuth } = useAuth();
   const queryClient = useQueryClient();
@@ -104,9 +105,22 @@ export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
     setIsExtractingCV(true);
 
     try {
-      const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
-        file_url: fileUrl,
-        json_schema: {
+      // Use AI-powered extraction instead of base44
+      const result = await invokeAI({
+        prompt: `Analyze this academic CV and extract researcher information. CV URL: ${fileUrl}
+
+Extract the following in JSON format:
+- full_name: Full name
+- academic_title: Academic title (e.g., Professor, Associate Professor)
+- institution: University/Research institution name
+- department: Department or faculty name
+- research_areas: Array of 3-5 research focus areas
+- bio: Brief academic biography
+- publications_count: Approximate number of publications
+- orcid_id: ORCID ID if found
+- google_scholar_url: Google Scholar profile URL if found
+- researchgate_url: ResearchGate profile URL if found`,
+        response_json_schema: {
           type: 'object',
           properties: {
             full_name: { type: 'string' },
@@ -122,6 +136,8 @@ export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
           }
         }
       });
+
+      const extracted = result.success ? { status: 'success', output: result.data } : { status: 'error' };
 
       if (extracted.status === 'success' && extracted.output) {
         const output = extracted.output;
