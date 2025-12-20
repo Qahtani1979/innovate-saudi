@@ -498,6 +498,8 @@ import FinalUsersAccessAssessment from './pages/FinalUsersAccessAssessment';
 import FinalCitizenSystemAssessment from './pages/FinalCitizenSystemAssessment';
 import FinalExpertsSystemAssessment from './pages/FinalExpertsSystemAssessment';
 import FinalPartnershipsSystemAssessment from './pages/FinalPartnershipsSystemAssessment';
+import FinalResearchersSystemAssessment from './pages/FinalResearchersSystemAssessment';
+import FinalStrategySystemAssessment from './pages/FinalStrategySystemAssessment';
 import FinalMatchmakerSystemAssessment from './pages/FinalMatchmakerSystemAssessment';
 import FinalStartupsSystemAssessment from './pages/FinalStartupsSystemAssessment';
 import PartnershipDetail from './pages/PartnershipDetail';
@@ -1078,6 +1080,9 @@ export const PAGES = {
     "FinalUsersAccessAssessment": FinalUsersAccessAssessment,
     "FinalCitizenSystemAssessment": FinalCitizenSystemAssessment,
     "FinalExpertsSystemAssessment": FinalExpertsSystemAssessment,
+    "FinalPartnershipsSystemAssessment": FinalPartnershipsSystemAssessment,
+    "FinalResearchersSystemAssessment": FinalResearchersSystemAssessment,
+    "FinalStrategySystemAssessment": FinalStrategySystemAssessment,
 }
 
 export const pagesConfig = {
