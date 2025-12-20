@@ -452,6 +452,7 @@ import SolutionChallengeMatcher from './pages/SolutionChallengeMatcher';
 import EvaluationAnalyticsDashboard from './pages/EvaluationAnalyticsDashboard';
 import EvaluationHistory from './pages/EvaluationHistory';
 import FinalEvaluationsSystemAssessment from './pages/FinalEvaluationsSystemAssessment';
+import FinalApprovalsSystemAssessment from './pages/FinalApprovalsSystemAssessment';
 import AllGapsExport from './pages/AllGapsExport';
 import CityDashboard from './pages/CityDashboard';
 import OrganizationPortfolioAnalytics from './pages/OrganizationPortfolioAnalytics';
@@ -993,6 +994,7 @@ export const PAGES = {
     "SolutionChallengeMatcher": SolutionChallengeMatcher,
     "EvaluationAnalyticsDashboard": EvaluationAnalyticsDashboard,
     "AllGapsExport": AllGapsExport,
+    "FinalApprovalsSystemAssessment": FinalApprovalsSystemAssessment,
     "CityDashboard": CityDashboard,
     "OrganizationPortfolioAnalytics": OrganizationPortfolioAnalytics,
     "ExpertGapsSummary": ExpertGapsSummary,
