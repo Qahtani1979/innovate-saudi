@@ -450,6 +450,8 @@ import StartupShowcase from './pages/StartupShowcase';
 import ChallengeSolutionMatching from './pages/ChallengeSolutionMatching';
 import SolutionChallengeMatcher from './pages/SolutionChallengeMatcher';
 import EvaluationAnalyticsDashboard from './pages/EvaluationAnalyticsDashboard';
+import EvaluationHistory from './pages/EvaluationHistory';
+import FinalEvaluationsSystemAssessment from './pages/FinalEvaluationsSystemAssessment';
 import AllGapsExport from './pages/AllGapsExport';
 import CityDashboard from './pages/CityDashboard';
 import OrganizationPortfolioAnalytics from './pages/OrganizationPortfolioAnalytics';
@@ -555,6 +557,8 @@ export const PAGES = {
     "ProposalWizard": ProposalWizard,
     "ProgramApplicationWizard": ProgramApplicationWizard,
     "EvaluationPanel": EvaluationPanel,
+    "EvaluationHistory": EvaluationHistory,
+    "FinalEvaluationsSystemAssessment": FinalEvaluationsSystemAssessment,
     "NotificationCenter": NotificationCenter,
     "ReportsBuilder": ReportsBuilder,
     "SectorDashboard": SectorDashboard,
