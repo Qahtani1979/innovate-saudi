@@ -1,15 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useLanguage } from '../components/LanguageContext';
-import { Settings, Clock, Target, AlertTriangle, Save } from 'lucide-react';
+import { Settings, Clock, Target, AlertTriangle, Save, Loader2 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { toast } from 'sonner';
 
 function SystemDefaultsConfig() {
   const { language, isRTL, t } = useLanguage();
+  const queryClient = useQueryClient();
+  
+  // Fetch system defaults from database
+  const { data: configData } = useQuery({
+    queryKey: ['platform-system-defaults'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('platform_configs')
+        .select('*')
+        .eq('category', 'system_defaults');
+      if (error) throw error;
+      
+      const configObj = {};
+      (data || []).forEach(item => {
+        configObj[item.config_key] = item.config_value;
+      });
+      return configObj;
+    }
+  });
+  
   const [defaults, setDefaults] = useState({
     default_challenge_status: 'draft',
     default_pilot_duration: 90,
@@ -18,6 +41,45 @@ function SystemDefaultsConfig() {
     auto_archive_after_days: 365,
     business_hours_start: '08:00',
     business_hours_end: '17:00'
+  });
+  
+  // Load config from database when available
+  useEffect(() => {
+    if (configData) {
+      setDefaults(prev => ({
+        default_challenge_status: configData.default_challenge_status || prev.default_challenge_status,
+        default_pilot_duration: configData.default_pilot_duration || prev.default_pilot_duration,
+        default_approval_sla: configData.default_approval_sla || prev.default_approval_sla,
+        escalation_after_days: configData.escalation_after_days || prev.escalation_after_days,
+        auto_archive_after_days: configData.auto_archive_after_days || prev.auto_archive_after_days,
+        business_hours_start: configData.business_hours_start || prev.business_hours_start,
+        business_hours_end: configData.business_hours_end || prev.business_hours_end
+      }));
+    }
+  }, [configData]);
+  
+  // Save mutation
+  const saveMutation = useMutation({
+    mutationFn: async (data) => {
+      for (const [key, value] of Object.entries(data)) {
+        await supabase
+          .from('platform_configs')
+          .upsert({
+            config_key: key,
+            config_value: value,
+            category: 'system_defaults',
+            is_active: true,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'config_key' });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['platform-system-defaults']);
+      toast.success(t({ en: 'System defaults saved', ar: 'تم حفظ الإعدادات الافتراضية' }));
+    },
+    onError: () => {
+      toast.error(t({ en: 'Failed to save', ar: 'فشل في الحفظ' }));
+    }
   });
 
   return (
@@ -101,8 +163,12 @@ function SystemDefaultsConfig() {
         </Card>
       </div>
 
-      <Button className="w-full bg-slate-700 text-lg py-6">
-        <Save className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+      <Button 
+        className="w-full bg-slate-700 text-lg py-6" 
+        onClick={() => saveMutation.mutate(defaults)}
+        disabled={saveMutation.isPending}
+      >
+        {saveMutation.isPending ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Save className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />}
         {t({ en: 'Save System Defaults', ar: 'حفظ الافتراضات النظامية' })}
       </Button>
     </div>

@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from '../components/LanguageContext';
 import { Palette, Upload, Save, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { base44 } from '@/api/base44Client';
 import FileUploader from '../components/FileUploader';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePrompt } from '@/hooks/usePrompt';
@@ -15,7 +16,28 @@ import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function BrandingSettings() {
   const { language, isRTL, t } = useLanguage();
+  const queryClient = useQueryClient();
   const { invoke: invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = usePrompt(null);
+  
+  // Fetch branding config from database
+  const { data: brandingConfig } = useQuery({
+    queryKey: ['platform-branding-config'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('platform_configs')
+        .select('*')
+        .eq('category', 'branding');
+      if (error) throw error;
+      
+      // Convert array to object keyed by config_key
+      const configObj = {};
+      (data || []).forEach(item => {
+        configObj[item.config_key] = item.config_value;
+      });
+      return configObj;
+    }
+  });
+  
   const [branding, setBranding] = useState({
     platform_name_en: 'Saudi Innovates',
     platform_name_ar: 'الابتكار السعودي',
@@ -27,6 +49,50 @@ function BrandingSettings() {
     secondary_color: '#14B8A6',
     accent_color: '#8B5CF6',
     font_family: 'Inter'
+  });
+  
+  // Load config from database when available
+  useEffect(() => {
+    if (brandingConfig) {
+      setBranding(prev => ({
+        ...prev,
+        platform_name_en: brandingConfig.platform_name_en || prev.platform_name_en,
+        platform_name_ar: brandingConfig.platform_name_ar || prev.platform_name_ar,
+        tagline_en: brandingConfig.tagline_en || prev.tagline_en,
+        tagline_ar: brandingConfig.tagline_ar || prev.tagline_ar,
+        logo_url: brandingConfig.logo_url || prev.logo_url,
+        favicon_url: brandingConfig.favicon_url || prev.favicon_url,
+        primary_color: brandingConfig.primary_color || prev.primary_color,
+        secondary_color: brandingConfig.secondary_color || prev.secondary_color,
+        accent_color: brandingConfig.accent_color || prev.accent_color,
+        font_family: brandingConfig.font_family || prev.font_family
+      }));
+    }
+  }, [brandingConfig]);
+  
+  // Save branding mutation
+  const saveMutation = useMutation({
+    mutationFn: async (brandingData) => {
+      // Upsert each config item
+      for (const [key, value] of Object.entries(brandingData)) {
+        await supabase
+          .from('platform_configs')
+          .upsert({
+            config_key: key,
+            config_value: value,
+            category: 'branding',
+            is_active: true,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'config_key' });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['platform-branding-config']);
+      toast.success(t({ en: 'Branding settings saved', ar: 'تم حفظ إعدادات العلامة التجارية' }));
+    },
+    onError: () => {
+      toast.error(t({ en: 'Failed to save branding settings', ar: 'فشل في حفظ إعدادات العلامة التجارية' }));
+    }
   });
 
   const handleAIOptimize = async () => {
@@ -156,8 +222,12 @@ function BrandingSettings() {
         </CardContent>
       </Card>
 
-      <Button className="w-full bg-purple-600 text-lg py-6">
-        <Save className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+      <Button 
+        className="w-full bg-purple-600 text-lg py-6" 
+        onClick={() => saveMutation.mutate(branding)}
+        disabled={saveMutation.isPending}
+      >
+        {saveMutation.isPending ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Save className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />}
         {t({ en: 'Save Branding Settings', ar: 'حفظ إعدادات العلامة التجارية' })}
       </Button>
     </PageLayout>

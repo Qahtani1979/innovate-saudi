@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -14,13 +16,66 @@ import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function FeatureFlagsDashboard() {
   const { language, isRTL, t } = useLanguage();
+  const queryClient = useQueryClient();
   const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
-  const [flags, setFlags] = useState([
-    { id: 1, name: 'AI Matching Engine', enabled: true, rollout: 100, users: 1250, experiments: 0 },
-    { id: 2, name: 'Advanced Analytics', enabled: true, rollout: 75, users: 938, experiments: 1 },
-    { id: 3, name: 'Team Workspaces', enabled: false, rollout: 0, users: 0, experiments: 0 },
-    { id: 4, name: 'Predictive Insights', enabled: true, rollout: 50, users: 625, experiments: 2 }
-  ]);
+  
+  // Fetch feature flags from platform_configs
+  const { data: flagsConfig = [] } = useQuery({
+    queryKey: ['platform-feature-flags'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('platform_configs')
+        .select('*')
+        .eq('category', 'feature_flags');
+      if (error) throw error;
+      return data || [];
+    }
+  });
+  
+  // Default flags - will be merged with DB values
+  const defaultFlags = [
+    { id: 1, name: 'AI Matching Engine', key: 'ai_matching_engine', enabled: true, rollout: 100, users: 1250, experiments: 0 },
+    { id: 2, name: 'Advanced Analytics', key: 'advanced_analytics', enabled: true, rollout: 75, users: 938, experiments: 1 },
+    { id: 3, name: 'Team Workspaces', key: 'team_workspaces', enabled: false, rollout: 0, users: 0, experiments: 0 },
+    { id: 4, name: 'Predictive Insights', key: 'predictive_insights', enabled: true, rollout: 50, users: 625, experiments: 2 }
+  ];
+  
+  // Merge DB config with defaults
+  const [flags, setFlags] = useState(defaultFlags);
+  
+  useEffect(() => {
+    if (flagsConfig.length > 0) {
+      setFlags(prev => prev.map(flag => {
+        const dbConfig = flagsConfig.find(c => c.config_key === flag.key);
+        if (dbConfig?.config_value) {
+          return {
+            ...flag,
+            enabled: dbConfig.config_value.enabled ?? flag.enabled,
+            rollout: dbConfig.config_value.rollout ?? flag.rollout
+          };
+        }
+        return flag;
+      }));
+    }
+  }, [flagsConfig]);
+  
+  // Toggle flag mutation
+  const toggleMutation = useMutation({
+    mutationFn: async ({ key, enabled, rollout }) => {
+      await supabase
+        .from('platform_configs')
+        .upsert({
+          config_key: key,
+          config_value: { enabled, rollout },
+          category: 'feature_flags',
+          is_active: true,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'config_key' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['platform-feature-flags']);
+    }
+  });
 
   const handleAIExperimentDesign = async (flag) => {
     const result = await invokeAI({
@@ -126,8 +181,12 @@ Suggest:
                   </Button>
                   <Switch checked={flag.enabled} onCheckedChange={(v) => {
                     const newFlags = [...flags];
-                    newFlags[flag.id - 1].enabled = v;
-                    setFlags(newFlags);
+                    const flagIndex = newFlags.findIndex(f => f.id === flag.id);
+                    if (flagIndex >= 0) {
+                      newFlags[flagIndex].enabled = v;
+                      setFlags(newFlags);
+                      toggleMutation.mutate({ key: flag.key, enabled: v, rollout: flag.rollout });
+                    }
                   }} />
                 </div>
               </div>
