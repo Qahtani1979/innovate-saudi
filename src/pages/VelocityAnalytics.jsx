@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../components/LanguageContext';
@@ -12,12 +12,18 @@ function VelocityAnalyticsPage() {
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges-velocity'],
-    queryFn: () => base44.entities.Challenge.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('challenges').select('id, created_at, status').eq('is_deleted', false);
+      return data || [];
+    }
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots-velocity'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('pilots').select('id, created_at, stage').eq('is_deleted', false);
+      return data || [];
+    }
   });
 
   const avgChallengeTime = 14;
