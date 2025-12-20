@@ -71,8 +71,8 @@ export default function FinalOnboardingSystemAssessment() {
         items: [
           { name: 'OnboardingChecklist.jsx', status: 'verified', details: 'Progress checklist for onboarding steps' },
           { name: 'ProfileCompletenessCoach.jsx', status: 'verified', details: 'AI-powered profile completion coaching' },
-          { name: 'FirstActionRecommender.jsx', status: 'verified', details: 'Recommends first actions based on persona' },
-          { name: 'OnboardingAnalytics.jsx', status: 'verified', details: 'Analytics tracking for onboarding funnel' },
+          { name: 'FirstActionRecommender.jsx', status: 'fixed', details: 'Fixed: migrated from base44 to Supabase queries for challenges/RD calls' },
+          { name: 'OnboardingAnalytics.jsx', status: 'fixed', details: 'Fixed: migrated from base44 to Supabase queries for user/challenge/solution data' },
           { name: 'AIRoleAssigner.jsx', status: 'verified', details: 'AI-assisted role assignment recommendations' },
           { name: 'SmartWelcomeEmail.jsx', status: 'verified', details: 'Persona-specific welcome email generation' },
           { name: 'ProgressiveProfilingPrompt.jsx', status: 'verified', details: 'Progressive profile completion prompts' }
@@ -141,6 +141,8 @@ export default function FinalOnboardingSystemAssessment() {
       'ResearcherOnboardingWizard.jsx: Migrated CV extraction from base44 to invokeAI',
       'ExpertOnboardingWizard.jsx: Migrated CV extraction from base44 to invokeAI',
       'ExpertOnboarding.jsx (PAGE): Fixed broken base44 reference - migrated to useAIWithFallback',
+      'OnboardingAnalytics.jsx: Migrated from base44 to Supabase queries for user/challenge/solution data',
+      'FirstActionRecommender.jsx: Migrated from base44 to Supabase queries for challenges/RD calls',
       'All wizards now use Lovable AI gateway (ai.gateway.lovable.dev) via invoke-llm edge function'
     ],
 
@@ -148,8 +150,8 @@ export default function FinalOnboardingSystemAssessment() {
       totalCategories: 9,
       verifiedCategories: 9,
       totalItems: 52,
-      verifiedItems: 46,
-      fixedItems: 6,
+      verifiedItems: 44,
+      fixedItems: 8,
       pendingItems: 0
     }
   };
