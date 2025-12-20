@@ -503,6 +503,7 @@ import FinalStrategySystemAssessment from './pages/FinalStrategySystemAssessment
 import FinalMatchmakerSystemAssessment from './pages/FinalMatchmakerSystemAssessment';
 import FinalStartupsSystemAssessment from './pages/FinalStartupsSystemAssessment';
 import FinalChallengesSystemAssessment from './pages/FinalChallengesSystemAssessment';
+import FinalScalingSystemAssessment from './pages/FinalScalingSystemAssessment';
 import PartnershipDetail from './pages/PartnershipDetail';
 import PartnershipCreate from './pages/PartnershipCreate';
 import StrategyHub from './pages/StrategyHub';
@@ -1087,6 +1088,7 @@ export const PAGES = {
     "FinalMatchmakerSystemAssessment": FinalMatchmakerSystemAssessment,
     "FinalStartupsSystemAssessment": FinalStartupsSystemAssessment,
     "FinalChallengesSystemAssessment": FinalChallengesSystemAssessment,
+    "FinalScalingSystemAssessment": FinalScalingSystemAssessment,
 }
 
 export const pagesConfig = {
