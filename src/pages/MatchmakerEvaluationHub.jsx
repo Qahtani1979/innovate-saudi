@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +20,14 @@ function MatchmakerEvaluationHub() {
 
   const { data: applications = [] } = useQuery({
     queryKey: ['matchmaker-apps-eval'],
-    queryFn: () => base44.entities.MatchmakerApplication.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('matchmaker_applications')
+        .select('*');
+
+      if (error) throw error;
+      return data;
+    }
   });
 
   const screening = applications.filter(a => a.stage === 'screening');
@@ -33,14 +40,16 @@ function MatchmakerEvaluationHub() {
 
   const handleEvaluationComplete = async () => {
     setShowEvaluationForm(false);
-    
+
     if (selectedApp) {
-      await base44.functions.invoke('checkConsensus', {
-        entity_type: 'matchmaker_application',
-        entity_id: selectedApp.id
+      await supabase.functions.invoke('checkConsensus', {
+        body: {
+          entity_type: 'matchmaker_application',
+          entity_id: selectedApp.id
+        }
       });
     }
-    
+
     setSelectedApp(null);
     queryClient.invalidateQueries(['matchmaker-apps-eval']);
   };
@@ -120,9 +129,9 @@ function MatchmakerEvaluationHub() {
                   </div>
                 </div>
 
-                <EvaluationConsensusPanel 
-                  entityType="matchmaker_application" 
-                  entityId={app.id} 
+                <EvaluationConsensusPanel
+                  entityType="matchmaker_application"
+                  entityId={app.id}
                 />
 
                 <div className="flex gap-2 mt-4">

@@ -7,11 +7,7 @@ import { Tags, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { 
-  AUTO_TAGGER_SYSTEM_PROMPT, 
-  buildAutoTaggerPrompt, 
-  AUTO_TAGGER_SCHEMA 
-} from '@/lib/ai/prompts/knowledge/autoTagger';
+import { AUTO_TAGGER_PROMPT_TEMPLATE } from '@/lib/ai/prompts/knowledge/autoTagger';
 
 export default function AIContentAutoTagger({ document, onTagsGenerated }) {
   const { language, t } = useLanguage();
@@ -19,10 +15,11 @@ export default function AIContentAutoTagger({ document, onTagsGenerated }) {
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const generateTags = async () => {
+    const template = AUTO_TAGGER_PROMPT_TEMPLATE(document);
     const result = await invokeAI({
-      system_prompt: AUTO_TAGGER_SYSTEM_PROMPT,
-      prompt: buildAutoTaggerPrompt({ document }),
-      response_json_schema: AUTO_TAGGER_SCHEMA
+      system_prompt: template.system,
+      prompt: template.prompt,
+      response_json_schema: template.schema
     });
 
     if (result.success) {

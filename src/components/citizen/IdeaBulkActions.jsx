@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle2, XCircle, Users, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../LanguageContext';
+import { supabase } from '@/lib/supabase';
 
 export default function IdeaBulkActions({ selectedIds, onComplete }) {
   const { t } = useLanguage();
@@ -20,9 +20,14 @@ export default function IdeaBulkActions({ selectedIds, onComplete }) {
         review: { status: 'under_review' }
       };
 
-      const promises = ids.map(id => 
-        base44.entities.CitizenIdea.update(id, updates[action])
-      );
+      const promises = ids.map(async (id) => {
+        const { error } = await supabase
+          .from('citizen_ideas')
+          .update(updates[action])
+          .eq('id', id);
+
+        if (error) throw error;
+      });
 
       return await Promise.all(promises);
     },
@@ -73,7 +78,7 @@ export default function IdeaBulkActions({ selectedIds, onComplete }) {
         </SelectContent>
       </Select>
 
-      <Button 
+      <Button
         onClick={handleBulkAction}
         disabled={!action || bulkUpdateMutation.isPending}
         className="bg-blue-600"

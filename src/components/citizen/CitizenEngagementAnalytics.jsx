@@ -1,21 +1,27 @@
-import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../LanguageContext';
 import { Users, TrendingUp, MapPin, MessageSquare } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { supabase } from '@/lib/supabase';
 
 export default function CitizenEngagementAnalytics() {
   const { language, t } = useLanguage();
 
   const { data: feedback = [] } = useQuery({
     queryKey: ['all-citizen-feedback'],
-    queryFn: () => base44.entities.CitizenFeedback.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('citizen_feedback')
+        .select('*');
+      if (error) throw error;
+      return data;
+    }
   });
 
   const totalSubmissions = feedback.length;
   const avgVotes = feedback.reduce((acc, f) => acc + (f.vote_count || 0), 0) / (totalSubmissions || 1);
-  
+
   const topicCounts = feedback.reduce((acc, f) => {
     const topic = f.feedback_type || 'general';
     acc[topic] = (acc[topic] || 0) + 1;

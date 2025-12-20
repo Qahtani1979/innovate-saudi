@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Network, CheckCircle2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 export default function MergeDuplicatesDialog({ primaryIdea, duplicateIdeas, onClose }) {
@@ -16,10 +17,10 @@ export default function MergeDuplicatesDialog({ primaryIdea, duplicateIdeas, onC
     mutationFn: async () => {
       // Merge all selected ideas into primary
       const allIdeas = [primaryIdea, ...duplicateIdeas.filter(d => selectedIds.includes(d.id))];
-      
+
       // Combine vote counts
       const totalVotes = allIdeas.reduce((sum, idea) => sum + (idea.vote_count || 0), 0);
-      
+
       // Combine comments
       const allSubmitters = allIdeas
         .filter(i => i.submitter_name)
@@ -27,20 +28,30 @@ export default function MergeDuplicatesDialog({ primaryIdea, duplicateIdeas, onC
         .join(', ');
 
       // Update primary idea
-      await base44.entities.CitizenIdea.update(primaryIdea.id, {
-        vote_count: totalVotes,
-        description: `${primaryIdea.description}\n\n[Merged from ${selectedIds.length} similar ideas. Co-submitters: ${allSubmitters}]`
-      });
+      const { error: updateError } = await supabase
+        .from('citizen_ideas')
+        .update({
+          vote_count: totalVotes,
+          description: `${primaryIdea.description}\n\n[Merged from ${selectedIds.length} similar ideas. Co-submitters: ${allSubmitters}]`
+        })
+        .eq('id', primaryIdea.id);
+
+      if (updateError) throw updateError;
 
       // Mark duplicates as merged
-      await Promise.all(
-        selectedIds.map(id => 
-          base44.entities.CitizenIdea.update(id, {
+      const promises = selectedIds.map(async (id) => {
+        const { error } = await supabase
+          .from('citizen_ideas')
+          .update({
             status: 'duplicate',
             review_notes: `Merged into idea ${primaryIdea.id}`
           })
-        )
-      );
+          .eq('id', id);
+
+        if (error) throw error;
+      });
+
+      await Promise.all(promises);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['citizen-ideas']);

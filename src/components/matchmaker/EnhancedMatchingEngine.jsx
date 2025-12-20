@@ -7,7 +7,7 @@ import { Slider } from "@/components/ui/slider";
 import { useLanguage } from '../LanguageContext';
 import { Network, Sparkles, Loader2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
@@ -15,6 +15,7 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { getEnhancedMatchingPrompt, enhancedMatchingSchema } from '@/lib/ai/prompts/matchmaker';
 import { getSystemPrompt } from '@/lib/saudiContext';
+import MatchAcceptanceAction from './MatchAcceptanceAction';
 
 export default function EnhancedMatchingEngine({ application, onMatchComplete }) {
   const { language, isRTL, t } = useLanguage();
@@ -30,7 +31,16 @@ export default function EnhancedMatchingEngine({ application, onMatchComplete })
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges-for-matching'],
-    queryFn: () => base44.entities.Challenge.list('-overall_score', 100)
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('*')
+        .order('overall_score', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+      return data;
+    }
   });
 
   const runBilateralMatching = async () => {
@@ -74,13 +84,13 @@ export default function EnhancedMatchingEngine({ application, onMatchComplete })
         {/* Preferences */}
         <div className="p-4 bg-white border-2 border-purple-200 rounded-lg space-y-4">
           <p className="font-medium text-sm">{t({ en: 'Matching Preferences:', ar: 'تفضيلات المطابقة:' })}</p>
-          
+
           <div>
             <label className="text-xs text-slate-600">{t({ en: 'Minimum Match Score', ar: 'الحد الأدنى لدرجة المطابقة' })}</label>
             <div className="flex items-center gap-3 mt-2">
               <Slider
                 value={[preferences.min_score]}
-                onValueChange={([v]) => setPreferences({...preferences, min_score: v})}
+                onValueChange={([v]) => setPreferences({ ...preferences, min_score: v })}
                 min={0}
                 max={100}
                 step={5}
@@ -97,7 +107,7 @@ export default function EnhancedMatchingEngine({ application, onMatchComplete })
               min="5"
               max="50"
               value={preferences.max_matches}
-              onChange={(e) => setPreferences({...preferences, max_matches: parseInt(e.target.value)})}
+              onChange={(e) => setPreferences({ ...preferences, max_matches: parseInt(e.target.value) })}
               className="w-full px-3 py-2 border rounded-lg text-sm"
             />
           </div>
@@ -105,7 +115,7 @@ export default function EnhancedMatchingEngine({ application, onMatchComplete })
           <div className="flex items-center gap-2">
             <Checkbox
               checked={preferences.include_tier_1_only}
-              onCheckedChange={(checked) => setPreferences({...preferences, include_tier_1_only: checked})}
+              onCheckedChange={(checked) => setPreferences({ ...preferences, include_tier_1_only: checked })}
             />
             <label className="text-sm">{t({ en: 'Tier 1 Challenges Only', ar: 'تحديات المستوى 1 فقط' })}</label>
           </div>
@@ -124,11 +134,11 @@ export default function EnhancedMatchingEngine({ application, onMatchComplete })
         </Button>
 
         {matches.length > 0 && (
-          <div className="space-y-3">
+          <div className="space-y-4">
             <p className="font-medium text-sm">{t({ en: 'Match Results:', ar: 'نتائج المطابقة:' })} ({matches.length})</p>
             {matches.map((match, i) => (
-              <Link key={i} to={createPageUrl(`ChallengeDetail?id=${match.id}`)}>
-                <div className="p-4 border-2 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all">
+              <div key={i} className="space-y-3 p-4 border-2 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all">
+                <Link to={createPageUrl(`ChallengeDetail?id=${match.id}`)} className="block">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
@@ -143,7 +153,7 @@ export default function EnhancedMatchingEngine({ application, onMatchComplete })
                       <p className="text-xs text-slate-500">{t({ en: 'Match', ar: 'مطابقة' })}</p>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-3 gap-2 mt-3">
                     <div>
                       <p className="text-xs text-slate-500">{t({ en: 'Sector', ar: 'قطاع' })}</p>
@@ -158,8 +168,18 @@ export default function EnhancedMatchingEngine({ application, onMatchComplete })
                       <p className="text-sm font-bold">{match.strategic_fit}</p>
                     </div>
                   </div>
+                </Link>
+
+                {/* Municipal Action Area */}
+                <div className="pt-3 border-t">
+                  <MatchAcceptanceAction
+                    match={match}
+                    onChange={() => {
+                      // Optionally refresh or update local state
+                    }}
+                  />
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         )}

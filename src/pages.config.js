@@ -469,9 +469,26 @@ import OrganizationVerificationQueue from './pages/OrganizationVerificationQueue
 
 import ServiceQualityDashboard from './pages/ServiceQualityDashboard';
 import SandboxParticipantDashboard from './pages/SandboxParticipantDashboard';
-import CitizenLabParticipation from './pages/CitizenLabParticipation';
 import PublicGeographicMap from './pages/PublicGeographicMap';
 import ComprehensiveReportAudit from './pages/ComprehensiveReportAudit';
+
+// New Citizen Pages
+import CitizenIdeaDetail from './pages/CitizenIdeaDetail';
+import CitizenIdeaVoting from './pages/CitizenIdeaVoting';
+import CitizenIdeaReview from './pages/CitizenIdeaReview';
+import CitizenFeedbackHub from './pages/CitizenFeedbackHub';
+import CitizenRewardsCenter from './pages/CitizenRewardsCenter';
+import CitizenCommunityForum from './pages/CitizenCommunityForum';
+import CitizenLivingLabParticipation from './pages/CitizenLivingLabParticipation';
+
+// Matchmaker Pages
+import { MatchmakerApplications } from "./pages/MatchmakerApplications";
+import { MatchmakerApplicationDetail } from "./pages/MatchmakerApplicationDetail";
+import { MatchmakerApplicationCreate } from "./pages/MatchmakerApplicationCreate";
+import { MatchmakerEvaluationHub } from "./pages/MatchmakerEvaluationHub";
+import { MatchmakerSuccessAnalytics } from "./pages/MatchmakerSuccessAnalytics";
+import { MatchmakerJourney } from "./pages/MatchmakerJourney";
+import { MatchmakerCoverageReport } from "./pages/MatchmakerCoverageReport";
 import ReportConsolidationTracker from './pages/ReportConsolidationTracker';
 import BilingualSystemAudit from './pages/BilingualSystemAudit';
 import EvaluationSystemDeepDive from './pages/EvaluationSystemDeepDive';
@@ -672,7 +689,7 @@ export const PAGES = {
     "ScalingCoverageReport": ScalingCoverageReport,
     "MatchmakerCoverageReport": MatchmakerCoverageReport,
     "StrategicPlanningCoverageReport": StrategicPlanningCoverageReport,
-    
+
     "MatchmakerApplications": MatchmakerApplications,
     "MatchmakerApplicationCreate": MatchmakerApplicationCreate,
     "MatchmakerApplicationDetail": MatchmakerApplicationDetail,
@@ -774,6 +791,22 @@ export const PAGES = {
     "FinalStartupsSystemAssessment": FinalStartupsSystemAssessment,
     "PublicIdeaSubmission": PublicIdeaSubmission,
     "CitizenEngagementDashboard": CitizenEngagementDashboard,
+    "CitizenIdeaDetail": CitizenIdeaDetail,
+    "CitizenIdeaVoting": CitizenIdeaVoting,
+    "CitizenIdeaReview": CitizenIdeaReview,
+    "CitizenFeedbackHub": CitizenFeedbackHub,
+    "CitizenRewardsCenter": CitizenRewardsCenter,
+    "CitizenCommunityForum": CitizenCommunityForum,
+    "CitizenLivingLabParticipation": CitizenLivingLabParticipation,
+
+    // Matchmaker Pages
+    "MatchmakerApplications": MatchmakerApplications,
+    "MatchmakerApplicationDetail": MatchmakerApplicationDetail,
+    "MatchmakerApplicationCreate": MatchmakerApplicationCreate,
+    "MatchmakerEvaluationHub": MatchmakerEvaluationHub,
+    "MatchmakerSuccessAnalytics": MatchmakerSuccessAnalytics,
+    "MatchmakerJourney": MatchmakerJourney,
+    "MatchmakerCoverageReport": MatchmakerCoverageReport,
     "StrategyCopilotChat": StrategyCopilotChat,
     "MyWorkloadDashboard": MyWorkloadDashboard,
     "MyApprovals": MyApprovals,
@@ -1037,7 +1070,7 @@ export const PAGES = {
     // "RoleRequestApprovalQueue" removed - use RoleRequestCenter instead
     "FinalImplementationSummary": FinalImplementationSummary,
     "OrganizationVerificationQueue": OrganizationVerificationQueue,
-    
+
     "ServiceQualityDashboard": ServiceQualityDashboard,
     "SandboxParticipantDashboard": SandboxParticipantDashboard,
     "CitizenLabParticipation": CitizenLabParticipation,

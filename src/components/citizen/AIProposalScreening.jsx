@@ -14,9 +14,11 @@ import {
   getProposalScreeningSystemPrompt
 } from '@/lib/ai/prompts/citizen';
 
+import { supabase } from '@/lib/supabase';
+
 export default function AIProposalScreening({ proposal, onScreeningComplete }) {
   const [screeningResults, setScreeningResults] = useState(proposal.ai_pre_screening || null);
-  
+
   const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
     showToasts: true,
     fallbackData: null
@@ -32,16 +34,21 @@ export default function AIProposalScreening({ proposal, onScreeningComplete }) {
     if (success && data) {
       try {
         // Update proposal with screening results
-        await base44.entities.InnovationProposal.update(proposal.id, {
-          ai_pre_screening: data,
-          ai_evaluation_score: Math.round(
-            (data.proposal_completeness_score +
-             data.feasibility_score +
-             data.budget_reasonability_score +
-             data.team_adequacy_score +
-             data.strategic_alignment_preliminary) / 5
-          )
-        });
+        const { error: updateError } = await supabase
+          .from('innovation_proposals')
+          .update({
+            ai_pre_screening: data,
+            ai_evaluation_score: Math.round(
+              (data.proposal_completeness_score +
+                data.feasibility_score +
+                data.budget_reasonability_score +
+                data.team_adequacy_score +
+                data.strategic_alignment_preliminary) / 5
+            )
+          })
+          .eq('id', proposal.id);
+
+        if (updateError) throw updateError;
 
         setScreeningResults(data);
         toast.success('AI screening complete');
@@ -78,11 +85,11 @@ export default function AIProposalScreening({ proposal, onScreeningComplete }) {
         </CardHeader>
         <CardContent className="space-y-4">
           <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails={true} />
-          
+
           <p className="text-sm text-slate-600">
             Run AI screening to assess proposal completeness, feasibility, budget reasonability, and team adequacy.
           </p>
-          
+
           <Button onClick={runAIScreening} disabled={isLoading || !isAvailable} className="bg-purple-600">
             {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             <Sparkles className="h-4 w-4 mr-2" />
@@ -114,8 +121,8 @@ export default function AIProposalScreening({ proposal, onScreeningComplete }) {
           </CardTitle>
           <Badge className={
             screeningResults.auto_recommendation === 'approve_for_expert_review' ? 'bg-green-600' :
-            screeningResults.auto_recommendation === 'request_clarification' ? 'bg-yellow-600' :
-            'bg-red-600'
+              screeningResults.auto_recommendation === 'request_clarification' ? 'bg-yellow-600' :
+                'bg-red-600'
           }>
             {screeningResults.auto_recommendation?.replace(/_/g, ' ')}
           </Badge>
@@ -148,8 +155,8 @@ export default function AIProposalScreening({ proposal, onScreeningComplete }) {
           <div className="p-3 bg-white rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-slate-600">Budget</span>
-              {screeningResults.budget_reasonability ? 
-                <CheckCircle2 className="h-5 w-5 text-green-600" /> : 
+              {screeningResults.budget_reasonability ?
+                <CheckCircle2 className="h-5 w-5 text-green-600" /> :
                 <XCircle className="h-5 w-5 text-red-600" />
               }
             </div>
@@ -162,8 +169,8 @@ export default function AIProposalScreening({ proposal, onScreeningComplete }) {
           <div className="p-3 bg-white rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-slate-600">Team</span>
-              {screeningResults.team_adequacy ? 
-                <CheckCircle2 className="h-5 w-5 text-green-600" /> : 
+              {screeningResults.team_adequacy ?
+                <CheckCircle2 className="h-5 w-5 text-green-600" /> :
                 <XCircle className="h-5 w-5 text-red-600" />
               }
             </div>

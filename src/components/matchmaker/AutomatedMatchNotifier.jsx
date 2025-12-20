@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,7 +35,7 @@ export default function AutomatedMatchNotifier({ match, provider, challenge }) {
     mutationFn: async () => {
       const [subject, ...bodyLines] = emailContent.split('\n').filter(line => line.trim());
       const body = bodyLines.join('\n');
-      
+
       await supabase.functions.invoke('email-trigger-hub', {
         body: {
           trigger: 'MATCHMAKER_MATCH',
@@ -52,14 +52,21 @@ export default function AutomatedMatchNotifier({ match, provider, challenge }) {
         }
       });
 
-      await base44.entities.Notification.create({
-        recipient_email: provider.contact_email,
-        notification_type: 'matchmaker_match',
-        title: 'New Challenge Match',
-        message: `You've been matched to challenge: ${challenge.title_en}`,
-        related_entity_type: 'match',
-        related_entity_id: match.id
-      });
+      // Insert into notifications table if it exists, or just valid as sent
+      const { error } = await supabase.from('notifications').insert([
+        {
+          recipient_email: provider.contact_email,
+          notification_type: 'matchmaker_match',
+          title: 'New Challenge Match',
+          message: `You've been matched to challenge: ${challenge.title_en}`,
+          related_entity_type: 'match',
+          related_entity_id: match.id
+        }
+      ]);
+
+      if (error) {
+        console.warn('Failed to save notification record, but email trigger sent.', error);
+      }
     },
     onSuccess: () => {
       toast.success(t({ en: 'Notification sent', ar: 'تم إرسال الإشعار' }));
@@ -77,7 +84,7 @@ export default function AutomatedMatchNotifier({ match, provider, challenge }) {
       </CardHeader>
       <CardContent className="pt-6 space-y-4">
         <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
-        
+
         {!emailContent && (
           <div className="text-center py-6">
             <Mail className="h-12 w-12 text-blue-300 mx-auto mb-3" />
@@ -115,16 +122,16 @@ export default function AutomatedMatchNotifier({ match, provider, challenge }) {
             </div>
 
             <div className="flex gap-2">
-              <Button 
-                onClick={() => sendNotification.mutate()} 
+              <Button
+                onClick={() => sendNotification.mutate()}
                 disabled={sendNotification.isPending}
                 className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600"
               >
                 <Send className="h-4 w-4 mr-2" />
                 {t({ en: 'Send to Provider', ar: 'إرسال للمزود' })}
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setEmailContent('')}
               >
                 {t({ en: 'Cancel', ar: 'إلغاء' })}

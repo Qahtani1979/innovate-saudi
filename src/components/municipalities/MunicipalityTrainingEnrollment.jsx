@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { BookOpen, Clock, Award, CheckCircle2, Calendar } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
@@ -54,12 +54,15 @@ export default function MunicipalityTrainingEnrollment({ municipalityId }) {
 
   const enrollMutation = useMutation({
     mutationFn: async (programId) => {
-      const response = await base44.functions.invoke('enrollMunicipalityTraining', {
-        municipalityId,
-        programId,
-        enrollmentDate: new Date().toISOString()
+      const { data, error } = await supabase.functions.invoke('municipality-training-enroll', {
+        body: {
+          municipalityId,
+          programId,
+          enrollmentDate: new Date().toISOString()
+        }
       });
-      return response.data;
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['municipality', municipalityId] });
@@ -90,7 +93,7 @@ export default function MunicipalityTrainingEnrollment({ municipalityId }) {
                       <h3 className="font-bold text-lg">{language === 'ar' ? program.title_ar : program.title_en}</h3>
                       <p className="text-sm text-slate-600 mt-1">{language === 'ar' ? program.description_ar : program.description_en}</p>
                     </div>
-                    
+
                     <div className="flex items-center gap-2 flex-wrap">
                       <Badge variant="outline" className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
@@ -98,14 +101,14 @@ export default function MunicipalityTrainingEnrollment({ municipalityId }) {
                       </Badge>
                       <Badge className={
                         program.level === 'beginner' ? 'bg-green-100 text-green-700' :
-                        program.level === 'intermediate' ? 'bg-blue-100 text-blue-700' :
-                        'bg-purple-100 text-purple-700'
+                          program.level === 'intermediate' ? 'bg-blue-100 text-blue-700' :
+                            'bg-purple-100 text-purple-700'
                       }>
                         {program.level}
                       </Badge>
                     </div>
 
-                    <Button 
+                    <Button
                       onClick={() => enrollMutation.mutate(program.id)}
                       disabled={enrollMutation.isPending}
                       className="w-full"

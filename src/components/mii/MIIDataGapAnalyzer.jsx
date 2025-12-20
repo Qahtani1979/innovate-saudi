@@ -1,4 +1,4 @@
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,39 +11,48 @@ export default function MIIDataGapAnalyzer({ municipalityId }) {
 
   const { data: municipality } = useQuery({
     queryKey: ['municipality', municipalityId],
-    queryFn: () => base44.entities.Municipality.filter({ id: municipalityId }).then(r => r[0])
+    queryFn: async () => {
+      const { data } = await supabase.from('municipalities').select('*').eq('id', municipalityId).single();
+      return data;
+    }
   });
 
   const { data: dimensions = [] } = useQuery({
     queryKey: ['mii-dimensions'],
-    queryFn: () => base44.entities.MIIDimension.list(),
+    queryFn: async () => {
+      const { data } = await supabase.from('mii_indicators').select('*');
+      // Map old structure to new if needed, or just use as is if schema matches
+      // Assuming mii_indicators has data_sources JSONB
+      return data || [];
+    },
     initialData: []
   });
 
   const dataGaps = dimensions.map(dim => {
-    const sources = dim.data_sources || [];
+    const sources = dim.data_source_config?.sources || []; // Assuming JSON B structure
     let collected = 0;
     let total = sources.length;
 
     sources.forEach(source => {
-      if (source.source_entity === 'Pilot') {
-        if (municipality?.active_pilots > 0) collected++;
-      } else if (source.source_entity === 'Challenge') {
-        if (municipality?.active_challenges > 0) collected++;
+      if (source.type === 'Pilot') {
+        if ((municipality?.active_pilots_count || 0) > 0) collected++;
+      } else if (source.type === 'Challenge') {
+        if ((municipality?.active_challenges_count || 0) > 0) collected++;
       }
     });
 
     const completeness = total > 0 ? Math.round((collected / total) * 100) : 0;
-    const impact = completeness < 100 ? Math.round((100 - completeness) * dim.weight / 100) : 0;
+    const weight = dim.weight || 0;
+    const impact = completeness < 100 ? Math.round((100 - completeness) * weight / 100) : 0;
 
     return {
-      dimension: dim.dimension_name_en,
-      dimension_ar: dim.dimension_name_ar,
+      dimension: dim.name_en,
+      dimension_ar: dim.name_ar,
       completeness,
       missing: total - collected,
       total,
       impact,
-      weight: dim.weight
+      weight
     };
   });
 

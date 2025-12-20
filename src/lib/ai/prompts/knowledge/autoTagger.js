@@ -1,51 +1,62 @@
 /**
- * Content Auto-Tagger Prompts
- * @module knowledge/autoTagger
- * @version 1.0.0
+ * Knowledge Auto-Tagger Prompt Module
+ * Automatic classification and tagging of documents
+ * @module prompts/knowledge/autoTagger
  */
 
-import { getSystemPrompt } from '@/lib/saudiContext';
-
-export const AUTO_TAGGER_SYSTEM_PROMPT = getSystemPrompt('auto_tagger', `
-You are a content metadata specialist for Saudi Arabia's municipal innovation knowledge base.
-Your role is to automatically extract and suggest tags, keywords, and categories for documents.
-Consider sector relevance, entity relationships, and thematic classification.
-`);
+import { SAUDI_CONTEXT } from '@/lib/saudiContext';
 
 /**
- * Build auto-tagging prompt
- * @param {Object} params - Document data
- * @returns {string} Formatted prompt
+ * Auto-tagger prompt template
+ * @param {Object} document - Document data with title, content, type
+ * @returns {Object} Prompt configuration
  */
-export function buildAutoTaggerPrompt({ document }) {
-  return `Analyze document and suggest metadata tags:
+export const AUTO_TAGGER_PROMPT_TEMPLATE = (document) => ({
+  system: \`You are an expert Taxonomist and Knowledge Manager for the Saudi National Innovation Platform.
+\${SAUDI_CONTEXT.VISION_2030}
 
-TITLE: ${document?.title_en || document?.title || 'Unknown'}
-CONTENT: ${(document?.content_en || document?.content || '').substring(0, 500)}
-TYPE: ${document?.type || 'general'}
+Your role is to automatically categorize, tag, and link documents to the correct ecosystem entities using the official Saudi Standard Innovation Taxonomy.\`,
 
-Extract:
-1. Primary sector (urban_design, transport, environment, etc.)
-2. Keywords (5-10 relevant terms)
-3. Categories (best_practice, case_study, guide, template, etc.)
-4. Related entities (mention Challenge codes, Pilot codes, municipalities)
-5. Topics/themes`;
-}
+  prompt: \`Analyze this document and extract metadata:
 
-export const AUTO_TAGGER_SCHEMA = {
-  type: "object",
-  properties: {
-    sector: { type: "string" },
-    keywords: { type: "array", items: { type: "string" } },
-    categories: { type: "array", items: { type: "string" } },
-    related_entity_codes: { type: "array", items: { type: "string" } },
-    themes: { type: "array", items: { type: "string" } }
-  },
-  required: ["sector", "keywords", "categories"]
-};
+DOCUMENT:
+- Title: \${document?.title || 'Untitled'}
+- Type: \${document?.file_type || 'Generic text'}
+- Preview: \${document?.content?.substring(0, 1000) || 'No content provided'}
 
-export const AUTO_TAGGER_PROMPTS = {
-  systemPrompt: AUTO_TAGGER_SYSTEM_PROMPT,
-  buildPrompt: buildAutoTaggerPrompt,
-  schema: AUTO_TAGGER_SCHEMA
+Identify:
+1. Primary Sector (e.g., Municipal, Health, Education)
+2. Relevant Keywords (up to 10)
+3. Content Categories (e.g., Policy, Case Study)
+4. Related Entity Codes (e.g., SA-R-2024-001)
+
+Output valid JSON.\`,
+
+  schema: {
+    type: "object",
+    properties: {
+      sector: {
+        type: "string",
+        description: "Primary sector focus"
+      },
+      keywords: {
+        type: "array",
+        items: { type: "string" }
+      },
+      categories: {
+        type: "array",
+        items: { type: "string" }
+      },
+      related_entity_codes: {
+        type: "array",
+        items: { type: "string" },
+        description: "Codes of related projects, challenges, or entities"
+      }
+    },
+    required: ["sector", "keywords", "categories"]
+  }
+});
+
+export default {
+  AUTO_TAGGER_PROMPT_TEMPLATE
 };

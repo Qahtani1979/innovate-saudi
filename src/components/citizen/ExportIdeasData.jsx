@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, Loader2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../LanguageContext';
+import { supabase } from '@/lib/supabase';
 
 export default function ExportIdeasData() {
   const { t } = useLanguage();
@@ -14,7 +14,16 @@ export default function ExportIdeasData() {
 
   const { data: ideas = [] } = useQuery({
     queryKey: ['citizen-ideas-export'],
-    queryFn: () => base44.entities.CitizenIdea.list('-created_date', 1000)
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('citizen_ideas')
+        .select('*')
+        .order('created_date', { ascending: false })
+        .limit(1000);
+
+      if (error) throw error;
+      return data;
+    }
   });
 
   const handleExport = async () => {

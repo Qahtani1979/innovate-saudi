@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,14 +46,26 @@ function MatchmakerApplicationCreate() {
     mutationFn: async (data) => {
       // Auto-generate application code
       const year = new Date().getFullYear();
-      const apps = await base44.entities.MatchmakerApplication.list();
-      const nextNum = apps.filter(a => a.application_code?.startsWith(`MMA-${year}`)).length + 1;
+
+      const { count } = await supabase
+        .from('matchmaker_applications')
+        .select('*', { count: 'exact', head: true })
+        .ilike('application_code', `MMA-${year}-%`);
+
+      const nextNum = (count || 0) + 1;
       const application_code = `MMA-${year}-${String(nextNum).padStart(3, '0')}`;
-      
-      return base44.entities.MatchmakerApplication.create({
-        ...data,
-        application_code
-      });
+
+      const { data: newApp, error } = await supabase
+        .from('matchmaker_applications')
+        .insert({
+          ...data,
+          application_code
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return newApp;
     },
     onSuccess: (response) => {
       queryClient.invalidateQueries(['matchmaker-applications']);
@@ -132,18 +144,18 @@ function MatchmakerApplicationCreate() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium">{t({ en: 'Organization Name (EN)*', ar: 'اسم المنظمة (EN)*' })}</label>
-              <Input value={formData.organization_name_en} onChange={(e) => setFormData({...formData, organization_name_en: e.target.value})} required />
+              <Input value={formData.organization_name_en} onChange={(e) => setFormData({ ...formData, organization_name_en: e.target.value })} required />
             </div>
             <div>
               <label className="text-sm font-medium">{t({ en: 'Organization Name (AR)', ar: 'اسم المنظمة (AR)' })}</label>
-              <Input value={formData.organization_name_ar} onChange={(e) => setFormData({...formData, organization_name_ar: e.target.value})} />
+              <Input value={formData.organization_name_ar} onChange={(e) => setFormData({ ...formData, organization_name_ar: e.target.value })} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium">{t({ en: 'Headquarters Location*', ar: 'موقع المقر*' })}</label>
-              <Select value={formData.headquarters_location} onValueChange={(value) => setFormData({...formData, headquarters_location: value})}>
+              <Select value={formData.headquarters_location} onValueChange={(value) => setFormData({ ...formData, headquarters_location: value })}>
                 <SelectTrigger>
                   <SelectValue placeholder={t({ en: 'Select...', ar: 'اختر...' })} />
                 </SelectTrigger>
@@ -160,13 +172,13 @@ function MatchmakerApplicationCreate() {
             </div>
             <div>
               <label className="text-sm font-medium">{t({ en: 'Year Established', ar: 'سنة التأسيس' })}</label>
-              <Input type="number" value={formData.year_established} onChange={(e) => setFormData({...formData, year_established: e.target.value})} />
+              <Input type="number" value={formData.year_established} onChange={(e) => setFormData({ ...formData, year_established: e.target.value })} />
             </div>
           </div>
 
           <div>
             <label className="text-sm font-medium">{t({ en: 'Website', ar: 'الموقع الإلكتروني' })}</label>
-            <Input type="url" value={formData.website} onChange={(e) => setFormData({...formData, website: e.target.value})} />
+            <Input type="url" value={formData.website} onChange={(e) => setFormData({ ...formData, website: e.target.value })} />
           </div>
         </CardContent>
       </Card>
@@ -179,22 +191,22 @@ function MatchmakerApplicationCreate() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium">{t({ en: 'Contact Person*', ar: 'جهة الاتصال*' })}</label>
-              <Input value={formData.contact_person} onChange={(e) => setFormData({...formData, contact_person: e.target.value})} required />
+              <Input value={formData.contact_person} onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })} required />
             </div>
             <div>
               <label className="text-sm font-medium">{t({ en: 'Position/Title', ar: 'المسمى الوظيفي' })}</label>
-              <Input value={formData.contact_title} onChange={(e) => setFormData({...formData, contact_title: e.target.value})} />
+              <Input value={formData.contact_title} onChange={(e) => setFormData({ ...formData, contact_title: e.target.value })} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium">{t({ en: 'Email*', ar: 'البريد الإلكتروني*' })}</label>
-              <Input type="email" value={formData.contact_email} onChange={(e) => setFormData({...formData, contact_email: e.target.value})} required />
+              <Input type="email" value={formData.contact_email} onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })} required />
             </div>
             <div>
               <label className="text-sm font-medium">{t({ en: 'Phone', ar: 'الهاتف' })}</label>
-              <Input type="tel" value={formData.contact_phone} onChange={(e) => setFormData({...formData, contact_phone: e.target.value})} />
+              <Input type="tel" value={formData.contact_phone} onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })} />
             </div>
           </div>
         </CardContent>
@@ -222,7 +234,7 @@ function MatchmakerApplicationCreate() {
 
           <div>
             <label className="text-sm font-medium">{t({ en: 'Company Stage', ar: 'مرحلة الشركة' })}</label>
-            <Select value={formData.company_stage} onValueChange={(value) => setFormData({...formData, company_stage: value})}>
+            <Select value={formData.company_stage} onValueChange={(value) => setFormData({ ...formData, company_stage: value })}>
               <SelectTrigger>
                 <SelectValue placeholder={t({ en: 'Select stage...', ar: 'اختر المرحلة...' })} />
               </SelectTrigger>
@@ -269,7 +281,7 @@ function MatchmakerApplicationCreate() {
             <Textarea
               rows={5}
               value={formData.collaboration_approach}
-              onChange={(e) => setFormData({...formData, collaboration_approach: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, collaboration_approach: e.target.value })}
               placeholder={t({ en: 'Describe your experience and preferences for opportunities in Saudi Arabia...', ar: 'اشرح تجربتك وتفضيلاتك للفرص في المملكة...' })}
             />
           </div>
@@ -277,7 +289,7 @@ function MatchmakerApplicationCreate() {
           <div>
             <label className="text-sm font-medium mb-2 block">{t({ en: 'Portfolio & Documents', ar: 'الملف والوثائق' })}</label>
             <FileUploader
-              onUploadComplete={(url) => setFormData({...formData, portfolio_url: url})}
+              onUploadComplete={(url) => setFormData({ ...formData, portfolio_url: url })}
               currentFileUrl={formData.portfolio_url}
               acceptedTypes="application/pdf"
               label={t({ en: 'Upload Portfolio (PDF)', ar: 'رفع الملف (PDF)' })}

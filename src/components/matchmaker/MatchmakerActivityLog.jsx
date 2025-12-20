@@ -1,5 +1,5 @@
-import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -10,26 +10,37 @@ export default function MatchmakerActivityLog({ applicationId }) {
 
   const { data: activities = [] } = useQuery({
     queryKey: ['matchmaker-activities', applicationId],
-    queryFn: () => base44.entities.SystemActivity.filter({ 
-      entity_id: applicationId,
-      entity_type: 'MatchmakerApplication'
-    }, '-created_date', 100)
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('matchmaker_activity_logs')
+        .select('*')
+        .eq('application_id', applicationId)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+      return data;
+    }
   });
 
   const { data: evaluations = [] } = useQuery({
     queryKey: ['matchmaker-evaluations', applicationId],
     queryFn: async () => {
-      const sessions = await base44.entities.MatchmakerEvaluationSession.filter({ 
-        application_id: applicationId 
-      }, '-created_date');
-      return sessions;
+      const { data, error } = await supabase
+        .from('expert_evaluations')
+        .select('*')
+        .eq('entity_id', applicationId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data;
     }
   });
 
   const allEvents = [
     ...activities.map(a => ({ ...a, type: 'activity' })),
-    ...evaluations.map(e => ({ 
-      ...e, 
+    ...evaluations.map(e => ({
+      ...e,
       type: 'evaluation',
       activity_description: `Evaluation: ${e.evaluation_outcome || 'In Progress'}`,
       created_by: e.evaluator_email
@@ -49,12 +60,10 @@ export default function MatchmakerActivityLog({ applicationId }) {
           {allEvents.map((event, idx) => {
             const Icon = event.type === 'evaluation' ? CheckCircle2 : Activity;
             return (
-              <div key={idx} className={`flex gap-3 p-3 rounded-lg border ${
-                event.type === 'evaluation' ? 'bg-purple-50 border-purple-200' : 'bg-slate-50'
-              }`}>
-                <div className={`h-8 w-8 rounded-full ${
-                  event.type === 'evaluation' ? 'bg-purple-100' : 'bg-blue-100'
-                } flex items-center justify-center flex-shrink-0`}>
+              <div key={idx} className={`flex gap-3 p-3 rounded-lg border ${event.type === 'evaluation' ? 'bg-purple-50 border-purple-200' : 'bg-slate-50'
+                }`}>
+                <div className={`h-8 w-8 rounded-full ${event.type === 'evaluation' ? 'bg-purple-100' : 'bg-blue-100'
+                  } flex items-center justify-center flex-shrink-0`}>
                   <Icon className={`h-4 w-4 ${event.type === 'evaluation' ? 'text-purple-600' : 'text-blue-600'}`} />
                 </div>
                 <div className="flex-1">
@@ -73,11 +82,10 @@ export default function MatchmakerActivityLog({ applicationId }) {
                     </Badge>
                   )}
                   {event.evaluation_outcome && (
-                    <Badge className={`mt-2 text-xs ${
-                      event.evaluation_outcome === 'approved' ? 'bg-green-600' :
-                      event.evaluation_outcome === 'rejected' ? 'bg-red-600' :
-                      'bg-blue-600'
-                    }`}>
+                    <Badge className={`mt-2 text-xs ${event.evaluation_outcome === 'approved' ? 'bg-green-600' :
+                        event.evaluation_outcome === 'rejected' ? 'bg-red-600' :
+                          'bg-blue-600'
+                      }`}>
                       {event.evaluation_outcome}
                     </Badge>
                   )}

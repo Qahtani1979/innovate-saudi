@@ -2,15 +2,15 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabase';
 import { useLanguage } from '../LanguageContext';
 import { Sparkles, TrendingUp, Target, CheckCircle2, Loader2 } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { 
-  MII_IMPROVEMENT_SYSTEM_PROMPT, 
-  buildMIIImprovementPrompt, 
-  MII_IMPROVEMENT_SCHEMA 
+import {
+  MII_IMPROVEMENT_SYSTEM_PROMPT,
+  buildMIIImprovementPrompt,
+  MII_IMPROVEMENT_SCHEMA
 } from '@/lib/ai/prompts/municipalities/miiImprovement';
 
 export default function MIIImprovementAI({ municipality }) {
@@ -20,15 +20,34 @@ export default function MIIImprovementAI({ municipality }) {
 
   const generateRecommendations = async () => {
     if (!isAvailable) return;
-    
-    try {
-      const [challenges, pilots, allMunicipalities] = await Promise.all([
-        base44.entities.Challenge.filter({ municipality_id: municipality.id }).catch(() => []),
-        base44.entities.Pilot.filter({ municipality_id: municipality.id }).catch(() => []),
-        base44.entities.Municipality.list()
-      ]);
 
-      const nationalAvg = (allMunicipalities.reduce((sum, m) => sum + (m.mii_score || 0), 0) / allMunicipalities.length).toFixed(1);
+    try {
+      // Fetch challenges for this municipality
+      const { data: challenges = [], error: challengesError } = await supabase
+        .from('challenges')
+        .select('*')
+        .eq('municipality_id', municipality.id);
+
+      if (challengesError) console.error('Challenges fetch error:', challengesError);
+
+      // Fetch pilots for this municipality
+      const { data: pilots = [], error: pilotsError } = await supabase
+        .from('pilots')
+        .select('*')
+        .eq('municipality_id', municipality.id);
+
+      if (pilotsError) console.error('Pilots fetch error:', pilotsError);
+
+      // Fetch all municipalities for benchmarking
+      const { data: allMunicipalities = [], error: municipalitiesError } = await supabase
+        .from('municipalities')
+        .select('*');
+
+      if (municipalitiesError) console.error('Municipalities fetch error:', municipalitiesError);
+
+      const nationalAvg = allMunicipalities.length > 0
+        ? (allMunicipalities.reduce((sum, m) => sum + (m.mii_score || 0), 0) / allMunicipalities.length).toFixed(1)
+        : '0';
 
       const result = await invokeAI({
         system_prompt: MII_IMPROVEMENT_SYSTEM_PROMPT,
@@ -87,7 +106,7 @@ export default function MIIImprovementAI({ municipality }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
-        
+
         {!recommendations && (
           <div className="text-center py-8">
             <div className="mb-4">
@@ -98,7 +117,7 @@ export default function MIIImprovementAI({ municipality }) {
                 {t({ en: 'Get AI-Powered Recommendations', ar: 'احصل على توصيات ذكية' })}
               </p>
               <p className="text-sm text-slate-600 max-w-md mx-auto mb-6">
-                {t({ 
+                {t({
                   en: 'AI will analyze your municipality performance and provide personalized improvement actions to boost your MII score.',
                   ar: 'الذكاء سيحلل أداء بلديتك ويقدم إجراءات تحسين مخصصة لتعزيز درجة المؤشر.'
                 })}
@@ -171,8 +190,8 @@ export default function MIIImprovementAI({ municipality }) {
                         <p className="font-medium text-sm flex-1">{action.action}</p>
                         <Badge className={
                           action.impact_score >= 80 ? 'bg-green-100 text-green-700' :
-                          action.impact_score >= 60 ? 'bg-blue-100 text-blue-700' :
-                          'bg-yellow-100 text-yellow-700'
+                            action.impact_score >= 60 ? 'bg-blue-100 text-blue-700' :
+                              'bg-yellow-100 text-yellow-700'
                         }>
                           Impact: {action.impact_score}/100
                         </Badge>
@@ -182,8 +201,8 @@ export default function MIIImprovementAI({ municipality }) {
                         <span>•</span>
                         <span className={
                           action.difficulty === 'easy' ? 'text-green-600' :
-                          action.difficulty === 'medium' ? 'text-yellow-600' :
-                          'text-red-600'
+                            action.difficulty === 'medium' ? 'text-yellow-600' :
+                              'text-red-600'
                         }>
                           {action.difficulty}
                         </span>

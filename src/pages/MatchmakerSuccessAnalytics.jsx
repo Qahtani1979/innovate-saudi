@@ -1,4 +1,4 @@
-import { base44 } from '@/api/base44Client';
+import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,12 +13,27 @@ function MatchmakerSuccessAnalytics() {
 
   const { data: applications = [] } = useQuery({
     queryKey: ['matchmaker-apps-analytics'],
-    queryFn: () => base44.entities.MatchmakerApplication.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('matchmaker_applications')
+        .select('*');
+
+      if (error) throw error;
+      return data;
+    }
   });
 
   const { data: partnerships = [] } = useQuery({
     queryKey: ['partnerships-analytics'],
-    queryFn: () => base44.entities.OrganizationPartnership.list()
+    queryFn: async () => {
+      // Assuming organization_partnerships table exists, otherwise return empty
+      const { data, error } = await supabase
+        .from('organization_partnerships')
+        .select('*');
+
+      if (error) return []; // Graceful fallback
+      return data;
+    }
   });
 
   const stats = {

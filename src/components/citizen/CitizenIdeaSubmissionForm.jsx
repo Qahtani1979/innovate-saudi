@@ -9,6 +9,7 @@ import { useLanguage } from '../LanguageContext';
 import { Lightbulb, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { supabase } from '@/lib/supabase';
 
 export default function CitizenIdeaSubmissionForm({ municipalityId }) {
   const { language, t } = useLanguage();
@@ -24,18 +25,24 @@ export default function CitizenIdeaSubmissionForm({ municipalityId }) {
 
   const submitIdea = useMutation({
     mutationFn: async (data) => {
-      const feedback = await base44.entities.CitizenFeedback.create({
-        challenge_id: municipalityId,
-        feedback_type: 'suggestion',
-        content: `IDEA: ${data.title}\n\n${data.description}\n\nLocation: ${data.location}`,
-        citizen_name: data.is_anonymous ? 'Anonymous' : data.citizen_name,
-        is_anonymous: data.is_anonymous
-      });
+      const { data: feedback, error } = await supabase
+        .from('citizen_feedback')
+        .insert({
+          challenge_id: municipalityId,
+          feedback_type: 'suggestion',
+          content: `IDEA: ${data.title}\n\n${data.description}\n\nLocation: ${data.location}`,
+          citizen_name: data.is_anonymous ? 'Anonymous' : data.citizen_name,
+          is_anonymous: data.is_anonymous
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
       return feedback;
     },
     onSuccess: async (feedback) => {
       queryClient.invalidateQueries(['citizen-ideas']);
-      
+
       // Trigger email notification for citizen idea submission
       await triggerEmail('citizen.idea_submitted', {
         entityType: 'citizen_feedback',
@@ -46,7 +53,7 @@ export default function CitizenIdeaSubmissionForm({ municipalityId }) {
           is_anonymous: ideaData.is_anonymous
         }
       }).catch(err => console.error('Email trigger failed:', err));
-      
+
       setIdeaData({ title: '', description: '', location: '', category: 'infrastructure', is_anonymous: false });
       toast.success(t({ en: 'Idea submitted successfully!', ar: 'قُدمت الفكرة بنجاح!' }));
     }

@@ -14,6 +14,7 @@ import {
   getFeedbackAggregationSchema,
   getFeedbackAggregationSystemPrompt
 } from '@/lib/ai/prompts/citizen';
+import { supabase } from '@/lib/supabase';
 
 export default function PublicFeedbackAggregator({ municipalityId }) {
   const { language, t } = useLanguage();
@@ -23,8 +24,15 @@ export default function PublicFeedbackAggregator({ municipalityId }) {
   const { data: feedback = [] } = useQuery({
     queryKey: ['public-feedback', municipalityId],
     queryFn: async () => {
-      const all = await base44.entities.CitizenFeedback.list();
-      return municipalityId ? all.filter(f => f.challenge_id === municipalityId) : all;
+      let query = supabase.from('citizen_feedback').select('*');
+
+      if (municipalityId) {
+        query = query.eq('challenge_id', municipalityId);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data;
     }
   });
 
@@ -61,7 +69,7 @@ export default function PublicFeedbackAggregator({ municipalityId }) {
       </CardHeader>
       <CardContent className="pt-6">
         <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
-        
+
         <div className="mb-4">
           <p className="text-sm text-slate-700">
             {t({ en: `Analyzing ${feedback.length} public feedback entries`, ar: `تحليل ${feedback.length} مدخلات من التغذية الراجعة` })}
@@ -110,8 +118,8 @@ export default function PublicFeedbackAggregator({ municipalityId }) {
                       </div>
                       <Badge className={
                         theme.priority === 'high' ? 'bg-red-100 text-red-700' :
-                        theme.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-blue-100 text-blue-700'
+                          theme.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-blue-100 text-blue-700'
                       }>{theme.priority}</Badge>
                     </div>
                   ))}

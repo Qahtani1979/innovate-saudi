@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,8 +21,12 @@ export default function StrategicChallengeMapper({ application, onUpdate }) {
   const { data: challenges = [] } = useQuery({
     queryKey: ['strategic-challenges'],
     queryFn: async () => {
-      const all = await base44.entities.Challenge.list();
-      return all.filter(c => c.priority === 'tier_1' || c.priority === 'tier_2');
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('*');
+
+      if (error) throw error;
+      return data.filter(c => c.priority === 'tier_1' || c.priority === 'tier_2');
     }
   });
 
@@ -70,7 +74,7 @@ export default function StrategicChallengeMapper({ application, onUpdate }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
-        
+
         <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
           <p className="text-sm text-amber-900">
             {t({
@@ -83,11 +87,10 @@ export default function StrategicChallengeMapper({ application, onUpdate }) {
         <div className="space-y-2 max-h-96 overflow-y-auto">
           {challenges.map((challenge) => {
             const selected = selectedChallenges.find(c => c.challenge_id === challenge.id);
-            
+
             return (
-              <div key={challenge.id} className={`p-4 border-2 rounded-lg transition-all ${
-                selected ? 'border-amber-400 bg-amber-50' : 'border-slate-200 hover:border-amber-200'
-              }`}>
+              <div key={challenge.id} className={`p-4 border-2 rounded-lg transition-all ${selected ? 'border-amber-400 bg-amber-50' : 'border-slate-200 hover:border-amber-200'
+                }`}>
                 <div className="flex items-start gap-3">
                   <Checkbox
                     checked={!!selected}

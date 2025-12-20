@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,16 @@ function MatchmakerApplicationsPage() {
 
   const { data: applications = [], isLoading } = useQuery({
     queryKey: ['matchmaker-applications'],
-    queryFn: () => base44.entities.MatchmakerApplication.list('-created_date', 100),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('matchmaker_applications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+      return data;
+    },
     initialData: []
   });
 
@@ -175,7 +184,7 @@ function MatchmakerApplicationsPage() {
         <div className="space-y-3">
           {filteredApplications.map((app) => {
             const classInfo = classifications.find(c => c.id === app.classification);
-            
+
             return (
               <Link key={app.id} to={createPageUrl('MatchmakerApplicationDetail') + `?id=${app.id}`}>
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer">

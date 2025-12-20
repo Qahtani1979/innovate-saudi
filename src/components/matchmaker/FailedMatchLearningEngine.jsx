@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,8 +21,13 @@ export default function FailedMatchLearningEngine() {
   const { data: failedMatches = [] } = useQuery({
     queryKey: ['failed-matches'],
     queryFn: async () => {
-      const all = await base44.entities.MatchmakerApplication.list();
-      return all.filter(m => m.status === 'failed' || m.status === 'terminated');
+      const { data, error } = await supabase
+        .from('matchmaker_applications')
+        .select('*')
+        .in('stage', ['rejected', 'on_hold']);
+
+      if (error) throw error;
+      return data;
     }
   });
 

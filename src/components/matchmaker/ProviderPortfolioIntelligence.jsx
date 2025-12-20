@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +23,15 @@ export default function ProviderPortfolioIntelligence({ providerId }) {
 
   const { data: matches = [] } = useQuery({
     queryKey: ['provider-matches', providerId],
-    queryFn: () => base44.entities.MatchmakerApplication.filter({ provider_id: providerId }),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('matchmaker_applications')
+        .select('*')
+        .eq('organization_id', providerId);
+
+      if (error) throw error;
+      return data;
+    },
     initialData: []
   });
 

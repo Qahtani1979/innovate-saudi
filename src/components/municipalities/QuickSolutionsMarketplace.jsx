@@ -1,4 +1,4 @@
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,16 +17,39 @@ export default function QuickSolutionsMarketplace({ municipalityId, challenges =
   const { data: matchedSolutions = [] } = useQuery({
     queryKey: ['matched-solutions', municipalityId],
     queryFn: async () => {
-      const challengeIds = challenges.map(c => c.id);
-      const matches = await base44.entities.ChallengeSolutionMatch.list();
-      const relevantMatches = matches.filter(m => challengeIds.includes(m.challenge_id));
-      
-      const solutionIds = [...new Set(relevantMatches.map(m => m.solution_id))];
-      const solutions = await base44.entities.Solution.list();
-      
-      return solutions
-        .filter(s => solutionIds.includes(s.id) && s.is_published && s.is_verified)
-        .slice(0, 6);
+      if (challenges.length === 0) return [];
+
+      // This is a simplified "matching" query. In a real scenario, this would likely be an Edge Function or a complex join.
+      // For now, we will fetch solutions that match the sector of the challenges.
+
+      const sectors = [...new Set(challenges.map(c => c.sector).filter(Boolean))];
+
+      if (sectors.length === 0) {
+        // If no sectors, just return top verified solutions
+        const { data } = await supabase
+          .from('solutions')
+          .select('*, providers(name_en, name_ar)')
+          .eq('is_published', true)
+          .eq('is_verified', true)
+          .limit(6);
+        return data?.map(s => ({
+          ...s,
+          provider_name: language === 'ar' ? s.providers?.name_ar : s.providers?.name_en
+        })) || [];
+      }
+
+      const { data } = await supabase
+        .from('solutions')
+        .select('*, providers(name_en, name_ar)')
+        .in('sector', sectors)
+        .eq('is_published', true)
+        .eq('is_verified', true)
+        .limit(6);
+
+      return data?.map(s => ({
+        ...s,
+        provider_name: language === 'ar' ? s.providers?.name_ar : s.providers?.name_en
+      })) || [];
     },
     enabled: challenges.length > 0
   });

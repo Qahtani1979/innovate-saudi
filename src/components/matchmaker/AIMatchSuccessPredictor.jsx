@@ -7,23 +7,24 @@ import { Target, Sparkles, Loader2, Info } from 'lucide-react';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
 import useAIWithFallback, { AI_STATUS } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator, { AIOptionalBadge } from '@/components/ai/AIStatusIndicator';
-import { getMatchSuccessPredictorPrompt, matchSuccessPredictorSchema } from '@/lib/ai/prompts/matchmaker';
+import { MATCH_SUCCESS_PREDICTOR_PROMPT_TEMPLATE } from '@/lib/ai/prompts/matchmaker';
 import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function AIMatchSuccessPredictor({ match, provider, challenge }) {
   const { t } = useLanguage();
   const [prediction, setPrediction] = useState(null);
-  
+
   const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
     showToasts: true,
     fallbackData: null
   });
 
   const predictSuccess = async () => {
+    const template = MATCH_SUCCESS_PREDICTOR_PROMPT_TEMPLATE({ provider, challenge });
     const { success, data } = await invokeAI({
-      prompt: getMatchSuccessPredictorPrompt({ provider, challenge }),
-      system_prompt: getSystemPrompt('COMPACT', true),
-      response_json_schema: matchSuccessPredictorSchema
+      prompt: template.prompt,
+      system_prompt: template.system,
+      response_json_schema: template.schema
     });
 
     if (success && data) {
@@ -52,7 +53,7 @@ export default function AIMatchSuccessPredictor({ match, provider, challenge }) 
       </CardHeader>
       <CardContent className="pt-6 space-y-4">
         <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails={true} />
-        
+
         <Button onClick={predictSuccess} disabled={isLoading || !isAvailable} size="sm" className="bg-teal-600 w-full">
           {isLoading ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -85,16 +86,15 @@ export default function AIMatchSuccessPredictor({ match, provider, challenge }) 
         {prediction && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className={`p-6 rounded-lg border-2 text-center ${
-                prediction.success_probability >= 75 ? 'bg-green-50 border-green-300' :
-                prediction.success_probability >= 50 ? 'bg-yellow-50 border-yellow-300' :
-                'bg-red-50 border-red-300'
-              }`}>
+              <div className={`p-6 rounded-lg border-2 text-center ${prediction.success_probability >= 75 ? 'bg-green-50 border-green-300' :
+                  prediction.success_probability >= 50 ? 'bg-yellow-50 border-yellow-300' :
+                    'bg-red-50 border-red-300'
+                }`}>
                 <p className="text-sm text-slate-600 mb-2">{t({ en: 'Success Probability', ar: 'احتمالية النجاح' })}</p>
                 <p className="text-5xl font-bold text-slate-900">{prediction.success_probability}%</p>
                 <Badge className="mt-2">
                   {prediction.success_probability >= 75 ? 'High Confidence' :
-                   prediction.success_probability >= 50 ? 'Moderate' : 'Low Confidence'}
+                    prediction.success_probability >= 50 ? 'Moderate' : 'Low Confidence'}
                 </Badge>
               </div>
 
@@ -121,11 +121,10 @@ export default function AIMatchSuccessPredictor({ match, provider, challenge }) 
               </div>
             )}
 
-            <div className={`p-4 rounded-lg border-2 ${
-              prediction.recommendation?.includes('proceed') ? 'bg-green-50 border-green-300' :
-              prediction.recommendation?.includes('alternative') ? 'bg-yellow-50 border-yellow-300' :
-              'bg-blue-50 border-blue-300'
-            }`}>
+            <div className={`p-4 rounded-lg border-2 ${prediction.recommendation?.includes('proceed') ? 'bg-green-50 border-green-300' :
+                prediction.recommendation?.includes('alternative') ? 'bg-yellow-50 border-yellow-300' :
+                  'bg-blue-50 border-blue-300'
+              }`}>
               <p className="font-semibold text-slate-900 mb-2">
                 {t({ en: 'AI Recommendation:', ar: 'توصية الذكاء الاصطناعي:' })}
               </p>

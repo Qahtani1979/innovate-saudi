@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from '../LanguageContext';
 import { Rocket, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
@@ -35,7 +35,7 @@ export default function PilotConversionWizard({ application, challenge, onClose 
   const autoPopulateFromMatch = async () => {
     const title_en = `Pilot: ${challenge?.title_en || application.organization_name_en}`;
     const title_ar = challenge?.title_ar || application.organization_name_ar || '';
-    
+
     setPilotData({
       ...pilotData,
       title_en,
@@ -43,7 +43,7 @@ export default function PilotConversionWizard({ application, challenge, onClose 
       objective_en: `Test ${application.organization_name_en} solution for ${challenge?.title_en}`,
       objective_ar: title_ar ? `اختبار حل ${application.organization_name_ar} لـ ${challenge.title_ar}` : ''
     });
-    
+
     toast.success(t({ en: 'Auto-populated from match', ar: 'تم الملء التلقائي من المطابقة' }));
   };
 
@@ -78,27 +78,60 @@ Generate professional MOU/Partnership Agreement in both Arabic and English with:
 
     if (success && data) {
       // In real implementation, format as PDF and upload
-      setPilotData({...pilotData, partnership_agreement_url: 'generated_agreement_url'});
+      setPilotData({ ...pilotData, partnership_agreement_url: 'generated_agreement_url' });
       toast.success(t({ en: 'Agreement generated', ar: 'تم إنشاء الاتفاقية' }));
     }
   };
 
   const createPilot = async () => {
     try {
-      const pilot = await base44.entities.Pilot.create({
-        ...pilotData,
-        challenge_id: challenge?.id,
-        solution_id: application.organization_id,
-        stage: 'design',
-        sector: challenge?.sector,
-        municipality_id: challenge?.municipality_id
-      });
+      // 1. Create Partnership Record
+      const { data: partnership, error: partnershipError } = await supabase
+        .from('organization_partnerships')
+        .insert({
+          provider_id: application.organization_id,
+          partner_id: challenge?.organization_id, // Assuming challenge has org_id of municipality
+          match_id: application.matched_challenges?.[0], // Best effort linking
+          status: 'active',
+          start_date: new Date().toISOString(),
+          agreement_url: pilotData.partnership_agreement_url,
+          total_value: pilotData.budget
+        })
+        .select()
+        .single();
 
-      await base44.entities.MatchmakerApplication.update(application.id, {
-        conversion_status: 'pilot_created',
-        converted_pilot_id: pilot.id,
-        stage: 'pilot_conversion'
-      });
+      if (partnershipError) {
+        console.error('Partnership creation failed:', partnershipError);
+        // We continue to create pilot even if partnership tracking fails, but warn
+        toast.warning(t({ en: 'Partnership tracking skipped', ar: 'تم تخطي تتبع الشراكة' }));
+      }
+
+      // 2. Create Pilot
+      const { data: pilot, error: pilotError } = await supabase
+        .from('pilots')
+        .insert({
+          ...pilotData,
+          challenge_id: challenge?.id,
+          solution_id: application.organization_id,
+          stage: 'design',
+          sector: challenge?.sector,
+          municipality_id: challenge?.municipality_id
+        })
+        .select()
+        .single();
+
+      if (pilotError) throw pilotError;
+
+      const { error: appError } = await supabase
+        .from('matchmaker_applications')
+        .update({
+          conversion_status: 'pilot_created',
+          converted_pilot_id: pilot.id,
+          stage: 'pilot_conversion'
+        })
+        .eq('id', application.id);
+
+      if (appError) throw appError;
 
       // Send pilot created email notification using hook
       await triggerEmail('pilot.created', {
@@ -112,9 +145,10 @@ Generate professional MOU/Partnership Agreement in both Arabic and English with:
         }
       }).catch(err => console.error('Email trigger failed:', err));
 
-      toast.success(t({ en: 'Pilot created successfully!', ar: 'تم إنشاء التجربة بنجاح!' }));
+      toast.success(t({ en: 'Pilot & Partnership created successfully!', ar: 'تم إنشاء التجربة والشراكة بنجاح!' }));
       navigate(createPageUrl(`PilotDetail?id=${pilot.id}`));
     } catch (error) {
+      console.error(error);
       toast.error(t({ en: 'Failed to create pilot', ar: 'فشل إنشاء التجربة' }));
     }
   };
@@ -129,7 +163,7 @@ Generate professional MOU/Partnership Agreement in both Arabic and English with:
       </CardHeader>
       <CardContent className="space-y-4">
         <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
-        
+
         <div className="flex items-center gap-2 mb-4">
           {[1, 2, 3].map(s => (
             <div key={s} className={`flex-1 h-2 rounded-full ${step >= s ? 'bg-green-600' : 'bg-slate-200'}`} />
@@ -139,7 +173,7 @@ Generate professional MOU/Partnership Agreement in both Arabic and English with:
         {step === 1 && (
           <div className="space-y-4">
             <p className="font-medium">{t({ en: 'Step 1: Auto-Populate Pilot Details', ar: 'الخطوة 1: الملء التلقائي لتفاصيل التجربة' })}</p>
-            
+
             <Button onClick={autoPopulateFromMatch} variant="outline" className="w-full">
               <Sparkles className="h-4 w-4 mr-2" />
               {t({ en: 'Auto-Fill from Match', ar: 'ملء تلقائي من المطابقة' })}
@@ -150,14 +184,14 @@ Generate professional MOU/Partnership Agreement in both Arabic and English with:
                 <label className="text-xs text-slate-600">{t({ en: 'Pilot Title (EN)', ar: 'عنوان التجربة (EN)' })}</label>
                 <Input
                   value={pilotData.title_en}
-                  onChange={(e) => setPilotData({...pilotData, title_en: e.target.value})}
+                  onChange={(e) => setPilotData({ ...pilotData, title_en: e.target.value })}
                 />
               </div>
               <div>
                 <label className="text-xs text-slate-600">{t({ en: 'Pilot Title (AR)', ar: 'عنوان التجربة (AR)' })}</label>
                 <Input
                   value={pilotData.title_ar}
-                  onChange={(e) => setPilotData({...pilotData, title_ar: e.target.value})}
+                  onChange={(e) => setPilotData({ ...pilotData, title_ar: e.target.value })}
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -166,7 +200,7 @@ Generate professional MOU/Partnership Agreement in both Arabic and English with:
                   <Input
                     type="number"
                     value={pilotData.duration_weeks}
-                    onChange={(e) => setPilotData({...pilotData, duration_weeks: parseInt(e.target.value)})}
+                    onChange={(e) => setPilotData({ ...pilotData, duration_weeks: parseInt(e.target.value) })}
                   />
                 </div>
                 <div>
@@ -174,7 +208,7 @@ Generate professional MOU/Partnership Agreement in both Arabic and English with:
                   <Input
                     type="number"
                     value={pilotData.budget}
-                    onChange={(e) => setPilotData({...pilotData, budget: parseInt(e.target.value)})}
+                    onChange={(e) => setPilotData({ ...pilotData, budget: parseInt(e.target.value) })}
                   />
                 </div>
               </div>
@@ -189,7 +223,7 @@ Generate professional MOU/Partnership Agreement in both Arabic and English with:
         {step === 2 && (
           <div className="space-y-4">
             <p className="font-medium">{t({ en: 'Step 2: Partnership Agreement', ar: 'الخطوة 2: اتفاقية الشراكة' })}</p>
-            
+
             <Button
               onClick={generatePartnershipAgreement}
               disabled={isLoading || !isAvailable}
@@ -224,7 +258,7 @@ Generate professional MOU/Partnership Agreement in both Arabic and English with:
         {step === 3 && (
           <div className="space-y-4">
             <p className="font-medium">{t({ en: 'Step 3: Review & Create', ar: 'الخطوة 3: مراجعة وإنشاء' })}</p>
-            
+
             <div className="p-4 bg-white border rounded-lg space-y-2 text-sm">
               <div><span className="text-slate-600">{t({ en: 'Pilot:', ar: 'التجربة:' })}</span> <span className="font-medium">{pilotData.title_en}</span></div>
               <div><span className="text-slate-600">{t({ en: 'Challenge:', ar: 'التحدي:' })}</span> <span className="font-medium">{challenge?.title_en}</span></div>

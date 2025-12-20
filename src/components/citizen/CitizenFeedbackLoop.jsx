@@ -1,9 +1,9 @@
-import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { MessageSquare, Award, CheckCircle2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 export default function CitizenFeedbackLoop({ citizenEmail }) {
   const { language, t } = useLanguage();
@@ -11,8 +11,12 @@ export default function CitizenFeedbackLoop({ citizenEmail }) {
   const { data: ideas = [] } = useQuery({
     queryKey: ['citizen-ideas', citizenEmail],
     queryFn: async () => {
-      const all = await base44.entities.CitizenIdea.list();
-      return all.filter(i => i.citizen_email === citizenEmail);
+      const { data, error } = await supabase
+        .from('citizen_ideas')
+        .select('*')
+        .eq('citizen_email', citizenEmail);
+      if (error) throw error;
+      return data;
     },
     initialData: []
   });
@@ -21,8 +25,16 @@ export default function CitizenFeedbackLoop({ citizenEmail }) {
     queryKey: ['challenges-from-ideas', citizenEmail],
     queryFn: async () => {
       const ideaIds = ideas.map(i => i.id);
-      const all = await base44.entities.Challenge.list();
-      return all.filter(c => 
+      if (ideaIds.length === 0) return [];
+
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('*');
+
+      if (error) throw error;
+
+      // Client-side filtering as per original logic (filtering by json/array field might be complex in SQL directly)
+      return data.filter(c =>
         c.citizen_idea_ids?.some(id => ideaIds.includes(id))
       );
     },
@@ -63,19 +75,19 @@ export default function CitizenFeedbackLoop({ citizenEmail }) {
         <div className="space-y-2">
           {ideas.slice(0, 5).map((idea) => {
             const challenge = challenges.find(c => c.id === idea.converted_challenge_id);
-            
+
             return (
               <div key={idea.id} className="p-3 bg-white rounded border">
                 <div className="flex items-start justify-between mb-2">
                   <h4 className="text-sm font-semibold text-slate-900">{idea.title}</h4>
                   <Badge className={
                     idea.status === 'converted_to_challenge' ? 'bg-green-600' :
-                    idea.status === 'under_review' ? 'bg-yellow-600' : 'bg-blue-600'
+                      idea.status === 'under_review' ? 'bg-yellow-600' : 'bg-blue-600'
                   }>
                     {idea.status}
                   </Badge>
                 </div>
-                
+
                 {challenge && (
                   <div className="mt-2 p-2 bg-green-50 rounded text-xs">
                     <CheckCircle2 className="h-3 w-3 inline text-green-600 mr-1" />
@@ -107,9 +119,9 @@ export default function CitizenFeedbackLoop({ citizenEmail }) {
                   {t({ en: '🎉 Impact Recognition', ar: '🎉 تقدير التأثير' })}
                 </p>
                 <p className="text-xs text-amber-700 mt-1">
-                  {t({ 
-                    en: `Your ideas led to real change! ${impactfulIdeas.length} idea(s) resulted in municipal pilots.`, 
-                    ar: `أفكارك أدت لتغيير حقيقي! ${impactfulIdeas.length} فكرة أدت لتجارب بلدية.` 
+                  {t({
+                    en: `Your ideas led to real change! ${impactfulIdeas.length} idea(s) resulted in municipal pilots.`,
+                    ar: `أفكارك أدت لتغيير حقيقي! ${impactfulIdeas.length} فكرة أدت لتجارب بلدية.`
                   })}
                 </p>
               </div>

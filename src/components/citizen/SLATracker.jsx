@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Clock, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 const SLA_TARGETS = {
   initial_review: 3, // days
@@ -16,7 +17,11 @@ export default function SLATracker() {
 
   const { data: ideas = [] } = useQuery({
     queryKey: ['ideas-sla'],
-    queryFn: () => base44.entities.CitizenIdea.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('citizen_ideas').select('*');
+      if (error) throw error;
+      return data;
+    }
   });
 
   const calculateDaysOpen = (idea) => {
