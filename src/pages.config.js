@@ -493,6 +493,7 @@ import StrategyFeedbackDashboard from './pages/StrategyFeedbackDashboard';
 import FinalRDAssessment from './pages/FinalRDAssessment';
 import FinalUsersAccessAssessment from './pages/FinalUsersAccessAssessment';
 import FinalCitizenSystemAssessment from './pages/FinalCitizenSystemAssessment';
+import FinalExpertsSystemAssessment from './pages/FinalExpertsSystemAssessment';
 import StrategyHub from './pages/StrategyHub';
 // Strategy System Pages
 import StrategyReviewPage from './pages/StrategyReviewPage';
@@ -1060,6 +1061,7 @@ export const PAGES = {
     "FinalRDAssessment": FinalRDAssessment,
     "FinalUsersAccessAssessment": FinalUsersAccessAssessment,
     "FinalCitizenSystemAssessment": FinalCitizenSystemAssessment,
+    "FinalExpertsSystemAssessment": FinalExpertsSystemAssessment,
 }
 
 export const pagesConfig = {
