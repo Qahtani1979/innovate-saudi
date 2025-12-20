@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,13 @@ export default function StrategicAlignmentPartnership({ partnership }) {
 
   const { data: strategicPlans = [] } = useQuery({
     queryKey: ['strategic-plans-alignment'],
-    queryFn: () => base44.entities.StrategicPlan.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const linkedPlans = strategicPlans.filter(p => 

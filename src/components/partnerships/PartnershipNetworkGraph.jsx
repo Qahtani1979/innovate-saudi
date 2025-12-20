@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,13 +11,25 @@ export default function PartnershipNetworkGraph() {
 
   const { data: partnerships = [] } = useQuery({
     queryKey: ['partnerships'],
-    queryFn: () => base44.entities.Partnership.list(),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('partnerships')
+        .select('*');
+      if (error) throw error;
+      return data || [];
+    },
     initialData: []
   });
 
   const { data: organizations = [] } = useQuery({
     queryKey: ['organizations'],
-    queryFn: () => base44.entities.Organization.list(),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('*');
+      if (error) throw error;
+      return data || [];
+    },
     initialData: []
   });
 

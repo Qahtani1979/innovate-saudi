@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -19,9 +19,12 @@ export default function ContextualKnowledgeWidget({ context }) {
 
   const findRelevantDocs = async () => {
     try {
-      const allDocs = await base44.entities.KnowledgeDocument.list();
+      const { data: allDocs, error } = await supabase
+        .from('knowledge_documents')
+        .select('*');
+      if (error) throw error;
       
-      const relevant = allDocs
+      const relevant = (allDocs || [])
         .filter(doc => {
           const sectorMatch = doc.sector === context.sector;
           const typeMatch = doc.type?.includes(context.entityType);

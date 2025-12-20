@@ -45,27 +45,6 @@ export default function RDProposalEscalationAutomation({ proposal, rdCall }) {
             },
             triggered_by: 'system'
           }
-        });
-      }
-    },
-
-      // Send email notification via email-trigger-hub
-      if (rdCall?.organizer_email) {
-        const { supabase } = await import('@/integrations/supabase/client');
-        await supabase.functions.invoke('email-trigger-hub', {
-          body: {
-            trigger: 'challenge.escalated',
-            recipient_email: rdCall.organizer_email,
-            entity_type: 'rd_proposal',
-            entity_id: proposal.id,
-            variables: {
-              proposalTitle: proposal.title_en,
-              proposalCode: proposal.proposal_code,
-              escalationLevel: escalationData.escalation_level
-            },
-            triggered_by: 'system'
-          }
-        });
       }
     },
     onSuccess: () => {

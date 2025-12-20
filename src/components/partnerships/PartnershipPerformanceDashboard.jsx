@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,8 +13,13 @@ export default function PartnershipPerformanceDashboard({ partnershipId }) {
   const { data: partnership } = useQuery({
     queryKey: ['partnership', partnershipId],
     queryFn: async () => {
-      const all = await base44.entities.Partnership.list();
-      return all.find(p => p.id === partnershipId);
+      const { data, error } = await supabase
+        .from('partnerships')
+        .select('*')
+        .eq('id', partnershipId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     }
   });
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,9 +18,12 @@ export default function PolicyLibraryWidget() {
   const { data: policies = [], isLoading } = useQuery({
     queryKey: ['knowledge-policies'],
     queryFn: async () => {
-      const all = await base44.entities.PolicyRecommendation.list();
+      const { data, error } = await supabase
+        .from('policy_recommendations')
+        .select('*');
+      if (error) throw error;
       // Only show published/active policies in knowledge hub
-      return all.filter(p => 
+      return (data || []).filter(p => 
         ['published', 'active', 'implemented'].includes(p.workflow_stage || p.status)
       );
     }
