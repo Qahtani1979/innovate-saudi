@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,24 +13,36 @@ function BudgetVarianceReport() {
 
   const { data: budgets = [], isLoading } = useQuery({
     queryKey: ['budgets-variance'],
-    queryFn: () => base44.entities.Budget.filter({ status: 'active' })
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('budgets')
+        .select('*')
+        .eq('status', 'active')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
-  const budgetsWithVariance = budgets.map(b => ({
-    ...b,
-    variance: b.variance_percentage || (b.total_allocated > 0 ? ((b.total_spent - b.total_allocated) / b.total_allocated * 100) : 0),
-    utilization: b.utilization_rate || (b.total_allocated > 0 ? (b.total_spent / b.total_allocated * 100) : 0)
-  }));
+  const budgetsWithVariance = budgets.map(b => {
+    const allocated = b.total_amount || b.allocated_amount || 0;
+    const spent = b.spent_amount || 0;
+    return {
+      ...b,
+      variance: allocated > 0 ? ((spent - allocated) / allocated * 100) : 0,
+      utilization: allocated > 0 ? (spent / allocated * 100) : 0
+    };
+  });
 
   const highVariance = budgetsWithVariance.filter(b => Math.abs(b.variance) > 10);
   const overBudget = budgetsWithVariance.filter(b => b.variance > 0);
   const underUtilized = budgetsWithVariance.filter(b => b.utilization < 50);
 
   const chartData = budgetsWithVariance.slice(0, 10).map(b => ({
-    name: b.budget_code,
+    name: b.budget_code || b.name_en,
     variance: b.variance,
-    allocated: b.total_allocated,
-    spent: b.total_spent
+    allocated: b.total_amount || b.allocated_amount || 0,
+    spent: b.spent_amount || 0
   }));
 
   if (isLoading) {
@@ -114,10 +126,10 @@ function BudgetVarianceReport() {
         <CardContent>
           <div className="space-y-3">
             {highVariance.map(budget => (
-              <div key={budget.id} className="p-4 border rounded-lg">
+                <div key={budget.id} className="p-4 border rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <div>
-                    <p className="font-semibold text-slate-900">{budget.budget_code}</p>
+                    <p className="font-semibold text-slate-900">{budget.budget_code || budget.name_en}</p>
                     <p className="text-xs text-slate-600">{budget.entity_type}</p>
                   </div>
                   <Badge className={budget.variance > 0 ? 'bg-red-600' : 'bg-green-600'}>
@@ -127,16 +139,16 @@ function BudgetVarianceReport() {
                 <div className="grid grid-cols-3 gap-2 text-sm">
                   <div>
                     <p className="text-xs text-slate-600">{t({ en: 'Allocated', ar: 'مخصص' })}</p>
-                    <p className="font-medium">{budget.total_allocated?.toLocaleString()}</p>
+                    <p className="font-medium">{(budget.total_amount || budget.allocated_amount || 0).toLocaleString()}</p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-600">{t({ en: 'Spent', ar: 'مصروف' })}</p>
-                    <p className="font-medium">{budget.total_spent?.toLocaleString()}</p>
+                    <p className="font-medium">{(budget.spent_amount || 0).toLocaleString()}</p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-600">{t({ en: 'Difference', ar: 'الفرق' })}</p>
                     <p className={`font-medium ${budget.variance > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                      {(budget.total_spent - budget.total_allocated)?.toLocaleString()}
+                      {((budget.spent_amount || 0) - (budget.total_amount || budget.allocated_amount || 0)).toLocaleString()}
                     </p>
                   </div>
                 </div>
