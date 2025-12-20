@@ -9,7 +9,7 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import rbacService from '@/services/rbac/rbacService.ts';
+import rbacService from '@/services/rbac/rbacService';
 import { toast } from 'sonner';
 
 /**

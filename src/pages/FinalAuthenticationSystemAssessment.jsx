@@ -45,7 +45,7 @@ export default function FinalAuthenticationSystemAssessment() {
         { name: 'TwoFactorAuth', status: 'fixed', details: 'Integrated with Supabase MFA API (TOTP enrollment, challenge, verify)' },
         { name: 'ChangePasswordDialog', status: 'verified', details: 'supabase.auth.updateUser with password strength validation' },
         { name: 'SessionsDialog', status: 'fixed', details: 'Queries user_sessions table, shows active sessions, terminate session support' },
-        { name: 'LoginHistoryDialog', status: 'verified', details: 'Queries access_logs for login/logout/failed events with pagination' },
+        { name: 'LoginHistoryDialog', status: 'fixed', details: 'Fixed: queries access_logs for login_success/logout/login_failed events with pagination' },
         { name: 'DeleteAccountDialog', status: 'verified', details: 'Soft delete with confirmation, clears user_roles, signs out' }
       ]
     },
@@ -56,8 +56,8 @@ export default function FinalAuthenticationSystemAssessment() {
         { name: 'rbacService.ts', status: 'verified', details: 'Unified service calling rbac-manager edge function for all RBAC ops' },
         { name: 'rbac-manager Edge Function', status: 'verified', details: '756 lines handling role.assign, role.revoke, check_auto_approve, permission.validate, etc.' },
         { name: 'useUserRoles Hook', status: 'verified', details: 'Queries user_roles with hasRole, hasAnyRole, isAdmin helpers' },
-        { name: 'useAutoRoleAssignment Hook', status: 'fixed', details: 'Fixed import path to rbacService.ts' },
-        { name: 'useRBACManager Hook', status: 'fixed', details: 'Fixed import path to rbacService.ts' },
+        { name: 'useAutoRoleAssignment Hook', status: 'fixed', details: 'Fixed import path - removed .ts extension from rbacService import' },
+        { name: 'useRBACManager Hook', status: 'fixed', details: 'Fixed import path - removed .ts extension from rbacService import' },
         { name: 'Role Assignment', status: 'verified', details: 'Writes to user_roles table with role_id lookup' },
         { name: 'Auto-Approval Rules', status: 'verified', details: 'Domain-based, organization-based, always/never rules' },
         { name: 'Role Request Workflow', status: 'verified', details: 'Pending → Approved/Rejected with notifications' }
@@ -102,6 +102,8 @@ export default function FinalAuthenticationSystemAssessment() {
         { name: 'Failed Login Detection', status: 'verified', details: 'log-auth-event tracks failed attempts, alerts on 5+ in 1 hour' },
         { name: 'Session Token Management', status: 'verified', details: 'Supabase handles JWT tokens, AuthContext stores session' },
         { name: 'RLS on user_roles', status: 'verified', details: 'Users can view own roles, admins can manage all' },
+        { name: 'RLS on user_sessions', status: 'fixed', details: 'Added policies: Users can view/create/update own sessions' },
+        { name: 'RLS on access_logs', status: 'fixed', details: 'Added policies: Users can view own logs, service role can insert' },
         { name: 'Global Signout', status: 'verified', details: 'Sign out from all devices via supabase.auth.signOut({ scope: global })' }
       ]
     }
@@ -193,11 +195,19 @@ export default function FinalAuthenticationSystemAssessment() {
           </li>
           <li className="flex items-start gap-2">
             <CheckCircle className="h-4 w-4 text-green-600 mt-0.5" />
-            <span><strong>useAutoRoleAssignment.js:</strong> Fixed import path to rbacService.ts</span>
+            <span><strong>useAutoRoleAssignment.js:</strong> Fixed import path - removed .ts extension from rbacService import</span>
           </li>
           <li className="flex items-start gap-2">
             <CheckCircle className="h-4 w-4 text-green-600 mt-0.5" />
-            <span><strong>useRBACManager.js:</strong> Fixed import path to rbacService.ts</span>
+            <span><strong>useRBACManager.js:</strong> Fixed import path - removed .ts extension from rbacService import</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <CheckCircle className="h-4 w-4 text-green-600 mt-0.5" />
+            <span><strong>LoginHistoryDialog.jsx:</strong> Fixed action filter to match AuthContext event names (login_success instead of login)</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <CheckCircle className="h-4 w-4 text-green-600 mt-0.5" />
+            <span><strong>Database RLS:</strong> Added missing policies for user_sessions and access_logs tables</span>
           </li>
         </ul>
       </div>
