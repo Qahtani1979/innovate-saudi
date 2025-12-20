@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,13 +12,21 @@ export default function MarketplaceAnalytics() {
 
   const { data: solutions = [] } = useQuery({
     queryKey: ['solutions'],
-    queryFn: () => base44.entities.Solution.list(),
+    queryFn: async () => {
+      const { data, error } = await supabase.from('solutions').select('*');
+      if (error) throw error;
+      return data || [];
+    },
     initialData: []
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list(),
+    queryFn: async () => {
+      const { data, error } = await supabase.from('pilots').select('*');
+      if (error) throw error;
+      return data || [];
+    },
     initialData: []
   });
 

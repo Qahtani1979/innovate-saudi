@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -46,7 +45,12 @@ export default function ExpressInterestButton({ solution, challenge = null, vari
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      const interest = await base44.entities.SolutionInterest.create(data);
+      const { data: interest, error } = await supabase
+        .from('solution_interests')
+        .insert(data)
+        .select()
+        .single();
+      if (error) throw error;
       
       // Notify provider
       await supabase.functions.invoke('email-trigger-hub', {
@@ -70,7 +74,7 @@ export default function ExpressInterestButton({ solution, challenge = null, vari
       });
 
       // Log activity
-      await base44.entities.SystemActivity.create({
+      await supabase.from('system_activities').insert({
         entity_type: 'Solution',
         entity_id: solution.id,
         activity_type: 'interest_expressed',

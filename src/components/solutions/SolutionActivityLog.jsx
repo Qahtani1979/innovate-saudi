@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -16,11 +16,15 @@ export default function SolutionActivityLog({ solution }) {
   const { data: activities = [] } = useQuery({
     queryKey: ['solution-activities', solution.id],
     queryFn: async () => {
-      const systemActivities = await base44.entities.SystemActivity.filter({
-        entity_type: 'Solution',
-        entity_id: solution.id
-      }, '-created_date', 100);
-      return systemActivities;
+      const { data, error } = await supabase
+        .from('system_activities')
+        .select('*')
+        .eq('entity_type', 'Solution')
+        .eq('entity_id', solution.id)
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!solution.id
   });
@@ -28,10 +32,15 @@ export default function SolutionActivityLog({ solution }) {
   const { data: comments = [] } = useQuery({
     queryKey: ['solution-comments', solution.id],
     queryFn: async () => {
-      const solutionComments = await base44.entities.SolutionComment?.filter({
-        solution_id: solution.id
-      }, '-created_date', 50) || [];
-      return solutionComments;
+      const { data, error } = await supabase
+        .from('comments')
+        .select('*')
+        .eq('entity_type', 'solution')
+        .eq('entity_id', solution.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!solution.id
   });
@@ -39,11 +48,15 @@ export default function SolutionActivityLog({ solution }) {
   const { data: approvals = [] } = useQuery({
     queryKey: ['solution-approvals', solution.id],
     queryFn: async () => {
-      const approvalRequests = await base44.entities.ApprovalRequest?.filter({
-        entity_type: 'Solution',
-        entity_id: solution.id
-      }, '-created_date', 50) || [];
-      return approvalRequests;
+      const { data, error } = await supabase
+        .from('approval_requests')
+        .select('*')
+        .eq('entity_type', 'Solution')
+        .eq('entity_id', solution.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!solution.id
   });
@@ -51,10 +64,14 @@ export default function SolutionActivityLog({ solution }) {
   const { data: interests = [] } = useQuery({
     queryKey: ['solution-interests', solution.id],
     queryFn: async () => {
-      const solutionInterests = await base44.entities.SolutionInterest?.filter({
-        solution_id: solution.id
-      }, '-created_date', 50) || [];
-      return solutionInterests;
+      const { data, error } = await supabase
+        .from('solution_interests')
+        .select('*')
+        .eq('solution_id', solution.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!solution.id
   });
@@ -62,10 +79,14 @@ export default function SolutionActivityLog({ solution }) {
   const { data: reviews = [] } = useQuery({
     queryKey: ['solution-reviews', solution.id],
     queryFn: async () => {
-      const solutionReviews = await base44.entities.SolutionReview?.filter({
-        solution_id: solution.id
-      }, '-created_date', 50) || [];
-      return solutionReviews;
+      const { data, error } = await supabase
+        .from('solution_reviews')
+        .select('*')
+        .eq('solution_id', solution.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!solution.id
   });
@@ -73,10 +94,14 @@ export default function SolutionActivityLog({ solution }) {
   const { data: demoRequests = [] } = useQuery({
     queryKey: ['demo-requests', solution.id],
     queryFn: async () => {
-      const requests = await base44.entities.DemoRequest?.filter({
-        solution_id: solution.id
-      }, '-created_date', 50) || [];
-      return requests;
+      const { data, error } = await supabase
+        .from('demo_requests')
+        .select('*')
+        .eq('solution_id', solution.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!solution.id
   });

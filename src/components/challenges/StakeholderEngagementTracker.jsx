@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,8 +14,12 @@ export default function StakeholderEngagementTracker({ challenge }) {
   const { data: activities = [] } = useQuery({
     queryKey: ['challenge-activities', challenge.id],
     queryFn: async () => {
-      const all = await base44.entities.ChallengeActivity.list();
-      return all.filter(a => a.challenge_id === challenge.id);
+      const { data, error } = await supabase
+        .from('challenge_activities')
+        .select('*')
+        .eq('challenge_id', challenge.id);
+      if (error) throw error;
+      return data || [];
     },
     initialData: []
   });

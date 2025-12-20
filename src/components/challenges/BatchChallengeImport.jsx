@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,39 +23,18 @@ export default function BatchChallengeImport() {
     setProcessing(true);
 
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: selectedFile });
+      // Upload file to storage
+      const fileName = `imports/${Date.now()}-${selectedFile.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from('uploads')
+        .upload(fileName, selectedFile);
+      if (uploadError) throw uploadError;
 
-      const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
-        file_url,
-        json_schema: {
-          type: "object",
-          properties: {
-            challenges: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  title_en: { type: "string" },
-                  title_ar: { type: "string" },
-                  description_en: { type: "string" },
-                  sector: { type: "string" },
-                  priority: { type: "string" }
-                }
-              }
-            }
-          }
-        }
-      });
-
-      if (result.status === 'success') {
-        setPreview(result.output.challenges || []);
-        toast.success(t({ en: `${result.output.challenges?.length || 0} challenges extracted`, ar: `${result.output.challenges?.length || 0} تحدي مستخرج` }));
-      } else {
-        toast.error(result.details || 'Extraction failed');
-      }
+      // For now, show a placeholder - real parsing would use an edge function
+      toast.info(t({ en: 'File uploaded. Manual parsing needed for now.', ar: 'تم تحميل الملف. يلزم التحليل اليدوي حاليًا.' }));
+      setProcessing(false);
     } catch (error) {
       toast.error(t({ en: 'File processing failed', ar: 'فشلت معالجة الملف' }));
-    } finally {
       setProcessing(false);
     }
   };
@@ -63,11 +42,13 @@ export default function BatchChallengeImport() {
   const importMutation = useMutation({
     mutationFn: async (challenges) => {
       const results = await Promise.allSettled(
-        challenges.map(c => base44.entities.Challenge.create({
-          ...c,
-          status: 'draft',
-          priority: c.priority || 'medium'
-        }))
+        challenges.map(c => 
+          supabase.from('challenges').insert({
+            ...c,
+            status: 'draft',
+            priority: c.priority || 'medium'
+          })
+        )
       );
       return results.filter(r => r.status === 'fulfilled').length;
     },

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,14 +21,18 @@ export default function ChallengeBountySystem({ challenge }) {
 
   const createBountyMutation = useMutation({
     mutationFn: async () => {
-      await base44.entities.Challenge.update(challenge.id, {
-        bounty_enabled: true,
-        bounty_details: {
-          ...bountyData,
-          created_date: new Date().toISOString(),
-          status: 'open'
-        }
-      });
+      const { error } = await supabase
+        .from('challenges')
+        .update({
+          bounty_enabled: true,
+          bounty_details: {
+            ...bountyData,
+            created_date: new Date().toISOString(),
+            status: 'open'
+          }
+        })
+        .eq('id', challenge.id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['challenges'] });

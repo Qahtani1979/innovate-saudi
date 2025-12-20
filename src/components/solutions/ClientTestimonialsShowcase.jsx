@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,10 +12,15 @@ export default function ClientTestimonialsShowcase({ solutionId }) {
   const { data: reviews = [] } = useQuery({
     queryKey: ['solution-reviews-testimonials', solutionId],
     queryFn: async () => {
-      const all = await base44.entities.SolutionReview.list();
-      return all
-        .filter(r => r.solution_id === solutionId && r.overall_rating >= 4 && r.review_text)
-        .sort((a, b) => b.overall_rating - a.overall_rating);
+      const { data, error } = await supabase
+        .from('solution_reviews')
+        .select('*')
+        .eq('solution_id', solutionId)
+        .gte('overall_rating', 4)
+        .not('review_text', 'is', null)
+        .order('overall_rating', { ascending: false });
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!solutionId
   });

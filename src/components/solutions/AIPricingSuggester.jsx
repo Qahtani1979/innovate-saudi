@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,8 +22,8 @@ export default function AIPricingSuggester({ solution, onPricingComplete }) {
   const handleAnalyzePricing = async () => {
     try {
       // Find similar solutions for pricing comparison
-      const solutions = await base44.entities.Solution.list();
-      const similarSolutions = solutions
+      const { data: solutions = [] } = await supabase.from('solutions').select('*');
+      const similarSolutions = (solutions || [])
         .filter(s => 
           s.id !== solution?.id && 
           s.pricing_model && 

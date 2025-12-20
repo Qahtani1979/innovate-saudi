@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,26 +16,37 @@ export default function SmartRecommendationEngine({ challenge, userId, limit = 3
 
   const { data: solutions = [] } = useQuery({
     queryKey: ['solutions-for-recommendations'],
-    queryFn: () => base44.entities.Solution.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('solutions').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: userActivity = [] } = useQuery({
     queryKey: ['user-activity', userId],
     queryFn: async () => {
-      const all = await base44.entities.UserActivity.list();
-      return all.filter(a => a.user_email === userId);
+      const { data, error } = await supabase
+        .from('user_activities')
+        .select('*')
+        .eq('user_email', userId);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!userId
   });
 
   const trackInteraction = useMutation({
-    mutationFn: (data) => base44.entities.UserActivity.create({
-      user_email: userId,
-      activity_type: data.type,
-      entity_type: 'solution',
-      entity_id: data.solutionId,
-      metadata: { recommendation_score: data.score }
-    })
+    mutationFn: async (data) => {
+      const { error } = await supabase.from('user_activities').insert({
+        user_email: userId,
+        activity_type: data.type,
+        entity_type: 'solution',
+        entity_id: data.solutionId,
+        metadata: { recommendation_score: data.score }
+      });
+      if (error) throw error;
+    }
   });
 
   useEffect(() => {

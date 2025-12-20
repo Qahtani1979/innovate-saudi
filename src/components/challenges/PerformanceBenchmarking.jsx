@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -13,14 +13,24 @@ export default function PerformanceBenchmarking({ challenge }) {
   const { data: similarChallenges = [] } = useQuery({
     queryKey: ['similar-challenges-benchmark', challenge.sector],
     queryFn: async () => {
-      const all = await base44.entities.Challenge.filter({ sector: challenge.sector });
-      return all.filter(c => c.id !== challenge.id && c.status === 'resolved');
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('*')
+        .eq('sector', challenge.sector)
+        .eq('status', 'resolved')
+        .neq('id', challenge.id);
+      if (error) throw error;
+      return data || [];
     }
   });
 
   const { data: municipalities = [] } = useQuery({
     queryKey: ['municipalities'],
-    queryFn: () => base44.entities.Municipality.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('municipalities').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   if (similarChallenges.length === 0) {

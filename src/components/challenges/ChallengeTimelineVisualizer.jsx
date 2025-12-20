@@ -1,6 +1,6 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tantml:react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -12,10 +12,13 @@ export default function ChallengeTimelineVisualizer({ challenge }) {
   const { data: activities = [] } = useQuery({
     queryKey: ['challenge-activities', challenge.id],
     queryFn: async () => {
-      const all = await base44.entities.ChallengeActivity.list();
-      return all.filter(a => a.challenge_id === challenge.id).sort((a, b) => 
-        new Date(a.created_date) - new Date(b.created_date)
-      );
+      const { data, error } = await supabase
+        .from('challenge_activities')
+        .select('*')
+        .eq('challenge_id', challenge.id)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return data || [];
     },
     initialData: []
   });

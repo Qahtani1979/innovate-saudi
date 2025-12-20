@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,8 +26,12 @@ export default function CitizenFeedbackWidget({ challengeId, pilotId }) {
   const { data: feedbacks = [] } = useQuery({
     queryKey: ['citizen-feedback', challengeId || pilotId],
     queryFn: async () => {
-      const filter = challengeId ? { challenge_id: challengeId } : { pilot_id: pilotId };
-      return await base44.entities.CitizenFeedback.filter(filter, '-created_date');
+      let query = supabase.from('citizen_feedback').select('*').order('created_at', { ascending: false });
+      if (challengeId) query = query.eq('entity_id', challengeId).eq('entity_type', 'challenge');
+      else if (pilotId) query = query.eq('entity_id', pilotId).eq('entity_type', 'pilot');
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
     }
   });
 
@@ -41,11 +45,16 @@ export default function CitizenFeedbackWidget({ challengeId, pilotId }) {
 
       const sentiment = sentimentResult.success ? sentimentResult.data : { sentiment: 'neutral', score: 0 };
 
-      return base44.entities.CitizenFeedback.create({
-        ...data,
-        sentiment: sentiment.sentiment,
-        sentiment_score: sentiment.score
+      const { error } = await supabase.from('citizen_feedback').insert({
+        entity_id: data.challenge_id || data.pilot_id,
+        entity_type: data.challenge_id ? 'challenge' : 'pilot',
+        feedback_text: data.content,
+        feedback_type: data.feedback_type,
+        is_anonymous: data.is_anonymous,
+        status: sentiment.sentiment,
+        rating: sentiment.score
       });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['citizen-feedback'] });

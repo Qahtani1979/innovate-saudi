@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,11 +25,14 @@ export default function RealTimeMarketIntelligence({ solution }) {
     queryKey: ['competitors', solution?.id],
     queryFn: async () => {
       if (!solution?.sectors) return [];
-      const all = await base44.entities.Solution.list();
-      return all.filter(s => 
-        s.id !== solution.id &&
-        s.sectors?.some(sector => solution.sectors.includes(sector)) &&
-        s.is_verified
+      const { data, error } = await supabase
+        .from('solutions')
+        .select('*')
+        .eq('is_verified', true)
+        .neq('id', solution.id);
+      if (error) throw error;
+      return (data || []).filter(s => 
+        s.sectors?.some(sector => solution.sectors.includes(sector))
       );
     },
     enabled: !!solution

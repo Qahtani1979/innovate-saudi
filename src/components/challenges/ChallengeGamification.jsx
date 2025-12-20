@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,26 +10,26 @@ export default function ChallengeGamification({ userEmail }) {
   const { data: solvedChallenges = [] } = useQuery({
     queryKey: ['solved-challenges', userEmail],
     queryFn: async () => {
-      // Challenges where user was involved in resolution
-      return base44.entities.Challenge.filter({
-        status: 'resolved',
-        $or: [
-          { challenge_owner_email: userEmail },
-          { created_by: userEmail },
-          { reviewed_by: userEmail }
-        ]
-      });
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('*')
+        .eq('status', 'resolved')
+        .or(`challenge_owner_email.eq.${userEmail},created_by.eq.${userEmail},reviewer.eq.${userEmail}`);
+      if (error) throw error;
+      return data || [];
     }
   });
 
   const { data: badges = [] } = useQuery({
     queryKey: ['challenge-badges', userEmail],
     queryFn: async () => {
-      const userBadges = await base44.entities.UserAchievement.filter({
-        user_email: userEmail,
-        achievement_category: 'challenge_solving'
-      });
-      return userBadges;
+      const { data, error } = await supabase
+        .from('user_achievements')
+        .select('*')
+        .eq('user_email', userEmail)
+        .eq('achievement_category', 'challenge_solving');
+      if (error) throw error;
+      return data || [];
     }
   });
 
