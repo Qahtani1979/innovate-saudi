@@ -6,7 +6,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
-import rbacService from '@/services/rbac/rbacService';
+import rbacService from '@/services/rbac/rbacService.ts';
 import { toast } from 'sonner';
 
 export const useAutoRoleAssignment = () => {

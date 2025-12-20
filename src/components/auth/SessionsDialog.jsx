@@ -7,13 +7,44 @@ import { useLanguage } from '../LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
-import { Monitor, Smartphone, Globe, Clock, MapPin, Shield, LogOut, RefreshCw } from 'lucide-react';
+import { Monitor, Smartphone, Globe, Clock, MapPin, Shield, LogOut, RefreshCw, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function SessionsDialog({ open, onOpenChange }) {
   const { t, isRTL } = useLanguage();
-  const { session, logout } = useAuth();
+  const { session, user, logout } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [sessions, setSessions] = useState([]);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+
+  // Fetch user sessions from database
+  useEffect(() => {
+    if (open && user?.id) {
+      fetchSessions();
+    }
+  }, [open, user?.id]);
+
+  const fetchSessions = async () => {
+    setIsLoadingSessions(true);
+    try {
+      const { data, error } = await supabase
+        .from('user_sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('started_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setSessions(data || []);
+    } catch (error) {
+      console.error('Error fetching sessions:', error);
+      // Fall back to current session only
+      setSessions([]);
+    } finally {
+      setIsLoadingSessions(false);
+    }
+  };
 
   // Get device info from user agent
   const getDeviceInfo = (userAgent) => {
@@ -40,7 +71,15 @@ export default function SessionsDialog({ open, onOpenChange }) {
   const handleSignOutAllDevices = async () => {
     setIsLoading(true);
     try {
-      // First try global signout for all devices
+      // Mark all sessions as inactive in our database
+      if (user?.id) {
+        await supabase
+          .from('user_sessions')
+          .update({ is_active: false, ended_at: new Date().toISOString() })
+          .eq('user_id', user.id);
+      }
+
+      // Global signout from Supabase
       await supabase.auth.signOut({ scope: 'global' });
       toast.success(t({ en: 'Signed out from all devices', ar: 'تم تسجيل الخروج من جميع الأجهزة' }));
     } catch (error) {
@@ -55,6 +94,21 @@ export default function SessionsDialog({ open, onOpenChange }) {
       setIsLoading(false);
       // Always redirect to auth page
       window.location.href = '/Auth';
+    }
+  };
+
+  const handleTerminateSession = async (sessionId) => {
+    try {
+      await supabase
+        .from('user_sessions')
+        .update({ is_active: false, ended_at: new Date().toISOString() })
+        .eq('id', sessionId);
+      
+      toast.success(t({ en: 'Session terminated', ar: 'تم إنهاء الجلسة' }));
+      fetchSessions();
+    } catch (error) {
+      console.error('Error terminating session:', error);
+      toast.error(t({ en: 'Failed to terminate session', ar: 'فشل إنهاء الجلسة' }));
     }
   };
 
@@ -79,6 +133,7 @@ export default function SessionsDialog({ open, onOpenChange }) {
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Current Session */}
           {currentSession && (
             <Card className="border-primary/50 bg-primary/5">
               <CardContent className="p-4">
@@ -113,6 +168,52 @@ export default function SessionsDialog({ open, onOpenChange }) {
               </CardContent>
             </Card>
           )}
+
+          {/* Other Sessions from Database */}
+          {isLoadingSessions ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : sessions.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-muted-foreground">
+                {t({ en: 'Other Sessions', ar: 'جلسات أخرى' })}
+              </p>
+              {sessions.map((sess) => {
+                const deviceInfo = getDeviceInfo(sess.device_info?.user_agent);
+                return (
+                  <Card key={sess.id} className="border-border/50">
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {deviceInfo.type === 'mobile' ? (
+                            <Smartphone className="h-5 w-5 text-muted-foreground" />
+                          ) : (
+                            <Monitor className="h-5 w-5 text-muted-foreground" />
+                          )}
+                          <div>
+                            <p className="text-sm font-medium">{deviceInfo.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {sess.ip_address && `IP: ${sess.ip_address} • `}
+                              {sess.started_at && format(new Date(sess.started_at), 'MMM d, HH:mm')}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleTerminateSession(sess.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          {t({ en: 'End', ar: 'إنهاء' })}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          ) : null}
 
           <div className="p-4 bg-muted/50 rounded-lg">
             <p className="text-sm text-muted-foreground mb-3">
