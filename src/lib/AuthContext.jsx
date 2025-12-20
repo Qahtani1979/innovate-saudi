@@ -224,6 +224,9 @@ export const AuthProvider = ({ children }) => {
       });
       
       if (error) {
+        // Log failed login attempt
+        logAuthEvent('login_failed', email, error.message);
+        
         setAuthError({
           type: 'login_error',
           message: error.message
@@ -231,9 +234,53 @@ export const AuthProvider = ({ children }) => {
         throw error;
       }
       
+      // Log successful login and create session record
+      logAuthEvent('login_success', email);
+      createSessionRecord(data.user);
+      
       return data;
     } catch (error) {
       throw error;
+    }
+  };
+
+  // Helper function to log auth events
+  const logAuthEvent = async (eventType, email, errorMessage = null) => {
+    try {
+      await supabase.functions.invoke('log-auth-event', {
+        body: {
+          event_type: eventType,
+          email,
+          error_message: errorMessage,
+          metadata: {
+            user_agent: navigator.userAgent,
+            timestamp: new Date().toISOString()
+          }
+        }
+      });
+    } catch (error) {
+      console.debug('Auth event logging failed:', error);
+      // Don't throw - logging failures shouldn't block auth
+    }
+  };
+
+  // Helper function to create session record
+  const createSessionRecord = async (authUser) => {
+    if (!authUser) return;
+    try {
+      await supabase.from('user_sessions').insert({
+        user_id: authUser.id,
+        user_email: authUser.email,
+        device_info: {
+          user_agent: navigator.userAgent,
+          platform: navigator.platform,
+          language: navigator.language
+        },
+        started_at: new Date().toISOString(),
+        is_active: true
+      });
+    } catch (error) {
+      console.debug('Session record creation failed:', error);
     }
   };
 
@@ -358,6 +405,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async (shouldRedirect = true) => {
+    const currentEmail = user?.email;
+    const currentUserId = user?.id;
+    
     // Clear local state first - this ensures UI updates immediately
     setUser(null);
     setSession(null);
@@ -367,6 +417,20 @@ export const AuthProvider = ({ children }) => {
     setNeedsOnboarding(false);
     
     try {
+      // Log the logout event
+      if (currentEmail) {
+        logAuthEvent('logout', currentEmail);
+      }
+      
+      // Mark session as ended in database
+      if (currentUserId) {
+        await supabase
+          .from('user_sessions')
+          .update({ is_active: false, ended_at: new Date().toISOString() })
+          .eq('user_id', currentUserId)
+          .eq('is_active', true);
+      }
+      
       // Try to sign out from Supabase - but don't fail if session is already gone
       const { error } = await supabase.auth.signOut({ scope: 'local' });
       
