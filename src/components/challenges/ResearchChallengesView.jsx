@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +12,12 @@ export default function ResearchChallengesView() {
   const { data: rdChallenges = [] } = useQuery({
     queryKey: ['rd-challenges'],
     queryFn: async () => {
-      return base44.entities.Challenge.filter({ track: 'r_and_d' });
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('*')
+        .contains('tracks', ['r_and_d']);
+      if (error) throw error;
+      return data || [];
     }
   });
 

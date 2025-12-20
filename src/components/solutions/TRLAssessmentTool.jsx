@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,13 @@ export default function TRLAssessmentTool({ solution, onAssessmentComplete }) {
   const { invokeAI, isLoading: assessing, status, error, rateLimitInfo } = useAIWithFallback();
 
   const updateSolution = useMutation({
-    mutationFn: (data) => base44.entities.Solution.update(solution.id, data),
+    mutationFn: async (data) => {
+      const { error } = await supabase
+        .from('solutions')
+        .update(data)
+        .eq('id', solution.id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['solution']);
       toast.success(t({ en: 'TRL updated', ar: 'تم تحديث المستوى' }));

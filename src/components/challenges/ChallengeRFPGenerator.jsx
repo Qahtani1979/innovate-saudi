@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -37,13 +37,16 @@ export default function ChallengeRFPGenerator({ challenge, onComplete }) {
 
   const publishRFP = async () => {
     try {
-      // Create ChallengeProposal tracking entity (for incoming proposals)
-      await base44.entities.Challenge.update(challenge.id, {
-        rfp_published: true,
-        rfp_data: rfpData,
-        rfp_published_date: new Date().toISOString(),
-        status: 'rfp_open'
-      });
+      const { error } = await supabase
+        .from('challenges')
+        .update({
+          rfp_published: true,
+          rfp_data: rfpData,
+          rfp_published_date: new Date().toISOString(),
+          status: 'rfp_open'
+        })
+        .eq('id', challenge.id);
+      if (error) throw error;
 
       toast.success('RFP published - providers can now submit proposals');
       onComplete?.();

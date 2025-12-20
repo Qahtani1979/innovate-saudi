@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,9 +15,14 @@ export default function MarketIntelligenceFeed({ providerSectors }) {
   const { data: recentChallenges = [] } = useQuery({
     queryKey: ['recent-challenges', providerSectors],
     queryFn: async () => {
-      const all = await base44.entities.Challenge.list('-created_date');
-      return all
-        .filter(c => c.status === 'approved' && providerSectors?.some(s => c.sector === s))
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('*')
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data || [])
+        .filter(c => providerSectors?.some(s => c.sector === s))
         .slice(0, 10);
     },
     enabled: !!providerSectors
