@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,10 +14,16 @@ function AuditDetail() {
   const auditId = urlParams.get('id');
 
   const { data: audit, isLoading } = useQuery({
-    queryKey: ['audit', auditId],
+    queryKey: ['audit-detail', auditId],
     queryFn: async () => {
-      const audits = await base44.entities.Audit.filter({ id: auditId });
-      return audits[0];
+      const { data, error } = await supabase
+        .from('audits')
+        .select('*')
+        .eq('id', auditId)
+        .single();
+      
+      if (error) throw error;
+      return data;
     },
     enabled: !!auditId
   });
@@ -106,11 +112,15 @@ function AuditDetail() {
           <CardContent className="space-y-3">
             <div>
               <p className="text-xs font-semibold text-slate-600">{t({ en: 'Auditor', ar: 'المدقق' })}</p>
-              <p className="text-sm text-slate-900">{audit.auditor_email}</p>
+              <p className="text-sm text-slate-900">{audit.auditor_name || audit.auditor_email}</p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-slate-600">{t({ en: 'Organization', ar: 'المنظمة' })}</p>
+              <p className="text-sm text-slate-900">{audit.auditor_organization || 'N/A'}</p>
             </div>
             <div>
               <p className="text-xs font-semibold text-slate-600">{t({ en: 'Audit Date', ar: 'تاريخ التدقيق' })}</p>
-              <p className="text-sm text-slate-900">{new Date(audit.audit_date).toLocaleDateString()}</p>
+              <p className="text-sm text-slate-900">{new Date(audit.audit_start_date).toLocaleDateString()}</p>
             </div>
             {audit.follow_up_required && (
               <div className="p-3 bg-amber-50 rounded-lg border border-amber-300">
