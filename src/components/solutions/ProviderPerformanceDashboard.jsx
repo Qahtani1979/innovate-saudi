@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,27 +13,31 @@ export default function ProviderPerformanceDashboard({ providerId }) {
   const { data: solutions = [] } = useQuery({
     queryKey: ['provider-solutions', providerId],
     queryFn: async () => {
-      const all = await base44.entities.Solution.list();
-      return all.filter(s => s.provider_id === providerId);
+      const { data } = await supabase.from('solutions').select('*').eq('provider_id', providerId);
+      return data || [];
     }
   });
 
+  const solutionIds = solutions.map(s => s.id);
+
   const { data: pilots = [] } = useQuery({
-    queryKey: ['provider-pilots', providerId],
+    queryKey: ['provider-pilots', providerId, solutionIds],
     queryFn: async () => {
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => solutions.some(s => s.id === p.solution_id));
+      if (solutionIds.length === 0) return [];
+      const { data } = await supabase.from('pilots').select('*').in('solution_id', solutionIds);
+      return data || [];
     },
-    enabled: solutions.length > 0
+    enabled: solutionIds.length > 0
   });
 
   const { data: matches = [] } = useQuery({
-    queryKey: ['solution-matches', providerId],
+    queryKey: ['solution-matches', providerId, solutionIds],
     queryFn: async () => {
-      const all = await base44.entities.ChallengeSolutionMatch.list();
-      return all.filter(m => solutions.some(s => s.id === m.solution_id));
+      if (solutionIds.length === 0) return [];
+      const { data } = await supabase.from('challenge_solution_matches').select('*').in('solution_id', solutionIds);
+      return data || [];
     },
-    enabled: solutions.length > 0
+    enabled: solutionIds.length > 0
   });
 
   const winRate = matches.length > 0 ? (pilots.length / matches.length) * 100 : 0;

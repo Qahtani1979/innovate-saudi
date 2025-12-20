@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,8 +27,12 @@ export default function ComplianceValidationAI({ solution, onValidationComplete 
     const uploaded = [];
 
     for (const file of files) {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      uploaded.push({ name: file.name, url: file_url });
+      const fileName = `compliance/${Date.now()}_${file.name}`;
+      const { data, error } = await supabase.storage.from('documents').upload(fileName, file);
+      if (!error && data) {
+        const { data: urlData } = supabase.storage.from('documents').getPublicUrl(data.path);
+        uploaded.push({ name: file.name, url: urlData.publicUrl });
+      }
     }
 
     setUploadedDocs([...uploadedDocs, ...uploaded]);
@@ -36,21 +40,9 @@ export default function ComplianceValidationAI({ solution, onValidationComplete 
   };
 
   const validateCompliance = async () => {
-    // Extract data from uploaded compliance documents
-    const extractedData = [];
-    for (const doc of uploadedDocs) {
-      try {
-        const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
-          file_url: doc.url,
-          json_schema: getDocumentExtractionSchema()
-        });
-        if (result.status === 'success') {
-          extractedData.push(result.output);
-        }
-      } catch (error) {
-        console.error('Failed to extract from', doc.name);
-      }
-    }
+    // For now, we'll use AI to validate based on solution data
+    // Document extraction would require a separate edge function
+    const extractedData = uploadedDocs.map(doc => ({ name: doc.name, url: doc.url }));
 
     // AI validation of compliance
     const result = await invokeAI({

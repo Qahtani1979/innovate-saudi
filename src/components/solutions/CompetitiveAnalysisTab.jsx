@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,18 +15,15 @@ export default function CompetitiveAnalysisTab({ solution }) {
   const { data: similarSolutions = [] } = useQuery({
     queryKey: ['similar-solutions', solution.id],
     queryFn: async () => {
-      if (!solution.embedding || solution.embedding.length === 0) return [];
+      // Get similar solutions by sector
+      const { data } = await supabase.from('solutions').select('*')
+        .neq('id', solution.id)
+        .eq('is_verified', true)
+        .overlaps('sectors', solution.sectors || [])
+        .limit(6);
       
-      const result = await base44.functions.invoke('semanticSearch', {
-        entity_name: 'Solution',
-        query_embedding: solution.embedding,
-        top_k: 6,
-        filter: { id: { $ne: solution.id }, is_verified: true }
-      });
-      
-      return result.data?.results || [];
-    },
-    enabled: !!solution.embedding
+      return data || [];
+    }
   });
 
   const competitors = similarSolutions.slice(0, 5);

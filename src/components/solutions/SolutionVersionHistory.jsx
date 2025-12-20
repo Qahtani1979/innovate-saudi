@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,8 +23,10 @@ export default function SolutionVersionHistory({ solutionId }) {
 
   const { data: currentSolution } = useQuery({
     queryKey: ['solution', solutionId],
-    queryFn: () => base44.entities.Solution.filter({ id: solutionId })
-      .then(results => results[0])
+    queryFn: async () => {
+      const { data } = await supabase.from('solutions').select('*').eq('id', solutionId).single();
+      return data;
+    }
   });
 
   const { data: versions = [] } = useQuery({
@@ -34,8 +36,8 @@ export default function SolutionVersionHistory({ solutionId }) {
       let current = currentSolution;
       
       while (current?.previous_version_id) {
-        const prev = await base44.entities.Solution.filter({ id: current.previous_version_id })
-          .then(results => results[0]);
+        const { data: prev } = await supabase.from('solutions').select('*')
+          .eq('id', current.previous_version_id).single();
         if (prev) {
           allVersions.push(prev);
           current = prev;

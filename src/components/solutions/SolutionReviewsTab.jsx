@@ -67,12 +67,13 @@ export default function SolutionReviewsTab({ solution }) {
 
   const createReviewMutation = useMutation({
     mutationFn: async (data) => {
-      const review = await base44.entities.SolutionReview.create(data);
+      const { data: review, error } = await supabase.from('solution_reviews').insert(data).select().single();
+      if (error) throw error;
       
       // Update solution aggregate ratings
       const allReviews = [...reviews, review];
       const avgRating = allReviews.reduce((sum, r) => sum + r.overall_rating, 0) / allReviews.length;
-      await base44.entities.Solution.update(solution.id, {
+      await supabase.from('solutions').update({
         average_rating: avgRating,
         total_reviews: allReviews.length,
         ratings: {
@@ -86,10 +87,10 @@ export default function SolutionReviewsTab({ solution }) {
             1: allReviews.filter(r => r.overall_rating === 1).length
           }
         }
-      });
+      }).eq('id', solution.id);
 
       // Log activity
-      await base44.entities.SystemActivity.create({
+      await supabase.from('system_activities').insert({
         entity_type: 'Solution',
         entity_id: solution.id,
         activity_type: 'review_submitted',

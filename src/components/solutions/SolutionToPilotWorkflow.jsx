@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,19 +31,28 @@ export default function SolutionToPilotWorkflow({ solution, onClose, onSuccess }
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges-for-solution-match'],
-    queryFn: () => base44.entities.Challenge.filter({ sector: solution.sectors?.[0], status: 'approved' })
+    queryFn: async () => {
+      const { data } = await supabase.from('challenges').select('*')
+        .eq('sector', solution.sectors?.[0])
+        .eq('status', 'approved');
+      return data || [];
+    }
   });
 
   const { data: municipalities = [] } = useQuery({
     queryKey: ['municipalities-for-pilot'],
-    queryFn: () => base44.entities.Municipality.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('municipalities').select('*');
+      return data || [];
+    }
   });
 
   const createPilotMutation = useMutation({
     mutationFn: async (data) => {
-      const pilot = await base44.entities.Pilot.create(data);
+      const { data: pilot, error } = await supabase.from('pilots').insert(data).select().single();
+      if (error) throw error;
       
-      await base44.entities.SystemActivity.create({
+      await supabase.from('system_activities').insert({
         entity_type: 'solution',
         entity_id: solution.id,
         action: 'proposed_pilot',

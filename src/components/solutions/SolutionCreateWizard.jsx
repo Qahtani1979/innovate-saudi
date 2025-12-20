@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
@@ -37,7 +37,11 @@ export default function SolutionCreateWizard({ onComplete }) {
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges-active'],
-    queryFn: () => base44.entities.Challenge.filter({ status: { $in: ['approved', 'in_treatment'] } })
+    queryFn: async () => {
+      const { data } = await supabase.from('challenges').select('*')
+        .in('status', ['approved', 'in_treatment']);
+      return data || [];
+    }
   });
 
   const [formData, setFormData] = useState({
@@ -92,38 +96,13 @@ export default function SolutionCreateWizard({ onComplete }) {
     { num: 6, title: { en: 'Review & Submit', ar: 'المراجعة والإرسال' }, icon: CheckCircle2 }
   ];
 
-  // ext-3: Retry logic with exponential backoff for embeddings
-  const generateEmbeddingsWithRetry = async (params, maxRetries = 3) => {
-    let lastError;
-    for (let i = 0; i < maxRetries; i++) {
-      try {
-        return await base44.functions.invoke('generateEmbeddings', params);
-      } catch (err) {
-        lastError = err;
-        if (i < maxRetries - 1) {
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
-        }
-      }
-    }
-    throw lastError;
-  };
-
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      const solution = await base44.entities.Solution.create(data);
-      
-      // Auto-generate embedding with retry
-      try {
-        await generateEmbeddingsWithRetry({
-          entity_name: 'Solution',
-          entity_ids: [solution.id]
-        });
-      } catch (err) {
-        console.error('Embedding generation failed after retries:', err);
-      }
+      const { data: solution, error } = await supabase.from('solutions').insert(data).select().single();
+      if (error) throw error;
 
       // Log creation
-      await base44.entities.SystemActivity.create({
+      await supabase.from('system_activities').insert({
         entity_type: 'Solution',
         entity_id: solution.id,
         activity_type: 'created',
@@ -256,24 +235,15 @@ Generate:
         tags: result.keywords || prev.tags || []
       }));
 
-      // Auto-match to challenges
-      if (result.description_en) {
+      // Auto-match to challenges based on sector
+      if (result.sectors?.length > 0) {
         try {
-          const embeddingResult = await base44.functions.invoke('generateEmbeddings', {
-            text: result.description_en + ' ' + result.value_proposition,
-            return_embedding: true
-          });
+          const { data: matchingChallengesData } = await supabase.from('challenges').select('*')
+            .in('status', ['approved', 'in_treatment'])
+            .overlaps('sectors', result.sectors)
+            .limit(5);
           
-          if (embeddingResult.data?.embedding) {
-            const matches = await base44.functions.invoke('semanticSearch', {
-              entity_name: 'Challenge',
-              query_embedding: embeddingResult.data.embedding,
-              top_k: 5,
-              filter: { status: { $in: ['approved', 'in_treatment'] } }
-            });
-            
-            setMatchingChallenges(matches.data?.results || []);
-          }
+          setMatchingChallenges(matchingChallengesData || []);
         } catch (err) {
           console.error('Auto-matching failed:', err);
         }
