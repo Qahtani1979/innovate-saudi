@@ -506,6 +506,8 @@ import FinalChallengesSystemAssessment from './pages/FinalChallengesSystemAssess
 import FinalScalingSystemAssessment from './pages/FinalScalingSystemAssessment';
 import FinalNewsSystemAssessment from './pages/FinalNewsSystemAssessment';
 import FinalPolicySystemAssessment from './pages/FinalPolicySystemAssessment';
+import FinalKnowledgeSystemAssessment from './pages/FinalKnowledgeSystemAssessment';
+import LessonsLearnedRepository from './pages/LessonsLearnedRepository';
 import NewsManagement from './pages/NewsManagement';
 import PartnershipDetail from './pages/PartnershipDetail';
 import PartnershipCreate from './pages/PartnershipCreate';
@@ -1094,6 +1096,8 @@ export const PAGES = {
     "FinalScalingSystemAssessment": FinalScalingSystemAssessment,
     "FinalNewsSystemAssessment": FinalNewsSystemAssessment,
     "FinalPolicySystemAssessment": FinalPolicySystemAssessment,
+    "FinalKnowledgeSystemAssessment": FinalKnowledgeSystemAssessment,
+    "LessonsLearnedRepository": LessonsLearnedRepository,
     "NewsManagement": NewsManagement,
 }
 

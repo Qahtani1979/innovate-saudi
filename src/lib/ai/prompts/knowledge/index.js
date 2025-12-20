@@ -4,3 +4,6 @@
  */
 
 export * from './qualityAudit';
+export * from './autoTagger';
+export * from './learningPath';
+export * from './knowledgeExtraction';
