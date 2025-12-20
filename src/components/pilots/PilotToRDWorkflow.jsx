@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '../LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,21 +59,30 @@ export default function PilotToRDWorkflow({ pilot, onClose, onSuccess }) {
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      const rdProject = await base44.entities.RDProject.create(data);
+      const { data: rdProject, error: rdError } = await supabase
+        .from('rd_projects')
+        .insert(data)
+        .select()
+        .single();
+      if (rdError) throw rdError;
       
       // Update pilot with R&D link
-      await base44.entities.Pilot.update(pilot.id, {
-        linked_rd_ids: [...(pilot.linked_rd_ids || []), rdProject.id]
-      });
+      const { error: pilotError } = await supabase
+        .from('pilots')
+        .update({ linked_rd_ids: [...(pilot.linked_rd_ids || []), rdProject.id] })
+        .eq('id', pilot.id);
+      if (pilotError) throw pilotError;
 
       // Create relation
       if (pilot.challenge_id) {
-        await base44.entities.ChallengeRelation.create({
-          challenge_id: pilot.challenge_id,
-          related_entity_type: 'rd_project',
-          related_entity_id: rdProject.id,
-          relation_role: 'informed_by'
-        });
+        await supabase
+          .from('challenge_relations')
+          .insert({
+            challenge_id: pilot.challenge_id,
+            related_entity_type: 'rd_project',
+            related_entity_id: rdProject.id,
+            relation_role: 'informed_by'
+          });
       }
 
       return rdProject;

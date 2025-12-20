@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,8 +13,14 @@ export default function MultiCityOrchestration({ masterPilot }) {
   const { data: childPilots = [] } = useQuery({
     queryKey: ['child-pilots', masterPilot.id],
     queryFn: async () => {
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => p.code?.includes(masterPilot.code) && p.id !== masterPilot.id);
+      const { data, error } = await supabase
+        .from('pilots')
+        .select('*')
+        .ilike('code', `%${masterPilot.code}%`)
+        .neq('id', masterPilot.id)
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
     },
     initialData: []
   });
