@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,22 +33,27 @@ export default function ProgramLaunchWorkflow({ program, onClose }) {
 
   const launchMutation = useMutation({
     mutationFn: async () => {
-      await base44.entities.Program.update(program.id, {
-        status: 'applications_open',
-        launch_date: new Date().toISOString().split('T')[0],
-        launch_checklist: checklist,
-        announcement_text: announcement
-      });
+      const { error: programError } = await supabase
+        .from('programs')
+        .update({
+          status: 'applications_open',
+          launch_date: new Date().toISOString().split('T')[0],
+          launch_checklist: checklist,
+          announcement_text: announcement
+        })
+        .eq('id', program.id);
+      if (programError) throw programError;
 
       // Create notification
-      await base44.entities.Notification.create({
-        type: 'program_launched',
-        title: `New Program: ${program.name_en}`,
-        message: announcement || `${program.name_en} is now accepting applications.`,
-        severity: 'info',
-        link: `/ProgramDetail?id=${program.id}`
-      });
-
+      await supabase
+        .from('notifications')
+        .insert({
+          type: 'program_launched',
+          title: `New Program: ${program.name_en}`,
+          message: announcement || `${program.name_en} is now accepting applications.`,
+          severity: 'info',
+          link: `/ProgramDetail?id=${program.id}`
+        });
     },
     onSuccess: async () => {
       queryClient.invalidateQueries(['program']);

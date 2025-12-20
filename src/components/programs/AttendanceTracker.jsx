@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,8 +16,13 @@ export default function AttendanceTracker({ programId, sessionId }) {
   const { data: applications = [] } = useQuery({
     queryKey: ['program-participants', programId],
     queryFn: async () => {
-      const all = await base44.entities.ProgramApplication.list();
-      return all.filter(a => a.program_id === programId && a.status === 'accepted');
+      const { data, error } = await supabase
+        .from('program_applications')
+        .select('*')
+        .eq('program_id', programId)
+        .eq('status', 'accepted');
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!programId
   });
@@ -25,8 +30,13 @@ export default function AttendanceTracker({ programId, sessionId }) {
   const { data: program } = useQuery({
     queryKey: ['program', programId],
     queryFn: async () => {
-      const programs = await base44.entities.Program.list();
-      return programs.find(p => p.id === programId);
+      const { data, error } = await supabase
+        .from('programs')
+        .select('*')
+        .eq('id', programId)
+        .single();
+      if (error) throw error;
+      return data;
     },
     enabled: !!programId
   });
@@ -40,9 +50,11 @@ export default function AttendanceTracker({ programId, sessionId }) {
         e.id === sessionId ? { ...e, attendance, attendance_recorded: true } : e
       );
 
-      await base44.entities.Program.update(programId, {
-        events: updatedEvents
-      });
+      const { error: programError } = await supabase
+        .from('programs')
+        .update({ events: updatedEvents })
+        .eq('id', programId);
+      if (programError) throw programError;
 
       // Update each participant's attendance percentage
       for (const app of applications) {
@@ -50,9 +62,10 @@ export default function AttendanceTracker({ programId, sessionId }) {
         const attended = sessions.filter(e => e.attendance[app.id]).length;
         const percentage = sessions.length > 0 ? (attended / sessions.length) * 100 : 0;
 
-        await base44.entities.ProgramApplication.update(app.id, {
-          attendance_percentage: Math.round(percentage)
-        });
+        await supabase
+          .from('program_applications')
+          .update({ attendance_percentage: Math.round(percentage) })
+          .eq('id', app.id);
       }
     },
     onSuccess: () => {

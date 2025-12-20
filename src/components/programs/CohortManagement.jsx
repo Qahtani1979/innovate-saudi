@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../LanguageContext';
 import { Users, TrendingUp, Calendar, FileText, Award, AlertCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function CohortManagement({ program, cohort }) {
   const { language, isRTL, t } = useLanguage();
@@ -15,8 +15,13 @@ export default function CohortManagement({ program, cohort }) {
   const { data: applications = [] } = useQuery({
     queryKey: ['cohort-participants', program?.id],
     queryFn: async () => {
-      const all = await base44.entities.ProgramApplication.list();
-      return all.filter(a => a.program_id === program?.id && a.status === 'accepted');
+      const { data, error } = await supabase
+        .from('program_applications')
+        .select('*')
+        .eq('program_id', program?.id)
+        .eq('status', 'accepted');
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!program?.id
   });

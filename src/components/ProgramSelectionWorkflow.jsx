@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,9 +17,13 @@ export default function ProgramSelectionWorkflow({ program, onClose }) {
   const { data: applications = [] } = useQuery({
     queryKey: ['program-applications-review', program?.id],
     queryFn: async () => {
-      const all = await base44.entities.ProgramApplication.list();
-      return all.filter(a => a.program_id === program?.id && 
-        (a.status === 'under_review' || a.status === 'submitted'));
+      const { data, error } = await supabase
+        .from('program_applications')
+        .select('*')
+        .eq('program_id', program?.id)
+        .in('status', ['under_review', 'submitted']);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!program?.id
   });
@@ -32,29 +35,36 @@ export default function ProgramSelectionWorkflow({ program, onClose }) {
   const selectionMutation = useMutation({
     mutationFn: async () => {
       // Accept selected
-      const acceptanceUpdates = selected.map(appId =>
-        base44.entities.ProgramApplication.update(appId, {
-          status: 'accepted',
-          selection_date: new Date().toISOString().split('T')[0]
-        })
-      );
+      for (const appId of selected) {
+        await supabase
+          .from('program_applications')
+          .update({
+            status: 'accepted',
+            selection_date: new Date().toISOString().split('T')[0]
+          })
+          .eq('id', appId);
+      }
 
       // Reject others
-      const rejectionUpdates = rejected.map(appId =>
-        base44.entities.ProgramApplication.update(appId, {
-          status: 'rejected',
-          rejection_reason: rejectionMessage,
-          rejection_date: new Date().toISOString().split('T')[0]
-        })
-      );
-
-      await Promise.all([...acceptanceUpdates, ...rejectionUpdates]);
+      for (const appId of rejected) {
+        await supabase
+          .from('program_applications')
+          .update({
+            status: 'rejected',
+            rejection_reason: rejectionMessage,
+            rejection_date: new Date().toISOString().split('T')[0]
+          })
+          .eq('id', appId);
+      }
 
       // Update program counts
-      await base44.entities.Program.update(program.id, {
-        accepted_count: selected.length,
-        status: 'active'
-      });
+      await supabase
+        .from('programs')
+        .update({
+          accepted_count: selected.length,
+          status: 'active'
+        })
+        .eq('id', program.id);
 
       // Send acceptance emails
       for (const appId of selected) {

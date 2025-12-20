@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,18 +27,24 @@ export default function MentorScheduler({ programId, mentorEmail }) {
   const { data: applications = [] } = useQuery({
     queryKey: ['mentor-mentees', programId, mentorEmail],
     queryFn: async () => {
-      const assignments = await base44.entities.ExpertAssignment.list();
-      const mentorAssignments = assignments.filter(a => 
-        a.entity_type === 'program' && 
-        a.entity_id === programId && 
-        a.expert_email === mentorEmail &&
-        a.assignment_type === 'mentor'
-      );
+      const { data: assignments, error: assignError } = await supabase
+        .from('expert_assignments')
+        .select('*')
+        .eq('entity_type', 'program')
+        .eq('entity_id', programId)
+        .eq('expert_email', mentorEmail)
+        .eq('assignment_type', 'mentor');
+      
+      if (assignError) throw assignError;
+      if (!assignments?.length) return [];
 
-      if (mentorAssignments.length === 0) return [];
-
-      const all = await base44.entities.ProgramApplication.list();
-      return all.filter(app => app.program_id === programId && app.status === 'accepted');
+      const { data: apps, error: appsError } = await supabase
+        .from('program_applications')
+        .select('*')
+        .eq('program_id', programId)
+        .eq('status', 'accepted');
+      if (appsError) throw appsError;
+      return apps || [];
     },
     enabled: !!programId && !!mentorEmail
   });
@@ -46,11 +52,13 @@ export default function MentorScheduler({ programId, mentorEmail }) {
   const { data: meetings = [] } = useQuery({
     queryKey: ['mentor-meetings', programId, mentorEmail],
     queryFn: async () => {
-      const mentorships = await base44.entities.ProgramMentorship.list();
-      return mentorships.filter(m => 
-        m.program_id === programId && 
-        m.mentor_email === mentorEmail
-      );
+      const { data, error } = await supabase
+        .from('program_mentorships')
+        .select('*')
+        .eq('program_id', programId)
+        .eq('mentor_email', mentorEmail);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!programId && !!mentorEmail
   });
@@ -59,22 +67,41 @@ export default function MentorScheduler({ programId, mentorEmail }) {
     mutationFn: async (data) => {
       const mentee = applications.find(a => a.id === data.mentee_id);
       
-      await base44.entities.ProgramMentorship.create({
-        program_id: programId,
-        mentor_email: mentorEmail,
-        mentee_email: mentee.applicant_email,
-        mentee_name: mentee.applicant_name,
-        session_date: data.date,
-        session_time: data.time,
-        duration_minutes: data.duration_minutes,
-        agenda: data.agenda,
-        location: data.location,
-        status: 'scheduled'
-      });
+      const { error } = await supabase
+        .from('program_mentorships')
+        .insert({
+          program_id: programId,
+          mentor_email: mentorEmail,
+          mentee_email: mentee.applicant_email,
+          mentee_name: mentee.applicant_name,
+          session_date: data.date,
+          session_time: data.time,
+          duration_minutes: data.duration_minutes,
+          agenda: data.agenda,
+          location: data.location,
+          status: 'scheduled'
+        });
+      if (error) throw error;
 
       // Send email via email-trigger-hub
-      const { supabase } = await import('@/integrations/supabase/client');
       await supabase.functions.invoke('email-trigger-hub', {
+        body: {
+          trigger: 'event.invitation',
+          recipient_email: mentee.applicant_email,
+          entity_type: 'program',
+          entity_id: programId,
+          variables: {
+            menteeName: mentee.applicant_name,
+            sessionDate: data.date,
+            sessionTime: data.time,
+            durationMinutes: data.duration_minutes,
+            location: data.location,
+            agenda: data.agenda
+          },
+          triggered_by: 'system'
+        }
+      });
+    },
         body: {
           trigger: 'event.invitation',
           recipient_email: mentee.applicant_email,

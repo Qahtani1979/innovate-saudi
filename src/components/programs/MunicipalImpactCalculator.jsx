@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,8 +23,13 @@ export default function MunicipalImpactCalculator({ programId }) {
   const { data: program } = useQuery({
     queryKey: ['program', programId],
     queryFn: async () => {
-      const programs = await base44.entities.Program.list();
-      return programs.find(p => p.id === programId);
+      const { data, error } = await supabase
+        .from('programs')
+        .select('*')
+        .eq('id', programId)
+        .single();
+      if (error) throw error;
+      return data;
     },
     enabled: !!programId
   });
@@ -32,20 +37,33 @@ export default function MunicipalImpactCalculator({ programId }) {
   const { data: applications = [] } = useQuery({
     queryKey: ['program-applications', programId],
     queryFn: async () => {
-      const all = await base44.entities.ProgramApplication.list();
-      return all.filter(a => a.program_id === programId && a.status === 'accepted');
+      const { data, error } = await supabase
+        .from('program_applications')
+        .select('*')
+        .eq('program_id', programId)
+        .eq('status', 'accepted');
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!programId
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('pilots').select('*').eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: solutions = [] } = useQuery({
     queryKey: ['solutions'],
-    queryFn: () => base44.entities.Solution.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('solutions').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const calculateImpact = async () => {

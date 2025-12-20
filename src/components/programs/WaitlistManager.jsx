@@ -1,5 +1,4 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,9 +15,14 @@ export default function WaitlistManager({ programId }) {
   const { data: waitlistApps = [] } = useQuery({
     queryKey: ['waitlist-applications', programId],
     queryFn: async () => {
-      const all = await base44.entities.ProgramApplication.list();
-      return all.filter(a => a.program_id === programId && a.status === 'waitlisted')
-        .sort((a, b) => (b.ai_score || 0) - (a.ai_score || 0));
+      const { data, error } = await supabase
+        .from('program_applications')
+        .select('*')
+        .eq('program_id', programId)
+        .eq('status', 'waitlisted')
+        .order('ai_score', { ascending: false });
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!programId
   });
@@ -27,10 +31,14 @@ export default function WaitlistManager({ programId }) {
     mutationFn: async (appId) => {
       const app = waitlistApps.find(a => a.id === appId);
       
-      await base44.entities.ProgramApplication.update(appId, {
-        status: 'accepted',
-        waitlist_promoted_date: new Date().toISOString()
-      });
+      const { error } = await supabase
+        .from('program_applications')
+        .update({
+          status: 'accepted',
+          waitlist_promoted_date: new Date().toISOString()
+        })
+        .eq('id', appId);
+      if (error) throw error;
 
       await supabase.functions.invoke('email-trigger-hub', {
         body: {

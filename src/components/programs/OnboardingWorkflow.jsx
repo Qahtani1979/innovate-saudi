@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,14 +24,15 @@ export default function OnboardingWorkflow({ participant, program }) {
 
   const onboardingMutation = useMutation({
     mutationFn: async () => {
-      await base44.entities.ProgramApplication.update(participant.id, {
-        onboarding_status: 'completed',
-        onboarding_completed_date: new Date().toISOString(),
-        onboarding_checklist: checklist
-      });
-
-      // Send welcome email via email-trigger-hub
-      const { supabase } = await import('@/integrations/supabase/client');
+      const { error } = await supabase
+        .from('program_applications')
+        .update({
+          onboarding_status: 'completed',
+          onboarding_completed_date: new Date().toISOString(),
+          onboarding_checklist: checklist
+        })
+        .eq('id', participant.id);
+      if (error) throw error;
       await supabase.functions.invoke('email-trigger-hub', {
         body: {
           trigger: 'pilot.enrollment_confirmed',

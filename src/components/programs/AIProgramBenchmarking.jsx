@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,11 @@ export default function AIProgramBenchmarking({ program }) {
   // Fetch similar programs
   const { data: allPrograms = [] } = useQuery({
     queryKey: ['all-programs-benchmark'],
-    queryFn: () => base44.entities.Program.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('programs').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const similarPrograms = allPrograms.filter(p => 

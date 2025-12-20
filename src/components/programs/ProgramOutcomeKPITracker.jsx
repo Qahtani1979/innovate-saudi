@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,18 +17,22 @@ export default function ProgramOutcomeKPITracker({ program }) {
 
   const { data: strategicPlans = [] } = useQuery({
     queryKey: ['strategic-plans-kpi'],
-    queryFn: () => base44.entities.StrategicPlan.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('strategic_plans').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: strategicKPIs = [] } = useQuery({
     queryKey: ['strategic-kpis'],
     queryFn: async () => {
-      // Try to get from strategic_kpis table or objectives from plans
+      // Try to get from strategic_kpis table
       try {
-        const kpis = await base44.entities.StrategicKPI?.list();
-        if (kpis?.length) return kpis;
+        const { data: kpis, error } = await supabase.from('strategic_kpis').select('*');
+        if (!error && kpis?.length) return kpis;
       } catch (e) {
-        console.log('Strategic KPIs entity not available, using plan objectives');
+        console.log('Strategic KPIs table not available, using plan objectives');
       }
       
       // Fallback: extract KPIs from strategic plan objectives
@@ -79,23 +83,30 @@ export default function ProgramOutcomeKPITracker({ program }) {
         program_id: program.id
       };
 
-      await base44.entities.Program.update(program.id, {
-        kpi_contributions: [...existingContributions, newContribution],
-        last_kpi_contribution_date: new Date().toISOString()
-      });
+      const { error } = await supabase
+        .from('programs')
+        .update({
+          kpi_contributions: [...existingContributions, newContribution],
+          last_kpi_contribution_date: new Date().toISOString()
+        })
+        .eq('id', program.id);
+      if (error) throw error;
 
-      // Try to update strategic KPI if entity exists
+      // Try to update strategic KPI if table exists
       try {
         const kpi = strategicKPIs.find(k => k.id === kpiId);
-        if (kpi && base44.entities.StrategicKPI?.update) {
-          await base44.entities.StrategicKPI.update(kpiId, {
-            current: (kpi.current || 0) + contribution,
-            last_updated: new Date().toISOString(),
-            contributing_programs: [...(kpi.contributing_programs || []), program.id]
-          });
+        if (kpi) {
+          await supabase
+            .from('strategic_kpis')
+            .update({
+              current: (kpi.current || 0) + contribution,
+              last_updated: new Date().toISOString(),
+              contributing_programs: [...(kpi.contributing_programs || []), program.id]
+            })
+            .eq('id', kpiId);
         }
       } catch (e) {
-        console.log('Could not update StrategicKPI entity:', e);
+        console.log('Could not update strategic_kpis table:', e);
       }
 
       return newContribution;
