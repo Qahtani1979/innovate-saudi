@@ -4875,6 +4875,96 @@ export type Database = {
           },
         ]
       }
+      lessons_learned: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          created_by: string | null
+          description_ar: string | null
+          description_en: string | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          impact_level: string | null
+          is_featured: boolean | null
+          is_published: boolean | null
+          key_insight_ar: string | null
+          key_insight_en: string | null
+          municipality_id: string | null
+          recommendations_ar: string[] | null
+          recommendations_en: string[] | null
+          sector_id: string | null
+          tags: string[] | null
+          title_ar: string | null
+          title_en: string
+          updated_at: string | null
+          view_count: number | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          impact_level?: string | null
+          is_featured?: boolean | null
+          is_published?: boolean | null
+          key_insight_ar?: string | null
+          key_insight_en?: string | null
+          municipality_id?: string | null
+          recommendations_ar?: string[] | null
+          recommendations_en?: string[] | null
+          sector_id?: string | null
+          tags?: string[] | null
+          title_ar?: string | null
+          title_en: string
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          impact_level?: string | null
+          is_featured?: boolean | null
+          is_published?: boolean | null
+          key_insight_ar?: string | null
+          key_insight_en?: string | null
+          municipality_id?: string | null
+          recommendations_ar?: string[] | null
+          recommendations_en?: string[] | null
+          sector_id?: string | null
+          tags?: string[] | null
+          title_ar?: string | null
+          title_en?: string
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lessons_learned_municipality_id_fkey"
+            columns: ["municipality_id"]
+            isOneToOne: false
+            referencedRelation: "municipalities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lessons_learned_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "sectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       living_lab_bookings: {
         Row: {
           approved_by: string | null
