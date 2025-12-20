@@ -1,10 +1,10 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '../LanguageContext';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Activity, FileText, CheckCircle2, AlertCircle, User, Calendar } from 'lucide-react';
+import { Activity, FileText, CheckCircle2, AlertCircle, User, Calendar, TestTube, Shield, Lightbulb, TrendingUp } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function RDProjectActivityLog({ rdProjectId }) {
@@ -13,11 +13,15 @@ export default function RDProjectActivityLog({ rdProjectId }) {
   const { data: activities = [] } = useQuery({
     queryKey: ['rd-activity', rdProjectId],
     queryFn: async () => {
-      const all = await base44.entities.SystemActivity.filter({
-        entity_type: 'rd_project',
-        entity_id: rdProjectId
-      }, '-created_date', 50);
-      return all;
+      const { data, error } = await supabase
+        .from('system_activities')
+        .select('*')
+        .eq('entity_type', 'rd_project')
+        .eq('entity_id', rdProjectId)
+        .order('created_date', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data || [];
     }
   });
 

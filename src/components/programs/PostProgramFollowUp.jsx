@@ -67,20 +67,6 @@ export default function PostProgramFollowUp({ program }) {
         }
       });
     },
-      await supabase.functions.invoke('email-trigger-hub', {
-        body: {
-          trigger: 'pilot.feedback_request',
-          recipient_email: selectedParticipant.email,
-          entity_type: 'program',
-          entity_id: program.id,
-          variables: {
-            programName: program.name_en,
-            participantName: selectedParticipant.name
-          },
-          triggered_by: 'system'
-        }
-      });
-    },
     onSuccess: () => {
       queryClient.invalidateQueries(['program']);
       toast.success(t({ en: 'Follow-up recorded', ar: 'تم تسجيل المتابعة' }));

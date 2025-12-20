@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,13 @@ export default function IPManagementWidget({ project }) {
   });
 
   const updateProjectMutation = useMutation({
-    mutationFn: (data) => base44.entities.RDProject.update(project.id, data),
+    mutationFn: async (data) => {
+      const { error } = await supabase
+        .from('rd_projects')
+        .update(data)
+        .eq('id', project.id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['rd-project']);
       toast.success(t({ en: 'Updated', ar: 'تم التحديث' }));

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,7 +17,13 @@ export default function EventStrategicAlignment({ event, onUpdate }) {
 
   const { data: strategicPlans = [] } = useQuery({
     queryKey: ['strategic-plans-event-align'],
-    queryFn: () => base44.entities.StrategicPlan.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   // Calculate alignment score

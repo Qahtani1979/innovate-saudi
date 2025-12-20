@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '../LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,17 +42,21 @@ export default function TRLAssessmentWorkflow({ rdProject, onUpdate }) {
 
   const updateMutation = useMutation({
     mutationFn: async () => {
-      return await base44.entities.RDProject.update(rdProject.id, {
-        trl_current: assessment.assessed_trl,
-        trl_assessment: {
-          level: assessment.assessed_trl,
-          evidence: evidence,
-          assessed_by: 'AI',
-          assessed_date: new Date().toISOString(),
-          ai_confidence: assessment.confidence,
-          justification: assessment.justification
-        }
-      });
+      const { error } = await supabase
+        .from('rd_projects')
+        .update({
+          trl_current: assessment.assessed_trl,
+          trl_assessment: {
+            level: assessment.assessed_trl,
+            evidence: evidence,
+            assessed_by: 'AI',
+            assessed_date: new Date().toISOString(),
+            ai_confidence: assessment.confidence,
+            justification: assessment.justification
+          }
+        })
+        .eq('id', rdProject.id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rd-projects'] });

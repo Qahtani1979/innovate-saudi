@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,27 +16,46 @@ export default function PolicyImpactTracker({ rdProject }) {
 
   const { data: policies = [] } = useQuery({
     queryKey: ['policies-for-impact'],
-    queryFn: () => base44.entities.PolicyRecommendation.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('policy_recommendations')
+        .select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const linkPolicyMutation = useMutation({
     mutationFn: async (policyId) => {
-      // Create bidirectional link
-      const policy = await base44.entities.PolicyRecommendation.get(policyId);
+      // Get current policy
+      const { data: policy, error: fetchError } = await supabase
+        .from('policy_recommendations')
+        .select('*')
+        .eq('id', policyId)
+        .single();
+      if (fetchError) throw fetchError;
       
       // Update policy with research link
-      await base44.entities.PolicyRecommendation.update(policyId, {
-        research_evidence_ids: [...(policy.research_evidence_ids || []), rdProject.id],
-        research_publications_cited: [
-          ...(policy.research_publications_cited || []),
-          ...rdProject.publications?.map(p => p.title) || []
-        ]
-      });
+      const { error: policyUpdateError } = await supabase
+        .from('policy_recommendations')
+        .update({
+          research_evidence_ids: [...(policy.research_evidence_ids || []), rdProject.id],
+          research_publications_cited: [
+            ...(policy.research_publications_cited || []),
+            ...rdProject.publications?.map(p => p.title) || []
+          ]
+        })
+        .eq('id', policyId);
+      if (policyUpdateError) throw policyUpdateError;
 
       // Update R&D project with policy link
-      await base44.entities.RDProject.update(rdProject.id, {
-        influenced_policy_ids: [...(rdProject.influenced_policy_ids || []), policyId]
-      });
+      const { error: rdUpdateError } = await supabase
+        .from('rd_projects')
+        .update({
+          influenced_policy_ids: [...(rdProject.influenced_policy_ids || []), policyId]
+        })
+        .eq('id', rdProject.id);
+      if (rdUpdateError) throw rdUpdateError;
 
       return policyId;
     },
@@ -50,15 +69,28 @@ export default function PolicyImpactTracker({ rdProject }) {
 
   const unlinkPolicyMutation = useMutation({
     mutationFn: async (policyId) => {
-      const policy = await base44.entities.PolicyRecommendation.get(policyId);
+      const { data: policy, error: fetchError } = await supabase
+        .from('policy_recommendations')
+        .select('*')
+        .eq('id', policyId)
+        .single();
+      if (fetchError) throw fetchError;
       
-      await base44.entities.PolicyRecommendation.update(policyId, {
-        research_evidence_ids: (policy.research_evidence_ids || []).filter(id => id !== rdProject.id)
-      });
+      const { error: policyUpdateError } = await supabase
+        .from('policy_recommendations')
+        .update({
+          research_evidence_ids: (policy.research_evidence_ids || []).filter(id => id !== rdProject.id)
+        })
+        .eq('id', policyId);
+      if (policyUpdateError) throw policyUpdateError;
 
-      await base44.entities.RDProject.update(rdProject.id, {
-        influenced_policy_ids: (rdProject.influenced_policy_ids || []).filter(id => id !== policyId)
-      });
+      const { error: rdUpdateError } = await supabase
+        .from('rd_projects')
+        .update({
+          influenced_policy_ids: (rdProject.influenced_policy_ids || []).filter(id => id !== policyId)
+        })
+        .eq('id', rdProject.id);
+      if (rdUpdateError) throw rdUpdateError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rd-project', rdProject.id] });
