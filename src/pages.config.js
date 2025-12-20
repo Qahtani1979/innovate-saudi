@@ -504,6 +504,9 @@ import FinalMatchmakerSystemAssessment from './pages/FinalMatchmakerSystemAssess
 import FinalStartupsSystemAssessment from './pages/FinalStartupsSystemAssessment';
 import FinalChallengesSystemAssessment from './pages/FinalChallengesSystemAssessment';
 import FinalScalingSystemAssessment from './pages/FinalScalingSystemAssessment';
+import FinalNewsSystemAssessment from './pages/FinalNewsSystemAssessment';
+import FinalPolicySystemAssessment from './pages/FinalPolicySystemAssessment';
+import NewsManagement from './pages/NewsManagement';
 import PartnershipDetail from './pages/PartnershipDetail';
 import PartnershipCreate from './pages/PartnershipCreate';
 import StrategyHub from './pages/StrategyHub';
@@ -1089,6 +1092,9 @@ export const PAGES = {
     "FinalStartupsSystemAssessment": FinalStartupsSystemAssessment,
     "FinalChallengesSystemAssessment": FinalChallengesSystemAssessment,
     "FinalScalingSystemAssessment": FinalScalingSystemAssessment,
+    "FinalNewsSystemAssessment": FinalNewsSystemAssessment,
+    "FinalPolicySystemAssessment": FinalPolicySystemAssessment,
+    "NewsManagement": NewsManagement,
 }
 
 export const pagesConfig = {
