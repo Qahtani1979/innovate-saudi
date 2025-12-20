@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
@@ -48,11 +48,25 @@ export default function RDProjectCreateWizard() {
 
   const { data: rdCalls = [] } = useQuery({
     queryKey: ['rd-calls-for-project'],
-    queryFn: () => base44.entities.RDCall.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('rd_calls')
+        .select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.RDProject.create(data),
+    mutationFn: async (data) => {
+      const { data: project, error } = await supabase
+        .from('rd_projects')
+        .insert(data)
+        .select()
+        .single();
+      if (error) throw error;
+      return project;
+    },
     onSuccess: async (project) => {
       queryClient.invalidateQueries(['rd-projects']);
       

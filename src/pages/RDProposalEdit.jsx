@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -26,8 +26,13 @@ export default function RDProposalEdit() {
   const { data: proposal, isLoading } = useQuery({
     queryKey: ['rd-proposal', proposalId],
     queryFn: async () => {
-      const proposals = await base44.entities.RDProposal.list();
-      return proposals.find(p => p.id === proposalId);
+      const { data, error } = await supabase
+        .from('rd_proposals')
+        .select('*')
+        .eq('id', proposalId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
     enabled: !!proposalId
   });
@@ -47,7 +52,13 @@ export default function RDProposalEdit() {
   }, [proposal]);
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.RDProposal.update(proposalId, data),
+    mutationFn: async (data) => {
+      const { error } = await supabase
+        .from('rd_proposals')
+        .update(data)
+        .eq('id', proposalId);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['rd-proposal']);
       toast.success(t({ en: 'Proposal updated', ar: 'تم تحديث المقترح' }));

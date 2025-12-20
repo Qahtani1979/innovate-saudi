@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -27,8 +27,13 @@ function RDProjectEditPage() {
   const { data: project, isLoading } = useQuery({
     queryKey: ['rd-project', projectId],
     queryFn: async () => {
-      const projects = await base44.entities.RDProject.list();
-      return projects.find(p => p.id === projectId);
+      const { data, error } = await supabase
+        .from('rd_projects')
+        .select('*')
+        .eq('id', projectId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
     enabled: !!projectId
   });
@@ -44,14 +49,15 @@ function RDProjectEditPage() {
   }, [project]);
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.RDProject.update(projectId, data),
+    mutationFn: async (data) => {
+      const { error } = await supabase
+        .from('rd_projects')
+        .update(data)
+        .eq('id', projectId);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['rd-project', projectId]);
-      // Auto-generate embedding if content changed
-      base44.functions.invoke('generateEmbeddings', {
-        entity_name: 'RDProject',
-        mode: 'missing'
-      }).catch(err => console.error('Embedding generation failed:', err));
       toast.success(t({ en: 'R&D Project updated', ar: 'تم تحديث المشروع' }));
       navigate(createPageUrl(`RDProjectDetail?id=${projectId}`));
     }

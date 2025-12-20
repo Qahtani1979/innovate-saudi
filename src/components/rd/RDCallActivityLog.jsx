@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,15 +11,30 @@ export default function RDCallActivityLog({ rdCallId }) {
 
   const { data: activities = [] } = useQuery({
     queryKey: ['rd-call-activities', rdCallId],
-    queryFn: () => base44.entities.SystemActivity.filter({ 
-      entity_id: rdCallId,
-      entity_type: 'RDCall'
-    }, '-created_date', 100)
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('system_activities')
+        .select('*')
+        .eq('entity_id', rdCallId)
+        .eq('entity_type', 'RDCall')
+        .order('created_date', { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: comments = [] } = useQuery({
     queryKey: ['rd-call-comments', rdCallId],
-    queryFn: () => base44.entities.RDCallComment.filter({ rd_call_id: rdCallId }, '-created_date')
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('rd_call_comments')
+        .select('*')
+        .eq('rd_call_id', rdCallId)
+        .order('created_date', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const allEvents = [

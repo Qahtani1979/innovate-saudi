@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,33 +24,46 @@ export default function CollaborativeProposalEditor({ proposalId }) {
   }, [proposalId]);
 
   const loadProposal = async () => {
-    const proposals = await base44.entities.RDProposal.list();
-    const p = proposals.find(p => p.id === proposalId);
-    setProposal(p);
+    const { data, error } = await supabase
+      .from('rd_proposals')
+      .select('*')
+      .eq('id', proposalId)
+      .maybeSingle();
+    if (!error && data) setProposal(data);
   };
 
   const loadComments = async () => {
-    const all = await base44.entities.RDProposalComment.list();
-    setComments(all.filter(c => c.rd_proposal_id === proposalId));
+    const { data, error } = await supabase
+      .from('rd_proposal_comments')
+      .select('*')
+      .eq('rd_proposal_id', proposalId);
+    if (!error) setComments(data || []);
   };
 
   const saveSection = async () => {
-    await base44.entities.RDProposal.update(proposalId, {
-      [editSection]: content
-    });
-    toast.success(t({ en: 'Section saved', ar: 'تم حفظ القسم' }));
-    setEditSection(null);
-    loadProposal();
+    const { error } = await supabase
+      .from('rd_proposals')
+      .update({ [editSection]: content })
+      .eq('id', proposalId);
+    if (!error) {
+      toast.success(t({ en: 'Section saved', ar: 'تم حفظ القسم' }));
+      setEditSection(null);
+      loadProposal();
+    }
   };
 
   const addComment = async () => {
-    await base44.entities.RDProposalComment.create({
-      rd_proposal_id: proposalId,
-      comment_text: newComment,
-      section: editSection || 'general'
-    });
-    setNewComment('');
-    loadComments();
+    const { error } = await supabase
+      .from('rd_proposal_comments')
+      .insert({
+        rd_proposal_id: proposalId,
+        comment_text: newComment,
+        section: editSection || 'general'
+      });
+    if (!error) {
+      setNewComment('');
+      loadComments();
+    }
   };
 
   const sections = [

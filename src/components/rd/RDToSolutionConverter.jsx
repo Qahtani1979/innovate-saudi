@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '../LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -62,20 +62,31 @@ export default function RDToSolutionConverter({ rdProject, onClose, onSuccess })
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      const solution = await base44.entities.Solution.create(data);
+      const { data: solution, error: solutionError } = await supabase
+        .from('solutions')
+        .insert(data)
+        .select()
+        .single();
+      if (solutionError) throw solutionError;
       
-      await base44.entities.RDProject.update(rdProject.id, {
-        commercialization_notes: `Commercialized as Solution ${solution.id}`,
-        commercialization_solution_id: solution.id
-      });
+      const { error: updateError } = await supabase
+        .from('rd_projects')
+        .update({
+          commercialization_notes: `Commercialized as Solution ${solution.id}`,
+          commercialization_solution_id: solution.id
+        })
+        .eq('id', rdProject.id);
+      if (updateError) console.error('Update error:', updateError);
 
-      await base44.entities.SystemActivity.create({
-        activity_type: 'rd_commercialized',
-        entity_type: 'rd_project',
-        entity_id: rdProject.id,
-        description_en: `R&D project commercialized as Solution: ${solution.name_en}`,
-        metadata: { solution_id: solution.id }
-      });
+      await supabase
+        .from('system_activities')
+        .insert({
+          activity_type: 'rd_commercialized',
+          entity_type: 'rd_project',
+          entity_id: rdProject.id,
+          description_en: `R&D project commercialized as Solution: ${solution.name_en}`,
+          metadata: { solution_id: solution.id }
+        });
 
       return solution;
     },
