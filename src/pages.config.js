@@ -497,6 +497,9 @@ import FinalRDAssessment from './pages/FinalRDAssessment';
 import FinalUsersAccessAssessment from './pages/FinalUsersAccessAssessment';
 import FinalCitizenSystemAssessment from './pages/FinalCitizenSystemAssessment';
 import FinalExpertsSystemAssessment from './pages/FinalExpertsSystemAssessment';
+import FinalPartnershipsSystemAssessment from './pages/FinalPartnershipsSystemAssessment';
+import PartnershipDetail from './pages/PartnershipDetail';
+import PartnershipCreate from './pages/PartnershipCreate';
 import StrategyHub from './pages/StrategyHub';
 // Strategy System Pages
 import StrategyReviewPage from './pages/StrategyReviewPage';
@@ -742,6 +745,9 @@ export const PAGES = {
     "PresentationMode": PresentationMode,
     "ChallengeAnalyticsDashboard": ChallengeAnalyticsDashboard,
     "PartnershipRegistry": PartnershipRegistry,
+    "PartnershipDetail": PartnershipDetail,
+    "PartnershipCreate": PartnershipCreate,
+    "FinalPartnershipsSystemAssessment": FinalPartnershipsSystemAssessment,
     "PublicIdeaSubmission": PublicIdeaSubmission,
     "CitizenEngagementDashboard": CitizenEngagementDashboard,
     "StrategyCopilotChat": StrategyCopilotChat,
