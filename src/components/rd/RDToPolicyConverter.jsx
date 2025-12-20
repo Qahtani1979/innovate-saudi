@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '../LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -62,16 +62,25 @@ export default function RDToPolicyConverter({ rdProject, onClose, onSuccess }) {
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      const policy = await base44.entities.PolicyRecommendation.create(data);
+      const { data: policy, error: policyError } = await supabase
+        .from('policy_recommendations')
+        .insert(data)
+        .select()
+        .single();
+      if (policyError) throw policyError;
       
       // Update R&D with policy impact
-      await base44.entities.RDProject.update(rdProject.id, {
-        policy_impact: {
-          ...rdProject.policy_impact,
-          policy_generated_id: policy.id,
-          policy_generated_date: new Date().toISOString()
-        }
-      });
+      const { error: updateError } = await supabase
+        .from('rd_projects')
+        .update({
+          policy_impact: {
+            ...rdProject.policy_impact,
+            policy_generated_id: policy.id,
+            policy_generated_date: new Date().toISOString()
+          }
+        })
+        .eq('id', rdProject.id);
+      if (updateError) throw updateError;
 
       return policy;
     },
