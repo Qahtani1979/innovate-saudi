@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,37 +9,55 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { MessageSquare, Send, Flag, Trash2, User } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
-export default function CommentThread({ ideaId }) {
+export default function CommentThread({ ideaId, entityType = 'citizen_idea', entityId }) {
   const { language, isRTL, t } = useLanguage();
+  const { user } = useAuth();
   const [newComment, setNewComment] = useState('');
   const [commenterName, setCommenterName] = useState('');
-  const [commenterEmail, setCommenterEmail] = useState('');
   const queryClient = useQueryClient();
+  
+  const actualEntityId = entityId || ideaId;
 
   const { data: comments = [] } = useQuery({
-    queryKey: ['idea-comments', ideaId],
+    queryKey: ['comments', entityType, actualEntityId],
     queryFn: async () => {
-      const all = await base44.entities.IdeaComment.list();
-      return all.filter(c => c.idea_id === ideaId && c.is_approved && !c.is_deleted)
-        .sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
+      const { data, error } = await supabase
+        .from('comments')
+        .select('*')
+        .eq('entity_type', entityType)
+        .eq('entity_id', actualEntityId)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!ideaId
+    enabled: !!actualEntityId
   });
 
   const addCommentMutation = useMutation({
-    mutationFn: (data) => base44.entities.IdeaComment.create(data),
+    mutationFn: async (data) => {
+      const { error } = await supabase.from('comments').insert(data);
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries(['idea-comments', ideaId]);
+      queryClient.invalidateQueries(['comments', entityType, actualEntityId]);
       setNewComment('');
       toast.success(t({ en: 'Comment posted', ar: 'تم نشر التعليق' }));
     }
   });
 
   const flagCommentMutation = useMutation({
-    mutationFn: (commentId) => base44.entities.IdeaComment.update(commentId, { is_flagged: true }),
+    mutationFn: async (commentId) => {
+      const { error } = await supabase
+        .from('comments')
+        .update({ is_internal: true })
+        .eq('id', commentId);
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries(['idea-comments', ideaId]);
+      queryClient.invalidateQueries(['comments', entityType, actualEntityId]);
       toast.success(t({ en: 'Comment flagged for review', ar: 'تم الإبلاغ عن التعليق' }));
     }
   });
@@ -48,10 +66,11 @@ export default function CommentThread({ ideaId }) {
     if (!newComment.trim()) return;
     
     addCommentMutation.mutate({
-      idea_id: ideaId,
+      entity_type: entityType,
+      entity_id: actualEntityId,
       comment_text: newComment,
-      commenter_name: commenterName || 'Anonymous',
-      commenter_email: commenterEmail || undefined
+      user_name: commenterName || user?.email?.split('@')[0] || 'Anonymous',
+      user_email: user?.email || 'anonymous@guest.com'
     });
   };
 
@@ -75,9 +94,9 @@ export default function CommentThread({ ideaId }) {
                     <User className="h-4 w-4 text-purple-600" />
                   </div>
                   <div>
-                    <p className="font-medium text-sm text-slate-900">{comment.commenter_name}</p>
+                    <p className="font-medium text-sm text-slate-900">{comment.user_name || 'Anonymous'}</p>
                     <p className="text-xs text-slate-500">
-                      {new Date(comment.created_date).toLocaleString()}
+                      {new Date(comment.created_at).toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -97,19 +116,11 @@ export default function CommentThread({ ideaId }) {
 
         {/* Add Comment Form */}
         <div className="space-y-3 pt-4 border-t">
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              placeholder={t({ en: 'Your name', ar: 'اسمك' })}
-              value={commenterName}
-              onChange={(e) => setCommenterName(e.target.value)}
-            />
-            <Input
-              type="email"
-              placeholder={t({ en: 'Email (optional)', ar: 'البريد (اختياري)' })}
-              value={commenterEmail}
-              onChange={(e) => setCommenterEmail(e.target.value)}
-            />
-          </div>
+          <Input
+            placeholder={t({ en: 'Your name (optional)', ar: 'اسمك (اختياري)' })}
+            value={commenterName}
+            onChange={(e) => setCommenterName(e.target.value)}
+          />
           <Textarea
             placeholder={t({ en: 'Share your thoughts...', ar: 'شارك أفكارك...' })}
             value={newComment}
@@ -118,7 +129,7 @@ export default function CommentThread({ ideaId }) {
           />
           <Button 
             onClick={handleSubmit}
-            disabled={!newComment.trim() || addCommentMutation.isLoading}
+            disabled={!newComment.trim() || addCommentMutation.isPending}
             className="bg-purple-600"
           >
             <Send className="h-4 w-4 mr-2" />
