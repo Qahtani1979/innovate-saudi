@@ -1,45 +1,82 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
-import { Bookmark } from 'lucide-react';
+import { Bookmark, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function BookmarkButton({ entityType, entityId, entityName }) {
-  const [isBookmarked, setIsBookmarked] = useState(false);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
-    setIsBookmarked(bookmarks.some(b => b.entityType === entityType && b.entityId === entityId));
-  }, [entityType, entityId]);
+  const { data: bookmark, isLoading } = useQuery({
+    queryKey: ['bookmark', entityType, entityId, user?.email],
+    queryFn: async () => {
+      if (!user?.email) return null;
+      const { data, error } = await supabase
+        .from('bookmarks')
+        .select('*')
+        .eq('user_email', user.email)
+        .eq('entity_type', entityType)
+        .eq('entity_id', entityId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.email && !!entityId
+  });
 
-  const toggleBookmark = () => {
-    const bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
-    
-    if (isBookmarked) {
-      const updated = bookmarks.filter(b => !(b.entityType === entityType && b.entityId === entityId));
-      localStorage.setItem('bookmarks', JSON.stringify(updated));
-      setIsBookmarked(false);
-      toast.success('Removed from bookmarks');
-    } else {
-      bookmarks.push({ 
-        entityType, 
-        entityId, 
-        entityName, 
-        bookmarkedAt: new Date().toISOString() 
-      });
-      localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
-      setIsBookmarked(true);
-      toast.success('Added to bookmarks');
+  const toggleMutation = useMutation({
+    mutationFn: async () => {
+      if (!user?.email) throw new Error('Login required');
+      
+      if (bookmark) {
+        // Remove bookmark
+        const { error } = await supabase
+          .from('bookmarks')
+          .delete()
+          .eq('id', bookmark.id);
+        if (error) throw error;
+      } else {
+        // Add bookmark
+        const { error } = await supabase
+          .from('bookmarks')
+          .insert({
+            user_email: user.email,
+            entity_type: entityType,
+            entity_id: entityId,
+            notes: entityName || null
+          });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['bookmark', entityType, entityId]);
+      queryClient.invalidateQueries(['user-bookmarks']);
+      toast.success(bookmark ? 'Removed from bookmarks' : 'Added to bookmarks');
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to update bookmark');
     }
-  };
+  });
+
+  const isBookmarked = !!bookmark;
 
   return (
     <Button
       variant="ghost"
       size="icon"
-      onClick={toggleBookmark}
+      onClick={() => toggleMutation.mutate()}
+      disabled={toggleMutation.isPending || isLoading || !user}
       className={isBookmarked ? 'text-yellow-600' : 'text-slate-400'}
+      title={user ? (isBookmarked ? 'Remove bookmark' : 'Add bookmark') : 'Login to bookmark'}
     >
-      <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-current' : ''}`} />
+      {toggleMutation.isPending ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-current' : ''}`} />
+      )}
     </Button>
   );
 }

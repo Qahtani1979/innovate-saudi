@@ -30,22 +30,38 @@ export default function ChallengeVoting({ challengeId, initialVotes = 0 }) {
   const voteMutation = useMutation({
     mutationFn: async () => {
       if (userVote) {
-        // Unvote
-        await base44.entities.CitizenVote.delete(userVote.id);
-        await base44.entities.Challenge.update(challengeId, {
-          citizen_votes_count: Math.max(0, (initialVotes || 0) - 1)
-        });
+        // Unvote - delete the vote
+        const { error: deleteError } = await supabase
+          .from('citizen_votes')
+          .delete()
+          .eq('id', userVote.id);
+        if (deleteError) throw deleteError;
+        
+        // Update challenge vote count
+        const { error: updateError } = await supabase
+          .from('challenges')
+          .update({ citizen_votes_count: Math.max(0, (initialVotes || 0) - 1) })
+          .eq('id', challengeId);
+        if (updateError) throw updateError;
       } else {
-        // Vote
-        await base44.entities.CitizenVote.create({
-          voter_email: user.email,
-          entity_type: 'challenge',
-          entity_id: challengeId,
-          vote_type: 'upvote'
-        });
-        await base44.entities.Challenge.update(challengeId, {
-          citizen_votes_count: (initialVotes || 0) + 1
-        });
+        // Vote - insert new vote
+        const { error: insertError } = await supabase
+          .from('citizen_votes')
+          .insert({
+            user_email: user.email,
+            user_id: user.id,
+            entity_type: 'challenge',
+            entity_id: challengeId,
+            vote_type: 'upvote'
+          });
+        if (insertError) throw insertError;
+        
+        // Update challenge vote count
+        const { error: updateError } = await supabase
+          .from('challenges')
+          .update({ citizen_votes_count: (initialVotes || 0) + 1 })
+          .eq('id', challengeId);
+        if (updateError) throw updateError;
       }
     },
     onSuccess: () => {

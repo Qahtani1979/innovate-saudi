@@ -513,6 +513,7 @@ import FinalNotificationsSystemAssessment from './pages/FinalNotificationsSystem
 import FinalMediaLibrarySystemAssessment from './pages/FinalMediaLibrarySystemAssessment';
 import FinalBudgetsSystemAssessment from './pages/FinalBudgetsSystemAssessment';
 import FinalAuditsLogsSystemAssessment from './pages/FinalAuditsLogsSystemAssessment';
+import FinalSocialFeaturesSystemAssessment from './pages/FinalSocialFeaturesSystemAssessment';
 import NewsManagement from './pages/NewsManagement';
 import PartnershipDetail from './pages/PartnershipDetail';
 import PartnershipCreate from './pages/PartnershipCreate';
@@ -1108,6 +1109,7 @@ export const PAGES = {
     "FinalMediaLibrarySystemAssessment": FinalMediaLibrarySystemAssessment,
     "FinalBudgetsSystemAssessment": FinalBudgetsSystemAssessment,
     "FinalAuditsLogsSystemAssessment": FinalAuditsLogsSystemAssessment,
+    "FinalSocialFeaturesSystemAssessment": FinalSocialFeaturesSystemAssessment,
     "NewsManagement": NewsManagement,
 }
 
