@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +32,10 @@ export default function PolicyRecommendationManager({ challengeId, policies = []
   const queryClient = useQueryClient();
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.PolicyRecommendation.delete(id),
+    mutationFn: async (id) => {
+      const { error } = await supabase.from('policy_recommendations').delete().eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['challenge-policies']);
       toast.success(t({ en: 'Policy deleted', ar: 'تم حذف السياسة' }));

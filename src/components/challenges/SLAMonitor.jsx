@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,8 +16,11 @@ export default function SLAMonitor() {
   const queryClient = useQueryClient();
   const [escalatingId, setEscalatingId] = React.useState(null);
   const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
+    queryKey: ['challenges-sla'],
+    queryFn: async () => {
+      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false);
+      return data || [];
+    }
   });
 
   const calculateSLA = (challenge) => {
@@ -48,10 +51,11 @@ export default function SLAMonitor() {
     setEscalatingId(challenge.id);
     try {
       // Update challenge escalation level
-      await base44.entities.Challenge.update(challenge.id, {
+      const { error } = await supabase.from('challenges').update({
         escalation_level: (challenge.escalation_level || 0) + 1,
         escalation_date: new Date().toISOString()
-      });
+      }).eq('id', challenge.id);
+      if (error) throw error;
 
       // Trigger escalation email
       await triggerEmail('challenge.escalated', {

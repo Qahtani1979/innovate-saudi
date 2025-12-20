@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Share2, CheckCircle2, Loader2, Zap } from 'lucide-react';
@@ -24,29 +24,33 @@ export default function CrossCitySolutionSharing({ challenge }) {
 
   const { data: municipalities = [] } = useQuery({
     queryKey: ['municipalities-for-sharing'],
-    queryFn: () => base44.entities.Municipality.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('municipalities').select('*');
+      return data || [];
+    }
   });
 
   const { data: similarChallenges = [] } = useQuery({
     queryKey: ['similar-challenges', challenge.id],
     queryFn: async () => {
-      const all = await base44.entities.Challenge.list();
-      return all.filter(c => 
-        c.id !== challenge.id && 
-        c.sector === challenge.sector &&
-        (c.status === 'under_review' || c.status === 'approved')
-      ).slice(0, 10);
+      const { data } = await supabase.from('challenges')
+        .select('*')
+        .eq('sector', challenge.sector)
+        .neq('id', challenge.id)
+        .in('status', ['under_review', 'approved'])
+        .limit(10);
+      return data || [];
     }
   });
 
   const shareMutation = useMutation({
     mutationFn: async (cities) => {
       for (const cityId of cities) {
-        await base44.entities.ChallengeActivity.create({
+        await supabase.from('challenge_activities').insert({
           challenge_id: challenge.id,
           activity_type: 'cross_city_share',
           description: `Solution shared with ${cityId}`,
-          details: { shared_to_municipality: cityId, shared_date: new Date().toISOString() }
+          metadata: { shared_to_municipality: cityId, shared_date: new Date().toISOString() }
         });
 
         // Send email via email-trigger-hub

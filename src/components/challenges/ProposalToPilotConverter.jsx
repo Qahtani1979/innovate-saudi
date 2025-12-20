@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,39 +18,43 @@ export default function ProposalToPilotConverter({ proposal, challenge, onSucces
 
   const { data: solution } = useQuery({
     queryKey: ['solution', proposal.solution_id],
-    queryFn: () => base44.entities.Solution.get(proposal.solution_id),
+    queryFn: async () => {
+      const { data } = await supabase.from('solutions').select('*').eq('id', proposal.solution_id).single();
+      return data;
+    },
     enabled: !!proposal.solution_id
   });
 
   const convertMutation = useMutation({
     mutationFn: async () => {
-      const pilot = await base44.entities.Pilot.create({
-        code: `PLT-${Date.now().toString().slice(-6)}`,
-        title_en: `Pilot: ${proposal.proposal_title}`,
-        title_ar: proposal.proposal_title,
+      const pilotCode = `PLT-${Date.now().toString().slice(-6)}`;
+      const { data: pilot, error: pilotError } = await supabase.from('pilots').insert({
+        code: pilotCode,
+        title_en: `Pilot: ${proposal.proposal_title || proposal.title}`,
+        title_ar: proposal.proposal_title || proposal.title,
         challenge_id: challenge.id,
         solution_id: proposal.solution_id,
         municipality_id: challenge.municipality_id,
         sector: challenge.sector,
-        description_en: proposal.proposal_text,
-        objective_en: proposal.approach_summary,
-        duration_weeks: proposal.timeline_weeks,
-        budget: proposal.estimated_cost,
+        description_en: proposal.proposed_solution || proposal.description,
+        objective_en: proposal.proposed_solution,
+        duration_weeks: proposal.timeline ? parseInt(proposal.timeline) : 12,
+        budget: proposal.budget_estimate,
         stage: 'design',
         status: 'draft'
-      });
+      }).select().single();
+      if (pilotError) throw pilotError;
 
       // Update proposal with pilot reference
-      await base44.entities.ChallengeProposal.update(proposal.id, {
-        converted_to_pilot_id: pilot.id,
+      await supabase.from('challenge_proposals').update({
         status: 'accepted'
-      });
+      }).eq('id', proposal.id);
 
       // Update challenge with linked pilot
-      await base44.entities.Challenge.update(challenge.id, {
+      await supabase.from('challenges').update({
         linked_pilot_ids: [...(challenge.linked_pilot_ids || []), pilot.id],
         track: 'pilot'
-      });
+      }).eq('id', challenge.id);
 
       return pilot;
     },

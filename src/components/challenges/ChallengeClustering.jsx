@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,8 +28,11 @@ export default function ChallengeClustering() {
   });
 
   const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
+    queryKey: ['challenges-clustering'],
+    queryFn: async () => {
+      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false);
+      return data || [];
+    }
   });
 
   const analyzeClusters = async () => {
@@ -50,6 +53,7 @@ export default function ChallengeClustering() {
     try {
       const megaChallengeData = {
         title_en: cluster.name,
+        title_ar: cluster.name,
         description_en: cluster.mega_challenge_description,
         sector: cluster.theme,
         keywords: cluster.suggested_tags,
@@ -58,7 +62,8 @@ export default function ChallengeClustering() {
         tags: cluster.suggested_tags
       };
 
-      await base44.entities.Challenge.create(megaChallengeData);
+      const { error } = await supabase.from('challenges').insert(megaChallengeData);
+      if (error) throw error;
       toast.success(t({ en: 'Mega-challenge created', ar: 'تم إنشاء التحدي الضخم' }));
     } catch (error) {
       toast.error(t({ en: 'Creation failed', ar: 'فشل الإنشاء' }));

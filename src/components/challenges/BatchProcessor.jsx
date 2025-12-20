@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,40 +31,44 @@ export default function BatchProcessor() {
     setProcessing(true);
 
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: uploadedFile });
-
-      const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
-        file_url,
-        json_schema: {
-          type: "object",
-          properties: {
-            challenges: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  title_en: { type: "string" },
-                  title_ar: { type: "string" },
-                  description_en: { type: "string" },
-                  sector: { type: "string" },
-                  priority: { type: "string" },
-                  municipality_id: { type: "string" }
+      // For now, use AI to extract from file content read as text
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const content = event.target?.result;
+        // Use AI to parse the content
+        const parseResult = await invokeAI({
+          prompt: `Extract challenge data from this file content. Return as JSON with array of challenges having title_en, title_ar, description_en, sector, priority fields:\n\n${content}`,
+          response_json_schema: {
+            type: "object",
+            properties: {
+              challenges: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    title_en: { type: "string" },
+                    title_ar: { type: "string" },
+                    description_en: { type: "string" },
+                    sector: { type: "string" },
+                    priority: { type: "string" }
+                  }
                 }
               }
             }
           }
-        }
-      });
+        });
 
-      if (extracted.status === 'success') {
-        setExtractedData(extracted.output.challenges || []);
-        await validateData(extracted.output.challenges);
-      } else {
-        toast.error(t({ en: 'Extraction failed', ar: 'فشل الاستخراج' }));
-      }
+        if (parseResult.success && parseResult.data?.challenges) {
+          setExtractedData(parseResult.data.challenges);
+          await validateData(parseResult.data.challenges);
+        } else {
+          toast.error(t({ en: 'Extraction failed', ar: 'فشل الاستخراج' }));
+        }
+        setProcessing(false);
+      };
+      reader.readAsText(uploadedFile);
     } catch (error) {
       toast.error(t({ en: 'Upload failed', ar: 'فشل الرفع' }));
-    } finally {
       setProcessing(false);
     }
   };
@@ -89,7 +93,12 @@ export default function BatchProcessor() {
   };
 
   const bulkImportMutation = useMutation({
-    mutationFn: (challenges) => base44.entities.Challenge.bulkCreate(challenges),
+    mutationFn: async (challenges) => {
+      const { error } = await supabase.from('challenges').insert(
+        challenges.map(c => ({ ...c, status: 'draft' }))
+      );
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['challenges'] });
       toast.success(t({ en: 'Challenges imported successfully', ar: 'تم استيراد التحديات بنجاح' }));

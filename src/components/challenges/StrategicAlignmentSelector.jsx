@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -20,12 +20,18 @@ export default function StrategicAlignmentSelector({ challenge, onUpdate }) {
 
   const { data: strategicPlans = [] } = useQuery({
     queryKey: ['strategic-plans'],
-    queryFn: () => base44.entities.StrategicPlan.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('strategic_plans').select('*');
+      return data || [];
+    }
   });
 
   const { data: existingLinks = [] } = useQuery({
     queryKey: ['strategic-links', challenge?.id],
-    queryFn: () => base44.entities.StrategicPlanChallengeLink.filter({ challenge_id: challenge?.id }),
+    queryFn: async () => {
+      const { data } = await supabase.from('strategic_plan_challenge_links').select('*').eq('challenge_id', challenge?.id);
+      return data || [];
+    },
     enabled: !!challenge?.id
   });
 
@@ -36,9 +42,9 @@ export default function StrategicAlignmentSelector({ challenge, onUpdate }) {
         return;
       }
 
-      await base44.entities.Challenge.update(challenge.id, {
+      await supabase.from('challenges').update({
         strategic_plan_ids: selectedPlans
-      });
+      }).eq('id', challenge.id);
 
       const currentLinks = existingLinks.map(l => l.strategic_plan_id);
       const toAdd = selectedPlans.filter(id => !currentLinks.includes(id));
@@ -46,7 +52,7 @@ export default function StrategicAlignmentSelector({ challenge, onUpdate }) {
 
       await Promise.all([
         ...toAdd.map(plan_id => 
-          base44.entities.StrategicPlanChallengeLink.create({
+          supabase.from('strategic_plan_challenge_links').insert({
             strategic_plan_id: plan_id,
             challenge_id: challenge.id,
             contribution_type: 'addresses',
@@ -55,7 +61,7 @@ export default function StrategicAlignmentSelector({ challenge, onUpdate }) {
         ),
         ...toRemove.map(plan_id => {
           const link = existingLinks.find(l => l.strategic_plan_id === plan_id);
-          return link ? base44.entities.StrategicPlanChallengeLink.delete(link.id) : Promise.resolve();
+          return link ? supabase.from('strategic_plan_challenge_links').delete().eq('id', link.id) : Promise.resolve();
         })
       ]);
     },

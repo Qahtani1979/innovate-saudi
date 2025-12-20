@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Zap, CheckCircle2 } from 'lucide-react';
+import { Zap, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function QuickFixWorkflow({ challenge, onComplete }) {
@@ -22,7 +22,7 @@ export default function QuickFixWorkflow({ challenge, onComplete }) {
   const quickFixMutation = useMutation({
     mutationFn: async (data) => {
       // Update challenge with quick fix resolution
-      await base44.entities.Challenge.update(challenge.id, {
+      const { error } = await supabase.from('challenges').update({
         status: 'resolved',
         resolution_date: new Date().toISOString(),
         treatment_plan: {
@@ -30,7 +30,8 @@ export default function QuickFixWorkflow({ challenge, onComplete }) {
           ...data
         },
         track: 'operational'
-      });
+      }).eq('id', challenge.id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['challenges'] });

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -15,10 +15,11 @@ export default function ChallengeActivityLog({ challengeId }) {
   const { data: activities = [] } = useQuery({
     queryKey: ['challenge-activities', challengeId],
     queryFn: async () => {
-      const all = await base44.entities.ChallengeActivity.list();
-      return all.filter(a => a.challenge_id === challengeId).sort((a, b) => 
-        new Date(b.timestamp) - new Date(a.timestamp)
-      );
+      const { data } = await supabase.from('challenge_activities')
+        .select('*')
+        .eq('challenge_id', challengeId)
+        .order('created_at', { ascending: false });
+      return data || [];
     },
     enabled: !!challengeId
   });
