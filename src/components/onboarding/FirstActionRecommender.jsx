@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,15 +26,38 @@ export default function FirstActionRecommender({ user }) {
     fallbackData: null
   });
 
+  // Fetch open challenges for recommendations
   const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-open'],
-    queryFn: () => base44.entities.Challenge.filter({ status: 'approved' }, '-created_date', 5),
+    queryKey: ['challenges-open-first-action'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('id, title_en, title_ar, status, created_at')
+        .eq('status', 'approved')
+        .eq('is_deleted', false)
+        .eq('is_published', true)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      if (error) throw error;
+      return data || [];
+    },
     initialData: []
   });
 
+  // Fetch R&D calls for recommendations
   const { data: rdCalls = [] } = useQuery({
-    queryKey: ['rd-calls-open'],
-    queryFn: () => base44.entities.RDCall.filter({ status: 'published' }, '-created_date', 3),
+    queryKey: ['rd-calls-open-first-action'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('rd_calls')
+        .select('id, title_en, title_ar, status, created_at')
+        .eq('status', 'published')
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false })
+        .limit(3);
+      if (error) throw error;
+      return data || [];
+    },
     initialData: []
   });
 

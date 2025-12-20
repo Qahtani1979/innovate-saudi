@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,38 +10,62 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 export default function OnboardingAnalytics() {
   const { language, t } = useLanguage();
 
+  // Fetch user profiles count
   const { data: users = [] } = useQuery({
-    queryKey: ['users'],
-    queryFn: () => base44.entities.User.list(),
+    queryKey: ['user-profiles-analytics'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('id, user_email, onboarding_completed, created_at')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    },
     initialData: []
   });
 
+  // Fetch challenges count for activity
   const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list(),
+    queryKey: ['challenges-analytics'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('id, created_by, created_at')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    },
     initialData: []
   });
 
+  // Fetch solutions count for activity
   const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions'],
-    queryFn: () => base44.entities.Solution.list(),
+    queryKey: ['solutions-analytics'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('solutions')
+        .select('id, created_by, created_at')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    },
     initialData: []
   });
 
   // Calculate onboarding metrics
   const totalUsers = users.length;
   const activeUsers = users.filter(u => {
-    const createdChallenges = challenges.filter(c => c.created_by === u.email).length;
-    const createdSolutions = solutions.filter(s => s.created_by === u.email).length;
+    const createdChallenges = challenges.filter(c => c.created_by === u.user_email).length;
+    const createdSolutions = solutions.filter(s => s.created_by === u.user_email).length;
     return createdChallenges > 0 || createdSolutions > 0;
   }).length;
 
   const activationRate = totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) : 0;
 
-  // Time-to-first-action (simulated)
+  // Time-to-first-action (simulated - would need access_logs analysis for real data)
   const avgTimeToAction = 2.3; // days
 
-  // Cohort analysis (last 6 months)
+  // Cohort analysis (last 6 months - static demo data)
   const cohortData = [
     { month: 'Jun', users: 12, activated: 9 },
     { month: 'Jul', users: 18, activated: 14 },
