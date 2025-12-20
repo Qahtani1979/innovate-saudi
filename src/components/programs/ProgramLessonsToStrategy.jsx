@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +31,11 @@ export default function ProgramLessonsToStrategy({ program }) {
 
   const { data: strategicPlans = [] } = useQuery({
     queryKey: ['strategic-plans-lessons'],
-    queryFn: () => base44.entities.StrategicPlan.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('strategic_plans').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   // Get existing lessons
@@ -61,10 +65,14 @@ export default function ProgramLessonsToStrategy({ program }) {
         }
       ];
 
-      await base44.entities.Program.update(program.id, {
-        lessons_learned: updatedLessons,
-        last_lesson_date: new Date().toISOString()
-      });
+      const { error } = await supabase
+        .from('programs')
+        .update({
+          lessons_learned: updatedLessons,
+          last_lesson_date: new Date().toISOString()
+        })
+        .eq('id', program.id);
+      if (error) throw error;
 
       return updatedLessons;
     },
@@ -142,10 +150,13 @@ export default function ProgramLessonsToStrategy({ program }) {
           replication_opportunities: aiSummary.replication_opportunities
         };
 
-        await base44.entities.StrategicPlan.update(plan.id, {
-          program_feedback: [...existingFeedback, newFeedback],
-          last_feedback_date: new Date().toISOString()
-        });
+        await supabase
+          .from('strategic_plans')
+          .update({
+            program_feedback: [...existingFeedback, newFeedback],
+            last_feedback_date: new Date().toISOString()
+          })
+          .eq('id', plan.id);
       }
 
       return linkedPlans.length;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,11 +22,13 @@ export default function ProgramAlumniStoryboard({ program, showPublicOnly = fals
   const { data: applications = [] } = useQuery({
     queryKey: ['program-applications-alumni', program?.id],
     queryFn: async () => {
-      const all = await base44.entities.ProgramApplication.list();
-      return all.filter(a => 
-        a.program_id === program.id && 
-        (a.status === 'graduated' || a.status === 'active')
-      );
+      const { data, error } = await supabase
+        .from('program_applications')
+        .select('*')
+        .eq('program_id', program.id)
+        .in('status', ['graduated', 'active']);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!program
   });
@@ -38,8 +40,9 @@ export default function ProgramAlumniStoryboard({ program, showPublicOnly = fals
       const participantEmails = applications.map(a => a.applicant_email);
       if (participantEmails.length === 0) return [];
       
-      const all = await base44.entities.Solution.list();
-      return all.filter(s => 
+      const { data, error } = await supabase.from('solutions').select('*');
+      if (error) throw error;
+      return (data || []).filter(s => 
         participantEmails.includes(s.created_by) ||
         participantEmails.some(email => s.provider_name?.includes(email))
       );
@@ -54,8 +57,9 @@ export default function ProgramAlumniStoryboard({ program, showPublicOnly = fals
       const participantEmails = applications.map(a => a.applicant_email);
       if (participantEmails.length === 0) return [];
       
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => 
+      const { data, error } = await supabase.from('pilots').select('*').eq('is_deleted', false);
+      if (error) throw error;
+      return (data || []).filter(p => 
         participantEmails.includes(p.created_by) ||
         p.team?.some(t => participantEmails.includes(t.email))
       );

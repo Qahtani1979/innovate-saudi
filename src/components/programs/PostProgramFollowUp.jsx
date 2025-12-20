@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '../LanguageContext';
-import { TrendingUp, Users, CheckCircle2, Send, Loader2 } from 'lucide-react';
+import { TrendingUp, Users, CheckCircle2, Send, Loader2, X } from 'lucide-react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
@@ -27,24 +27,46 @@ export default function PostProgramFollowUp({ program }) {
   const { data: applications = [] } = useQuery({
     queryKey: ['program-applications', program.id],
     queryFn: async () => {
-      const all = await base44.entities.ProgramApplication.list();
-      return all.filter(app => app.program_id === program.id && app.status === 'accepted');
+      const { data, error } = await supabase
+        .from('program_applications')
+        .select('*')
+        .eq('program_id', program.id)
+        .eq('status', 'accepted');
+      if (error) throw error;
+      return data || [];
     }
   });
 
   const updateMutation = useMutation({
     mutationFn: async (data) => {
       // Update program outcomes
-      await base44.entities.Program.update(program.id, {
-        outcomes: {
-          ...program.outcomes,
-          follow_up_data: data,
-          last_follow_up: new Date().toISOString()
-        }
-      });
+      const { error } = await supabase
+        .from('programs')
+        .update({
+          outcomes: {
+            ...program.outcomes,
+            follow_up_data: data,
+            last_follow_up: new Date().toISOString()
+          }
+        })
+        .eq('id', program.id);
+      if (error) throw error;
 
       // Send follow-up email via email-trigger-hub
-      const { supabase } = await import('@/integrations/supabase/client');
+      await supabase.functions.invoke('email-trigger-hub', {
+        body: {
+          trigger: 'pilot.feedback_request',
+          recipient_email: selectedParticipant.email,
+          entity_type: 'program',
+          entity_id: program.id,
+          variables: {
+            programName: program.name_en,
+            participantName: selectedParticipant.name
+          },
+          triggered_by: 'system'
+        }
+      });
+    },
       await supabase.functions.invoke('email-trigger-hub', {
         body: {
           trigger: 'pilot.feedback_request',

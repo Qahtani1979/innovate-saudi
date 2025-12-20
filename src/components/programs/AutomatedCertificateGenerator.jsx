@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +33,7 @@ export default function AutomatedCertificateGenerator({ programId, graduates }) 
   };
 
   const sendCertificate = async (cert) => {
-    const { supabase } = await import('@/integrations/supabase/client');
+    await supabase.functions.invoke('email-trigger-hub', {
     await supabase.functions.invoke('email-trigger-hub', {
       body: {
         trigger: 'program.completed',

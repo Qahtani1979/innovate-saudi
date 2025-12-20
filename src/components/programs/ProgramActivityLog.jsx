@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,10 +16,14 @@ export default function ProgramActivityLog({ programId }) {
   const { data: systemActivity = [] } = useQuery({
     queryKey: ['system-activity-program', programId],
     queryFn: async () => {
-      const all = await base44.entities.SystemActivity.list();
-      return all
-        .filter(a => a.entity_type === 'program' && a.entity_id === programId)
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      const { data, error } = await supabase
+        .from('system_activities')
+        .select('*')
+        .eq('entity_type', 'program')
+        .eq('entity_id', programId)
+        .order('timestamp', { ascending: false });
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!programId
   });
@@ -27,10 +31,14 @@ export default function ProgramActivityLog({ programId }) {
   const { data: comments = [] } = useQuery({
     queryKey: ['program-comments', programId],
     queryFn: async () => {
-      const all = await base44.entities.ProgramComment.list();
-      return all
-        .filter(c => c.program_id === programId)
-        .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+      const { data, error } = await supabase
+        .from('comments')
+        .select('*')
+        .eq('entity_type', 'program')
+        .eq('entity_id', programId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!programId
   });
@@ -38,10 +46,14 @@ export default function ProgramActivityLog({ programId }) {
   const { data: approvals = [] } = useQuery({
     queryKey: ['program-approvals', programId],
     queryFn: async () => {
-      const all = await base44.entities.ApprovalRequest.list();
-      return all
-        .filter(a => a.entity_type === 'program' && a.entity_id === programId)
-        .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+      const { data, error } = await supabase
+        .from('approval_requests')
+        .select('*')
+        .eq('entity_type', 'program')
+        .eq('entity_id', programId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!programId
   });
