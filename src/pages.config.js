@@ -510,6 +510,7 @@ import FinalKnowledgeSystemAssessment from './pages/FinalKnowledgeSystemAssessme
 import LessonsLearnedRepository from './pages/LessonsLearnedRepository';
 import FinalCommunicationsSystemAssessment from './pages/FinalCommunicationsSystemAssessment';
 import FinalNotificationsSystemAssessment from './pages/FinalNotificationsSystemAssessment';
+import FinalMediaLibrarySystemAssessment from './pages/FinalMediaLibrarySystemAssessment';
 import NewsManagement from './pages/NewsManagement';
 import PartnershipDetail from './pages/PartnershipDetail';
 import PartnershipCreate from './pages/PartnershipCreate';
@@ -1102,6 +1103,7 @@ export const PAGES = {
     "LessonsLearnedRepository": LessonsLearnedRepository,
     "FinalCommunicationsSystemAssessment": FinalCommunicationsSystemAssessment,
     "FinalNotificationsSystemAssessment": FinalNotificationsSystemAssessment,
+    "FinalMediaLibrarySystemAssessment": FinalMediaLibrarySystemAssessment,
     "NewsManagement": NewsManagement,
 }
 
