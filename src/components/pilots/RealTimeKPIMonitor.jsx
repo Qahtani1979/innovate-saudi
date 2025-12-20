@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,17 +14,28 @@ export default function RealTimeKPIMonitor({ pilotId }) {
   const { data: pilot } = useQuery({
     queryKey: ['pilot', pilotId],
     queryFn: async () => {
-      const pilots = await base44.entities.Pilot.list();
-      return pilots.find(p => p.id === pilotId);
+      const { data, error } = await supabase
+        .from('pilots')
+        .select('*')
+        .eq('id', pilotId)
+        .single();
+      if (error) throw error;
+      return data;
     },
-    refetchInterval: 30000 // Refresh every 30 seconds
+    refetchInterval: 30000
   });
 
   const { data: datapoints = [] } = useQuery({
     queryKey: ['kpi-datapoints', pilotId],
     queryFn: async () => {
-      const all = await base44.entities.PilotKPIDatapoint.list('-timestamp');
-      return all.filter(d => d.pilot_id === pilotId).slice(0, 50);
+      const { data, error } = await supabase
+        .from('pilot_kpi_datapoints')
+        .select('*')
+        .eq('pilot_id', pilotId)
+        .order('timestamp', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data || [];
     },
     refetchInterval: 30000
   });

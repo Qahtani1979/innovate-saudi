@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,7 +49,10 @@ export default function PilotToPolicyWorkflow({ pilot, onClose }) {
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      await base44.entities.PolicyRecommendation.create(data);
+      const { error } = await supabase
+        .from('policy_recommendations')
+        .insert(data);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['policies']);
