@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,7 +45,7 @@ export default function SolutionDeprecationWizard({ solution, onComplete }) {
   const deprecateMutation = useMutation({
     mutationFn: async (data) => {
       // Update solution
-      await base44.entities.Solution.update(solution.id, {
+      await supabase.from('solutions').update({
         workflow_stage: 'deprecated',
         is_published: false,
         is_archived: true,
@@ -55,13 +54,12 @@ export default function SolutionDeprecationWizard({ solution, onComplete }) {
         end_of_life_date: data.end_of_life_date,
         replacement_solution_id: data.replacement_solution_id,
         support_end_date: data.support_end_date
-      });
+      }).eq('id', solution.id);
 
       // Get all pilots using this solution
-      const activePilots = await base44.entities.Pilot.filter({
-        solution_id: solution.id,
-        stage: { $in: ['active', 'monitoring', 'preparation'] }
-      });
+      const { data: activePilots = [] } = await supabase.from('pilots').select('*')
+        .eq('solution_id', solution.id)
+        .in('stage', ['active', 'monitoring', 'preparation']);
 
       // Notify all affected municipalities
       for (const pilot of activePilots) {
@@ -88,7 +86,7 @@ export default function SolutionDeprecationWizard({ solution, onComplete }) {
       }
 
       // Log activity
-      await base44.entities.SystemActivity.create({
+      await supabase.from('system_activities').insert({
         entity_type: 'Solution',
         entity_id: solution.id,
         activity_type: 'deprecated',

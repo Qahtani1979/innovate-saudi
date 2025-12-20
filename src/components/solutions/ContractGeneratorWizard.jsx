@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -80,7 +80,9 @@ export default function ContractGeneratorWizard({ solution, pilot, onComplete, o
 
   const createContractMutation = useMutation({
     mutationFn: async (data) => {
-      return await base44.entities.Contract.create(data);
+      const { data: contract, error } = await supabase.from('contracts').insert(data).select().single();
+      if (error) throw error;
+      return contract;
     },
     onSuccess: async (createdContract) => {
       queryClient.invalidateQueries(['contracts']);

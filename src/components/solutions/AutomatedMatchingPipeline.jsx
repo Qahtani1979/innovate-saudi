@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
@@ -25,10 +25,12 @@ export default function AutomatedMatchingPipeline() {
 
   const runWeeklyMatching = async () => {
     try {
-      const [challenges, solutions] = await Promise.all([
-        base44.entities.Challenge.filter({ status: 'approved' }),
-        base44.entities.Solution.filter({ is_published: true })
+      const [challengesRes, solutionsRes] = await Promise.all([
+        supabase.from('challenges').select('*').eq('status', 'approved'),
+        supabase.from('solutions').select('*').eq('is_published', true)
       ]);
+      const challenges = challengesRes.data || [];
+      const solutions = solutionsRes.data || [];
 
       const response = await invokeAI({
         system_prompt: getSystemPrompt(AUTOMATED_MATCHING_SYSTEM_PROMPT),
@@ -47,7 +49,7 @@ export default function AutomatedMatchingPipeline() {
           }))
         );
 
-        await base44.entities.ChallengeSolutionMatch.bulkCreate(matchesToCreate);
+        await supabase.from('challenge_solution_matches').insert(matchesToCreate);
         setResults(response.data);
         toast.success(t({ en: 'Weekly matching complete', ar: 'اكتملت المطابقة الأسبوعية' }));
       }

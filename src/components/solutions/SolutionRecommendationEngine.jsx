@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Sparkles, Target, Zap, Loader2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
@@ -17,7 +17,7 @@ export default function SolutionRecommendationEngine({ challenge, userProfile, c
   const { invokeAI, status: aiStatus, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const generateRecommendations = async () => {
-    const solutions = await base44.entities.Solution.list();
+    const { data: solutions = [] } = await supabase.from('solutions').select('*').eq('is_published', true);
     
     const result = await invokeAI({
       prompt: `Recommend the best 5 solutions for this ${context} in BOTH English and Arabic:
