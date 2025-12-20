@@ -2,7 +2,7 @@
  * Citizen Module Prompts Index
  * Central export point for all citizen-related AI prompts
  * @module citizen
- * @version 1.3.0
+ * @version 1.4.0
  */
 
 export * from './ideaClassifier';
@@ -15,11 +15,13 @@ export * from './ideasAnalytics';
 export * from './proposalToRD';
 export * from './ideaToRD';
 export * from './ideaToPilot';
+export * from './feedbackSentiment';
+export * from './ideaEnhancer';
 
 export const CITIZEN_PROMPTS_CONFIG = {
   module: 'citizen',
-  version: '1.3.0',
-  promptCount: 11,
+  version: '1.4.0',
+  promptCount: 13,
   prompts: [
     'ideaClassifier',
     'contentModeration',
@@ -30,6 +32,8 @@ export const CITIZEN_PROMPTS_CONFIG = {
     'ideasAnalytics',
     'ideaToRD',
     'ideaToPilot',
-    'proposalToRD'
+    'proposalToRD',
+    'feedbackSentiment',
+    'ideaEnhancer'
   ]
 };
