@@ -517,6 +517,7 @@ import FinalSocialFeaturesSystemAssessment from './pages/FinalSocialFeaturesSyst
 import FinalAIFeaturesSystemAssessment from './pages/FinalAIFeaturesSystemAssessment';
 import FinalPlatformAnalyticsSystemAssessment from './pages/FinalPlatformAnalyticsSystemAssessment';
 import FinalPlatformConfigSystemAssessment from './pages/FinalPlatformConfigSystemAssessment';
+import FinalOnboardingSystemAssessment from './pages/FinalOnboardingSystemAssessment';
 import NewsManagement from './pages/NewsManagement';
 import PartnershipDetail from './pages/PartnershipDetail';
 import PartnershipCreate from './pages/PartnershipCreate';
@@ -1116,6 +1117,7 @@ export const PAGES = {
     "FinalAIFeaturesSystemAssessment": FinalAIFeaturesSystemAssessment,
     "FinalPlatformAnalyticsSystemAssessment": FinalPlatformAnalyticsSystemAssessment,
     "FinalPlatformConfigSystemAssessment": FinalPlatformConfigSystemAssessment,
+    "FinalOnboardingSystemAssessment": FinalOnboardingSystemAssessment,
     "NewsManagement": NewsManagement,
 }
 

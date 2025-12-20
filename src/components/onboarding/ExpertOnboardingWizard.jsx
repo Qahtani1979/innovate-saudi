@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { base44 } from '@/api/base44Client';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useAutoRoleAssignment } from '@/hooks/useAutoRoleAssignment';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,6 +55,7 @@ const ENGAGEMENT_TYPES = [
 ];
 
 export default function ExpertOnboardingWizard({ onComplete, onSkip }) {
+  const { invokeAI } = useAIWithFallback();
   const { language, isRTL, t, toggleLanguage } = useLanguage();
   const { user, userProfile, checkAuth } = useAuth();
   const queryClient = useQueryClient();
@@ -110,9 +111,20 @@ export default function ExpertOnboardingWizard({ onComplete, onSkip }) {
     setIsExtractingCV(true);
 
     try {
-      const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
-        file_url: fileUrl,
-        json_schema: {
+      // Use AI-powered extraction instead of base44
+      const result = await invokeAI({
+        prompt: `Analyze this expert/consultant CV and extract professional information. CV URL: ${fileUrl}
+
+Extract the following in JSON format:
+- full_name: Full name
+- job_title: Current title/role
+- organization: Company/Organization name
+- years_of_experience: Number of years of experience
+- expertise_areas: Array of 3-5 expertise areas
+- certifications: Array of certifications held
+- bio: Brief professional biography
+- linkedin_url: LinkedIn profile URL if found`,
+        response_json_schema: {
           type: 'object',
           properties: {
             full_name: { type: 'string' },
@@ -126,6 +138,8 @@ export default function ExpertOnboardingWizard({ onComplete, onSkip }) {
           }
         }
       });
+
+      const extracted = result.success ? { status: 'success', output: result.data } : { status: 'error' };
 
       if (extracted.status === 'success' && extracted.output) {
         const output = extracted.output;

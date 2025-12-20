@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { base44 } from '@/api/base44Client';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +38,7 @@ const ROLE_LEVELS = [
 ];
 
 export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }) {
+  const { invokeAI } = useAIWithFallback();
   const { language, isRTL, t, toggleLanguage } = useLanguage();
   const { user, userProfile, checkAuth } = useAuth();
   const queryClient = useQueryClient();
@@ -174,9 +175,20 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
     setIsExtractingCV(true);
 
     try {
-      const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
-        file_url: fileUrl,
-        json_schema: {
+      // Use AI-powered extraction instead of base44
+      const result = await invokeAI({
+        prompt: `Analyze this CV file and extract professional information for a municipality staff member. CV URL: ${fileUrl}
+
+Extract the following in JSON format:
+- full_name: Full name
+- job_title: Current job title  
+- department: Department name
+- organization: Organization/Municipality name
+- years_of_experience: Number of years
+- specializations: Array of 3-5 specialization areas
+- phone: Phone number if found
+- employee_id: Employee ID if found`,
+        response_json_schema: {
           type: 'object',
           properties: {
             full_name: { type: 'string' },
@@ -190,6 +202,8 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
           }
         }
       });
+
+      const extracted = result.success ? { status: 'success', output: result.data } : { status: 'error' };
 
       if (extracted.status === 'success' && extracted.output) {
         const output = extracted.output;
