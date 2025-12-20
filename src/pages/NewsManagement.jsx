@@ -13,8 +13,7 @@ import { useAllNewsArticles, useNewsArticleMutations } from '@/hooks/useNewsArti
 import NewsArticleEditor from '@/components/news/NewsArticleEditor';
 import NewsArticleCard from '@/components/news/NewsArticleCard';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
-import PageLayout from '@/components/layout/PageLayout';
-import PageHeader from '@/components/layout/PageHeader';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { format } from 'date-fns';
 import {
   AlertDialog,

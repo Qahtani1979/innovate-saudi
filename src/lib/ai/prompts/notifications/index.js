@@ -4,3 +4,4 @@
  */
 
 export * from './alerts';
+export * from './notificationOptimization';

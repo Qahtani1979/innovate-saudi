@@ -23,7 +23,7 @@ function NotificationCenter() {
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
-        .eq('recipient_email', user?.email)
+        .eq('user_email', user?.email)
         .order('created_at', { ascending: false })
         .limit(100);
       if (error) throw error;
@@ -36,7 +36,7 @@ function NotificationCenter() {
     mutationFn: async (id) => {
       const { error } = await supabase
         .from('notifications')
-        .update({ read: true })
+        .update({ is_read: true })
         .eq('id', id);
       if (error) throw error;
     },
@@ -56,11 +56,11 @@ function NotificationCenter() {
 
   const markAllAsRead = useMutation({
     mutationFn: async () => {
-      const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
+      const unreadIds = notifications.filter(n => !n.is_read).map(n => n.id);
       if (unreadIds.length > 0) {
         const { error } = await supabase
           .from('notifications')
-          .update({ read: true })
+          .update({ is_read: true })
           .in('id', unreadIds);
         if (error) throw error;
       }
@@ -69,7 +69,7 @@ function NotificationCenter() {
   });
 
   const filteredNotifications = notifications.filter(n => {
-    const readMatch = filter === 'all' || (filter === 'unread' && !n.read) || (filter === 'read' && n.read);
+    const readMatch = filter === 'all' || (filter === 'unread' && !n.is_read) || (filter === 'read' && n.is_read);
     const typeMatch = typeFilter === 'all' || 
       (typeFilter === 'expert' && (n.type === 'expert_assignment' || n.category === 'expert')) ||
       (typeFilter === 'approval' && n.type === 'approval') ||
@@ -78,7 +78,7 @@ function NotificationCenter() {
     return readMatch && typeMatch;
   });
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   const typeConfig = {
     approval: { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50' },
@@ -152,7 +152,7 @@ function NotificationCenter() {
           const Icon = config.icon;
 
           return (
-            <Card key={notification.id} className={`${!notification.read ? 'border-2 border-blue-200' : ''} hover:shadow-md transition-shadow`}>
+            <Card key={notification.id} className={`${!notification.is_read ? 'border-2 border-blue-200' : ''} hover:shadow-md transition-shadow`}>
               <CardContent className="pt-6">
                 <div className="flex items-start gap-3">
                   <div className={`p-2 rounded-lg ${config.bg}`}>
@@ -161,13 +161,13 @@ function NotificationCenter() {
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-2">
                       <div>
-                        <p className={`font-medium ${!notification.read ? 'text-slate-900' : 'text-slate-600'}`}>
+                        <p className={`font-medium ${!notification.is_read ? 'text-slate-900' : 'text-slate-600'}`}>
                           {notification.title}
                         </p>
                         <p className="text-sm text-slate-600 mt-1">{notification.message}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        {!notification.read && (
+                        {!notification.is_read && (
                           <Button variant="ghost" size="sm" onClick={() => markAsRead.mutate(notification.id)}>
                             <CheckCircle className="h-4 w-4" />
                           </Button>
@@ -179,9 +179,9 @@ function NotificationCenter() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-slate-500">
-                        {formatDistanceToNow(new Date(notification.created_date), { addSuffix: true })}
+                        {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                       </span>
-                      {!notification.read && (
+                      {!notification.is_read && (
                         <Badge className="bg-blue-100 text-blue-800 text-xs">
                           {t({ en: 'New', ar: 'جديد' })}
                         </Badge>
