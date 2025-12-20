@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,14 +19,24 @@ function AuditRegistry() {
   const [statusFilter, setStatusFilter] = useState('all');
 
   const { data: audits = [], isLoading } = useQuery({
-    queryKey: ['audits'],
-    queryFn: () => base44.entities.Audit.list('-created_date')
+    queryKey: ['audits-registry'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('audits')
+        .select('*')
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const filteredAudits = audits.filter(a => {
     const matchesSearch = !search || 
-      a.audit_title?.toLowerCase().includes(search.toLowerCase()) ||
-      a.audit_code?.toLowerCase().includes(search.toLowerCase());
+      a.audit_scope?.toLowerCase().includes(search.toLowerCase()) ||
+      a.audit_code?.toLowerCase().includes(search.toLowerCase()) ||
+      a.auditor_email?.toLowerCase().includes(search.toLowerCase());
     const matchesType = typeFilter === 'all' || a.audit_type === typeFilter;
     const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
     return matchesSearch && matchesType && matchesStatus;
@@ -36,7 +46,7 @@ function AuditRegistry() {
     total: audits.length,
     in_progress: audits.filter(a => a.status === 'in_progress').length,
     completed: audits.filter(a => a.status === 'completed').length,
-    issues_found: audits.reduce((sum, a) => sum + (a.findings?.filter(f => f.severity === 'high' || f.severity === 'critical').length || 0), 0)
+    issues_found: audits.reduce((sum, a) => sum + (a.issues_critical || 0) + (a.issues_high || 0), 0)
   };
 
   const typeColors = {
@@ -187,7 +197,7 @@ function AuditRegistry() {
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-slate-900">{audit.audit_title}</h3>
+                          <h3 className="font-semibold text-slate-900">{audit.audit_code}</h3>
                           <Badge className={typeColors[audit.audit_type]}>
                             {audit.audit_type}
                           </Badge>
@@ -195,22 +205,22 @@ function AuditRegistry() {
                             {audit.status?.replace(/_/g, ' ')}
                           </Badge>
                         </div>
-                        <p className="text-sm text-slate-600">{audit.scope}</p>
+                        <p className="text-sm text-slate-600">{audit.audit_scope}</p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-4 text-sm text-slate-600 mt-3">
                       <div>
-                        <span className="font-medium">{t({ en: 'Auditor:', ar: 'المدقق:' })}</span> {audit.lead_auditor_email}
+                        <span className="font-medium">{t({ en: 'Auditor:', ar: 'المدقق:' })}</span> {audit.auditor_email}
                       </div>
-                      {audit.start_date && (
+                      {audit.audit_start_date && (
                         <div>
-                          <span className="font-medium">{t({ en: 'Date:', ar: 'التاريخ:' })}</span> {new Date(audit.start_date).toLocaleDateString()}
+                          <span className="font-medium">{t({ en: 'Date:', ar: 'التاريخ:' })}</span> {new Date(audit.audit_start_date).toLocaleDateString()}
                         </div>
                       )}
-                      {audit.findings && audit.findings.length > 0 && (
-                        <Badge variant="outline">
-                          {audit.findings.length} {t({ en: 'findings', ar: 'نتيجة' })}
+                      {(audit.issues_critical > 0 || audit.issues_high > 0) && (
+                        <Badge variant="outline" className="text-red-600">
+                          {(audit.issues_critical || 0) + (audit.issues_high || 0)} {t({ en: 'issues', ar: 'مشكلة' })}
                         </Badge>
                       )}
                     </div>
