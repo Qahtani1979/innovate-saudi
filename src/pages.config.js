@@ -498,6 +498,7 @@ import FinalUsersAccessAssessment from './pages/FinalUsersAccessAssessment';
 import FinalCitizenSystemAssessment from './pages/FinalCitizenSystemAssessment';
 import FinalExpertsSystemAssessment from './pages/FinalExpertsSystemAssessment';
 import FinalPartnershipsSystemAssessment from './pages/FinalPartnershipsSystemAssessment';
+import FinalMatchmakerSystemAssessment from './pages/FinalMatchmakerSystemAssessment';
 import PartnershipDetail from './pages/PartnershipDetail';
 import PartnershipCreate from './pages/PartnershipCreate';
 import StrategyHub from './pages/StrategyHub';
@@ -748,6 +749,7 @@ export const PAGES = {
     "PartnershipDetail": PartnershipDetail,
     "PartnershipCreate": PartnershipCreate,
     "FinalPartnershipsSystemAssessment": FinalPartnershipsSystemAssessment,
+    "FinalMatchmakerSystemAssessment": FinalMatchmakerSystemAssessment,
     "PublicIdeaSubmission": PublicIdeaSubmission,
     "CitizenEngagementDashboard": CitizenEngagementDashboard,
     "StrategyCopilotChat": StrategyCopilotChat,
