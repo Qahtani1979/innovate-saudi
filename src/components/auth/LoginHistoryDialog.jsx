@@ -42,7 +42,7 @@ export default function LoginHistoryDialog({ open, onOpenChange }) {
         .from('access_logs')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
-        .in('action', ['login', 'logout', 'login_failed']);
+        .in('action', ['login_success', 'logout', 'login_failed']);
 
       if (!countError) {
         setTotalCount(count || 0);
@@ -53,7 +53,7 @@ export default function LoginHistoryDialog({ open, onOpenChange }) {
         .from('access_logs')
         .select('*')
         .eq('user_id', user.id)
-        .in('action', ['login', 'logout', 'login_failed'])
+        .in('action', ['login_success', 'logout', 'login_failed'])
         .order('created_at', { ascending: false })
         .range((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE - 1);
 
@@ -89,7 +89,7 @@ export default function LoginHistoryDialog({ open, onOpenChange }) {
 
   const getActionBadge = (action) => {
     switch (action) {
-      case 'login':
+      case 'login_success':
         return (
           <Badge className="bg-green-600 text-xs">
             <CheckCircle className="h-3 w-3 mr-1" />
