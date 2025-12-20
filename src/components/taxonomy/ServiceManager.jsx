@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../LanguageContext';
-import { Plus, Save, X, Edit2, Trash2, Sparkles } from 'lucide-react';
+import { Plus, Save, X, Edit2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ServiceManager({ subsector, services, onClose }) {

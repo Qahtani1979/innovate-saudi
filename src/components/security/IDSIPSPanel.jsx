@@ -1,7 +1,6 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Shield, AlertCircle, Activity } from 'lucide-react';
+import { Shield, AlertCircle } from 'lucide-react';
 
 export default function IDSIPSPanel() {
   const threats = [

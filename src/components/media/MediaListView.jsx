@@ -1,11 +1,10 @@
-import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Image, Video, FileText, Music, Archive, File, 
-  Download, Trash2, Eye, MoreVertical, ArrowUp, ArrowDown, HardDrive, Clock, User
+  Download, Trash2, Eye, MoreVertical, ArrowUp, ArrowDown
 } from 'lucide-react';
 import {
   DropdownMenu,

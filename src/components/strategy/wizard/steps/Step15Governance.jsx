@@ -1,25 +1,24 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Progress } from "@/components/ui/progress";
 import { StepAlerts } from '../shared/StepAlerts';
-import { 
-  Sparkles, Building2, Plus, X, AlertTriangle, Users, LayoutDashboard, Grid3X3, 
-  ChevronUp, ChevronDown, ArrowDown, UserCheck, Brain, Shield, Scale,
-  GitBranch, Network, Target, CheckCircle2, AlertCircle, Clock, Briefcase,
-  Crown, UserCog, Lightbulb, Database, Gavel, TrendingUp, ChevronRight,
-  BarChart3, PieChart, Activity, Layers, Loader2
+import { Building2, Plus, X, Users, LayoutDashboard, Grid3X3, 
+  ChevronUp, ChevronDown, ArrowDown, UserCheck, Shield, Scale,
+  GitBranch, Network, Target, CheckCircle2, AlertCircle, Briefcase,
+  Crown, UserCog, Lightbulb, Database, Gavel, TrendingUp,
+  BarChart3, PieChart, Activity, Layers
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { cn } from '@/lib/utils';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
+import { StepDashboardHeader, RecommendationsCard, MainAIGeneratorCard } from '../shared';
 
 // Enhanced Committee Types
 const COMMITTEE_TYPES = [

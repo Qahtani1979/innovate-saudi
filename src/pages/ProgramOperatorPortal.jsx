@@ -1,4 +1,3 @@
-import React from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,8 +7,8 @@ import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { 
-  Calendar, Users, Target, TrendingUp, CheckCircle2, Clock, Award, Sparkles,
-  FileText, Activity, BarChart3, Plus, Bell, Zap, TestTube, MessageSquare, CalendarDays
+  Calendar, Users, CheckCircle2, Clock, Sparkles,
+  FileText, Plus, Bell, TestTube, CalendarDays
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';

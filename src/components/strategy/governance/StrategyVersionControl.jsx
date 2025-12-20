@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +7,7 @@ import { useLanguage } from '@/components/LanguageContext';
 import { useStrategyVersions } from '@/hooks/strategy/useStrategyVersions';
 import { useVersionAI } from '@/hooks/strategy/useVersionAI';
 import { 
-  GitBranch, Clock, CheckCircle2, FileEdit, RotateCcw, 
+  GitBranch, CheckCircle2, FileEdit, RotateCcw, 
   Eye, Plus, ArrowRight, User, Calendar, Loader2, Sparkles, AlertTriangle, FileSearch
 } from 'lucide-react';
 import {

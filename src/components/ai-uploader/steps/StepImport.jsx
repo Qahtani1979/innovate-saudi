@@ -2,14 +2,13 @@
  * Step 6: Import execution
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
-  ArrowLeft, CheckCircle, XCircle, Loader2, Download,
+  ArrowLeft, CheckCircle, Loader2, Download,
   RefreshCw, Sparkles, AlertTriangle, FileText
 } from 'lucide-react';
 import { toast } from 'sonner';

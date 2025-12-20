@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
 import { Award, TrendingUp, Target, Users, Loader2, Sparkles } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { PROVIDER_PERFORMANCE_SYSTEM_PROMPT, buildProviderPerformancePrompt, PROVIDER_PERFORMANCE_SCHEMA } from '@/lib/ai/prompts/matchmaker';

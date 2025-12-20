@@ -1,4 +1,3 @@
-import React from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '../components/LanguageContext';
@@ -7,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { Microscope, FileText, CheckCircle2, Clock, TrendingUp, Plus, Megaphone } from 'lucide-react';
+import { Microscope, FileText, Clock, TrendingUp, Plus, Megaphone } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
 

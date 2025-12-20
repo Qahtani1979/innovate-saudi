@@ -7,9 +7,8 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Button } from "@/components/ui/button";
 import {
-  FileText, Clock, CheckCircle2, Activity, Rocket, TestTube,
-  BarChart3, TrendingUp, XCircle, Pause, AlertTriangle, ArrowRight,
-  Users, Shield, Target, Sparkles, MessageSquare, Calendar, Settings
+  FileText, Clock, CheckCircle2, Activity, Rocket, TestTube, TrendingUp, AlertTriangle, ArrowRight,
+  Users, Shield, Target, Sparkles, Settings
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 

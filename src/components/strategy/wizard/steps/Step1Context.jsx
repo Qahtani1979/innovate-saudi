@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,8 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { 
-  Sparkles, Loader2, X, ChevronDown, ChevronRight, Target, Calendar, 
+import { X, ChevronDown, ChevronRight, Target, Calendar, 
   DollarSign, MapPin, Users, Lightbulb, Flag, Building, Cpu, Eye,
   CheckCircle2, AlertCircle, Info
 } from 'lucide-react';

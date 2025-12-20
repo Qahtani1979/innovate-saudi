@@ -1,14 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { MessageSquare, Send, Sparkles, Loader2, Bot, User } from 'lucide-react';
+import { Send, Sparkles, Loader2, Bot, User } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePrompt } from '@/hooks/usePrompt';
-import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function StrategyCopilotChat() {
   const { language, t } = useLanguage();

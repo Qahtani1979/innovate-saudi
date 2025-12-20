@@ -10,12 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../components/LanguageContext';
-import { Save, Loader2, Sparkles, Plus, X, Target } from 'lucide-react';
+import { Save, Loader2, Sparkles, X, Target } from 'lucide-react';
 import FileUploader from '../components/FileUploader';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import StrategicPlanSelector from '@/components/strategy/StrategicPlanSelector';
 import { SANDBOX_ENHANCEMENT_PROMPT_TEMPLATE, SANDBOX_ENHANCEMENT_RESPONSE_SCHEMA } from '@/lib/ai/prompts/sandbox/enhancement';
 

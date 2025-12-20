@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +14,6 @@ import {
   DollarSign,
   Calendar,
   Target,
-  TrendingUp,
   Award,
   Sparkles,
   CheckCircle2,
@@ -26,8 +25,7 @@ import {
   Eye,
   MessageSquare,
   Loader2,
-  X,
-  Link as LinkIcon
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ProposalSubmissionWizard from '../components/ProposalSubmissionWizard';

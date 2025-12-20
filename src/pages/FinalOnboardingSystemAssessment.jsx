@@ -1,7 +1,6 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Users, Building2, FlaskConical, Award, Rocket, Shield, Eye, Bot, FileText, Globe, Clock } from 'lucide-react';
+import { CheckCircle2, Users, Building2, FlaskConical, Award, Rocket, Shield, Eye, Bot, Clock } from 'lucide-react';
 
 /**
  * Final Onboarding System Assessment

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,15 +11,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
-  Sparkles, Loader2, Plus, X, Calendar, Flag, Link2, 
-  Layers, Milestone, BarChart3, AlertTriangle, CheckCircle2,
-  Clock, Target, Rocket, Search, Play, Pause, ArrowRight,
-  GanttChart, CalendarDays, ListTree, GitBranch
+  Sparkles, Plus, X, Calendar, Flag, Link2, 
+  Layers, BarChart3, AlertTriangle, CheckCircle2,
+  Clock, Target, Search,
+  GanttChart, CalendarDays
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import EntityAllocationSelector from '../EntityAllocationSelector';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
-import AIStepAnalyzer from '../AIStepAnalyzer';
+import { RecommendationsCard, MainAIGeneratorCard } from '../shared';
 
 // Phase categories with metadata
 const PHASE_CATEGORIES = {

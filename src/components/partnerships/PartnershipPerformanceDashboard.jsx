@@ -1,10 +1,9 @@
-import React from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { TrendingUp, AlertCircle, CheckCircle, Calendar } from 'lucide-react';
+import { TrendingUp, AlertCircle } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 
 export default function PartnershipPerformanceDashboard({ partnershipId }) {

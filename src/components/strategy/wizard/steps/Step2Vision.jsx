@@ -1,17 +1,14 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Sparkles, Heart, Plus, X, Columns, ChevronDown, ChevronRight, 
-  Loader2, Target, Lightbulb, Shield, Users, Zap, Globe, 
+import { Heart, Plus, X, Columns, ChevronDown, ChevronRight, Target, Lightbulb, Shield, Users, Zap, Globe, 
   CheckCircle2, Star, TrendingUp, Award, Gem
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';

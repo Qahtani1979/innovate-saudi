@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useState, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -12,13 +12,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   Sparkles, Loader2, Plus, X, Target, ChevronDown, ChevronUp, Wand2, Check, 
-  RefreshCw, AlertTriangle, CheckCircle, LayoutGrid, List, BarChart3, Building2,
-  Flag, Calendar, TrendingUp
+  RefreshCw, AlertTriangle, CheckCircle, List, BarChart3, Building2,
+  Flag, Calendar
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { cn } from "@/lib/utils";
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
+import { StepDashboardHeader, MainAIGeneratorCard } from '../shared';
 import AIObjectivesAnalyzer from '../AIObjectivesAnalyzer';
 
 export default function Step3Objectives({ 

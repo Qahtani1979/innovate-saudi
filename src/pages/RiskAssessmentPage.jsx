@@ -1,4 +1,3 @@
-import React from 'react';
 import RiskAssessmentBuilder from '@/components/strategy/preplanning/RiskAssessmentBuilder';
 import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
 import NoPlanGuard from '@/components/strategy/NoPlanGuard';

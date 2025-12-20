@@ -1,12 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useLanguage } from '../components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
-  CheckCircle2, Clock, Target, Zap, Calendar, Users, Code,
-  FileText, Sparkles, TrendingUp, AlertCircle, ChevronDown,
+  CheckCircle2, Clock, Target, Zap, Users, Sparkles, TrendingUp, AlertCircle, ChevronDown,
   ChevronRight, Package, Layers, Activity
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';

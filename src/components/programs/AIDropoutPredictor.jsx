@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLanguage } from '../LanguageContext';
-import { AlertTriangle, Users, TrendingDown, Shield } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 
 export default function AIDropoutPredictor({ program, applications }) {
   const { t } = useLanguage();

@@ -14,10 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '../LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { createPageUrl } from '@/utils';
-import FileUploader from '../FileUploader';
 import { 
   Rocket, ArrowRight, ArrowLeft, CheckCircle2, 
-  Building2, Target, Globe, Loader2, Upload, FileText, Sparkles
+  Building2, Target, Globe, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 

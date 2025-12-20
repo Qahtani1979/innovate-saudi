@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/components/LanguageContext';
 import { Mail, Phone, MapPin, Globe, Sparkles } from 'lucide-react';

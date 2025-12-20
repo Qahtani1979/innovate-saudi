@@ -1,8 +1,7 @@
-import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { CheckCircle2, Circle, Clock, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Circle, Clock } from 'lucide-react';
 
 export default function CitizenIdeaWorkflowTab({ idea }) {
   const { language, t } = useLanguage();

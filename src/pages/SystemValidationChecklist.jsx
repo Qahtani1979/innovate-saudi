@@ -1,28 +1,25 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useLanguage } from '@/components/LanguageContext';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { useSystemValidation } from '@/hooks/useSystemValidation';
-import { PLATFORM_SYSTEMS } from '@/constants/platformSystems';
 import { VALIDATION_CATEGORIES } from '@/constants/validationCategories';
 import { useIsMobile } from '@/hooks/use-mobile';
 import ExpertValidationPanel from '@/components/validation/ExpertValidationPanel';
 import { 
-  ClipboardCheck, Database, Shield, Code, Users, GitBranch, Bell, 
+  ClipboardCheck, Database, Shield, Code, GitBranch, Bell, 
   FileText, Eye, Lock, Search, Download, RefreshCw, CheckCircle2,
-  AlertTriangle, XCircle, Layers, Activity, Settings, Server, 
-  Globe, FolderOpen, BookOpen, Zap, Menu, Save, ChevronRight,
+  AlertTriangle, XCircle, Layers, Server, 
+  Globe, BookOpen, Save, ChevronRight,
   LayoutGrid, Navigation, UserCog, Palette, Sparkles
 } from 'lucide-react';
 // Use validation categories from constants with icon mapping

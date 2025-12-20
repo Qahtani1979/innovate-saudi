@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -12,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
   Settings, ChevronRight, ChevronLeft, Check, AlertTriangle,
-  Target, Calendar, Users, FileText, Bell, CheckCircle2, Sparkles, Loader2
+  Target, Users, FileText, CheckCircle2, Sparkles, Loader2
 } from 'lucide-react';
 import {
   Select,

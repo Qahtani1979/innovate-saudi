@@ -1,4 +1,3 @@
-import React from 'react';
 import EnvironmentalScanWidget from '@/components/strategy/preplanning/EnvironmentalScanWidget';
 import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
 import NoPlanGuard from '@/components/strategy/NoPlanGuard';

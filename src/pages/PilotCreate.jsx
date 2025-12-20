@@ -24,7 +24,6 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePermissions } from '../components/permissions/usePermissions';
 import SolutionReadinessGate from '../components/solutions/SolutionReadinessGate';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import StrategicPlanSelector from '@/components/strategy/StrategicPlanSelector';

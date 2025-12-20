@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,9 +10,9 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import {
   ArrowRight, Lightbulb, TestTube, Microscope, Shield,
-  ShoppingCart, TrendingUp, Calendar, FileText, Activity,
-  Sparkles, CheckCircle2, AlertCircle, Search, Filter,
-  ExternalLink, Target, Users, Zap
+  ShoppingCart, TrendingUp, Calendar, FileText,
+  Sparkles, CheckCircle2, AlertCircle, Search,
+  ExternalLink, Zap
 } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import ProtectedPage from '../components/permissions/ProtectedPage';

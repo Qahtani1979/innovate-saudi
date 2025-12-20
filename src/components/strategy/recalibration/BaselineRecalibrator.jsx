@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useLanguage } from '@/components/LanguageContext';
 import { useStrategyRecalibration } from '@/hooks/strategy/useStrategyRecalibration';
 import {
-  Target, TrendingUp, ArrowRight, RefreshCw, CheckCircle2,
+  Target, TrendingUp, ArrowRight,
   AlertTriangle, History, Save
 } from 'lucide-react';
 

@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Heart, AlertTriangle, CheckCircle, Activity } from 'lucide-react';
+import { Heart, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 
 export default function ChallengeHealthScore({ challenge }) {

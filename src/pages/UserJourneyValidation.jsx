@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 import { 
   CheckCircle2, AlertCircle, Info, Target, Users, Sparkles, 
-  Map, Workflow, Database, Shield, TrendingUp, Award,
+  Map, Workflow, Database, Shield, TrendingUp,
   TestTube, Lightbulb, Calendar, Network, BookOpen, ChevronDown, ChevronRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';

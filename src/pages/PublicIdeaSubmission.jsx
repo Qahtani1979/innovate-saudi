@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/components/LanguageContext';
@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Lightbulb, Send, Sparkles, ArrowRight, ArrowLeft, CheckCircle2, 
-  Loader2, Globe, Star, Users, Trophy, Heart, Rocket
+  Loader2, Star, Users, Trophy, Heart, Rocket
 } from 'lucide-react';
 import { toast } from 'sonner';
 

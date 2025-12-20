@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLanguage } from '../components/LanguageContext';
-import { Save, Loader2, Sparkles, Plus, X, Clock, Eye, History, AlertCircle, CheckCircle2, Rocket } from 'lucide-react';
+import { Save, Loader2, Sparkles, X, Eye, History, AlertCircle, Rocket } from 'lucide-react';
 import FileUploader from '../components/FileUploader';
 import MediaFieldWithPicker from '../components/media/MediaFieldWithPicker';
 import { useMediaIntegration } from '@/hooks/useMediaIntegration';

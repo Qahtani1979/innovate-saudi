@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/LanguageContext';
 import { 
-  PageLayout, PageHeader, SearchFilter, usePersonaColors, PersonaButton
+  PageLayout, PageHeader, PersonaButton
 } from '@/components/layout/PersonaPageLayout';
 import { 
-  Upload, Search, Grid, List, Loader2, RefreshCw, Trash2, Download,
+  Upload, Search, Grid, List, Loader2, RefreshCw, Download,
   Image, Video, FileText, File, SlidersHorizontal, ArrowUpDown, ArrowUp, ArrowDown,
   Calendar, HardDrive, Eye, FolderOpen, ChevronLeft, ChevronRight
 } from 'lucide-react';
@@ -26,16 +26,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+
+
 import {
   DropdownMenu,
   DropdownMenuContent,

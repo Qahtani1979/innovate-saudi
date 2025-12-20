@@ -1,8 +1,8 @@
 // Strategy Wizard Steps Configuration
 import { 
   FileText, Target, BarChart3, Lightbulb, Link, Activity, Calendar, CheckCircle2,
-  Eye, Users, Globe, TrendingUp, AlertTriangle, GitBranch, Shield, Building2,
-  Megaphone, RefreshCw, DollarSign, Network
+  Eye, Users, Globe, TrendingUp, AlertTriangle, GitBranch, Building2,
+  Megaphone, RefreshCw, DollarSign
 } from 'lucide-react';
 
 // Organized into 4 phases with 18 total steps

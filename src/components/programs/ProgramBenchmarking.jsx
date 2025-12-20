@@ -1,8 +1,7 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { BarChart2, TrendingUp } from 'lucide-react';
+import { BarChart2 } from 'lucide-react';
 
 export default function ProgramBenchmarking() {
   const { language, t } = useLanguage();

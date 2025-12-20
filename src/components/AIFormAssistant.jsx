@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,8 +7,7 @@ import { Sparkles, Send, Loader2, X, CheckCircle, Bot, User } from 'lucide-react
 import { toast } from 'sonner';
 import { useLanguage } from './LanguageContext';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { buildFormAssistantPrompt, FORM_ASSISTANT_SCHEMA } from '@/lib/ai/prompts/forms';
+import { buildFormAssistantPrompt } from '@/lib/ai/prompts/forms';
 
 export default function AIFormAssistant({ onDataExtracted, entityType = 'Challenge', municipalities = [], challenges = [] }) {
   const [isOpen, setIsOpen] = useState(false);

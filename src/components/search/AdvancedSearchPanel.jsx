@@ -1,13 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Search, Filter, X, Calendar, MapPin, Tag } from 'lucide-react';
+import { Search, Filter, X, Calendar } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
 
 export default function AdvancedSearchPanel({ onSearch, onClose }) {
   const { t } = useLanguage();

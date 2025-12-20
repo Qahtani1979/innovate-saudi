@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { base44 } from '@/api/base44Client';
 import { useLanguage } from '../LanguageContext';
-import { DollarSign, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { DollarSign, CheckCircle2, XCircle } from 'lucide-react';
 
 export default function BudgetApprovalGate({ scalingPlan, onApproved, onRejected }) {
   const { t, isRTL } = useLanguage();

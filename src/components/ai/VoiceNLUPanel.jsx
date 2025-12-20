@@ -1,9 +1,7 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { useLanguage } from '../LanguageContext';
-import { Mic, Brain, AlertCircle } from 'lucide-react';
+import { Brain, AlertCircle } from 'lucide-react';
 
 export default function VoiceNLUPanel() {
   const { t } = useLanguage();

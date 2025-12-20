@@ -1,8 +1,7 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { CheckCircle2, Database, Shield, FileCode, Layers, Zap, Users, Brain, Link2, ClipboardCheck, GitBranch } from 'lucide-react';
+import { CheckCircle2, Database, Shield, FileCode, Layers, Zap, Brain, Link2, ClipboardCheck, GitBranch } from 'lucide-react';
 
 export default function FinalApprovalsSystemAssessment() {
   const { t } = useLanguage();

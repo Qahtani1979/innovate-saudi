@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
 import { Users, CheckCircle2, FileText, Calendar, Mail, Building2 } from 'lucide-react';
-import { toast } from 'sonner';
 
 export default function EngagementReadinessGate({ application, onComplete }) {
   const { language, isRTL, t } = useLanguage();

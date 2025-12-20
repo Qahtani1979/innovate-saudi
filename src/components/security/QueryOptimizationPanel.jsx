@@ -1,8 +1,7 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Zap, Database, TrendingUp, AlertCircle } from 'lucide-react';
+import { Database, TrendingUp, AlertCircle } from 'lucide-react';
 
 export default function QueryOptimizationPanel() {
   const { t } = useLanguage();

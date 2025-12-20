@@ -1,4 +1,3 @@
-import React from 'react';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Lightbulb, Calendar, Megaphone, CalendarDays, Sparkles } from 'lucide-react';

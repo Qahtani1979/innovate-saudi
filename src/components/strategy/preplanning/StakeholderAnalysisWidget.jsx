@@ -23,12 +23,10 @@ import {
   Users,
   Loader2,
   Edit2,
-  Info,
-  ZoomIn,
-  ZoomOut
+  Info
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 // Fallback stakeholder types (used when taxonomy not loaded)
 const FALLBACK_STAKEHOLDER_TYPES = [

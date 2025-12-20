@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import TemplateRatingDialog from '../templates/TemplateRatingDialog';
 import TemplateCoverageAnalysis from '../templates/TemplateCoverageAnalysis';
 import {
   FileText, Plus, Search, Star, Copy, Eye, Trash2, Save,
-  Loader2, Lightbulb, Building2, Leaf, Globe, Zap, Users, Share2, Lock, Tag, X, BarChart3
+  Loader2, Share2, Lock, Tag, X, BarChart3
 } from 'lucide-react';
 
 const StrategyTemplateLibrary = ({ onApplyTemplate, currentPlan }) => {

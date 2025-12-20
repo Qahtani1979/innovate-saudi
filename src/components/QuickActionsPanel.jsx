@@ -1,10 +1,8 @@
-import React from 'react';
 import { useLanguage } from './LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Plus, AlertCircle, TestTube, FileText, Lightbulb, Calendar, Users, Zap } from 'lucide-react';
+import { AlertCircle, TestTube, FileText, Lightbulb, Calendar, Users, Zap } from 'lucide-react';
 
 export default function QuickActionsPanel({ userRole = 'user' }) {
   const { language, isRTL, t } = useLanguage();

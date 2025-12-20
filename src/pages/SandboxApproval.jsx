@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../components/LanguageContext';
-import { Shield, CheckCircle2, XCircle, MapPin, AlertCircle, Sparkles } from 'lucide-react';
+import { Shield, CheckCircle2, XCircle, MapPin, AlertCircle } from 'lucide-react';
 import SandboxAIRiskAssessment from '../components/SandboxAIRiskAssessment';
 import AutomatedComplianceChecker from '../components/AutomatedComplianceChecker';
 import ApprovalStageProgress from '../components/ApprovalStageProgress';

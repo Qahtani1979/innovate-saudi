@@ -1,15 +1,12 @@
-import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
 import { 
-  Handshake, Calendar, CheckCircle2, AlertTriangle, 
-  Clock, TrendingUp, Users, FileText, ArrowRight, Activity
+  Handshake, Calendar, AlertTriangle, 
+  Clock, TrendingUp, Users, ArrowRight
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import ProtectedPage from '../components/permissions/ProtectedPage';

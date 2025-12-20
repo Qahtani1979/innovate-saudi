@@ -1,4 +1,3 @@
-import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Sparkles, Loader2, Lightbulb, RefreshCw, Wand2, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';

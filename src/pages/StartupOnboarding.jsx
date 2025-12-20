@@ -1,4 +1,3 @@
-import React from 'react';
 import StartupOnboardingWizard from '@/components/startup/StartupOnboardingWizard';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';

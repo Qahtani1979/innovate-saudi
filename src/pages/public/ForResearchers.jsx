@@ -1,13 +1,12 @@
-import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { 
-  Microscope, BookOpen, FileText, CheckCircle2, Users, Building2,
-  TrendingUp, Award, ArrowRight, Beaker, BarChart3, Database,
-  GraduationCap, Globe, Lightbulb, Target, TestTube, Brain
+  Microscope, BookOpen, FileText, Users, Building2,
+  TrendingUp, Award, ArrowRight, BarChart3, Database,
+  GraduationCap, Globe, Target, TestTube, Brain
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 

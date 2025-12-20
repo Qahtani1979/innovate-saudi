@@ -1,17 +1,16 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from 'react';
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '@/components/LanguageContext';
 import { 
   Newspaper, Plus, Search, Trash2, Edit, Eye, EyeOff, 
-  Star, StarOff, Loader2, Filter 
+  Star, Loader2 
 } from 'lucide-react';
 import { useAllNewsArticles, useNewsArticleMutations } from '@/hooks/useNewsArticles';
 import NewsArticleEditor from '@/components/news/NewsArticleEditor';
-import NewsArticleCard from '@/components/news/NewsArticleCard';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { format } from 'date-fns';

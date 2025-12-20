@@ -1,4 +1,3 @@
-import React from 'react';
 import ChallengeSubmissionWizard from '@/components/ChallengeSubmissionWizard';
 import ChallengeReviewWorkflow from '@/components/ChallengeReviewWorkflow';
 import ChallengeTreatmentPlan from '@/components/ChallengeTreatmentPlan';

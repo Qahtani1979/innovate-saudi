@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Rocket, CheckCircle2, Mail, FileText, Users } from 'lucide-react';
+import { Rocket, CheckCircle2, Mail, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function OnboardingWorkflow({ participant, program }) {

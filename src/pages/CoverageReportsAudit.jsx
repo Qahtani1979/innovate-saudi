@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
 import { 
-  CheckCircle2, AlertCircle, XCircle, ChevronDown, ChevronRight, Circle, Clock,
+  CheckCircle2, AlertCircle, XCircle, ChevronDown, ChevronRight, Clock,
   Database, FileText, Workflow, Users, Brain, Network, Target, Shield, TrendingUp, Zap
 } from 'lucide-react';
 import { Link } from 'react-router-dom';

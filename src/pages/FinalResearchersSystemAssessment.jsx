@@ -1,11 +1,10 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
 import { 
-  CheckCircle2, AlertCircle, Database, FileCode, Cpu, Users,
+  CheckCircle2, Database, FileCode, Users,
   Microscope, GraduationCap, BookOpen, Beaker, FileText, Link2,
   Building2, Award, Sparkles, Settings, Shield
 } from 'lucide-react';

@@ -1,9 +1,8 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
-import { TestTube, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { TestTube } from 'lucide-react';
 
 export default function TestAutomationDashboard() {
   const { t } = useLanguage();

@@ -1,8 +1,7 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Calendar, Users, FileText, CheckCircle, Clock } from 'lucide-react';
+import { Calendar, FileText, CheckCircle, Clock } from 'lucide-react';
 
 export default function PartnershipEngagementTracker({ partnership }) {
   const { language, t } = useLanguage();

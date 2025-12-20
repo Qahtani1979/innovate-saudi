@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -8,9 +8,9 @@ import { useLanguage } from '../components/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { 
-  CheckCircle2, AlertCircle, XCircle, ChevronDown, ChevronRight, 
+  CheckCircle2, AlertCircle, ChevronDown, ChevronRight, 
   Database, FileText, Workflow, Users, Brain, Network, Target, Shield,
-  TrendingUp, Zap, Circle, Clock, History
+  TrendingUp, Zap, History
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';

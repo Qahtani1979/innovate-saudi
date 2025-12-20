@@ -1,4 +1,3 @@
-import React from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -10,8 +9,8 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { 
   Shield, Users, Settings, Database, Activity, FileText, AlertCircle, 
-  CheckCircle2, BarChart3, Zap, Award, Target, TrendingUp, Bell, Clock,
-  Lightbulb, TestTube, Calendar, MapPin, Network, BookOpen, Sparkles
+  CheckCircle2, BarChart3, Zap, Award, Target, Bell,
+  Lightbulb, TestTube, Calendar, MapPin
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,15 +8,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../components/LanguageContext';
-import MergeDuplicatesDialog from '../components/citizen/MergeDuplicatesDialog';
-import { Link, useSearchParams } from 'react-router-dom';
-import { createPageUrl } from '../utils';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
 import {
-  Lightbulb, CheckCircle2, XCircle, AlertTriangle, Eye, MessageSquare,
-  ThumbsUp, ArrowRight, Sparkles, Loader2, Filter, Search, TrendingUp,
-  MapPin, User, Calendar, Target, Network, TestTube, Microscope, Mail, Download
+  Lightbulb, CheckCircle2, XCircle, AlertTriangle, Eye,
+  ThumbsUp, Sparkles, Loader2, Search, User, Target, Network, TestTube, Microscope, Mail
 } from 'lucide-react';
 import IdeaToSolutionConverter from '../components/citizen/IdeaToSolutionConverter';
 import IdeaToPilotConverter from '../components/citizen/IdeaToPilotConverter';
@@ -27,7 +24,6 @@ import ExportIdeasData from '../components/citizen/ExportIdeasData';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";

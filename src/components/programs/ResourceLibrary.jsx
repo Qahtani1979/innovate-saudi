@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { BookOpen, FileText, Video, Link as LinkIcon, Download, Plus, X } from 'lucide-react';
+import { BookOpen, FileText, Video, Link as LinkIcon, Download, Plus } from 'lucide-react';
 import FileUploader from '../FileUploader';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';

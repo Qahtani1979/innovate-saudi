@@ -1,4 +1,3 @@
-import React from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -9,9 +8,8 @@ import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { 
-  Beaker, Microscope, Calendar, Users, TrendingUp, Activity, Plus,
-  BookOpen, Award, CheckCircle2, Clock, BarChart3, TestTube, Wrench,
-  FileText
+  Beaker, Microscope, Calendar, TrendingUp, Activity, Plus,
+  BookOpen, CheckCircle2, BarChart3, Wrench
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 

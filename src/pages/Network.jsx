@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { NETWORK_INSIGHTS_PROMPT_TEMPLATE, NETWORK_INSIGHTS_RESPONSE_SCHEMA } from '@/lib/ai/prompts/network/insights';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,15 +10,11 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import {
   Building2,
-  Users,
   Network as NetworkIcon,
   Search,
-  Mail,
-  Globe,
   Award,
   Sparkles,
   TrendingUp,
-  Target,
   LayoutGrid,
   Share2
 } from 'lucide-react';

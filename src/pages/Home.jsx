@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Lightbulb, TestTube, TrendingUp, MapPin, Target, Zap, Plus, FileText, CheckCircle, Clock, Megaphone, MessageCircle, Users } from 'lucide-react';
+import { AlertCircle, Lightbulb, TestTube, TrendingUp, MapPin, Target, Zap, Plus, FileText, Clock, Megaphone, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { useLanguage } from '../components/LanguageContext';

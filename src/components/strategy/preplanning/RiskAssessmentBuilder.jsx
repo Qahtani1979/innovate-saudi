@@ -28,7 +28,7 @@ import {
   TrendingDown
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 // Fallback risk categories (used when taxonomy not loaded)
 const FALLBACK_RISK_CATEGORIES = [

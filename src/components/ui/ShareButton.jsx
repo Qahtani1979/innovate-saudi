@@ -1,4 +1,3 @@
-import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Share2, Mail, Link as LinkIcon } from 'lucide-react';
 import { toast } from 'sonner';

@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
-import { Target, TrendingUp, Calendar, CheckCircle2, Star, Users } from 'lucide-react';
+import { Target, Calendar, CheckCircle2, Star, Users } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function MenteeProgress() {

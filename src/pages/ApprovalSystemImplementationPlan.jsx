@@ -1,15 +1,14 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useLanguage } from '../components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import {
   CheckCircle2, Circle, AlertCircle, Target, Zap, Calendar,
-  FileText, Code, Shield, Sparkles, Database, Layout, ArrowRight,
-  Clock, Users, TrendingUp, Network, Activity, BarChart3
+  FileText, Code, Shield, Database, Layout, ArrowRight,
+  Clock, Network, Activity, BarChart3
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 

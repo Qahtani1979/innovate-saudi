@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { useLanguage } from '../components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { CheckCircle2, XCircle, FileText, DollarSign, Clock, Loader2, Rocket } from 'lucide-react';
+import { CheckCircle2, XCircle, FileText, DollarSign, Clock, Rocket } from 'lucide-react';
 import { toast } from 'sonner';
 import ProposalToPilotConverter from '../components/challenges/ProposalToPilotConverter';
 import { usePermissions } from '../components/permissions/usePermissions';

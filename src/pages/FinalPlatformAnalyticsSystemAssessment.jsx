@@ -1,8 +1,7 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { CheckCircle, BarChart3, TrendingUp, Activity, Users, Database, Zap, Target, PieChart } from 'lucide-react';
+import { CheckCircle, BarChart3, Activity, Database, Zap, Target, PieChart } from 'lucide-react';
 
 export default function FinalPlatformAnalyticsSystemAssessment() {
   const { t } = useLanguage();

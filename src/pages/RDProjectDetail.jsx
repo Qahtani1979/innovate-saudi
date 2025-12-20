@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,10 +11,10 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
 import {
-  Beaker, Mail, Target, Calendar, DollarSign, FileText, Sparkles,
+  Beaker, Target, Calendar, DollarSign, FileText, Sparkles,
   TrendingUp, CheckCircle2, Users, BookOpen, Award, Send, MessageSquare,
-  Clock, Building2, Image, Video, Database, BarChart3, AlertCircle,
-  ExternalLink, TestTube, Zap, Rocket, Play, Loader2, X, Shield, Lightbulb, Activity
+  Clock, Building2, Image, Video, Database, AlertCircle,
+  ExternalLink, TestTube, Rocket, Loader2, X, Shield, Lightbulb, Activity
 } from 'lucide-react';
 import RDProjectKickoffWorkflow from '../components/RDProjectKickoffWorkflow';
 import RDProjectCompletionWorkflow from '../components/RDProjectCompletionWorkflow';
@@ -22,7 +22,6 @@ import RDToPilotTransition from '../components/rd/RDToPilotTransition';
 import RDProjectMilestoneGate from '../components/RDProjectMilestoneGate';
 import RDOutputValidation from '../components/RDOutputValidation';
 import RDTRLAdvancement from '../components/RDTRLAdvancement';
-import CrossEntityRecommender from '../components/CrossEntityRecommender';
 import PolicyTabWidget from '../components/policy/PolicyTabWidget';
 import RDProjectActivityLog from '../components/rd/RDProjectActivityLog';
 import RDToSolutionConverter from '../components/rd/RDToSolutionConverter';
@@ -30,7 +29,6 @@ import RDToPolicyConverter from '../components/rd/RDToPolicyConverter';
 import TRLAssessmentWorkflow from '../components/rd/TRLAssessmentWorkflow';
 import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowApprovalTab';
 import { usePermissions } from '../components/permissions/usePermissions';
-import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
 import RDProjectFinalEvaluationPanel from '../components/rd/RDProjectFinalEvaluationPanel';
 import IPManagementWidget from '../components/rd/IPManagementWidget';
 import TRLVisualization from '../components/rd/TRLVisualization';

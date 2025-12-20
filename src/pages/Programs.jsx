@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { Edit, Trash2, Archive, Loader2, X } from 'lucide-react';
+import { Edit, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Calendar,
@@ -15,11 +15,9 @@ import {
   TrendingUp,
   Plus,
   Search,
-  Filter,
   Sparkles,
   Award,
   Clock,
-  MapPin,
   LayoutGrid,
   List,
   CalendarDays,
@@ -38,7 +36,6 @@ import {
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePermissions } from '../components/permissions/usePermissions';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { PROGRAMS_INSIGHTS_PROMPT_TEMPLATE, PROGRAMS_INSIGHTS_RESPONSE_SCHEMA } from '@/lib/ai/prompts/programs/insights';

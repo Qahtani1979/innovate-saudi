@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { CheckCircle2, XCircle, Users, Shield } from 'lucide-react';
+import { Shield } from 'lucide-react';
 
 export default function RolePermissionMatrix({ roles, users }) {
   const { t } = useLanguage();

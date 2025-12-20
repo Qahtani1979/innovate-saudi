@@ -1,8 +1,7 @@
-import React from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useLanguage } from '../LanguageContext';
-import { CheckCircle2, Circle, Clock, Shield, Play, XCircle } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, Shield, Play } from 'lucide-react';
 
 export default function SandboxWorkflowTab({ sandbox }) {
   const { t } = useLanguage();

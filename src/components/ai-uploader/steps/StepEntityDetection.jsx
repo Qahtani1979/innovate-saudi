@@ -2,12 +2,11 @@
  * Step 2: AI Entity Detection
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Brain, ArrowRight, ArrowLeft, CheckCircle, 
   Sparkles, Building2, Lightbulb, Target,
@@ -15,7 +14,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import { getSystemPrompt } from '@/lib/saudiContext';
 import { 
   buildEntityDetectionPrompt, 
   ENTITY_DETECTION_SCHEMA,

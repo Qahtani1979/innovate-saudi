@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '../components/LanguageContext';
@@ -10,8 +10,7 @@ import { createPageUrl } from '../utils';
 import {
   ArrowRight, CheckCircle2, AlertCircle, Sparkles, Target,
   TestTube, Microscope, Shield, ShoppingCart, TrendingUp,
-  Lightbulb, FileText, Activity, BarChart3, Calendar,
-  Users, Zap, ExternalLink, Handshake
+  Lightbulb, FileText, Activity, BarChart3, Calendar, Handshake
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 

@@ -19,15 +19,10 @@ import {
   Loader2, X, Microscope, Clock, Bell, Activity, Lightbulb, MessageSquare, Calendar,
   BarChart3, Shield, Zap, FileText
 } from 'lucide-react';
-import { toast } from 'sonner';
 import MunicipalPolicyTracker from '../components/policy/MunicipalPolicyTracker';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { PageLayout, PageHeader, PersonaButton } from '@/components/layout/PersonaPageLayout';
-import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
-import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
-import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function MunicipalityDashboard() {
   const { language, isRTL, t } = useLanguage();

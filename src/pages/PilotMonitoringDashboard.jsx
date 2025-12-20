@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,8 +9,8 @@ import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import {
-  Activity, AlertTriangle, TrendingUp, TrendingDown, CheckCircle2,
-  Clock, Target, Users, MapPin, BarChart3, Zap, AlertCircle
+  Activity, AlertTriangle, CheckCircle2,
+  Clock, Target, MapPin, BarChart3, Zap, AlertCircle
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';

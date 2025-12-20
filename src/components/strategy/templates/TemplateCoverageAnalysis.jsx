@@ -1,18 +1,17 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { STRATEGY_TEMPLATE_TYPES } from '@/constants/strategyTemplateTypes';
 import { supabase } from '@/integrations/supabase/client';
 import {
-  BarChart3, CheckCircle2, AlertTriangle, Lightbulb, Sparkles, Loader2,
-  Building2, Home, Leaf, Globe, Zap, Users, FileText, Target, TrendingUp,
-  MapPin, Cpu, Cog, Shield, Heart, Truck, Droplets, TreeDeciduous, Building,
+  BarChart3, CheckCircle2, AlertTriangle, Sparkles, Loader2,
+  Building2, Home, Leaf, Globe, Users, FileText, Target,
+  MapPin, Cpu, Shield, Heart, Truck, TreeDeciduous, Building,
   RefreshCcw
 } from 'lucide-react';
 

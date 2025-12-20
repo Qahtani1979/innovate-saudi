@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
 import { useSearchParams } from 'react-router-dom';

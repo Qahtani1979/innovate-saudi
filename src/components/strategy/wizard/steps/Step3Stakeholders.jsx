@@ -1,19 +1,16 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { 
-  Sparkles, Users, Plus, X, Grid3X3, ChevronDown, ChevronRight,
+import { Users, Plus, X, Grid3X3,
   Loader2, Building, User, Briefcase, Globe, CheckCircle2, AlertCircle,
-  UserCheck, UserX, MessageSquare, FileText, TrendingUp, BarChart3,
+  UserCheck, MessageSquare, FileText, TrendingUp, BarChart3,
   Wand2, Check, RefreshCw
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';

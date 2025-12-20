@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -14,13 +14,9 @@ import { toast } from 'sonner';
 import {
   Microscope,
   Target,
-  Sparkles,
-  ArrowRight,
   Link2,
   CheckCircle2,
   AlertTriangle,
-  Brain,
-  Filter,
   Search
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';

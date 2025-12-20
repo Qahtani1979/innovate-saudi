@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
@@ -10,7 +10,7 @@ import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowAp
 import {
   Sparkles, FileText, Lightbulb, Activity, MessageSquare, TrendingUp,
   Target, AlertCircle, TestTube, Microscope, BarChart3, Users, Database,
-  Award, Image, Clock, Shield, Network, Globe, BookOpen, Calendar
+  Award, Image, Shield, Network, BookOpen, Calendar
 } from 'lucide-react';
 import { usePrompt } from '@/hooks/usePrompt';
 import { CHALLENGE_DETAIL_PROMPT_TEMPLATE } from '@/lib/ai/prompts/challenges/challengeDetail';
@@ -18,7 +18,7 @@ import { usePermissions } from '@/components/permissions/usePermissions';
 import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
 import { useSolutionsWithVisibility, usePilotsWithVisibility, useContractsWithVisibility } from '@/hooks/visibility';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
-import { ChallengeHero, ChallengeStatsCards, ChallengeWorkflowModals } from '@/components/challenges/detail';
+import { ChallengeHero, ChallengeWorkflowModals } from '@/components/challenges/detail';
 
 // Import all extracted tab components
 import {

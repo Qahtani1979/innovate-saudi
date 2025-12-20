@@ -31,11 +31,9 @@ import {
 import MIIImprovementAI from '../components/municipalities/MIIImprovementAI';
 import PeerBenchmarkingTool from '../components/municipalities/PeerBenchmarkingTool';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { PageLayout } from '@/components/layout/PersonaPageLayout';
 import { useMIIData } from '@/hooks/useMIIData';
 
 function MunicipalityProfile() {

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useLanguage } from '../../../LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,18 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { StepAlerts } from '../shared/StepAlerts';
 import { 
   Sparkles, Plus, X, ChevronDown, ChevronUp, RefreshCw, Users, Target, 
-  BookOpen, AlertTriangle, CheckCircle, Clock, TrendingUp, Layers,
-  GraduationCap, UserCheck, Shield, Heart, Zap, ArrowRight, BarChart3,
-  Calendar, Award, MessageSquare, Lightbulb, Settings, Eye, List, GitBranch,
+  BookOpen, AlertTriangle, CheckCircle, Clock, Layers,
+  GraduationCap, UserCheck, Shield, Heart, Zap, BarChart3, Award, MessageSquare, Lightbulb, Settings, Eye, List, GitBranch,
   Info, AlertCircle, PieChart
 } from 'lucide-react';
-import { Loader2 } from 'lucide-react';
 import EntityAllocationSelector from '../EntityAllocationSelector';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, StatsGrid, MainAIGeneratorCard } from '../shared';
-import AIStepAnalyzer from '../AIStepAnalyzer';
+import { StepDashboardHeader, StatsGrid, MainAIGeneratorCard } from '../shared';
 
 // Change Phase Types (ADKAR Model)
 const CHANGE_PHASES = [

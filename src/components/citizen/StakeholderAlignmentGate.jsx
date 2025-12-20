@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from 'sonner';
-import { Users, CheckCircle2, XCircle, AlertTriangle, Loader2 } from 'lucide-react';
+import { Users, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 
 export default function StakeholderAlignmentGate({ proposal, onGateComplete }) {

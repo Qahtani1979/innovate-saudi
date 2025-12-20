@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { AlertCircle, Shield, CheckCircle2, Code } from 'lucide-react';
+import { AlertCircle, Shield, Code } from 'lucide-react';
 
 /**
  * CSRF Protection Middleware Configuration

@@ -1,8 +1,7 @@
-import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, Users, AlertTriangle } from 'lucide-react';
+import { Users, AlertTriangle } from 'lucide-react';
 
 export default function QuickEvaluationCard({ 
   evaluations = [], 

@@ -1,4 +1,3 @@
-import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,12 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from '../components/LanguageContext';
 import { 
-  User, Mail, MapPin, Briefcase, Globe, Linkedin, 
+  User, MapPin, Linkedin, 
   Award, Star, Trophy, CheckCircle, ArrowLeft, Lock,
   Calendar, Building2, GraduationCap, Languages
 } from 'lucide-react';
 import { ProfileStatCard, ProfileStatGrid } from '@/components/profile/ProfileStatCard';
-import { ProfileBadge } from '@/components/profile/ProfileBadge';
 
 export default function PublicProfilePage() {
   const { userId } = useParams();

@@ -1,11 +1,10 @@
-import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
-import { Database, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Database } from 'lucide-react';
 
 export default function DataQualityTracker() {
   const { t } = useLanguage();

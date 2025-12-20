@@ -1,4 +1,3 @@
-import React from 'react';
 import { usePermissions } from './usePermissions';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Lock } from 'lucide-react';

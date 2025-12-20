@@ -1,9 +1,7 @@
-import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Bell, Zap, Mail, Smartphone, MessageSquare } from 'lucide-react';
+import { Bell, Mail, Smartphone, MessageSquare } from 'lucide-react';
 
 export default function AINotificationRouterPanel({ notification }) {
   const { language, t } = useLanguage();

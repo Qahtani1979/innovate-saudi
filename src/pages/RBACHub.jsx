@@ -1,8 +1,8 @@
-import React, { useState, lazy, Suspense } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '@/components/LanguageContext';
 import { 
-  Shield, BarChart3, FileCheck, AlertTriangle, Menu, Loader2, Users, UserPlus, Calendar, Lock
+  Shield, BarChart3, FileCheck, AlertTriangle, Menu, Loader2, UserPlus, Calendar, Lock
 } from 'lucide-react';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';

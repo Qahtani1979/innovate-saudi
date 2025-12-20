@@ -3,7 +3,6 @@
  * Displays researcher profile summary with actions
  */
 
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +12,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { 
   GraduationCap, Building2, BookOpen, Award, ExternalLink, 
-  Mail, Link2, CheckCircle2, Clock
+  Mail, Link2, CheckCircle2
 } from 'lucide-react';
 
 export default function ResearcherProfileCard({ researcher, showActions = true, compact = false }) {

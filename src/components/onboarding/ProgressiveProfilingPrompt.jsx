@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '../LanguageContext';
@@ -6,8 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { X, Sparkles, ChevronRight, CheckCircle } from 'lucide-react';
+import { X, Sparkles, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 const PROFILE_FIELDS = {

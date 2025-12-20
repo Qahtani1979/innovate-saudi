@@ -1,7 +1,6 @@
 /**
  * Cities Tab Component for Data Management Hub
  */
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';

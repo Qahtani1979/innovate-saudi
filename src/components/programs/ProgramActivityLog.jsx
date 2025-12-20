@@ -1,4 +1,3 @@
-import React from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import {
   Activity, MessageSquare, CheckCircle2, XCircle, Clock, Rocket,
-  Users, Calendar, Award, Target, Sparkles, AlertCircle, FileText
+  Users, Calendar, Award, Target, Sparkles, FileText
 } from 'lucide-react';
 
 export default function ProgramActivityLog({ programId }) {

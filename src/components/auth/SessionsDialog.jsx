@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +7,7 @@ import { useLanguage } from '../LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
-import { Monitor, Smartphone, Globe, Clock, MapPin, Shield, LogOut, RefreshCw, Loader2 } from 'lucide-react';
+import { Monitor, Smartphone, Clock, Shield, LogOut, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function SessionsDialog({ open, onOpenChange }) {

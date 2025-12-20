@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,8 +11,7 @@ import { createPageUrl } from '../utils';
 import {
   CheckCircle2, XCircle, AlertTriangle, Target, TrendingUp,
   ChevronDown, ChevronRight, Sparkles, Database, Workflow,
-  Users, Network, FileText, Brain, Zap, Shield, AlertCircle,
-  Calendar, BookOpen, Globe, BarChart3, Award, Code
+  Users, Network, FileText, Brain, Shield, AlertCircle, Award
 } from 'lucide-react';
 
 export default function ChallengesCoverageReport() {

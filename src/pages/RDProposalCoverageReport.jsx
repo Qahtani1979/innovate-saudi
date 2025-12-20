@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
 import { 
-  CheckCircle2, AlertCircle, FileText, Sparkles, Award,
+  CheckCircle2, FileText,
   Database, Workflow, Users, Brain, Network, Target, Shield,
   ChevronDown, ChevronRight
 } from 'lucide-react';

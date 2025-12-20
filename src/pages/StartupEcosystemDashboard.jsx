@@ -1,13 +1,10 @@
-import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
 import {
-  Rocket, TrendingUp, Target, CheckCircle2, Building2, TestTube,
-  DollarSign, Users, Lightbulb, BarChart3, Activity
+  Rocket, TrendingUp, Target, CheckCircle2, Building2, TestTube, Lightbulb, BarChart3, Activity
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';

@@ -1,14 +1,12 @@
-import React from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { 
-  Beaker, Users, Award, CheckCircle2, Star, Upload, MessageSquare 
+  Beaker, Award, Star, MessageSquare 
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { CitizenPageLayout, CitizenPageHeader } from '@/components/citizen/CitizenPageLayout';

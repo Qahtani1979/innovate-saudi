@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -6,7 +6,7 @@ import {
   Sparkles, Brain, Target, TrendingUp, Users, AlertCircle, 
   Lightbulb, TestTube, Network, Award, BarChart3, MessageSquare,
   FileText, Search, Zap, Shield, GitBranch, ChevronDown, ChevronRight,
-  Rocket, CheckCircle2, Database, Eye, RefreshCw, Map, MapPin, Activity, BookOpen
+  Rocket, CheckCircle2, Database, Eye, RefreshCw, MapPin, Activity, BookOpen
 } from 'lucide-react';
 
 export default function AIFeaturesDocumentation() {

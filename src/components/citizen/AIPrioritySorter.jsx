@@ -1,9 +1,7 @@
-import React from 'react';
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sparkles, TrendingUp, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
-import { calculatePriorityScore, PRIORITY_WEIGHTS } from '@/lib/ai/prompts/citizen';
+import { calculatePriorityScore } from '@/lib/ai/prompts/citizen';
 
 export default function AIPrioritySorter({ ideas, onSort }) {
   const { t } = useLanguage();

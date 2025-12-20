@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
-import { CheckCircle2, Circle, Menu, Layout, Sidebar, Globe, Sparkles, Target, ChevronDown, ChevronRight, Database, FileText, Workflow, Users, Network, Brain, Shield, TrendingUp } from 'lucide-react';
+import { CheckCircle2, Menu, Layout, Sparkles, Target, ChevronDown, ChevronRight, Database, FileText, Workflow, Users, Network, Brain, Shield, TrendingUp } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function MenuCoverageReport() {

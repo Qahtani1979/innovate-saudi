@@ -1,4 +1,3 @@
-import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +12,7 @@ import LivingLabWorkflowTab from '../components/livinglab/LivingLabWorkflowTab';
 import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowApprovalTab';
 import { createPageUrl } from '../utils';
 import { 
-  Beaker, MapPin, Building2, Wifi, Database, Zap, Users, Phone, Mail,
+  Beaker, MapPin, Building2, Wifi, Database, Users, Phone, Mail,
   Clock, DollarSign, FileText, Image, Video, Globe, Calendar,
   Award, BookOpen, Sparkles, CheckCircle2, TestTube, Microscope,
   GraduationCap, Wrench, Monitor, Activity, TrendingUp, Shield, Rocket
@@ -30,9 +29,7 @@ import LivingLabPublicationSubmission from '../components/LivingLabPublicationSu
 import LivingLabInfrastructureWizard from '../components/livinglabs/LivingLabInfrastructureWizard';
 import AICapacityOptimizer from '../components/livinglabs/AICapacityOptimizer';
 import LabSolutionCertificationWorkflow from '../components/livinglab/LabSolutionCertificationWorkflow';
-import { usePermissions } from '@/components/permissions/usePermissions';
-import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
-import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { PageLayout } from '@/components/layout/PersonaPageLayout';
 
 export default function LivingLabDetail() {
   const urlParams = new URLSearchParams(window.location.search);

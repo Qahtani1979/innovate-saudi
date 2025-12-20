@@ -9,8 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from '../components/LanguageContext';
 import { 
-  Shield, Target, Activity, FileText, AlertCircle, 
-  CheckCircle2, Upload, BarChart3, Clock, Bell 
+  Shield, Activity, FileText, AlertCircle, Upload 
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';

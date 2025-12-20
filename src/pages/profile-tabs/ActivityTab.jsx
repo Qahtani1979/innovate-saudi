@@ -1,4 +1,3 @@
-import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +6,7 @@ import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { 
   Activity, TrendingUp, Clock, Eye, FileText, MessageSquare, 
-  ThumbsUp, Calendar, Lightbulb, Target
+  ThumbsUp, Lightbulb, Target
 } from 'lucide-react';
 import { ProfileStatCard, ProfileStatGrid } from '@/components/profile/ProfileStatCard';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';

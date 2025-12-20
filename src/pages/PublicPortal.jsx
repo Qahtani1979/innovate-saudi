@@ -1,15 +1,14 @@
-import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
-  Sparkles, TrendingUp, Award, MapPin, Target, TestTube, Lightbulb, 
-  CheckCircle2, Users, Building2, Rocket, BarChart3, Globe, BookOpen,
-  MessageSquare, Calendar, Microscope, Beaker, LogIn, UserPlus, ArrowRight,
+  Sparkles, Target, TestTube, Lightbulb, 
+  CheckCircle2, Users, Building2, Rocket,
+  MessageSquare, Microscope,
   ChevronRight, Play, Star, Zap
 } from 'lucide-react';
 import { motion } from 'framer-motion';

@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
-import { Handshake, CheckCircle2, ArrowRight, Users } from 'lucide-react';
+import { Handshake, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function PartnershipWorkflowIntegration({ organizationId }) {

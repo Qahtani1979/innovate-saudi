@@ -1,10 +1,8 @@
-import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { CheckCircle2, Circle, Clock, Users, Shield, Award, Zap, Network, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Circle, Users, Shield, Award, Zap, Network, ArrowRight } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function MatchmakerJourney() {

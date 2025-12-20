@@ -1,11 +1,10 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLanguage } from '@/components/LanguageContext';
 import { useStrategySignoffs } from '@/hooks/strategy/useStrategySignoffs';
 import { useStrategyVersions } from '@/hooks/strategy/useStrategyVersions';
 import { useCommitteeDecisions } from '@/hooks/strategy/useCommitteeDecisions';
 import { 
-  BarChart3, TrendingUp, Clock, CheckCircle2, AlertTriangle, 
+  BarChart3, TrendingUp, CheckCircle2, 
   Users, GitBranch, FileSignature, Loader2
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';

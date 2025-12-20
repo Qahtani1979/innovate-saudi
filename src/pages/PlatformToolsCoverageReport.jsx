@@ -1,9 +1,8 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
-import { CheckCircle2, Circle, Settings, Wrench, Sparkles, TrendingUp } from 'lucide-react';
+import { CheckCircle2, Settings, Wrench, Sparkles } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function PlatformToolsCoverageReport() {

@@ -3,8 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -12,10 +10,9 @@ import {
   CheckCircle2, AlertTriangle, Target, Link, Activity, 
   Lightbulb, Calendar, FileText, Save, Loader2, Send,
   Users, Globe, Shield, Megaphone, DollarSign, Download, FileSpreadsheet,
-  ChevronDown, ChevronRight, TrendingUp, BarChart3, Clock, Building,
-  AlertCircle, Briefcase, PieChart, MessageSquare, RefreshCw, GitBranch,
-  Eye, List, Sparkles, Award, Gauge, CheckCircle, XCircle, Flag,
-  ArrowRight, Zap, BookOpen, Settings, Layers, Network, Info
+  ChevronDown, ChevronRight, BarChart3, Building,
+  AlertCircle, Briefcase, RefreshCw, GitBranch,
+  Eye, List, Sparkles, CheckCircle, XCircle
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { useTaxonomy } from '@/contexts/TaxonomyContext';
@@ -24,7 +21,6 @@ import { useStrategyVersions } from '@/hooks/strategy/useStrategyVersions';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
 import AIStrategicPlanAnalyzer from '../AIStrategicPlanAnalyzer';
 
 // Readiness Level Configuration

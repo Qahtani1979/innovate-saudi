@@ -1,11 +1,10 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/components/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
-  Rocket, Target, Users, TrendingUp, CheckCircle2, ArrowRight,
-  Building2, Award, Globe, Zap, BarChart3, Shield
+  Rocket, Target, TrendingUp, ArrowRight,
+  Building2, Award, Zap, BarChart3
 } from 'lucide-react';
 
 export default function ForProviders() {

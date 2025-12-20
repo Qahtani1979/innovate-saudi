@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -13,14 +13,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { Save, Sparkles, Loader2, ArrowLeft, AlertTriangle, CheckCircle, GitBranch, Clock } from 'lucide-react';
+import { Save, Sparkles, Loader2, AlertTriangle, GitBranch, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import PolicyConflictDetector from '../components/policy/PolicyConflictDetector';
 import PolicyEditHistory from '../components/policy/PolicyEditHistory';
 import PolicyAmendmentWizard from '../components/policy/PolicyAmendmentWizard';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function PolicyEdit() {

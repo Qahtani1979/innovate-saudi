@@ -1,4 +1,3 @@
-import React from 'react';
 import StrategyInputCollector from '@/components/strategy/preplanning/StrategyInputCollector';
 import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
 import NoPlanGuard from '@/components/strategy/NoPlanGuard';

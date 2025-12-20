@@ -1,24 +1,20 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import {
-  Lightbulb, TrendingUp, Star, TestTube, Edit, Eye, XCircle,
-  Activity, DollarSign, CheckCircle2, AlertCircle, BarChart3, Briefcase
+  Lightbulb, TrendingUp, Star, TestTube, XCircle, CheckCircle2, BarChart3, Briefcase
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ProviderSolutionCard from '../components/solutions/ProviderSolutionCard';
-import SolutionDeprecationWizard from '../components/solutions/SolutionDeprecationWizard';
 import MultiCityOperationsManager from '../components/startup/MultiCityOperationsManager';
 import ProviderCollaborationNetwork from '../components/solutions/ProviderCollaborationNetwork';
 import ContractPipelineTracker from '../components/startup/ContractPipelineTracker';
-import ClientTestimonialsShowcase from '../components/solutions/ClientTestimonialsShowcase';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 export default function ProviderPortfolioDashboard() {

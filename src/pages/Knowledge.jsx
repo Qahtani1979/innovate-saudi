@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, FileText, Award, Lightbulb, Search, ExternalLink, Download, Plus, Edit, Trash2, Filter, Upload, Video, Headphones, Image as ImageIcon, Eye, Star, Bookmark, Play, TrendingUp, Sparkles, Grid, List, Loader2, X } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BookOpen, FileText, Plus, Edit, Trash2, Video, Headphones, Image as ImageIcon, Eye, Star, Bookmark, Play, TrendingUp, Sparkles, Grid, List, Loader2, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -8,10 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Progress } from "@/components/ui/progress";
-import { 
-  Sparkles, Globe, Plus, X, Building2, DollarSign, Users, Cpu, Leaf, Scale, 
+import { Globe, Plus, X, Building2, DollarSign, Users, Cpu, Leaf, Scale, 
   ChevronDown, ChevronUp, CheckCircle2, AlertTriangle, TrendingUp, TrendingDown, 
-  Minus, BarChart3, Clock, Target, Eye, ListChecks, PieChart
+  Minus, BarChart3, Clock, Target, ListChecks, PieChart
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { useEnvironmentalFactors } from '@/hooks/strategy/useEnvironmentalFactors';

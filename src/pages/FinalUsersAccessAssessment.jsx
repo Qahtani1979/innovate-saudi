@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -10,8 +10,8 @@ import { useLanguage } from '@/components/LanguageContext';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import {
-  Users, Database, Shield, Code, CheckCircle2, AlertTriangle, XCircle,
-  Key, UserCog, Building2, Lock, FileText, Activity, Settings
+  Users, Shield, CheckCircle2, AlertTriangle, XCircle,
+  Key, UserCog, Lock, FileText, Activity, Settings
 } from 'lucide-react';
 
 // Users & Access System Categories

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,8 +8,8 @@ import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { 
-  Microscope, Calendar, TrendingUp, AlertCircle, CheckCircle2, 
-  FileText, Users, DollarSign, Clock, Lightbulb, ArrowRight 
+  Microscope, Calendar, AlertCircle, 
+  FileText, DollarSign, Clock, Lightbulb, ArrowRight 
 } from 'lucide-react';
 import { format, addDays, isWithinInterval } from 'date-fns';
 import ProtectedPage from '../components/permissions/ProtectedPage';

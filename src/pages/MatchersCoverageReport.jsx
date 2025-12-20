@@ -1,9 +1,8 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
-import { CheckCircle2, Sparkles, Network, Award } from 'lucide-react';
+import { CheckCircle2, Sparkles, Network } from 'lucide-react';
 
 export default function MatchersCoverageReport() {
   const { language, isRTL, t } = useLanguage();

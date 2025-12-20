@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useLanguage } from '@/components/LanguageContext';
 import { useQueueAutoPopulation } from '@/hooks/strategy/useQueueAutoPopulation';
@@ -10,8 +9,7 @@ import {
   ListOrdered, 
   Play, 
   SkipForward, 
-  X, 
-  CheckCircle2,
+  X,
   Loader2,
   Sparkles,
   ChevronRight,

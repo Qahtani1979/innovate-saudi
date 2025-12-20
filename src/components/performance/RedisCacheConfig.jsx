@@ -1,9 +1,8 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useLanguage } from '../LanguageContext';
-import { Zap, Database, Clock, AlertCircle } from 'lucide-react';
+import { Zap, Clock, AlertCircle } from 'lucide-react';
 
 export default function RedisCacheConfig() {
   const { t } = useLanguage();

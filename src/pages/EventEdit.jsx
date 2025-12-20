@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
@@ -30,7 +30,6 @@ import {
   Save, 
   Trash2,
   Loader2,
-  Image as ImageIcon,
   AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';

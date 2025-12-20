@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { TrendingUp, MapPin, Target, Award, Users, FileText, Activity, Sparkles } from 'lucide-react';
+import { TrendingUp, MapPin, Target, Award, Users, FileText, Activity } from 'lucide-react';
 import ScalingExecutionDashboard from '../components/scaling/ScalingExecutionDashboard';
 import StrategicAlignmentWidget from '../components/strategy/StrategicAlignmentWidget';
 

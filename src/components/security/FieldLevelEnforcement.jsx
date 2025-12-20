@@ -1,4 +1,3 @@
-import React from 'react';
 import { usePermissions } from '../permissions/usePermissions';
 
 // Field permission configuration per entity and role

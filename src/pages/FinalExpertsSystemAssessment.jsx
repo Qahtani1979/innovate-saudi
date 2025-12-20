@@ -1,7 +1,6 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Database, Shield, Code, FileText, Cpu, Link2, Users, Award, BarChart3, ClipboardCheck, Layers } from 'lucide-react';
+import { CheckCircle2, Database, Shield, Code, FileText, Cpu, Link2, Users, Award, ClipboardCheck, Layers } from 'lucide-react';
 import { useLanguage } from '../components/LanguageContext';
 
 export default function FinalExpertsSystemAssessment() {

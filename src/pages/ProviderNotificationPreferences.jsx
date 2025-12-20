@@ -1,4 +1,3 @@
-import React from 'react';
 import { useLanguage } from '../components/LanguageContext';
 import ProviderNotificationPreferencesComponent from '../components/challenges/ProviderNotificationPreferences';
 import ProtectedPage from '../components/permissions/ProtectedPage';

@@ -1,4 +1,3 @@
-import React from 'react';
 import ResearcherOnboardingWizard from '@/components/onboarding/ResearcherOnboardingWizard';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';

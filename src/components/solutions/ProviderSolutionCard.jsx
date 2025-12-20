@@ -1,4 +1,3 @@
-import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,8 +5,8 @@ import { useLanguage } from '../LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import {
-  Star, TestTube, TrendingUp, Eye, Edit, Activity, AlertCircle,
-  CheckCircle2, Clock
+  Star, TestTube, TrendingUp, Eye, Edit, Activity,
+  CheckCircle2
 } from 'lucide-react';
 
 export default function ProviderSolutionCard({ solution, pilots, reviews, isSelected, onToggleSelect }) {

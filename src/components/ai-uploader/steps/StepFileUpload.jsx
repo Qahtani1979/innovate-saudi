@@ -2,10 +2,9 @@
  * Step 1: File Upload with multi-format support
  */
 
-import React, { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Upload, FileText, FileSpreadsheet, FileImage, 
   File, Loader2, ArrowRight, X, CheckCircle

@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { Calendar, ChevronLeft, ChevronRight, TestTube, Target, Users, CalendarDays, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, TestTube, Target, Users, CalendarDays, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { Button } from "@/components/ui/button";
@@ -26,10 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useLanguage } from './components/LanguageContext';
-import ArabicFontOptimizer from './components/ui/ArabicFontOptimizer';
-import AIAssistant from './components/AIAssistant';
 import PortalSwitcher from './components/layout/PortalSwitcher';
-import PersonaHeader from './components/layout/PersonaHeader';
 import PersonaSidebar from './components/layout/PersonaSidebar';
 import PersonaSwitcher from './components/layout/PersonaSwitcher';
 import UserAvatarMenu from './components/shared/UserAvatarMenu';

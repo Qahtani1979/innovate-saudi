@@ -1,10 +1,9 @@
-import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { CheckCircle2, Activity, BarChart3, Eye, Clock, TrendingUp } from 'lucide-react';
+import { CheckCircle2, Activity, BarChart3, Eye, Clock } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function AnalyticsClusterAudit() {

@@ -10,8 +10,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
 import {
-  Lightbulb, ThumbsUp, MessageSquare, TrendingUp, Plus,
-  MapPin, Calendar, User, Filter, Sparkles, Loader2, ArrowRight
+  Lightbulb, ThumbsUp, TrendingUp, Plus, Calendar, Loader2, ArrowRight
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';

@@ -1,4 +1,3 @@
-import React from 'react';
 import SWOTAnalysisBuilder from '@/components/strategy/preplanning/SWOTAnalysisBuilder';
 import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
 import NoPlanGuard from '@/components/strategy/NoPlanGuard';

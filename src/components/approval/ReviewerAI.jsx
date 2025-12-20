@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,8 +7,7 @@ import { useLanguage } from '../LanguageContext';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { 
-  buildReviewerAnalysisPrompt, 
-  REVIEWER_ANALYSIS_SCHEMA 
+  buildReviewerAnalysisPrompt 
 } from '@/lib/ai/prompts/approval';
 
 /**

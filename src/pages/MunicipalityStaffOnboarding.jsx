@@ -1,4 +1,3 @@
-import React from 'react';
 import MunicipalityStaffOnboardingWizard from '@/components/onboarding/MunicipalityStaffOnboardingWizard';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';

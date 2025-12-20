@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from './LanguageContext';
-import { Rocket, CheckCircle2, AlertCircle, X, Loader2, Shield } from 'lucide-react';
+import { Rocket, AlertCircle, X, Loader2, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SandboxLaunchChecklist({ sandbox, onClose }) {

@@ -1,11 +1,10 @@
-import React from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useLanguage } from '../LanguageContext';
-import { UserCog, Clock, User } from 'lucide-react';
+import { UserCog } from 'lucide-react';
 
 export default function ImpersonationAuditLog() {
   const { language, isRTL, t } = useLanguage();

@@ -1,4 +1,3 @@
-import React from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,9 +8,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { 
   BarChart3, Target, TrendingUp, CheckCircle2, Clock, 
   AlertTriangle, Activity, Calendar, ArrowUpRight, ArrowDownRight,
-  Loader2, RefreshCw
+  Loader2
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 export default function PublicStrategyDashboard({ strategicPlanId: propPlanId }) {
   const { t, language } = useLanguage();

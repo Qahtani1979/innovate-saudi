@@ -1,4 +1,3 @@
-import React from 'react';
 import StrategyTimelinePlanner from '@/components/strategy/creation/StrategyTimelinePlanner';
 import { useLanguage } from '@/components/LanguageContext';
 import ProtectedPage from '@/components/permissions/ProtectedPage';

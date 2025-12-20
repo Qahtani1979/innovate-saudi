@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   BookOpen, Sparkles, Save, Eye, EyeOff, Star, Loader2, 
-  Image, Video, TrendingUp, Quote, Lightbulb, Search
+  Image, Video, TrendingUp, Lightbulb
 } from 'lucide-react';
 import { toast } from 'sonner';
 

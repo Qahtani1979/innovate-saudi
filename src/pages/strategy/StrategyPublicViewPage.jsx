@@ -1,4 +1,3 @@
-import React from 'react';
 import StrategyPublicView from '@/components/strategy/communication/StrategyPublicView';
 import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
 import { useActivePlan } from '@/contexts/StrategicPlanContext';

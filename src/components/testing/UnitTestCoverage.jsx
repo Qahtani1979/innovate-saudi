@@ -1,9 +1,8 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
-import { CheckCircle, FileCode } from 'lucide-react';
+import { FileCode } from 'lucide-react';
 
 export default function UnitTestCoverage() {
   const { t } = useLanguage();

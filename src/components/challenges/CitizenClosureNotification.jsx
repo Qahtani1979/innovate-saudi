@@ -1,12 +1,11 @@
 import React from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from '../LanguageContext';
-import { Mail, Loader2, CheckCircle2, Heart } from 'lucide-react';
+import { Mail, Loader2, Heart } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function CitizenClosureNotification({ challenge, onSent, onCancel }) {

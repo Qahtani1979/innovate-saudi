@@ -1,7 +1,6 @@
-import React from 'react';
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
-import { Share2, Facebook, Twitter, Linkedin, Link2, MessageCircle } from 'lucide-react';
+import { Facebook, Twitter, Linkedin, Link2, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SocialShare({ idea }) {

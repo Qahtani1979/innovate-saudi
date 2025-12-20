@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '@/components/LanguageContext';
 import { 
-  Sparkles, Wand2, Target, Users, Mail, MessageSquare, 
-  Languages, BarChart3, Loader2, Copy, Check, RefreshCw,
+  Sparkles, Wand2, 
+  Languages, Loader2, Copy, Check, RefreshCw,
   Lightbulb, PenTool, Zap
 } from 'lucide-react';
 import { toast } from 'sonner';

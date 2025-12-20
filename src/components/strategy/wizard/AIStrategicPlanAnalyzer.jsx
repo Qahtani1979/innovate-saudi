@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,8 +9,8 @@ import { Separator } from "@/components/ui/separator";
 import { 
   Brain, Loader2, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle,
   Target, TrendingUp, AlertCircle, Lightbulb, Award, BarChart3, 
-  RefreshCw, Zap, ArrowRight, XCircle, ExternalLink, Play, ListPlus,
-  Navigation, Wand2, ClipboardList
+  RefreshCw, Zap, ArrowRight, XCircle, ExternalLink, ListPlus,
+  Navigation, Wand2
 } from 'lucide-react';
 import { useLanguage } from '../../LanguageContext';
 import { supabase } from '@/integrations/supabase/client';

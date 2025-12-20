@@ -11,9 +11,9 @@ import { useCommunicationAI } from '@/hooks/strategy/useCommunicationAI';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { 
-  BarChart3, TrendingUp, TrendingDown, Eye, Share2, Users, 
+  BarChart3, TrendingUp, TrendingDown, Eye, Share2, 
   Mail, Globe, Radio, MessageSquare, Sparkles, Loader2,
-  ArrowUpRight, ArrowDownRight
+  ArrowUpRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 

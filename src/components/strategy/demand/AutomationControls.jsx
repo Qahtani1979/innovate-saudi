@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,13 +12,10 @@ import { useToast } from '@/hooks/use-toast';
 import { 
   Zap, 
   Play,
-  Pause,
   Settings2,
   Clock,
   Loader2,
-  RefreshCw,
-  CheckCircle2,
-  AlertCircle
+  CheckCircle2
 } from 'lucide-react';
 
 export default function AutomationControls() {

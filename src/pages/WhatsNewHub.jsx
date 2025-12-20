@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { 
-  Megaphone, Bell, Sparkles, Calendar, FileText, 
-  AlertCircle, X, ExternalLink, CheckCircle2 
+  Megaphone, Bell, Sparkles, 
+  AlertCircle, X 
 } from 'lucide-react';
 import { format } from 'date-fns';
 import ProtectedPage from '../components/permissions/ProtectedPage';

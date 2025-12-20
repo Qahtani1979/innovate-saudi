@@ -1,4 +1,3 @@
-import React from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,8 +10,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import {
-  GraduationCap, ClipboardCheck, Clock, TrendingUp, CheckCircle2,
-  AlertCircle, Star, Calendar, FileText, Users, Award, ArrowRight,
+  GraduationCap, ClipboardCheck, Clock, TrendingUp, CheckCircle2, Star, Calendar, FileText, Users, ArrowRight,
   BarChart3, Target, Zap
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';

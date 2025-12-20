@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { base44 } from '@/api/base44Client';
 import { useLanguage } from '../LanguageContext';
-import { Sparkles, TrendingUp, Target, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { Sparkles, TrendingUp, Target, CheckCircle2, Loader2 } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { 

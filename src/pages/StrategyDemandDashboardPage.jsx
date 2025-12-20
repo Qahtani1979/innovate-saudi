@@ -1,4 +1,3 @@
-import React from 'react';
 import DemandDashboard from '@/components/strategy/demand/DemandDashboard';
 import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
 import { useActivePlan } from '@/contexts/StrategicPlanContext';

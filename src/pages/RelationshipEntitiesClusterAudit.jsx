@@ -1,8 +1,7 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { CheckCircle2, Network, Link as LinkIcon } from 'lucide-react';
+import { CheckCircle2, Link as LinkIcon } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function RelationshipEntitiesClusterAudit() {

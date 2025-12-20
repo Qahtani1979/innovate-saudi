@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../components/LanguageContext';
-import { Calendar, User, FileText, Download, Filter, History, Search, BarChart3 } from 'lucide-react';
+import { Calendar, User, FileText, Download, History, Search, BarChart3 } from 'lucide-react';
 import { format } from 'date-fns';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 

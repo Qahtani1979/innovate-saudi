@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -11,12 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from '../components/LanguageContext';
 import { createPageUrl } from '../utils';
-import { Shield, ChevronLeft, ChevronRight, FileText, Building2, Wifi, DollarSign, Image as ImageIcon, Loader2, Sparkles, Target } from 'lucide-react';
+import { Shield, ChevronLeft, ChevronRight, FileText, Building2, Wifi, DollarSign, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import FileUploader from '../components/FileUploader';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import StrategicPlanSelector from '@/components/strategy/StrategicPlanSelector';
 
 function SandboxCreate() {

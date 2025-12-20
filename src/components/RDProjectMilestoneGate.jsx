@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,9 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { useLanguage } from './LanguageContext';
-import { CheckCircle2, X, Upload, FileText } from 'lucide-react';
+import { CheckCircle2, X, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import FileUploader from './FileUploader';
 import { useAuth } from '@/lib/AuthContext';

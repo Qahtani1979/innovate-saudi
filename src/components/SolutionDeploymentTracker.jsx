@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
-import { TrendingUp, Plus, X, Loader2, CheckCircle2, MapPin } from 'lucide-react';
+import { TrendingUp, Plus, X, CheckCircle2, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SolutionDeploymentTracker({ solution, onClose }) {

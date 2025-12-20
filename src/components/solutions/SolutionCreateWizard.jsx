@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -13,8 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
-import { 
-  Lightbulb, Save, Loader2, Plus, X, Sparkles, ChevronRight, ChevronLeft,
+import { Save, Loader2, Plus, X, Sparkles, ChevronRight, ChevronLeft,
   FileText, Code, DollarSign, CheckCircle2, Upload, Target, AlertCircle
 } from 'lucide-react';
 import FileUploader from '../FileUploader';
@@ -22,7 +21,6 @@ import { toast } from 'sonner';
 import CompetitiveAnalysisWidget from './CompetitiveAnalysisWidget';
 import AIPricingSuggester from './AIPricingSuggester';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import { solutionStep1Schema, solutionStep2Schema, solutionStep4Schema, validateSolution } from '@/lib/validations/solutionSchema';
 

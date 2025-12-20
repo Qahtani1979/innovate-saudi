@@ -5,15 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import {
   Building2, Globe, Mail, Award, TrendingUp, CheckCircle2, Star,
-  Target, FileText, ExternalLink, Lightbulb, MessageSquare, Send,
-  Sparkles, DollarSign, TestTube, Image, Video, Users, Code,
-  Clock, Shield, Package, Loader2, X, Upload, Plus
+  Target, FileText, ExternalLink, Lightbulb,
+  Sparkles, DollarSign, TestTube, Video, Users, Code,
+  Clock, Shield, Package, Loader2, X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import SolutionVerificationWizard from '../components/SolutionVerificationWizard';
@@ -26,23 +25,18 @@ import RequestDemoButton from '../components/solutions/RequestDemoButton';
 import ExpressInterestButton from '../components/solutions/ExpressInterestButton';
 import SolutionReviewsTab from '../components/solutions/SolutionReviewsTab';
 import CompetitiveAnalysisTab from '../components/solutions/CompetitiveAnalysisTab';
-import SolutionVersionHistory from '../components/solutions/SolutionVersionHistory';
-import SolutionDeprecationWizard from '../components/solutions/SolutionDeprecationWizard';
 import DeploymentBadges from '../components/solutions/DeploymentBadges';
 import ProviderScalingCommercial from '../components/scaling/ProviderScalingCommercial';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePermissions } from '../components/permissions/usePermissions';
-import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
 import AIProfileEnhancer from '../components/solutions/AIProfileEnhancer';
 import CompetitiveAnalysisAI from '../components/solutions/CompetitiveAnalysisAI';
 import PriceComparisonTool from '../components/solutions/PriceComparisonTool';
 import PilotReadinessChecker from '../components/solutions/PilotReadinessChecker';
-import SolutionEvolutionTracker from '../components/solutions/SolutionEvolutionTracker';
 import DynamicPricingIntelligence from '../components/solutions/DynamicPricingIntelligence';
 import DeploymentSuccessTracker from '../components/solutions/DeploymentSuccessTracker';
 import ClientTestimonialsShowcase from '../components/solutions/ClientTestimonialsShowcase';
 import SolutionSuccessPredictor from '../components/solutions/SolutionSuccessPredictor';
-import SmartRecommendationEngine from '../components/solutions/SmartRecommendationEngine';
 import ComplianceValidationAI from '../components/solutions/ComplianceValidationAI';
 import RealTimeMarketIntelligence from '../components/solutions/RealTimeMarketIntelligence';
 import TRLAssessmentTool from '../components/solutions/TRLAssessmentTool';
@@ -53,7 +47,6 @@ import { PageLayout } from '@/components/layout/PersonaPageLayout';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import SolutionNotFound from '../components/solutions/SolutionNotFound';
 import SolutionAccessDenied from '../components/solutions/SolutionAccessDenied';
-import SolutionErrorBoundary from '../components/solutions/SolutionErrorBoundary';
 
 function SolutionDetailPage() {
   const urlParams = new URLSearchParams(window.location.search);

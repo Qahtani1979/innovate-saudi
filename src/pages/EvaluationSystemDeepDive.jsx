@@ -1,12 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
 import {
-  CheckCircle2, AlertCircle, Database, FileText, Code, Target,
-  Shield, Zap, XCircle, ChevronDown, ChevronRight, TrendingUp
+  CheckCircle2, Database, Code, Target,
+  Shield, XCircle
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 

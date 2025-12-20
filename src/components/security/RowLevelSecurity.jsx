@@ -1,5 +1,4 @@
 import { usePermissions } from '../permissions/usePermissions';
-import { base44 } from '@/api/base44Client';
 
 // Row-level security rules
 const RLS_RULES = {

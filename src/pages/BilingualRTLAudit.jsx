@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 import { 
   Globe, CheckCircle2, AlertCircle, Circle, ChevronDown, ChevronRight, 
-  Languages, ArrowLeftRight, Target, Sparkles, Download, TrendingUp
+  Languages, Target, Sparkles
 } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import ProtectedPage from '../components/permissions/ProtectedPage';

@@ -1,4 +1,3 @@
-import React from 'react';
 import StakeholderAnalysisWidget from '@/components/strategy/preplanning/StakeholderAnalysisWidget';
 import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
 import NoPlanGuard from '@/components/strategy/NoPlanGuard';

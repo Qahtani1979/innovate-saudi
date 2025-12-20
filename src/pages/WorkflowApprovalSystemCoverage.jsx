@@ -1,18 +1,16 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useLanguage } from '../components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Progress } from "@/components/ui/progress";
 import {
   CheckCircle2, XCircle, AlertCircle, Shield, FileText, Users,
   Lightbulb, TestTube, Microscope, Calendar, Building2, Beaker,
-  Target, Handshake, Scale, Megaphone, Flag, TrendingUp, Activity,
-  Clock, Sparkles, ArrowRight, BarChart3, Zap, Network, Award,
-  ChevronDown, ChevronRight, Database, Workflow, Brain, Globe
+  Target, Handshake, Megaphone, TrendingUp, Activity, Sparkles, ArrowRight, BarChart3, Zap, Network, Award,
+  ChevronDown, ChevronRight, Database, Workflow, Brain
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 

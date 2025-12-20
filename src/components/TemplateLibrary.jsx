@@ -1,13 +1,9 @@
-import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Sparkles, Copy } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { createPageUrl } from '../utils';
+import { FileText, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from './LanguageContext';
 

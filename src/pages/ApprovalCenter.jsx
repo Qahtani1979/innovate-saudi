@@ -1,18 +1,17 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
 import { 
-  CheckCircle, Clock, AlertCircle, FileText, TestTube, Microscope, 
-  Calendar, Send, Sparkles, Loader2, TrendingUp, Shield, Target, Users,
+  CheckCircle, AlertCircle, FileText, TestTube, Microscope, 
+  Calendar, Sparkles, Shield, Target, Users,
   CalendarDays
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -20,7 +19,6 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import InlineApprovalWizard from '../components/approval/InlineApprovalWizard';
 import { getGateConfig } from '../components/approval/ApprovalGateConfig';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useAuth } from '@/lib/AuthContext';
 import {
   APPROVAL_ANALYSIS_SCHEMA,

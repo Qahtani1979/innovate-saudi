@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
-import { CheckCircle2, Circle, AlertCircle, Database, Sparkles, TrendingUp, ChevronDown, ChevronRight, XCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Database, Sparkles, TrendingUp, ChevronDown, ChevronRight, XCircle } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function EntitiesWorkflowTracker() {

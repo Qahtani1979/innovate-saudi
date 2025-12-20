@@ -1,17 +1,13 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { 
-  Sparkles, Loader2, Link2, CheckCircle2, Target, Grid3X3, List, 
-  Building2, BarChart3, AlertTriangle, Flag, ExternalLink, Layers
+import { Link2, CheckCircle2, Target, Grid3X3, BarChart3, AlertTriangle, Flag, Layers
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { cn } from "@/lib/utils";
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
+import { StepDashboardHeader, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
 
 // Vision 2030 Programs
 const VISION_2030_PROGRAMS = [

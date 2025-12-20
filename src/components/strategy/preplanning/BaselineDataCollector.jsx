@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,15 +19,7 @@ import {
   Edit2, 
   Save, 
   Download,
-  RefreshCw,
-  CheckCircle2,
-  AlertCircle,
-  Clock,
-  TrendingUp,
-  Target,
-  BarChart3,
-  Activity,
-  Sparkles
+  RefreshCw
 } from 'lucide-react';
 
 const BaselineDataCollector = ({ strategicPlanId, strategicPlan, onSave }) => {

@@ -1,7 +1,6 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import { AlertCircle } from 'lucide-react';
 
 export default function RDProposalEscalationAutomation({ proposal, rdCall }) {
@@ -15,7 +14,7 @@ export default function RDProposalEscalationAutomation({ proposal, rdCall }) {
         .update(escalationData)
         .eq('id', proposal.id);
       if (updateError) throw updateError;
-      
+
       // Create notification
       const { error: notifError } = await supabase
         .from('notifications')
@@ -45,6 +44,7 @@ export default function RDProposalEscalationAutomation({ proposal, rdCall }) {
             },
             triggered_by: 'system'
           }
+        });
       }
     },
     onSuccess: () => {
@@ -57,15 +57,15 @@ export default function RDProposalEscalationAutomation({ proposal, rdCall }) {
 
     const checkEscalation = () => {
       const now = new Date();
-      
+
       // If submitted, check review SLA
       if (proposal.status === 'submitted' && proposal.submission_date) {
         const submittedDate = new Date(proposal.submission_date);
         const daysSinceSubmit = (now - submittedDate) / (1000 * 60 * 60 * 24);
 
         // Escalation rules based on call timeline
-        const reviewDeadline = rdCall?.evaluation_deadline ? 
-          new Date(rdCall.evaluation_deadline) : 
+        const reviewDeadline = rdCall?.evaluation_deadline ?
+          new Date(rdCall.evaluation_deadline) :
           new Date(submittedDate.getTime() + 14 * 24 * 60 * 60 * 1000); // 14 days default
 
         const daysUntilDeadline = (reviewDeadline - now) / (1000 * 60 * 60 * 24);
@@ -114,9 +114,8 @@ export default function RDProposalEscalationAutomation({ proposal, rdCall }) {
   // Visual indicator only (escalation runs in background)
   if (proposal?.escalation_level > 0) {
     return (
-      <div className={`p-3 rounded-lg border-2 flex items-center gap-2 ${
-        proposal.escalation_level === 2 ? 'bg-red-50 border-red-400' : 'bg-amber-50 border-amber-400'
-      }`}>
+      <div className={`p-3 rounded-lg border-2 flex items-center gap-2 ${proposal.escalation_level === 2 ? 'bg-red-50 border-red-400' : 'bg-amber-50 border-amber-400'
+        }`}>
         <AlertCircle className={`h-5 w-5 ${proposal.escalation_level === 2 ? 'text-red-600' : 'text-amber-600'}`} />
         <div className="flex-1">
           <p className={`font-semibold text-sm ${proposal.escalation_level === 2 ? 'text-red-900' : 'text-amber-900'}`}>

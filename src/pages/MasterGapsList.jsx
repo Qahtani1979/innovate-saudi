@@ -1,17 +1,16 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useLanguage } from '../components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import {
   AlertCircle, CheckCircle2, XCircle, Target, Zap, Shield, 
-  FileText, Users, Sparkles, TrendingUp, Activity, Database, 
-  Workflow, Eye, Edit, ArrowRight, Layout, Brain, Clock, 
-  Microscope, TestTube, Calendar, Lightbulb, Building2, Beaker,
+  FileText, Sparkles, Activity, Database, 
+  Workflow, Eye, Edit, ArrowRight, Layout, Clock, 
+  Microscope,
   Globe, Award
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';

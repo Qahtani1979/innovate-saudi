@@ -1,9 +1,7 @@
-import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Network, ChevronRight, Plus, Trash2 } from 'lucide-react';
+import { Network, ChevronRight } from 'lucide-react';
 
 export default function RoleHierarchyBuilder({ roles, onUpdate }) {
   const { language, isRTL, t } = useLanguage();

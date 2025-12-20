@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -10,12 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { AlertCircle, Plus, Search, Filter, Edit, Eye, LayoutGrid, List, Sparkles, Loader2, TrendingUp, Target, Zap, Bell } from 'lucide-react';
+import { AlertCircle, Plus, Search, Edit, Eye, LayoutGrid, List, Sparkles, Loader2, TrendingUp, Target, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePrompt } from '@/hooks/usePrompt';
 import { CHALLENGE_QUICK_SUGGESTION_PROMPT_TEMPLATE } from '@/lib/ai/prompts/challenges/myChallenges';
-import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function MyChallenges() {

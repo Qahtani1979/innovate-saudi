@@ -1,8 +1,7 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Bell, Zap, AlertTriangle } from 'lucide-react';
+import { Bell, AlertTriangle } from 'lucide-react';
 
 export default function AlertManagementSystem() {
   const { t } = useLanguage();

@@ -1,7 +1,6 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Shield, Key, Users, Lock, Database, Clock, Bell } from 'lucide-react';
+import { CheckCircle, Shield, Key, Users, Lock, Database } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 
 export default function FinalAuthenticationSystemAssessment() {

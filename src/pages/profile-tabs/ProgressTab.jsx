@@ -1,4 +1,3 @@
-import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { 
-  CheckCircle2, Circle, Clock, TrendingUp, Target, Award, 
+  CheckCircle2, Circle, Clock, TrendingUp, Award, 
   Star, Zap, Trophy, Rocket
 } from 'lucide-react';
 import { ProfileStatCard, ProfileStatGrid } from '@/components/profile/ProfileStatCard';

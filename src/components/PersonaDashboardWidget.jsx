@@ -1,4 +1,3 @@
-import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from './LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { Building2, Rocket, Microscope, Target, CheckCircle2, Clock, AlertCircle, TestTube, FileText, Lightbulb } from 'lucide-react';
+import { Building2, Rocket, Microscope, Target, AlertCircle, TestTube, FileText, Lightbulb } from 'lucide-react';
 
 export default function PersonaDashboardWidget({ user }) {
   const { language, isRTL, t } = useLanguage();

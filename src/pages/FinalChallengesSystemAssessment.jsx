@@ -1,8 +1,7 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle2, Database, Shield, FileCode, Layers, Zap, Users, Brain, Link2, Award, FileText, Bell, GitBranch, Eye, Settings } from 'lucide-react';
+import { CheckCircle2, Database, Shield, FileCode, Layers, Zap, Brain, Link2, Award, Bell, GitBranch, Eye } from 'lucide-react';
 import { useLanguage } from '../components/LanguageContext';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 

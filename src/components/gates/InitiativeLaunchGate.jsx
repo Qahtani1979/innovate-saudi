@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Rocket, CheckCircle2, XCircle, Shield, Users, DollarSign, Calendar } from 'lucide-react';
-import { toast } from 'sonner';
 
 export default function InitiativeLaunchGate({ initiative, type, onApprove, onReject, onClose }) {
   const { language, isRTL, t } = useLanguage();

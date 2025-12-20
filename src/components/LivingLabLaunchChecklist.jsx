@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from './LanguageContext';
-import { Rocket, CheckCircle2, X, Loader2, Beaker } from 'lucide-react';
+import { Rocket, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function LivingLabLaunchChecklist({ lab, onClose }) {

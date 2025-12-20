@@ -1,10 +1,9 @@
-import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { CheckCircle, Circle, ArrowRight, Target, TrendingUp } from 'lucide-react';
+import { CheckCircle, Circle, Target, TrendingUp } from 'lucide-react';
 
 export default function UserJourneyMapper({ userEmail }) {
   const { t } = useLanguage();

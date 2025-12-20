@@ -1,10 +1,9 @@
-import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { Network, Sparkles, AlertCircle, Lightbulb, TestTube } from 'lucide-react';
+import { AlertCircle, Lightbulb, TestTube } from 'lucide-react';
 import NetworkGraph from '../components/NetworkGraph';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 

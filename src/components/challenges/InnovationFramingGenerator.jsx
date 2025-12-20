@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Lightbulb, Users, Loader2, Plus, Trash2, Edit2, Languages } from 'lucide-react';
+import { Sparkles, Lightbulb, Users, Loader2, Plus, Trash2, Languages } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';

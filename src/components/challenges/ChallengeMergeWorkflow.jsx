@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
-import { GitMerge, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { GitMerge, Loader2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ChallengeMergeWorkflow({ primaryChallenge, duplicateChallenges, onSuccess, onCancel }) {

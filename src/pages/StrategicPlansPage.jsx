@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -29,8 +29,7 @@ import ProtectedPage from '@/components/permissions/ProtectedPage';
 import { format } from 'date-fns';
 import { 
   Target, Plus, Search, MoreVertical, Edit, Eye, Copy, Archive,
-  Trash2, CheckCircle2, Play, RotateCcw, Clock, FileText, Calendar,
-  TrendingUp, AlertCircle, Filter, Loader2
+  Trash2, CheckCircle2, Play, RotateCcw, Clock, FileText, Calendar, AlertCircle, Loader2
 } from 'lucide-react';
 
 const statusConfig = {

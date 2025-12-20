@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../LanguageContext';
-import { Database, Download, Clock, CheckCircle } from 'lucide-react';
+import { Database, Download, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function BackupScheduler() {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
 import {
   Table,
@@ -33,8 +32,6 @@ import {
   Trash2,
   LayoutGrid,
   List,
-  Calendar as CalendarIcon,
-  Sparkles,
   TrendingUp,
   AlertTriangle,
   Archive,
@@ -44,7 +41,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { toast } from 'sonner';
 import ExportData from '../components/ExportData';
-import { createNotification } from '../components/AutoNotification';
 import PilotsAIInsights from '../components/pilots/PilotsAIInsights';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePermissions } from '../components/permissions/usePermissions';

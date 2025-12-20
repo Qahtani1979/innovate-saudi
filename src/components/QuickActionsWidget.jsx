@@ -1,11 +1,9 @@
-import React from 'react';
 import { useLanguage } from './LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Plus, AlertCircle, TestTube, FileText, Lightbulb, 
+import { AlertCircle, TestTube, FileText, Lightbulb, 
   Calendar, Users, Zap, Download, Shield, Search 
 } from 'lucide-react';
 

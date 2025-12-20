@@ -1,9 +1,8 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Users, Upload, Eye } from 'lucide-react';
+import { Users, Eye } from 'lucide-react';
 
 export default function CitizenScienceIntegration({ labId }) {
   const { language, t } = useLanguage();

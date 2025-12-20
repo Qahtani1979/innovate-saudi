@@ -1,4 +1,3 @@
-import React from 'react';
 import StrategyToLivingLabGenerator from '@/components/strategy/cascade/StrategyToLivingLabGenerator';
 import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
 import { useActivePlan } from '@/contexts/StrategicPlanContext';

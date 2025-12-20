@@ -1,11 +1,10 @@
-import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
-import { TrendingUp, Users, Building2, CheckCircle2, Clock, Target, Loader2 } from 'lucide-react';
+import { TrendingUp, Users, Building2, CheckCircle2, Clock, Target } from 'lucide-react';
 
 export default function PolicyImpactMetrics({ policy }) {
   const { language, isRTL, t } = useLanguage();

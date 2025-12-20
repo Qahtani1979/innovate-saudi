@@ -1,4 +1,3 @@
-import React from 'react';
 import DeputyshipOnboardingWizard from '@/components/onboarding/DeputyshipOnboardingWizard';
 
 export default function DeputyshipOnboarding() {

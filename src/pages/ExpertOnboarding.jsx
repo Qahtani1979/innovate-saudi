@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -19,12 +19,10 @@ import {
   ArrowRight,
   ArrowLeft,
   Loader2,
-  Award,
-  FileText
+  Award
 } from 'lucide-react';
 import { toast } from 'sonner';
 import FileUploader from '../components/FileUploader';
-import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function ExpertOnboarding() {
   const [step, setStep] = useState(1);

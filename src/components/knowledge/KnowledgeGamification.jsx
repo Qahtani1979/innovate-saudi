@@ -1,9 +1,8 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
-import { Award, Star, TrendingUp, Target } from 'lucide-react';
+import { Award, Star, Target } from 'lucide-react';
 
 export default function KnowledgeGamification() {
   const { language, t } = useLanguage();

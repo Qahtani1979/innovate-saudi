@@ -1,10 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { 
-  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger 
-} from "@/components/ui/tooltip";
+
 import { Link2, X, Zap } from 'lucide-react';
 import { useLanguage } from '../../LanguageContext';
 import { supabase } from '@/integrations/supabase/client';

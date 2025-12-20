@@ -1,8 +1,7 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { GitBranch, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react';
+import { GitBranch, Clock, AlertCircle } from 'lucide-react';
 
 export default function CICDPipeline() {
   const { t } = useLanguage();

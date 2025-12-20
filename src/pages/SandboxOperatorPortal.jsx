@@ -1,4 +1,3 @@
-import React from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,8 +9,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { 
   Shield, Activity, CheckCircle2, Clock, AlertTriangle, Plus, FileText,
-  TrendingUp, BarChart3, Users, Zap, Bell, Target, TestTube, Calendar,
-  Download, Wrench
+  TrendingUp, BarChart3, Zap, Bell
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 

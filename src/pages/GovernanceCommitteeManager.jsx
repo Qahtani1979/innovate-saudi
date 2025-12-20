@@ -1,7 +1,5 @@
-import React from 'react';
 import { useLanguage } from '../components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Shield, Users, Calendar, FileText } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';

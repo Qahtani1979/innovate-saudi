@@ -1,4 +1,3 @@
-import React from 'react';
 import SolutionCreateWizard from '../components/solutions/SolutionCreateWizard';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 

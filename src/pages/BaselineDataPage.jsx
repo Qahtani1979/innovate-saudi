@@ -1,4 +1,3 @@
-import React from 'react';
 import BaselineDataCollector from '@/components/strategy/preplanning/BaselineDataCollector';
 import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
 import NoPlanGuard from '@/components/strategy/NoPlanGuard';

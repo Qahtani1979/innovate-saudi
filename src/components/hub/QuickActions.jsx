@@ -1,7 +1,6 @@
-import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Calendar, Megaphone, Users, FileText, ExternalLink } from 'lucide-react';
+import { Plus, Calendar, Megaphone, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { useLanguage } from '@/components/LanguageContext';

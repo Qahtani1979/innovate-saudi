@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,25 +9,18 @@ import OpportunityPipelineDashboard from '../components/provider/OpportunityPipe
 import MarketIntelligenceFeed from '../components/solutions/MarketIntelligenceFeed';
 import ProviderPerformanceDashboard from '../components/solutions/ProviderPerformanceDashboard';
 import ProposalWorkflowTracker from '../components/startup/ProposalWorkflowTracker';
-import StartupJourneyAnalytics from '../components/startup/StartupJourneyAnalytics';
-import EcosystemContributionScore from '../components/startup/EcosystemContributionScore';
-import MultiMunicipalityExpansionTracker from '../components/startup/MultiMunicipalityExpansionTracker';
-import StartupCollaborationHub from '../components/startup/StartupCollaborationHub';
-import StartupReferralProgram from '../components/startup/StartupReferralProgram';
-import StartupMentorshipMatcher from '../components/startup/StartupMentorshipMatcher';
-import StartupChurnPredictor from '../components/startup/StartupChurnPredictor';
 import FirstActionRecommender from '../components/onboarding/FirstActionRecommender';
 import ProfileCompletenessCoach from '../components/onboarding/ProfileCompletenessCoach';
 import ProgressiveProfilingPrompt from '../components/onboarding/ProgressiveProfilingPrompt';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { 
-  Lightbulb, Target, Rocket, TrendingUp, Calendar, AlertCircle, Plus, 
-  Users, Award, CheckCircle2, MessageSquare, Sparkles, TestTube, FileText,
-  Clock, BarChart3, Zap, Building2, Mail
+  Lightbulb, Target, Rocket, Calendar, Plus, 
+  Users, CheckCircle2, Sparkles, TestTube, FileText,
+  Clock
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { PageLayout, PageHeader, PersonaButton } from '@/components/layout/PersonaPageLayout';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function StartupDashboard() {
   const { language, isRTL, t } = useLanguage();

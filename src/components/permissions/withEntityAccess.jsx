@@ -1,7 +1,6 @@
 /**
  * HOC wrapper for detail pages to enforce visibility
  */
-import React from 'react';
 import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
 
 export function withEntityAccess(Component, options = {}) {

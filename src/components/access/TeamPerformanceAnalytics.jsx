@@ -1,9 +1,8 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
-import { BarChart3, TrendingUp, Users, Award } from 'lucide-react';
+import { BarChart3, TrendingUp, Award } from 'lucide-react';
 
 export default function TeamPerformanceAnalytics({ team }) {
   const { language, isRTL, t } = useLanguage();

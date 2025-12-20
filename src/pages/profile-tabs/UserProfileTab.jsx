@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { 
-  User, Edit, Award, Briefcase, Mail, Globe, MapPin, Save, Upload, 
+  User, Edit, Award, Mail, Globe, Save, Upload, 
   Plus, X, Linkedin, Trophy, Star, Zap, Eye, EyeOff, CheckCircle
 } from 'lucide-react';
 import { toast } from 'sonner';

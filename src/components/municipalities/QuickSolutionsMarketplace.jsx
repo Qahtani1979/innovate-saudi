@@ -1,4 +1,3 @@
-import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +7,7 @@ import { useLanguage } from '../LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import {
-  Lightbulb, Star, TrendingUp, ArrowRight, Building2, CheckCircle2
+  Lightbulb, Star, TrendingUp, ArrowRight, CheckCircle2
 } from 'lucide-react';
 import ExpressInterestButton from '../solutions/ExpressInterestButton';
 

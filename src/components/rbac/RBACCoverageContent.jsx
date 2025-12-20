@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,8 +7,8 @@ import { useLanguage } from '@/components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { 
-  Shield, Users, Key, CheckCircle, CheckCircle2, Database, FileCode, 
-  ChevronDown, ChevronRight, Network, Target, Circle, UserPlus, AlertCircle
+  Shield, Key, CheckCircle, CheckCircle2, Database, 
+  ChevronDown, ChevronRight, Network, Target, UserPlus
 } from 'lucide-react';
 
 export default function RBACCoverageContent() {

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,8 +39,7 @@ import {
   XCircle,
   RotateCcw,
   Loader2,
-  X,
-  Microscope
+  X
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -51,19 +49,12 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { usePrompt } from '@/hooks/usePrompt';
 import { PILOT_DETAIL_PROMPT_TEMPLATE } from '@/lib/ai/prompts/pilots/pilotDetail';
-import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import CloneEntity from '../components/CloneEntity';
-import PDFExport from '../components/PDFExport';
-import EntityPermissions from '../components/EntityPermissions';
 import MultiStepApproval from '../components/MultiStepApproval';
 import FinancialTracker from '../components/FinancialTracker';
 import RegulatoryCompliance from '../components/RegulatoryCompliance';
 import AnomalyDetector from '../components/AnomalyDetector';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
-import { usePermissions } from '@/components/permissions/usePermissions';
-import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
 import MilestoneTracker from '../components/MilestoneTracker';
-import KPIDataEntry from '../components/KPIDataEntry';
 import AISuccessPredictor from '../components/AISuccessPredictor';
 import EnhancedKPITracker from '../components/EnhancedKPITracker';
 import AIPeerComparison from '../components/AIPeerComparison';
@@ -79,8 +70,6 @@ import BudgetApprovalWorkflow from '../components/BudgetApprovalWorkflow';
 import MilestoneApprovalGate from '../components/MilestoneApprovalGate';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import PolicyTabWidget from '../components/policy/PolicyTabWidget';
-import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowApprovalTab';
-import PilotActivityLog from '../components/pilots/PilotActivityLog';
 import SolutionFeedbackLoop from '../components/pilots/SolutionFeedbackLoop';
 
 function PilotDetailPage() {

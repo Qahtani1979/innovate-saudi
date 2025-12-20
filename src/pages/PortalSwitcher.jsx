@@ -1,10 +1,9 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { Building2, Rocket, Microscope, Shield, Globe, Target, Users, ArrowRight } from 'lucide-react';
+import { Building2, Rocket, Microscope, Shield, Globe, Target, ArrowRight } from 'lucide-react';
 
 export default function PortalSwitcher() {
   const { language, isRTL, t } = useLanguage();

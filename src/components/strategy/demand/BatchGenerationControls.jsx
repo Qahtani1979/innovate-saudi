@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,11 +16,9 @@ import {
   Play, 
   Pause, 
   Square, 
-  Settings2, 
   Loader2,
   CheckCircle2,
   AlertTriangle,
-  TrendingUp,
   Clock
 } from 'lucide-react';
 

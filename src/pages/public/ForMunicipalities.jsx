@@ -1,11 +1,10 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/components/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
-  Building2, Target, Lightbulb, TrendingUp, CheckCircle2, ArrowRight,
-  Users, BarChart3, Shield, Zap, Award, Handshake
+  Building2, Target, Lightbulb, TrendingUp, ArrowRight,
+  Users, BarChart3, Zap
 } from 'lucide-react';
 
 export default function ForMunicipalities() {

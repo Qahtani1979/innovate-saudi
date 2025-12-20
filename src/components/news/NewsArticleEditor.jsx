@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '@/components/LanguageContext';
-import { Newspaper, Save, Eye, Send, X, Sparkles, Loader2 } from 'lucide-react';
+import { Newspaper, Save, Send, X, Sparkles, Loader2 } from 'lucide-react';
 import { useNewsArticleMutations } from '@/hooks/useNewsArticles';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';

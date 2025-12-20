@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,7 +6,7 @@ import { useLanguage } from '@/components/LanguageContext';
 import { 
   Menu, CheckCircle, XCircle, AlertTriangle, ArrowRight, 
   Shield, Target, Building2, Briefcase, GraduationCap, Microscope, Users, User, Globe,
-  Key, Lock, Eye, Edit, Database
+  Key, Database
 } from 'lucide-react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";

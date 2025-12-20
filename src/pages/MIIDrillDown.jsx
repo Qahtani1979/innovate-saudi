@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,9 +9,9 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 import { Link, Navigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { Award, TrendingUp, AlertCircle, TestTube, Target, Building2, Users, Zap, ShieldAlert, ArrowUp, ArrowDown, Minus, RefreshCw, CheckCircle2, Loader2 } from 'lucide-react';
+import { Award, TrendingUp, AlertCircle, TestTube, Target, Users, ShieldAlert, ArrowUp, ArrowDown, Minus, RefreshCw, CheckCircle2, Loader2 } from 'lucide-react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { PageLayout } from '@/components/layout/PersonaPageLayout';
 import { usePermissions } from '@/components/permissions/usePermissions';
 import { useMIIData } from '@/hooks/useMIIData';
 import MIIImprovementAI from '@/components/municipalities/MIIImprovementAI';

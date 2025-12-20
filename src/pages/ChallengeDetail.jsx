@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -11,7 +11,6 @@ import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
-import SmartActionButton from '../components/SmartActionButton';
 import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowApprovalTab';
 import {
   Sparkles, FileText, Lightbulb, Activity, MessageSquare, TrendingUp,
@@ -20,12 +19,6 @@ import {
   Zap, Shield, Network, Archive, AlertTriangle, User, Globe, BookOpen
 } from 'lucide-react';
 import TrackAssignment from '../components/TrackAssignment';
-import ChallengeSubmissionWizard from '../components/ChallengeSubmissionWizard';
-import ChallengeReviewWorkflow from '../components/ChallengeReviewWorkflow';
-import ChallengeTreatmentPlan from '../components/ChallengeTreatmentPlan';
-import ChallengeResolutionWorkflow from '../components/ChallengeResolutionWorkflow';
-import ChallengeToRDWizard from '../components/ChallengeToRDWizard';
-import ChallengeArchiveWorkflow from '../components/ChallengeArchiveWorkflow';
 import InnovationFramingGenerator from '../components/challenges/InnovationFramingGenerator';
 import StrategicAlignmentSelector from '../components/challenges/StrategicAlignmentSelector';
 import ProposalSubmissionForm from '../components/challenges/ProposalSubmissionForm';
@@ -37,12 +30,11 @@ import PolicyRecommendationManager from '../components/challenges/PolicyRecommen
 import ChallengeActivityLog from '../components/challenges/ChallengeActivityLog';
 import { usePrompt } from '@/hooks/usePrompt';
 import { CHALLENGE_DETAIL_PROMPT_TEMPLATE } from '@/lib/ai/prompts/challenges/challengeDetail';
-import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { usePermissions } from '@/components/permissions/usePermissions';
 import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
 import { useSolutionsWithVisibility, usePilotsWithVisibility, useContractsWithVisibility } from '@/hooks/visibility';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
-import { ChallengeHero, ChallengeStatsCards, ChallengeWorkflowModals } from '@/components/challenges/detail';
+import { ChallengeHero, ChallengeWorkflowModals } from '@/components/challenges/detail';
 import { useChallengeDetailRealtime } from '@/hooks/useChallengeRealtime';
 
 export default function ChallengeDetail() {

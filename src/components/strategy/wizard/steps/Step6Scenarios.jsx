@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -7,16 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
-import { 
-  Sparkles, TrendingUp, TrendingDown, Minus, Plus, X, 
+import { TrendingUp, TrendingDown, Minus, Plus, X, 
   ChevronDown, ChevronUp, CheckCircle2, ListChecks, BarChart3, 
-  GitBranch, Target, Lightbulb, Scale, Percent, Loader2, AlertCircle
+  GitBranch, Target, Lightbulb, Scale, Percent, AlertCircle
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { cn } from '@/lib/utils';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
+import { StepDashboardHeader, QualityMetrics, RecommendationsCard, MainAIGeneratorCard } from '../shared';
 
 const SCENARIO_TYPES = [
   { 

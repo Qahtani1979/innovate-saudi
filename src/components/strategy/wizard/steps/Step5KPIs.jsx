@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -14,12 +13,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { 
   Sparkles, Loader2, Plus, X, Activity, ChevronDown, ChevronUp, Target, TrendingUp, 
   AlertCircle, CheckCircle2, BarChart3, Gauge, Info, LineChart, Grid3X3, PieChart,
-  AlertTriangle, Zap, Clock, Database, User, CalendarDays, Wand2, Check, RefreshCw
+  AlertTriangle, Zap, Clock, Database, User, Wand2, Check, RefreshCw
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useLanguage } from '../../../LanguageContext';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
-import AIStepAnalyzer from '../AIStepAnalyzer';
+import { StepDashboardHeader, MainAIGeneratorCard } from '../shared';
 
 // KPI Categories with descriptions
 const KPI_CATEGORIES = [

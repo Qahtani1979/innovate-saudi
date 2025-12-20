@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/components/LanguageContext';
@@ -11,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
   BarChart3, TrendingUp, TrendingDown, Minus, 
-  Download, RefreshCw, Target, Leaf, Building2, Users, Lightbulb, Sparkles, Loader2
+  Download, RefreshCw, Leaf, Building2, Users, Lightbulb, Sparkles, Loader2
 } from 'lucide-react';
 import {
   IMPACT_ASSESSMENT_SYSTEM_PROMPT,

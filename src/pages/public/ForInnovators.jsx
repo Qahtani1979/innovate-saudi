@@ -1,13 +1,12 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { 
   Lightbulb, Rocket, Target, TestTube, FileText, CheckCircle2,
-  Users, Building2, Microscope, TrendingUp, Award, ArrowRight,
-  Beaker, BarChart3, Clock, DollarSign, ChevronRight
+  Users, Building2, Microscope, TrendingUp, Award,
+  Beaker, BarChart3, DollarSign, ChevronRight
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useLanguage } from '../LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
-import { Globe, Lock, CheckCircle2, Shield, Loader2 } from 'lucide-react';
+import { Globe, Lock, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function PublishingWorkflow({ challenge, onClose, isCreationMode = false }) {

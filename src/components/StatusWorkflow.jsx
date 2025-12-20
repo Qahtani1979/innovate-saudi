@@ -1,4 +1,3 @@
-import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -7,7 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, CheckCircle2, Clock, XCircle, Eye, EyeOff } from 'lucide-react';
+import { ChevronDown, CheckCircle2, Clock, EyeOff } from 'lucide-react';
 
 export default function StatusWorkflow({ entity, currentStatus, onStatusChange, entityType }) {
   const challengeStatuses = [

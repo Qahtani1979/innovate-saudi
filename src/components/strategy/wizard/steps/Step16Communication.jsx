@@ -6,23 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Progress } from "@/components/ui/progress";
 import { StepAlerts } from '../shared/StepAlerts';
 import { 
   Sparkles, Megaphone, Plus, X, Users, Radio, Mail, Globe, BookOpen, 
-  ChevronUp, ChevronDown, Link2, MessageSquare, Calendar, LayoutGrid, 
-  Table2, CalendarDays, Building2, Handshake, Briefcase, Newspaper,
-  GraduationCap, User, Target, AlertTriangle, CheckCircle2, Send,
-  Smartphone, Monitor, Tv, Mic, FileText, PresentationIcon, Video,
-  Bell, Rss, Hash, Eye, TrendingUp, BarChart3, Loader2, Layers,
-  AlertCircle, Info, PieChart
+  ChevronUp, ChevronDown, Link2, MessageSquare, LayoutGrid, 
+  Table2, Building2, Handshake, Briefcase, Newspaper,
+  GraduationCap, User, Target, AlertTriangle, CheckCircle2,
+  Smartphone, Monitor, Tv, Mic, FileText, PresentationIcon, Video, Hash, TrendingUp, BarChart3, Layers, PieChart
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import EntityAllocationSelector from '../EntityAllocationSelector';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
-import AIStepAnalyzer from '../AIStepAnalyzer';
+import { StepDashboardHeader, RecommendationsCard, MainAIGeneratorCard } from '../shared';
 
 // Enhanced Audience Types
 const AUDIENCE_TYPES = [

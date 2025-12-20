@@ -1,8 +1,7 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Shield, Eye, AlertTriangle } from 'lucide-react';
+import { Eye, AlertTriangle } from 'lucide-react';
 
 export default function ThreatDetectionSystem() {
   const { t } = useLanguage();

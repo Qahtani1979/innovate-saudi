@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,11 +10,9 @@ import { useAuth } from '@/lib/AuthContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import {
-  Users, Calendar, Clock, Award, TrendingUp, CheckCircle2,
-  AlertCircle, FileText, Target, Activity
+  Users, Calendar, Clock, CheckCircle2
 } from 'lucide-react';
 import MentorScheduler from '../components/programs/MentorScheduler';
-import { Progress } from "@/components/ui/progress";
 
 export default function MentorDashboard() {
   const { t, language } = useLanguage();

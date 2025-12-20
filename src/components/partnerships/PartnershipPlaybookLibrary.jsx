@@ -1,9 +1,8 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
-import { BookOpen, Download, CheckCircle } from 'lucide-react';
+import { BookOpen, Download } from 'lucide-react';
 
 export default function PartnershipPlaybookLibrary() {
   const { language, t } = useLanguage();

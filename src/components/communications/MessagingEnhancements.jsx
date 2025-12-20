@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tantml:react-query';
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Paperclip, Send, CheckCircle, Smile } from 'lucide-react';
+import { Paperclip, Send } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function MessagingEnhancements({ threadId, onSend }) {

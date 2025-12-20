@@ -1,4 +1,3 @@
-import React from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { FileText, CheckCircle, AlertTriangle, Scale, Users, Gavel } from 'lucide-react';

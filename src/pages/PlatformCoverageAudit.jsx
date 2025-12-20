@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { 
-  CheckCircle2, XCircle, AlertCircle, Circle, Search, TrendingUp, TrendingDown, ListTodo, ArrowRight, Database
+  CheckCircle2, XCircle, AlertCircle, Circle, Search, TrendingUp, ListTodo, ArrowRight
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 

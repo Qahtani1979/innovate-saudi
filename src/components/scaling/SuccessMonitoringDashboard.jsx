@@ -1,8 +1,7 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { TrendingUp, TrendingDown, AlertCircle, CheckCircle2, BarChart3 } from 'lucide-react';
+import { TrendingUp, AlertCircle, CheckCircle2, BarChart3 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 export default function SuccessMonitoringDashboard({ scalingPlan, municipalities = [] }) {

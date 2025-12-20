@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,8 +6,7 @@ import { useLanguage } from '@/components/LanguageContext';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { MEDIA_AI_HELPER_SYSTEM_PROMPT, buildMediaAnalysisPrompt, MEDIA_ANALYSIS_SCHEMA } from '@/lib/ai/prompts/media';
 import { 
-  Sparkles, Loader2, TrendingUp, AlertTriangle, Archive, 
-  Image, Video, FileText, Trash2, Download, Eye, ChevronDown, ChevronUp,
+  Sparkles, Loader2, TrendingUp, AlertTriangle, Archive, Trash2, Eye, ChevronDown, ChevronUp,
   RefreshCw, Lightbulb, BarChart3, Zap
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';

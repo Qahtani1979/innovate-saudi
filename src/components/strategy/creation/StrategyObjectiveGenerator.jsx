@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useState, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,10 +21,8 @@ import {
   TrendingUp,
   Calendar,
   AlertTriangle,
-  CheckCircle,
   Trash2,
-  Save,
-  Info
+  Save
 } from 'lucide-react';
 
 export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectivesGenerated }) {

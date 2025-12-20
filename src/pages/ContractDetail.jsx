@@ -1,4 +1,3 @@
-import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,8 +6,6 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 import { FileText, Calendar, DollarSign, CheckCircle2, AlertCircle, Download } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { usePermissions } from '@/components/permissions/usePermissions';
-import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
 
 function ContractDetail() {

@@ -18,7 +18,7 @@ import { createPageUrl } from '@/utils';
 import FileUploader from '../FileUploader';
 import { 
   FlaskConical, ArrowRight, ArrowLeft, CheckCircle2, 
-  GraduationCap, BookOpen, Link2, Loader2, Sparkles, Upload, FileText, Globe
+  GraduationCap, BookOpen, Link2, Loader2, Upload, FileText, Globe
 } from 'lucide-react';
 import { toast } from 'sonner';
 

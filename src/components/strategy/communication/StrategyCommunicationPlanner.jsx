@@ -1,19 +1,17 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/components/LanguageContext';
 import { useCommunicationPlans } from '@/hooks/strategy/useCommunicationPlans';
 import { useCommunicationAI } from '@/hooks/strategy/useCommunicationAI';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { 
-  Megaphone, Users, MessageSquare, Calendar, Sparkles, 
-  Plus, Save, Target, Radio, Mail, Globe, Loader2, CheckCircle2
+  Megaphone, Users, MessageSquare, Calendar, Sparkles, Save, Radio, Mail, Globe, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 

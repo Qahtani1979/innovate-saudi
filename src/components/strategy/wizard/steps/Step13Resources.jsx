@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -10,17 +10,15 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { StepAlerts } from '../shared/StepAlerts';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { 
-  Sparkles, Loader2, DollarSign, Users, Cpu, Building, Plus, X, 
+import { DollarSign, Users, Cpu, Building, Plus, X, 
   BarChart3, PieChart, Briefcase, GraduationCap, ChevronUp, ChevronDown,
   Server, Cloud, Database, Wifi, Monitor, Shield, Code, Brain,
-  Calendar, Target, Layers, CheckCircle2, AlertCircle, AlertTriangle,
-  Lightbulb, Link2, Percent, TrendingUp
+  Calendar, Target, Layers, CheckCircle2, Link2, Percent, TrendingUp
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import EntityAllocationSelector from '../EntityAllocationSelector';
 import { cn } from '@/lib/utils';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
+import { StepDashboardHeader, RecommendationsCard, MainAIGeneratorCard } from '../shared';
 
 // HR skill categories
 const HR_CATEGORIES = [

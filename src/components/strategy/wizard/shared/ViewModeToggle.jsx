@@ -1,4 +1,3 @@
-import React from 'react';
 import { Button } from "@/components/ui/button";
 import { LayoutGrid, List, Grid3X3, BarChart3, FileText } from 'lucide-react';
 import { cn } from "@/lib/utils";

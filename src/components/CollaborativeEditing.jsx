@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Badge } from "@/components/ui/badge";
-import { Users, Circle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Users } from 'lucide-react';
 
 export default function CollaborativeEditing({ entityId, entityType }) {
   const [activeUsers, setActiveUsers] = useState([]);

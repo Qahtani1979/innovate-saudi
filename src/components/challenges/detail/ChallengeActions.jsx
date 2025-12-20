@@ -3,7 +3,7 @@
  * Implements: dc-4 (role-based action buttons)
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { usePermissions } from '@/components/permissions/usePermissions';
@@ -27,8 +27,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { 
   Edit, MoreVertical, Send, CheckCircle, XCircle, 
-  Eye, EyeOff, Archive, Trash2, UserPlus, Copy,
-  Share2, Download, Flag, Star, StarOff
+  Eye, EyeOff, Archive, Trash2, Copy, Star, StarOff
 } from 'lucide-react';
 import { useChallengeMutations } from '@/hooks/useChallengeMutations';
 import { toast } from 'sonner';

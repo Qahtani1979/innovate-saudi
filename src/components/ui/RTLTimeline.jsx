@@ -1,4 +1,3 @@
-import React from 'react';
 import { useLanguage } from '../LanguageContext';
 import { CheckCircle2, Circle } from 'lucide-react';
 

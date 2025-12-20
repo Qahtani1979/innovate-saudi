@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import {
   CheckCircle2, ArrowRight, Archive, Layers, Target, TrendingUp,
-  FileText, AlertCircle, ChevronDown, ChevronRight
+  FileText, ChevronDown, ChevronRight
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 

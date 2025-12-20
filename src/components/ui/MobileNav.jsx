@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
-import { Home, Search, Bell, User, Menu } from 'lucide-react';
+import { Home, Search, Bell, User } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
 
 export default function MobileNav({ currentPage }) {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useLanguage } from '../components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,8 +7,8 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import {
   CheckCircle2, XCircle, Edit, Shield, AlertCircle, TestTube,
-  Microscope, Calendar, Lightbulb, Building2, Beaker, ArrowRight,
-  Sparkles, TrendingUp, FileText, Users, Target
+  Microscope, Calendar, Lightbulb, Building2,
+  Sparkles, TrendingUp, FileText, Target
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 

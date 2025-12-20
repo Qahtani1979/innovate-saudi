@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,8 +10,8 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import {
   FileText, Clock, CheckCircle2, Activity, BarChart3, TrendingUp,
-  AlertTriangle, Target, Users, Zap, Sparkles, ArrowRight, Rocket,
-  RefreshCw, XCircle, Pause, Play, Award, TestTube, Shield, Calendar
+  AlertTriangle, Target, Zap, Sparkles, ArrowRight, Rocket,
+  RefreshCw, XCircle, Pause, Award, TestTube, Shield, Calendar
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';

@@ -1,12 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 import {
   CheckCircle2, Clock, Rocket, Target, TrendingUp, Zap,
-  ChevronDown, ChevronRight, Sparkles, Database
+  ChevronDown, ChevronRight
 } from 'lucide-react';
 
 export default function GapsImplementationTracker() {

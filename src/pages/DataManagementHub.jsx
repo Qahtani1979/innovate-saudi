@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,7 +11,7 @@ import { useLanguage } from '../components/LanguageContext';
 import { toast } from 'sonner';
 import { Switch } from "@/components/ui/switch";
 import {
-  MapPin, Building2, Plus, Loader2, Globe, Briefcase, Sparkles, Database, Landmark, Target
+  MapPin, Building2, Loader2, Globe, Briefcase, Sparkles, Database, Landmark, Target
 } from 'lucide-react';
 import LookupDataManager from '../components/admin/LookupDataManager';
 import StrategyLookupsTab from '../components/admin/lookup/StrategyLookupsTab';

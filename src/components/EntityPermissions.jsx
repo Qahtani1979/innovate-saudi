@@ -1,6 +1,5 @@
-import React from 'react';
 import { Badge } from "@/components/ui/badge";
-import { Shield, Eye, EyeOff, Lock } from 'lucide-react';
+import { Shield, Eye, EyeOff } from 'lucide-react';
 
 export default function EntityPermissions({ entity, userRole, entityType }) {
   const canEdit = () => {

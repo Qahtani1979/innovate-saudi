@@ -15,8 +15,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from 'sonner';
 import { 
   Upload, Download, FileSpreadsheet, FileText, Database, 
-  Loader2, CheckCircle, AlertCircle, FileUp, RefreshCw,
-  History, Settings, Wand2, Filter, Calendar, XCircle, Sparkles
+  Loader2, CheckCircle, FileUp,
+  History, Wand2, Filter, XCircle, Sparkles
 } from 'lucide-react';
 import AIDataUploader from '@/components/ai-uploader/AIDataUploader';
 import { useLanguage } from '@/components/LanguageContext';

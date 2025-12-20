@@ -3,11 +3,10 @@
  * Displays AI prompt module migration progress
  */
 
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { CheckCircle, Clock } from 'lucide-react';
 
 const ImplementationProgressTracker = () => {
   const progressData = {

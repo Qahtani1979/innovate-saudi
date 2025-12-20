@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { 
   Zap, Loader2, CheckCircle, AlertCircle, RefreshCw, 
-  PlayCircle, Pause, List, ChevronDown, ChevronUp 
+  PlayCircle, List, ChevronDown, ChevronUp 
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useLanguage } from '../../LanguageContext';

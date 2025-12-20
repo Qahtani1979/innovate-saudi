@@ -1,7 +1,6 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Database, Shield, FileCode, Sparkles, Mail, Bell, MessageSquare } from 'lucide-react';
+import { CheckCircle, Database, Shield, FileCode, Sparkles, Mail, Bell } from 'lucide-react';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 export default function FinalCommunicationsSystemAssessment() {

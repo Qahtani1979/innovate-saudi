@@ -1,9 +1,7 @@
-import React from 'react';
 import { useLanguage } from '../components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, TrendingUp, MessageSquare, Award } from 'lucide-react';
-import { Progress } from "@/components/ui/progress";
+import { Users, TrendingUp, MessageSquare } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function StakeholderAlignmentDashboard() {

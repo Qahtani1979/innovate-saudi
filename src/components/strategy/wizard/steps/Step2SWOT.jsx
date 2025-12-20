@@ -7,14 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Sparkles, Loader2, Plus, X, TrendingUp, TrendingDown, Target, AlertTriangle, 
+import { Plus, X, TrendingUp, TrendingDown, Target, AlertTriangle, 
   CheckCircle2, LayoutGrid, ListChecks, Lightbulb, ArrowRight, Shield, Zap, BarChart3, AlertCircle
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { useSwotAnalysis } from '@/hooks/strategy/useSwotAnalysis';
 import { cn } from '@/lib/utils';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, StatsGrid, MainAIGeneratorCard } from '../shared';
+import { StepDashboardHeader, RecommendationsCard, DistributionChart, StatsGrid, MainAIGeneratorCard } from '../shared';
 
 const CATEGORIES = [
   { 

@@ -1,11 +1,9 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
 import { 
-  CheckCircle2, AlertCircle, Clock, XCircle, Circle
+  CheckCircle2, Clock, XCircle
 } from 'lucide-react';
 
 export default function UserFeatureAudit() {

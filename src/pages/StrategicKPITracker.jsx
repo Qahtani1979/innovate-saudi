@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { Target, TrendingUp, AlertTriangle, CheckCircle2, Activity, Sparkles, Loader2 } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Target, AlertTriangle, CheckCircle2, Sparkles, Loader2 } from 'lucide-react';
 import KPIAlertConfig from '../components/kpi/KPIAlertConfig';
 import DashboardBuilder from '../components/kpi/DashboardBuilder';
 import ProtectedPage from '../components/permissions/ProtectedPage';

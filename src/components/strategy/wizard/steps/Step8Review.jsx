@@ -11,12 +11,10 @@ import {
   Users, Globe, Shield, Megaphone, DollarSign, Download, FileSpreadsheet
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
-import { WIZARD_STEPS } from '../StrategyWizardSteps';
 import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart } from '../shared';
 
 export default function Step8Review({ 
   data, 

@@ -1,5 +1,3 @@
-import React from 'react';
-import TrendingUp from 'lucide-react/icons/trending-up';
 import ImpactReportGenerator from '@/components/challenges/ImpactReportGenerator';
 
 export default function ChallengeImpactTab({ challenge, challengeId }) {

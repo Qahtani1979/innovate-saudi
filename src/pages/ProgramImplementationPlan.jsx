@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useLanguage } from '../components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,8 +7,8 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Calendar, CheckCircle2, AlertCircle, Clock, Target, Code,
-  Database, FileText, Sparkles, Users, Activity, TrendingUp,
-  Zap, Shield, ArrowRight, Layers, Award, Brain
+  Database, FileText, Sparkles,
+  Zap, Layers, Award
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 

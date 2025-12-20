@@ -2,7 +2,7 @@
  * Step 5: Review before import
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { 
   ArrowRight, ArrowLeft, CheckCircle, AlertTriangle, 
-  Eye, EyeOff, Edit2, Trash2, XCircle
+  Eye, EyeOff, XCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 

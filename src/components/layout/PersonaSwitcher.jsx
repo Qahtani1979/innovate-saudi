@@ -1,10 +1,10 @@
-import React, { Component } from 'react';
+import { Component } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/components/LanguageContext';
 import { useActivePersona } from '@/hooks/useActivePersona';
 import { SIDEBAR_MENUS } from '@/config/sidebarMenus';
 import { cn } from '@/lib/utils';
-import { ChevronDown, Check, RefreshCw, AlertCircle } from 'lucide-react';
+import { ChevronDown, Check, RefreshCw } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,

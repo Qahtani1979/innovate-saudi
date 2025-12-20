@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/components/LanguageContext';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 import { 
-  Globe, TrendingUp, BarChart3, Target, ArrowUpRight, 
+  Globe, BarChart3, Target, ArrowUpRight, 
   ArrowDownRight, Building2, RefreshCw
 } from 'lucide-react';
 

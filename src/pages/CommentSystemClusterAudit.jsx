@@ -1,11 +1,9 @@
-import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import {
-  CheckCircle2, MessageSquare, ChevronDown, ChevronRight,
+  CheckCircle2, ChevronDown, ChevronRight,
   AlertCircle, TestTube, Calendar, Lightbulb, Microscope, FileText, Users, Shield
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';

@@ -1,4 +1,3 @@
-import React from 'react';
 import RDProjectCreateWizard from '../components/rd/RDProjectCreateWizard';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 

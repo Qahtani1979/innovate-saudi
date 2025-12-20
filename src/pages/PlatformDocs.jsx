@@ -1,15 +1,14 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useLanguage } from '../components/LanguageContext';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   BookOpen, Search, Sparkles, LayoutDashboard, Target, Network, 
   AlertCircle, Lightbulb, TestTube, Microscope, Calendar, TrendingUp,
-  BarChart3, Users, Shield, MapPin, Settings, CheckCircle, CheckCircle2, Rocket,
-  Activity, Database, FileText, Zap, Play, RefreshCw, Beaker,
-  Building2, Upload, MessageSquare, Bell, Globe
+  BarChart3, Users, Shield, Settings, CheckCircle, CheckCircle2, Rocket,
+  Activity, FileText, Zap, RefreshCw, Beaker,
+  Building2, Upload, Bell, Globe
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 

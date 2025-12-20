@@ -1,11 +1,10 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/components/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
-  Target, Users, Building2, Globe, Award, Lightbulb, 
-  Handshake, TrendingUp, CheckCircle2, ArrowRight 
+  Target, Users, Globe, Award, Lightbulb, 
+  Handshake, TrendingUp, ArrowRight 
 } from 'lucide-react';
 
 export default function About() {

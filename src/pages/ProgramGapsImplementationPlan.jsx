@@ -1,12 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useLanguage } from '../components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { 
-  Calendar, CheckCircle2, Circle, Clock, Code, Database, 
-  FileText, Layers, Sparkles, Target, Users, Zap, AlertCircle,
-  Shield, Activity, TrendingUp, Edit, Eye, ArrowRight, Brain,
+import { Circle, Clock, Code, 
+  FileText, Target, Zap, AlertCircle, TrendingUp, ArrowRight,
   ChevronDown, ChevronRight
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';

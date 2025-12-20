@@ -1,4 +1,3 @@
-import React from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +8,7 @@ import { useLanguage } from '../components/LanguageContext';
 import { useSearchParams, Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { 
-  Handshake, Calendar, Users, FileText, TrendingUp, 
+  Handshake, Users, FileText, TrendingUp, 
   Target, CheckCircle2, Clock, ArrowLeft, Edit, Sparkles
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';

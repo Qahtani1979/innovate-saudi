@@ -1,8 +1,6 @@
-import React, { useState, useRef } from 'react';
-import BatchProcessor from '../components/challenges/BatchProcessor';
+import { useState } from 'react';
 import ChallengeClustering from '../components/challenges/ChallengeClustering';
 import ChallengeToProgramWorkflow from '../components/challenges/ChallengeToProgramWorkflow';
-import ChallengeMergeWorkflow from '../components/challenges/ChallengeMergeWorkflow';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -52,12 +50,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePermissions } from '../components/permissions/usePermissions';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 import { useChallengeListRealtime } from '@/hooks/useChallengeRealtime';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
-import { useVirtualList } from '@/hooks/useVirtualList';
 import VirtualizedChallengeGrid from '@/components/challenges/VirtualizedChallengeGrid';
 
 function Challenges() {

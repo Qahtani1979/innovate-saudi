@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   CheckCircle2, XCircle, Clock, AlertTriangle, ChevronRight,
-  Send, FileText, User, Shield
+  Send, Shield
 } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
 import { useAuth } from '@/lib/AuthContext';

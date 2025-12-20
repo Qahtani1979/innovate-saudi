@@ -1,9 +1,8 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
-import { CheckCircle2, Circle, AlertCircle, User, Building2, Lightbulb, Microscope, Sparkles, Award, Shield, Users, Target } from 'lucide-react';
+import { CheckCircle2, Circle, AlertCircle, User, Building2, Lightbulb, Microscope, Sparkles, Award } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function ProfilesIdentityCoverageReport() {

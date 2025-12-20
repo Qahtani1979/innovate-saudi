@@ -1,14 +1,12 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CheckCircle2, Users, Calendar as CalendarIcon, Link as LinkIcon, Loader2, AlertTriangle } from 'lucide-react';
+import { Users, Calendar as CalendarIcon, Link as LinkIcon, AlertTriangle } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
 import { format } from 'date-fns';
 import RequesterAI from '../approval/RequesterAI';

@@ -6,13 +6,13 @@ import { createPageUrl } from '../utils';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from '../components/LanguageContext';
-import { Save, X, Loader2, Sparkles, UserCog } from 'lucide-react';
+import { Save, X, Loader2, UserCog } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { PageLayout, PageHeader, PersonaButton } from '@/components/layout/PersonaPageLayout';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function ExpertProfileEdit() {
   const urlParams = new URLSearchParams(window.location.search);

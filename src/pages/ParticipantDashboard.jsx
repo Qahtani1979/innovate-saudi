@@ -1,4 +1,3 @@
-import React from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
@@ -11,8 +10,8 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { format } from 'date-fns';
 import {
-  Calendar, Users, Award, CheckCircle2, Clock, FileText,
-  TrendingUp, Target, BookOpen, MessageSquare, Upload, CalendarDays
+  Calendar, Clock, FileText,
+  TrendingUp, BookOpen, MessageSquare, Upload, CalendarDays
 } from 'lucide-react';
 
 export default function ParticipantDashboard() {

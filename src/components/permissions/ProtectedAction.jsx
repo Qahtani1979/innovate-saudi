@@ -1,4 +1,3 @@
-import React from 'react';
 import { usePermissions } from './usePermissions';
 import { Button } from "@/components/ui/button";
 import { Lock } from 'lucide-react';

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,9 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
-import { Award, CheckCircle2, X, Loader2, FileText, Upload } from 'lucide-react';
+import { Award, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function LivingLabAccreditationWorkflow({ lab, onClose }) {

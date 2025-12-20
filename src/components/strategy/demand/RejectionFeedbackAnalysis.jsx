@@ -1,12 +1,10 @@
-import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useLanguage } from '@/components/LanguageContext';
 import { useQueueNotifications } from '@/hooks/strategy/useQueueNotifications';
 import { 
-  TrendingDown, 
-  AlertCircle,
+  TrendingDown,
   Lightbulb,
   BarChart3
 } from 'lucide-react';

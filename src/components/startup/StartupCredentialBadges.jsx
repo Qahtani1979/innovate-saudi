@@ -1,4 +1,3 @@
-import React from 'react';
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Shield, Award, TrendingUp, CheckCircle2, Star, Zap } from 'lucide-react';

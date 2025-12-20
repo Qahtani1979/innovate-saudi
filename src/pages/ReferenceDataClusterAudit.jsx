@@ -1,12 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
 import {
-  CheckCircle2, XCircle, AlertTriangle, Database, ChevronDown, ChevronRight,
+  CheckCircle2, XCircle, ChevronDown, ChevronRight,
   MapPin, Building2, Layers, Tag as TagIcon, FileText, BarChart3
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';

@@ -1,9 +1,8 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
-import { Users, Calendar, FileText, MessageSquare, TrendingUp } from 'lucide-react';
+import { Calendar, FileText, MessageSquare, TrendingUp } from 'lucide-react';
 
 export default function TeamWorkspace({ team }) {
   const { language, isRTL, t } = useLanguage();

@@ -1,4 +1,3 @@
-import React from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Shield, Lock, Eye, Database, UserCheck, Bell } from 'lucide-react';

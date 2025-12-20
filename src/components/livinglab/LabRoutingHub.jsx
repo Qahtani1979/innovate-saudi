@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../LanguageContext';
-import { ArrowRight, Beaker, Sparkles } from 'lucide-react';
+import { ArrowRight, Beaker } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLivingLabsWithVisibility } from '@/hooks/useLivingLabsWithVisibility';
 

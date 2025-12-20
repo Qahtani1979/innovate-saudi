@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { AlertTriangle, Shield, TrendingUp, DollarSign, Clock, Users, Zap, Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
+import { Shield, TrendingUp, DollarSign, Clock, Users, Zap, Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
 import { Progress } from "@/components/ui/progress";
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';

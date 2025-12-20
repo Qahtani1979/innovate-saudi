@@ -1,4 +1,3 @@
-import React from 'react';
 import StrategyOwnershipAssigner from '@/components/strategy/creation/StrategyOwnershipAssigner';
 import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
 import { useActivePlan } from '@/contexts/StrategicPlanContext';

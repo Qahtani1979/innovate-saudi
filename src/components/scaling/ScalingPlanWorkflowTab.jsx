@@ -1,8 +1,7 @@
-import React from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useLanguage } from '../LanguageContext';
-import { CheckCircle2, Circle, Clock, TrendingUp, DollarSign, Rocket } from 'lucide-react';
+import { CheckCircle2, Circle, Clock } from 'lucide-react';
 
 export default function ScalingPlanWorkflowTab({ plan }) {
   const { t } = useLanguage();

@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
-import { Mail, Plus, Edit2, Eye, Copy } from 'lucide-react';
+import { Mail, Plus, Edit2, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 
 function EmailTemplateManager() {

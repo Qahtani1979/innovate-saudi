@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { useLanguage } from './LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { Database, Save, RefreshCw, AlertTriangle, CheckCircle2, Download, MapPin, Building2 } from 'lucide-react';
+import { Database, Save, RefreshCw, CheckCircle2, Download, MapPin, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 function SystemConfiguration() {

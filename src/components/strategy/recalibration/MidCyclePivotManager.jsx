@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,8 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useLanguage } from '@/components/LanguageContext';
 import { useStrategyRecalibration } from '@/hooks/strategy/useStrategyRecalibration';
 import {
-  GitBranch, AlertTriangle, Clock, CheckCircle2, XCircle,
-  ArrowRight, Users, Bell, FileText, RefreshCw, Zap
+  GitBranch, Clock, CheckCircle2, XCircle, RefreshCw, Zap
 } from 'lucide-react';
 
 const PIVOT_TYPES = [

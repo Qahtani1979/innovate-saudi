@@ -1,4 +1,3 @@
-import React from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,6 @@ import {
   Lightbulb, 
   TestTube, 
   ArrowRight,
-  TrendingUp,
   Building2,
   Award,
   UserPlus,

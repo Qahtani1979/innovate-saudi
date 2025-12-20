@@ -1,15 +1,14 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 import { Activity, AlertTriangle, TrendingUp, Zap, Target, Loader2, Sparkles, Users } from 'lucide-react';
 import { usePrompt } from '@/hooks/usePrompt';
 import { PIPELINE_HEALTH_ANALYSIS_PROMPT_TEMPLATE } from '@/lib/ai/prompts/pipeline/health';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function PipelineHealthDashboardPage() {

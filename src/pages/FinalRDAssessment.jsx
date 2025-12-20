@@ -1,19 +1,18 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLanguage } from '@/components/LanguageContext';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import {
-  Beaker, Database, Shield, Code, CheckCircle2, AlertTriangle, XCircle,
-  FileText, Eye, Lock, Layers, Server, Globe, BookOpen, Zap, 
-  Target, Users, Building2, TrendingUp, Lightbulb, Activity
+  Beaker, CheckCircle2, AlertTriangle, XCircle,
+  FileText, Globe, Zap, 
+  Target, Users, Lightbulb
 } from 'lucide-react';
 
 // Research System Categories

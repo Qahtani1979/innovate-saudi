@@ -1,4 +1,3 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -6,8 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { 
-  Folder, Image, FileText, Video, Music, Archive, File, 
-  HardDrive, Calendar, Clock
+  Folder, Image, FileText, Video, Archive, File, 
+  HardDrive
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { STORAGE_BUCKETS } from '@/config/mediaConfig';

@@ -1,4 +1,3 @@
-import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -21,7 +20,6 @@ import {
   Clock,
   CheckCircle2,
   Award,
-  AlertTriangle,
   Users,
   BarChart3
 } from 'lucide-react';

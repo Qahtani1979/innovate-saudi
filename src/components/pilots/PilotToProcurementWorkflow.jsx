@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from '../LanguageContext';
 import { toast } from 'sonner';
-import { ShoppingCart, Sparkles, ArrowRight, Loader2, X, FileText, Shield } from 'lucide-react';
+import { ShoppingCart, Sparkles, Loader2, X, FileText } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { PILOT_PROCUREMENT_SYSTEM_PROMPT, buildPilotProcurementPrompt, PILOT_PROCUREMENT_SCHEMA } from '@/lib/ai/prompts/pilots';

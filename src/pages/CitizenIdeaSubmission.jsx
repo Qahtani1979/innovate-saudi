@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/components/LanguageContext';
@@ -11,8 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
-  Lightbulb, Send, Sparkles, ArrowRight, ArrowLeft, CheckCircle2, 
-  Loader2, Clock, Eye, FileText, History
+  Lightbulb, Send, Sparkles, ArrowLeft, 
+  Loader2, Clock, Eye, FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '@/components/permissions/ProtectedPage';

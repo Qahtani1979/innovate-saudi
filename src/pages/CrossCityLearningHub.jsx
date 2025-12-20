@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../components/LanguageContext';
 import { 
-  Users, Building2, Lightbulb, MessageSquare, Share2, Award,
-  TrendingUp, Target, CheckCircle2
+  Users, Building2, Share2, Award
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';

@@ -1,22 +1,21 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { 
-  Sparkles, GitBranch, Link2, AlertCircle, Plus, X, CheckCircle, CheckCircle2,
-  ChevronDown, ChevronUp, Network, FileCheck, AlertTriangle,
+import { GitBranch, Link2, AlertCircle, Plus, X, CheckCircle, CheckCircle2,
+  ChevronDown, ChevronUp, Network, AlertTriangle,
   ArrowRight, Shield, Lightbulb, Target, TrendingUp, BarChart3
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { cn } from "@/lib/utils";
-import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
+import { StepDashboardHeader, MainAIGeneratorCard } from '../shared';
 
 export default function Step8Dependencies({ data, onChange, onGenerateAI, isGenerating, isReadOnly = false }) {
   const { language, t, isRTL } = useLanguage();

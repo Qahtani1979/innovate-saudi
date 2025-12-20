@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from '../components/LanguageContext';
-import { Monitor, Smartphone, Globe, MapPin, Clock, LogOut, Shield, AlertTriangle, Trash2, Search, Settings } from 'lucide-react';
+import { Monitor, Smartphone, Globe, MapPin, Clock, LogOut, Shield, AlertTriangle, Trash2, Search } from 'lucide-react';
 import SessionTimeoutConfig from '../components/access/SessionTimeoutConfig';
 import MultiDevicePolicyBuilder from '../components/access/MultiDevicePolicyBuilder';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";

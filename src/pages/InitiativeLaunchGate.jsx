@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../components/LanguageContext';
-import { Rocket, CheckCircle2, XCircle, Clock, TestTube, Calendar, Microscope } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, TestTube, Calendar, Microscope } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function InitiativeLaunchGate() {

@@ -1,11 +1,9 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
-  CheckCircle2, AlertCircle, XCircle, Users, Lightbulb, Heart, Award, Bell,
-  ThumbsUp, MessageSquare, Shield, Database, Code, Sparkles, TestTube, FileText
+  CheckCircle2, AlertCircle, XCircle, Shield, Database, Code, Sparkles
 } from 'lucide-react';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 

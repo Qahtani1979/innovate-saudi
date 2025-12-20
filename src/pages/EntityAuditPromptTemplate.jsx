@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
-import { Copy, CheckCircle2, Target, Database, FileText, Workflow, Users, Brain, Network, Shield, Zap } from 'lucide-react';
+import { Copy, CheckCircle2, Target, Database, FileText, Users, Brain, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
-import { TrendingUp, AlertTriangle, Target, Sparkles, MapPin, BarChart3, Map, Users, Zap, Award, CheckCircle2, Activity, Rocket, Bell, Shield, Microscope, Calendar } from 'lucide-react';
+import { TrendingUp, AlertTriangle, Target, Sparkles, BarChart3, Map, Zap, Award, CheckCircle2, Activity, Rocket, Bell, Shield, Microscope, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';

@@ -1,14 +1,12 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { 
-  Sparkles, Shield, Zap, CheckCircle2, Users, Activity, Code, Database, BarChart, TrendingUp
+import { CheckCircle2, Database, BarChart, TrendingUp
 } from 'lucide-react';
 
 export default function EnhancementRoadmapMaster() {

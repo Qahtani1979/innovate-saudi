@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,9 +10,9 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
 import {
-  Calendar, DollarSign, FileText, Target, Sparkles, TrendingUp,
-  Clock, Award, Users, CheckCircle2, Send, MessageSquare, BookOpen,
-  Beaker, AlertCircle, Image, Video, BarChart3, Mail, Play, Loader2, X
+  Calendar, DollarSign, FileText, Target, Sparkles,
+  Clock, Award, Users, CheckCircle2, Send, MessageSquare,
+  Beaker, AlertCircle, Image, BarChart3, Mail, Play, Loader2, X
 } from 'lucide-react';
 import RDCallPublishWorkflow from '../components/RDCallPublishWorkflow';
 import RDCallReviewWorkflow from '../components/RDCallReviewWorkflow';

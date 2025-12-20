@@ -1,13 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
@@ -15,14 +14,12 @@ import {
   Target,
   CheckCircle2,
   Clock,
-  AlertTriangle,
   TrendingUp,
   ArrowRight,
   FlaskConical,
   Microscope,
   Building2,
   Calendar,
-  BarChart3,
   Award,
   Archive,
   Filter

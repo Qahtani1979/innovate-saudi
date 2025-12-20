@@ -1,4 +1,3 @@
-import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -6,23 +5,19 @@ import { createPageUrl } from '../utils';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
 import {
   Award,
   Star,
-  MapPin,
   Briefcase,
   GraduationCap,
   CheckCircle2,
   FileText,
-  Globe,
   Linkedin,
   Mail,
   Calendar,
   TrendingUp,
-  Users,
   Target,
   UserCircle
 } from 'lucide-react';

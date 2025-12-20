@@ -1,4 +1,3 @@
-import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +6,7 @@ import { useLanguage } from '../LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import {
-  TrendingUp, DollarSign, MapPin, CheckCircle2, Clock, Building2
+  TrendingUp, DollarSign, MapPin, Clock
 } from 'lucide-react';
 
 export default function ProviderScalingCommercial({ solutionId }) {

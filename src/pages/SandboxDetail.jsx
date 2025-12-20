@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,7 +29,6 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from 'sonner';
 import { usePrompt } from '@/hooks/usePrompt';
 import { SANDBOX_DETAIL_PROMPT_TEMPLATE } from '@/lib/ai/prompts/sandbox/sandboxDetail';
-import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function SandboxDetail() {
   const urlParams = new URLSearchParams(window.location.search);

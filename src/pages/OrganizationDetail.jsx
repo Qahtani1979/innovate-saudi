@@ -1,4 +1,3 @@
-import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
 import {
-  Building2,
   Mail,
   Globe,
   MapPin,
@@ -31,7 +29,6 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowApprovalTab';
 import OrganizationWorkflowTab from '../components/organizations/OrganizationWorkflowTab';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
-import { EntityDetailHeader } from '@/components/layout/EntityDetailHeader';
 
 function OrganizationDetail() {
   const urlParams = new URLSearchParams(window.location.search);

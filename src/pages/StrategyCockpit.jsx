@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 import { useActivePlan } from '@/contexts/StrategicPlanContext';
 import { 
-  Target, TrendingUp, Users, Zap, AlertTriangle, CheckCircle2, 
+  Target, AlertTriangle, CheckCircle2, 
   Sparkles, Loader2, X, ArrowRight, Clock,
   ExternalLink, ChevronRight, BarChart3, DollarSign, Layers, Eye, FileText
 } from 'lucide-react';

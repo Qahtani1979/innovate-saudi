@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
 import { 
-  Database, Network, GitBranch, Layers, ChevronDown, ChevronRight,
+  Database, Network, GitBranch, ChevronDown, ChevronRight,
   AlertCircle, TestTube, Lightbulb, Calendar, Microscope, Shield,
   Users, MapPin, Target, FileText, TrendingUp, Award, MessageSquare,
-  CheckCircle2, BookOpen, Handshake, Sparkles, Settings, BarChart3, Bell, Activity,
+  CheckCircle2, BookOpen, Handshake, Sparkles, Settings, Bell, Activity,
   XCircle, Lock, Zap, Building2
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';

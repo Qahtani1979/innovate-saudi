@@ -5,8 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import {
-  Users, Building2, Rocket, Microscope, Calendar, Globe, Shield, Target,
+import { Building2, Rocket, Microscope, Calendar, Globe, Target,
   CheckCircle2, XCircle, AlertCircle, Eye, Layout, Sparkles, BarChart3
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';

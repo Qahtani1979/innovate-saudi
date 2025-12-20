@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { Target, Zap, AlertTriangle, TrendingUp, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Target, Zap, AlertTriangle, TrendingUp } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { toast } from 'sonner';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';

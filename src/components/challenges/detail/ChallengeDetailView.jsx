@@ -3,7 +3,7 @@
  * Implements: dc-1 (structured layout), dc-2 (related entities), dc-3 (activity history)
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -15,9 +15,9 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
-  Calendar, MapPin, Building2, Target, Users, 
+  Calendar, Building2, Target, Users, 
   FileText, Link2, Clock, AlertCircle, Lightbulb,
-  BarChart3, MessageSquare
+  BarChart3
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,10 +11,10 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
 import {
-  Calendar, Users, Target, Award, DollarSign, MapPin, Sparkles,
-  FileText, TrendingUp, CheckCircle2, Clock, Building2, MessageSquare,
-  Send, Image, Video, Lightbulb, Activity, BarChart3, BookOpen, Loader2, X,
-  Rocket, Filter, Play
+  Calendar, Users, Target, Award, DollarSign, Sparkles,
+  FileText, TrendingUp, CheckCircle2, Clock, MessageSquare,
+  Send, Image, Lightbulb, Activity, BookOpen, Loader2, X,
+  Rocket, Filter
 } from 'lucide-react';
 import ProgramLaunchWorkflow from '../components/ProgramLaunchWorkflow';
 import ProgramApplicationScreening from '../components/ProgramApplicationScreening';
@@ -23,13 +23,10 @@ import ProgramSessionManager from '../components/ProgramSessionManager';
 import ProgramMentorMatching from '../components/ProgramMentorMatching';
 import ProgramCompletionWorkflow from '../components/ProgramCompletionWorkflow';
 import ProgramMidReviewGate from '../components/ProgramMidReviewGate';
-import AICurriculumGenerator from '../components/programs/AICurriculumGenerator';
-import PostProgramFollowUp from '../components/programs/PostProgramFollowUp';
 import PolicyTabWidget from '../components/policy/PolicyTabWidget';
 import ProgramActivityLog from '../components/programs/ProgramActivityLog';
 import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowApprovalTab';
 import { usePermissions } from '../components/permissions/usePermissions';
-import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
 import { Shield, Workflow } from 'lucide-react';
 import AIProgramSuccessPredictor from '../components/programs/AIProgramSuccessPredictor';
 import AICohortOptimizerWidget from '../components/programs/AICohortOptimizerWidget';
@@ -39,7 +36,6 @@ import ProgramToSolutionWorkflow from '../components/programs/ProgramToSolutionW
 import ProgramToPilotWorkflow from '../components/programs/ProgramToPilotWorkflow';
 import StrategicAlignmentWidget from '../components/programs/StrategicAlignmentWidget';
 import ParticipantAssignmentSystem from '../components/programs/ParticipantAssignmentSystem';
-import AttendanceTracker from '../components/programs/AttendanceTracker';
 import WaitlistManager from '../components/programs/WaitlistManager';
 import AlumniNetworkHub from '../components/programs/AlumniNetworkHub';
 import AlumniImpactTracker from '../components/programs/AlumniImpactTracker';
@@ -52,7 +48,6 @@ import ProgramLessonsToStrategy from '../components/programs/ProgramLessonsToStr
 import { usePrompt } from '@/hooks/usePrompt';
 import { PROGRAM_DETAIL_PROMPT_TEMPLATE } from '@/lib/ai/prompts/programs/programDetail';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
-import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function ProgramDetail() {
   const { hasPermission, user } = usePermissions();

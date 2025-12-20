@@ -1,16 +1,14 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { 
   CheckCircle2, XCircle, Clock, SkipForward, 
   ChevronLeft, ChevronRight, PlayCircle, Pause,
-  AlertTriangle, Shield, Zap, Info, CheckCheck,
-  RotateCcw, Save
+  AlertTriangle, Shield, Zap, Info, CheckCheck, Save
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { VALIDATION_CATEGORIES } from '@/constants/validationCategories';

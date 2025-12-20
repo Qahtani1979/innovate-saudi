@@ -9,22 +9,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Slider } from "@/components/ui/slider";
 import { StepAlerts } from '../shared/StepAlerts';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { 
   Sparkles, Loader2, Plus, X, Lightbulb, ChevronDown, ChevronUp, Zap,
-  Target, Calendar, DollarSign, Users, ArrowRight, Layers, Beaker,
-  Rocket, Globe, Building2, Scale, FlaskConical, Handshake, TestTube,
-  BarChart3, GanttChartSquare, ListTree, AlertTriangle, Link2, TrendingUp,
-  PieChart, CheckCircle2, Clock, FileText, Info, User, Wand2, Check, RefreshCw
+  Target, Calendar, DollarSign, Layers, Beaker,
+  Rocket, Globe, Scale, FlaskConical, Handshake, TestTube, GanttChartSquare, ListTree, AlertTriangle, Link2, TrendingUp,
+  PieChart, FileText, User, Wand2, Check, RefreshCw
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useLanguage } from '../../../LanguageContext';
 import EntityGenerationPanel from '../EntityGenerationPanel';
 import { StepDashboardHeader, QualityMetrics, RecommendationsCard, DistributionChart, MainAIGeneratorCard } from '../shared';
-import AIStepAnalyzer from '../AIStepAnalyzer';
 
 // Enhanced entity type configuration
 const ENTITY_TYPES = [

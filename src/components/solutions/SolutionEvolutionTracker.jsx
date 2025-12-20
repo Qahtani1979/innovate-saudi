@@ -1,8 +1,7 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { History, TrendingUp, Package } from 'lucide-react';
+import { History, Package } from 'lucide-react';
 
 export default function SolutionEvolutionTracker({ solution }) {
   const { language, t } = useLanguage();

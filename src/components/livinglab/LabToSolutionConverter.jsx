@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
-import { Lightbulb, ArrowRight, Sparkles } from 'lucide-react';
+import { Lightbulb, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function LabToSolutionConverter({ rdProject, livingLabId }) {

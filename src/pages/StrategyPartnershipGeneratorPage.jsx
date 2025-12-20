@@ -1,4 +1,3 @@
-import React from 'react';
 import StrategyToPartnershipGenerator from '@/components/strategy/cascade/StrategyToPartnershipGenerator';
 import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
 import { useActivePlan } from '@/contexts/StrategicPlanContext';

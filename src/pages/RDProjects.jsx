@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { Edit, Trash2, Loader2, X } from 'lucide-react';
-import { toast } from 'sonner';
+import { Edit, Loader2, X } from 'lucide-react';
 import {
   Microscope,
   Beaker,
@@ -16,7 +15,6 @@ import {
   Search,
   Target,
   University,
-  FileText,
   Sparkles,
   Award,
   LayoutGrid,

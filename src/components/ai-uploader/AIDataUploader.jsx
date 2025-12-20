@@ -3,14 +3,12 @@
  * Guided wizard with full file support and AI-enhanced validation
  */
 
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
 import { 
-  Upload, FileText, Brain, CheckCircle, AlertTriangle, 
-  ArrowRight, ArrowLeft, Sparkles, Loader2, X
+  Upload, FileText, Brain, CheckCircle, AlertTriangle, Sparkles, X
 } from 'lucide-react';
 import { toast } from 'sonner';
 

@@ -1,4 +1,3 @@
-import React from 'react';
 import StrategyTemplateLibrary from '@/components/strategy/creation/StrategyTemplateLibrary';
 import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
 import { useActivePlan } from '@/contexts/StrategicPlanContext';

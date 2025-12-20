@@ -1,7 +1,6 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, MessageSquare, ThumbsUp, Bookmark, Bell, Share2, Users } from 'lucide-react';
+import { CheckCircle2, MessageSquare, Share2, Users } from 'lucide-react';
 
 export default function FinalSocialFeaturesSystemAssessment() {
   const assessmentData = {

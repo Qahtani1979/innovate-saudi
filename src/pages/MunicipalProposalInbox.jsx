@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -11,7 +11,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import {
   Inbox, CheckCircle2, XCircle, Clock, Building2, Lightbulb,
-  FileText, DollarSign, Calendar, AlertCircle, MessageSquare
+  FileText, DollarSign, Calendar, MessageSquare
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';

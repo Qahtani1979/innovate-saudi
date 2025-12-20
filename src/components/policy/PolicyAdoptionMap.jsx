@@ -1,11 +1,9 @@
-import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
-import { MapPin, CheckCircle2, Clock, XCircle, Loader2 } from 'lucide-react';
+import { MapPin, CheckCircle2, Clock, Loader2 } from 'lucide-react';
 
 export default function PolicyAdoptionMap({ policy }) {
   const { language, isRTL, t } = useLanguage();

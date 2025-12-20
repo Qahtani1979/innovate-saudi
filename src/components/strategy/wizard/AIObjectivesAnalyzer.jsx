@@ -6,12 +6,10 @@ import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Brain, Loader2, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle,
-  Target, TrendingUp, AlertCircle, Lightbulb, Award, BarChart3, 
-  RefreshCw, Zap, ArrowRight, XCircle, Building2, Link2, Layers,
-  ClipboardList, ShieldCheck, Flag
+  Target, AlertCircle, Lightbulb, Award, BarChart3, 
+  RefreshCw, Zap, ArrowRight, XCircle, Building2, Link2, Layers, ShieldCheck, Flag
 } from 'lucide-react';
 import { useLanguage } from '../../LanguageContext';
 import { supabase } from '@/integrations/supabase/client';

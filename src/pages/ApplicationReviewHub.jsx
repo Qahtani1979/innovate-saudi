@@ -1,18 +1,16 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { toast } from 'sonner';
 import { 
-  Calendar, Microscope, Users, CheckCircle, XCircle, Clock, 
-  FileText, Sparkles, Loader2, Star, TrendingUp, Award, AlertCircle
+  Calendar, Microscope, Users, CheckCircle, Clock, 
+  FileText, Star
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import UnifiedEvaluationForm from '../components/evaluation/UnifiedEvaluationForm';

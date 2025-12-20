@@ -1,9 +1,7 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
-import { Database, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Database, Clock, AlertCircle } from 'lucide-react';
 
 export default function AutomatedBackupSystem() {
   const { t } = useLanguage();

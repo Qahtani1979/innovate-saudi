@@ -1,16 +1,15 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from '../LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { toast } from 'sonner';
-import { GitBranch, Loader2, Sparkles } from 'lucide-react';
+import { GitBranch, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 
 export default function PolicyAmendmentWizard({ policy, onClose }) {

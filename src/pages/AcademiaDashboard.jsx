@@ -1,4 +1,3 @@
-import React from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,9 +7,8 @@ import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { 
-  Microscope, BookOpen, Award, Calendar, Target, FileText, Plus, TestTube, 
-  Beaker, Users, Sparkles, Clock, TrendingUp, BarChart3, Lightbulb,
-  CheckCircle2, Activity, Zap, Bell
+  Microscope, BookOpen, Calendar, Target, FileText, Plus, 
+  Beaker, Clock, Bell
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';

@@ -1,15 +1,14 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../LanguageContext';
-import { Award, Plus, DollarSign, Calendar, FileText, Shield, TrendingUp, Edit2, Trash2 } from 'lucide-react';
+import { Award, Plus, DollarSign, Shield, Edit2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function IPManagementWidget({ project }) {

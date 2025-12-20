@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -12,9 +12,8 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { 
   AlertCircle, CheckCircle2, Clock, TrendingUp, Target, 
-  FileText, Users, Calendar, Loader2, Sparkles, Zap, BookOpen 
+  FileText, Loader2, Sparkles, Zap, BookOpen 
 } from 'lucide-react';
-import { Progress } from "@/components/ui/progress";
 import MyWeekAhead from '../components/MyWeekAhead';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { WORKLOAD_PRIORITIES_PROMPT_TEMPLATE, WORKLOAD_PRIORITIES_SCHEMA, formatWorkItemsForPrioritization } from '@/lib/ai/prompts/workload/prioritization';

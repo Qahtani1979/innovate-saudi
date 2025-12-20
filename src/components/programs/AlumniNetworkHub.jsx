@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from '../LanguageContext';
-import { Users, Search, Sparkles, Mail, X } from 'lucide-react';
+import { Users, Search, Sparkles, Mail } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 
 export default function AlumniNetworkHub({ programId }) {

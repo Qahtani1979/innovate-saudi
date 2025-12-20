@@ -1,4 +1,3 @@
-import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { useLanguage } from '@/components/LanguageContext';
 import { TestTube, Lightbulb, Users, TrendingUp } from 'lucide-react';

@@ -1,9 +1,8 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useLanguage } from '../LanguageContext';
-import { Bell, AlertTriangle, AlertCircle } from 'lucide-react';
+import { Bell, AlertCircle } from 'lucide-react';
 
 export default function AlertingSystem() {
   const { t } = useLanguage();

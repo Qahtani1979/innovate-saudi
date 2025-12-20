@@ -1,6 +1,4 @@
-import React from 'react';
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
 import { 
   Linkedin, 
@@ -13,7 +11,6 @@ import {
   Calendar,
   Languages,
   Award,
-  User,
   Building2,
   ExternalLink
 } from 'lucide-react';

@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
-import { Network, CheckCircle2, XCircle, Target, Users, Building2, Award } from 'lucide-react';
+import { Network, CheckCircle2, XCircle, Target } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function NetworkTabAnalysis() {

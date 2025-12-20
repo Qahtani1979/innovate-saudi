@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
-import { Eye, CheckCircle2, XCircle, MessageSquare, Shield } from 'lucide-react';
+import { Eye, CheckCircle2, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import StageSpecificEvaluationForm from '../evaluation/StageSpecificEvaluationForm';
 import PermissionGate from '@/components/permissions/PermissionGate';

@@ -18,7 +18,6 @@ import PolicyTemplateLibrary from '../components/policy/PolicyTemplateLibrary';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import StrategicPlanSelector from '@/components/strategy/StrategicPlanSelector';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function PolicyCreate() {

@@ -1,13 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
 import {
-  CheckCircle2, XCircle, AlertTriangle, Sparkles, Shield, Users,
-  Database, FileText, Activity, Settings, BarChart3, Network, Calendar,
-  Microscope, Target, TrendingUp, Bell, MessageSquare, BookOpen, Globe,
+  CheckCircle2, XCircle, AlertTriangle, Sparkles, Shield, Activity, BarChart3, Network, Calendar,
+  Microscope, Target, BookOpen, Globe,
   MapPin, TestTube
 } from 'lucide-react';
 

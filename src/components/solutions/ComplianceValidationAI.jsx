@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,6 @@ import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import {
   generateComplianceValidationPrompt,
   getComplianceValidationSchema,
-  getDocumentExtractionSchema,
   getComplianceValidationSystemPrompt
 } from '@/lib/ai/prompts/solution';
 

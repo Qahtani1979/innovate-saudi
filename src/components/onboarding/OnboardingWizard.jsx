@@ -15,19 +15,16 @@ import { useLanguage } from '../LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { createPageUrl } from '@/utils';
 import FileUploader from '../FileUploader';
-import useOnboardingAnalytics from '@/hooks/useOnboardingAnalytics';
 import { useAutoRoleAssignment } from '@/hooks/useAutoRoleAssignment';
 import { 
   CheckCircle2, ArrowRight, ArrowLeft, Sparkles, 
   Building2, Lightbulb, FlaskConical, Users, Eye,
-  Rocket, Target, BookOpen, Network, X, Loader2,
+  Rocket, Target, BookOpen, X, Loader2,
   User, Briefcase, GraduationCap, Wand2, RefreshCw,
-  Upload, FileText, Linkedin, Globe, Award, AlertTriangle, 
-  Info, Plus, Bot, Shield
+  Upload, FileText, Linkedin, Globe, Award, AlertTriangle, Bot, Shield
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { 
   buildTranslationPrompt, 
   TRANSLATION_SCHEMA, 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +18,6 @@ import {
   FileText,
   Clock,
   AlertCircle,
-  CheckCircle2,
   CheckCircle,
   Network,
   Target,
@@ -27,7 +26,6 @@ import {
   Sparkles,
   Loader2,
   GitBranch,
-  Scale,
   Activity
 } from 'lucide-react';
 import PolicyImplementationTracker from '../components/policy/PolicyImplementationTracker';
@@ -41,9 +39,7 @@ import PolicyAdoptionMap from '../components/policy/PolicyAdoptionMap';
 import PolicyImpactMetrics from '../components/policy/PolicyImpactMetrics';
 import PolicyExecutiveSummaryGenerator from '../components/policy/PolicyExecutiveSummaryGenerator';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
-import { EntityDetailHeader } from '@/components/layout/EntityDetailHeader';
 
 export default function PolicyDetail() {
   const [aiAnalysis, setAiAnalysis] = useState(null);

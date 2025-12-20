@@ -1,10 +1,9 @@
 /* @refresh reset */
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useMediaDependencies } from '@/hooks/useMediaDependencies';
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -18,7 +17,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { 
   Trash2, AlertTriangle, Loader2, Link2, Archive, 
-  FileX, ExternalLink 
+  FileX 
 } from 'lucide-react';
 
 export default function MediaDeleteDialog({ 

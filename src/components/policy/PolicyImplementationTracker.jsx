@@ -1,16 +1,13 @@
-import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
-import { toast } from 'sonner';
 import { 
   CheckCircle, 
-  Building2, 
-  TrendingUp,
+  Building2,
   MapPin,
   Calendar,
   CheckCircle2,

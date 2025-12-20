@@ -1,9 +1,8 @@
-import React from 'react';
 import { useLanguage } from '../components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Users, Calendar, TrendingUp } from 'lucide-react';
+import { MessageSquare, Users, TrendingUp } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function StrategicCommunicationsHub() {

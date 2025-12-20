@@ -1,10 +1,9 @@
-import React from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '../LanguageContext';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Activity, FileText, CheckCircle2, AlertCircle, User, Calendar, TestTube, Shield, Lightbulb, TrendingUp } from 'lucide-react';
+import { Activity, FileText, CheckCircle2, User, TestTube, Shield, Lightbulb, TrendingUp } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function RDProjectActivityLog({ rdProjectId }) {

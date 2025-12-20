@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -12,11 +12,9 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Progress } from "@/components/ui/progress";
 import { StepAlerts } from '../shared/StepAlerts';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { 
-  Sparkles, AlertTriangle, Plus, X, Shield, ChevronDown, ChevronUp, 
-  CheckCircle2, ListChecks, Grid3X3, BarChart3, User, FileText,
-  TrendingUp, TrendingDown, Minus, Target, AlertCircle, Lightbulb,
-  FolderOpen, Clock, Percent, Users, Wand2, Check, RefreshCw, Loader2
+import { AlertTriangle, Plus, X, Shield, ChevronDown, ChevronUp, 
+  CheckCircle2, ListChecks, Grid3X3, BarChart3, User, TrendingDown, Minus, Target, AlertCircle,
+  FolderOpen, Percent, Users, Wand2, Check, RefreshCw, Loader2
 } from 'lucide-react';
 import { useLanguage } from '../../../LanguageContext';
 import { useTaxonomy } from '@/contexts/TaxonomyContext';

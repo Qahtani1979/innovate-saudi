@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Calendar, Users, Clock, Plus } from 'lucide-react';
+import { Calendar, Clock, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function MentorScheduler({ programId, mentorEmail }) {
@@ -34,7 +34,7 @@ export default function MentorScheduler({ programId, mentorEmail }) {
         .eq('entity_id', programId)
         .eq('expert_email', mentorEmail)
         .eq('assignment_type', 'mentor');
-      
+
       if (assignError) throw assignError;
       if (!assignments?.length) return [];
 
@@ -66,7 +66,7 @@ export default function MentorScheduler({ programId, mentorEmail }) {
   const scheduleMutation = useMutation({
     mutationFn: async (data) => {
       const mentee = applications.find(a => a.id === data.mentee_id);
-      
+
       const { error } = await supabase
         .from('program_mentorships')
         .insert({
@@ -102,23 +102,7 @@ export default function MentorScheduler({ programId, mentorEmail }) {
         }
       });
     },
-        body: {
-          trigger: 'event.invitation',
-          recipient_email: mentee.applicant_email,
-          entity_type: 'program',
-          entity_id: program.id,
-          variables: {
-            menteeName: mentee.applicant_name,
-            sessionDate: data.date,
-            sessionTime: data.time,
-            durationMinutes: data.duration_minutes,
-            location: data.location,
-            agenda: data.agenda
-          },
-          triggered_by: 'system'
-        }
-      });
-    },
+
     onSuccess: () => {
       queryClient.invalidateQueries(['mentor-meetings']);
       setShowForm(false);
@@ -144,7 +128,7 @@ export default function MentorScheduler({ programId, mentorEmail }) {
       <CardContent className="space-y-4">
         {showForm && (
           <div className="p-4 bg-purple-50 rounded-lg border border-purple-200 space-y-3">
-            <Select value={meeting.mentee_id} onValueChange={(v) => setMeeting({...meeting, mentee_id: v})}>
+            <Select value={meeting.mentee_id} onValueChange={(v) => setMeeting({ ...meeting, mentee_id: v })}>
               <SelectTrigger>
                 <SelectValue placeholder={t({ en: 'Select mentee', ar: 'اختر متدرب' })} />
               </SelectTrigger>
@@ -161,19 +145,19 @@ export default function MentorScheduler({ programId, mentorEmail }) {
               <Input
                 type="date"
                 value={meeting.date}
-                onChange={(e) => setMeeting({...meeting, date: e.target.value})}
+                onChange={(e) => setMeeting({ ...meeting, date: e.target.value })}
               />
               <Input
                 type="time"
                 value={meeting.time}
-                onChange={(e) => setMeeting({...meeting, time: e.target.value})}
+                onChange={(e) => setMeeting({ ...meeting, time: e.target.value })}
               />
             </div>
 
             <Textarea
               placeholder={t({ en: 'Meeting agenda', ar: 'جدول أعمال الاجتماع' })}
               value={meeting.agenda}
-              onChange={(e) => setMeeting({...meeting, agenda: e.target.value})}
+              onChange={(e) => setMeeting({ ...meeting, agenda: e.target.value })}
               rows={3}
             />
 
@@ -199,8 +183,8 @@ export default function MentorScheduler({ programId, mentorEmail }) {
                 <p className="font-medium text-sm">{m.mentee_name}</p>
                 <Badge className={
                   m.status === 'completed' ? 'bg-green-100 text-green-700' :
-                  m.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                  'bg-blue-100 text-blue-700'
+                    m.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                      'bg-blue-100 text-blue-700'
                 }>
                   {m.status}
                 </Badge>

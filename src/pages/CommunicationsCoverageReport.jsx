@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
 import { 
   CheckCircle2, Database, FileText, Workflow, Users, Brain, 
-  Network, Shield, ChevronDown, ChevronRight, MessageSquare, Bell
+  Network, Shield, ChevronDown, ChevronRight, MessageSquare
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
