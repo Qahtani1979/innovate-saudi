@@ -2,8 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Database, Shield, FileCode, Sparkles, BookOpen, Workflow, Users } from 'lucide-react';
-import PageLayout from '@/components/layout/PageLayout';
-import PageHeader from '@/components/layout/PageHeader';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 export default function FinalPolicySystemAssessment() {
   const categories = [
