@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,13 +12,14 @@ export default function RDProposalActivityLog({ proposalId }) {
   const { data: activities = [] } = useQuery({
     queryKey: ['rd-proposal-activities', proposalId],
     queryFn: async () => {
-      const all = await base44.entities.SystemActivity.list();
-      return all
-        .filter(a => 
-          a.entity_type === 'RDProposal' && 
-          a.entity_id === proposalId
-        )
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      const { data, error } = await supabase
+        .from('system_activities')
+        .select('*')
+        .eq('entity_type', 'RDProposal')
+        .eq('entity_id', proposalId)
+        .order('timestamp', { ascending: false });
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!proposalId
   });

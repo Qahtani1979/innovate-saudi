@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '../LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,7 +44,13 @@ export default function RDToPilotTransition({ rdProject, onClose, onSuccess }) {
 
   const { data: municipalities = [] } = useQuery({
     queryKey: ['municipalities-for-pilot'],
-    queryFn: () => base44.entities.Municipality.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('municipalities')
+        .select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const selectedMunicipalityData = municipalities.find(m => m.id === selectedMunicipality);
@@ -77,19 +83,28 @@ export default function RDToPilotTransition({ rdProject, onClose, onSuccess }) {
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      const pilot = await base44.entities.Pilot.create(data);
+      const { data: pilot, error: pilotError } = await supabase
+        .from('pilots')
+        .insert(data)
+        .select()
+        .single();
+      if (pilotError) throw pilotError;
       
-      await base44.entities.RDProject.update(rdProject.id, {
-        pilot_opportunities: [
-          ...(rdProject.pilot_opportunities || []),
-          {
-            description_en: `Pilot created: ${pilot.title_en}`,
-            pilot_id: pilot.id,
-            municipality: data.municipality_id,
-            status: 'created'
-          }
-        ]
-      });
+      const { error: updateError } = await supabase
+        .from('rd_projects')
+        .update({
+          pilot_opportunities: [
+            ...(rdProject.pilot_opportunities || []),
+            {
+              description_en: `Pilot created: ${pilot.title_en}`,
+              pilot_id: pilot.id,
+              municipality: data.municipality_id,
+              status: 'created'
+            }
+          ]
+        })
+        .eq('id', rdProject.id);
+      if (updateError) console.error('Update error:', updateError);
 
       return pilot;
     },

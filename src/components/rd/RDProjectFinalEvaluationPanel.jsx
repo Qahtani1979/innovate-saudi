@@ -44,7 +44,12 @@ export default function RDProjectFinalEvaluationPanel({ project, onClose }) {
   });
 
   const submitEvaluationMutation = useMutation({
-    mutationFn: (data) => base44.entities.ExpertEvaluation.create(data),
+    mutationFn: async (data) => {
+      const { error } = await supabase
+        .from('expert_evaluations')
+        .insert(data);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['rd-project-final-evaluations']);
       queryClient.invalidateQueries(['rd-project']);

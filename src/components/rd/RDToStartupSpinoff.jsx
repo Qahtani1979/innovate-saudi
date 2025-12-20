@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -62,31 +62,45 @@ Provide:
 
   const createSpinoffMutation = useMutation({
     mutationFn: async () => {
-      const startup = await base44.entities.StartupProfile.create({
-        name_en: spinoffData.startup_name,
-        description_en: rdProject.abstract_en,
-        stage: 'pre_seed',
-        product_stage: rdProject.trl_current >= 7 ? 'beta' : 'mvp',
-        sectors: [rdProject.research_area_en],
-        source_rd_project_id: rdProject.id
-      });
+      const { data: startup, error: startupError } = await supabase
+        .from('startup_profiles')
+        .insert({
+          name_en: spinoffData.startup_name,
+          description_en: rdProject.abstract_en,
+          stage: 'pre_seed',
+          product_stage: rdProject.trl_current >= 7 ? 'beta' : 'mvp',
+          sectors: [rdProject.research_area_en],
+          source_rd_project_id: rdProject.id
+        })
+        .select()
+        .single();
+      if (startupError) throw startupError;
 
-      const solution = await base44.entities.Solution.create({
-        name_en: spinoffData.startup_name,
-        description_en: rdProject.abstract_en,
-        provider_id: startup.id,
-        provider_name: spinoffData.startup_name,
-        provider_type: 'startup',
-        trl: rdProject.trl_current,
-        maturity_level: rdProject.trl_current >= 7 ? 'market_ready' : 'prototype',
-        source_rd_project_id: rdProject.id
-      });
+      const { data: solution, error: solutionError } = await supabase
+        .from('solutions')
+        .insert({
+          name_en: spinoffData.startup_name,
+          description_en: rdProject.abstract_en,
+          provider_id: startup.id,
+          provider_name: spinoffData.startup_name,
+          provider_type: 'startup',
+          trl: rdProject.trl_current,
+          maturity_level: rdProject.trl_current >= 7 ? 'market_ready' : 'prototype',
+          source_rd_project_id: rdProject.id
+        })
+        .select()
+        .single();
+      if (solutionError) throw solutionError;
 
-      await base44.entities.RDProject.update(rdProject.id, {
-        spinoff_startup_id: startup.id,
-        spinoff_solution_id: solution.id,
-        commercialization_status: 'spinoff_created'
-      });
+      const { error: updateError } = await supabase
+        .from('rd_projects')
+        .update({
+          spinoff_startup_id: startup.id,
+          spinoff_solution_id: solution.id,
+          commercialization_status: 'spinoff_created'
+        })
+        .eq('id', rdProject.id);
+      if (updateError) throw updateError;
 
       return { startup, solution };
     },

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -66,8 +66,13 @@ export default function RDProjectDetail() {
   const { data: project, isLoading, error: projectError } = useQuery({
     queryKey: ['rd-project', projectId],
     queryFn: async () => {
-      const projects = await base44.entities.RDProject.list();
-      return projects.find(p => p.id === projectId);
+      const { data, error } = await supabase
+        .from('rd_projects')
+        .select('*')
+        .eq('id', projectId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
     enabled: !!projectId,
     staleTime: 5 * 60 * 1000
@@ -76,8 +81,12 @@ export default function RDProjectDetail() {
   const { data: comments = [] } = useQuery({
     queryKey: ['rd-project-comments', projectId],
     queryFn: async () => {
-      const all = await base44.entities.RDProjectComment.list();
-      return all.filter(c => c.rd_project_id === projectId);
+      const { data, error } = await supabase
+        .from('rd_project_comments')
+        .select('*')
+        .eq('rd_project_id', projectId);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!projectId
   });
@@ -85,14 +94,24 @@ export default function RDProjectDetail() {
   const { data: expertEvaluations = [] } = useQuery({
     queryKey: ['rd-project-expert-evaluations', projectId],
     queryFn: async () => {
-      const all = await base44.entities.ExpertEvaluation.list();
-      return all.filter(e => e.entity_type === 'rd_project' && e.entity_id === projectId);
+      const { data, error } = await supabase
+        .from('expert_evaluations')
+        .select('*')
+        .eq('entity_type', 'rd_project')
+        .eq('entity_id', projectId);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!projectId
   });
 
   const commentMutation = useMutation({
-    mutationFn: (data) => base44.entities.RDProjectComment.create(data),
+    mutationFn: async (data) => {
+      const { error } = await supabase
+        .from('rd_project_comments')
+        .insert(data);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['rd-project-comments']);
       setComment('');

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,17 +20,22 @@ export default function PublicationTracker({ projectId, publications }) {
       return;
     }
 
-    await base44.entities.RDProject.update(projectId, {
-      publications: [...(publications || []), {
-        ...newPub,
-        citations: 0,
-        added_date: new Date().toISOString()
-      }]
-    });
+    const { error } = await supabase
+      .from('rd_projects')
+      .update({
+        publications: [...(publications || []), {
+          ...newPub,
+          citations: 0,
+          added_date: new Date().toISOString()
+        }]
+      })
+      .eq('id', projectId);
 
-    setNewPub({ title: '', journal: '', year: '', doi: '' });
-    setAdding(false);
-    toast.success(t({ en: 'Publication added', ar: 'تمت إضافة النشر' }));
+    if (!error) {
+      setNewPub({ title: '', journal: '', year: '', doi: '' });
+      setAdding(false);
+      toast.success(t({ en: 'Publication added', ar: 'تمت إضافة النشر' }));
+    }
   };
 
   const yearlyData = publications?.reduce((acc, pub) => {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -28,8 +28,13 @@ function RDCallEdit() {
   const { data: call, isLoading } = useQuery({
     queryKey: ['rd-call', callId],
     queryFn: async () => {
-      const calls = await base44.entities.RDCall.list();
-      return calls.find(c => c.id === callId);
+      const { data, error } = await supabase
+        .from('rd_calls')
+        .select('*')
+        .eq('id', callId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
     enabled: !!callId
   });
@@ -43,7 +48,13 @@ function RDCallEdit() {
   }, [call]);
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.RDCall.update(callId, data),
+    mutationFn: async (data) => {
+      const { error } = await supabase
+        .from('rd_calls')
+        .update(data)
+        .eq('id', callId);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['rd-call', callId]);
       toast.success(t({ en: 'Call updated', ar: 'تم تحديث الدعوة' }));

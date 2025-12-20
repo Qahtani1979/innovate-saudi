@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,8 +13,13 @@ export default function RealTimeProgressDashboard({ projectId }) {
   const { data: project } = useQuery({
     queryKey: ['rd-project', projectId],
     queryFn: async () => {
-      const projects = await base44.entities.RDProject.list();
-      return projects.find(p => p.id === projectId);
+      const { data, error } = await supabase
+        .from('rd_projects')
+        .select('*')
+        .eq('id', projectId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
     refetchInterval: 30000
   });

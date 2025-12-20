@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,13 @@ export default function RDProposalAIScorerWidget({ proposal }) {
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.RDProposal.update(proposal.id, data),
+    mutationFn: async (data) => {
+      const { error } = await supabase
+        .from('rd_proposals')
+        .update(data)
+        .eq('id', proposal.id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['rd-proposal']);
       toast.success(t({ en: 'AI scoring complete', ar: 'تم التقييم الذكي' }));

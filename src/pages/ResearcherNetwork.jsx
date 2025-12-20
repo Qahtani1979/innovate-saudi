@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -18,12 +18,24 @@ function ResearcherNetwork() {
 
   const { data: rdProjects = [] } = useQuery({
     queryKey: ['rd-projects-network'],
-    queryFn: () => base44.entities.RDProject.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('rd_projects')
+        .select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: organizations = [] } = useQuery({
     queryKey: ['organizations-network'],
-    queryFn: () => base44.entities.Organization.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const researchAreas = [...new Set(rdProjects.flatMap(p => p.research_area_en || p.research_area || []))].filter(Boolean);

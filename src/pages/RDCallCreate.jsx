@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -67,7 +67,7 @@ function RDCallCreate() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => {
+    mutationFn: async (data) => {
       // Clean up empty values before sending
       const cleanData = {
         ...data,
@@ -80,7 +80,13 @@ function RDCallCreate() {
         timeline: Object.values(data.timeline || {}).some(v => v) ? data.timeline : undefined,
         contact_person: Object.values(data.contact_person || {}).some(v => v) ? data.contact_person : undefined
       };
-      return base44.entities.RDCall.create(cleanData);
+      const { data: result, error } = await supabase
+        .from('rd_calls')
+        .insert(cleanData)
+        .select()
+        .single();
+      if (error) throw error;
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['rd-calls']);

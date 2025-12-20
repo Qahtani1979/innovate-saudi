@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,21 +46,27 @@ export default function RDProposalSubmissionGate({ proposal, rdCall, onClose }) 
   const submitMutation = useMutation({
     mutationFn: async () => {
       // Update status and submission date
-      await base44.entities.RDProposal.update(proposal.id, {
-        status: 'submitted',
-        submission_date: new Date().toISOString()
-      });
+      const { error: updateError } = await supabase
+        .from('rd_proposals')
+        .update({
+          status: 'submitted',
+          submission_date: new Date().toISOString()
+        })
+        .eq('id', proposal.id);
+      if (updateError) throw updateError;
 
       // Create system activity
-      await base44.entities.SystemActivity.create({
-        entity_type: 'RDProposal',
-        entity_id: proposal.id,
-        activity_type: 'submitted',
-        description: `Proposal "${proposal.title_en}" submitted for review`,
-        performed_by: proposal.created_by,
-        timestamp: new Date().toISOString()
-      });
-
+      const { error: activityError } = await supabase
+        .from('system_activities')
+        .insert({
+          entity_type: 'RDProposal',
+          entity_id: proposal.id,
+          activity_type: 'submitted',
+          description: `Proposal "${proposal.title_en}" submitted for review`,
+          performed_by: proposal.created_by,
+          timestamp: new Date().toISOString()
+        });
+      if (activityError) console.error('Activity log error:', activityError);
     },
     onSuccess: async () => {
       queryClient.invalidateQueries(['rd-proposal']);
