@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '../LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,16 +59,17 @@ export default function ChallengeToRDWizard({ challenge, onClose, onSuccess }) {
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      const rdCall = await base44.entities.RDCall.create(data);
+      const { data: rdCall, error: rdError } = await supabase.from('rd_calls').insert(data).select().single();
+      if (rdError) throw rdError;
       
-      await base44.entities.ChallengeRelation.create({
+      await supabase.from('challenge_relations').insert({
         challenge_id: challenge.id,
         related_entity_type: 'rd_call',
         related_entity_id: rdCall.id,
         relation_role: 'informed_by'
       });
 
-      await base44.entities.SystemActivity.create({
+      await supabase.from('system_activities').insert({
         activity_type: 'challenge_to_rd_call',
         entity_type: 'challenge',
         entity_id: challenge.id,

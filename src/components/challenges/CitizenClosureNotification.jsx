@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { useLanguage } from '../LanguageContext';
 import { Mail, Loader2, CheckCircle2, Heart } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function CitizenClosureNotification({ challenge, onSent }) {
+export default function CitizenClosureNotification({ challenge, onSent, onCancel }) {
   const { language, isRTL, t } = useLanguage();
   const [message, setMessage] = React.useState('');
 
@@ -21,8 +21,11 @@ export default function CitizenClosureNotification({ challenge, onSent }) {
       }
 
       // Get original idea creator
-      const idea = await base44.entities.CitizenIdea.get(challenge.citizen_origin_idea_id);
-      if (!idea || !idea.created_by) {
+      const { data: idea, error } = await supabase.from('citizen_ideas')
+        .select('*')
+        .eq('id', challenge.citizen_origin_idea_id)
+        .single();
+      if (error || !idea?.user_id) {
         throw new Error('Idea creator not found');
       }
 

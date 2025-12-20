@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,29 +32,27 @@ export default function ChallengeMergeWorkflow({ primaryChallenge, duplicateChal
         ...selectedDuplicates.flatMap(d => d.stakeholders || [])
       ];
 
-      await base44.entities.Challenge.update(primaryChallenge.id, {
+      await supabase.from('challenges').update({
         keywords: Array.from(combinedKeywords),
         stakeholders: combinedStakeholders,
         citizen_votes_count: (primaryChallenge.citizen_votes_count || 0) + 
           selectedDuplicates.reduce((sum, d) => sum + (d.citizen_votes_count || 0), 0)
-      });
+      }).eq('id', primaryChallenge.id);
 
       // Archive duplicates
       for (const dup of selectedDuplicates) {
-        await base44.entities.Challenge.update(dup.id, {
+        await supabase.from('challenges').update({
           status: 'archived',
           is_archived: true,
-          archive_date: new Date().toISOString(),
-          archive_reason: `Merged into ${primaryChallenge.code}`,
-          merged_into_challenge_id: primaryChallenge.id
-        });
+          archive_date: new Date().toISOString()
+        }).eq('id', dup.id);
 
         // Create activity log
-        await base44.entities.ChallengeActivity.create({
+        await supabase.from('challenge_activities').insert({
           challenge_id: dup.id,
           activity_type: 'merged',
           description: `Merged into ${primaryChallenge.code}`,
-          details: { merge_notes: mergeNotes }
+          metadata: { merge_notes: mergeNotes }
         });
       }
 

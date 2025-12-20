@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -19,12 +19,10 @@ export default function LiveKPIDashboard({ challenge }) {
         return [];
       }
       
-      const allDatapoints = [];
-      for (const pilotId of challenge.linked_pilot_ids) {
-        const data = await base44.entities.PilotKPIDatapoint.filter({ pilot_id: pilotId });
-        allDatapoints.push(...data);
-      }
-      return allDatapoints;
+      const { data } = await supabase.from('pilot_kpi_datapoints')
+        .select('*')
+        .in('pilot_id', challenge.linked_pilot_ids);
+      return data || [];
     },
     enabled: challenge.status === 'in_treatment' && challenge.linked_pilot_ids?.length > 0
   });

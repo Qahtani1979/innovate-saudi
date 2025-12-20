@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,15 +18,16 @@ export default function RDCallRequestForm({ challenge }) {
   const requestMutation = useMutation({
     mutationFn: async () => {
       // Create notification for admin to create R&D call
-      await base44.entities.Notification.create({
-        recipient_email: 'admin@platform.gov.sa', // Admin email
-        type: 'rd_call_request',
+      const { error } = await supabase.from('notifications').insert({
+        user_email: 'admin@platform.gov.sa', // Admin email
+        notification_type: 'rd_call_request',
         title: `R&D Call Request for Challenge: ${challenge.code}`,
         message: `Researcher requests R&D call for challenge "${challenge.title_en}". Justification: ${requestData.justification}`,
         entity_type: 'challenge',
         entity_id: challenge.id,
         metadata: requestData
       });
+      if (error) throw error;
     },
     onSuccess: () => {
       toast.success('R&D call request submitted - admin will review');

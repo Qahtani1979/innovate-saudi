@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,13 +37,14 @@ export default function ChallengeToProgramWorkflow({ challenge, onClose, onSucce
 
   const createProgramMutation = useMutation({
     mutationFn: async (data) => {
-      const program = await base44.entities.Program.create(data);
+      const { data: program, error: programError } = await supabase.from('programs').insert(data).select().single();
+      if (programError) throw programError;
       
-      await base44.entities.Challenge.update(challenge.id, {
+      await supabase.from('challenges').update({
         linked_program_ids: [...(challenge.linked_program_ids || []), program.id]
-      });
+      }).eq('id', challenge.id);
 
-      await base44.entities.ChallengeRelation.create({
+      await supabase.from('challenge_relations').insert({
         challenge_id: challenge.id,
         related_entity_type: 'program',
         related_entity_id: program.id,
@@ -51,11 +52,11 @@ export default function ChallengeToProgramWorkflow({ challenge, onClose, onSucce
         created_via: 'manual'
       });
 
-      await base44.entities.SystemActivity.create({
+      await supabase.from('system_activities').insert({
         entity_type: 'challenge',
         entity_id: challenge.id,
-        action: 'program_created',
-        description: `Program created from challenge: ${program.name_en}`
+        activity_type: 'program_created',
+        description_en: `Program created from challenge: ${program.name_en}`
       });
 
       return program;
