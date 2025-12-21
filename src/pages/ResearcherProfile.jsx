@@ -1,4 +1,4 @@
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,8 +21,8 @@ function ResearcherProfile() {
   const { data: researcher } = useQuery({
     queryKey: ['researcherProfile', researcherId],
     queryFn: async () => {
-      const profiles = await base44.entities.ResearcherProfile.filter({ id: researcherId });
-      return profiles[0];
+      const { data } = await supabase.from('researcher_profiles').select('*').eq('id', researcherId);
+      return data?.[0];
     }
   });
 
@@ -84,12 +84,12 @@ Suggest 5 researchers or institutions who would be ideal collaborators based on 
                   {language === 'ar' ? r?.full_name_en : r?.full_name_ar}
                 </p>
               )}
-              
+
               {/* Bilingual Title */}
               <p className="text-lg text-muted-foreground mt-1">
                 {language === 'ar' ? (r?.title_ar || r?.title_en) : (r?.title_en || r?.title_ar)}
               </p>
-              
+
               {/* Institution & Location */}
               <div className={`flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap ${isRTL ? 'flex-row-reverse' : ''}`}>
                 {r?.institution_name && (
@@ -105,7 +105,7 @@ Suggest 5 researchers or institutions who would be ideal collaborators based on 
                   </div>
                 )}
               </div>
-              
+
               {/* Badges */}
               <div className={`flex gap-2 mt-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
                 {r?.is_verified && <Badge className="bg-primary">✓ {t({ en: 'Verified', ar: 'موثق' })}</Badge>}
@@ -164,17 +164,17 @@ Suggest 5 researchers or institutions who would be ideal collaborators based on 
             <CardTitle>{t({ en: 'About', ar: 'نبذة' })}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <BioSection 
-              bioEn={r?.bio_en} 
+            <BioSection
+              bioEn={r?.bio_en}
               bioAr={r?.bio_ar}
               showBoth={!!(r?.bio_en && r?.bio_ar)}
             />
-            
+
             {/* Expertise Keywords */}
             {r?.expertise_keywords?.length > 0 && (
               <div className="pt-4 border-t">
-                <SkillsBadges 
-                  skills={r.expertise_keywords} 
+                <SkillsBadges
+                  skills={r.expertise_keywords}
                   label={{ en: 'Expertise', ar: 'الخبرات' }}
                   colorClass="bg-primary/10 text-primary"
                 />
@@ -194,12 +194,12 @@ Suggest 5 researchers or institutions who would be ideal collaborators based on 
               linkedinUrl={r?.linkedin_url}
               website={r?.google_scholar_url || r?.website}
             />
-            
+
             {r?.orcid_id && (
               <div className="mt-3 pt-3 border-t">
-                <a 
-                  href={`https://orcid.org/${r.orcid_id}`} 
-                  target="_blank" 
+                <a
+                  href={`https://orcid.org/${r.orcid_id}`}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-primary hover:underline"
                 >
@@ -216,8 +216,8 @@ Suggest 5 researchers or institutions who would be ideal collaborators based on 
             <CardTitle>{t({ en: 'Research Areas', ar: 'مجالات البحث' })}</CardTitle>
           </CardHeader>
           <CardContent>
-            <SkillsBadges 
-              skills={r?.research_areas} 
+            <SkillsBadges
+              skills={r?.research_areas}
               colorClass="bg-secondary text-secondary-foreground"
             />
             {!r?.research_areas?.length && (

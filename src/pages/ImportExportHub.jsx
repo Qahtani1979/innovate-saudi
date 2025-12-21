@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { base44 } from '@/api/base44Client';
+
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,8 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from 'sonner';
-import { 
-  Upload, Download, FileSpreadsheet, FileText, Database, 
+import {
+  Upload, Download, FileSpreadsheet, FileText, Database,
   Loader2, CheckCircle, FileUp,
   History, Wand2, Filter, XCircle, Sparkles
 } from 'lucide-react';
@@ -493,7 +493,7 @@ function ImportExportHub() {
   const { t, isRTL } = useLanguage();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('ai-uploader');
-  
+
   // Export state
   const [exportEntity, setExportEntity] = useState('');
   const [exportFormat, setExportFormat] = useState('csv');
@@ -506,7 +506,7 @@ function ImportExportHub() {
     status: ''
   });
   const [selectedFields, setSelectedFields] = useState([]);
-  
+
   // Import state
   const [importEntity, setImportEntity] = useState('');
   const [importFile, setImportFile] = useState(null);
@@ -514,7 +514,7 @@ function ImportExportHub() {
   const [importPreview, setImportPreview] = useState(null);
   const [useAIExtraction, setUseAIExtraction] = useState(false);
   const [validationErrors, setValidationErrors] = useState([]);
-  
+
   // Reference data for foreign key lookups
   const { data: sectors = [] } = useQuery({
     queryKey: ['sectors-lookup'],
@@ -523,7 +523,7 @@ function ImportExportHub() {
       return data || [];
     }
   });
-  
+
   const { data: municipalities = [] } = useQuery({
     queryKey: ['municipalities-lookup'],
     queryFn: async () => {
@@ -531,7 +531,7 @@ function ImportExportHub() {
       return data || [];
     }
   });
-  
+
   const { data: regions = [] } = useQuery({
     queryKey: ['regions-lookup'],
     queryFn: async () => {
@@ -539,7 +539,7 @@ function ImportExportHub() {
       return data || [];
     }
   });
-  
+
   const { data: providers = [] } = useQuery({
     queryKey: ['providers-lookup'],
     queryFn: async () => {
@@ -661,12 +661,12 @@ function ImportExportHub() {
       });
 
       const filename = `${exportEntity}-${new Date().toISOString().split('T')[0]}`;
-      
+
       if (exportFormat === 'csv') {
         const headers = Object.keys(filteredData[0]);
         const csvContent = [
           headers.join(','),
-          ...filteredData.map(row => 
+          ...filteredData.map(row =>
             headers.map(h => {
               const val = row[h];
               if (val === null || val === undefined) return '';
@@ -687,8 +687,8 @@ function ImportExportHub() {
       await supabase.from('access_logs').insert({
         action: 'data_export',
         entity_type: exportEntity,
-        metadata: { 
-          format: exportFormat, 
+        metadata: {
+          format: exportFormat,
           count: data.length,
           filters: exportFilters,
           fields: selectedFields.length
@@ -718,10 +718,10 @@ function ImportExportHub() {
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
+
     setImportFile(file);
     setValidationErrors([]);
-    
+
     // Preview CSV content
     if (file.name.endsWith('.csv')) {
       const text = await file.text();
@@ -736,7 +736,7 @@ function ImportExportHub() {
       const text = await file.text();
       const data = JSON.parse(text);
       const items = Array.isArray(data) ? data : [data];
-      setImportPreview({ 
+      setImportPreview({
         headers: items.length > 0 ? Object.keys(items[0]) : [],
         rows: items.slice(0, 5),
         totalLines: items.length
@@ -747,7 +747,7 @@ function ImportExportHub() {
   const validateImportData = (records, entityDef) => {
     const errors = [];
     const requiredCols = entityDef.requiredColumns || [];
-    
+
     records.forEach((record, index) => {
       requiredCols.forEach(col => {
         if (!record[col] || record[col].toString().trim() === '') {
@@ -755,14 +755,14 @@ function ImportExportHub() {
         }
       });
     });
-    
+
     return errors;
   };
 
   const checkDuplicates = async (records, entityDef) => {
     const duplicates = [];
     const codeCol = entityDef.templateColumns.includes('code') ? 'code' : null;
-    
+
     if (codeCol) {
       const codes = records.map(r => r[codeCol]).filter(Boolean);
       if (codes.length > 0) {
@@ -770,47 +770,56 @@ function ImportExportHub() {
           .from(entityDef.table)
           .select('code')
           .in('code', codes);
-        
+
         if (data && data.length > 0) {
           duplicates.push(...data.map(d => d.code));
         }
       }
     }
-    
+
     return duplicates;
   };
 
   // AI-powered import using base44
   const aiImportMutation = useMutation({
     mutationFn: async (file) => {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `uploads/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage.from('imports').upload(filePath, file);
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from('imports').getPublicUrl(filePath);
+      const file_url = data.publicUrl;
+
       const entityDef = ENTITY_DEFINITIONS[importEntity];
-      
-      const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
-        file_url,
-        json_schema: entityDef.aiSchema
+
+      const { data: extracted, error } = await supabase.functions.invoke('ai-data-extractor', {
+        body: { file_url, schema: entityDef.aiSchema }
       });
+
+      if (error) throw error;
 
       if (extracted.status === 'success' && extracted.output) {
         const data = Array.isArray(extracted.output) ? extracted.output : [extracted.output];
-        
+
         // Validate before insert
         const errors = validateImportData(data, entityDef);
         if (errors.length > 0) {
           throw new Error(`Validation failed: ${errors.slice(0, 3).join('; ')}`);
         }
-        
+
         const { error } = await supabase.from(entityDef.table).insert(data);
         if (error) throw error;
-        
+
         // Log import
         await supabase.from('access_logs').insert({
           action: 'data_import',
           entity_type: importEntity,
           metadata: { count: data.length, method: 'ai', filename: file.name }
         });
-        
+
         return { success: true, count: data.length };
       }
       throw new Error(extracted.details || 'AI extraction failed');
@@ -843,7 +852,7 @@ function ImportExportHub() {
 
     setImporting(true);
     setValidationErrors([]);
-    
+
     try {
       const text = await importFile.text();
       let records = [];
@@ -918,7 +927,7 @@ function ImportExportHub() {
     const result = [];
     let current = '';
     let inQuotes = false;
-    
+
     for (let i = 0; i < line.length; i++) {
       const char = line[i];
       if (char === '"') {
@@ -945,7 +954,7 @@ function ImportExportHub() {
       toast.error('Entity template not found');
       return;
     }
-    
+
     const csv = entityDef.templateColumns.join(',');
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
     downloadBlob(blob, `${entityValue}-template.csv`);
@@ -956,7 +965,7 @@ function ImportExportHub() {
 
   return (
     <PageLayout>
-      <PageHeader 
+      <PageHeader
         title={{ en: "Import & Export Hub", ar: "مركز الاستيراد والتصدير" }}
         subtitle={{ en: "Centralized data import and export management with validation", ar: "إدارة مركزية لاستيراد وتصدير البيانات مع التحقق" }}
         icon={Database}
@@ -983,7 +992,7 @@ function ImportExportHub() {
         </TabsList>
 
         <TabsContent value="ai-uploader" className="space-y-6">
-          <AIDataUploader 
+          <AIDataUploader
             onComplete={(results) => {
               queryClient.invalidateQueries();
               toast.success(`Successfully imported ${results?.inserted || 0} records`);
@@ -1050,9 +1059,9 @@ function ImportExportHub() {
                     <Filter className="h-4 w-4" />
                     {t({ en: "Filters", ar: "الفلاتر" })}
                   </Label>
-                  
+
                   <div className="flex items-center gap-2">
-                    <Checkbox 
+                    <Checkbox
                       id="include-deleted"
                       checked={exportFilters.includeDeleted}
                       onCheckedChange={(checked) => setExportFilters(f => ({ ...f, includeDeleted: checked }))}
@@ -1061,9 +1070,9 @@ function ImportExportHub() {
                       {t({ en: "Include deleted records", ar: "تضمين السجلات المحذوفة" })}
                     </Label>
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
-                    <Checkbox 
+                    <Checkbox
                       id="published-only"
                       checked={exportFilters.publishedOnly}
                       onCheckedChange={(checked) => setExportFilters(f => ({ ...f, publishedOnly: checked }))}
@@ -1097,8 +1106,8 @@ function ImportExportHub() {
                   {/* Status Filter */}
                   <div>
                     <Label className="text-xs">{t({ en: "Status", ar: "الحالة" })}</Label>
-                    <Select 
-                      value={exportFilters.status} 
+                    <Select
+                      value={exportFilters.status}
                       onValueChange={(value) => setExportFilters(f => ({ ...f, status: value === '__all__' ? '' : value }))}
                     >
                       <SelectTrigger className="h-8">
@@ -1118,8 +1127,8 @@ function ImportExportHub() {
                   </div>
                 </div>
 
-                <Button 
-                  onClick={handleExport} 
+                <Button
+                  onClick={handleExport}
                   disabled={!exportEntity || exporting}
                   className="w-full"
                 >
@@ -1145,15 +1154,15 @@ function ImportExportHub() {
                   <ScrollArea className="h-[280px] pr-4">
                     <div className="space-y-2">
                       <div className="flex gap-2 mb-3">
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => setSelectedFields(availableFields)}
                         >
                           {t({ en: "Select All", ar: "تحديد الكل" })}
                         </Button>
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => setSelectedFields([])}
                         >
@@ -1162,7 +1171,7 @@ function ImportExportHub() {
                       </div>
                       {availableFields.map(field => (
                         <div key={field} className="flex items-center gap-2">
-                          <Checkbox 
+                          <Checkbox
                             id={`field-${field}`}
                             checked={selectedFields.includes(field)}
                             onCheckedChange={(checked) => {
@@ -1307,8 +1316,8 @@ function ImportExportHub() {
                   </div>
                 )}
 
-                <Button 
-                  onClick={handleImport} 
+                <Button
+                  onClick={handleImport}
                   disabled={!importEntity || !importFile || isImportPending}
                   className="w-full"
                 >

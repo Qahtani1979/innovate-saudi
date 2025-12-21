@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,8 @@ function KnowledgeDocumentEdit() {
   const { data: doc, isLoading } = useQuery({
     queryKey: ['knowledge-doc', docId],
     queryFn: async () => {
-      const docs = await base44.entities.KnowledgeDocument.list();
+      const { data } = await supabase.from('knowledge_documents').select('*');
+      const docs = data || [];
       return docs.find(d => d.id === docId);
     },
     enabled: !!docId
@@ -44,14 +45,18 @@ function KnowledgeDocumentEdit() {
   }, [doc]);
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.KnowledgeDocument.update(docId, data),
+    mutationFn: async (data) => {
+      const { error } = await supabase.from('knowledge_documents').update(data).eq('id', docId);
+      if (error) throw error;
+      return data;
+    },
     onSuccess: (_, data) => {
       // Auto-generate embedding if content changed
-      base44.functions.invoke('generateEmbeddings', {
+      supabase.functions.invoke('generate-embeddings', {
         entity_name: 'KnowledgeDocument',
         mode: 'missing'
       }).catch(err => console.error('Embedding generation failed:', err));
-      
+
       // Trigger email if document is being published
       if (data.is_published && !doc?.is_published) {
         triggerEmail('knowledge.published', {
@@ -63,7 +68,7 @@ function KnowledgeDocumentEdit() {
           }
         }).catch(err => console.error('Email trigger failed:', err));
       }
-      
+
       toast.success(t({ en: 'Document updated', ar: 'تم تحديث المستند' }));
       navigate(createPageUrl('Knowledge'));
     }

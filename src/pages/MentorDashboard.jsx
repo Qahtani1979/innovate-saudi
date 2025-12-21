@@ -26,7 +26,7 @@ export default function MentorDashboard() {
         .from('expert_assignments')
         .select('*')
         .eq('expert_email', user?.email)
-        .eq('assignment_type', 'mentor')
+        .eq('task_type', 'mentorship') // Fixed from assignment_type
         .neq('status', 'declined');
       if (error) throw error;
       return data || [];
@@ -37,13 +37,15 @@ export default function MentorDashboard() {
   const { data: programs = [] } = useQuery({
     queryKey: ['mentor-programs', assignments],
     queryFn: async () => {
-      const programIds = [...new Set(assignments.map(a => a.entity_id))];
+      const programIds = [...new Set(assignments.map(a => a.entity_id || a.task_id))];
       if (programIds.length === 0) return [];
+
       const { data, error } = await supabase
         .from('programs')
         .select('*')
         .in('id', programIds)
         .eq('is_deleted', false);
+
       if (error) throw error;
       return data || [];
     },
@@ -53,8 +55,13 @@ export default function MentorDashboard() {
   const { data: mentorships = [] } = useQuery({
     queryKey: ['mentorships', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.ProgramMentorship.list();
-      return all.filter(m => m.mentor_email === user?.email);
+      const { data, error } = await supabase
+        .from('mentorship_sessions')
+        .select('*')
+        .eq('mentor_email', user?.email);
+
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!user?.email
   });
@@ -62,8 +69,14 @@ export default function MentorDashboard() {
   const { data: evaluations = [] } = useQuery({
     queryKey: ['mentor-evaluations', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.ExpertEvaluation.list();
-      return all.filter(e => e.expert_email === user?.email && e.entity_type === 'program_application');
+      const { data, error } = await supabase
+        .from('expert_evaluations')
+        .select('*')
+        .eq('evaluator_email', user?.email)
+        .eq('entity_type', 'program_application');
+
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!user?.email
   });
@@ -213,7 +226,7 @@ export default function MentorDashboard() {
                           )}
                         </div>
                         <p className="text-sm text-slate-600 mt-2">
-                          {program.duration_weeks} {t({ en: 'weeks', ar: 'أسبوع' })} • 
+                          {program.duration_weeks} {t({ en: 'weeks', ar: 'أسبوع' })} •
                           {program.accepted_count || 0} {t({ en: 'participants', ar: 'مشارك' })}
                         </p>
                       </div>
@@ -290,8 +303,8 @@ export default function MentorDashboard() {
                       <p className="font-medium text-sm">{evaluation.entity_id}</p>
                       <Badge className={
                         evaluation.recommendation === 'approve' ? 'bg-green-100 text-green-700' :
-                        evaluation.recommendation === 'reject' ? 'bg-red-100 text-red-700' :
-                        'bg-yellow-100 text-yellow-700'
+                          evaluation.recommendation === 'reject' ? 'bg-red-100 text-red-700' :
+                            'bg-yellow-100 text-yellow-700'
                       }>
                         {evaluation.recommendation}
                       </Badge>

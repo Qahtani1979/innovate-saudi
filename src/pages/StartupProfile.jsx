@@ -1,4 +1,4 @@
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,8 @@ function StartupProfile() {
     queryKey: ['startupProfile', startupId],
     queryFn: async () => {
       if (startupId) {
-        return await base44.entities.StartupProfile.filter({ id: startupId });
+        const { data } = await supabase.from('startup_profiles').select('*').eq('id', startupId);
+        return data || [];
       }
       return null;
     }
@@ -32,7 +33,10 @@ function StartupProfile() {
 
   const { data: solutions = [] } = useQuery({
     queryKey: ['startupSolutions', startupId],
-    queryFn: () => base44.entities.Solution.filter({ provider_id: startupId }),
+    queryFn: async () => {
+      const { data } = await supabase.from('solutions').select('*').eq('provider_id', startupId);
+      return data || [];
+    },
     enabled: !!startupId
   });
 
@@ -40,8 +44,9 @@ function StartupProfile() {
     queryKey: ['startup-pilots', startupId],
     queryFn: async () => {
       const solutionIds = solutions.map(s => s.id);
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => solutionIds.includes(p.solution_id));
+      if (solutionIds.length === 0) return [];
+      const { data } = await supabase.from('pilots').select('*').in('solution_id', solutionIds);
+      return data || [];
     },
     enabled: solutions.length > 0
   });
@@ -117,12 +122,12 @@ Find 5 best-matching challenges from the platform that align with their capabili
                   {language === 'ar' ? s?.name_en : s?.name_ar}
                 </p>
               )}
-              
+
               {/* Bilingual Tagline */}
               <p className="text-lg text-muted-foreground mt-1">
                 {language === 'ar' ? (s?.tagline_ar || s?.tagline_en) : (s?.tagline_en || s?.tagline_ar)}
               </p>
-              
+
               {/* Stage & Founding */}
               <div className={`flex items-center gap-4 mt-2 text-sm text-muted-foreground ${isRTL ? 'flex-row-reverse' : ''}`}>
                 {s?.stage && (
@@ -141,7 +146,7 @@ Find 5 best-matching challenges from the platform that align with their capabili
                   </div>
                 )}
               </div>
-              
+
               <div className="mt-3">
                 <StartupCredentialBadges startup={s} solutions={solutions} pilots={pilots} />
               </div>
@@ -157,28 +162,28 @@ Find 5 best-matching challenges from the platform that align with their capabili
             <CardTitle>{t({ en: 'About', ar: 'نبذة' })}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <BioSection 
-              bioEn={s?.description_en} 
+            <BioSection
+              bioEn={s?.description_en}
               bioAr={s?.description_ar}
               showBoth={!!(s?.description_en && s?.description_ar)}
             />
-            
+
             {/* Sectors */}
             {s?.sectors?.length > 0 && (
               <div className="pt-4 border-t">
-                <SkillsBadges 
-                  skills={s.sectors} 
+                <SkillsBadges
+                  skills={s.sectors}
                   label={{ en: 'Sectors', ar: 'القطاعات' }}
                   colorClass="bg-primary/10 text-primary"
                 />
               </div>
             )}
-            
+
             {/* Technologies */}
             {s?.technologies?.length > 0 && (
               <div className="pt-4 border-t">
-                <SkillsBadges 
-                  skills={s.technologies} 
+                <SkillsBadges
+                  skills={s.technologies}
                   label={{ en: 'Technologies', ar: 'التقنيات' }}
                   colorClass="bg-secondary text-secondary-foreground"
                 />

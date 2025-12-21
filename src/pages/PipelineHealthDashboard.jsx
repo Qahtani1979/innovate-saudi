@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 import { Activity, AlertTriangle, TrendingUp, Zap, Target, Loader2, Sparkles, Users } from 'lucide-react';
-import { usePrompt } from '@/hooks/usePrompt';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { PIPELINE_HEALTH_ANALYSIS_PROMPT_TEMPLATE } from '@/lib/ai/prompts/pipeline/health';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -14,31 +14,46 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 function PipelineHealthDashboardPage() {
   const { language, isRTL, t } = useLanguage();
   const [aiAnalysis, setAiAnalysis] = useState(null);
-  const { invoke: invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = usePrompt(null);
+  const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges-pipeline'],
-    queryFn: () => base44.entities.Challenge.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('challenges').select('*');
+      return data || [];
+    }
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots-pipeline'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('pilots').select('*');
+      return data || [];
+    }
   });
 
   const { data: solutions = [] } = useQuery({
     queryKey: ['solutions-pipeline'],
-    queryFn: () => base44.entities.Solution.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('solutions').select('*');
+      return data || [];
+    }
   });
 
   const { data: expertAssignments = [] } = useQuery({
     queryKey: ['expert-assignments-pipeline'],
-    queryFn: () => base44.entities.ExpertAssignment.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('expert_assignments').select('*');
+      return data || [];
+    }
   });
 
   const { data: expertProfiles = [] } = useQuery({
     queryKey: ['experts-pipeline'],
-    queryFn: () => base44.entities.ExpertProfile.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('expert_profiles').select('*');
+      return data || [];
+    }
   });
 
   const stages = {
@@ -52,8 +67,8 @@ function PipelineHealthDashboardPage() {
     scaled: pilots.filter(p => p.stage === 'scaled').length
   };
 
-  const conversionRate = challenges.length > 0 
-    ? Math.round((challenges.filter(c => c.linked_pilot_ids?.length > 0).length / challenges.length) * 100) 
+  const conversionRate = challenges.length > 0
+    ? Math.round((challenges.filter(c => c.linked_pilot_ids?.length > 0).length / challenges.length) * 100)
     : 0;
 
   const scalingRate = pilots.length > 0
@@ -61,7 +76,7 @@ function PipelineHealthDashboardPage() {
     : 0;
 
   const activeExperts = expertProfiles.filter(e => e.is_active).length;
-  const expertUtilization = activeExperts > 0 
+  const expertUtilization = activeExperts > 0
     ? Math.round((expertAssignments.filter(a => ['in_progress', 'accepted'].includes(a.status)).length / activeExperts) * 100)
     : 0;
   const expertCapacityIssue = expertUtilization > 80 || expertAssignments.filter(a => a.status === 'pending').length > 15;
@@ -100,7 +115,7 @@ function PipelineHealthDashboardPage() {
       system_prompt: promptConfig.system,
       response_json_schema: promptConfig.schema
     });
-    
+
     if (result.success) {
       setAiAnalysis(result.data);
     }

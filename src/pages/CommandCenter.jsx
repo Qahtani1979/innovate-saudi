@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
-import { 
-  Target, AlertTriangle, CheckCircle2, Clock, Users, 
+import {
+  Target, AlertTriangle, CheckCircle2, Clock, Users,
   TrendingUp, Activity, Zap, Shield, Sparkles, Loader2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -15,7 +15,7 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader, PersonaButton } from '@/components/layout/PersonaPageLayout';
-import { COMMAND_CENTER_PROMPT_TEMPLATE, COMMAND_CENTER_SCHEMA } from '@/lib/ai/prompts/command/strategicRecommendations';
+import { COMMAND_CENTER_PROMPT_TEMPLATE, COMMAND_CENTER_SCHEMA, COMMAND_CENTER_SYSTEM_PROMPT } from '@/lib/ai/prompts/command/strategicRecommendations';
 
 function CommandCenterPage() {
   const { language, isRTL, t } = useLanguage();
@@ -24,27 +24,42 @@ function CommandCenterPage() {
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges-command'],
-    queryFn: () => base44.entities.Challenge.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('challenges').select('*');
+      return data || [];
+    }
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots-command'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('pilots').select('*');
+      return data || [];
+    }
   });
 
   const { data: programs = [] } = useQuery({
     queryKey: ['programs-command'],
-    queryFn: () => base44.entities.Program.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('programs').select('*');
+      return data || [];
+    }
   });
 
   const { data: expertProfiles = [] } = useQuery({
     queryKey: ['experts-command'],
-    queryFn: () => base44.entities.ExpertProfile.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('expert_profiles').select('*');
+      return data || [];
+    }
   });
 
   const { data: expertAssignments = [] } = useQuery({
     queryKey: ['assignments-command'],
-    queryFn: () => base44.entities.ExpertAssignment.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('expert_assignments').select('*');
+      return data || [];
+    }
   });
 
   const criticalItems = [
@@ -58,13 +73,13 @@ function CommandCenterPage() {
   ];
 
   const activeOperations = pilots.filter(p => ['active', 'monitoring'].includes(p.stage));
-  
+
   const activeExperts = expertProfiles.filter(e => e.is_active).length;
-  const availableExperts = expertProfiles.filter(e => 
-    e.is_active && 
+  const availableExperts = expertProfiles.filter(e =>
+    e.is_active &&
     (expertAssignments.filter(a => a.expert_email === e.user_email && ['pending', 'in_progress'].includes(a.status)).length < 3)
-  ).length;
-  const expertCapacityRate = activeExperts > 0 ? Math.round((availableExperts / activeExperts) * 100) : 0;
+  );
+  const expertCapacityRate = activeExperts > 0 ? Math.round((availableExperts.length / activeExperts) * 100) : 0;
 
   const generateAIRecommendations = async () => {
     const result = await invokeAI({
@@ -74,6 +89,7 @@ function CommandCenterPage() {
         activeOperations: activeOperations.length,
         pendingApprovals: pendingApprovals.length
       }),
+      system_prompt: COMMAND_CENTER_SYSTEM_PROMPT,
       response_json_schema: COMMAND_CENTER_SCHEMA
     });
     if (result.success) {

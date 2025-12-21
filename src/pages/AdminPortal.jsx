@@ -7,8 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { 
-  Shield, Users, Settings, Database, Activity, FileText, AlertCircle, 
+import {
+  Shield, Users, Settings, Database, Activity, FileText, AlertCircle,
   CheckCircle2, BarChart3, Zap, Award, Target, Bell,
   Lightbulb, TestTube, Calendar, MapPin
 } from 'lucide-react';
@@ -62,36 +62,52 @@ function AdminPortal() {
 
   const { data: rdProjects = [] } = useQuery({
     queryKey: ['all-rd-admin'],
-    queryFn: () => base44.entities.RDProject.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('rd_projects').select('*').eq('is_deleted', false);
+      return data || [];
+    }
   });
 
   const { data: municipalities = [] } = useQuery({
     queryKey: ['all-municipalities-admin'],
-    queryFn: () => base44.entities.Municipality.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('municipalities').select('*').eq('is_active', true);
+      return data || [];
+    }
   });
 
   const { data: citizenIdeas = [] } = useQuery({
     queryKey: ['all-citizen-ideas-admin'],
-    queryFn: () => base44.entities.CitizenIdea.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('citizen_ideas').select('*');
+      return data || [];
+    }
   });
 
   const { data: expertProfiles = [] } = useQuery({
     queryKey: ['all-experts-admin'],
-    queryFn: () => base44.entities.ExpertProfile.list()
+    queryFn: async () => {
+      // Assuming users table has a role or metadata for experts, or a separate table
+      // For now, attempting to fetch from user_roles where role is expert
+      const { data } = await supabase.from('user_roles')
+        .select('user_id, roles(name)')
+        .eq('roles.name', 'expert');
+      return data || [];
+    }
   });
 
   const { data: pendingApprovals = [] } = useQuery({
     queryKey: ['pending-approvals-admin'],
     queryFn: async () => {
       const [challengeApprovals, pilotApprovals, programApps] = await Promise.all([
-        base44.entities.Challenge.filter({ status: 'submitted' }),
-        base44.entities.PilotApproval.filter({ status: 'pending' }),
-        base44.entities.ProgramApplication.filter({ status: 'submitted' })
+        supabase.from('challenges').select('*').eq('status', 'submitted'),
+        supabase.from('pilots').select('*').eq('stage', 'pending_approval'), // Adjusted stage logic
+        supabase.from('program_applications').select('*').eq('status', 'submitted')
       ]);
       return {
-        challenges: challengeApprovals,
-        pilots: pilotApprovals,
-        programs: programApps
+        challenges: challengeApprovals.data || [],
+        pilots: pilotApprovals.data || [],
+        programs: programApps.data || []
       };
     }
   });
@@ -99,8 +115,8 @@ function AdminPortal() {
   const { data: recentActivities = [] } = useQuery({
     queryKey: ['system-activity-admin'],
     queryFn: async () => {
-      const all = await base44.entities.SystemActivity.list('-created_date', 20);
-      return all;
+      const { data } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(20);
+      return data || [];
     }
   });
 

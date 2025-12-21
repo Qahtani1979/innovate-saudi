@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -55,14 +55,21 @@ function ExpertRegistry() {
 
   const { data: experts = [], isLoading } = useQuery({
     queryKey: ['expert-profiles'],
-    queryFn: () => base44.entities.ExpertProfile.list('-created_date', 500),
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('expert_profiles')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(500);
+      return data || [];
+    },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   const filteredExperts = experts.filter(expert => {
     const matchesSearch = expert.bio_en?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         expert.bio_ar?.includes(searchTerm) ||
-                         expert.expertise_areas?.some(e => e.toLowerCase().includes(searchTerm.toLowerCase()));
+      expert.bio_ar?.includes(searchTerm) ||
+      expert.expertise_areas?.some(e => e.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesSector = sectorFilter === 'all' || expert.sector_specializations?.includes(sectorFilter);
     return matchesSearch && matchesSector && expert.is_active && !expert.is_deleted;
   });
@@ -73,7 +80,7 @@ function ExpertRegistry() {
 
   const totalExperts = experts.filter(e => e.is_active && !e.is_deleted).length;
   const verifiedExperts = experts.filter(e => e.is_verified && e.is_active).length;
-  const avgRating = experts.length > 0 
+  const avgRating = experts.length > 0
     ? (experts.reduce((sum, e) => sum + (e.expert_rating || 0), 0) / experts.length).toFixed(1)
     : 0;
 
@@ -309,4 +316,4 @@ function ExpertRegistry() {
   );
 }
 
-export default ProtectedPage(ExpertRegistry, { requiredPermissions: []});
+export default ProtectedPage(ExpertRegistry, { requiredPermissions: [] });

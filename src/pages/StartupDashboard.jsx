@@ -14,8 +14,8 @@ import ProfileCompletenessCoach from '../components/onboarding/ProfileCompletene
 import ProgressiveProfilingPrompt from '../components/onboarding/ProgressiveProfilingPrompt';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { 
-  Lightbulb, Target, Rocket, Calendar, Plus, 
+import {
+  Lightbulb, Target, Rocket, Calendar, Plus,
   Users, CheckCircle2, Sparkles, TestTube, FileText,
   Clock
 } from 'lucide-react';
@@ -31,8 +31,8 @@ function StartupDashboard() {
     queryKey: ['my-organization', user?.email],
     queryFn: async () => {
       const { data } = await supabase.from('organizations').select('*');
-      return data?.find(o => 
-        o.contact_email === user?.email || 
+      return data?.find(o =>
+        o.contact_email === user?.email ||
         o.primary_contact_name === user?.full_name
       );
     },
@@ -54,10 +54,16 @@ function StartupDashboard() {
   const { data: myMatchmakerApp } = useQuery({
     queryKey: ['my-matchmaker-app', user?.email],
     queryFn: async () => {
-      const apps = await base44.entities.MatchmakerApplication.list();
-      return apps.find(a => a.contact_email === user?.email);
+      const { data, error } = await supabase
+        .from('matchmaker_applications')
+        .select('*')
+        .eq('contact_email', user?.email)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
     },
-    enabled: !!user
+    enabled: !!user?.email
   });
 
   // Matched challenges from matchmaker
@@ -65,31 +71,52 @@ function StartupDashboard() {
     queryKey: ['my-matched-challenges', myMatchmakerApp?.id],
     queryFn: async () => {
       if (!myMatchmakerApp?.matched_challenges?.length) return [];
-      const challenges = await base44.entities.Challenge.list();
-      return challenges.filter(c => 
-        myMatchmakerApp.matched_challenges.includes(c.id) && c.is_published
-      );
+
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('*')
+        .in('id', myMatchmakerApp.matched_challenges)
+        .eq('is_published', true);
+
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!myMatchmakerApp
+    enabled: !!myMatchmakerApp?.matched_challenges?.length
   });
 
   // My solutions
   const { data: mySolutions = [] } = useQuery({
-    queryKey: ['my-solutions', myOrganization?.id],
+    queryKey: ['my-solutions', myOrganization?.id, user?.email],
     queryFn: async () => {
-      const all = await base44.entities.Solution.list();
-      return all.filter(s => s.provider_id === myOrganization?.id || s.created_by === user?.email);
+      let query = supabase.from('solutions').select('*');
+
+      if (myOrganization?.id) {
+        query = query.eq('provider_id', myOrganization.id);
+      } else {
+        query = query.eq('created_by', user?.email);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!myOrganization || !!user
   });
 
   // My pilots (where my solution is used)
   const { data: myPilots = [] } = useQuery({
-    queryKey: ['my-pilots-startup', myOrganization?.id],
+    queryKey: ['my-pilots-startup', myOrganization?.id, mySolutions.length],
     queryFn: async () => {
+      if (mySolutions.length === 0) return [];
       const solutionIds = mySolutions.map(s => s.id);
-      const pilots = await base44.entities.Pilot.list();
-      return pilots.filter(p => solutionIds.includes(p.solution_id));
+
+      const { data, error } = await supabase
+        .from('pilots')
+        .select('*')
+        .in('solution_id', solutionIds);
+
+      if (error) throw error;
+      return data || [];
     },
     enabled: mySolutions.length > 0
   });
@@ -98,22 +125,30 @@ function StartupDashboard() {
   const { data: myProposals = [] } = useQuery({
     queryKey: ['my-proposals-startup', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.ChallengeProposal.list();
-      return all.filter(p => p.proposer_email === user?.email || p.created_by === user?.email);
+      const { data, error } = await supabase
+        .from('challenge_proposals')
+        .select('*')
+        .or(`proposer_email.eq.${user?.email},created_by.eq.${user?.email}`);
+
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!user
+    enabled: !!user?.email
   });
 
   // Programs I can apply to
   const { data: openPrograms = [] } = useQuery({
     queryKey: ['open-programs-startup'],
     queryFn: async () => {
-      const all = await base44.entities.Program.list();
-      return all.filter(p => 
-        p.status === 'applications_open' && 
-        p.is_published &&
-        ['accelerator', 'incubator', 'matchmaker'].includes(p.program_type)
-      );
+      const { data, error } = await supabase
+        .from('programs')
+        .select('*')
+        .eq('status', 'applications_open')
+        .eq('is_published', true)
+        .in('program_type', ['accelerator', 'incubator', 'matchmaker']);
+
+      if (error) throw error;
+      return data || [];
     }
   });
 
@@ -121,10 +156,15 @@ function StartupDashboard() {
   const { data: myProgramApps = [] } = useQuery({
     queryKey: ['my-program-apps', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.ProgramApplication.list();
-      return all.filter(a => a.applicant_email === user?.email || a.created_by === user?.email);
+      const { data, error } = await supabase
+        .from('program_applications')
+        .select('*')
+        .or(`applicant_email.eq.${user?.email},created_by.eq.${user?.email}`);
+
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!user
+    enabled: !!user?.email
   });
 
   return (
@@ -274,8 +314,8 @@ function StartupDashboard() {
                       <div className="flex items-center gap-2 mb-3">
                         <Badge className={
                           solution.verification_status === 'approved' ? 'bg-green-100 text-green-700 text-xs' :
-                          solution.verification_status === 'in_progress' ? 'bg-blue-100 text-blue-700 text-xs' :
-                          'bg-yellow-100 text-yellow-700 text-xs'
+                            solution.verification_status === 'in_progress' ? 'bg-blue-100 text-blue-700 text-xs' :
+                              'bg-yellow-100 text-yellow-700 text-xs'
                         }>{solution.verification_status?.replace(/_/g, ' ')}</Badge>
                         {solution.is_verified && (
                           <Badge className="bg-green-600 text-white text-xs">
@@ -458,9 +498,9 @@ function StartupDashboard() {
                       <Badge variant="outline" className="text-xs font-mono">{pilot.code}</Badge>
                       <Badge className={
                         pilot.stage === 'active' ? 'bg-green-100 text-green-700 text-xs' :
-                        pilot.stage === 'monitoring' ? 'bg-blue-100 text-blue-700 text-xs' :
-                        pilot.stage === 'completed' ? 'bg-teal-100 text-teal-700 text-xs' :
-                        'bg-slate-100 text-slate-700 text-xs'
+                          pilot.stage === 'monitoring' ? 'bg-blue-100 text-blue-700 text-xs' :
+                            pilot.stage === 'completed' ? 'bg-teal-100 text-teal-700 text-xs' :
+                              'bg-slate-100 text-slate-700 text-xs'
                       }>{pilot.stage}</Badge>
                     </div>
                     <p className="text-sm font-medium text-slate-900 truncate mb-1">
@@ -505,9 +545,9 @@ function StartupDashboard() {
                   <div className="flex items-center justify-between mb-2">
                     <Badge className={
                       proposal.status === 'approved' ? 'bg-green-100 text-green-700' :
-                      proposal.status === 'under_review' ? 'bg-yellow-100 text-yellow-700' :
-                      proposal.status === 'shortlisted' ? 'bg-purple-100 text-purple-700' :
-                      'bg-blue-100 text-blue-700'
+                        proposal.status === 'under_review' ? 'bg-yellow-100 text-yellow-700' :
+                          proposal.status === 'shortlisted' ? 'bg-purple-100 text-purple-700' :
+                            'bg-blue-100 text-blue-700'
                     }>{proposal.status?.replace(/_/g, ' ')}</Badge>
                     <span className="text-xs text-slate-500">
                       {new Date(proposal.created_date).toLocaleDateString()}
