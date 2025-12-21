@@ -6,8 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 import { useActivePlan } from '@/contexts/StrategicPlanContext';
-import { 
-  Target, AlertTriangle, CheckCircle2, 
+import {
+  Target, AlertTriangle, CheckCircle2,
   Sparkles, Loader2, X, ArrowRight, Clock,
   ExternalLink, ChevronRight, BarChart3, DollarSign, Layers, Eye, FileText
 } from 'lucide-react';
@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import ResourceAllocationView from '../components/strategy/ResourceAllocationView';
-import PartnershipNetwork from '../components/strategy/PartnershipNetwork';
+import PartnershipNetwork from '../components/partnerships/PartnershipNetwork';
 import BottleneckDetector from '../components/strategy/BottleneckDetector';
 import StrategicCoverageWidget from '../components/strategy/StrategicCoverageWidget';
 import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
@@ -28,7 +28,7 @@ function StrategyCockpitPage() {
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
   const { invokeAI, isLoading: aiLoading } = useAIWithFallback();
-  
+
   // Use activePlanId from context, default to 'all' for filtering
   const selectedPlanId = activePlanId || 'all';
 
@@ -106,10 +106,10 @@ function StrategyCockpitPage() {
   });
 
   // Filter data by selected strategic plan
-  const filteredChallenges = selectedPlanId === 'all' 
-    ? challenges 
+  const filteredChallenges = selectedPlanId === 'all'
+    ? challenges
     : challenges.filter(c => c.strategic_plan_ids?.includes(selectedPlanId));
-  
+
   const filteredPilots = selectedPlanId === 'all'
     ? pilots
     : pilots.filter(p => p.strategic_plan_ids?.includes(selectedPlanId));
@@ -220,7 +220,7 @@ Provide insights in format:
   return (
     <div className="space-y-6 container mx-auto py-6 px-4" dir={isRTL ? 'rtl' : 'ltr'}>
       <ActivePlanBanner />
-      
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -353,42 +353,42 @@ Provide insights in format:
 
       {/* Full Innovation Pipeline with drill-downs */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-        <PipelineCard 
+        <PipelineCard
           label={{ en: 'Discover', ar: 'اكتشاف' }}
           count={filteredChallenges.filter(c => c.status === 'draft' || c.status === 'submitted').length}
           bgColor="bg-gradient-to-br from-slate-50 to-white"
           textColor="text-slate-600"
           link="/Challenges?status=draft"
         />
-        <PipelineCard 
+        <PipelineCard
           label={{ en: 'Validate', ar: 'تحقق' }}
           count={filteredChallenges.filter(c => c.status === 'under_review').length}
           bgColor="bg-gradient-to-br from-blue-50 to-white"
           textColor="text-blue-600"
           link="/Challenges?status=under_review"
         />
-        <PipelineCard 
+        <PipelineCard
           label={{ en: 'Experiment', ar: 'تجربة' }}
           count={rdProjects.filter(r => r.status === 'active').length}
           bgColor="bg-gradient-to-br from-purple-50 to-white"
           textColor="text-purple-600"
           link="/rd-projects?status=active"
         />
-        <PipelineCard 
+        <PipelineCard
           label={{ en: 'Pilot', ar: 'تجريب' }}
           count={filteredPilots.filter(p => p.stage === 'active' || p.stage === 'monitoring').length}
           bgColor="bg-gradient-to-br from-green-50 to-white"
           textColor="text-green-600"
           link="/Pilots?stage=active"
         />
-        <PipelineCard 
+        <PipelineCard
           label={{ en: 'Scale', ar: 'توسع' }}
           count={filteredPilots.filter(p => p.stage === 'scaled').length}
           bgColor="bg-gradient-to-br from-orange-50 to-white"
           textColor="text-orange-600"
           link="/Pilots?stage=scaled"
         />
-        <PipelineCard 
+        <PipelineCard
           label={{ en: 'Institutionalize', ar: 'مأسسة' }}
           count={solutions.filter(s => s.maturity_level === 'proven').length}
           bgColor="bg-gradient-to-br from-teal-50 to-white"
@@ -399,7 +399,7 @@ Provide insights in format:
 
       {/* Key Portfolio Metrics with drill-downs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <MetricCard 
+        <MetricCard
           title={{ en: 'Total Challenges', ar: 'إجمالي التحديات' }}
           value={filteredChallenges.length}
           icon={Target}
@@ -407,7 +407,7 @@ Provide insights in format:
           bgColor="bg-gradient-to-br from-blue-50 to-white"
           link="/Challenges"
         />
-        <MetricCard 
+        <MetricCard
           title={{ en: 'Active Pilots', ar: 'التجارب النشطة' }}
           value={filteredPilots.filter(p => p.stage === 'active' || p.stage === 'monitoring').length}
           icon={CheckCircle2}
@@ -415,7 +415,7 @@ Provide insights in format:
           bgColor="bg-gradient-to-br from-green-50 to-white"
           link="/Pilots?stage=active"
         />
-        <MetricCard 
+        <MetricCard
           title={{ en: 'At Risk', ar: 'في خطر' }}
           value={filteredPilots.filter(p => p.risk_level === 'high' || p.risk_level === 'critical').length}
           icon={AlertTriangle}
@@ -424,7 +424,7 @@ Provide insights in format:
           link="/Pilots?risk=high"
           subtext={t({ en: 'Requires attention', ar: 'يتطلب الاهتمام' })}
         />
-        <MetricCard 
+        <MetricCard
           title={{ en: 'Active Programs', ar: 'البرامج النشطة' }}
           value={filteredPrograms.filter(p => p.status === 'active').length}
           icon={Layers}

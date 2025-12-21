@@ -160,7 +160,7 @@ function OrganizationsCoverageReport() {
     components: [
       { name: 'organizations/OrganizationActivityDashboard', coverage: 55, status: 'exists' },
       { name: 'organizations/AINetworkAnalysis', coverage: 45, status: 'exists' },
-      { name: 'organizations/PartnershipWorkflow', coverage: 50, status: 'exists' },
+      { name: 'partnerships/PartnershipWorkflow', coverage: 50, status: 'exists' },
       { name: 'organizations/OrganizationPerformanceMetrics', coverage: 60, status: 'exists' },
       { name: 'organizations/OrganizationNetworkGraph', coverage: 40, status: 'exists' },
       { name: 'organizations/OrganizationCollaborationManager', coverage: 35, status: 'exists' },
@@ -171,7 +171,7 @@ function OrganizationsCoverageReport() {
       { name: 'partnerships/PartnershipSynergyDetector', coverage: 30, status: 'exists' },
       { name: 'partnerships/PartnershipEngagementTracker', coverage: 40, status: 'exists' },
       { name: 'partnerships/PartnershipPlaybookLibrary', coverage: 35, status: 'exists' },
-      { name: 'collaboration/PartnershipProposalWizard', coverage: 45, status: 'exists' },
+      { name: 'partnerships/PartnershipProposalWizard', coverage: 45, status: 'exists' },
       { name: 'collaboration/StakeholderMapper', coverage: 40, status: 'exists' },
       { name: 'profiles/ExpertFinder', coverage: 50, status: 'exists' },
       { name: 'profiles/CredentialVerificationAI', coverage: 40, status: 'exists' }
@@ -1263,26 +1263,24 @@ function OrganizationsCoverageReport() {
                   <h4 className="font-semibold text-slate-900 text-lg">{journey.persona}</h4>
                   <Badge className={
                     journey.coverage >= 90 ? 'bg-green-100 text-green-700' :
-                    journey.coverage >= 70 ? 'bg-yellow-100 text-yellow-700' :
-                    journey.coverage >= 50 ? 'bg-orange-100 text-orange-700' :
-                    'bg-red-100 text-red-700'
+                      journey.coverage >= 70 ? 'bg-yellow-100 text-yellow-700' :
+                        journey.coverage >= 50 ? 'bg-orange-100 text-orange-700' :
+                          'bg-red-100 text-red-700'
                   }>{journey.coverage}% Complete</Badge>
                 </div>
                 <div className="space-y-2">
                   {journey.journey.map((step, i) => (
                     <div key={i} className="flex items-start gap-3">
                       <div className="flex flex-col items-center">
-                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                          step.status === 'complete' ? 'bg-green-100 text-green-700' :
-                          step.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
+                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${step.status === 'complete' ? 'bg-green-100 text-green-700' :
+                            step.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-red-100 text-red-700'
+                          }`}>
                           {i + 1}
                         </div>
                         {i < journey.journey.length - 1 && (
-                          <div className={`w-0.5 h-8 ${
-                            step.status === 'complete' ? 'bg-green-300' : 'bg-slate-200'
-                          }`} />
+                          <div className={`w-0.5 h-8 ${step.status === 'complete' ? 'bg-green-300' : 'bg-slate-200'
+                            }`} />
                         )}
                       </div>
                       <div className="flex-1 pt-1">
@@ -1348,22 +1346,20 @@ function OrganizationsCoverageReport() {
             </div>
             <div className="space-y-4">
               {coverageData.aiFeatures.map((ai, idx) => (
-                <div key={idx} className={`p-4 border rounded-lg ${
-                  ai.status === 'implemented' ? 'bg-gradient-to-r from-purple-50 to-pink-50' :
-                  ai.status === 'partial' ? 'bg-yellow-50' : 'bg-red-50'
-                }`}>
+                <div key={idx} className={`p-4 border rounded-lg ${ai.status === 'implemented' ? 'bg-gradient-to-r from-purple-50 to-pink-50' :
+                    ai.status === 'partial' ? 'bg-yellow-50' : 'bg-red-50'
+                  }`}>
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Sparkles className={`h-5 w-5 ${
-                        ai.status === 'implemented' ? 'text-purple-600' :
-                        ai.status === 'partial' ? 'text-yellow-600' : 'text-red-600'
-                      }`} />
+                      <Sparkles className={`h-5 w-5 ${ai.status === 'implemented' ? 'text-purple-600' :
+                          ai.status === 'partial' ? 'text-yellow-600' : 'text-red-600'
+                        }`} />
                       <h4 className="font-semibold text-slate-900">{ai.name}</h4>
                     </div>
                     <Badge className={
                       ai.status === 'implemented' ? 'bg-green-100 text-green-700' :
-                      ai.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-red-100 text-red-700'
+                        ai.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
                     }>{ai.coverage}%</Badge>
                   </div>
                   <p className="text-sm text-slate-600 mb-2">{ai.description}</p>
@@ -1418,15 +1414,15 @@ function OrganizationsCoverageReport() {
               <p className="font-bold text-red-900 mb-2">🚨 CRITICAL: Isolated Nodes Without Intelligence</p>
               <p className="text-sm text-red-800">
                 Organizations have <strong>GOOD REGISTRATION</strong> (85%): comprehensive profiles, multiple types.
-                <br/><br/>
+                <br /><br />
                 But <strong>WEAK ECOSYSTEM INTELLIGENCE</strong> (30%): no network analysis, no reputation, no performance tracking, no proactive collaboration.
-                <br/><br/>
+                <br /><br />
                 Organizations exist as <strong>ISOLATED NODES</strong> - platform does not:
-                <br/>• Analyze their network position
-                <br/>• Suggest partnerships
-                <br/>• Measure their ecosystem contribution
-                <br/>• Recommend collaboration opportunities
-                <br/><br/>
+                <br />• Analyze their network position
+                <br />• Suggest partnerships
+                <br />• Measure their ecosystem contribution
+                <br />• Recommend collaboration opportunities
+                <br /><br />
                 17 AI components exist for network intelligence but ZERO INTEGRATED.
               </p>
             </div>
@@ -1435,17 +1431,16 @@ function OrganizationsCoverageReport() {
               <p className="font-semibold text-green-900 mb-3">← INPUT Paths (Good - 80%)</p>
               <div className="space-y-3">
                 {coverageData.conversionPaths.incoming.map((path, i) => (
-                  <div key={i} className={`p-3 border-2 rounded-lg ${
-                    path.coverage >= 80 ? 'border-green-300 bg-green-50' :
-                    path.coverage >= 50 ? 'border-yellow-300 bg-yellow-50' :
-                    'border-red-300 bg-red-50'
-                  }`}>
+                  <div key={i} className={`p-3 border-2 rounded-lg ${path.coverage >= 80 ? 'border-green-300 bg-green-50' :
+                      path.coverage >= 50 ? 'border-yellow-300 bg-yellow-50' :
+                        'border-red-300 bg-red-50'
+                    }`}>
                     <div className="flex items-center justify-between mb-2">
                       <p className="font-bold">{path.path}</p>
                       <Badge className={
                         path.coverage >= 80 ? 'bg-green-600 text-white' :
-                        path.coverage >= 50 ? 'bg-yellow-600 text-white' :
-                        'bg-red-600 text-white'
+                          path.coverage >= 50 ? 'bg-yellow-600 text-white' :
+                            'bg-red-600 text-white'
                       }>{path.coverage}%</Badge>
                     </div>
                     <p className="text-sm text-slate-700 mb-1">{path.description}</p>
@@ -1466,17 +1461,16 @@ function OrganizationsCoverageReport() {
               <p className="font-semibold text-red-900 mb-3">→ OUTPUT Paths (ECOSYSTEM WEAK - 30%)</p>
               <div className="space-y-3">
                 {coverageData.conversionPaths.outgoing.map((path, i) => (
-                  <div key={i} className={`p-3 border-2 rounded-lg ${
-                    path.coverage >= 80 ? 'border-green-300 bg-green-50' :
-                    path.coverage >= 50 ? 'border-yellow-300 bg-yellow-50' :
-                    'border-red-300 bg-red-50'
-                  }`}>
+                  <div key={i} className={`p-3 border-2 rounded-lg ${path.coverage >= 80 ? 'border-green-300 bg-green-50' :
+                      path.coverage >= 50 ? 'border-yellow-300 bg-yellow-50' :
+                        'border-red-300 bg-red-50'
+                    }`}>
                     <div className="flex items-center justify-between mb-2">
                       <p className="font-bold">{path.path}</p>
                       <Badge className={
                         path.coverage >= 80 ? 'bg-green-600 text-white' :
-                        path.coverage >= 50 ? 'bg-yellow-600 text-white' :
-                        'bg-red-600 text-white'
+                          path.coverage >= 50 ? 'bg-yellow-600 text-white' :
+                            'bg-red-600 text-white'
                       }>{path.coverage}%</Badge>
                     </div>
                     <p className="text-sm text-slate-700 mb-1">{path.description}</p>
@@ -1934,19 +1928,18 @@ function OrganizationsCoverageReport() {
         <CardContent>
           <div className="space-y-3">
             {coverageData.recommendations.map((rec, idx) => (
-              <div key={idx} className={`p-4 border-2 rounded-lg ${
-                rec.priority === 'P0' ? 'border-red-300 bg-red-50' :
-                rec.priority === 'P1' ? 'border-orange-300 bg-orange-50' :
-                rec.priority === 'P2' ? 'border-yellow-300 bg-yellow-50' :
-                'border-blue-300 bg-blue-50'
-              }`}>
+              <div key={idx} className={`p-4 border-2 rounded-lg ${rec.priority === 'P0' ? 'border-red-300 bg-red-50' :
+                  rec.priority === 'P1' ? 'border-orange-300 bg-orange-50' :
+                    rec.priority === 'P2' ? 'border-yellow-300 bg-yellow-50' :
+                      'border-blue-300 bg-blue-50'
+                }`}>
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Badge className={
                       rec.priority === 'P0' ? 'bg-red-600 text-white' :
-                      rec.priority === 'P1' ? 'bg-orange-600 text-white' :
-                      rec.priority === 'P2' ? 'bg-yellow-600 text-white' :
-                      'bg-blue-600 text-white'
+                        rec.priority === 'P1' ? 'bg-orange-600 text-white' :
+                          rec.priority === 'P2' ? 'bg-yellow-600 text-white' :
+                            'bg-blue-600 text-white'
                     }>
                       {rec.priority}
                     </Badge>
@@ -2004,19 +1997,19 @@ function OrganizationsCoverageReport() {
             <p className="text-sm font-semibold text-green-900 mb-2">✅ Organizations System - 100% Complete</p>
             <p className="text-sm text-green-800">
               Organizations module has {overallCoverage}% coverage with <strong>COMPLETE ECOSYSTEM FOUNDATION</strong>:
-              <br/><br/>
+              <br /><br />
               <strong>✅ REGISTRATION (100%):</strong> Comprehensive multi-type organization profiles (Ministry, Municipality, University, Company, Startup, NGO)
-              <br/>
+              <br />
               <strong>✅ VERIFICATION (100%):</strong> Multi-criteria verification system with OrganizationVerification entity + OrganizationVerificationQueue
-              <br/>
+              <br />
               <strong>✅ REPUTATION (100%):</strong> calculateOrganizationReputation function + ProviderLeaderboard + 5-factor reputation scoring
-              <br/>
+              <br />
               <strong>✅ PERFORMANCE (100%):</strong> Comprehensive performance_metrics tracking (solutions, pilots, success_rate, deployments, publications)
-              <br/>
+              <br />
               <strong>✅ PARTNERSHIPS (100%):</strong> OrganizationPartnership entity + formation workflows + collaboration tracking
-              <br/>
+              <br />
               <strong>✅ NETWORK INTELLIGENCE (100%):</strong> 17 AI components for partner discovery, expert matching, network analysis
-              <br/><br/>
+              <br /><br />
               Organizations are the <strong>FOUNDATION ENTITY</strong> connecting all stakeholders across innovation ecosystem.
             </p>
           </div>
@@ -2025,20 +2018,20 @@ function OrganizationsCoverageReport() {
             <p className="text-sm font-semibold text-blue-900 mb-2">🎯 Bottom Line - Organizations 100% Complete</p>
             <p className="text-sm text-blue-800">
               <strong>ORGANIZATION ECOSYSTEM PRODUCTION READY</strong>
-              <br/><br/>
+              <br /><br />
               <strong>✅ Completed:</strong>
-              <br/>✅ 3 entities (Organization, OrganizationPartnership, OrganizationVerification) - 100%
-              <br/>✅ 5 core pages (Organizations, OrganizationDetail, Network, VerificationQueue, Leaderboard) - 100%
-              <br/>✅ 5 workflows (Onboarding, Partnership Formation, Performance Tracking, Expert Discovery, Verification) - 100%
-              <br/>✅ 8 complete user journeys (New Org, Provider, University, Agency, NGO, Admin, Partnership Manager, Municipality) - 100%
-              <br/>✅ 10 AI features (partner discovery, network analysis, expert finder, credential verification, synergy detection, reputation scoring) - 100%
-              <br/>✅ 11 conversion paths (3 input + 8 output) - 100%
-              <br/>✅ 4 comparison tables (Organization vs Municipality/Startups/Partnerships/Solutions) - 100%
-              <br/>✅ RBAC with 8 permissions, 7 roles, 6 RLS patterns - 100%
-              <br/>✅ 9 integration points across platform - 100%
-              <br/><br/>
+              <br />✅ 3 entities (Organization, OrganizationPartnership, OrganizationVerification) - 100%
+              <br />✅ 5 core pages (Organizations, OrganizationDetail, Network, VerificationQueue, Leaderboard) - 100%
+              <br />✅ 5 workflows (Onboarding, Partnership Formation, Performance Tracking, Expert Discovery, Verification) - 100%
+              <br />✅ 8 complete user journeys (New Org, Provider, University, Agency, NGO, Admin, Partnership Manager, Municipality) - 100%
+              <br />✅ 10 AI features (partner discovery, network analysis, expert finder, credential verification, synergy detection, reputation scoring) - 100%
+              <br />✅ 11 conversion paths (3 input + 8 output) - 100%
+              <br />✅ 4 comparison tables (Organization vs Municipality/Startups/Partnerships/Solutions) - 100%
+              <br />✅ RBAC with 8 permissions, 7 roles, 6 RLS patterns - 100%
+              <br />✅ 9 integration points across platform - 100%
+              <br /><br />
               <strong>🎉 NO REMAINING CRITICAL GAPS - ORGANIZATIONS PRODUCTION READY</strong>
-              <br/>(Foundation entity for all stakeholder collaboration across platform)
+              <br />(Foundation entity for all stakeholder collaboration across platform)
             </p>
           </div>
 

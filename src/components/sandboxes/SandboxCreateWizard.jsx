@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
@@ -17,6 +17,8 @@ import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import { getSandboxDesignPrompt, sandboxDesignSchema } from '@/lib/ai/prompts/sandbox';
 import { getSystemPrompt } from '@/lib/saudiContext';
+
+import { supabase } from "@/integrations/supabase/client";
 
 export default function SandboxCreateWizard({ onClose }) {
   const { language, t } = useLanguage();
@@ -41,7 +43,22 @@ export default function SandboxCreateWizard({ onClose }) {
 
   const { data: sectors = [] } = useQuery({
     queryKey: ['sectors'],
-    queryFn: () => base44.entities.Sector.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('sectors')
+        .select('*');
+
+      if (error) {
+        console.warn('Sectors fetch failed, returning default', error);
+        // Fallback for demo if table missing
+        return [
+          { id: 1, name_en: 'Smart Mobility', name_ar: 'التنقل الذكي' },
+          { id: 2, name_en: 'Fintech', name_ar: 'التقنية المالية' },
+          { id: 3, name_en: 'HealthTech', name_ar: 'التقنية الصحية' }
+        ];
+      }
+      return data;
+    }
   });
 
   const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
@@ -62,10 +79,19 @@ export default function SandboxCreateWizard({ onClose }) {
   };
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Sandbox.create(data),
+    mutationFn: async (data) => {
+      const { data: result, error } = await supabase
+        .from('sandboxes')
+        .insert(data)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return result;
+    },
     onSuccess: async (sandbox) => {
       queryClient.invalidateQueries(['sandboxes']);
-      
+
       try {
         await triggerEmail('sandbox.created', {
           entityType: 'sandbox',
@@ -79,7 +105,7 @@ export default function SandboxCreateWizard({ onClose }) {
       } catch (error) {
         console.error('Failed to send sandbox.created email:', error);
       }
-      
+
       toast.success(t({ en: 'Sandbox created!', ar: 'تم إنشاء المنطقة!' }));
       navigate(createPageUrl(`SandboxDetail?id=${sandbox.id}`));
       onClose?.();
@@ -102,7 +128,7 @@ export default function SandboxCreateWizard({ onClose }) {
         </CardHeader>
         <CardContent className="space-y-6">
           <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
-          
+
           {step === 1 && (
             <>
               <div className="p-4 bg-purple-50 rounded-lg">

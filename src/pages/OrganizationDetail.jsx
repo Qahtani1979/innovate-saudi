@@ -23,7 +23,7 @@ import {
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import OrganizationActivityDashboard from '../components/organizations/OrganizationActivityDashboard';
-import PartnershipWorkflow from '../components/organizations/PartnershipWorkflow';
+import PartnershipWorkflow from '../components/partnerships/PartnershipWorkflow';
 import AINetworkAnalysis from '../components/organizations/AINetworkAnalysis';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowApprovalTab';
@@ -86,7 +86,7 @@ function OrganizationDetail() {
         <div className="space-y-6">
           <div className="h-48 bg-muted animate-pulse rounded-2xl" />
           <div className="grid grid-cols-4 gap-4">
-            {[1,2,3,4].map(i => (
+            {[1, 2, 3, 4].map(i => (
               <div key={i} className="h-24 bg-muted animate-pulse rounded-lg" />
             ))}
           </div>
@@ -266,8 +266,8 @@ function OrganizationDetail() {
                 entityId={orgId}
                 currentStage={
                   organization.is_verified ? 'verified' :
-                  organization.verification_date ? 'verification' :
-                  organization.partnership_status === 'pending' ? 'partnership' : 'registration'
+                    organization.verification_date ? 'verification' :
+                      organization.partnership_status === 'pending' ? 'partnership' : 'registration'
                 }
               />
             </TabsContent>
@@ -406,7 +406,7 @@ function OrganizationDetail() {
                           </div>
                           <p className="text-xs text-slate-600">{agreement.type}</p>
                           <p className="text-xs text-slate-500 mt-1">
-                            {agreement.start_date && new Date(agreement.start_date).toLocaleDateString()} 
+                            {agreement.start_date && new Date(agreement.start_date).toLocaleDateString()}
                             {agreement.end_date && ` - ${new Date(agreement.end_date).toLocaleDateString()}`}
                           </p>
                         </div>
@@ -511,7 +511,7 @@ function OrganizationDetail() {
 
             <TabsContent value="partnerships" className="space-y-6">
               <AINetworkAnalysis organization={organization} />
-              <PartnershipWorkflow organization={organization} onComplete={() => {}} />
+              <PartnershipWorkflow organization={organization} onComplete={() => { }} />
             </TabsContent>
 
             <TabsContent value="solutions">
@@ -638,10 +638,10 @@ function OrganizationDetail() {
             <div>
               <p className="text-xs text-slate-500 mb-1">{t({ en: 'Partnership', ar: 'الشراكة' })}</p>
               <Badge variant={organization.is_partner ? "default" : "outline"}>
-                {organization.partnership_status === 'active' ? t({ en: 'Active Partner', ar: 'شريك نشط' }) : 
-                 organization.partnership_status === 'pending' ? t({ en: 'Pending', ar: 'معلق' }) :
-                 organization.partnership_status === 'suspended' ? t({ en: 'Suspended', ar: 'معلق' }) :
-                 t({ en: 'Not Partner', ar: 'غير شريك' })}
+                {organization.partnership_status === 'active' ? t({ en: 'Active Partner', ar: 'شريك نشط' }) :
+                  organization.partnership_status === 'pending' ? t({ en: 'Pending', ar: 'معلق' }) :
+                    organization.partnership_status === 'suspended' ? t({ en: 'Suspended', ar: 'معلق' }) :
+                      t({ en: 'Not Partner', ar: 'غير شريك' })}
               </Badge>
             </div>
 

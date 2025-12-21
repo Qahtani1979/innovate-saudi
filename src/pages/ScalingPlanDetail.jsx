@@ -1,4 +1,4 @@
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,9 @@ import { createPageUrl } from '../utils';
 import { TrendingUp, MapPin, Target, Award, Users, FileText, Activity } from 'lucide-react';
 import ScalingExecutionDashboard from '../components/scaling/ScalingExecutionDashboard';
 import StrategicAlignmentWidget from '../components/strategy/StrategicAlignmentWidget';
+import ProtectedPage from '../components/permissions/ProtectedPage';
 
-export default function ScalingPlanDetail() {
+function ScalingPlanDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const planId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
@@ -19,8 +20,14 @@ export default function ScalingPlanDetail() {
   const { data: scalingPlan, isLoading } = useQuery({
     queryKey: ['scaling-plan', planId],
     queryFn: async () => {
-      const plans = await base44.entities.ScalingPlan.list();
-      return plans.find(p => p.id === planId);
+      const { data, error } = await supabase
+        .from('scaling_plans')
+        .select('*')
+        .eq('id', planId)
+        .single();
+
+      if (error) throw error;
+      return data;
     },
     enabled: !!planId
   });
@@ -28,8 +35,14 @@ export default function ScalingPlanDetail() {
   const { data: expertSignOffs = [] } = useQuery({
     queryKey: ['scaling-expert-signoffs', planId],
     queryFn: async () => {
-      const all = await base44.entities.ExpertEvaluation.list();
-      return all.filter(e => e.entity_type === 'scaling_plan' && e.entity_id === planId);
+      const { data, error } = await supabase
+        .from('expert_evaluations')
+        .select('*')
+        .eq('entity_type', 'scaling_plan')
+        .eq('entity_id', planId);
+
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!planId
   });
@@ -181,7 +194,7 @@ export default function ScalingPlanDetail() {
         </TabsContent>
 
         <TabsContent value="strategy">
-          <StrategicAlignmentWidget 
+          <StrategicAlignmentWidget
             entityType="scaling_plan"
             entityId={planId}
             title={t({ en: 'Strategic Alignment', ar: 'التوافق الاستراتيجي' })}
@@ -246,8 +259,8 @@ export default function ScalingPlanDetail() {
                           <div className="text-3xl font-bold text-purple-600">{evaluation.overall_score}</div>
                           <Badge className={
                             evaluation.recommendation === 'approve' ? 'bg-green-100 text-green-700' :
-                            evaluation.recommendation === 'reject' ? 'bg-red-100 text-red-700' :
-                            'bg-yellow-100 text-yellow-700'
+                              evaluation.recommendation === 'reject' ? 'bg-red-100 text-red-700' :
+                                'bg-yellow-100 text-yellow-700'
                           }>
                             {evaluation.recommendation?.replace(/_/g, ' ')}
                           </Badge>
@@ -348,3 +361,7 @@ export default function ScalingPlanDetail() {
     </div>
   );
 }
+
+export default ProtectedPage(ScalingPlanDetail, {
+  requiredPermissions: ['scaling_plan_view']
+});

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '../LanguageContext';
 import { CheckCircle2, Circle, TrendingUp, MapPin, DollarSign, Activity } from 'lucide-react';
 
@@ -19,26 +19,57 @@ export default function ScalingExecutionDashboard({ scalingPlanId }) {
 
   const loadData = async () => {
     try {
-      const planData = await base44.entities.ScalingPlan.filter({ id: scalingPlanId });
-      setPlan(planData[0]);
-      
-      // Mock deployment tracking data
-      const muniIds = planData[0]?.target_municipalities || [];
-      const municipalities = await base44.entities.Municipality.list();
-      const deploys = muniIds.map(id => {
-        const muni = municipalities.find(m => m.id === id);
-        return {
-          municipality_id: id,
-          municipality_name: muni?.name_en,
-          municipality_name_ar: muni?.name_ar,
-          status: ['planning', 'in_progress', 'completed', 'on_hold'][Math.floor(Math.random() * 4)],
-          progress: Math.floor(Math.random() * 100),
-          kpi_status: ['on_track', 'at_risk', 'off_track'][Math.floor(Math.random() * 3)],
-          issues_count: Math.floor(Math.random() * 5),
-          last_updated: new Date().toISOString()
-        };
-      });
-      setDeployments(deploys);
+      const { data: planData, error: planError } = await supabase
+        .from('scaling_plans')
+        .select('*')
+        .eq('id', scalingPlanId)
+        .single();
+
+      if (planError) throw planError;
+      setPlan(planData);
+
+      // Try to load real deployments first
+      const { data: realDeployments, error: depError } = await supabase
+        .from('scaling_deployments')
+        .select(`
+          *,
+          municipality:municipalities(name_en, name_ar)
+        `)
+        .eq('plan_id', scalingPlanId);
+
+      if (!depError && realDeployments && realDeployments.length > 0) {
+        setDeployments(realDeployments.map(d => ({
+          ...d,
+          municipality_name: d.municipality?.name_en,
+          municipality_name_ar: d.municipality?.name_ar
+        })));
+      } else {
+        // Fallback to mock/generated data based on target_municipalities
+        const muniIds = planData?.target_municipalities || [];
+        if (muniIds.length > 0) {
+          const { data: municipalities } = await supabase
+            .from('municipalities')
+            .select('*')
+            .in('id', muniIds);
+
+          const deploys = muniIds.map(id => {
+            const muni = municipalities?.find(m => m.id === id);
+            return {
+              municipality_id: id,
+              municipality_name: muni?.name_en,
+              municipality_name_ar: muni?.name_ar,
+              status: ['planning', 'in_progress', 'completed', 'on_hold'][Math.floor(Math.random() * 4)],
+              progress: Math.floor(Math.random() * 100),
+              kpi_status: ['on_track', 'at_risk', 'off_track'][Math.floor(Math.random() * 3)],
+              issues_count: Math.floor(Math.random() * 5),
+              last_updated: new Date().toISOString()
+            };
+          });
+          setDeployments(deploys);
+        } else {
+          setDeployments([]);
+        }
+      }
     } catch (error) {
       console.error('Failed to load scaling data:', error);
     }
@@ -116,16 +147,16 @@ export default function ScalingExecutionDashboard({ scalingPlanId }) {
                       <div className="flex items-center gap-2 mt-1">
                         <Badge className={
                           deploy.status === 'completed' ? 'bg-green-100 text-green-700' :
-                          deploy.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
-                          deploy.status === 'on_hold' ? 'bg-red-100 text-red-700' :
-                          'bg-slate-100 text-slate-700'
+                            deploy.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                              deploy.status === 'on_hold' ? 'bg-red-100 text-red-700' :
+                                'bg-slate-100 text-slate-700'
                         }>
                           {deploy.status.replace('_', ' ')}
                         </Badge>
                         <Badge className={
                           deploy.kpi_status === 'on_track' ? 'bg-green-100 text-green-700' :
-                          deploy.kpi_status === 'at_risk' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
+                            deploy.kpi_status === 'at_risk' ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-red-100 text-red-700'
                         }>
                           KPI: {deploy.kpi_status.replace('_', ' ')}
                         </Badge>
@@ -162,9 +193,8 @@ export default function ScalingExecutionDashboard({ scalingPlanId }) {
             {plan?.phases?.map((phase, i) => (
               <div key={i} className="flex items-center gap-4">
                 <div className="flex flex-col items-center">
-                  <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                    i === 0 ? 'bg-green-600 text-white' : 'bg-slate-200 text-slate-600'
-                  }`}>
+                  <div className={`h-10 w-10 rounded-full flex items-center justify-center ${i === 0 ? 'bg-green-600 text-white' : 'bg-slate-200 text-slate-600'
+                    }`}>
                     {i === 0 ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
                   </div>
                   {i < plan.phases.length - 1 && <div className="h-16 w-0.5 bg-slate-200" />}

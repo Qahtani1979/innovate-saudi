@@ -1,9 +1,11 @@
-import { base44 } from '@/api/base44Client';
+
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../LanguageContext';
 import { BarChart3, TrendingUp, Clock, AlertCircle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+import { supabase } from "@/integrations/supabase/client";
 
 export default function SandboxPerformanceAnalytics({ sandboxId }) {
   const { language, t } = useLanguage();
@@ -11,16 +13,32 @@ export default function SandboxPerformanceAnalytics({ sandboxId }) {
   const { data: applications = [] } = useQuery({
     queryKey: ['sandbox-apps', sandboxId],
     queryFn: async () => {
-      const all = await base44.entities.SandboxApplication.list();
-      return all.filter(a => a.sandbox_id === sandboxId);
+      const { data, error } = await supabase
+        .from('sandbox_applications')
+        .select('*')
+        .eq('sandbox_id', sandboxId);
+
+      if (error) {
+        console.warn('Apps fetch failed', error);
+        return [];
+      }
+      return data;
     }
   });
 
   const { data: incidents = [] } = useQuery({
     queryKey: ['sandbox-incidents', sandboxId],
     queryFn: async () => {
-      const all = await base44.entities.SandboxIncident.list();
-      return all.filter(i => i.sandbox_id === sandboxId);
+      const { data, error } = await supabase
+        .from('sandbox_incidents')
+        .select('*')
+        .eq('sandbox_id', sandboxId);
+
+      if (error) {
+        console.warn('Incidents fetch failed', error);
+        return [];
+      }
+      return data;
     }
   });
 
@@ -30,9 +48,9 @@ export default function SandboxPerformanceAnalytics({ sandboxId }) {
 
   const avgApprovalTime = applications.filter(a => a.approval_date).length > 0
     ? applications.filter(a => a.approval_date).reduce((sum, a) => {
-        const days = Math.floor((new Date(a.approval_date) - new Date(a.created_date)) / (1000 * 60 * 60 * 24));
-        return sum + days;
-      }, 0) / applications.filter(a => a.approval_date).length
+      const days = Math.floor((new Date(a.approval_date) - new Date(a.created_date)) / (1000 * 60 * 60 * 24));
+      return sum + days;
+    }, 0) / applications.filter(a => a.approval_date).length
     : 0;
 
   const utilization = applications.filter(a => a.status === 'active').length;
@@ -102,20 +120,19 @@ export default function SandboxPerformanceAnalytics({ sandboxId }) {
         </Card>
       )}
 
-      <div className={`p-4 rounded-lg border-2 ${
-        successRate >= 80 ? 'bg-green-50 border-green-300' :
+      <div className={`p-4 rounded-lg border-2 ${successRate >= 80 ? 'bg-green-50 border-green-300' :
         successRate >= 60 ? 'bg-yellow-50 border-yellow-300' :
-        'bg-red-50 border-red-300'
-      }`}>
+          'bg-red-50 border-red-300'
+        }`}>
         <h4 className="font-semibold text-slate-900 mb-2">
           {t({ en: 'AI Performance Analysis', ar: 'تحليل الأداء الذكي' })}
         </h4>
         <p className="text-sm text-slate-700">
-          {successRate >= 80 
+          {successRate >= 80
             ? t({ en: 'Sandbox performing excellently. Continue current practices and consider capacity expansion.', ar: 'منطقة التجريب تؤدي بامتياز. واصل الممارسات الحالية وضع في الاعتبار توسيع القدرة.' })
             : successRate >= 60
-            ? t({ en: 'Moderate performance. Review failed projects to identify improvement areas.', ar: 'أداء متوسط. راجع المشاريع الفاشلة لتحديد مجالات التحسين.' })
-            : t({ en: 'Underperforming sandbox. Recommend process review and additional regulatory support.', ar: 'منطقة تجريب ضعيفة الأداء. نوصي بمراجعة العملية ودعم تنظيمي إضافي.' })
+              ? t({ en: 'Moderate performance. Review failed projects to identify improvement areas.', ar: 'أداء متوسط. راجع المشاريع الفاشلة لتحديد مجالات التحسين.' })
+              : t({ en: 'Underperforming sandbox. Recommend process review and additional regulatory support.', ar: 'منطقة تجريب ضعيفة الأداء. نوصي بمراجعة العملية ودعم تنظيمي إضافي.' })
           }
         </p>
       </div>

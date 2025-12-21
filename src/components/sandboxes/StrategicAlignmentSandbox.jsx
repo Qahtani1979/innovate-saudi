@@ -1,4 +1,4 @@
-import { base44 } from '@/api/base44Client';
+
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,25 +8,37 @@ import { useLanguage } from '../LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 
+import { supabase } from "@/integrations/supabase/client";
+
 export default function StrategicAlignmentSandbox({ sandbox }) {
   const { language, t } = useLanguage();
 
   const { data: strategicPlans = [] } = useQuery({
     queryKey: ['strategic-plans-alignment'],
-    queryFn: () => base44.entities.StrategicPlan.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .select('*');
+
+      if (error) {
+        console.warn('Strategic Plans fetch failed', error);
+        return [];
+      }
+      return data;
+    }
   });
 
-  const linkedPlans = strategicPlans.filter(p => 
+  const linkedPlans = strategicPlans.filter(p =>
     sandbox?.strategic_plan_ids?.includes(p.id)
   );
 
-  const linkedObjectives = strategicPlans.flatMap(plan => 
-    (plan.objectives || []).filter(obj => 
+  const linkedObjectives = strategicPlans.flatMap(plan =>
+    (plan.objectives || []).filter(obj =>
       sandbox?.strategic_objective_ids?.includes(obj.id)
     ).map(obj => ({ ...obj, planName: language === 'ar' && plan.name_ar ? plan.name_ar : plan.name_en }))
   );
 
-  const alignmentScore = sandbox?.strategic_objective_ids?.length 
+  const alignmentScore = sandbox?.strategic_objective_ids?.length
     ? Math.min(100, (sandbox.strategic_objective_ids.length * 20))
     : 0;
 

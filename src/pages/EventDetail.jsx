@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,24 +27,21 @@ function EventDetail() {
   const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(window.location.search);
   const eventId = urlParams.get('id');
-  
+
   const [newComment, setNewComment] = useState('');
   const [isBookmarked, setIsBookmarked] = useState(false);
 
-  const canEditEvents = hasAnyPermission(['event_edit', 'event_manage', 'admin']) || 
+  const canEditEvents = hasAnyPermission(['event_edit', 'event_manage', 'admin']) ||
     roles?.some(r => ['admin', 'super_admin', 'municipality_admin', 'gdibs_internal', 'event_manager'].includes(r));
-  
-  const canEvaluateEvents = hasAnyPermission(['event_evaluate', 'expert_evaluate', 'admin']) || 
+
+  const canEvaluateEvents = hasAnyPermission(['event_evaluate', 'expert_evaluate', 'admin']) ||
     roles?.some(r => ['admin', 'super_admin', 'expert', 'evaluator', 'gdibs_internal'].includes(r));
 
-  const { data: event, isLoading } = useQuery({
-    queryKey: ['event', eventId],
-    queryFn: async () => {
-      const events = await base44.entities.Event.filter({ id: eventId });
-      return events[0];
-    },
-    enabled: !!eventId
-  });
+  import { useEvents } from '@/hooks/useEvents';
+
+  // ... inside component
+  const { useEvent } = useEvents();
+  const { data: event, isLoading } = useEvent(eventId);
 
   // Fetch comments for this event
   const { data: comments = [] } = useQuery({
@@ -125,7 +122,7 @@ function EventDetail() {
     onSuccess: () => {
       setIsBookmarked(!isBookmarked);
       queryClient.invalidateQueries(['event-bookmark', eventId, userEmail]);
-      toast.success(isBookmarked 
+      toast.success(isBookmarked
         ? t({ en: 'Removed from bookmarks', ar: 'تمت الإزالة من المحفوظات' })
         : t({ en: 'Added to bookmarks', ar: 'تمت الإضافة للمحفوظات' })
       );
@@ -174,8 +171,8 @@ function EventDetail() {
         </div>
         <div className="flex items-center gap-2">
           {userEmail && (
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="icon"
               onClick={() => toggleBookmarkMutation.mutate()}
               className={isBookmarked ? 'text-yellow-600' : 'text-slate-400'}
@@ -364,17 +361,17 @@ function EventDetail() {
         <TabsContent value="ai-insights" className="space-y-6 mt-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* AI Attendance Predictor */}
-            <AIAttendancePredictor 
+            <AIAttendancePredictor
               event={event}
               registrationCount={event.registration_count || 0}
             />
-            
+
             {/* AI Event Optimizer */}
             {canEditEvents && (
-              <AIEventOptimizer 
+              <AIEventOptimizer
                 eventData={event}
                 onApplySuggestion={(field, value) => {
-                  toast.info(t({ 
+                  toast.info(t({
                     en: `Suggestion: Update ${field} to optimize event`,
                     ar: `اقتراح: تحديث ${field} لتحسين الفعالية`
                   }));
@@ -426,8 +423,8 @@ function EventDetail() {
                     placeholder={t({ en: 'Add a comment...', ar: 'أضف تعليقاً...' })}
                     className="min-h-[80px]"
                   />
-                  <Button 
-                    onClick={handleAddComment} 
+                  <Button
+                    onClick={handleAddComment}
                     disabled={!newComment.trim() || addCommentMutation.isPending}
                     className="self-end"
                   >

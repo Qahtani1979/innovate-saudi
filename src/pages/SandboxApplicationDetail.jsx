@@ -14,7 +14,7 @@ import { createPageUrl } from '../utils';
 import ApprovalStageProgress from '../components/ApprovalStageProgress';
 import SandboxAIRiskAssessment from '../components/SandboxAIRiskAssessment';
 import AutomatedComplianceChecker from '../components/AutomatedComplianceChecker';
-import SandboxCertificationWorkflow from '../components/sandbox/SandboxCertificationWorkflow';
+import SandboxCertificationWorkflow from '../components/sandboxes/SandboxCertificationWorkflow';
 
 export default function SandboxApplicationDetail() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -443,8 +443,8 @@ export default function SandboxApplicationDetail() {
                           <div className="text-3xl font-bold text-purple-600">{evaluation.overall_score}</div>
                           <Badge className={
                             evaluation.recommendation === 'approve' ? 'bg-green-100 text-green-700' :
-                            evaluation.recommendation === 'reject' ? 'bg-red-100 text-red-700' :
-                            'bg-yellow-100 text-yellow-700'
+                              evaluation.recommendation === 'reject' ? 'bg-red-100 text-red-700' :
+                                'bg-yellow-100 text-yellow-700'
                           }>
                             {evaluation.recommendation?.replace(/_/g, ' ')}
                           </Badge>

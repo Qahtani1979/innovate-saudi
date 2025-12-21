@@ -1,24 +1,52 @@
-import { base44 } from '@/api/base44Client';
+
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Activity, Shield, Edit, Clock, User, AlertCircle } from 'lucide-react';
 
+import { supabase } from "@/integrations/supabase/client";
+
 export default function SandboxActivityLog({ sandboxId }) {
   const { t, language } = useLanguage();
 
   const { data: activities = [] } = useQuery({
     queryKey: ['sandbox-activities', sandboxId],
-    queryFn: () => base44.entities.SystemActivity.filter({ 
-      entity_id: sandboxId,
-      entity_type: 'Sandbox'
-    }, '-created_date', 100)
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('system_activities')
+        .select('*')
+        .eq('entity_id', sandboxId)
+        .eq('entity_type', 'Sandbox')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) {
+        console.warn('System Activities fetch failed', error);
+        return [];
+      }
+      return data;
+    },
+    enabled: !!sandboxId
   });
 
   const { data: incidents = [] } = useQuery({
     queryKey: ['sandbox-incidents', sandboxId],
-    queryFn: () => base44.entities.SandboxIncident.filter({ sandbox_id: sandboxId }, '-created_date', 50)
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('sandbox_incidents')
+        .select('*')
+        .eq('sandbox_id', sandboxId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        console.warn('Sandbox Incidents fetch failed', error);
+        return [];
+      }
+      return data;
+    },
+    enabled: !!sandboxId
   });
 
   const allEvents = [
@@ -46,12 +74,10 @@ export default function SandboxActivityLog({ sandboxId }) {
           {allEvents.map((event, idx) => {
             const Icon = activityIcons[event.type] || Activity;
             return (
-              <div key={idx} className={`flex gap-3 p-3 rounded-lg border ${
-                event.type === 'incident' ? 'bg-red-50 border-red-200' : 'bg-slate-50'
-              }`}>
-                <div className={`h-8 w-8 rounded-full ${
-                  event.type === 'incident' ? 'bg-red-100' : 'bg-blue-100'
-                } flex items-center justify-center flex-shrink-0`}>
+              <div key={idx} className={`flex gap-3 p-3 rounded-lg border ${event.type === 'incident' ? 'bg-red-50 border-red-200' : 'bg-slate-50'
+                }`}>
+                <div className={`h-8 w-8 rounded-full ${event.type === 'incident' ? 'bg-red-100' : 'bg-blue-100'
+                  } flex items-center justify-center flex-shrink-0`}>
                   <Icon className={`h-4 w-4 ${event.type === 'incident' ? 'text-red-600' : 'text-blue-600'}`} />
                 </div>
                 <div className="flex-1">
@@ -70,11 +96,10 @@ export default function SandboxActivityLog({ sandboxId }) {
                     </Badge>
                   )}
                   {event.severity && (
-                    <Badge className={`mt-2 text-xs ${
-                      event.severity === 'critical' ? 'bg-red-600' :
+                    <Badge className={`mt-2 text-xs ${event.severity === 'critical' ? 'bg-red-600' :
                       event.severity === 'high' ? 'bg-orange-600' :
-                      'bg-yellow-600'
-                    }`}>
+                        'bg-yellow-600'
+                      }`}>
                       {event.severity}
                     </Badge>
                   )}

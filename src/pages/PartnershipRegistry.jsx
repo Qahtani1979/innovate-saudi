@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,14 +21,21 @@ function PartnershipRegistry() {
 
   const { data: partnerships = [], isLoading } = useQuery({
     queryKey: ['partnerships'],
-    queryFn: () => base44.entities.Partnership.list(),
-    initialData: []
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('partnerships')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data;
+    }
   });
 
   const filteredPartnerships = partnerships.filter(p => {
-    const matchesSearch = !searchQuery || 
+    const matchesSearch = !searchQuery ||
       (p.name_en?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-       p.name_ar?.includes(searchQuery));
+        p.name_ar?.includes(searchQuery));
     const matchesType = filterType === 'all' || p.partnership_type === filterType;
     const matchesStatus = filterStatus === 'all' || p.status === filterStatus;
     return matchesSearch && matchesType && matchesStatus;
@@ -37,7 +44,7 @@ function PartnershipRegistry() {
   const stats = {
     total: partnerships.length,
     active: partnerships.filter(p => p.status === 'active').length,
-    avgHealth: partnerships.length > 0 
+    avgHealth: partnerships.length > 0
       ? Math.round(partnerships.reduce((sum, p) => sum + (p.health_score || 0), 0) / partnerships.length)
       : 0
   };
