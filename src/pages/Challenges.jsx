@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import ChallengeClustering from '../components/challenges/ChallengeClustering';
 import ChallengeToProgramWorkflow from '../components/challenges/ChallengeToProgramWorkflow';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -67,7 +67,7 @@ function Challenges() {
   const queryClient = useQueryClient();
   const { language, isRTL, t } = useLanguage();
   const { triggerEmail } = useEmailTrigger();
-  
+
   const { invokeAI, status: aiStatus, isLoading: aiAnalyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   // Use visibility-aware hook for challenges
@@ -80,15 +80,27 @@ function Challenges() {
   // Enable realtime updates (rt-1, live-1)
   const { isConnected: realtimeConnected } = useChallengeListRealtime();
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Challenge.delete(id),
+    mutationFn: async (id) => {
+      const { error } = await supabase
+        .from('challenges')
+        .update({ is_deleted: true })
+        .eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['challenges']);
-      toast.success('Challenge deleted');
+      toast.success(t({ en: 'Challenge deleted', ar: 'تم حذف التحدي' }));
     }
   });
 
   const archiveMutation = useMutation({
-    mutationFn: (id) => base44.entities.Challenge.update(id, { status: 'archived' }),
+    mutationFn: async (id) => {
+      const { error } = await supabase
+        .from('challenges')
+        .update({ status: 'archived', is_archived: true })
+        .eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: (_, id) => {
       queryClient.invalidateQueries(['challenges']);
       // Trigger status changed email
@@ -105,7 +117,7 @@ function Challenges() {
           }
         }).catch(err => console.error('Email trigger failed:', err));
       }
-      toast.success('Challenge archived');
+      toast.success(t({ en: 'Challenge archived', ar: 'تم أرشفة التحدي' }));
     }
   });
 
@@ -114,38 +126,29 @@ function Challenges() {
       toast.error(t({ en: 'No challenges available', ar: 'لا توجد تحديات متاحة' }));
       return;
     }
-    
+
     const topChallenges = challenges
       .filter(c => c.priority === 'tier_1' || c.priority === 'tier_2')
       .slice(0, 5);
-    
+
     if (topChallenges.length === 0) {
       toast.info(t({ en: 'No high-priority challenges to analyze', ar: 'لا توجد تحديات ذات أولوية عالية للتحليل' }));
       return;
     }
 
     try {
-      const topChallenges = challenges
-        .filter(c => c.priority === 'tier_1' || c.priority === 'tier_2')
-        .slice(0, 5);
-      
-      if (topChallenges.length === 0) {
-        toast.info(t({ en: 'No high-priority challenges to analyze', ar: 'لا توجد تحديات ذات أولوية عالية للتحليل' }));
-        setAiAnalyzing(false);
-        return;
-      }
-
       // Import centralized prompt module
       const { CHALLENGE_PORTFOLIO_PROMPT_TEMPLATE, CHALLENGE_PORTFOLIO_RESPONSE_SCHEMA } = await import('@/lib/ai/prompts/challenges/portfolioAnalysis');
 
       const result = await invokeAI({
+        system_prompt: "You are an expert innovation consultant analyzing a portfolio of challenges. Return only valid JSON.",
         prompt: CHALLENGE_PORTFOLIO_PROMPT_TEMPLATE(topChallenges),
-        response_json_schema: {
+        response_json_schema: CHALLENGE_PORTFOLIO_RESPONSE_SCHEMA || {
           type: 'object',
           properties: {
-            patterns: { 
-              type: 'array', 
-              items: { 
+            patterns: {
+              type: 'array',
+              items: {
                 type: 'object',
                 properties: {
                   en: { type: 'string' },
@@ -153,9 +156,9 @@ function Challenges() {
                 }
               }
             },
-            priority_sectors: { 
-              type: 'array', 
-              items: { 
+            priority_sectors: {
+              type: 'array',
+              items: {
                 type: 'object',
                 properties: {
                   sector: { type: 'string' },
@@ -164,9 +167,9 @@ function Challenges() {
                 }
               }
             },
-            systemic_solutions: { 
-              type: 'array', 
-              items: { 
+            systemic_solutions: {
+              type: 'array',
+              items: {
                 type: 'object',
                 properties: {
                   en: { type: 'string' },
@@ -174,9 +177,9 @@ function Challenges() {
                 }
               }
             },
-            risk_alerts: { 
-              type: 'array', 
-              items: { 
+            risk_alerts: {
+              type: 'array',
+              items: {
                 type: 'object',
                 properties: {
                   en: { type: 'string' },
@@ -184,9 +187,9 @@ function Challenges() {
                 }
               }
             },
-            quick_wins: { 
-              type: 'array', 
-              items: { 
+            quick_wins: {
+              type: 'array',
+              items: {
                 type: 'object',
                 properties: {
                   challenge_code: { type: 'string' },
@@ -197,9 +200,9 @@ function Challenges() {
             },
             recommendations_en: { type: 'string' },
             recommendations_ar: { type: 'string' },
-            coordination_opportunities: { 
-              type: 'array', 
-              items: { 
+            coordination_opportunities: {
+              type: 'array',
+              items: {
                 type: 'object',
                 properties: {
                   en: { type: 'string' },
@@ -207,9 +210,9 @@ function Challenges() {
                 }
               }
             },
-            technology_opportunities: { 
-              type: 'array', 
-              items: { 
+            technology_opportunities: {
+              type: 'array',
+              items: {
                 type: 'object',
                 properties: {
                   en: { type: 'string' },
@@ -224,9 +227,8 @@ function Challenges() {
       setAiInsights(result);
       toast.success(t({ en: 'AI analysis complete', ar: 'اكتمل التحليل الذكي' }));
     } catch (error) {
+      console.error('AI Analysis failed:', error);
       toast.error(t({ en: 'AI analysis failed', ar: 'فشل التحليل الذكي' }));
-    } finally {
-      setAiAnalyzing(false);
     }
   };
 
@@ -236,14 +238,16 @@ function Challenges() {
       return;
     }
     if (selectedIds.length === 0) return;
-    
+
     if (action === 'approve') {
       for (const id of selectedIds) {
         const challenge = challenges.find(c => c.id === id);
-        await base44.entities.Challenge.update(id, { status: 'approved' });
+
+        await supabase.from('challenges').update({ status: 'approved' }).eq('id', id);
+
         await createNotification({
-          title: 'Challenge Approved',
-          body: `${challenge?.code} has been approved`,
+          title: t({ en: 'Challenge Approved', ar: 'تمت الموافقة على التحدي' }),
+          body: t({ en: `${challenge?.code} has been approved`, ar: `تمت الموافقة على ${challenge?.code}` }),
           type: 'alert',
           priority: 'medium',
           linkUrl: `ChallengeDetail?id=${id}`,
@@ -264,14 +268,16 @@ function Challenges() {
           }).catch(err => console.error('Email trigger failed:', err));
         }
       }
-      toast.success(`${selectedIds.length} challenges approved`);
+      toast.success(t({ en: `${selectedIds.length} challenges approved`, ar: `تم اعتماد ${selectedIds.length} تحديات` }));
     } else if (action === 'archive') {
       for (const id of selectedIds) {
         const challenge = challenges.find(c => c.id === id);
-        await base44.entities.Challenge.update(id, { is_archived: true });
+
+        await supabase.from('challenges').update({ is_archived: true, status: 'archived' }).eq('id', id);
+
         await createNotification({
-          title: 'Challenge Archived',
-          body: `${challenge?.code} has been archived`,
+          title: t({ en: 'Challenge Archived', ar: 'تم أرشفت التحدي' }),
+          body: t({ en: `${challenge?.code} has been archived`, ar: `تمت أرشفة ${challenge?.code}` }),
           type: 'alert',
           priority: 'low',
           linkUrl: `ChallengeDetail?id=${id}`,
@@ -292,13 +298,13 @@ function Challenges() {
           }).catch(err => console.error('Email trigger failed:', err));
         }
       }
-      toast.success(`${selectedIds.length} challenges archived`);
+      toast.success(t({ en: `${selectedIds.length} challenges archived`, ar: `تم أرشفة ${selectedIds.length} تحديات` }));
     } else if (action === 'delete') {
-      if (confirm(`Delete ${selectedIds.length} challenges permanently?`)) {
+      if (confirm(t({ en: `Delete ${selectedIds.length} challenges permanently?`, ar: `حذف ${selectedIds.length} تحديات نهائياً؟` }))) {
         for (const id of selectedIds) {
-          await base44.entities.Challenge.delete(id);
+          await supabase.from('challenges').update({ is_deleted: true }).eq('id', id);
         }
-        toast.success(`${selectedIds.length} challenges deleted`);
+        toast.success(t({ en: `${selectedIds.length} challenges deleted`, ar: `تم حذف ${selectedIds.length} تحديات` }));
       }
     }
     queryClient.invalidateQueries(['challenges']);
@@ -307,8 +313,8 @@ function Challenges() {
 
   const filteredChallenges = challenges.filter(challenge => {
     const matchesSearch = challenge.title_en?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         challenge.title_ar?.includes(searchTerm) ||
-                         challenge.code?.toLowerCase().includes(searchTerm.toLowerCase());
+      challenge.title_ar?.includes(searchTerm) ||
+      challenge.code?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesSector = sectorFilter === 'all' || challenge.sector === sectorFilter;
     const matchesStatus = statusFilter === 'all' || challenge.status === statusFilter;
     const notHidden = !challenge.is_hidden;
@@ -370,412 +376,412 @@ function Challenges() {
 
       <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
 
-      {/* AI Insights Banner */}
-      <Card className="p-4 bg-gradient-to-r from-blue-50 to-teal-50 border-blue-200">
-        <div className="flex items-start gap-3">
-          <Sparkles className="h-5 w-5 text-blue-600 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-slate-900">{t({ en: 'AI Analysis', ar: 'تحليل الذكاء الاصطناعي' })}</p>
-            <p className="text-sm text-slate-600 mt-1">
-              {t({ en: `${challenges.length} challenges identified`, ar: `تم تحديد ${challenges.length} تحدي` })}.{' '}
-              <span className="text-blue-600 font-medium">
-                {challenges.filter(c => c.priority === 'tier_1' || c.priority === 'tier_2').length} {t({ en: 'high-priority challenges require immediate attention', ar: 'تحدي عالي الأولوية يتطلب اهتماماً فورياً' })}
-              </span>.
-            </p>
+        {/* AI Insights Banner */}
+        <Card className="p-4 bg-gradient-to-r from-blue-50 to-teal-50 border-blue-200">
+          <div className="flex items-start gap-3">
+            <Sparkles className="h-5 w-5 text-blue-600 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-slate-900">{t({ en: 'AI Analysis', ar: 'تحليل الذكاء الاصطناعي' })}</p>
+              <p className="text-sm text-slate-600 mt-1">
+                {t({ en: `${challenges.length} challenges identified`, ar: `تم تحديد ${challenges.length} تحدي` })}.{' '}
+                <span className="text-blue-600 font-medium">
+                  {challenges.filter(c => c.priority === 'tier_1' || c.priority === 'tier_2').length} {t({ en: 'high-priority challenges require immediate attention', ar: 'تحدي عالي الأولوية يتطلب اهتماماً فورياً' })}
+                </span>.
+              </p>
+            </div>
+            <Button
+              onClick={generateAIInsights}
+              disabled={aiAnalyzing || isLoading || challenges.length === 0}
+              size="sm"
+              className="bg-gradient-to-r from-blue-600 to-teal-600"
+            >
+              {aiAnalyzing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+            </Button>
           </div>
-          <Button
-            onClick={generateAIInsights}
-            disabled={aiAnalyzing || isLoading || challenges.length === 0}
-            size="sm"
-            className="bg-gradient-to-r from-blue-600 to-teal-600"
-          >
-            {aiAnalyzing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
-      </Card>
+        </Card>
 
-      {aiInsights && (
-        <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50">
-          <CardHeader>
-            <CardTitle className="text-purple-900 flex items-center gap-2">
-              <Sparkles className="h-5 w-5" />
-              {t({ en: 'AI Strategic Insights', ar: 'الرؤى الاستراتيجية الذكية' })}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {aiInsights.patterns?.length > 0 && (
-              <div>
-                <p className="text-sm font-semibold text-purple-900 mb-2">{t({ en: 'Common Patterns:', ar: 'الأنماط المشتركة:' })}</p>
-                <div className="space-y-1">
-                  {aiInsights.patterns.map((p, i) => (
-                    <div key={i} className="flex items-start gap-2 text-sm text-slate-700">
-                      <div className="h-1.5 w-1.5 rounded-full bg-purple-600 mt-1.5 flex-shrink-0" />
-                      <span dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                        {typeof p === 'string' ? p : (language === 'ar' && p.ar ? p.ar : p.en)}
-                      </span>
-                    </div>
-                  ))}
+        {aiInsights && (
+          <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50">
+            <CardHeader>
+              <CardTitle className="text-purple-900 flex items-center gap-2">
+                <Sparkles className="h-5 w-5" />
+                {t({ en: 'AI Strategic Insights', ar: 'الرؤى الاستراتيجية الذكية' })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {aiInsights.patterns?.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold text-purple-900 mb-2">{t({ en: 'Common Patterns:', ar: 'الأنماط المشتركة:' })}</p>
+                  <div className="space-y-1">
+                    {aiInsights.patterns.map((p, i) => (
+                      <div key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                        <div className="h-1.5 w-1.5 rounded-full bg-purple-600 mt-1.5 flex-shrink-0" />
+                        <span dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                          {typeof p === 'string' ? p : (language === 'ar' && p.ar ? p.ar : p.en)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-            {aiInsights.priority_sectors?.length > 0 && (
-              <div>
-                <p className="text-sm font-semibold text-purple-900 mb-2">{t({ en: 'Priority Sectors:', ar: 'القطاعات ذات الأولوية:' })}</p>
-                <div className="space-y-2">
-                  {aiInsights.priority_sectors.map((s, i) => (
-                    <div key={i} className="p-3 bg-white rounded-lg border">
-                      <Badge className="bg-red-100 text-red-700 mb-1">
-                        {typeof s === 'string' ? s : s.sector}
-                      </Badge>
-                      {typeof s === 'object' && (s.reason_en || s.reason_ar) && (
-                        <p className="text-xs text-slate-600 mt-1" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                          {language === 'ar' && s.reason_ar ? s.reason_ar : s.reason_en}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            {aiInsights.quick_wins?.length > 0 && (
-              <div>
-                <p className="text-sm font-semibold text-purple-900 mb-2">{t({ en: 'Quick Wins:', ar: 'الإنجازات السريعة:' })}</p>
-                <div className="space-y-2">
-                  {aiInsights.quick_wins.map((w, i) => (
-                    <div key={i} className="p-3 bg-green-50 rounded-lg border border-green-200">
-                      <div className="flex items-start gap-2">
-                        <CheckCircle2 className="h-4 w-4 mt-0.5 text-green-600 flex-shrink-0" />
-                        <div className="flex-1">
-                          {typeof w === 'object' && w.challenge_code && (
-                            <Badge variant="outline" className="text-xs mb-1">{w.challenge_code}</Badge>
-                          )}
-                          <p className="text-sm text-slate-700" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                            {typeof w === 'string' ? w : (language === 'ar' && w.approach_ar ? w.approach_ar : w.approach_en)}
+              )}
+              {aiInsights.priority_sectors?.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold text-purple-900 mb-2">{t({ en: 'Priority Sectors:', ar: 'القطاعات ذات الأولوية:' })}</p>
+                  <div className="space-y-2">
+                    {aiInsights.priority_sectors.map((s, i) => (
+                      <div key={i} className="p-3 bg-white rounded-lg border">
+                        <Badge className="bg-red-100 text-red-700 mb-1">
+                          {typeof s === 'string' ? s : s.sector}
+                        </Badge>
+                        {typeof s === 'object' && (s.reason_en || s.reason_ar) && (
+                          <p className="text-xs text-slate-600 mt-1" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                            {language === 'ar' && s.reason_ar ? s.reason_ar : s.reason_en}
                           </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {aiInsights.quick_wins?.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold text-purple-900 mb-2">{t({ en: 'Quick Wins:', ar: 'الإنجازات السريعة:' })}</p>
+                  <div className="space-y-2">
+                    {aiInsights.quick_wins.map((w, i) => (
+                      <div key={i} className="p-3 bg-green-50 rounded-lg border border-green-200">
+                        <div className="flex items-start gap-2">
+                          <CheckCircle2 className="h-4 w-4 mt-0.5 text-green-600 flex-shrink-0" />
+                          <div className="flex-1">
+                            {typeof w === 'object' && w.challenge_code && (
+                              <Badge variant="outline" className="text-xs mb-1">{w.challenge_code}</Badge>
+                            )}
+                            <p className="text-sm text-slate-700" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                              {typeof w === 'string' ? w : (language === 'ar' && w.approach_ar ? w.approach_ar : w.approach_en)}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            {(aiInsights.recommendations_en || aiInsights.recommendations_ar || aiInsights.recommendations) && (
-              <div className="p-4 bg-white/50 rounded-lg border border-purple-200">
-                <p className="text-sm font-semibold text-purple-900 mb-2">{t({ en: 'Strategic Recommendations:', ar: 'التوصيات الاستراتيجية:' })}</p>
-                <p className="text-sm text-slate-700 leading-relaxed" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                  {language === 'ar' && aiInsights.recommendations_ar 
-                    ? aiInsights.recommendations_ar 
-                    : aiInsights.recommendations_en || aiInsights.recommendations}
-                </p>
-              </div>
-            )}
-            {aiInsights.coordination_opportunities?.length > 0 && (
-              <div>
-                <p className="text-sm font-semibold text-purple-900 mb-2">{t({ en: 'Coordination Opportunities:', ar: 'فرص التنسيق:' })}</p>
-                <div className="space-y-1">
-                  {aiInsights.coordination_opportunities.map((opp, i) => (
-                    <div key={i} className="flex items-start gap-2 text-sm text-blue-700">
-                      <div className="h-1.5 w-1.5 rounded-full bg-blue-600 mt-1.5" />
-                      <span dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                        {typeof opp === 'string' ? opp : (language === 'ar' && opp.ar ? opp.ar : opp.en)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            {aiInsights.technology_opportunities?.length > 0 && (
-              <div>
-                <p className="text-sm font-semibold text-purple-900 mb-2">{t({ en: 'Technology Opportunities:', ar: 'فرص التقنية:' })}</p>
-                <div className="flex flex-wrap gap-2">
-                  {aiInsights.technology_opportunities.map((tech, i) => (
-                    <Badge key={i} variant="outline" className="bg-white" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                      {typeof tech === 'string' ? tech : (language === 'ar' && tech.ar ? tech.ar : tech.en)}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Bulk Actions */}
-      {selectedIds.length > 0 && (
-        <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <span className="text-sm font-medium text-blue-900">
-            {selectedIds.length} {t({ en: 'selected', ar: 'محدد' })}
-          </span>
-          {hasPermission('challenge_approve') && (
-            <Button size="sm" onClick={() => handleBulkAction('approve')} className="bg-green-600">
-              {t({ en: 'Approve All', ar: 'الموافقة على الكل' })}
-            </Button>
-          )}
-          {(hasPermission('challenge_edit') || isAdmin) && (
-            <Button size="sm" variant="outline" onClick={() => handleBulkAction('archive')}>
-              {t({ en: 'Archive All', ar: 'أرشفة الكل' })}
-            </Button>
-          )}
-          {hasPermission('challenge_delete') && (
-            <Button size="sm" variant="outline" onClick={() => handleBulkAction('delete')} className="text-red-600">
-              {t({ en: 'Delete All', ar: 'حذف الكل' })}
-            </Button>
-          )}
-          <Button size="sm" variant="ghost" onClick={() => handleBulkAction('clear')}>
-            {t({ en: 'Clear', ar: 'مسح' })}
-          </Button>
-        </div>
-      )}
-
-      {/* View Mode Tabs */}
-      <Tabs defaultValue="grid" value={viewMode} onValueChange={setViewMode}>
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="grid">{t({ en: 'Grid View', ar: 'عرض الشبكة' })}</TabsTrigger>
-          <TabsTrigger value="table">{t({ en: 'Table View', ar: 'عرض الجدول' })}</TabsTrigger>
-          <TabsTrigger value="clusters">{t({ en: 'AI Clusters', ar: 'التجمعات الذكية' })}</TabsTrigger>
-        </TabsList>
-
-        {/* Filters */}
-        <Card className="p-6 mt-4">
-          <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400`} />
-            <Input
-              placeholder={t({ en: 'Search by title, code, or keyword...', ar: 'ابحث بالعنوان، الرمز، أو الكلمة المفتاحية...' })}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={isRTL ? 'pr-10' : 'pl-10'}
-            />
-          </div>
-
-          <Select value={sectorFilter} onValueChange={setSectorFilter}>
-            <SelectTrigger className="w-48">
-              <Filter className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-              <SelectValue placeholder={t({ en: 'All Sectors', ar: 'جميع القطاعات' })} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t({ en: 'All Sectors', ar: 'جميع القطاعات' })}</SelectItem>
-              {sectorOptions.map(option => (
-                <SelectItem key={option.value} value={option.value}>
-                  {t(option.label)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder={t({ en: 'All Status', ar: 'جميع الحالات' })} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t({ en: 'All Status', ar: 'جميع الحالات' })}</SelectItem>
-              <SelectItem value="draft">{t({ en: 'Draft', ar: 'مسودة' })}</SelectItem>
-              <SelectItem value="submitted">{t({ en: 'Submitted', ar: 'مُقدّم' })}</SelectItem>
-              <SelectItem value="under_review">{t({ en: 'Under Review', ar: 'قيد المراجعة' })}</SelectItem>
-              <SelectItem value="approved">{t({ en: 'Approved', ar: 'معتمد' })}</SelectItem>
-              <SelectItem value="in_treatment">{t({ en: 'In Treatment', ar: 'قيد المعالجة' })}</SelectItem>
-              <SelectItem value="resolved">{t({ en: 'Resolved', ar: 'محلول' })}</SelectItem>
-              <SelectItem value="archived">{t({ en: 'Archived', ar: 'مؤرشف' })}</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <div className="flex items-center gap-1 border rounded-lg p-1">
-            <Button
-              variant={viewMode === 'grid' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('grid')}
-            >
-              <LayoutGrid className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'table' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('table')}
-            >
-              <List className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </Card>
-
-        <TabsContent value="grid">
-          {/* Grid View - With Virtualization for large lists */}
-          <VirtualizedChallengeGrid 
-            challenges={filteredChallenges}
-            statusColors={statusColors}
-            priorityColors={priorityColors}
-            language={language}
-            t={t}
-            hasPermission={hasPermission}
-          />
-        </TabsContent>
-
-        <TabsContent value="table">
-          {/* Table View */}
-        <Card>
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-slate-50">
-              <TableHead className="w-12">
-                <Checkbox
-                  checked={selectedIds.length === filteredChallenges.length && filteredChallenges.length > 0}
-                  onCheckedChange={(checked) => {
-                    setSelectedIds(checked ? filteredChallenges.map(c => c.id) : []);
-                  }}
-                />
-              </TableHead>
-              <TableHead className="font-semibold">{t({ en: 'Code', ar: 'الرمز' })}</TableHead>
-              <TableHead className="font-semibold">{t({ en: 'Title', ar: 'العنوان' })}</TableHead>
-              <TableHead className="font-semibold">{t({ en: 'Sector', ar: 'القطاع' })}</TableHead>
-              <TableHead className="font-semibold">{t({ en: 'Municipality', ar: 'البلدية' })}</TableHead>
-              <TableHead className="font-semibold">{t({ en: 'Priority', ar: 'الأولوية' })}</TableHead>
-              <TableHead className="font-semibold">{t({ en: 'Score', ar: 'النقاط' })}</TableHead>
-              <TableHead className="font-semibold">{t({ en: 'Status', ar: 'الحالة' })}</TableHead>
-              <TableHead className="font-semibold">{t({ en: 'Track', ar: 'المسار' })}</TableHead>
-              <TableHead className={`${isRTL ? 'text-left' : 'text-right'} font-semibold`}>{t({ en: 'Actions', ar: 'الإجراءات' })}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array(5).fill(0).map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell colSpan={9}>
-                    <div className="h-12 bg-slate-100 rounded animate-pulse" />
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : filteredChallenges.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={9} className="text-center py-12">
-                  <div className="flex flex-col items-center gap-3">
-                    <AlertTriangle className="h-12 w-12 text-slate-400" />
-                    <p className="text-slate-600">{t({ en: 'No challenges found', ar: 'لم يتم العثور على تحديات' })}</p>
+                    ))}
                   </div>
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredChallenges.map((challenge) => (
-                <TableRow
-                  key={challenge.id}
-                  className="hover:bg-slate-50 transition-colors"
-                >
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedIds.includes(challenge.id)}
-                      onCheckedChange={(checked) => {
-                        setSelectedIds(checked 
-                          ? [...selectedIds, challenge.id]
-                          : selectedIds.filter(id => id !== challenge.id)
-                        );
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">{challenge.code}</TableCell>
-                  <TableCell className="font-medium max-w-xs truncate">
-                    {language === 'ar' && challenge.title_ar ? challenge.title_ar : challenge.title_en}
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm text-slate-600 capitalize">
-                      {challenge.sector?.replace(/_/g, ' ')}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-sm text-slate-600">
-                    {challenge.municipality_id?.substring(0, 15)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={priorityColors[challenge.priority] || priorityColors.tier_3}>
-                      {challenge.priority?.replace('tier_', 'T')}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">{challenge.overall_score || 0}</span>
-                      <TrendingUp className="h-3 w-3 text-green-600" />
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={statusColors[challenge.status]}>
-                      {challenge.status?.replace(/_/g, ' ')}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm text-slate-600 capitalize">
-                      {challenge.track?.replace(/_/g, ' ') || 'None'}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Link to={createPageUrl(`ChallengeDetail?id=${challenge.id}`)}>
-                        <Button variant="ghost" size="icon" className="hover:bg-blue-50">
-                          <Eye className="h-4 w-4 text-blue-600" />
-                        </Button>
-                      </Link>
-                      {hasPermission('challenge_edit') && (
-                        <Link to={createPageUrl(`ChallengeEdit?id=${challenge.id}`)}>
-                          <Button variant="ghost" size="icon" className="hover:bg-yellow-50">
-                            <Edit className="h-4 w-4 text-yellow-600" />
-                          </Button>
-                        </Link>
-                      )}
-                      {(hasPermission('challenge_edit') || isAdmin) && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => archiveMutation.mutate(challenge.id)}
-                          className="hover:bg-amber-50"
-                        >
-                          <Archive className="h-4 w-4 text-amber-600" />
-                        </Button>
-                      )}
-                      {hasPermission('challenge_delete') && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            if (confirm('Delete permanently?')) {
-                              deleteMutation.mutate(challenge.id);
-                            }
-                          }}
-                          className="hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </Card>
-        </TabsContent>
+                </div>
+              )}
+              {(aiInsights.recommendations_en || aiInsights.recommendations_ar || aiInsights.recommendations) && (
+                <div className="p-4 bg-white/50 rounded-lg border border-purple-200">
+                  <p className="text-sm font-semibold text-purple-900 mb-2">{t({ en: 'Strategic Recommendations:', ar: 'التوصيات الاستراتيجية:' })}</p>
+                  <p className="text-sm text-slate-700 leading-relaxed" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                    {language === 'ar' && aiInsights.recommendations_ar
+                      ? aiInsights.recommendations_ar
+                      : aiInsights.recommendations_en || aiInsights.recommendations}
+                  </p>
+                </div>
+              )}
+              {aiInsights.coordination_opportunities?.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold text-purple-900 mb-2">{t({ en: 'Coordination Opportunities:', ar: 'فرص التنسيق:' })}</p>
+                  <div className="space-y-1">
+                    {aiInsights.coordination_opportunities.map((opp, i) => (
+                      <div key={i} className="flex items-start gap-2 text-sm text-blue-700">
+                        <div className="h-1.5 w-1.5 rounded-full bg-blue-600 mt-1.5" />
+                        <span dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                          {typeof opp === 'string' ? opp : (language === 'ar' && opp.ar ? opp.ar : opp.en)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {aiInsights.technology_opportunities?.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold text-purple-900 mb-2">{t({ en: 'Technology Opportunities:', ar: 'فرص التقنية:' })}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {aiInsights.technology_opportunities.map((tech, i) => (
+                      <Badge key={i} variant="outline" className="bg-white" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                        {typeof tech === 'string' ? tech : (language === 'ar' && tech.ar ? tech.ar : tech.en)}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
-        <TabsContent value="clusters">
-          {/* Clustering View with Program Creation */}
-          <ChallengeClustering 
-            challenges={filteredChallenges}
-            onClusterAction={(cluster) => {
-              // Allow creating program from cluster
-              const clusterChallenges = filteredChallenges.filter(c => 
-                cluster.challenge_ids?.includes(c.id)
-              );
-              if (clusterChallenges.length >= 2) {
-                // Show program creation workflow
-                return <ChallengeToProgramWorkflow
-                  selectedChallenges={clusterChallenges}
-                  onSuccess={() => queryClient.invalidateQueries(['programs'])}
-                  onCancel={() => {}}
-                />;
-              }
-            }}
-          />
-        </TabsContent>
-      </Tabs>
+        {/* Bulk Actions */}
+        {selectedIds.length > 0 && (
+          <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <span className="text-sm font-medium text-blue-900">
+              {selectedIds.length} {t({ en: 'selected', ar: 'محدد' })}
+            </span>
+            {hasPermission('challenge_approve') && (
+              <Button size="sm" onClick={() => handleBulkAction('approve')} className="bg-green-600">
+                {t({ en: 'Approve All', ar: 'الموافقة على الكل' })}
+              </Button>
+            )}
+            {(hasPermission('challenge_edit') || isAdmin) && (
+              <Button size="sm" variant="outline" onClick={() => handleBulkAction('archive')}>
+                {t({ en: 'Archive All', ar: 'أرشفة الكل' })}
+              </Button>
+            )}
+            {hasPermission('challenge_delete') && (
+              <Button size="sm" variant="outline" onClick={() => handleBulkAction('delete')} className="text-red-600">
+                {t({ en: 'Delete All', ar: 'حذف الكل' })}
+              </Button>
+            )}
+            <Button size="sm" variant="ghost" onClick={() => handleBulkAction('clear')}>
+              {t({ en: 'Clear', ar: 'مسح' })}
+            </Button>
+          </div>
+        )}
+
+        {/* View Mode Tabs */}
+        <Tabs defaultValue="grid" value={viewMode} onValueChange={setViewMode}>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="grid">{t({ en: 'Grid View', ar: 'عرض الشبكة' })}</TabsTrigger>
+            <TabsTrigger value="table">{t({ en: 'Table View', ar: 'عرض الجدول' })}</TabsTrigger>
+            <TabsTrigger value="clusters">{t({ en: 'AI Clusters', ar: 'التجمعات الذكية' })}</TabsTrigger>
+          </TabsList>
+
+          {/* Filters */}
+          <Card className="p-6 mt-4">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400`} />
+                <Input
+                  placeholder={t({ en: 'Search by title, code, or keyword...', ar: 'ابحث بالعنوان، الرمز، أو الكلمة المفتاحية...' })}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className={isRTL ? 'pr-10' : 'pl-10'}
+                />
+              </div>
+
+              <Select value={sectorFilter} onValueChange={setSectorFilter}>
+                <SelectTrigger className="w-48">
+                  <Filter className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                  <SelectValue placeholder={t({ en: 'All Sectors', ar: 'جميع القطاعات' })} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t({ en: 'All Sectors', ar: 'جميع القطاعات' })}</SelectItem>
+                  {sectorOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {t(option.label)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder={t({ en: 'All Status', ar: 'جميع الحالات' })} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t({ en: 'All Status', ar: 'جميع الحالات' })}</SelectItem>
+                  <SelectItem value="draft">{t({ en: 'Draft', ar: 'مسودة' })}</SelectItem>
+                  <SelectItem value="submitted">{t({ en: 'Submitted', ar: 'مُقدّم' })}</SelectItem>
+                  <SelectItem value="under_review">{t({ en: 'Under Review', ar: 'قيد المراجعة' })}</SelectItem>
+                  <SelectItem value="approved">{t({ en: 'Approved', ar: 'معتمد' })}</SelectItem>
+                  <SelectItem value="in_treatment">{t({ en: 'In Treatment', ar: 'قيد المعالجة' })}</SelectItem>
+                  <SelectItem value="resolved">{t({ en: 'Resolved', ar: 'محلول' })}</SelectItem>
+                  <SelectItem value="archived">{t({ en: 'Archived', ar: 'مؤرشف' })}</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <div className="flex items-center gap-1 border rounded-lg p-1">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'table' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('table')}
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          <TabsContent value="grid">
+            {/* Grid View - With Virtualization for large lists */}
+            <VirtualizedChallengeGrid
+              challenges={filteredChallenges}
+              statusColors={statusColors}
+              priorityColors={priorityColors}
+              language={language}
+              t={t}
+              hasPermission={hasPermission}
+            />
+          </TabsContent>
+
+          <TabsContent value="table">
+            {/* Table View */}
+            <Card>
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50">
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={selectedIds.length === filteredChallenges.length && filteredChallenges.length > 0}
+                        onCheckedChange={(checked) => {
+                          setSelectedIds(checked ? filteredChallenges.map(c => c.id) : []);
+                        }}
+                      />
+                    </TableHead>
+                    <TableHead className="font-semibold">{t({ en: 'Code', ar: 'الرمز' })}</TableHead>
+                    <TableHead className="font-semibold">{t({ en: 'Title', ar: 'العنوان' })}</TableHead>
+                    <TableHead className="font-semibold">{t({ en: 'Sector', ar: 'القطاع' })}</TableHead>
+                    <TableHead className="font-semibold">{t({ en: 'Municipality', ar: 'البلدية' })}</TableHead>
+                    <TableHead className="font-semibold">{t({ en: 'Priority', ar: 'الأولوية' })}</TableHead>
+                    <TableHead className="font-semibold">{t({ en: 'Score', ar: 'النقاط' })}</TableHead>
+                    <TableHead className="font-semibold">{t({ en: 'Status', ar: 'الحالة' })}</TableHead>
+                    <TableHead className="font-semibold">{t({ en: 'Track', ar: 'المسار' })}</TableHead>
+                    <TableHead className={`${isRTL ? 'text-left' : 'text-right'} font-semibold`}>{t({ en: 'Actions', ar: 'الإجراءات' })}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    Array(5).fill(0).map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell colSpan={9}>
+                          <div className="h-12 bg-slate-100 rounded animate-pulse" />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : filteredChallenges.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center py-12">
+                        <div className="flex flex-col items-center gap-3">
+                          <AlertTriangle className="h-12 w-12 text-slate-400" />
+                          <p className="text-slate-600">{t({ en: 'No challenges found', ar: 'لم يتم العثور على تحديات' })}</p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredChallenges.map((challenge) => (
+                      <TableRow
+                        key={challenge.id}
+                        className="hover:bg-slate-50 transition-colors"
+                      >
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedIds.includes(challenge.id)}
+                            onCheckedChange={(checked) => {
+                              setSelectedIds(checked
+                                ? [...selectedIds, challenge.id]
+                                : selectedIds.filter(id => id !== challenge.id)
+                              );
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">{challenge.code}</TableCell>
+                        <TableCell className="font-medium max-w-xs truncate">
+                          {language === 'ar' && challenge.title_ar ? challenge.title_ar : challenge.title_en}
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-slate-600 capitalize">
+                            {challenge.sector?.replace(/_/g, ' ')}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-sm text-slate-600">
+                          {challenge.municipality_id?.substring(0, 15)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={priorityColors[challenge.priority] || priorityColors.tier_3}>
+                            {challenge.priority?.replace('tier_', 'T')}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">{challenge.overall_score || 0}</span>
+                            <TrendingUp className="h-3 w-3 text-green-600" />
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={statusColors[challenge.status]}>
+                            {challenge.status?.replace(/_/g, ' ')}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-slate-600 capitalize">
+                            {challenge.track?.replace(/_/g, ' ') || t({ en: 'None', ar: 'لا يوجد' })}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Link to={createPageUrl(`ChallengeDetail?id=${challenge.id}`)}>
+                              <Button variant="ghost" size="icon" className="hover:bg-blue-50">
+                                <Eye className="h-4 w-4 text-blue-600" />
+                              </Button>
+                            </Link>
+                            {hasPermission('challenge_edit') && (
+                              <Link to={createPageUrl(`ChallengeEdit?id=${challenge.id}`)}>
+                                <Button variant="ghost" size="icon" className="hover:bg-yellow-50">
+                                  <Edit className="h-4 w-4 text-yellow-600" />
+                                </Button>
+                              </Link>
+                            )}
+                            {(hasPermission('challenge_edit') || isAdmin) && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => archiveMutation.mutate(challenge.id)}
+                                className="hover:bg-amber-50"
+                              >
+                                <Archive className="h-4 w-4 text-amber-600" />
+                              </Button>
+                            )}
+                            {hasPermission('challenge_delete') && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  if (confirm(t({ en: 'Delete permanently?', ar: 'حذف نهائياً؟' }))) {
+                                    deleteMutation.mutate(challenge.id);
+                                  }
+                                }}
+                                className="hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4 text-red-600" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="clusters">
+            {/* Clustering View with Program Creation */}
+            <ChallengeClustering
+              challenges={filteredChallenges}
+              onClusterAction={(cluster) => {
+                // Allow creating program from cluster
+                const clusterChallenges = filteredChallenges.filter(c =>
+                  cluster.challenge_ids?.includes(c.id)
+                );
+                if (clusterChallenges.length >= 2) {
+                  // Show program creation workflow
+                  return <ChallengeToProgramWorkflow
+                    selectedChallenges={clusterChallenges}
+                    onSuccess={() => queryClient.invalidateQueries(['programs'])}
+                    onCancel={() => { }}
+                  />;
+                }
+              }}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     </PageLayout>
   );

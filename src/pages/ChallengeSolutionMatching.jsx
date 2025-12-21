@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,21 +25,24 @@ function ChallengeSolutionMatching() {
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges-for-matching'],
     queryFn: async () => {
-      const all = await base44.entities.Challenge.list();
-      return all.filter(c => c.status === 'approved' || c.status === 'in_treatment');
+      const { data } = await supabase.from('challenges').select('*').in('status', ['approved', 'in_treatment']);
+      return data || [];
     }
   });
 
   const { data: solutions = [] } = useQuery({
     queryKey: ['solutions-for-matching'],
     queryFn: async () => {
-      const all = await base44.entities.Solution.list();
-      return all.filter(s => s.is_verified && s.is_published);
+      const { data } = await supabase.from('solutions').select('*').eq('is_verified', true).eq('is_published', true);
+      return data || [];
     }
   });
 
   const createMatchMutation = useMutation({
-    mutationFn: (data) => base44.entities.ChallengeSolutionMatch.create(data),
+    mutationFn: async (data) => {
+      const { error } = await supabase.from('challenge_solution_matches').insert([data]);
+      if (error) throw error;
+    },
     onSuccess: async (result, variables) => {
       // Trigger solution matched email
       await triggerEmail('solution.matched', {
@@ -60,15 +63,18 @@ function ChallengeSolutionMatching() {
 
   const runMatching = async () => {
     if (!selectedChallenge) return;
-    
+
     setMatching(true);
     try {
-      const result = await base44.functions.invoke('semanticSearch', {
-        challenge_id: selectedChallenge.id,
-        limit: 10
+      const { data, error } = await supabase.functions.invoke('semanticSearch', {
+        body: {
+          challenge_id: selectedChallenge.id,
+          limit: 10
+        }
       });
 
-      setMatches(result.data || []);
+      if (error) throw error;
+      setMatches(data || []);
       toast.success(t({ en: 'Matching complete', ar: 'اكتملت المطابقة' }));
     } catch (error) {
       toast.error(t({ en: 'Matching failed', ar: 'فشلت المطابقة' }));
@@ -81,7 +87,7 @@ function ChallengeSolutionMatching() {
     setNotifying(true);
     try {
       const topMatches = matches.slice(0, 5);
-      
+
       for (const match of topMatches) {
         const solution = solutions.find(s => s.id === match.solution_id);
         if (!solution?.contact_email) continue;
@@ -104,7 +110,7 @@ function ChallengeSolutionMatching() {
         });
 
         // Create notification record
-        await base44.entities.Notification.create({
+        const { error } = await supabase.from('notifications').insert([{
           user_email: solution.contact_email,
           type: 'solution_match',
           title: `New Challenge Match: ${selectedChallenge.code}`,
@@ -112,12 +118,13 @@ function ChallengeSolutionMatching() {
           entity_type: 'challenge',
           entity_id: selectedChallenge.id,
           is_read: false
-        });
+        }]);
+        if (error) console.error('Notification creation failed:', error);
       }
 
-      toast.success(t({ 
-        en: `Notified ${topMatches.length} providers`, 
-        ar: `تم إشعار ${topMatches.length} مزودين` 
+      toast.success(t({
+        en: `Notified ${topMatches.length} providers`,
+        ar: `تم إشعار ${topMatches.length} مزودين`
       }));
     } catch (error) {
       toast.error(t({ en: 'Notification failed', ar: 'فشل الإشعار' }));
@@ -161,18 +168,17 @@ function ChallengeSolutionMatching() {
               <button
                 key={challenge.id}
                 onClick={() => setSelectedChallenge(challenge)}
-                className={`w-full p-3 text-left border-2 rounded-lg transition-all ${
-                  selectedChallenge?.id === challenge.id
+                className={`w-full p-3 text-left border-2 rounded-lg transition-all ${selectedChallenge?.id === challenge.id
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-slate-200 hover:border-blue-300'
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-2 mb-1">
                   <Badge variant="outline" className="text-xs font-mono">{challenge.code}</Badge>
                   <Badge className={
                     challenge.priority === 'tier_1' ? 'bg-red-100 text-red-700 text-xs' :
-                    challenge.priority === 'tier_2' ? 'bg-orange-100 text-orange-700 text-xs' :
-                    'bg-blue-100 text-blue-700 text-xs'
+                      challenge.priority === 'tier_2' ? 'bg-orange-100 text-orange-700 text-xs' :
+                        'bg-blue-100 text-blue-700 text-xs'
                   }>{challenge.priority}</Badge>
                 </div>
                 <p className="text-sm font-medium text-slate-900 line-clamp-2">
@@ -196,8 +202,8 @@ function ChallengeSolutionMatching() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm text-slate-700">
-                  {language === 'ar' && selectedChallenge.description_ar 
-                    ? selectedChallenge.description_ar.substring(0, 200) 
+                  {language === 'ar' && selectedChallenge.description_ar
+                    ? selectedChallenge.description_ar.substring(0, 200)
                     : selectedChallenge.description_en?.substring(0, 200)}...
                 </p>
 

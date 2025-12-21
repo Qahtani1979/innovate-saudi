@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -73,11 +73,17 @@ function SolutionsPage() {
 
   // mh-2: Optimistic updates for delete
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Solution.delete(id),
+    mutationFn: async (id) => {
+      const { error } = await supabase
+        .from('solutions')
+        .update({ is_deleted: true, deleted_date: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+    },
     onMutate: async (deletedId) => {
       await queryClient.cancelQueries(['solutions-with-visibility']);
       const previousSolutions = queryClient.getQueryData(['solutions-with-visibility']);
-      queryClient.setQueryData(['solutions-with-visibility'], (old) => 
+      queryClient.setQueryData(['solutions-with-visibility'], (old) =>
         old?.filter(s => s.id !== deletedId) || []
       );
       return { previousSolutions };
@@ -112,9 +118,11 @@ function SolutionsPage() {
 
   const bulkArchiveMutation = useMutation({
     mutationFn: async (ids) => {
-      for (const id of ids) {
-        await base44.entities.Solution.update(id, { is_archived: true });
-      }
+      const { error } = await supabase
+        .from('solutions')
+        .update({ is_archived: true })
+        .in('id', ids);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['solutions']);
@@ -124,7 +132,13 @@ function SolutionsPage() {
   });
 
   const togglePublishMutation = useMutation({
-    mutationFn: ({ id, published }) => base44.entities.Solution.update(id, { is_published: published }),
+    mutationFn: async ({ id, published }) => {
+      const { error } = await supabase
+        .from('solutions')
+        .update({ is_published: published })
+        .eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['solutions']);
       toast.success('Solution visibility updated');
@@ -134,7 +148,7 @@ function SolutionsPage() {
   // lc-3: Filter and sort solutions
   const filteredSolutions = solutions.filter(solution => {
     const matchesSearch = solution.name_en?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         solution.provider_name?.toLowerCase().includes(searchTerm.toLowerCase());
+      solution.provider_name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesSector = sectorFilter === 'all' || solution.sectors?.includes(sectorFilter);
     const matchesMaturity = maturityFilter === 'all' || solution.maturity_level === maturityFilter;
     const notArchived = !solution.is_archived;
@@ -169,10 +183,10 @@ function SolutionsPage() {
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
-    
+
     // Import centralized prompt module
     const { SOLUTION_PORTFOLIO_PROMPT_TEMPLATE, SOLUTION_PORTFOLIO_RESPONSE_SCHEMA } = await import('@/lib/ai/prompts/solutions/portfolioAnalysis');
-    
+
     const solutionSummary = solutions.slice(0, 15).map(s => ({
       name: s.name_en,
       provider: s.provider_name,
@@ -416,8 +430,8 @@ function SolutionsPage() {
             </SelectContent>
           </Select>
 
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="icon"
             onClick={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')}
             title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
@@ -430,9 +444,9 @@ function SolutionsPage() {
       {/* Results count with pluralization (i18n-4) */}
       <div className="flex justify-between items-center text-sm text-muted-foreground">
         <span>
-          {t({ 
-            en: `${filteredSolutions.length} ${pluralize(filteredSolutions.length, 'solution', 'solutions')} found`, 
-            ar: `تم العثور على ${filteredSolutions.length} ${pluralize(filteredSolutions.length, 'حل', 'حلول')}` 
+          {t({
+            en: `${filteredSolutions.length} ${pluralize(filteredSolutions.length, 'solution', 'solutions')} found`,
+            ar: `تم العثور على ${filteredSolutions.length} ${pluralize(filteredSolutions.length, 'حل', 'حلول')}`
           })}
         </span>
       </div>
@@ -564,9 +578,9 @@ function SolutionsPage() {
                     </Link>
                   )}
                   {(hasPermission('solution_delete') || solution.created_by === user?.email) && (
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       className="text-destructive hover:text-destructive hover:bg-destructive/10"
                       onClick={(e) => handleDeleteClick(solution, e)}
                     >

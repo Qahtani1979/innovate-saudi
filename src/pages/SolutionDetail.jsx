@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,17 @@ import { PageLayout } from '@/components/layout/PersonaPageLayout';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import SolutionNotFound from '../components/solutions/SolutionNotFound';
 import SolutionAccessDenied from '../components/solutions/SolutionAccessDenied';
+import SolutionOverviewTab from '../components/solutions/tabs/SolutionOverviewTab';
+import SolutionFeaturesTab from '../components/solutions/tabs/SolutionFeaturesTab';
+import SolutionTechnicalTab from '../components/solutions/tabs/SolutionTechnicalTab';
+import SolutionPricingTab from '../components/solutions/tabs/SolutionPricingTab';
+import SolutionDeploymentsTab from '../components/solutions/tabs/SolutionDeploymentsTab';
+import SolutionCasesTab from '../components/solutions/tabs/SolutionCasesTab';
+import SolutionPilotsTab from '../components/solutions/tabs/SolutionPilotsTab';
+import SolutionCertificationsTab from '../components/solutions/tabs/SolutionCertificationsTab';
+import SolutionPartnershipsTab from '../components/solutions/tabs/SolutionPartnershipsTab';
+import SolutionSupportTab from '../components/solutions/tabs/SolutionSupportTab';
+import SolutionMediaTab from '../components/solutions/tabs/SolutionMediaTab';
 
 function SolutionDetailPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -64,12 +75,57 @@ function SolutionDetailPage() {
   const [showRDCollaboration, setShowRDCollaboration] = React.useState(false);
   const queryClient = useQueryClient();
 
+  // Solution workflow gates configuration (Level 16 fix)
+  const solutionWorkflowGates = [
+    {
+      stage: 'draft',
+      label: { en: 'Draft', ar: 'مسودة' },
+      description: { en: 'Initial solution draft', ar: 'مسودة الحل الأولية' }
+    },
+    {
+      stage: 'submitted',
+      label: { en: 'Submitted', ar: 'مقدم' },
+      description: { en: 'Submitted for review', ar: 'مقدم للمراجعة' }
+    },
+    {
+      stage: 'under_review',
+      label: { en: 'Under Review', ar: 'قيد المراجعة' },
+      description: { en: 'Being reviewed by experts', ar: 'قيد المراجعة من قبل الخبراء' }
+    },
+    {
+      stage: 'verified',
+      label: { en: 'Verified', ar: 'موثق' },
+      description: { en: 'Verified and approved', ar: 'موثق ومعتمد' }
+    },
+    {
+      stage: 'published',
+      label: { en: 'Published', ar: 'منشور' },
+      description: { en: 'Published in marketplace', ar: 'منشور في السوق' }
+    },
+    {
+      stage: 'active',
+      label: { en: 'Active', ar: 'نشط' },
+      description: { en: 'Actively deployed', ar: 'منشور بشكل نشط' }
+    },
+    {
+      stage: 'archived',
+      label: { en: 'Archived', ar: 'مؤرشف' },
+      description: { en: 'Archived solution', ar: 'حل مؤرشف' }
+    }
+  ];
+
+  // Fixed N+1 query (dc-4/api-14) - direct filter instead of fetching all
   // Fixed N+1 query (dc-4/api-14) - direct filter instead of fetching all
   const { data: solution, isLoading } = useQuery({
     queryKey: ['solution', solutionId],
     queryFn: async () => {
-      const solutions = await base44.entities.Solution.filter({ id: solutionId });
-      return solutions?.[0] || null;
+      const { data, error } = await supabase
+        .from('solutions')
+        .select('*')
+        .eq('id', solutionId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
     enabled: !!solutionId
   });
@@ -77,8 +133,12 @@ function SolutionDetailPage() {
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots-for-solution', solutionId],
     queryFn: async () => {
-      const allPilots = await base44.entities.Pilot.list();
-      return allPilots.filter(p => p.solution_id === solutionId);
+      const { data, error } = await supabase
+        .from('pilots')
+        .select('*, stage')
+        .eq('solution_id', solutionId);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!solutionId
   });
@@ -86,8 +146,12 @@ function SolutionDetailPage() {
   const { data: comments = [] } = useQuery({
     queryKey: ['solution-comments', solutionId],
     queryFn: async () => {
-      const all = await base44.entities.SolutionComment.list();
-      return all.filter(c => c.solution_id === solutionId);
+      const { data, error } = await supabase
+        .from('solution_comments')
+        .select('*')
+        .eq('solution_id', solutionId);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!solutionId
   });
@@ -95,20 +159,35 @@ function SolutionDetailPage() {
   const { data: expertEvaluations = [] } = useQuery({
     queryKey: ['solution-expert-evaluations', solutionId],
     queryFn: async () => {
-      const all = await base44.entities.ExpertEvaluation.list();
-      return all.filter(e => e.entity_type === 'solution' && e.entity_id === solutionId);
+      const { data, error } = await supabase
+        .from('expert_evaluations')
+        .select('*')
+        .eq('entity_type', 'solution')
+        .eq('entity_id', solutionId);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!solutionId
   });
 
   const { data: allSolutions = [] } = useQuery({
     queryKey: ['all-solutions-for-comparison'],
-    queryFn: () => base44.entities.Solution.list(),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('solutions')
+        .select('*')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    },
     enabled: !!solutionId
   });
 
   const commentMutation = useMutation({
-    mutationFn: (data) => base44.entities.SolutionComment.create(data),
+    mutationFn: async (data) => {
+      const { error } = await supabase.from('solution_comments').insert(data);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['solution-comments']);
       setComment('');
@@ -120,7 +199,7 @@ function SolutionDetailPage() {
     setShowAIInsights(true);
     // Use centralized prompt template
     const promptConfig = SOLUTION_DETAIL_PROMPT_TEMPLATE(solution);
-    
+
     const result = await invokeAI({
       prompt: promptConfig.prompt,
       system_prompt: promptConfig.system,
@@ -251,8 +330,8 @@ function SolutionDetailPage() {
                     Featured
                   </Badge>
                 )}
-                </div>
-                <DeploymentBadges solution={solution} pilots={pilots} />
+              </div>
+              <DeploymentBadges solution={solution} pilots={pilots} />
               <h1 className="text-5xl font-bold mb-2">
                 {language === 'ar' && solution.name_ar ? solution.name_ar : solution.name_en}
               </h1>
@@ -536,550 +615,79 @@ function SolutionDetailPage() {
                 <Users className="h-4 w-4" />
                 <span className="text-xs">{t({ en: 'R&D', ar: 'بحث' })}</span>
               </TabsTrigger>
-              </TabsList>
+            </TabsList>
 
             {/* Workflow & Approvals Tab */}
             <TabsContent value="workflow" className="space-y-6">
               <UnifiedWorkflowApprovalTab
                 entityType="Solution"
                 entity={solution}
+                gates={solutionWorkflowGates}
                 onUpdate={() => queryClient.invalidateQueries(['solution', solutionId])}
               />
             </TabsContent>
 
             {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Description | الوصف</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-sm text-slate-700 leading-relaxed">
-                      {solution.description_en || 'No description provided'}
-                    </p>
-                  </div>
-                  {solution.description_ar && (
-                    <div className="pt-4 border-t" dir="rtl">
-                      <p className="text-sm text-slate-700 leading-relaxed">
-                        {solution.description_ar}
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {solution.sectors && solution.sectors.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Applicable Sectors | القطاعات المطبقة</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                      {solution.sectors.map((sector, i) => (
-                        <Badge key={i} variant="outline" className="capitalize">
-                          {sector.replace(/_/g, ' ')}
-                        </Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              <SolutionOverviewTab solution={solution} />
             </TabsContent>
 
             {/* Features Tab */}
             <TabsContent value="features" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t({ en: 'Key Features', ar: 'المميزات الرئيسية' })}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {solution.features && solution.features.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {solution.features.map((feature, i) => (
-                        <div key={i} className="flex items-start gap-3 p-3 border rounded-lg">
-                          <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                          <p className="text-sm text-slate-700">{feature}</p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-slate-500 text-center py-8">No features listed</p>
-                  )}
-                </CardContent>
-              </Card>
-
-              {solution.use_cases && solution.use_cases.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>{t({ en: 'Use Cases', ar: 'حالات الاستخدام' })}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {solution.use_cases.map((useCase, i) => (
-                        <div key={i} className="p-4 border-l-4 border-blue-500 bg-blue-50 rounded-r-lg">
-                          <h4 className="font-semibold text-slate-900 mb-1">{useCase.title}</h4>
-                          <p className="text-sm text-slate-700">{useCase.description}</p>
-                          {useCase.sector && (
-                            <Badge variant="outline" className="mt-2 text-xs">{useCase.sector}</Badge>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {solution.value_proposition && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>{t({ en: 'Value Proposition', ar: 'القيمة المقترحة' })}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-slate-700 leading-relaxed">{solution.value_proposition}</p>
-                  </CardContent>
-                </Card>
-              )}
+              <SolutionFeaturesTab solution={solution} t={t} />
             </TabsContent>
 
             {/* Technical Tab */}
             <TabsContent value="technical" className="space-y-6">
-              {solution.technical_specifications && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Code className="h-5 w-5 text-blue-600" />
-                      {t({ en: 'Technical Specifications', ar: 'المواصفات التقنية' })}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {solution.technical_specifications.technology_stack?.length > 0 && (
-                      <div>
-                        <p className="text-sm font-medium text-slate-700 mb-2">Technology Stack:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {solution.technical_specifications.technology_stack.map((tech, i) => (
-                            <Badge key={i} variant="outline">{tech}</Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {solution.technical_specifications.integration_requirements && (
-                      <div>
-                        <p className="text-sm font-medium text-slate-700">Integration:</p>
-                        <p className="text-sm text-slate-600">{solution.technical_specifications.integration_requirements}</p>
-                      </div>
-                    )}
-                    {solution.technical_specifications.scalability && (
-                      <div>
-                        <p className="text-sm font-medium text-slate-700">Scalability:</p>
-                        <p className="text-sm text-slate-600">{solution.technical_specifications.scalability}</p>
-                      </div>
-                    )}
-                    {solution.technical_specifications.security_features?.length > 0 && (
-                      <div>
-                        <p className="text-sm font-medium text-slate-700 mb-2">Security Features:</p>
-                        <div className="space-y-2">
-                          {solution.technical_specifications.security_features.map((feature, i) => (
-                            <div key={i} className="flex items-center gap-2">
-                              <Shield className="h-4 w-4 text-green-600" />
-                              <span className="text-sm text-slate-700">{feature}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-
-              {solution.deployment_options?.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>{t({ en: 'Deployment Options', ar: 'خيارات النشر' })}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                      {solution.deployment_options.map((option, i) => (
-                        <Badge key={i} variant="outline" className="capitalize">{option}</Badge>
-                      ))}
-                    </div>
-                    {solution.implementation_timeline && (
-                      <div className="mt-4">
-                        <p className="text-sm font-medium text-slate-700">Implementation Timeline:</p>
-                        <p className="text-sm text-slate-600">{solution.implementation_timeline}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
+              <SolutionTechnicalTab solution={solution} t={t} />
             </TabsContent>
 
             {/* Pricing Tab */}
             <TabsContent value="pricing">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <DollarSign className="h-5 w-5 text-green-600" />
-                    {t({ en: 'Pricing Details', ar: 'تفاصيل التسعير' })}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {solution.pricing_model && (
-                    <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
-                      <p className="text-sm font-medium text-green-900">Model: {solution.pricing_model}</p>
-                    </div>
-                  )}
-                  {solution.pricing_details && (
-                    <div className="space-y-3">
-                      {solution.pricing_details.setup_cost && (
-                        <div className="flex justify-between p-3 border rounded-lg">
-                          <span className="text-sm text-slate-600">Setup Cost:</span>
-                          <span className="text-sm font-medium">{solution.pricing_details.setup_cost} SAR</span>
-                        </div>
-                      )}
-                      {solution.pricing_details.monthly_cost && (
-                        <div className="flex justify-between p-3 border rounded-lg">
-                          <span className="text-sm text-slate-600">Monthly Cost:</span>
-                          <span className="text-sm font-medium">{solution.pricing_details.monthly_cost} SAR</span>
-                        </div>
-                      )}
-                      {solution.pricing_details.per_user_cost && (
-                        <div className="flex justify-between p-3 border rounded-lg">
-                          <span className="text-sm text-slate-600">Per User:</span>
-                          <span className="text-sm font-medium">{solution.pricing_details.per_user_cost} SAR</span>
-                        </div>
-                      )}
-                      {solution.pricing_details.custom_pricing && (
-                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                          <p className="text-sm text-blue-900">Custom pricing available for enterprise deployments</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <SolutionPricingTab solution={solution} t={t} />
             </TabsContent>
 
             {/* Deployments Tab */}
             <TabsContent value="deployments" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-green-600" />
-                    {t({ en: 'Deployment History', ar: 'سجل النشر' })}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {solution.deployments && solution.deployments.length > 0 ? (
-                    <div className="space-y-3">
-                      {solution.deployments.map((deployment, i) => (
-                        <div key={i} className="p-4 border rounded-lg">
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <p className="font-semibold text-slate-900">{deployment.organization}</p>
-                              <p className="text-sm text-slate-600">{deployment.location}</p>
-                            </div>
-                            <Badge variant="outline">{deployment.status}</Badge>
-                          </div>
-                          {deployment.start_date && (
-                            <p className="text-xs text-slate-500">Since {deployment.start_date}</p>
-                          )}
-                          {deployment.results && (
-                            <p className="text-sm text-slate-700 mt-2">{deployment.results}</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <TrendingUp className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-                      <p className="text-slate-500">No deployments recorded yet</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <SolutionDeploymentsTab solution={solution} t={t} />
             </TabsContent>
+
 
             {/* Case Studies Tab */}
             <TabsContent value="cases" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-purple-600" />
-                    {t({ en: 'Case Studies', ar: 'دراسات الحالة' })}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {solution.case_studies && solution.case_studies.length > 0 ? (
-                    <div className="space-y-4">
-                      {solution.case_studies.map((caseStudy, i) => (
-                        <div key={i} className="p-4 border rounded-lg">
-                          <h4 className="font-semibold text-slate-900 mb-2">{caseStudy.title}</h4>
-                          <div className="space-y-2 text-sm">
-                            <div>
-                              <span className="text-slate-500">Client:</span> {caseStudy.client}
-                            </div>
-                            <div>
-                              <span className="text-slate-500">Challenge:</span>
-                              <p className="text-slate-700 mt-1">{caseStudy.challenge}</p>
-                            </div>
-                            <div>
-                              <span className="text-slate-500">Results:</span>
-                              <p className="text-slate-700 mt-1">{caseStudy.results}</p>
-                            </div>
-                            {caseStudy.document_url && (
-                              <Button variant="outline" size="sm" asChild className="mt-2">
-                                <a href={caseStudy.document_url} target="_blank" rel="noopener noreferrer">
-                                  <ExternalLink className="h-3 w-3 mr-2" />
-                                  View Full Case Study
-                                </a>
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <FileText className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-                      <p className="text-slate-500">No case studies available</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <SolutionCasesTab solution={solution} t={t} />
             </TabsContent>
+
 
             {/* Pilots Tab */}
             <TabsContent value="pilots">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Related Pilots | التجارب المرتبطة</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {pilots.length > 0 ? (
-                    <div className="space-y-3">
-                      {pilots.map((pilot) => (
-                        <Link
-                          key={pilot.id}
-                          to={createPageUrl(`PilotDetail?id=${pilot.id}`)}
-                          className="block p-4 border rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium text-slate-900">{pilot.title_en}</p>
-                              <p className="text-sm text-slate-600 mt-1">{pilot.municipality_id}</p>
-                            </div>
-                            <Badge>
-                              {pilot.stage?.replace(/_/g, ' ')}
-                            </Badge>
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <Lightbulb className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-                      <p className="text-slate-500">No pilots using this solution yet</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <SolutionPilotsTab pilots={pilots} />
             </TabsContent>
+
 
             {/* Certifications Tab */}
             <TabsContent value="certifications" className="space-y-6">
-              {solution.certifications && solution.certifications.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Award className="h-5 w-5 text-green-600" />
-                      {t({ en: 'Certifications', ar: 'الشهادات' })}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {solution.certifications.map((cert, i) => (
-                        <div key={i} className="p-3 border rounded-lg">
-                          <p className="font-medium text-sm text-slate-900">{cert.name}</p>
-                          <p className="text-xs text-slate-600">{cert.issuer}</p>
-                          {cert.date && (
-                            <p className="text-xs text-slate-500 mt-1">{cert.date}</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {solution.awards && solution.awards.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Award className="h-5 w-5 text-amber-600" />
-                      {t({ en: 'Awards & Recognition', ar: 'الجوائز والتقدير' })}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {solution.awards.map((award, i) => (
-                        <div key={i} className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                          <p className="font-medium text-amber-900">{award.award}</p>
-                          <p className="text-sm text-slate-600">{award.organization} • {award.year}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              <SolutionCertificationsTab solution={solution} t={t} />
             </TabsContent>
+
 
             {/* Partnerships Tab */}
             <TabsContent value="partnerships">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5 text-blue-600" />
-                    {t({ en: 'Partnerships & Collaborations', ar: 'الشراكات والتعاون' })}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {solution.partnerships && solution.partnerships.length > 0 ? (
-                    <div className="space-y-3">
-                      {solution.partnerships.map((partnership, i) => (
-                        <div key={i} className="p-4 border rounded-lg">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <p className="font-semibold text-slate-900">{partnership.partner}</p>
-                              <Badge variant="outline" className="text-xs mt-1">{partnership.type}</Badge>
-                            </div>
-                          </div>
-                          {partnership.description && (
-                            <p className="text-sm text-slate-600 mt-2">{partnership.description}</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-slate-500 text-sm text-center py-8">No partnerships listed</p>
-                  )}
-                </CardContent>
-              </Card>
+              <SolutionPartnershipsTab solution={solution} t={t} />
             </TabsContent>
+
 
             {/* Support Tab */}
             <TabsContent value="support">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Shield className="h-5 w-5 text-blue-600" />
-                    {t({ en: 'Support Services', ar: 'خدمات الدعم' })}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {solution.support_services && solution.support_services.length > 0 ? (
-                    <div className="space-y-3">
-                      {solution.support_services.map((service, i) => (
-                        <div key={i} className="p-3 border rounded-lg">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <p className="font-medium text-sm text-slate-900">{service.service}</p>
-                              {service.description && (
-                                <p className="text-sm text-slate-600 mt-1">{service.description}</p>
-                              )}
-                            </div>
-                            {service.included && (
-                              <Badge className="bg-green-100 text-green-700 text-xs">Included</Badge>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-slate-500 text-sm text-center py-8">No support services listed</p>
-                  )}
-                </CardContent>
-              </Card>
+              <SolutionSupportTab solution={solution} t={t} />
             </TabsContent>
+
 
             {/* Media Tab */}
             <TabsContent value="media" className="space-y-6">
-              {solution.image_url && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>{t({ en: 'Main Image', ar: 'الصورة الرئيسية' })}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <img src={solution.image_url} alt={solution.name_en} className="w-full rounded-lg" />
-                  </CardContent>
-                </Card>
-              )}
-
-              {solution.gallery_urls && solution.gallery_urls.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>{t({ en: 'Gallery', ar: 'المعرض' })}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {solution.gallery_urls.map((url, i) => (
-                        <img key={i} src={url} alt={`Gallery ${i + 1}`} className="w-full rounded-lg" />
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {solution.video_url && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Video className="h-5 w-5 text-red-600" />
-                      {t({ en: 'Demo Video', ar: 'فيديو تجريبي' })}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="aspect-video bg-slate-100 rounded-lg flex items-center justify-center">
-                      <p className="text-slate-500">Video Player</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {(solution.demo_url || solution.documentation_url || solution.api_documentation_url) && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>{t({ en: 'Resources', ar: 'الموارد' })}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {solution.demo_url && (
-                      <Button variant="outline" asChild className="w-full justify-start">
-                        <a href={solution.demo_url} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          Live Demo
-                        </a>
-                      </Button>
-                    )}
-                    {solution.documentation_url && (
-                      <Button variant="outline" asChild className="w-full justify-start">
-                        <a href={solution.documentation_url} target="_blank" rel="noopener noreferrer">
-                          <FileText className="h-4 w-4 mr-2" />
-                          Documentation
-                        </a>
-                      </Button>
-                    )}
-                    {solution.api_documentation_url && (
-                      <Button variant="outline" asChild className="w-full justify-start">
-                        <a href={solution.api_documentation_url} target="_blank" rel="noopener noreferrer">
-                          <Code className="h-4 w-4 mr-2" />
-                          API Docs
-                        </a>
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
+              <SolutionMediaTab solution={solution} t={t} />
             </TabsContent>
+
 
             {/* Experts Tab */}
             <TabsContent value="experts" className="space-y-6">
@@ -1114,8 +722,8 @@ function SolutionDetailPage() {
                               <div className="text-3xl font-bold text-purple-600">{evaluation.overall_score}</div>
                               <Badge className={
                                 evaluation.recommendation === 'approve' ? 'bg-green-100 text-green-700' :
-                                evaluation.recommendation === 'reject' ? 'bg-red-100 text-red-700' :
-                                'bg-yellow-100 text-yellow-700'
+                                  evaluation.recommendation === 'reject' ? 'bg-red-100 text-red-700' :
+                                    'bg-yellow-100 text-yellow-700'
                               }>
                                 {evaluation.recommendation?.replace(/_/g, ' ')}
                               </Badge>
@@ -1194,7 +802,7 @@ function SolutionDetailPage() {
               <PriceComparisonTool solutions={allSolutions} selectedSolution={solution} />
               <PilotReadinessChecker solution={solution} />
               <DynamicPricingIntelligence solution={solution} />
-              <DeploymentSuccessTracker solution={solution} onClose={() => {}} />
+              <DeploymentSuccessTracker solution={solution} onClose={() => { }} />
               <ComplianceValidationAI solution={solution} onValidationComplete={() => queryClient.invalidateQueries(['solution', solutionId])} />
               <RealTimeMarketIntelligence solution={solution} />
             </TabsContent>
@@ -1212,9 +820,9 @@ function SolutionDetailPage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <p className="text-sm text-slate-700">
-                    {t({ 
-                      en: 'Collaborate with researchers and academic institutions to advance this solution\'s technology readiness.', 
-                      ar: 'تعاون مع الباحثين والمؤسسات الأكاديمية لتطوير جاهزية هذا الحل التقني.' 
+                    {t({
+                      en: 'Collaborate with researchers and academic institutions to advance this solution\'s technology readiness.',
+                      ar: 'تعاون مع الباحثين والمؤسسات الأكاديمية لتطوير جاهزية هذا الحل التقني.'
                     })}
                   </p>
                   <Button onClick={() => setShowRDCollaboration(true)} className="w-full bg-purple-600">
@@ -1224,7 +832,7 @@ function SolutionDetailPage() {
                 </CardContent>
               </Card>
             </TabsContent>
-            </Tabs>
+          </Tabs>
         </div>
 
         {/* Right Sidebar */}

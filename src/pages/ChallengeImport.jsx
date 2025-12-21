@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -29,7 +29,7 @@ export default function ChallengeImport() {
   const parseCSV = (text) => {
     const lines = text.split('\n').filter(line => line.trim());
     const headers = lines[0].split(';').map(h => h.trim());
-    
+
     const data = [];
     for (let i = 1; i < lines.length; i++) {
       const values = lines[i].split(';').map(v => v.trim().replace(/^"|"$/g, ''));
@@ -39,7 +39,7 @@ export default function ChallengeImport() {
       });
       data.push(record);
     }
-    
+
     return data;
   };
 
@@ -106,7 +106,7 @@ export default function ChallengeImport() {
 
     setFile(uploadedFile);
     const reader = new FileReader();
-    
+
     reader.onload = (event) => {
       try {
         const text = event.target.result;
@@ -250,7 +250,8 @@ Generate:
 
     for (let i = 0; i < parsedData.length; i++) {
       try {
-        await base44.entities.Challenge.create(parsedData[i]);
+        const { error } = await supabase.from('challenges').insert([parsedData[i]]);
+        if (error) throw error;
         imported.push(parsedData[i].code);
         setProgress(((i + 1) / parsedData.length) * 100);
       } catch (error) {
@@ -261,7 +262,7 @@ Generate:
     setImporting(false);
     setResults({ imported, failed });
     queryClient.invalidateQueries(['challenges']);
-    
+
     if (failed.length === 0) {
       toast.success(`Successfully imported ${imported.length} challenges`);
     } else {
@@ -331,9 +332,9 @@ Generate:
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-slate-600">
-                {t({ 
-                  en: 'Use AI to translate Arabic fields to English for better matching and analysis.', 
-                  ar: 'استخدم الذكاء الاصطناعي لترجمة الحقول العربية إلى الإنجليزية لتحسين المطابقة والتحليل.' 
+                {t({
+                  en: 'Use AI to translate Arabic fields to English for better matching and analysis.',
+                  ar: 'استخدم الذكاء الاصطناعي لترجمة الحقول العربية إلى الإنجليزية لتحسين المطابقة والتحليل.'
                 })}
               </p>
 
@@ -442,9 +443,9 @@ Generate:
             <CardContent className="space-y-4">
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-900">
-                  {t({ 
-                    en: `Ready to import ${parsedData.length} challenges to the database.`, 
-                    ar: `جاهز لاستيراد ${parsedData.length} تحدي إلى قاعدة البيانات.` 
+                  {t({
+                    en: `Ready to import ${parsedData.length} challenges to the database.`,
+                    ar: `جاهز لاستيراد ${parsedData.length} تحدي إلى قاعدة البيانات.`
                   })}
                 </p>
               </div>

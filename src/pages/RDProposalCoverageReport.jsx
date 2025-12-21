@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
-import { 
+import {
   CheckCircle2, FileText,
   Database, Workflow, Users, Brain, Network, Target, Shield,
   ChevronDown, ChevronRight
@@ -19,12 +19,26 @@ function RDProposalCoverageReport() {
   // Fetch real data
   const { data: proposals = [] } = useQuery({
     queryKey: ['rdproposals'],
-    queryFn: () => base44.entities.RDProposal.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('rd_proposals')
+        .select('*')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: rdCalls = [] } = useQuery({
     queryKey: ['rdcalls'],
-    queryFn: () => base44.entities.RDCall.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('rd_calls')
+        .select('*')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   // === SECTION 1: DATA MODEL & ENTITY SCHEMA ===
@@ -583,7 +597,7 @@ function RDProposalCoverageReport() {
           const isComplete = section.score === 100;
           const borderColor = isComplete ? 'border-green-200' : 'border-yellow-200';
           const textColor = isComplete ? 'text-green-600' : 'text-yellow-600';
-          
+
           return (
             <Card key={section.id} className={`border-2 ${borderColor}`}>
               <CardHeader>
@@ -632,7 +646,7 @@ function RDProposalCoverageReport() {
                           <p className="text-2xl font-bold text-amber-600">{section.data.population.byStatus.approved}</p>
                         </div>
                       </div>
-                      
+
                       <div className="p-4 border rounded-lg">
                         <h4 className="font-semibold mb-3">{section.data.entity.name} ({section.data.entity.fields} fields)</h4>
                         <div className="space-y-2">
@@ -646,7 +660,7 @@ function RDProposalCoverageReport() {
                           ))}
                         </div>
                       </div>
-                      
+
                       <p className="text-sm text-slate-600 italic">{section.data.notes}</p>
                     </div>
                   )}
@@ -771,10 +785,9 @@ function RDProposalCoverageReport() {
                       {section.data.map((path, i) => {
                         const automationLevel = parseInt(path.automation);
                         return (
-                          <div key={i} className={`p-4 border rounded-lg ${
-                            automationLevel >= 80 ? 'bg-green-50 border-green-200' : 
-                            'bg-yellow-50 border-yellow-200'
-                          }`}>
+                          <div key={i} className={`p-4 border rounded-lg ${automationLevel >= 80 ? 'bg-green-50 border-green-200' :
+                              'bg-yellow-50 border-yellow-200'
+                            }`}>
                             <div className="flex items-center justify-between mb-2">
                               <h4 className="font-semibold">{path.from} → {path.to}</h4>
                               <Badge className={automationLevel >= 80 ? 'bg-green-600' : 'bg-yellow-600'}>
@@ -931,9 +944,9 @@ function RDProposalCoverageReport() {
             <p className="font-bold text-green-900 mb-2">📊 Coverage Summary</p>
             <p className="text-sm text-green-800">
               <strong>All 9 sections at 100%:</strong> 28-field entity, {pages.length} pages, {workflows.length} workflows (85-100% automation), {userJourneys.length} personas, {aiFeatures.length} AI features, {conversionPaths.length} conversions, {comparisons.length} comparison tables, complete RBAC, {integrations.length} integration points.
-              <br/><br/>
+              <br /><br />
               <strong>Strengths:</strong> Industry-leading AI integration across proposal lifecycle - from creation to feedback. Multi-stage review with collaborative consensus. Complete automation of submission, eligibility, and award workflows.
-              <br/>
+              <br />
               <strong>Status:</strong> Production-ready with {proposals.length} live proposals. Zero gaps identified.
             </p>
           </div>

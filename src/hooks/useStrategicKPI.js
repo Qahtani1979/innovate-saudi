@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -13,19 +12,27 @@ export function useStrategicKPI() {
   // Fetch strategic plans with their KPIs/objectives
   const { data: strategicPlans = [], isLoading: plansLoading } = useQuery({
     queryKey: ['strategic-plans-kpi-hook'],
-    queryFn: () => base44.entities.StrategicPlan.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .select('*')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   // Extract KPIs from strategic plans
   const extractKPIsFromPlans = (plans) => {
     const kpis = [];
     plans.forEach(plan => {
-      const objectives = plan.objectives || plan.strategic_objectives || [];
+      // Use standard 'objectives' field from Supabase schema
+      const objectives = Array.isArray(plan.objectives) ? plan.objectives : [];
       objectives.forEach((obj, i) => {
         kpis.push({
           id: typeof obj === 'object' && obj.id ? obj.id : `${plan.id}-kpi-${i}`,
           plan_id: plan.id,
-          plan_name: plan.name_en || plan.title_en,
+          plan_name: plan.name_en,
           name_en: typeof obj === 'object' ? obj.name_en || obj.title : obj,
           name_ar: typeof obj === 'object' ? obj.name_ar : null,
           description: typeof obj === 'object' ? obj.description : null,
@@ -54,11 +61,16 @@ export function useStrategicKPI() {
       if (!plan) throw new Error('Strategic plan not found');
 
       // Update the plan's objectives with new contribution
-      const updatedObjectives = (plan.objectives || plan.strategic_objectives || []).map((obj, i) => {
-        const objId = typeof obj === 'object' && obj.id ? obj.id : `${plan.id}-kpi-${i}`;
-        
+      const objectivesArray = Array.isArray(plan.objectives) ? plan.objectives : [];
+      const updatedObjectives = objectivesArray.map((obj, i) => {
+        const isObject = typeof obj === 'object' && obj !== null && !Array.isArray(obj);
+        const objId = isObject && 'id' in obj ? obj.id : `${plan.id}-kpi-${i}`;
+
         if (objId === kpiId) {
-          const existingContributions = typeof obj === 'object' ? obj.contributions || [] : [];
+          const existingContributions = isObject && 'contributions' in obj && Array.isArray(obj.contributions)
+            ? obj.contributions
+            : [];
+
           const newContribution = {
             program_id: programId,
             value: contributionValue,
@@ -66,30 +78,43 @@ export function useStrategicKPI() {
             notes
           };
 
-          return typeof obj === 'object' ? {
-            ...obj,
-            current: (obj.current || 0) + contributionValue,
-            contributions: [...existingContributions, newContribution],
-            contributing_programs: [...new Set([...(obj.contributing_programs || []), programId])],
-            last_updated: new Date().toISOString()
-          } : {
-            name_en: obj,
-            current: contributionValue,
-            target: 100,
-            contributions: [newContribution],
-            contributing_programs: [programId],
-            last_updated: new Date().toISOString()
-          };
+          if (isObject) {
+            const currentVal = typeof obj.current === 'number' ? obj.current : 0;
+            const existingProgs = Array.isArray(obj.contributing_programs) ? obj.contributing_programs : [];
+
+            return {
+              ...obj,
+              current: currentVal + contributionValue,
+              contributions: [...existingContributions, newContribution],
+              contributing_programs: [...new Set([...existingProgs, programId])],
+              last_updated: new Date().toISOString()
+            };
+          } else {
+            return {
+              name_en: obj,
+              current: contributionValue,
+              target: 100,
+              contributions: [newContribution],
+              contributing_programs: [programId],
+              last_updated: new Date().toISOString()
+            };
+          }
         }
         return obj;
       });
 
-      // Update strategic plan with new objective values
-      await base44.entities.StrategicPlan.update(plan.id, {
-        objectives: updatedObjectives,
-        last_kpi_update: new Date().toISOString()
-      });
+      // Update strategic plan via Supabase
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .update({
+          objectives: updatedObjectives,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', plan.id)
+        .select()
+        .single();
 
+      if (error) throw error;
       return { kpiId, contributionValue, planId: plan.id };
     },
     onSuccess: ({ kpiId, contributionValue }) => {
@@ -121,8 +146,8 @@ export function useStrategicKPI() {
     return {
       totalKPIs: contributedKPIs.length,
       contributedKPIs,
-      contributionScore: strategicKPIs.length > 0 
-        ? Math.round((contributedKPIs.length / strategicKPIs.length) * 100) 
+      contributionScore: strategicKPIs.length > 0
+        ? Math.round((contributedKPIs.length / strategicKPIs.length) * 100)
         : 0
     };
   };
@@ -131,7 +156,7 @@ export function useStrategicKPI() {
    * Get KPIs linked to a specific program via strategic_plan_ids
    */
   const getLinkedKPIs = (programStrategicPlanIds = [], programStrategicObjectiveIds = []) => {
-    return strategicKPIs.filter(kpi => 
+    return strategicKPIs.filter(kpi =>
       programStrategicPlanIds.includes(kpi.plan_id) ||
       programStrategicObjectiveIds.includes(kpi.id)
     );
@@ -152,13 +177,13 @@ export function useStrategicKPI() {
     return {
       plansWithPrograms: linkedPlanIds.size,
       totalPlans: strategicPlans.length,
-      planCoverage: strategicPlans.length > 0 
-        ? Math.round((linkedPlanIds.size / strategicPlans.length) * 100) 
+      planCoverage: strategicPlans.length > 0
+        ? Math.round((linkedPlanIds.size / strategicPlans.length) * 100)
         : 0,
       kpisWithContributions: strategicKPIs.filter(k => k.contributing_programs?.length > 0).length,
       totalKPIs: strategicKPIs.length,
-      kpiCoverage: strategicKPIs.length > 0 
-        ? Math.round((strategicKPIs.filter(k => k.contributing_programs?.length > 0).length / strategicKPIs.length) * 100) 
+      kpiCoverage: strategicKPIs.length > 0
+        ? Math.round((strategicKPIs.filter(k => k.contributing_programs?.length > 0).length / strategicKPIs.length) * 100)
         : 0
     };
   };
@@ -169,7 +194,7 @@ export function useStrategicKPI() {
   const batchUpdateKPIs = useMutation({
     mutationFn: async ({ programId, outcomes }) => {
       const updates = [];
-      
+
       for (const outcome of outcomes) {
         if (outcome.linked_kpi_id && outcome.current) {
           updates.push(

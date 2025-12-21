@@ -1,4 +1,5 @@
-import { base44 } from '@/api/base44Client';
+// import { base44 } from '@/api/base44Client'; // Removed legacy client
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '../components/LanguageContext';
 import WhatIfSimulator from '../components/strategy/WhatIfSimulator';
@@ -11,12 +12,26 @@ function WhatIfSimulatorPage() {
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('*')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('pilots')
+        .select('*')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   return (

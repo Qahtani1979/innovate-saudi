@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,27 +21,55 @@ function RDPortfolioPlanner() {
 
   const { data: rdProjects = [] } = useQuery({
     queryKey: ['rd-projects'],
-    queryFn: () => base44.entities.RDProject.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('rd_projects')
+        .select('*')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: rdCalls = [] } = useQuery({
     queryKey: ['rd-calls'],
-    queryFn: () => base44.entities.RDCall.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('rd_calls')
+        .select('*')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('*')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('pilots')
+        .select('*')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const generatePortfolioPlan = async () => {
-    const gapChallenges = challenges.filter(c => 
-      !pilots.some(p => p.challenge_id === c.id) && 
+    const gapChallenges = challenges.filter(c =>
+      !pilots.some(p => p.challenge_id === c.id) &&
       !rdProjects.some(r => r.challenge_ids?.includes(c.id))
     );
 

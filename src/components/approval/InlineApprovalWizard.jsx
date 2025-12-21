@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle2, XCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 import ReviewerAI from './ReviewerAI';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import { toast } from 'sonner';
@@ -14,44 +15,54 @@ import { toast } from 'sonner';
  * InlineApprovalWizard - Quick approval interface for ApprovalCenter
  * Allows reviewers to approve/reject without leaving the queue
  */
-export default function InlineApprovalWizard({ 
-  approvalRequest, 
+export default function InlineApprovalWizard({
+  approvalRequest,
   entityData,
   gateConfig,
-  onComplete 
+  onComplete
 }) {
   const { t, language, isRTL } = useLanguage();
+  const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
   const [comments, setComments] = useState('');
   const [showAI, setShowAI] = useState(false);
   const { triggerEmail } = useEmailTrigger();
 
   const updateApprovalMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.ApprovalRequest.update(id, data),
-    onSuccess: async (_, variables) => {
-      const decision = variables.data.decision;
-      const triggerKey = decision === 'approved' ? 'approval.approved' : 
-                         decision === 'rejected' ? 'approval.rejected' : 'approval.conditional';
-      
+    mutationFn: async ({ id, data }) => {
+      const { data: result, error } = await supabase
+        .from('approval_requests')
+        .update(data)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: async (result, variables) => {
+      const decision = variables.data.approval_status;
+      const triggerKey = decision === 'approved' ? 'approval.approved' :
+        decision === 'rejected' ? 'approval.rejected' : 'approval.conditional';
+
       // Trigger approval notification email
       await triggerEmail(triggerKey, {
-        entityType: approvalRequest.entity_type,
-        entityId: approvalRequest.entity_id,
+        entity_type: approvalRequest.entity_type,
+        entity_id: approvalRequest.entity_id,
         variables: {
           entity_type: approvalRequest.entity_type,
           entity_title: entityData.title_en || entityData.name_en || entityData.code,
           gate_name: approvalRequest.gate_name,
           decision: decision,
-          comments: variables.data.comments,
+          comments: variables.data.rejection_reason || variables.data.metadata?.comments,
           requester_email: approvalRequest.requester_email
         }
       }).catch(err => console.error('Email trigger failed:', err));
 
-      queryClient.invalidateQueries(['approval-requests']);
-      queryClient.invalidateQueries(['my-approvals']);
-      toast.success(t({ 
-        en: `Request ${decision}`, 
-        ar: decision === 'approved' ? 'تمت الموافقة' : decision === 'rejected' ? 'تم الرفض' : 'موافقة مشروطة' 
+      queryClient.invalidateQueries({ queryKey: ['approval-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['my-approvals'] });
+      toast.success(t({
+        en: `Request ${decision}`,
+        ar: decision === 'approved' ? 'تمت الموافقة' : decision === 'rejected' ? 'تم الرفض' : 'موافقة مشروطة'
       }));
       if (onComplete) onComplete();
     }
@@ -61,12 +72,17 @@ export default function InlineApprovalWizard({
     await updateApprovalMutation.mutateAsync({
       id: approvalRequest.id,
       data: {
-        status: decision === 'approved' ? 'approved' : 
-               decision === 'rejected' ? 'rejected' : 
-               decision === 'conditional' ? 'conditional' : 'info_requested',
-        decision,
-        decision_date: new Date().toISOString(),
-        comments
+        approval_status: decision === 'approved' ? 'approved' :
+          decision === 'rejected' ? 'rejected' :
+            decision === 'conditional' ? 'conditional' : 'info_requested',
+        approved_at: new Date().toISOString(),
+        approver_email: currentUser?.email || 'admin@innovate.sa',
+        rejection_reason: decision === 'rejected' ? comments : undefined,
+        metadata: {
+          ...approvalRequest.metadata,
+          decision,
+          comments
+        }
       }
     });
   };

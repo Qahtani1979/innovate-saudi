@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -14,8 +14,9 @@ import { toast } from 'sonner';
 import PreFlightRiskSimulator from '../components/pilots/PreFlightRiskSimulator';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import ProtectedPage from '../components/permissions/ProtectedPage';
 
-export default function PilotLaunchWizard() {
+const PilotLaunchWizard = () => {
   const urlParams = new URLSearchParams(window.location.search);
   const pilotId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
@@ -39,8 +40,14 @@ export default function PilotLaunchWizard() {
     queryKey: ['pilot-launch', pilotId],
     queryFn: async () => {
       if (!pilotId) return null;
-      const pilots = await base44.entities.Pilot.list();
-      return pilots.find(p => p.id === pilotId);
+      const { data, error } = await supabase
+        .from('pilots')
+        .select('*')
+        .eq('id', pilotId)
+        .single();
+
+      if (error) throw error;
+      return data;
     },
     enabled: !!pilotId
   });
@@ -62,13 +69,18 @@ export default function PilotLaunchWizard() {
 
   const launchMutation = useMutation({
     mutationFn: async () => {
-      await base44.entities.Pilot.update(pilotId, {
-        stage: 'active',
-        timeline: {
-          ...pilot.timeline,
-          pilot_start: launchDate || new Date().toISOString().split('T')[0]
-        }
-      });
+      const { error } = await supabase
+        .from('pilots')
+        .update({
+          stage: 'active',
+          timeline: {
+            ...(pilot.timeline || {}),
+            pilot_start: launchDate || new Date().toISOString().split('T')[0]
+          }
+        })
+        .eq('id', pilotId);
+
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['pilot']);
@@ -79,13 +91,18 @@ export default function PilotLaunchWizard() {
 
   const moveToPreparation = useMutation({
     mutationFn: async () => {
-      await base44.entities.Pilot.update(pilotId, {
-        stage: 'preparation',
-        timeline: {
-          ...pilot.timeline,
-          prep_start: new Date().toISOString().split('T')[0]
-        }
-      });
+      const { error } = await supabase
+        .from('pilots')
+        .update({
+          stage: 'preparation',
+          timeline: {
+            ...(pilot.timeline || {}),
+            prep_start: new Date().toISOString().split('T')[0]
+          }
+        })
+        .eq('id', pilotId);
+
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['pilot']);
@@ -95,16 +112,16 @@ export default function PilotLaunchWizard() {
 
   const generateAIChecklist = async () => {
     try {
-      const { 
-        PILOT_LAUNCH_CHECKLIST_PROMPT_TEMPLATE, 
-        PILOT_LAUNCH_CHECKLIST_RESPONSE_SCHEMA 
+      const {
+        PILOT_LAUNCH_CHECKLIST_PROMPT_TEMPLATE,
+        PILOT_LAUNCH_CHECKLIST_RESPONSE_SCHEMA
       } = await import('@/lib/ai/prompts/pilots/launchChecklist');
-      
+
       const response = await invokeAI({
         prompt: PILOT_LAUNCH_CHECKLIST_PROMPT_TEMPLATE(pilot),
         response_json_schema: PILOT_LAUNCH_CHECKLIST_RESPONSE_SCHEMA
       });
-      
+
       if (response.success) {
         toast.success('AI generated readiness checklist');
       } else {
@@ -130,9 +147,9 @@ export default function PilotLaunchWizard() {
           <CardContent className="pt-6 text-center">
             <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
             <p className="text-slate-700">
-              {t({ 
-                en: 'This pilot is not ready for launch. Current stage:', 
-                ar: 'هذه التجربة غير جاهزة للإطلاق. المرحلة الحالية:' 
+              {t({
+                en: 'This pilot is not ready for launch. Current stage:',
+                ar: 'هذه التجربة غير جاهزة للإطلاق. المرحلة الحالية:'
               })} {pilot.stage}
             </p>
             <Button onClick={() => navigate(createPageUrl(`PilotDetail?id=${pilotId}`))} className="mt-4">
@@ -156,22 +173,20 @@ export default function PilotLaunchWizard() {
       />
 
       {/* Readiness Score */}
-      <Card className={`border-2 ${
-        readinessScore === 100 ? 'border-green-500 bg-green-50' :
+      <Card className={`border-2 ${readinessScore === 100 ? 'border-green-500 bg-green-50' :
         readinessScore >= 50 ? 'border-yellow-500 bg-yellow-50' :
-        'border-red-500 bg-red-50'
-      }`}>
+          'border-red-500 bg-red-50'
+        }`}>
         <CardContent className="pt-6">
           <div className="flex items-center justify-between mb-3">
             <div>
               <p className="text-sm font-medium text-slate-700">{t({ en: 'Launch Readiness', ar: 'جاهزية الإطلاق' })}</p>
               <p className="text-3xl font-bold mt-1">{Math.round(readinessScore)}%</p>
             </div>
-            <Rocket className={`h-12 w-12 ${
-              readinessScore === 100 ? 'text-green-600' :
+            <Rocket className={`h-12 w-12 ${readinessScore === 100 ? 'text-green-600' :
               readinessScore >= 50 ? 'text-yellow-600' :
-              'text-red-600'
-            }`} />
+                'text-red-600'
+              }`} />
           </div>
           <Progress value={readinessScore} className="h-3" />
         </CardContent>
@@ -287,9 +302,9 @@ export default function PilotLaunchWizard() {
                     {t({ en: 'Incomplete Readiness', ar: 'عدم اكتمال الجاهزية' })}
                   </p>
                   <p className="text-sm text-amber-800 mt-1">
-                    {t({ 
-                      en: 'Complete all checklist items before launching', 
-                      ar: 'أكمل جميع عناصر القائمة قبل الإطلاق' 
+                    {t({
+                      en: 'Complete all checklist items before launching',
+                      ar: 'أكمل جميع عناصر القائمة قبل الإطلاق'
                     })}
                   </p>
                 </div>
@@ -318,4 +333,9 @@ export default function PilotLaunchWizard() {
       </div>
     </PageLayout>
   );
-}
+};
+
+export default ProtectedPage(PilotLaunchWizard, {
+  requiredPermissions: ['pilot_create', 'pilot_edit'],
+  requiredRoles: ['Executive Leadership', 'Program Director', 'Innovation Manager']
+});

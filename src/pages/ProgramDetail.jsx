@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -70,8 +70,13 @@ export default function ProgramDetail() {
   const { data: program, isLoading } = useQuery({
     queryKey: ['program', programId],
     queryFn: async () => {
-      const programs = await base44.entities.Program.list();
-      return programs.find(p => p.id === programId);
+      const { data, error } = await supabase
+        .from('programs')
+        .select('*')
+        .eq('id', programId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
     enabled: !!programId
   });
@@ -79,8 +84,12 @@ export default function ProgramDetail() {
   const { data: applications = [] } = useQuery({
     queryKey: ['program-applications', programId],
     queryFn: async () => {
-      const all = await base44.entities.ProgramApplication.list();
-      return all.filter(a => a.program_id === programId);
+      const { data, error } = await supabase
+        .from('program_applications')
+        .select('*')
+        .eq('program_id', programId);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!programId
   });
@@ -88,8 +97,12 @@ export default function ProgramDetail() {
   const { data: comments = [] } = useQuery({
     queryKey: ['program-comments', programId],
     queryFn: async () => {
-      const all = await base44.entities.ProgramComment.list();
-      return all.filter(c => c.program_id === programId);
+      const { data, error } = await supabase
+        .from('program_comments')
+        .select('*')
+        .eq('program_id', programId);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!programId
   });
@@ -97,14 +110,23 @@ export default function ProgramDetail() {
   const { data: expertAssignments = [] } = useQuery({
     queryKey: ['program-expert-assignments', programId],
     queryFn: async () => {
-      const all = await base44.entities.ExpertAssignment.list();
-      return all.filter(a => a.entity_type === 'program' && a.entity_id === programId && a.assignment_type === 'mentor');
+      const { data, error } = await supabase
+        .from('expert_assignments')
+        .select('*')
+        .eq('entity_type', 'program')
+        .eq('entity_id', programId)
+        .eq('assignment_type', 'mentor');
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!programId
   });
 
   const commentMutation = useMutation({
-    mutationFn: (data) => base44.entities.ProgramComment.create(data),
+    mutationFn: async (data) => {
+      const { error } = await supabase.from('program_comments').insert(data);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['program-comments']);
       setComment('');
@@ -117,7 +139,7 @@ export default function ProgramDetail() {
     try {
       // Use centralized prompt template
       const promptConfig = PROGRAM_DETAIL_PROMPT_TEMPLATE(program);
-      
+
       const result = await invokeAI({
         prompt: promptConfig.prompt,
         system_prompt: promptConfig.system,
@@ -548,7 +570,7 @@ export default function ProgramDetail() {
                 <BookOpen className="h-4 w-4" />
                 <span className="text-xs">{t({ en: 'Resources', ar: 'موارد' })}</span>
               </TabsTrigger>
-              </TabsList>
+            </TabsList>
 
             {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-6">
@@ -768,10 +790,10 @@ export default function ProgramDetail() {
                             </div>
                             <Badge className={
                               assignment.status === 'completed' ? 'bg-green-100 text-green-700' :
-                              assignment.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
-                              assignment.status === 'accepted' ? 'bg-purple-100 text-purple-700' :
-                              assignment.status === 'declined' ? 'bg-red-100 text-red-700' :
-                              'bg-yellow-100 text-yellow-700'
+                                assignment.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                                  assignment.status === 'accepted' ? 'bg-purple-100 text-purple-700' :
+                                    assignment.status === 'declined' ? 'bg-red-100 text-red-700' :
+                                      'bg-yellow-100 text-yellow-700'
                             }>
                               {assignment.status?.replace(/_/g, ' ')}
                             </Badge>
@@ -891,8 +913,8 @@ export default function ProgramDetail() {
               <MunicipalImpactCalculator programId={programId} />
 
               {applications.length > 0 && (
-                <AlumniSuccessStoryGenerator 
-                  alumnus={applications[0]} 
+                <AlumniSuccessStoryGenerator
+                  alumnus={applications[0]}
                   program={program}
                 />
               )}
@@ -1066,8 +1088,10 @@ export default function ProgramDetail() {
                         <ProgramToPilotWorkflow program={program} graduateApplication={applications[0]} />
                       </div>
                       <p className="text-xs text-slate-500">
-                        {t({ en: 'Convert program outcomes into marketplace solutions or pilot projects', 
-                             ar: 'تحويل نتائج البرنامج إلى حلول أو تجارب' })}
+                        {t({
+                          en: 'Convert program outcomes into marketplace solutions or pilot projects',
+                          ar: 'تحويل نتائج البرنامج إلى حلول أو تجارب'
+                        })}
                       </p>
                     </div>
                   )}
@@ -1079,8 +1103,10 @@ export default function ProgramDetail() {
                         {t({ en: 'Addressing Challenges', ar: 'التحديات المعالجة' })}
                       </h3>
                       <p className="text-sm text-slate-600">
-                        {t({ en: `This program addresses ${program.linked_challenge_ids.length} municipal challenge(s)`, 
-                             ar: `يعالج هذا البرنامج ${program.linked_challenge_ids.length} تحدي بلدي` })}
+                        {t({
+                          en: `This program addresses ${program.linked_challenge_ids.length} municipal challenge(s)`,
+                          ar: `يعالج هذا البرنامج ${program.linked_challenge_ids.length} تحدي بلدي`
+                        })}
                       </p>
                     </div>
                   )}
@@ -1089,8 +1115,10 @@ export default function ProgramDetail() {
                   {!['active', 'completed'].includes(program.status) && (
                     <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
                       <p className="text-sm text-amber-900">
-                        {t({ en: 'Conversion workflows available when program is active or completed', 
-                             ar: 'سير عمل التحويل متاح عندما يكون البرنامج نشطاً أو مكتملاً' })}
+                        {t({
+                          en: 'Conversion workflows available when program is active or completed',
+                          ar: 'سير عمل التحويل متاح عندما يكون البرنامج نشطاً أو مكتملاً'
+                        })}
                       </p>
                     </div>
                   )}
@@ -1130,7 +1158,7 @@ export default function ProgramDetail() {
                       onChange={(e) => setComment(e.target.value)}
                       rows={3}
                     />
-                    <Button 
+                    <Button
                       onClick={() => commentMutation.mutate({ program_id: programId, comment_text: comment })}
                       className="bg-gradient-to-r from-blue-600 to-teal-600"
                       disabled={!comment}

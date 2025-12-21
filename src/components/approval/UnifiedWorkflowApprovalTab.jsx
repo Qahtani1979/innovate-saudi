@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
+import {
   CheckCircle2, XCircle, Clock, AlertTriangle, ChevronRight,
   Send, Shield
 } from 'lucide-react';
@@ -20,9 +20,9 @@ import ProgramExpertEvaluation from '../programs/ProgramExpertEvaluation';
  * UnifiedWorkflowApprovalTab - Single tab replacing separate Workflow + Approvals tabs
  * Shows workflow timeline + approval gates in one unified view
  */
-export default function UnifiedWorkflowApprovalTab({ 
-  entityType, 
-  entityId, 
+export default function UnifiedWorkflowApprovalTab({
+  entityType,
+  entityId,
   entityData
 }) {
   const { t, language, isRTL } = useLanguage();
@@ -51,7 +51,15 @@ export default function UnifiedWorkflowApprovalTab({
 
   // Create approval request mutation
   const createApprovalMutation = useMutation({
-    mutationFn: (data) => base44.entities.ApprovalRequest.create(data),
+    mutationFn: async (data) => {
+      const { data: result, error } = await supabase
+        .from('approval_requests')
+        .insert(data)
+        .select()
+        .single();
+      if (error) throw error;
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['approval-requests', entityType, entityId]);
     }
@@ -59,7 +67,16 @@ export default function UnifiedWorkflowApprovalTab({
 
   // Update approval request mutation
   const updateApprovalMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.ApprovalRequest.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      const { data: result, error } = await supabase
+        .from('approval_requests')
+        .update(data)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['approval-requests', entityType, entityId]);
     }
@@ -67,7 +84,7 @@ export default function UnifiedWorkflowApprovalTab({
 
   // Get approval request for a specific gate
   const getApprovalForGate = (gateName) => {
-    return approvalRequests.find(a => a.gate_name === gateName && !a.is_deleted);
+    return approvalRequests.find(a => a.request_type === gateName && !a.is_deleted);
   };
 
   // Submit for approval (simplified)
@@ -75,13 +92,15 @@ export default function UnifiedWorkflowApprovalTab({
     const approvalData = {
       entity_type: entityType,
       entity_id: entityId,
-      gate_name: gateName,
-      gate_type: 'review',
-      workflow_stage: entityData?.workflow_stage || entityData?.status || entityData?.stage || 'unknown',
+      request_type: gateName,
       requester_email: currentUser?.email || 'unknown',
-      reviewer_role: 'admin',
-      status: 'pending',
-      priority: 'medium'
+      approval_status: 'pending',
+      metadata: {
+        gate_type: 'review',
+        workflow_stage: entityData?.workflow_stage || entityData?.status || entityData?.stage || 'unknown',
+        reviewer_role: 'admin',
+        priority: 'medium'
+      }
     };
 
     await createApprovalMutation.mutateAsync(approvalData);
@@ -92,14 +111,18 @@ export default function UnifiedWorkflowApprovalTab({
     await updateApprovalMutation.mutateAsync({
       id: approvalRequest.id,
       data: {
-        status: decision === 'approved' ? 'approved' : 
-               decision === 'rejected' ? 'rejected' : 
-               decision === 'conditional' ? 'conditional' : 'info_requested',
-        decision,
-        decision_date: new Date().toISOString(),
-        reviewer_email: currentUser.email,
-        comments,
-        conditions: conditions.length > 0 ? conditions : undefined
+        approval_status: decision === 'approved' ? 'approved' :
+          decision === 'rejected' ? 'rejected' :
+            decision === 'conditional' ? 'conditional' : 'info_requested',
+        approved_at: new Date().toISOString(),
+        approver_email: currentUser.email,
+        rejection_reason: decision === 'rejected' ? comments : undefined,
+        metadata: {
+          ...approvalRequest.metadata,
+          decision,
+          comments,
+          conditions: conditions.length > 0 ? conditions : undefined
+        }
       }
     });
   };
@@ -108,11 +131,11 @@ export default function UnifiedWorkflowApprovalTab({
   const getGateStatus = (gateName) => {
     const approval = getApprovalForGate(gateName);
     if (!approval) return { status: 'not_started', color: 'slate', icon: Clock };
-    
-    if (approval.status === 'approved') return { status: 'approved', color: 'green', icon: CheckCircle2 };
-    if (approval.status === 'rejected') return { status: 'rejected', color: 'red', icon: XCircle };
-    if (approval.status === 'conditional') return { status: 'conditional', color: 'yellow', icon: AlertTriangle };
-    if (approval.status === 'under_review') return { status: 'under_review', color: 'blue', icon: Clock };
+
+    if (approval.approval_status === 'approved') return { status: 'approved', color: 'green', icon: CheckCircle2 };
+    if (approval.approval_status === 'rejected') return { status: 'rejected', color: 'red', icon: XCircle };
+    if (approval.approval_status === 'conditional') return { status: 'conditional', color: 'yellow', icon: AlertTriangle };
+    if (approval.approval_status === 'under_review') return { status: 'under_review', color: 'blue', icon: Clock };
     return { status: 'pending', color: 'amber', icon: Clock };
   };
 
@@ -132,7 +155,12 @@ export default function UnifiedWorkflowApprovalTab({
               if (approval) {
                 updateApprovalMutation.mutate({
                   id: approval.id,
-                  data: { self_check_data: data }
+                  data: {
+                    metadata: {
+                      ...approval.metadata,
+                      self_check_data: data
+                    }
+                  }
                 });
               }
             }}
@@ -154,8 +182,8 @@ export default function UnifiedWorkflowApprovalTab({
               gateConfig={selectedGate}
               approvalRequest={approval}
             />
-            <ProgramExpertEvaluation 
-              program={entityData} 
+            <ProgramExpertEvaluation
+              program={entityData}
               approvalRequest={approval}
             />
           </>
@@ -171,8 +199,8 @@ export default function UnifiedWorkflowApprovalTab({
             gateConfig={selectedGate}
             approvalRequest={approval}
           />
-          <ReviewPanel 
-            gate={selectedGate} 
+          <ReviewPanel
+            gate={selectedGate}
             approval={approval}
             currentUser={currentUser}
             onDecision={handleReviewerDecision}
@@ -201,10 +229,9 @@ export default function UnifiedWorkflowApprovalTab({
               const isOverdue = false;
 
               return (
-                <div key={idx} className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                  selectedGate?.name === gate.name ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-slate-300'
-                }`}
-                onClick={() => setSelectedGate(gate)}
+                <div key={idx} className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${selectedGate?.name === gate.name ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                  onClick={() => setSelectedGate(gate)}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -220,17 +247,19 @@ export default function UnifiedWorkflowApprovalTab({
                     </div>
                     <div className="flex items-center gap-3">
                       {isOverdue && (
-                        <Badge className="bg-red-600 text-white">
+                        <Badge variant="destructive" className="bg-red-600 text-white">
                           {t({ en: 'Overdue', ar: 'متأخر' })}
                         </Badge>
                       )}
-                      <Badge className={`bg-${gateStatus.color}-100 text-${gateStatus.color}-700`}>
+                      <Badge variant="secondary" className={`bg-${gateStatus.color}-100 text-${gateStatus.color}-700`}>
                         {gateStatus.status.replace(/_/g, ' ')}
                       </Badge>
                       {approval && (
                         <Badge variant="outline" className="text-xs">
-                          {t({ en: `Submitted ${new Date(approval.created_date).toLocaleDateString()}`, 
-                               ar: `قُدم ${new Date(approval.created_date).toLocaleDateString()}` })}
+                          {t({
+                            en: `Submitted ${new Date(approval.created_at).toLocaleDateString()}`,
+                            ar: `قُدم ${new Date(approval.created_at).toLocaleDateString()}`
+                          })}
                         </Badge>
                       )}
                       <ChevronRight className="h-5 w-5 text-slate-400" />
@@ -250,7 +279,7 @@ export default function UnifiedWorkflowApprovalTab({
             <CardTitle className="flex items-center justify-between">
               <span>{selectedGate.label[language]}</span>
               {!getApprovalForGate(selectedGate.name) && (
-                <Button 
+                <Button
                   onClick={() => handleSubmitForApproval(selectedGate.name)}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
@@ -344,8 +373,8 @@ function GateOverview({ gate, approval }) {
         <div className="p-3 bg-slate-50 rounded border">
           <p className="text-xs text-slate-600">{t({ en: 'Status', ar: 'الحالة' })}</p>
           <p className="font-semibold text-slate-900">
-            {approval 
-              ? (statusLabels[approval.status] ? t(statusLabels[approval.status]) : approval.status)
+            {approval
+              ? (statusLabels[approval.approval_status] ? t(statusLabels[approval.approval_status]) : approval.approval_status)
               : t({ en: 'Not Started', ar: 'لم يبدأ' })}
           </p>
         </div>
@@ -361,23 +390,23 @@ function GateOverview({ gate, approval }) {
             <div>
               <p className="text-slate-600">{t({ en: 'Submitted On:', ar: 'تاريخ التقديم:' })}</p>
               <p className="font-medium text-slate-900">
-                {new Date(approval.created_date).toLocaleDateString()}
+                {new Date(approval.created_at).toLocaleDateString()}
               </p>
             </div>
-            {approval.reviewer_email && (
+            {approval.approver_email && (
               <>
                 <div>
                   <p className="text-slate-600">{t({ en: 'Reviewer:', ar: 'المراجع:' })}</p>
-                  <p className="font-medium text-slate-900">{approval.reviewer_email}</p>
+                  <p className="font-medium text-slate-900">{approval.approver_email}</p>
                 </div>
                 <div>
                   <p className="text-slate-600">{t({ en: 'Decision:', ar: 'القرار:' })}</p>
-                  <Badge className={
-                    approval.decision === 'approved' ? 'bg-green-600 text-white' :
-                    approval.decision === 'rejected' ? 'bg-red-600 text-white' :
-                    'bg-yellow-600 text-white'
+                  <Badge variant="outline" className={
+                    approval.metadata?.decision === 'approved' ? 'bg-green-600 text-white' :
+                      approval.metadata?.decision === 'rejected' ? 'bg-red-600 text-white' :
+                        'bg-yellow-600 text-white'
                   }>
-                    {approval.decision || 'Pending'}
+                    {approval.metadata?.decision || 'Pending'}
                   </Badge>
                 </div>
               </>
@@ -408,7 +437,7 @@ function SelfCheckPanel({ gate, approval }) {
       <div className="space-y-2">
         {gate.selfCheckItems?.map((item, idx) => {
           const checkItem = selfCheckData.checklist_items?.find(c => c.item === item[language]);
-          
+
           return (
             <div key={idx} className="flex items-start gap-3 p-3 bg-white rounded border">
               {checkItem?.checked ? (
@@ -458,8 +487,8 @@ function ReviewPanel({ gate, approval, currentUser, onDecision }) {
   }
 
   // Check if current user can review
-  const canReview = currentUser.role === 'admin' || 
-                    currentUser.assigned_roles?.includes(gate.requiredRole);
+  const canReview = currentUser.role === 'admin' ||
+    currentUser.assigned_roles?.includes(gate.requiredRole);
 
   if (!canReview) {
     return (
@@ -471,18 +500,18 @@ function ReviewPanel({ gate, approval, currentUser, onDecision }) {
     );
   }
 
-  if (approval.status === 'approved' || approval.status === 'rejected') {
+  if (approval.approval_status === 'approved' || approval.approval_status === 'rejected') {
     return (
       <div className="p-4 bg-slate-50 rounded-lg border">
         <p className="font-semibold text-slate-900 mb-2">
           {t({ en: 'Decision Recorded', ar: 'القرار مسجل' })}
         </p>
-        <Badge className={approval.decision === 'approved' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}>
-          {approval.decision}
+        <Badge variant="outline" className={approval.metadata?.decision === 'approved' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}>
+          {approval.metadata?.decision}
         </Badge>
-        <p className="text-sm text-slate-700 mt-3">{approval.comments}</p>
+        <p className="text-sm text-slate-700 mt-3">{approval.metadata?.comments || approval.rejection_reason}</p>
         <p className="text-xs text-slate-500 mt-2">
-          {t({ en: 'By', ar: 'بواسطة' })}: {approval.reviewer_email} • {new Date(approval.decision_date).toLocaleDateString()}
+          {t({ en: 'By', ar: 'بواسطة' })}: {approval.approver_email} • {new Date(approval.approved_at).toLocaleDateString()}
         </p>
       </div>
     );
@@ -511,7 +540,7 @@ function ReviewPanel({ gate, approval, currentUser, onDecision }) {
           onChange={(e) => setComments(e.target.value)}
           className="mb-3"
         />
-        
+
         <div className="flex gap-2 flex-wrap">
           <Button
             onClick={() => onDecision(approval, 'approved', comments)}

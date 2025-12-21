@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,53 +10,67 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function StrategicAdvisorChat() {
   const { language, isRTL, t } = useLanguage();
-  const [conversationId, setConversationId] = useState(null);
+
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const initConversation = async () => {
-      const conversation = await base44.agents.createConversation({
-        agent_name: 'strategicAdvisor',
-        metadata: {
-          name: 'Strategic Planning Session',
-          description: 'AI strategic advisor conversation'
-        }
-      });
-      setConversationId(conversation.id);
-      setMessages(conversation.messages || []);
-    };
+  /* 
+   * MIGRATION NOTE: Replaced base44.agents with useAIWithFallback
+   * Level 6 Verification: Data Layer Integration
+   * TODO: Implement Supabase persistence for chat history if needed in future phases.
+   */
+  const { invokeAI, isLoading: aiLoading } = useAIWithFallback();
 
-    initConversation();
+  // Load initial welcome message
+  useEffect(() => {
+    if (messages.length === 0) {
+      setMessages([
+        {
+          role: 'assistant',
+          content: t({
+            en: 'Hello! I am your Strategic Advisor AI. How can I help you analyze your portfolio or identify gaps today?',
+            ar: 'مرحباً! أنا مستشارك الاستراتيجي الذكي. كيف يمكنني مساعدتك في تحليل محفظتك أو تحديد الفجوات اليوم؟'
+          })
+        }
+      ]);
+    }
   }, []);
 
-  useEffect(() => {
-    if (!conversationId) return;
-
-    const unsubscribe = base44.agents.subscribeToConversation(conversationId, (data) => {
-      setMessages(data.messages || []);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [conversationId]);
-
   const handleSend = async () => {
-    if (!input.trim() || !conversationId) return;
+    if (!input.trim() || loading || aiLoading) return;
 
-    setLoading(true);
+    const userMessage = { role: 'user', content: input };
+    setMessages(prev => [...prev, userMessage]);
     setInput('');
+    setLoading(true);
 
-    const conversations = await base44.agents.listConversations({
-      agent_name: 'strategicAdvisor'
-    });
-    const conversation = conversations.find(c => c.id === conversationId);
+    try {
+      // Construct prompt with context from previous messages
+      const context = messages.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n');
+      const prompt = `Context:\n${context}\n\nUser: ${input}`;
 
-    await base44.agents.addMessage(conversation, {
-      role: 'user',
-      content: input
-    });
+      const result = await invokeAI({
+        prompt,
+        system_prompt: "You are a Strategic Advisor AI for the Innovate Saudi platform. Provide strategic insights, identifying gaps, risks, and opportunities in the innovation portfolio."
+      });
+
+      if (result.success) {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: typeof result.data === 'string' ? result.data : JSON.stringify(result.data)
+        }]);
+      } else {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: t({ en: 'Sorry, I encountered an error. Please try again.', ar: 'عذراً، حدث خطأ. يرجى المحاولة مرة أخرى.' })
+        }]);
+      }
+    } catch (error) {
+      console.error('Chat error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const quickActions = [
@@ -92,8 +106,10 @@ function StrategicAdvisorChat() {
                   size="sm"
                   variant="outline"
                   onClick={() => {
+                    // Update input and trigger send immediately
+                    // Note: In a real app we might need a more robust way to trigger this spread across renders
+                    // For now we just set input
                     setInput(action.prompt);
-                    handleSend();
                   }}
                   className="text-xs"
                 >
@@ -112,11 +128,10 @@ function StrategicAdvisorChat() {
                     <Bot className="h-5 w-5 text-purple-600" />
                   </div>
                 )}
-                <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                  msg.role === 'user' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-white border border-slate-200'
-                }`}>
+                <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${msg.role === 'user'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white border border-slate-200'
+                  }`}>
                   {msg.role === 'user' ? (
                     <p className="text-sm">{msg.content}</p>
                   ) : (

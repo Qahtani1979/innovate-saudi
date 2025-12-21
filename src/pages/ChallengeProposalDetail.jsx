@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,12 +11,12 @@ import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
-import { 
-  FileText, 
-  Edit, 
-  Trash2, 
-  Save, 
-  X, 
+import {
+  FileText,
+  Edit,
+  Trash2,
+  Save,
+  X,
   Loader2,
   ArrowLeft,
   Calendar,
@@ -37,10 +37,9 @@ function ChallengeProposalDetail() {
   const { data: proposal, isLoading } = useQuery({
     queryKey: ['proposal', proposalId],
     queryFn: async () => {
-      const proposals = await base44.entities.ChallengeProposal.list();
-      const found = proposals.find(p => p.id === proposalId);
-      if (found) setFormData(found);
-      return found;
+      const { data } = await supabase.from('challenge_proposals').select('*').eq('id', proposalId).single();
+      if (data) setFormData(data);
+      return data;
     },
     enabled: !!proposalId
   });
@@ -49,8 +48,8 @@ function ChallengeProposalDetail() {
     queryKey: ['challenge', proposal?.challenge_id],
     queryFn: async () => {
       if (!proposal?.challenge_id) return null;
-      const challenges = await base44.entities.Challenge.list();
-      return challenges.find(c => c.id === proposal.challenge_id);
+      const { data } = await supabase.from('challenges').select('*').eq('id', proposal.challenge_id).single();
+      return data;
     },
     enabled: !!proposal?.challenge_id
   });
@@ -59,14 +58,17 @@ function ChallengeProposalDetail() {
     queryKey: ['solution', proposal?.solution_id],
     queryFn: async () => {
       if (!proposal?.solution_id) return null;
-      const solutions = await base44.entities.Solution.list();
-      return solutions.find(s => s.id === proposal.solution_id);
+      const { data } = await supabase.from('solutions').select('*').eq('id', proposal.solution_id).single();
+      return data;
     },
     enabled: !!proposal?.solution_id
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.ChallengeProposal.update(proposalId, data),
+    mutationFn: async (data) => {
+      const { error } = await supabase.from('challenge_proposals').update(data).eq('id', proposalId);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['proposal']);
       queryClient.invalidateQueries(['challenge-proposals']);
@@ -76,7 +78,10 @@ function ChallengeProposalDetail() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: () => base44.entities.ChallengeProposal.delete(proposalId),
+    mutationFn: async () => {
+      const { error } = await supabase.from('challenge_proposals').delete().eq('id', proposalId);
+      if (error) throw error;
+    },
     onSuccess: () => {
       toast.success(t({ en: 'Proposal deleted', ar: 'تم حذف المقترح' }));
       window.location.href = createPageUrl(`ChallengeDetail?id=${proposal.challenge_id}`);
@@ -121,8 +126,8 @@ function ChallengeProposalDetail() {
                 <Edit className="h-4 w-4" />
                 {t({ en: 'Edit', ar: 'تعديل' })}
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => {
                   if (confirm(t({ en: 'Delete this proposal?', ar: 'حذف هذا المقترح؟' }))) {
                     deleteMutation.mutate();
@@ -192,14 +197,14 @@ function ChallengeProposalDetail() {
                 <Label>{t({ en: 'Proposal Title', ar: 'عنوان المقترح' })}</Label>
                 <Input
                   value={formData.proposal_title || ''}
-                  onChange={(e) => setFormData({...formData, proposal_title: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, proposal_title: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
                 <Label>{t({ en: 'Approach Summary', ar: 'ملخص النهج' })}</Label>
                 <Textarea
                   value={formData.approach_summary || ''}
-                  onChange={(e) => setFormData({...formData, approach_summary: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, approach_summary: e.target.value })}
                   rows={4}
                 />
               </div>
@@ -207,7 +212,7 @@ function ChallengeProposalDetail() {
                 <Label>{t({ en: 'Detailed Proposal', ar: 'المقترح التفصيلي' })}</Label>
                 <Textarea
                   value={formData.detailed_proposal || ''}
-                  onChange={(e) => setFormData({...formData, detailed_proposal: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, detailed_proposal: e.target.value })}
                   rows={6}
                 />
               </div>
@@ -217,7 +222,7 @@ function ChallengeProposalDetail() {
                   <Input
                     type="number"
                     value={formData.timeline_weeks || ''}
-                    onChange={(e) => setFormData({...formData, timeline_weeks: parseInt(e.target.value)})}
+                    onChange={(e) => setFormData({ ...formData, timeline_weeks: parseInt(e.target.value) })}
                   />
                 </div>
                 <div className="space-y-2">
@@ -225,7 +230,7 @@ function ChallengeProposalDetail() {
                   <Input
                     type="number"
                     value={formData.estimated_cost || ''}
-                    onChange={(e) => setFormData({...formData, estimated_cost: parseFloat(e.target.value)})}
+                    onChange={(e) => setFormData({ ...formData, estimated_cost: parseFloat(e.target.value) })}
                   />
                 </div>
               </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,18 +18,28 @@ function PilotSuccessPatternsPage() {
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const { invokeAI, status, isLoading: loading, rateLimitInfo, isAvailable } = useAIWithFallback();
 
+
   const { data: successfulPilots = [] } = useQuery({
     queryKey: ['successful-pilots'],
     queryFn: async () => {
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => (p.stage === 'completed' || p.stage === 'scaled') && (p.success_probability || 0) >= 70);
+      const { data } = await supabase.from('pilots').select('*').in('stage', ['completed', 'scaled']).eq('is_deleted', false);
+      return (data || []).filter(p => (p.success_probability || 0) >= 70);
     }
   });
 
   const { data: allPilots = [] } = useQuery({
     queryKey: ['all-pilots-patterns'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('pilots').select('*').eq('is_deleted', false);
+      return data || [];
+    }
   });
+
+  // Safe accessors
+  const getTeam = (p) => Array.isArray(p?.team) ? p.team : [];
+  const getStakeholders = (p) => Array.isArray(p?.stakeholders) ? p.stakeholders : [];
+  const getKpis = (p) => Array.isArray(p?.kpis) ? p.kpis : [];
+
 
   const generateAIPatterns = async () => {
     const pilotSummary = successfulPilots.map(p => ({
@@ -37,14 +47,15 @@ function PilotSuccessPatternsPage() {
       success_probability: p.success_probability,
       budget: p.budget,
       duration_weeks: p.duration_weeks,
-      team_size: p.team?.length || 0,
-      stakeholder_count: p.stakeholders?.length || 0,
-      kpi_count: p.kpis?.length || 0,
+      team_size: getTeam(p).length,
+      stakeholder_count: getStakeholders(p).length,
+      kpi_count: getKpis(p).length,
       stage: p.stage,
-      launch_month: p.timeline?.pilot_start ? new Date(p.timeline.pilot_start).getMonth() + 1 : null
+      launch_month: p.timeline?.['pilot_start'] ? new Date(p.timeline['pilot_start']).getMonth() + 1 : null
     }));
 
     const result = await invokeAI({
+      system_prompt: 'You are an expert AI analyst specializing in municipal innovation pilots. Analyze success patterns from the provided data.',
       prompt: `Analyze these ${successfulPilots.length} successful municipal innovation pilots and identify success patterns:
 
 Pilot Data: ${JSON.stringify(pilotSummary)}
@@ -112,7 +123,7 @@ For each pattern, provide:
   })).sort((a, b) => b.avg_success - a.avg_success);
 
   const teamSizeData = successfulPilots.map(p => ({
-    team_size: p.team?.length || 0,
+    team_size: getTeam(p).length,
     success: p.success_probability || 70
   })).filter(d => d.team_size > 0);
 
@@ -129,8 +140,8 @@ For each pattern, provide:
 
   const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'];
 
-  const successRate = allPilots.length > 0 
-    ? Math.round((successfulPilots.length / allPilots.length) * 100) 
+  const successRate = allPilots.length > 0
+    ? Math.round((successfulPilots.length / allPilots.length) * 100)
     : 0;
 
   return (
@@ -207,8 +218,8 @@ For each pattern, provide:
                 <div className="flex items-start gap-3">
                   <Badge className={
                     pattern.confidence === 'high' ? 'bg-green-600' :
-                    pattern.confidence === 'medium' ? 'bg-yellow-600' :
-                    'bg-slate-600'
+                      pattern.confidence === 'medium' ? 'bg-yellow-600' :
+                        'bg-slate-600'
                   }>{pattern.confidence} confidence</Badge>
                   <div className="flex-1">
                     <h4 className="font-semibold text-slate-900 mb-1">
@@ -410,4 +421,4 @@ For each pattern, provide:
   );
 }
 
-export default ProtectedPage(PilotSuccessPatternsPage, { requiredPermissions: [] });
+export default ProtectedPage(PilotSuccessPatternsPage, { requiredPermissions: ['pilot_view'] });

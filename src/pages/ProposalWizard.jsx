@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ export default function ProposalWizard() {
   const { language, isRTL, t } = useLanguage();
   const urlParams = new URLSearchParams(window.location.search);
   const preselectedCallId = urlParams.get('callId');
-  
+
   const [step, setStep] = useState(preselectedCallId ? 2 : 1);
   const [formData, setFormData] = useState({
     rd_call_id: preselectedCallId || '',
@@ -54,13 +54,26 @@ export default function ProposalWizard() {
   const { data: rdCalls = [] } = useQuery({
     queryKey: ['open-rd-calls'],
     queryFn: async () => {
-      const all = await base44.entities.RDCall.list();
-      return all.filter(c => c.status === 'open');
+      const { data, error } = await supabase
+        .from('rd_calls')
+        .select('*')
+        .eq('status', 'open')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
     }
   });
 
   const submitMutation = useMutation({
-    mutationFn: (data) => base44.entities.RDProposal.create(data),
+    mutationFn: async (data) => {
+      const { data: result, error } = await supabase
+        .from('rd_proposals')
+        .insert([data])
+        .select()
+        .single();
+      if (error) throw error;
+      return result;
+    },
     onSuccess: () => {
       setStep(4);
     }
@@ -185,7 +198,7 @@ Align with Saudi Vision 2030 and municipal innovation goals.`,
                   ))}
                 </SelectContent>
               </Select>
-              
+
               {selectedCall && (
                 <Card className="bg-blue-50 border-blue-200">
                   <CardContent className="pt-4">
@@ -232,7 +245,7 @@ Align with Saudi Vision 2030 and municipal innovation goals.`,
                 </Button>
               </div>
               <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
-              
+
               {/* Titles */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -244,7 +257,7 @@ Align with Saudi Vision 2030 and municipal innovation goals.`,
                   <Input value={formData.title_ar} onChange={(e) => setFormData({ ...formData, title_ar: e.target.value })} className="mt-1" dir="rtl" />
                 </div>
               </div>
-              
+
               {/* Taglines */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -256,7 +269,7 @@ Align with Saudi Vision 2030 and municipal innovation goals.`,
                   <Input value={formData.tagline_ar} onChange={(e) => setFormData({ ...formData, tagline_ar: e.target.value })} className="mt-1" dir="rtl" />
                 </div>
               </div>
-              
+
               {/* Institution & Research Area */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -268,7 +281,7 @@ Align with Saudi Vision 2030 and municipal innovation goals.`,
                   <Input value={formData.research_area} onChange={(e) => setFormData({ ...formData, research_area: e.target.value })} className="mt-1" />
                 </div>
               </div>
-              
+
               {/* Abstracts */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -280,7 +293,7 @@ Align with Saudi Vision 2030 and municipal innovation goals.`,
                   <Textarea value={formData.abstract_ar} onChange={(e) => setFormData({ ...formData, abstract_ar: e.target.value })} rows={5} className="mt-1" dir="rtl" />
                 </div>
               </div>
-              
+
               {/* Methodology */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -292,7 +305,7 @@ Align with Saudi Vision 2030 and municipal innovation goals.`,
                   <Textarea value={formData.methodology_ar} onChange={(e) => setFormData({ ...formData, methodology_ar: e.target.value })} rows={4} className="mt-1" dir="rtl" />
                 </div>
               </div>
-              
+
               {/* Impact & Innovation */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -315,9 +328,9 @@ Align with Saudi Vision 2030 and municipal innovation goals.`,
                   <label className="text-sm font-medium">{t({ en: 'PI Name *', ar: 'اسم الباحث الرئيسي *' })}</label>
                   <Input
                     value={formData.principal_investigator?.name || ''}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
-                      principal_investigator: {...(formData.principal_investigator || {}), name: e.target.value} 
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      principal_investigator: { ...(formData.principal_investigator || {}), name: e.target.value }
                     })}
                     className="mt-1"
                   />
@@ -326,9 +339,9 @@ Align with Saudi Vision 2030 and municipal innovation goals.`,
                   <label className="text-sm font-medium">{t({ en: 'PI Title', ar: 'لقب الباحث الرئيسي' })}</label>
                   <Input
                     value={formData.principal_investigator?.title || ''}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
-                      principal_investigator: {...(formData.principal_investigator || {}), title: e.target.value} 
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      principal_investigator: { ...(formData.principal_investigator || {}), title: e.target.value }
                     })}
                     className="mt-1"
                   />
@@ -338,9 +351,9 @@ Align with Saudi Vision 2030 and municipal innovation goals.`,
                   <Input
                     type="email"
                     value={formData.principal_investigator?.email || ''}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
-                      principal_investigator: {...(formData.principal_investigator || {}), email: e.target.value} 
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      principal_investigator: { ...(formData.principal_investigator || {}), email: e.target.value }
                     })}
                     className="mt-1"
                   />

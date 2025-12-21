@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,7 +52,7 @@ function ProgramsPage({ embedded = false }) {
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
   const queryClient = useQueryClient();
-  
+
   const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   // Use visibility-aware hook for programs
@@ -64,16 +64,36 @@ function ProgramsPage({ embedded = false }) {
 
   const { data: sectors = [] } = useQuery({
     queryKey: ['sectors'],
-    queryFn: () => base44.entities.Sector.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('sectors')
+        .select('*')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: regions = [] } = useQuery({
     queryKey: ['regions'],
-    queryFn: () => base44.entities.Region.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('regions')
+        .select('*')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Program.delete(id),
+    mutationFn: async (id) => {
+      const { error } = await supabase
+        .from('programs')
+        .update({ is_deleted: true, deleted_date: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['programs']);
       toast.success('Program deleted');
@@ -81,7 +101,7 @@ function ProgramsPage({ embedded = false }) {
   });
 
   const filteredPrograms = programs.filter(program => {
-    const matchesSearch = !searchTerm || 
+    const matchesSearch = !searchTerm ||
       program.name_en?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       program.name_ar?.includes(searchTerm);
     const matchesType = filterType === 'all' || program.program_type === filterType;
@@ -611,7 +631,7 @@ function ProgramsPage({ embedded = false }) {
             <div className="space-y-4">
               {Array.from({ length: 12 }, (_, i) => {
                 const month = new Date(2025, i, 1);
-                const monthPrograms = filteredPrograms.filter(p => 
+                const monthPrograms = filteredPrograms.filter(p =>
                   p.start_date && new Date(p.start_date).getMonth() === i
                 );
                 return monthPrograms.length > 0 ? (

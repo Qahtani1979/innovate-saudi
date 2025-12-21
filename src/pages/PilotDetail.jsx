@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -81,8 +81,13 @@ function PilotDetailPage() {
   const { data: pilot, isLoading } = useQuery({
     queryKey: ['pilot', pilotId],
     queryFn: async () => {
-      const pilots = await base44.entities.Pilot.list();
-      return pilots.find(p => p.id === pilotId);
+      const { data, error } = await supabase
+        .from('pilots')
+        .select('*')
+        .eq('id', pilotId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
     enabled: !!pilotId
   });
@@ -90,8 +95,13 @@ function PilotDetailPage() {
   const { data: challenge } = useQuery({
     queryKey: ['challenge', pilot?.challenge_id],
     queryFn: async () => {
-      const challenges = await base44.entities.Challenge.list();
-      return challenges.find(c => c.id === pilot?.challenge_id);
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('*')
+        .eq('id', pilot.challenge_id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
     enabled: !!pilot?.challenge_id
   });
@@ -99,8 +109,13 @@ function PilotDetailPage() {
   const { data: solution } = useQuery({
     queryKey: ['solution', pilot?.solution_id],
     queryFn: async () => {
-      const solutions = await base44.entities.Solution.list();
-      return solutions.find(s => s.id === pilot?.solution_id);
+      const { data, error } = await supabase
+        .from('solutions')
+        .select('*')
+        .eq('id', pilot.solution_id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
     enabled: !!pilot?.solution_id
   });
@@ -108,8 +123,13 @@ function PilotDetailPage() {
   const { data: municipality } = useQuery({
     queryKey: ['municipality', pilot?.municipality_id],
     queryFn: async () => {
-      const municipalities = await base44.entities.Municipality.list();
-      return municipalities.find(m => m.id === pilot?.municipality_id);
+      const { data, error } = await supabase
+        .from('municipalities')
+        .select('*')
+        .eq('id', pilot.municipality_id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
     enabled: !!pilot?.municipality_id
   });
@@ -117,8 +137,13 @@ function PilotDetailPage() {
   const { data: region } = useQuery({
     queryKey: ['region', pilot?.region_id],
     queryFn: async () => {
-      const regions = await base44.entities.Region.list();
-      return regions.find(r => r.id === pilot?.region_id);
+      const { data, error } = await supabase
+        .from('regions')
+        .select('*')
+        .eq('id', pilot.region_id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
     enabled: !!pilot?.region_id
   });
@@ -126,8 +151,13 @@ function PilotDetailPage() {
   const { data: city } = useQuery({
     queryKey: ['city', pilot?.city_id],
     queryFn: async () => {
-      const cities = await base44.entities.City.list();
-      return cities.find(c => c.id === pilot?.city_id);
+      const { data, error } = await supabase
+        .from('cities')
+        .select('*')
+        .eq('id', pilot.city_id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
     enabled: !!pilot?.city_id
   });
@@ -135,8 +165,13 @@ function PilotDetailPage() {
   const { data: livingLab } = useQuery({
     queryKey: ['livingLab', pilot?.living_lab_id],
     queryFn: async () => {
-      const labs = await base44.entities.LivingLab.list();
-      return labs.find(l => l.id === pilot?.living_lab_id);
+      const { data, error } = await supabase
+        .from('living_labs')
+        .select('*')
+        .eq('id', pilot.living_lab_id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
     enabled: !!pilot?.living_lab_id
   });
@@ -144,8 +179,13 @@ function PilotDetailPage() {
   const { data: sandbox } = useQuery({
     queryKey: ['sandbox', pilot?.sandbox_id],
     queryFn: async () => {
-      const sandboxes = await base44.entities.Sandbox.list();
-      return sandboxes.find(s => s.id === pilot?.sandbox_id);
+      const { data, error } = await supabase
+        .from('sandboxes')
+        .select('*')
+        .eq('id', pilot.sandbox_id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
     enabled: !!pilot?.sandbox_id
   });
@@ -153,8 +193,12 @@ function PilotDetailPage() {
   const { data: approvals = [] } = useQuery({
     queryKey: ['pilot-approvals', pilotId],
     queryFn: async () => {
-      const all = await base44.entities.PilotApproval.list();
-      return all.filter(a => a.pilot_id === pilotId);
+      const { data, error } = await supabase
+        .from('pilot_approvals')
+        .select('*')
+        .eq('pilot_id', pilotId);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!pilotId
   });
@@ -162,8 +206,12 @@ function PilotDetailPage() {
   const { data: comments = [] } = useQuery({
     queryKey: ['pilot-comments', pilotId],
     queryFn: async () => {
-      const all = await base44.entities.PilotComment.list();
-      return all.filter(c => c.pilot_id === pilotId);
+      const { data, error } = await supabase
+        .from('pilot_comments')
+        .select('*')
+        .eq('pilot_id', pilotId);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!pilotId
   });
@@ -171,8 +219,13 @@ function PilotDetailPage() {
   const { data: expertEvaluations = [] } = useQuery({
     queryKey: ['pilot-expert-evaluations', pilotId],
     queryFn: async () => {
-      const all = await base44.entities.ExpertEvaluation.list();
-      return all.filter(e => e.entity_type === 'pilot' && e.entity_id === pilotId);
+      const { data, error } = await supabase
+        .from('expert_evaluations')
+        .select('*')
+        .eq('entity_type', 'pilot')
+        .eq('entity_id', pilotId);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!pilotId
   });
@@ -199,7 +252,10 @@ function PilotDetailPage() {
   }, [authUser]);
 
   const commentMutation = useMutation({
-    mutationFn: (data) => base44.entities.PilotComment.create(data),
+    mutationFn: async (data) => {
+      const { error } = await supabase.from('pilot_comments').insert(data);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['pilot-comments']);
       setComment('');
@@ -209,11 +265,15 @@ function PilotDetailPage() {
 
   const holdMutation = useMutation({
     mutationFn: async () => {
-      await base44.entities.Pilot.update(pilotId, {
-        stage: 'on_hold',
-        hold_reason: holdReason,
-        hold_date: new Date().toISOString()
-      });
+      const { error } = await supabase
+        .from('pilots')
+        .update({
+          stage: 'on_hold',
+          hold_reason: holdReason,
+          hold_date: new Date().toISOString()
+        })
+        .eq('id', pilotId);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['pilot']);
@@ -224,10 +284,14 @@ function PilotDetailPage() {
 
   const resumeMutation = useMutation({
     mutationFn: async () => {
-      await base44.entities.Pilot.update(pilotId, {
-        stage: 'active',
-        resumed_date: new Date().toISOString()
-      });
+      const { error } = await supabase
+        .from('pilots')
+        .update({
+          stage: 'active',
+          resumed_date: new Date().toISOString()
+        })
+        .eq('id', pilotId);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['pilot']);
@@ -246,7 +310,7 @@ function PilotDetailPage() {
         challenge_title: challenge?.title_en,
         solution_name: solution?.name_en
       });
-      
+
       const result = await invokeAI({
         prompt: promptConfig.prompt,
         system_prompt: promptConfig.system,
@@ -854,7 +918,7 @@ function PilotDetailPage() {
                 <TrendingUp className="h-4 w-4" />
                 <span className="text-xs">{t({ en: 'Next Steps', ar: 'الخطوات' })}</span>
               </TabsTrigger>
-              </TabsList>
+            </TabsList>
 
             {/* Workflow & Approvals Tab */}
             <TabsContent value="workflow_approvals" className="space-y-6">
@@ -891,118 +955,118 @@ function PilotDetailPage() {
                     </CardContent>
                   </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t({ en: 'Objectives', ar: 'الأهداف' })}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-slate-700" dir={language === 'ar' && pilot.objective_ar ? 'rtl' : 'ltr'}>
-                    {language === 'ar' && pilot.objective_ar ? pilot.objective_ar : (pilot.objective_en || t({ en: 'Test and validate solution effectiveness in real-world conditions', ar: 'اختبار وتقييم فعالية الحل في ظروف الواقع' }))}
-                  </p>
-                </CardContent>
-              </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>{t({ en: 'Objectives', ar: 'الأهداف' })}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-slate-700" dir={language === 'ar' && pilot.objective_ar ? 'rtl' : 'ltr'}>
+                        {language === 'ar' && pilot.objective_ar ? pilot.objective_ar : (pilot.objective_en || t({ en: 'Test and validate solution effectiveness in real-world conditions', ar: 'اختبار وتقييم فعالية الحل في ظروف الواقع' }))}
+                      </p>
+                    </CardContent>
+                  </Card>
 
-              {pilot.hypothesis && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>{t({ en: 'Hypothesis', ar: 'الفرضية' })}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-slate-700">{pilot.hypothesis}</p>
-                  </CardContent>
-                </Card>
-              )}
+                  {pilot.hypothesis && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>{t({ en: 'Hypothesis', ar: 'الفرضية' })}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-slate-700">{pilot.hypothesis}</p>
+                      </CardContent>
+                    </Card>
+                  )}
 
-              {pilot.methodology && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>{t({ en: 'Methodology', ar: 'المنهجية' })}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-slate-700">{pilot.methodology}</p>
-                  </CardContent>
-                </Card>
-              )}
+                  {pilot.methodology && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>{t({ en: 'Methodology', ar: 'المنهجية' })}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-slate-700">{pilot.methodology}</p>
+                      </CardContent>
+                    </Card>
+                  )}
 
-              {pilot.scope && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>{t({ en: 'Scope', ar: 'النطاق' })}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-slate-700">{pilot.scope}</p>
-                  </CardContent>
-                </Card>
-              )}
+                  {pilot.scope && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>{t({ en: 'Scope', ar: 'النطاق' })}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-slate-700">{pilot.scope}</p>
+                      </CardContent>
+                    </Card>
+                  )}
 
-              {pilot.ai_insights && (
-                <Card className="border-blue-200 bg-blue-50">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-blue-900">
-                      <Sparkles className="h-5 w-5" />
-                      {t({ en: 'AI Insights', ar: 'الرؤى الذكية' })}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-blue-900">{pilot.ai_insights}</p>
-                  </CardContent>
-                </Card>
-              )}
+                  {pilot.ai_insights && (
+                    <Card className="border-blue-200 bg-blue-50">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-blue-900">
+                          <Sparkles className="h-5 w-5" />
+                          {t({ en: 'AI Insights', ar: 'الرؤى الذكية' })}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-blue-900">{pilot.ai_insights}</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+
+                <div className="space-y-6">
+                  {challenge && (
+                    <Card className="border-blue-200 bg-blue-50">
+                      <CardHeader>
+                        <CardTitle className="text-blue-900 text-sm">
+                          {t({ en: 'Challenge', ar: 'التحدي' })}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <Link to={createPageUrl(`ChallengeDetail?id=${challenge.id}`)} className="text-blue-900 hover:text-blue-700">
+                          <p className="font-medium">{challenge.code}</p>
+                          <p className="text-sm">{language === 'ar' && challenge.title_ar ? challenge.title_ar : challenge.title_en}</p>
+                        </Link>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {solution && (
+                    <Card className="border-purple-200 bg-purple-50">
+                      <CardHeader>
+                        <CardTitle className="text-purple-900 text-sm">
+                          {t({ en: 'Solution', ar: 'الحل' })}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <Link to={createPageUrl(`SolutionDetail?id=${solution.id}`)} className="text-purple-900 hover:text-purple-700">
+                          <p className="font-medium">{language === 'ar' && solution.name_ar ? solution.name_ar : solution.name_en}</p>
+                          <p className="text-sm">{solution.provider_name}</p>
+                        </Link>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {pilot.target_population && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-sm">{t({ en: 'Target Population', ar: 'الفئة المستهدفة' })}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2 text-sm">
+                        {pilot.target_population.size && (
+                          <div>
+                            <span className="text-slate-500">{t({ en: 'Size:', ar: 'الحجم:' })}</span> {pilot.target_population.size}
+                          </div>
+                        )}
+                        {pilot.target_population.demographics && (
+                          <p className="text-slate-700">{pilot.target_population.demographics}</p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
               </div>
-
-              <div className="space-y-6">
-              {challenge && (
-                <Card className="border-blue-200 bg-blue-50">
-                  <CardHeader>
-                    <CardTitle className="text-blue-900 text-sm">
-                      {t({ en: 'Challenge', ar: 'التحدي' })}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Link to={createPageUrl(`ChallengeDetail?id=${challenge.id}`)} className="text-blue-900 hover:text-blue-700">
-                      <p className="font-medium">{challenge.code}</p>
-                      <p className="text-sm">{language === 'ar' && challenge.title_ar ? challenge.title_ar : challenge.title_en}</p>
-                    </Link>
-                  </CardContent>
-                </Card>
-              )}
-
-              {solution && (
-                <Card className="border-purple-200 bg-purple-50">
-                  <CardHeader>
-                    <CardTitle className="text-purple-900 text-sm">
-                      {t({ en: 'Solution', ar: 'الحل' })}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Link to={createPageUrl(`SolutionDetail?id=${solution.id}`)} className="text-purple-900 hover:text-purple-700">
-                      <p className="font-medium">{language === 'ar' && solution.name_ar ? solution.name_ar : solution.name_en}</p>
-                      <p className="text-sm">{solution.provider_name}</p>
-                    </Link>
-                  </CardContent>
-                </Card>
-              )}
-
-              {pilot.target_population && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">{t({ en: 'Target Population', ar: 'الفئة المستهدفة' })}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2 text-sm">
-                    {pilot.target_population.size && (
-                      <div>
-                        <span className="text-slate-500">{t({ en: 'Size:', ar: 'الحجم:' })}</span> {pilot.target_population.size}
-                      </div>
-                    )}
-                    {pilot.target_population.demographics && (
-                      <p className="text-slate-700">{pilot.target_population.demographics}</p>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-              </div>
-              </div>
-              </TabsContent>
+            </TabsContent>
 
             {/* Financial Tab */}
             <TabsContent value="financial" className="space-y-6">
@@ -1093,8 +1157,8 @@ function PilotDetailPage() {
                           </div>
                           <Badge className={
                             kpi.status === 'on_track' ? 'bg-green-100 text-green-700' :
-                            kpi.status === 'at_risk' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-red-100 text-red-700'
+                              kpi.status === 'at_risk' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-red-100 text-red-700'
                           }>
                             {kpi.status || 'on_track'}
                           </Badge>
@@ -1200,17 +1264,16 @@ function PilotDetailPage() {
                   {pilot.risks && pilot.risks.length > 0 ? (
                     <div className="space-y-4">
                       {pilot.risks.map((risk, idx) => (
-                        <div key={idx} className={`p-4 border-l-4 rounded-r-lg ${
-                          risk.probability === 'high' || risk.impact === 'high' ? 'border-red-500 bg-red-50' :
+                        <div key={idx} className={`p-4 border-l-4 rounded-r-lg ${risk.probability === 'high' || risk.impact === 'high' ? 'border-red-500 bg-red-50' :
                           risk.probability === 'medium' || risk.impact === 'medium' ? 'border-amber-500 bg-amber-50' :
-                          'border-green-500 bg-green-50'
-                        }`}>
+                            'border-green-500 bg-green-50'
+                          }`}>
                           <div className="flex items-start justify-between mb-2">
                             <p className="font-medium text-slate-900">{risk.risk}</p>
                             <Badge className={
                               risk.status === 'mitigated' ? 'bg-green-100 text-green-700' :
-                              risk.status === 'occurred' ? 'bg-red-100 text-red-700' :
-                              'bg-amber-100 text-amber-700'
+                                risk.status === 'occurred' ? 'bg-red-100 text-red-700' :
+                                  'bg-amber-100 text-amber-700'
                             }>
                               {risk.status}
                             </Badge>
@@ -1252,8 +1315,8 @@ function PilotDetailPage() {
                             <p className="font-medium text-slate-900">{issue.issue}</p>
                             <Badge className={
                               issue.status === 'resolved' ? 'bg-green-100 text-green-700' :
-                              issue.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
-                              'bg-red-100 text-red-700'
+                                issue.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                                  'bg-red-100 text-red-700'
                             }>
                               {issue.status}
                             </Badge>
@@ -1511,9 +1574,9 @@ function PilotDetailPage() {
                   </CardContent>
                 </Card>
               )}
-              
+
               <MilestoneTracker pilot={pilot} />
-              
+
               {pilot.pivot_history && pilot.pivot_history.length > 0 && (
                 <Card>
                   <CardHeader>
@@ -1617,8 +1680,8 @@ function PilotDetailPage() {
                             </div>
                             <Badge className={
                               media.sentiment === 'positive' ? 'bg-green-100 text-green-700' :
-                              media.sentiment === 'negative' ? 'bg-red-100 text-red-700' :
-                              'bg-slate-100 text-slate-700'
+                                media.sentiment === 'negative' ? 'bg-red-100 text-red-700' :
+                                  'bg-slate-100 text-slate-700'
                             }>
                               {media.sentiment}
                             </Badge>
@@ -1655,12 +1718,11 @@ function PilotDetailPage() {
                   )}
 
                   {pilot.recommendation && (
-                    <div className={`p-4 rounded-lg border-2 ${
-                      pilot.recommendation === 'scale' ? 'bg-green-50 border-green-300' :
+                    <div className={`p-4 rounded-lg border-2 ${pilot.recommendation === 'scale' ? 'bg-green-50 border-green-300' :
                       pilot.recommendation === 'iterate' ? 'bg-yellow-50 border-yellow-300' :
-                      pilot.recommendation === 'terminate' ? 'bg-red-50 border-red-300' :
-                      'bg-slate-50 border-slate-300'
-                    }`}>
+                        pilot.recommendation === 'terminate' ? 'bg-red-50 border-red-300' :
+                          'bg-slate-50 border-slate-300'
+                      }`}>
                       <p className="font-semibold text-lg mb-1">
                         {t({ en: 'Recommendation:', ar: 'التوصية:' })} {pilot.recommendation.toUpperCase()}
                       </p>
@@ -1679,29 +1741,29 @@ function PilotDetailPage() {
                       <div>
                         <p className="text-sm font-medium text-slate-900 mb-1">{t({ en: 'AI Evaluation Summary', ar: 'ملخص التقييم الذكي' })}</p>
                         <p className="text-sm text-slate-600">
-                          {t({ 
+                          {t({
                             en: 'Based on KPI trends, budget utilization, and stakeholder feedback, this pilot demonstrates strong potential for success. Recommend proceeding to scale-up planning phase.',
                             ar: 'بناءً على اتجاهات مؤشرات الأداء واستخدام الميزانية وملاحظات الأطراف المعنية، تُظهر هذه التجربة إمكانات قوية للنجاح. يُوصى بالانتقال إلى مرحلة تخطيط التوسع.'
                           })}
-                          </p>
-                          </div>
-                          </div>
-                          </div>
-                          </CardContent>
-                          </Card>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-                          {pilot.lessons_learned && pilot.lessons_learned.length > 0 && (
-                          <Card>
-                          <CardHeader>
-                          <CardTitle className="flex items-center gap-2">
-                          <BookOpen className="h-5 w-5 text-purple-600" />
-                          {t({ en: 'Lessons Learned', ar: 'الدروس المستفادة' })}
-                          </CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                          <div className="space-y-4">
-                          {pilot.lessons_learned.map((lesson, idx) => (
-                          <div key={idx} className="p-4 border-l-4 border-purple-500 bg-purple-50 rounded-r-lg">
+              {pilot.lessons_learned && pilot.lessons_learned.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <BookOpen className="h-5 w-5 text-purple-600" />
+                      {t({ en: 'Lessons Learned', ar: 'الدروس المستفادة' })}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {pilot.lessons_learned.map((lesson, idx) => (
+                        <div key={idx} className="p-4 border-l-4 border-purple-500 bg-purple-50 rounded-r-lg">
                           {lesson.category && (
                             <Badge variant="outline" className="mb-2 text-xs">{lesson.category}</Badge>
                           )}
@@ -1709,283 +1771,283 @@ function PilotDetailPage() {
                           {lesson.recommendation && (
                             <p className="text-sm text-slate-700">{lesson.recommendation}</p>
                           )}
-                          </div>
-                          ))}
-                          </div>
-                          </CardContent>
-                          </Card>
-                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
-                          {pilot.scaling_plan && (
-                          <Card>
-                          <CardHeader>
-                          <CardTitle className="flex items-center gap-2">
-                          <TrendingUp className="h-5 w-5 text-blue-600" />
-                          {t({ en: 'Scaling Plan', ar: 'خطة التوسع' })}
-                          </CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-3">
-                          {pilot.scaling_plan.strategy && (
-                          <div>
-                          <p className="text-sm font-medium text-slate-700">{t({ en: 'Strategy:', ar: 'الاستراتيجية:' })}</p>
-                          <p className="text-sm text-slate-600">{pilot.scaling_plan.strategy}</p>
-                          </div>
-                          )}
-                          {pilot.scaling_plan.target_locations && pilot.scaling_plan.target_locations.length > 0 && (
-                          <div>
-                          <p className="text-sm font-medium text-slate-700 mb-2">{t({ en: 'Target Locations:', ar: 'المواقع المستهدفة:' })}</p>
-                          <div className="flex flex-wrap gap-2">
+              {pilot.scaling_plan && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-blue-600" />
+                      {t({ en: 'Scaling Plan', ar: 'خطة التوسع' })}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {pilot.scaling_plan.strategy && (
+                      <div>
+                        <p className="text-sm font-medium text-slate-700">{t({ en: 'Strategy:', ar: 'الاستراتيجية:' })}</p>
+                        <p className="text-sm text-slate-600">{pilot.scaling_plan.strategy}</p>
+                      </div>
+                    )}
+                    {pilot.scaling_plan.target_locations && pilot.scaling_plan.target_locations.length > 0 && (
+                      <div>
+                        <p className="text-sm font-medium text-slate-700 mb-2">{t({ en: 'Target Locations:', ar: 'المواقع المستهدفة:' })}</p>
+                        <div className="flex flex-wrap gap-2">
                           {pilot.scaling_plan.target_locations.map((loc, idx) => (
                             <Badge key={idx} variant="outline">{loc}</Badge>
                           ))}
+                        </div>
+                      </div>
+                    )}
+                    {pilot.scaling_plan.estimated_cost && (
+                      <div>
+                        <p className="text-sm font-medium text-slate-700">{t({ en: 'Estimated Cost:', ar: 'التكلفة المقدرة:' })}</p>
+                        <p className="text-sm text-slate-600">{pilot.scaling_plan.estimated_cost} SAR</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+
+            {/* Experts Tab */}
+            <TabsContent value="experts" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Award className="h-5 w-5 text-purple-600" />
+                      {t({ en: 'Expert Evaluations', ar: 'تقييمات الخبراء' })}
+                    </CardTitle>
+                    <Link to={createPageUrl(`ExpertMatchingEngine?entity_type=pilot&entity_id=${pilotId}`)} target="_blank">
+                      <Button size="sm" className="bg-purple-600">
+                        <Users className="h-4 w-4 mr-2" />
+                        {t({ en: 'Assign Experts', ar: 'تعيين خبراء' })}
+                      </Button>
+                    </Link>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {expertEvaluations.length > 0 ? (
+                    <div className="space-y-4">
+                      {expertEvaluations.map((evaluation) => (
+                        <div key={evaluation.id} className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <p className="font-medium text-slate-900">{evaluation.expert_email}</p>
+                              <p className="text-xs text-slate-500">
+                                {new Date(evaluation.evaluation_date).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-3xl font-bold text-purple-600">{evaluation.overall_score}</div>
+                              <Badge className={
+                                evaluation.recommendation === 'approve' ? 'bg-green-100 text-green-700' :
+                                  evaluation.recommendation === 'reject' ? 'bg-red-100 text-red-700' :
+                                    'bg-yellow-100 text-yellow-700'
+                              }>
+                                {evaluation.recommendation?.replace(/_/g, ' ')}
+                              </Badge>
+                            </div>
                           </div>
+
+                          <div className="grid grid-cols-4 gap-2 mb-3">
+                            <div className="text-center p-2 bg-white rounded">
+                              <div className="text-sm font-bold text-green-600">{evaluation.feasibility_score}</div>
+                              <div className="text-xs text-slate-600">{t({ en: 'Feasibility', ar: 'الجدوى' })}</div>
+                            </div>
+                            <div className="text-center p-2 bg-white rounded">
+                              <div className="text-sm font-bold text-blue-600">{evaluation.impact_score}</div>
+                              <div className="text-xs text-slate-600">{t({ en: 'Impact', ar: 'التأثير' })}</div>
+                            </div>
+                            <div className="text-center p-2 bg-white rounded">
+                              <div className="text-sm font-bold text-purple-600">{evaluation.technical_quality_score}</div>
+                              <div className="text-xs text-slate-600">{t({ en: 'Quality', ar: 'الجودة' })}</div>
+                            </div>
+                            <div className="text-center p-2 bg-white rounded">
+                              <div className="text-sm font-bold text-red-600">{evaluation.risk_score}</div>
+                              <div className="text-xs text-slate-600">{t({ en: 'Risk', ar: 'المخاطر' })}</div>
+                            </div>
                           </div>
+
+                          {evaluation.feedback_text && (
+                            <div className="p-3 bg-white rounded border">
+                              <p className="text-sm text-slate-700">{evaluation.feedback_text}</p>
+                            </div>
                           )}
-                          {pilot.scaling_plan.estimated_cost && (
-                          <div>
-                          <p className="text-sm font-medium text-slate-700">{t({ en: 'Estimated Cost:', ar: 'التكلفة المقدرة:' })}</p>
-                          <p className="text-sm text-slate-600">{pilot.scaling_plan.estimated_cost} SAR</p>
+
+                          {evaluation.strengths && evaluation.strengths.length > 0 && (
+                            <div className="mt-3">
+                              <p className="text-xs font-semibold text-green-700 mb-1">{t({ en: 'Strengths:', ar: 'نقاط القوة:' })}</p>
+                              <ul className="text-xs text-slate-700 space-y-1">
+                                {evaluation.strengths.map((s, i) => (
+                                  <li key={i}>• {s}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {evaluation.weaknesses && evaluation.weaknesses.length > 0 && (
+                            <div className="mt-3">
+                              <p className="text-xs font-semibold text-red-700 mb-1">{t({ en: 'Weaknesses:', ar: 'نقاط الضعف:' })}</p>
+                              <ul className="text-xs text-slate-700 space-y-1">
+                                {evaluation.weaknesses.map((w, i) => (
+                                  <li key={i}>• {w}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+
+                      {expertEvaluations.length >= 2 && (
+                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <p className="text-sm font-semibold text-blue-900 mb-2">
+                            {t({ en: 'Multi-Expert Consensus', ar: 'إجماع متعدد الخبراء' })}
+                          </p>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-slate-600">{t({ en: 'Total Evaluators:', ar: 'إجمالي المقيّمين:' })}</span>
+                              <span className="font-medium">{expertEvaluations.length}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-600">{t({ en: 'Approval Rate:', ar: 'معدل الموافقة:' })}</span>
+                              <span className="font-medium text-green-600">
+                                {(expertEvaluations.filter(e => e.recommendation === 'approve').length / expertEvaluations.length * 100).toFixed(0)}%
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-600">{t({ en: 'Avg. Overall Score:', ar: 'متوسط النقاط:' })}</span>
+                              <span className="font-medium text-purple-600">
+                                {(expertEvaluations.reduce((sum, e) => sum + (e.overall_score || 0), 0) / expertEvaluations.length).toFixed(1)}
+                              </span>
+                            </div>
                           </div>
-                          )}
-                          </CardContent>
-                          </Card>
-                          )}
-                          </TabsContent>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Award className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+                      <p className="text-slate-500 mb-4">{t({ en: 'No expert evaluations yet', ar: 'لا توجد تقييمات خبراء بعد' })}</p>
+                      <Link to={createPageUrl(`ExpertMatchingEngine?entity_type=pilot&entity_id=${pilotId}`)} target="_blank">
+                        <Button className="bg-purple-600">
+                          <Users className="h-4 w-4 mr-2" />
+                          {t({ en: 'Assign Experts Now', ar: 'تعيين خبراء الآن' })}
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-                          {/* Experts Tab */}
-                          <TabsContent value="experts" className="space-y-6">
-                            <Card>
-                              <CardHeader>
-                                <div className="flex items-center justify-between">
-                                  <CardTitle className="flex items-center gap-2">
-                                    <Award className="h-5 w-5 text-purple-600" />
-                                    {t({ en: 'Expert Evaluations', ar: 'تقييمات الخبراء' })}
-                                  </CardTitle>
-                                  <Link to={createPageUrl(`ExpertMatchingEngine?entity_type=pilot&entity_id=${pilotId}`)} target="_blank">
-                                    <Button size="sm" className="bg-purple-600">
-                                      <Users className="h-4 w-4 mr-2" />
-                                      {t({ en: 'Assign Experts', ar: 'تعيين خبراء' })}
-                                    </Button>
-                                  </Link>
-                                </div>
-                              </CardHeader>
-                              <CardContent>
-                                {expertEvaluations.length > 0 ? (
-                                  <div className="space-y-4">
-                                    {expertEvaluations.map((evaluation) => (
-                                      <div key={evaluation.id} className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                                        <div className="flex items-start justify-between mb-3">
-                                          <div>
-                                            <p className="font-medium text-slate-900">{evaluation.expert_email}</p>
-                                            <p className="text-xs text-slate-500">
-                                              {new Date(evaluation.evaluation_date).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')}
-                                            </p>
-                                          </div>
-                                          <div className="text-right">
-                                            <div className="text-3xl font-bold text-purple-600">{evaluation.overall_score}</div>
-                                            <Badge className={
-                                              evaluation.recommendation === 'approve' ? 'bg-green-100 text-green-700' :
-                                              evaluation.recommendation === 'reject' ? 'bg-red-100 text-red-700' :
-                                              'bg-yellow-100 text-yellow-700'
-                                            }>
-                                              {evaluation.recommendation?.replace(/_/g, ' ')}
-                                            </Badge>
-                                          </div>
-                                        </div>
+            {/* AI Connections Tab */}
+            <TabsContent value="connections">
+              <CrossEntityRecommender
+                sourceEntity={pilot}
+                sourceType="Pilot"
+                recommendations={['rdprojects', 'challenges']}
+              />
+            </TabsContent>
 
-                                        <div className="grid grid-cols-4 gap-2 mb-3">
-                                          <div className="text-center p-2 bg-white rounded">
-                                            <div className="text-sm font-bold text-green-600">{evaluation.feasibility_score}</div>
-                                            <div className="text-xs text-slate-600">{t({ en: 'Feasibility', ar: 'الجدوى' })}</div>
-                                          </div>
-                                          <div className="text-center p-2 bg-white rounded">
-                                            <div className="text-sm font-bold text-blue-600">{evaluation.impact_score}</div>
-                                            <div className="text-xs text-slate-600">{t({ en: 'Impact', ar: 'التأثير' })}</div>
-                                          </div>
-                                          <div className="text-center p-2 bg-white rounded">
-                                            <div className="text-sm font-bold text-purple-600">{evaluation.technical_quality_score}</div>
-                                            <div className="text-xs text-slate-600">{t({ en: 'Quality', ar: 'الجودة' })}</div>
-                                          </div>
-                                          <div className="text-center p-2 bg-white rounded">
-                                            <div className="text-sm font-bold text-red-600">{evaluation.risk_score}</div>
-                                            <div className="text-xs text-slate-600">{t({ en: 'Risk', ar: 'المخاطر' })}</div>
-                                          </div>
-                                        </div>
+            {/* Policy Tab */}
+            <TabsContent value="policy">
+              <PolicyTabWidget entityType="pilot" entityId={pilotId} />
+            </TabsContent>
 
-                                        {evaluation.feedback_text && (
-                                          <div className="p-3 bg-white rounded border">
-                                            <p className="text-sm text-slate-700">{evaluation.feedback_text}</p>
-                                          </div>
-                                        )}
+            <TabsContent value="conversions" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t({ en: 'Next Steps & Conversions', ar: 'الخطوات التالية والتحويلات' })}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-slate-600">
+                    {t({ en: 'Conversion workflows available in ConversionHub', ar: 'سير عمل التحويل متاح في مركز التحويل' })}
+                  </p>
+                </CardContent>
+              </Card>
 
-                                        {evaluation.strengths && evaluation.strengths.length > 0 && (
-                                          <div className="mt-3">
-                                            <p className="text-xs font-semibold text-green-700 mb-1">{t({ en: 'Strengths:', ar: 'نقاط القوة:' })}</p>
-                                            <ul className="text-xs text-slate-700 space-y-1">
-                                              {evaluation.strengths.map((s, i) => (
-                                                <li key={i}>• {s}</li>
-                                              ))}
-                                            </ul>
-                                          </div>
-                                        )}
+              {pilot.solution_id && (
+                <SolutionFeedbackLoop pilot={pilot} />
+              )}
+            </TabsContent>
+          </Tabs>
 
-                                        {evaluation.weaknesses && evaluation.weaknesses.length > 0 && (
-                                          <div className="mt-3">
-                                            <p className="text-xs font-semibold text-red-700 mb-1">{t({ en: 'Weaknesses:', ar: 'نقاط الضعف:' })}</p>
-                                            <ul className="text-xs text-slate-700 space-y-1">
-                                              {evaluation.weaknesses.map((w, i) => (
-                                                <li key={i}>• {w}</li>
-                                              ))}
-                                            </ul>
-                                          </div>
-                                        )}
-                                      </div>
-                                    ))}
+          {/* Workflow Actions */}
+          {['active', 'monitoring'].includes(pilot.stage) && (
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Button onClick={() => setShowBudgetApproval(true)} variant="outline" className="w-full">
+                <DollarSign className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                {t({ en: 'Request Budget Release', ar: 'طلب صرف ميزانية' })}
+              </Button>
+            </div>
+          )}
 
-                                    {expertEvaluations.length >= 2 && (
-                                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                        <p className="text-sm font-semibold text-blue-900 mb-2">
-                                          {t({ en: 'Multi-Expert Consensus', ar: 'إجماع متعدد الخبراء' })}
-                                        </p>
-                                        <div className="space-y-2 text-sm">
-                                          <div className="flex justify-between">
-                                            <span className="text-slate-600">{t({ en: 'Total Evaluators:', ar: 'إجمالي المقيّمين:' })}</span>
-                                            <span className="font-medium">{expertEvaluations.length}</span>
-                                          </div>
-                                          <div className="flex justify-between">
-                                            <span className="text-slate-600">{t({ en: 'Approval Rate:', ar: 'معدل الموافقة:' })}</span>
-                                            <span className="font-medium text-green-600">
-                                              {(expertEvaluations.filter(e => e.recommendation === 'approve').length / expertEvaluations.length * 100).toFixed(0)}%
-                                            </span>
-                                          </div>
-                                          <div className="flex justify-between">
-                                            <span className="text-slate-600">{t({ en: 'Avg. Overall Score:', ar: 'متوسط النقاط:' })}</span>
-                                            <span className="font-medium text-purple-600">
-                                              {(expertEvaluations.reduce((sum, e) => sum + (e.overall_score || 0), 0) / expertEvaluations.length).toFixed(1)}
-                                            </span>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <div className="text-center py-12">
-                                    <Award className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-                                    <p className="text-slate-500 mb-4">{t({ en: 'No expert evaluations yet', ar: 'لا توجد تقييمات خبراء بعد' })}</p>
-                                    <Link to={createPageUrl(`ExpertMatchingEngine?entity_type=pilot&entity_id=${pilotId}`)} target="_blank">
-                                      <Button className="bg-purple-600">
-                                        <Users className="h-4 w-4 mr-2" />
-                                        {t({ en: 'Assign Experts Now', ar: 'تعيين خبراء الآن' })}
-                                      </Button>
-                                    </Link>
-                                  </div>
-                                )}
-                              </CardContent>
-                            </Card>
-                          </TabsContent>
-
-                          {/* AI Connections Tab */}
-                          <TabsContent value="connections">
-                            <CrossEntityRecommender 
-                              sourceEntity={pilot} 
-                              sourceType="Pilot" 
-                              recommendations={['rdprojects', 'challenges']}
-                            />
-                          </TabsContent>
-
-                          {/* Policy Tab */}
-                          <TabsContent value="policy">
-                            <PolicyTabWidget entityType="pilot" entityId={pilotId} />
-                          </TabsContent>
-
-                          <TabsContent value="conversions" className="space-y-6">
-                            <Card>
-                              <CardHeader>
-                                <CardTitle>{t({ en: 'Next Steps & Conversions', ar: 'الخطوات التالية والتحويلات' })}</CardTitle>
-                              </CardHeader>
-                              <CardContent>
-                                <p className="text-sm text-slate-600">
-                                  {t({ en: 'Conversion workflows available in ConversionHub', ar: 'سير عمل التحويل متاح في مركز التحويل' })}
-                                </p>
-                              </CardContent>
-                            </Card>
-
-                            {pilot.solution_id && (
-                              <SolutionFeedbackLoop pilot={pilot} />
-                            )}
-                          </TabsContent>
-                          </Tabs>
-
-                          {/* Workflow Actions */}
-            {['active', 'monitoring'].includes(pilot.stage) && (
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button onClick={() => setShowBudgetApproval(true)} variant="outline" className="w-full">
-                  <DollarSign className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                  {t({ en: 'Request Budget Release', ar: 'طلب صرف ميزانية' })}
+          {/* Hold/Resume Management */}
+          {['active', 'monitoring', 'preparation'].includes(pilot.stage) && (
+            <Card className="mt-6 border-amber-200 bg-amber-50">
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Pause className="h-4 w-4 text-amber-600" />
+                  {t({ en: 'Pause Pilot', ar: 'إيقاف التجربة مؤقتاً' })}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Textarea
+                  placeholder={t({ en: 'Reason for pausing...', ar: 'سبب الإيقاف...' })}
+                  value={holdReason}
+                  onChange={(e) => setHoldReason(e.target.value)}
+                  rows={2}
+                />
+                <Button
+                  onClick={() => holdMutation.mutate()}
+                  disabled={!holdReason || holdMutation.isPending}
+                  variant="outline"
+                  className="w-full border-amber-600 text-amber-600 hover:bg-amber-100"
+                >
+                  <Pause className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                  {t({ en: 'Put On Hold', ar: 'إيقاف مؤقت' })}
                 </Button>
-              </div>
-            )}
+              </CardContent>
+            </Card>
+          )}
 
-            {/* Hold/Resume Management */}
-            {['active', 'monitoring', 'preparation'].includes(pilot.stage) && (
-              <Card className="mt-6 border-amber-200 bg-amber-50">
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Pause className="h-4 w-4 text-amber-600" />
-                    {t({ en: 'Pause Pilot', ar: 'إيقاف التجربة مؤقتاً' })}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Textarea
-                    placeholder={t({ en: 'Reason for pausing...', ar: 'سبب الإيقاف...' })}
-                    value={holdReason}
-                    onChange={(e) => setHoldReason(e.target.value)}
-                    rows={2}
-                  />
-                  <Button
-                    onClick={() => holdMutation.mutate()}
-                    disabled={!holdReason || holdMutation.isPending}
-                    variant="outline"
-                    className="w-full border-amber-600 text-amber-600 hover:bg-amber-100"
-                  >
-                    <Pause className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                    {t({ en: 'Put On Hold', ar: 'إيقاف مؤقت' })}
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
+          {pilot.stage === 'on_hold' && (
+            <Card className="mt-6 border-blue-200 bg-blue-50">
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-blue-600" />
+                  {t({ en: 'Pilot On Hold', ar: 'التجربة متوقفة مؤقتاً' })}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {pilot.hold_reason && (
+                  <p className="text-sm text-slate-700 p-3 bg-white rounded border">
+                    <span className="font-medium">{t({ en: 'Reason:', ar: 'السبب:' })}</span> {pilot.hold_reason}
+                  </p>
+                )}
+                {pilot.hold_date && (
+                  <p className="text-xs text-slate-500">{t({ en: 'Paused on:', ar: 'تم الإيقاف في:' })} {new Date(pilot.hold_date).toLocaleDateString()}</p>
+                )}
+                <Button
+                  onClick={() => resumeMutation.mutate()}
+                  disabled={resumeMutation.isPending}
+                  className="w-full bg-gradient-to-r from-blue-600 to-teal-600"
+                >
+                  <Play className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                  {t({ en: 'Resume Pilot', ar: 'استئناف التجربة' })}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
-            {pilot.stage === 'on_hold' && (
-              <Card className="mt-6 border-blue-200 bg-blue-50">
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-blue-600" />
-                    {t({ en: 'Pilot On Hold', ar: 'التجربة متوقفة مؤقتاً' })}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {pilot.hold_reason && (
-                    <p className="text-sm text-slate-700 p-3 bg-white rounded border">
-                      <span className="font-medium">{t({ en: 'Reason:', ar: 'السبب:' })}</span> {pilot.hold_reason}
-                    </p>
-                  )}
-                  {pilot.hold_date && (
-                    <p className="text-xs text-slate-500">{t({ en: 'Paused on:', ar: 'تم الإيقاف في:' })} {new Date(pilot.hold_date).toLocaleDateString()}</p>
-                  )}
-                  <Button
-                    onClick={() => resumeMutation.mutate()}
-                    disabled={resumeMutation.isPending}
-                    className="w-full bg-gradient-to-r from-blue-600 to-teal-600"
-                  >
-                    <Play className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                    {t({ en: 'Resume Pilot', ar: 'استئناف التجربة' })}
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Comments Section */}
-            <Card className="mt-6">
+          {/* Comments Section */}
+          <Card className="mt-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MessageSquare className="h-5 w-5 text-slate-600" />
@@ -2019,7 +2081,7 @@ function PilotDetailPage() {
                   onChange={(e) => setComment(e.target.value)}
                   rows={3}
                 />
-                <Button 
+                <Button
                   onClick={() => commentMutation.mutate({ pilot_id: pilotId, comment_text: comment })}
                   className="bg-gradient-to-r from-blue-600 to-teal-600"
                   disabled={!comment}
@@ -2029,11 +2091,11 @@ function PilotDetailPage() {
                 </Button>
               </div>
             </CardContent>
-            </Card>
-            </div>
-            </div>
+          </Card>
+        </div>
+      </div>
     </PageLayout>
-            );
-            }
+  );
+}
 
 export default ProtectedPage(PilotDetailPage, { requiredPermissions: [] });

@@ -28,9 +28,9 @@ export const CHALLENGE_ANALYSIS_PROMPT_TEMPLATE = ({
   sectors = [],
   subsectors = [],
   services = []
-}) => `${CHALLENGE_ANALYSIS_SYSTEM_PROMPT}
-
-INPUT:
+}) => ({
+  system: CHALLENGE_ANALYSIS_SYSTEM_PROMPT,
+  prompt: `INPUT:
 Municipality: ${municipality?.name_en} (${municipality?.name_ar || ''})
 User's Description: ${userDescription}
 ${ideaContext}
@@ -76,7 +76,101 @@ REQUIRED OUTPUT FIELDS:
 24. Priority: tier_1/tier_2/tier_3/tier_4
 25. Tracks (multiple): pilot/r_and_d/program/procurement/policy
 26. Budget Estimate (SAR): Estimated cost
-27. Timeline Estimate: Expected duration`;
+27. Timeline Estimate: Expected duration`,
+  schema: {
+    type: 'object',
+    required: ['title_en', 'title_ar', 'description_en', 'description_ar', 'problem_statement_en', 'problem_statement_ar', 'sector_id', 'severity_score', 'impact_score'],
+    properties: {
+      title_en: { type: 'string' },
+      title_ar: { type: 'string' },
+      tagline_en: { type: 'string' },
+      tagline_ar: { type: 'string' },
+      description_en: { type: 'string' },
+      description_ar: { type: 'string' },
+      problem_statement_en: { type: 'string' },
+      problem_statement_ar: { type: 'string' },
+      current_situation_en: { type: 'string' },
+      current_situation_ar: { type: 'string' },
+      desired_outcome_en: { type: 'string' },
+      desired_outcome_ar: { type: 'string' },
+      root_cause_en: { type: 'string' },
+      root_cause_ar: { type: 'string' },
+      root_causes: { type: 'array', items: { type: 'string' } },
+      sector_id: { type: 'string' },
+      subsector_id: { type: 'string' },
+      service_id: { type: 'string' },
+      affected_services: { type: 'array', items: { type: 'string' } },
+      severity_score: { type: 'number' },
+      impact_score: { type: 'number' },
+      affected_population: {
+        type: 'object',
+        properties: {
+          size: { type: 'number' },
+          demographics: { type: 'string' },
+          location: { type: 'string' }
+        }
+      },
+      kpis: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            name_en: { type: 'string' },
+            name_ar: { type: 'string' },
+            baseline: { type: 'string' },
+            target: { type: 'string' },
+            unit: { type: 'string' }
+          }
+        }
+      },
+      stakeholders: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+            role: { type: 'string' },
+            involvement: { type: 'string' }
+          }
+        }
+      },
+      data_evidence: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            type: { type: 'string' },
+            source: { type: 'string' },
+            value: { type: 'string' },
+            date: { type: 'string' }
+          }
+        }
+      },
+      constraints: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            type: { type: 'string' },
+            description: { type: 'string' }
+          }
+        }
+      },
+      keywords: { type: 'array', items: { type: 'string' } },
+      theme: { type: 'string' },
+      category: { type: 'string' },
+      challenge_type: { type: 'string' },
+      priority_tier: { type: 'number' },
+      tracks: { type: 'array', items: { type: 'string' } },
+      budget_estimate: { type: 'number' },
+      timeline_estimate: { type: 'string' },
+      ministry_service: { type: 'string' },
+      responsible_agency: { type: 'string' },
+      department: { type: 'string' },
+      strategic_goal: { type: 'string' }
+    }
+  }
+});
 
 export default {
   CHALLENGE_ANALYSIS_SYSTEM_PROMPT,

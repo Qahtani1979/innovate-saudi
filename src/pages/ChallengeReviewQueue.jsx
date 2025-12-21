@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,8 +29,8 @@ function ChallengeReviewQueue() {
   const { data: challenges = [], isLoading } = useQuery({
     queryKey: ['challenges-for-review'],
     queryFn: async () => {
-      const all = await base44.entities.Challenge.list();
-      return all.filter(c => c.status === 'submitted' || c.status === 'under_review');
+      const { data } = await supabase.from('challenges').select('*').in('status', ['submitted', 'under_review']);
+      return data || [];
     }
   });
 
@@ -46,14 +46,16 @@ function ChallengeReviewQueue() {
 
   const handleEvaluationComplete = async () => {
     setShowEvaluationForm(false);
-    
+
     if (selectedChallenge) {
-      await base44.functions.invoke('checkConsensus', {
-        entity_type: 'challenge',
-        entity_id: selectedChallenge.id
+      await supabase.functions.invoke('checkConsensus', {
+        body: {
+          entity_type: 'challenge',
+          entity_id: selectedChallenge.id
+        }
       });
     }
-    
+
     setSelectedChallenge(null);
     queryClient.invalidateQueries(['challenges-for-review']);
   };
@@ -192,9 +194,9 @@ function ChallengeReviewQueue() {
                 </div>
               </div>
 
-              <EvaluationConsensusPanel 
-                entityType="challenge" 
-                entityId={challenge.id} 
+              <EvaluationConsensusPanel
+                entityType="challenge"
+                entityId={challenge.id}
               />
 
               <div className="flex gap-2 mt-4">

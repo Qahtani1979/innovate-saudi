@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
+// import { base44 } from '@/api/base44Client'; // Removed legacy client
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,16 +24,39 @@ function ProgramApplicationEvaluationHub() {
 
   const { data: applications = [] } = useQuery({
     queryKey: ['program-applications-eval'],
-    queryFn: () => base44.entities.ProgramApplication.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('program_applications')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: programs = [] } = useQuery({
     queryKey: ['programs-eval'],
-    queryFn: () => base44.entities.Program.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('programs')
+        .select('*')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.ProgramApplication.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      const { data: result, error } = await supabase
+        .from('program_applications')
+        .update(data)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['program-applications-eval']);
       toast.success(t({ en: 'Application updated', ar: 'تم تحديث الطلب' }));

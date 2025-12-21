@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
@@ -50,18 +50,40 @@ function RDCallsPage() {
 
   const { data: calls = [], isLoading: callsLoading, error: callsError } = useQuery({
     queryKey: ['rd-calls'],
-    queryFn: () => base44.entities.RDCall.list('-created_date'),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('rd_calls')
+        .select('*, rd_proposals(count)')
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Map proposals count back to the call object for easier access
+      return data?.map(call => ({
+        ...call,
+        proposals_count: call.rd_proposals?.[0]?.count || 0
+      })) || [];
+    },
     staleTime: 5 * 60 * 1000
   });
 
   const { data: proposals = [], isLoading: proposalsLoading, error: proposalsError } = useQuery({
     queryKey: ['rd-proposals'],
-    queryFn: () => base44.entities.RDProposal.list('-created_date'),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('rd_proposals')
+        .select('*')
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
     staleTime: 5 * 60 * 1000
   });
 
   const filteredCalls = calls.filter(call => {
-    const matchesSearch = !searchTerm || 
+    const matchesSearch = !searchTerm ||
       call.title_en?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       call.title_ar?.includes(searchTerm);
     const matchesStatus = filterStatus === 'all' || call.status === filterStatus;
@@ -99,11 +121,12 @@ function RDCallsPage() {
       status: c.status,
       budget: c.budget_total,
       proposals: c.proposals_count,
-      themes: c.research_themes
+      themes: c.research_areas || []
     }));
 
     const { success, data } = await invokeAI({
       prompt: RD_CALLS_INSIGHTS_PROMPT_TEMPLATE({ callSummary, stats }),
+      system_prompt: "You are an AI research strategy advisor specializing in Saudi municipal innovation. Analyze the R&D call patterns and provide strategic insights.",
       response_json_schema: RD_CALLS_INSIGHTS_RESPONSE_SCHEMA
     });
 
@@ -118,10 +141,10 @@ function RDCallsPage() {
         <div className="space-y-6">
           <div className="h-24 bg-muted animate-pulse rounded-lg" />
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {[1,2,3,4].map(i => <div key={i} className="h-28 bg-muted animate-pulse rounded-lg" />)}
+            {[1, 2, 3, 4].map(i => <div key={i} className="h-28 bg-muted animate-pulse rounded-lg" />)}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[1,2,3,4].map(i => <div key={i} className="h-64 bg-muted animate-pulse rounded-lg" />)}
+            {[1, 2, 3, 4].map(i => <div key={i} className="h-64 bg-muted animate-pulse rounded-lg" />)}
           </div>
         </div>
       </PageLayout>
@@ -146,37 +169,37 @@ function RDCallsPage() {
         description={t({ en: 'Research funding opportunities and submissions', ar: 'فرص التمويل البحثي والمقترحات' })}
         actions={
           <div className="flex items-center gap-3">
-          <Button variant="outline" className="gap-2" onClick={handleAIInsights} disabled={!isAvailable || aiLoading}>
-            <Sparkles className="h-4 w-4" />
-            {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
-          </Button>
-          <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} />
-          <div className="flex items-center gap-1 border rounded-lg p-1">
-            <Button
-              variant={viewMode === 'grid' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('grid')}
-            >
-              <LayoutGrid className="h-4 w-4" />
+            <Button variant="outline" className="gap-2" onClick={handleAIInsights} disabled={!isAvailable || aiLoading}>
+              <Sparkles className="h-4 w-4" />
+              <span>{t({ en: 'AI Insights', ar: 'رؤى ذكية' })}</span>
             </Button>
-            <Button
-              variant={viewMode === 'table' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('table')}
-            >
-              <List className="h-4 w-4" />
-            </Button>
-          </div>
-          {hasPermission('rd_call_manage') && (
-            <Link to={createPageUrl('RDCallCreate')}>
-              <Button className="bg-gradient-to-r from-blue-600 to-teal-600 gap-2">
-                <Plus className="h-5 w-5" />
-                {t({ en: 'New R&D Call', ar: 'دعوة جديدة' })}
+            <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} error={null} />
+            <div className="flex items-center gap-1 border rounded-lg p-1">
+              <Button
+                variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('grid')}
+              >
+                <LayoutGrid className="h-4 w-4" />
               </Button>
-            </Link>
-          )}
-        </div>
-      }
+              <Button
+                variant={viewMode === 'table' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('table')}
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
+            {hasPermission('rd_call_manage') && (
+              <Link to={createPageUrl('RDCallCreate')}>
+                <Button className="bg-gradient-to-r from-blue-600 to-teal-600 gap-2">
+                  <Plus className="h-5 w-5" />
+                  <span>{t({ en: 'New R&D Call', ar: 'دعوة جديدة' })}</span>
+                </Button>
+              </Link>
+            )}
+          </div>
+        }
       />
       {/* AI Insights Modal */}
       {showAIInsights && (
@@ -358,7 +381,7 @@ function RDCallsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {filteredCalls.map((call) => {
                 const daysLeft = call.close_date ? Math.ceil((new Date(call.close_date) - new Date()) / (1000 * 60 * 60 * 24)) : null;
-                
+
                 return (
                   <Card key={call.id} className="hover:shadow-lg transition-shadow overflow-hidden">
                     {call.image_url && (
@@ -516,8 +539,8 @@ function RDCallsPage() {
                           </p>
                           <div className="flex items-center gap-4 text-xs text-slate-500">
                             {proposal.principal_investigator && (
-                              <span>PI: {typeof proposal.principal_investigator === 'object' 
-                                ? proposal.principal_investigator.name 
+                              <span>PI: {typeof proposal.principal_investigator === 'object'
+                                ? proposal.principal_investigator.name
                                 : proposal.principal_investigator}</span>
                             )}
                             {proposal.budget_requested && (

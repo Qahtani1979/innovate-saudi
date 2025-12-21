@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,17 +25,29 @@ function PilotMonitoringDashboard() {
   const { data: activePilots = [] } = useQuery({
     queryKey: ['active-monitoring-pilots'],
     queryFn: async () => {
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => ['active', 'monitoring'].includes(p.stage));
+      const { data } = await supabase
+        .from('pilots')
+        .select('*')
+        .in('stage', ['active', 'monitoring'])
+        .eq('is_deleted', false);
+      return data || [];
     }
   });
 
   const { data: municipalities = [] } = useQuery({
     queryKey: ['municipalities'],
-    queryFn: () => base44.entities.Municipality.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('municipalities').select('*');
+      return data || [];
+    }
   });
 
   const selectedPilotData = selectedPilot ? activePilots.find(p => p.id === selectedPilot) : activePilots[0];
+
+  // Safe accessors for JSON fields
+  const getKpis = (pilot) => Array.isArray(pilot?.kpis) ? pilot.kpis : [];
+  const getMilestones = (pilot) => Array.isArray(pilot?.milestones) ? pilot.milestones : [];
+
 
   // Mock real-time data
   const mockKPITrend = [
@@ -52,7 +64,7 @@ function PilotMonitoringDashboard() {
     const target = parseFloat(kpi.target);
     const baseline = parseFloat(kpi.baseline);
     const progress = baseline !== target ? ((baseline - current) / (baseline - target)) * 100 : 50;
-    
+
     if (progress >= 80) return 'on_track';
     if (progress >= 50) return 'at_risk';
     return 'off_track';
@@ -155,16 +167,15 @@ function PilotMonitoringDashboard() {
               const municipality = municipalities.find(m => m.id === pilot.municipality_id);
               const isSelected = selectedPilotData?.id === pilot.id;
               const riskColor = pilot.risk_level === 'low' ? 'bg-green-100 text-green-700' :
-                              pilot.risk_level === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-red-100 text-red-700';
-              
+                pilot.risk_level === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                  'bg-red-100 text-red-700';
+
               return (
                 <div
                   key={pilot.id}
                   onClick={() => setSelectedPilot(pilot.id)}
-                  className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                    isSelected ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-blue-300'
-                  }`}
+                  className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-blue-300'
+                    }`}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
@@ -222,7 +233,7 @@ function PilotMonitoringDashboard() {
                     <BarChart3 className="h-5 w-5 text-blue-600 mx-auto mb-1" />
                     <p className="text-xs text-slate-500">KPIs On Track</p>
                     <p className="text-xl font-bold text-blue-600">
-                      {selectedPilotData.kpis?.filter(k => k.status === 'on_track').length || 0}/{selectedPilotData.kpis?.length || 0}
+                      {getKpis(selectedPilotData).filter(k => k.status === 'on_track').length || 0}/{getKpis(selectedPilotData).length || 0}
                     </p>
                   </div>
                 </div>
@@ -234,17 +245,17 @@ function PilotMonitoringDashboard() {
                 <CardTitle>{t({ en: 'KPI Performance', ar: 'أداء المؤشرات' })}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {selectedPilotData.kpis && selectedPilotData.kpis.length > 0 ? (
-                  selectedPilotData.kpis.map((kpi, idx) => {
+                {getKpis(selectedPilotData).length > 0 ? (
+                  getKpis(selectedPilotData).map((kpi, idx) => {
                     const status = kpi.status || getKPIStatus(kpi);
                     const statusConfig = {
                       on_track: { color: 'text-green-600', bg: 'bg-green-100', icon: CheckCircle2 },
                       at_risk: { color: 'text-yellow-600', bg: 'bg-yellow-100', icon: AlertTriangle },
                       off_track: { color: 'text-red-600', bg: 'bg-red-100', icon: AlertCircle }
                     }[status] || { color: 'text-slate-600', bg: 'bg-slate-100', icon: Activity };
-                    
+
                     const StatusIcon = statusConfig.icon;
-                    
+
                     return (
                       <div key={idx} className="space-y-2">
                         <div className="flex items-center justify-between">
@@ -294,24 +305,24 @@ function PilotMonitoringDashboard() {
                 <CardTitle>{t({ en: 'Milestone Progress', ar: 'تقدم المعالم' })}</CardTitle>
               </CardHeader>
               <CardContent>
-                {selectedPilotData.milestones && selectedPilotData.milestones.length > 0 ? (
+                {getMilestones(selectedPilotData).length > 0 ? (
                   <div className="space-y-3">
-                    {selectedPilotData.milestones.map((milestone, idx) => (
+                    {getMilestones(selectedPilotData).map((milestone, idx) => (
                       <div key={idx} className="flex items-center gap-3">
                         {milestone.status === 'completed' && <CheckCircle2 className="h-5 w-5 text-green-600" />}
                         {milestone.status === 'in_progress' && <Activity className="h-5 w-5 text-blue-600 animate-pulse" />}
                         {milestone.status === 'pending' && <Clock className="h-5 w-5 text-slate-400" />}
                         {milestone.status === 'delayed' && <AlertTriangle className="h-5 w-5 text-red-600" />}
-                        
+
                         <div className="flex-1">
                           <p className="text-sm font-medium">{milestone.name}</p>
                           <p className="text-xs text-slate-500">{milestone.due_date}</p>
                         </div>
                         <Badge className={
                           milestone.status === 'completed' ? 'bg-green-100 text-green-700' :
-                          milestone.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
-                          milestone.status === 'delayed' ? 'bg-red-100 text-red-700' :
-                          'bg-slate-100 text-slate-700'
+                            milestone.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                              milestone.status === 'delayed' ? 'bg-red-100 text-red-700' :
+                                'bg-slate-100 text-slate-700'
                         }>
                           {milestone.status || 'pending'}
                         </Badge>
@@ -329,11 +340,10 @@ function PilotMonitoringDashboard() {
                 <CardTitle>{t({ en: 'Active Alerts', ar: 'التنبيهات النشطة' })}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {selectedPilotData.kpis?.filter(k => k.status === 'off_track' || k.status === 'at_risk').length > 0 ? (
-                  selectedPilotData.kpis.filter(k => k.status === 'off_track' || k.status === 'at_risk').map((kpi, idx) => (
-                    <div key={idx} className={`p-3 rounded-lg border-2 ${
-                      kpi.status === 'off_track' ? 'bg-red-50 border-red-300' : 'bg-yellow-50 border-yellow-300'
-                    }`}>
+                {getKpis(selectedPilotData).filter(k => k.status === 'off_track' || k.status === 'at_risk').length > 0 ? (
+                  getKpis(selectedPilotData).filter(k => k.status === 'off_track' || k.status === 'at_risk').map((kpi, idx) => (
+                    <div key={idx} className={`p-3 rounded-lg border-2 ${kpi.status === 'off_track' ? 'bg-red-50 border-red-300' : 'bg-yellow-50 border-yellow-300'
+                      }`}>
                       <div className="flex items-start gap-2">
                         <AlertTriangle className={`h-4 w-4 mt-0.5 ${kpi.status === 'off_track' ? 'text-red-600' : 'text-yellow-600'}`} />
                         <div className="flex-1">
@@ -358,4 +368,4 @@ function PilotMonitoringDashboard() {
   );
 }
 
-export default ProtectedPage(PilotMonitoringDashboard, { requiredPermissions: [] });
+export default ProtectedPage(PilotMonitoringDashboard, { requiredPermissions: ['pilot_view'] });

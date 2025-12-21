@@ -1,4 +1,4 @@
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,10 @@ function PilotGatesOverview() {
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['all-pilots'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('pilots').select('*').eq('is_deleted', false);
+      return data || [];
+    }
   });
 
   const gates = [
@@ -281,4 +284,4 @@ function PilotGatesOverview() {
   );
 }
 
-export default ProtectedPage(PilotGatesOverview, { requiredPermissions: [] });
+export default ProtectedPage(PilotGatesOverview, { requiredPermissions: ['pilot_view'] });

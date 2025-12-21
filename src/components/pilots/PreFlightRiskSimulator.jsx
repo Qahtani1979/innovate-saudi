@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,10 +9,10 @@ import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Responsi
 import { Progress } from "@/components/ui/progress";
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { 
-  PREFLIGHT_RISK_SYSTEM_PROMPT, 
-  createPreflightRiskPrompt, 
-  PREFLIGHT_RISK_SCHEMA 
+import {
+  PREFLIGHT_RISK_SYSTEM_PROMPT,
+  createPreflightRiskPrompt,
+  PREFLIGHT_RISK_SCHEMA
 } from '@/lib/ai/prompts/pilots';
 import { getSystemPrompt } from '@/lib/saudiContext';
 
@@ -30,12 +30,13 @@ export default function PreFlightRiskSimulator({ pilot }) {
 
   const simulateRisks = async () => {
     try {
-      const allPilots = await base44.entities.Pilot.list();
-      
+      const { data: allPilots, error } = await supabase.from('pilots').select('*');
+      if (error) throw error;
+
       const budgetMin = (pilot.budget || 0) * 0.7;
       const budgetMax = (pilot.budget || 0) * 1.3;
-      
-      const similarPilots = allPilots.filter(p => 
+
+      const similarPilots = allPilots.filter(p =>
         p.sector === pilot.sector &&
         (p.budget || 0) >= budgetMin &&
         (p.budget || 0) <= budgetMax &&
@@ -44,45 +45,45 @@ export default function PreFlightRiskSimulator({ pilot }) {
       );
 
       const totalSimilar = similarPilots.length;
-      const failedPilots = similarPilots.filter(p => 
+      const failedPilots = similarPilots.filter(p =>
         p.stage === 'terminated' || (p.success_probability || 0) < 50
       );
 
       const risks = {
         budget_overrun: {
-          probability: totalSimilar > 0 ? Math.round((failedPilots.filter(p => 
-            p.termination_reason?.toLowerCase().includes('budget') || 
+          probability: totalSimilar > 0 ? Math.round((failedPilots.filter(p =>
+            (p.termination_reason && typeof p.termination_reason === 'string' && p.termination_reason.toLowerCase().includes('budget')) ||
             (p.budget_released || 0) > (p.budget || 0)
           ).length / totalSimilar) * 100) : 35,
           evidence_count: totalSimilar,
           severity: 'high'
         },
         timeline_delays: {
-          probability: totalSimilar > 0 ? Math.round((failedPilots.filter(p => 
-            p.termination_reason?.toLowerCase().includes('delay') ||
-            p.milestones?.some(m => m.status === 'delayed')
+          probability: totalSimilar > 0 ? Math.round((failedPilots.filter(p =>
+            (p.termination_reason && typeof p.termination_reason === 'string' && p.termination_reason.toLowerCase().includes('delay')) ||
+            (Array.isArray(p.milestones) && p.milestones.some(m => m.status === 'delayed'))
           ).length / totalSimilar) * 100) : 45,
           evidence_count: totalSimilar,
           severity: 'medium'
         },
         low_kpi_achievement: {
-          probability: totalSimilar > 0 ? Math.round((failedPilots.filter(p => 
-            p.kpis?.some(k => k.status === 'off_track')
+          probability: totalSimilar > 0 ? Math.round((failedPilots.filter(p =>
+            (Array.isArray(p.kpis) && p.kpis.some(k => k.status === 'off_track'))
           ).length / totalSimilar) * 100) : 28,
           evidence_count: totalSimilar,
           severity: 'high'
         },
         stakeholder_issues: {
-          probability: totalSimilar > 0 ? Math.round((failedPilots.filter(p => 
-            p.issues?.some(i => i.issue?.toLowerCase().includes('stakeholder'))
+          probability: totalSimilar > 0 ? Math.round((failedPilots.filter(p =>
+            (Array.isArray(p.issues) && p.issues.some(i => i.issue?.toLowerCase().includes('stakeholder')))
           ).length / totalSimilar) * 100) : 22,
           evidence_count: totalSimilar,
           severity: 'medium'
         },
         technical_failures: {
-          probability: totalSimilar > 0 ? Math.round((failedPilots.filter(p => 
-            p.termination_reason?.toLowerCase().includes('technical') ||
-            p.risks?.some(r => r.risk?.toLowerCase().includes('technical') && r.status === 'occurred')
+          probability: totalSimilar > 0 ? Math.round((failedPilots.filter(p =>
+            (p.termination_reason && typeof p.termination_reason === 'string' && p.termination_reason.toLowerCase().includes('technical')) ||
+            (Array.isArray(p.risks) && p.risks.some(r => r.risk?.toLowerCase().includes('technical') && r.status === 'occurred'))
           ).length / totalSimilar) * 100) : 38,
           evidence_count: totalSimilar,
           severity: 'high'
@@ -105,12 +106,12 @@ export default function PreFlightRiskSimulator({ pilot }) {
             mitigations[category].push(language === 'ar' ? strategy.strategy_ar : strategy.strategy_en);
           });
         }
-        
-        setRiskAssessment({ 
-          risks, 
-          mitigations, 
-          recommendation: result.data.contingency_plans_en?.[0] || '', 
-          similarPilots: totalSimilar 
+
+        setRiskAssessment({
+          risks,
+          mitigations,
+          recommendation: result.data.contingency_plans_en?.[0] || '',
+          similarPilots: totalSimilar
         });
       } else {
         setRiskAssessment({ risks, mitigations: {}, recommendation: '', similarPilots: totalSimilar });
@@ -157,26 +158,23 @@ export default function PreFlightRiskSimulator({ pilot }) {
   };
 
   return (
-    <Card className={`border-2 ${
-      riskLevel === 'high' ? 'border-red-300 bg-red-50' :
+    <Card className={`border-2 ${riskLevel === 'high' ? 'border-red-300 bg-red-50' :
       riskLevel === 'medium' ? 'border-yellow-300 bg-yellow-50' :
-      'border-green-300 bg-green-50'
-    }`}>
+        'border-green-300 bg-green-50'
+      }`}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            <Shield className={`h-5 w-5 ${
-              riskLevel === 'high' ? 'text-red-600' :
+            <Shield className={`h-5 w-5 ${riskLevel === 'high' ? 'text-red-600' :
               riskLevel === 'medium' ? 'text-yellow-600' :
-              'text-green-600'
-            }`} />
+                'text-green-600'
+              }`} />
             {t({ en: '🛡️ Pre-Flight Risk Assessment', ar: '🛡️ تقييم المخاطر قبل الإطلاق' })}
           </CardTitle>
-          <Badge className={`text-lg px-4 py-1 ${
-            riskLevel === 'high' ? 'bg-red-600' :
+          <Badge className={`text-lg px-4 py-1 ${riskLevel === 'high' ? 'bg-red-600' :
             riskLevel === 'medium' ? 'bg-yellow-600' :
-            'bg-green-600'
-          }`}>
+              'bg-green-600'
+            }`}>
             {overallRiskScore}% {t({ en: 'Risk', ar: 'خطر' })}
           </Badge>
         </div>
@@ -203,7 +201,7 @@ export default function PreFlightRiskSimulator({ pilot }) {
               const config = riskConfig[key];
               const Icon = config.icon;
               const riskColor = risk.probability > 60 ? 'text-red-600' : risk.probability > 30 ? 'text-yellow-600' : 'text-green-600';
-              
+
               return (
                 <div key={key} className="flex items-center gap-3">
                   <Icon className={`h-5 w-5 ${riskColor}`} />
@@ -229,14 +227,14 @@ export default function PreFlightRiskSimulator({ pilot }) {
             {Object.entries(risks).filter(([_, risk]) => risk.probability > 30).map(([key, risk]) => {
               const config = riskConfig[key];
               const strategies = mitigations?.[key] || [];
-              
+
               return strategies.length > 0 && (
                 <div key={key} className="p-4 bg-white rounded-lg border-2 border-slate-200">
                   <div className="flex items-start gap-3 mb-2">
                     <Badge className={
                       risk.probability > 60 ? 'bg-red-600' :
-                      risk.probability > 30 ? 'bg-yellow-600' :
-                      'bg-green-600'
+                        risk.probability > 30 ? 'bg-yellow-600' :
+                          'bg-green-600'
                     }>{risk.probability}%</Badge>
                     <h5 className="font-medium text-slate-900">{t(config.label)}</h5>
                   </div>
@@ -255,11 +253,10 @@ export default function PreFlightRiskSimulator({ pilot }) {
         </div>
 
         {recommendation && (
-          <div className={`p-4 rounded-lg border-2 ${
-            riskLevel === 'high' ? 'bg-red-50 border-red-300' :
+          <div className={`p-4 rounded-lg border-2 ${riskLevel === 'high' ? 'bg-red-50 border-red-300' :
             riskLevel === 'medium' ? 'bg-yellow-50 border-yellow-300' :
-            'bg-green-50 border-green-300'
-          }`}>
+              'bg-green-50 border-green-300'
+            }`}>
             <p className="text-sm font-semibold mb-2">
               {t({ en: '🎯 Overall Recommendation:', ar: '🎯 التوصية العامة:' })}
             </p>
@@ -272,8 +269,8 @@ export default function PreFlightRiskSimulator({ pilot }) {
             <p className="text-sm font-medium text-slate-900">
               {t({ en: 'Risk Level:', ar: 'مستوى المخاطر:' })} <strong className={
                 riskLevel === 'high' ? 'text-red-600' :
-                riskLevel === 'medium' ? 'text-yellow-600' :
-                'text-green-600'
+                  riskLevel === 'medium' ? 'text-yellow-600' :
+                    'text-green-600'
               }>{riskLevel.toUpperCase()}</strong>
             </p>
             <p className="text-xs text-slate-600 mt-1">

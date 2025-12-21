@@ -1,4 +1,4 @@
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +12,10 @@ function ChallengeAnalyticsDashboard() {
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
+    queryFn: async () => {
+      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false);
+      return data || [];
+    }
   });
 
   // Funnel data
@@ -47,11 +50,11 @@ function ChallengeAnalyticsDashboard() {
 
   // Average resolution time
   const resolvedChallenges = challenges.filter(c => c.status === 'resolved' && c.created_date && c.resolution_date);
-  const avgResolutionDays = resolvedChallenges.length > 0 
+  const avgResolutionDays = resolvedChallenges.length > 0
     ? Math.round(resolvedChallenges.reduce((sum, c) => {
-        const days = Math.floor((new Date(c.resolution_date) - new Date(c.created_date)) / (1000 * 60 * 60 * 24));
-        return sum + days;
-      }, 0) / resolvedChallenges.length)
+      const days = Math.floor((new Date(c.resolution_date) - new Date(c.created_date)) / (1000 * 60 * 60 * 24));
+      return sum + days;
+    }, 0) / resolvedChallenges.length)
     : 0;
 
   // Resolution rate trends (last 6 months)
@@ -165,7 +168,7 @@ function ChallengeAnalyticsDashboard() {
                     <span className="font-medium">{sector.resolved}/{sector.count}</span>
                   </div>
                   <div className="w-full bg-slate-100 rounded-full h-2">
-                    <div 
+                    <div
                       className="bg-green-600 h-2 rounded-full"
                       style={{ width: `${sector.count > 0 ? (sector.resolved / sector.count) * 100 : 0}%` }}
                     />

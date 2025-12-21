@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,14 +28,23 @@ import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowAp
 import { usePrompt } from '@/hooks/usePrompt';
 import { RD_CALL_INSIGHTS_PROMPT_TEMPLATE } from '@/lib/ai/prompts/rd/callInsights';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { useAuth } from '@/lib/AuthContext';
+// import { useAuth } from '@/lib/AuthContext'; // Removed unused import
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
+
+// Modular Tab Components
+import OverviewTab from '../components/rd/call_tabs/OverviewTab';
+import ThemesTab from '../components/rd/call_tabs/ThemesTab';
+import TimelineTab from '../components/rd/call_tabs/TimelineTab';
+import EligibilityTab from '../components/rd/call_tabs/EligibilityTab';
+import FundingTab from '../components/rd/call_tabs/FundingTab';
+import SubmissionTab from '../components/rd/call_tabs/SubmissionTab';
+import EvaluationTab from '../components/rd/call_tabs/EvaluationTab';
 
 function RDCallDetailPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const callId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
-  const { user } = useAuth();
+  // const { user } = useAuth(); // Removed unused variable
   const [comment, setComment] = useState('');
   const [showPublish, setShowPublish] = useState(false);
   const [showReview, setShowReview] = useState(false);
@@ -47,13 +57,19 @@ function RDCallDetailPage() {
   const [showMeetingScheduler, setShowMeetingScheduler] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
   const queryClient = useQueryClient();
-  const { invoke: invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = usePrompt(null);
+  const { invoke: invokeAI, status: aiStatus, isLoading: aiLoading } = usePrompt(null);
 
   const { data: call, isLoading, error: callError } = useQuery({
     queryKey: ['rd-call', callId],
     queryFn: async () => {
-      const calls = await base44.entities.RDCall.list();
-      return calls.find(c => c.id === callId);
+      const { data, error } = await supabase
+        .from('rd_calls')
+        .select('*')
+        .eq('id', callId)
+        .eq('is_deleted', false)
+        .single();
+      if (error) throw error;
+      return data;
     },
     enabled: !!callId,
     staleTime: 5 * 60 * 1000
@@ -62,8 +78,13 @@ function RDCallDetailPage() {
   const { data: proposals = [] } = useQuery({
     queryKey: ['proposals-for-call', callId],
     queryFn: async () => {
-      const allProposals = await base44.entities.RDProposal.list();
-      return allProposals.filter(p => p.rd_call_id === callId);
+      const { data, error } = await supabase
+        .from('rd_proposals')
+        .select('*')
+        .eq('rd_call_id', callId)
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!callId
   });
@@ -71,14 +92,24 @@ function RDCallDetailPage() {
   const { data: comments = [] } = useQuery({
     queryKey: ['rdcall-comments', callId],
     queryFn: async () => {
-      const all = await base44.entities.RDCallComment.list();
-      return all.filter(c => c.rd_call_id === callId);
+      const { data, error } = await supabase
+        .from('rd_call_comments')
+        .select('*')
+        .eq('rd_call_id', callId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!callId
   });
 
   const commentMutation = useMutation({
-    mutationFn: (data) => base44.entities.RDCallComment.create(data),
+    mutationFn: async (data) => {
+      const { error } = await supabase
+        .from('rd_call_comments')
+        .insert([data]);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['rdcall-comments']);
       setComment('');
@@ -92,7 +123,7 @@ function RDCallDetailPage() {
         <div className="space-y-6">
           <div className="h-48 bg-muted animate-pulse rounded-2xl" />
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {[1,2,3,4].map(i => <div key={i} className="h-28 bg-muted animate-pulse rounded-lg" />)}
+            {[1, 2, 3, 4].map(i => <div key={i} className="h-28 bg-muted animate-pulse rounded-lg" />)}
           </div>
           <div className="h-96 bg-muted animate-pulse rounded-lg" />
         </div>
@@ -540,317 +571,39 @@ function RDCallDetailPage() {
                 entityId={callId}
                 currentStage={
                   call.status === 'draft' ? 'draft' :
-                  call.status === 'published' || call.status === 'open' ? 'published' :
-                  call.status === 'under_review' ? 'review' :
-                  call.status === 'awarded' ? 'awarded' : 'draft'
+                    call.status === 'published' || call.status === 'open' ? 'published' :
+                      call.status === 'under_review' ? 'review' :
+                        call.status === 'awarded' ? 'awarded' : 'draft'
                 }
               />
             </TabsContent>
 
             <TabsContent value="overview" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t({ en: 'Call Description', ar: 'وصف الدعوة' })}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap" dir={language === 'ar' && call.description_ar ? 'rtl' : 'ltr'}>
-                    {language === 'ar' && call.description_ar ? call.description_ar : (call.description_en || t({ en: 'No description provided', ar: 'لا يوجد وصف' }))}
-                  </p>
-                </CardContent>
-              </Card>
-
-              {(call.objectives_en || call.objectives_ar) && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>{t({ en: 'Objectives', ar: 'الأهداف' })}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-slate-700 leading-relaxed" dir={language === 'ar' && call.objectives_ar ? 'rtl' : 'ltr'}>
-                      {language === 'ar' && call.objectives_ar ? call.objectives_ar : call.objectives_en}
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-
-              {call.expected_outcomes && call.expected_outcomes.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>{t({ en: 'Expected Outcomes', ar: 'النتائج المتوقعة' })}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {call.expected_outcomes.map((outcome, i) => (
-                        <div key={i} className="flex items-start gap-2">
-                          <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                          <p className="text-sm text-slate-700">{outcome}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              <OverviewTab call={call} t={t} language={language} />
             </TabsContent>
 
             <TabsContent value="themes">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Beaker className="h-5 w-5 text-teal-600" />
-                    {t({ en: 'Research Themes', ar: 'المواضيع البحثية' })}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {call.research_themes && call.research_themes.length > 0 ? (
-                    <div className="space-y-4">
-                      {call.research_themes.map((theme, i) => (
-                        <div key={i} className="p-4 border-l-4 border-teal-500 bg-teal-50 rounded-r-lg">
-                          <h4 className="font-semibold text-slate-900">{theme.theme}</h4>
-                          {theme.description && (
-                            <p className="text-sm text-slate-700 mt-1">{theme.description}</p>
-                          )}
-                          {theme.budget_allocation && (
-                            <p className="text-sm text-teal-900 font-medium mt-2">
-                              {t({ en: 'Budget', ar: 'الميزانية' })}: {(theme.budget_allocation / 1000).toFixed(0)}K SAR
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-slate-500 text-sm text-center py-8">{t({ en: 'No research themes defined', ar: 'لم يتم تحديد المواضيع البحثية' })}</p>
-                  )}
-                </CardContent>
-              </Card>
-
-              {call.focus_areas && call.focus_areas.length > 0 && (
-                <Card className="mt-6">
-                  <CardHeader>
-                    <CardTitle>{t({ en: 'Focus Areas', ar: 'مجالات التركيز' })}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                      {call.focus_areas.map((area, i) => (
-                        <Badge key={i} variant="outline">{area}</Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              <ThemesTab call={call} t={t} />
             </TabsContent>
 
             <TabsContent value="timeline">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-blue-600" />
-                    {t({ en: 'Important Dates', ar: 'التواريخ المهمة' })}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {call.timeline ? (
-                    <div className="space-y-3">
-                      {call.timeline.announcement_date && (
-                        <div className="flex items-center justify-between p-3 border rounded-lg">
-                          <span className="text-sm text-slate-600">{t({ en: 'Announcement', ar: 'الإعلان' })}:</span>
-                          <span className="text-sm font-medium">{call.timeline.announcement_date}</span>
-                        </div>
-                      )}
-                      {call.timeline.submission_open && (
-                        <div className="flex items-center justify-between p-3 border rounded-lg bg-green-50">
-                          <span className="text-sm text-slate-600">{t({ en: 'Submissions Open', ar: 'فتح التقديم' })}:</span>
-                          <span className="text-sm font-medium text-green-700">{call.timeline.submission_open}</span>
-                        </div>
-                      )}
-                      {call.timeline.submission_close && (
-                        <div className="flex items-center justify-between p-3 border rounded-lg bg-red-50">
-                          <span className="text-sm text-slate-600">{t({ en: 'Deadline', ar: 'الموعد النهائي' })}:</span>
-                          <span className="text-sm font-medium text-red-700">{call.timeline.submission_close}</span>
-                        </div>
-                      )}
-                      {call.timeline.review_period && (
-                        <div className="flex items-center justify-between p-3 border rounded-lg">
-                          <span className="text-sm text-slate-600">{t({ en: 'Review Period', ar: 'فترة المراجعة' })}:</span>
-                          <span className="text-sm font-medium">{call.timeline.review_period}</span>
-                        </div>
-                      )}
-                      {call.timeline.award_date && (
-                        <div className="flex items-center justify-between p-3 border rounded-lg bg-blue-50">
-                          <span className="text-sm text-slate-600">{t({ en: 'Award Date', ar: 'تاريخ الإعلان' })}:</span>
-                          <span className="text-sm font-medium text-blue-700">{call.timeline.award_date}</span>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-slate-500 text-sm text-center py-8">{t({ en: 'No timeline specified', ar: 'لم يتم تحديد الجدول الزمني' })}</p>
-                  )}
-                </CardContent>
-              </Card>
+              <TimelineTab call={call} t={t} />
             </TabsContent>
 
             <TabsContent value="eligibility">
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t({ en: 'Eligibility Criteria', ar: 'معايير الأهلية' })}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {call.eligibility_criteria && Array.isArray(call.eligibility_criteria) && call.eligibility_criteria.length > 0 ? (
-                    <div className="space-y-2">
-                      {call.eligibility_criteria.map((criterion, i) => (
-                        <div key={i} className="flex items-start gap-2 p-3 border rounded-lg">
-                          <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                          <p className="text-sm text-slate-700">{criterion}</p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-slate-500 text-sm text-center py-8">{t({ en: 'No specific criteria listed', ar: 'لا توجد معايير محددة' })}</p>
-                  )}
-                </CardContent>
-              </Card>
-
-              {call.eligible_institutions && call.eligible_institutions.length > 0 && (
-                <Card className="mt-6">
-                  <CardHeader>
-                    <CardTitle>{t({ en: 'Eligible Institutions', ar: 'المؤسسات المؤهلة' })}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                      {call.eligible_institutions.map((inst, i) => (
-                        <Badge key={i} variant="outline">{inst}</Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              <EligibilityTab call={call} t={t} />
             </TabsContent>
 
             <TabsContent value="funding">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <DollarSign className="h-5 w-5 text-green-600" />
-                    {t({ en: 'Funding Details', ar: 'تفاصيل التمويل' })}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="font-semibold text-green-900">{t({ en: 'Total Pool', ar: 'إجمالي التمويل' })}</p>
-                      <span className="text-2xl font-bold text-green-600">
-                        {call.total_funding ? `${(call.total_funding / 1000000).toFixed(1)}M SAR` : t({ en: 'N/A', ar: 'غير محدد' })}
-                      </span>
-                    </div>
-                  </div>
-
-                  {call.funding_per_project && (
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3 border rounded-lg">
-                        <p className="text-xs text-slate-500">{t({ en: 'Min per Project', ar: 'الحد الأدنى للمشروع' })}</p>
-                        <p className="text-lg font-bold text-slate-900">{(call.funding_per_project.min / 1000).toFixed(0)}K SAR</p>
-                      </div>
-                      <div className="p-3 border rounded-lg">
-                        <p className="text-xs text-slate-500">{t({ en: 'Max per Project', ar: 'الحد الأقصى للمشروع' })}</p>
-                        <p className="text-lg font-bold text-slate-900">{(call.funding_per_project.max / 1000).toFixed(0)}K SAR</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {call.number_of_awards && (
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-sm text-blue-900">
-                        <span className="font-semibold">{call.number_of_awards}</span> {t({ en: 'awards available', ar: 'جوائز متاحة' })}
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <FundingTab call={call} t={t} />
             </TabsContent>
 
             <TabsContent value="submission">
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t({ en: 'Submission Requirements', ar: 'متطلبات التقديم' })}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {call.submission_requirements && call.submission_requirements.length > 0 ? (
-                    <div className="space-y-3">
-                      {call.submission_requirements.map((req, i) => (
-                        <div key={i} className={`p-4 border rounded-lg ${req.mandatory ? 'border-red-300 bg-red-50' : ''}`}>
-                          <div className="flex items-start justify-between mb-1">
-                            <p className="font-medium text-sm text-slate-900">{req.requirement}</p>
-                            {req.mandatory && (
-                              <Badge className="bg-red-100 text-red-700 text-xs">{t({ en: 'Mandatory', ar: 'إلزامي' })}</Badge>
-                            )}
-                          </div>
-                          {req.description && (
-                            <p className="text-sm text-slate-600">{req.description}</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-slate-500 text-sm text-center py-8">{t({ en: 'No requirements specified', ar: 'لم يتم تحديد المتطلبات' })}</p>
-                  )}
-                </CardContent>
-              </Card>
-
-              {call.document_urls && call.document_urls.length > 0 && (
-                <Card className="mt-6">
-                  <CardHeader>
-                    <CardTitle>{t({ en: 'Documents', ar: 'المستندات' })}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {call.document_urls.map((doc, i) => (
-                        <Button key={i} variant="outline" asChild className="w-full justify-start">
-                          <a href={doc.url} target="_blank" rel="noopener noreferrer">
-                            <FileText className="h-4 w-4 mr-2" />
-                            {doc.name}
-                          </a>
-                        </Button>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              <SubmissionTab call={call} t={t} />
             </TabsContent>
 
             <TabsContent value="evaluation">
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t({ en: 'Evaluation Criteria', ar: 'معايير التقييم' })}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {call.evaluation_criteria && call.evaluation_criteria.length > 0 ? (
-                    <div className="space-y-3">
-                      {call.evaluation_criteria.map((criterion, i) => (
-                        <div key={i} className="p-4 border rounded-lg">
-                          <div className="flex items-start justify-between mb-2">
-                            <p className="font-medium text-sm text-slate-900">{criterion.criterion}</p>
-                            <Badge variant="outline" className="text-xs">{criterion.weight}%</Badge>
-                          </div>
-                          {criterion.description && (
-                            <p className="text-sm text-slate-600">{criterion.description}</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-slate-500 text-sm text-center py-8">{t({ en: 'No evaluation criteria specified', ar: 'لم يتم تحديد معايير التقييم' })}</p>
-                  )}
-                </CardContent>
-              </Card>
-
-              {call.review_process && (
-                <Card className="mt-6">
-                  <CardHeader>
-                    <CardTitle>{t({ en: 'Review Process', ar: 'عملية المراجعة' })}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-slate-700 leading-relaxed">{call.review_process}</p>
-                  </CardContent>
-                </Card>
-              )}
+              <EvaluationTab call={call} t={t} />
             </TabsContent>
 
             <TabsContent value="proposals">
@@ -1042,7 +795,7 @@ function RDCallDetailPage() {
                       onChange={(e) => setComment(e.target.value)}
                       rows={3}
                     />
-                    <Button 
+                    <Button
                       onClick={() => commentMutation.mutate({ rd_call_id: callId, comment_text: comment })}
                       className="bg-gradient-to-r from-blue-600 to-teal-600"
                       disabled={!comment}
@@ -1057,9 +810,9 @@ function RDCallDetailPage() {
 
             {/* AI Connections Tab */}
             <TabsContent value="connections">
-              <CrossEntityRecommender 
-                sourceEntity={call} 
-                sourceType="RDCall" 
+              <CrossEntityRecommender
+                sourceEntity={call}
+                sourceType="RDCall"
                 recommendations={['challenges', 'rdprojects', 'pilots']}
               />
             </TabsContent>

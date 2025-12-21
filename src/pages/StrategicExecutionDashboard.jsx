@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
@@ -17,27 +17,63 @@ export default function StrategicExecutionDashboard() {
 
   const { data: strategicPlans = [] } = useQuery({
     queryKey: ['strategic-plans'],
-    queryFn: () => base44.entities.StrategicPlan.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .select('*')
+        .or('is_template.is.null,is_template.eq.false')
+        .or('is_deleted.is.null,is_deleted.eq.false');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('*, strategic_goal, tags, status')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('pilots')
+        .select('*, tags, stage')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: rdProjects = [] } = useQuery({
     queryKey: ['rd-projects'],
-    queryFn: () => base44.entities.RDProject.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('rd_projects')
+        .select('*')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: programs = [] } = useQuery({
     queryKey: ['programs'],
-    queryFn: () => base44.entities.Program.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('programs')
+        .select('*')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const activePlan = strategicPlans.find(p => p.status === 'active') || strategicPlans[0];
@@ -46,17 +82,17 @@ export default function StrategicExecutionDashboard() {
     if (!theme || !activePlan) return { completed: 0, total: 0, percentage: 0 };
 
     const themeName = theme.name_en?.toLowerCase();
-    const relatedChallenges = challenges.filter(c => 
-      c.strategic_goal?.toLowerCase().includes(themeName) || 
+    const relatedChallenges = challenges.filter(c =>
+      c.strategic_goal?.toLowerCase().includes(themeName) ||
       c.tags?.some(t => t.toLowerCase().includes(themeName))
     );
-    const relatedPilots = pilots.filter(p => 
+    const relatedPilots = pilots.filter(p =>
       p.tags?.some(t => t.toLowerCase().includes(themeName))
     );
 
     const total = relatedChallenges.length + relatedPilots.length;
-    const completed = relatedChallenges.filter(c => c.status === 'resolved').length + 
-                      relatedPilots.filter(p => p.stage === 'completed' || p.stage === 'scaled').length;
+    const completed = relatedChallenges.filter(c => c.status === 'resolved').length +
+      relatedPilots.filter(p => p.stage === 'completed' || p.stage === 'scaled').length;
 
     return {
       completed,
@@ -311,9 +347,9 @@ Be specific and actionable.`,
                 <div className="text-right">
                   <Badge className={
                     milestone.status === 'completed' ? 'bg-green-100 text-green-700' :
-                    milestone.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
-                    milestone.status === 'delayed' ? 'bg-red-100 text-red-700' :
-                    'bg-slate-100 text-slate-700'
+                      milestone.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                        milestone.status === 'delayed' ? 'bg-red-100 text-red-700' :
+                          'bg-slate-100 text-slate-700'
                   }>
                     {milestone.status?.replace(/_/g, ' ')}
                   </Badge>

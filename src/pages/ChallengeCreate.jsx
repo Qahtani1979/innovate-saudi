@@ -21,6 +21,7 @@ import { usePermissions } from '../components/permissions/usePermissions';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { CHALLENGE_ANALYSIS_PROMPT_TEMPLATE } from '@/lib/ai/prompts/challenges/challengeAnalysis';
 
 function ChallengeCreatePage() {
   const { hasPermission } = usePermissions();
@@ -28,14 +29,14 @@ function ChallengeCreatePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { triggerEmail } = useEmailTrigger();
-  
+
   const { invokeAI, status: aiStatus, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
-  
+
   // URL params for context
   const urlParams = new URLSearchParams(window.location.search);
   const ideaId = urlParams.get('idea_id');
   const strategicPlanId = urlParams.get('strategic_plan_id');
-  
+
   const [currentStep, setCurrentStep] = useState(1);
   const [initialThoughts, setInitialThoughts] = useState('');
   const [linkedIdea, setLinkedIdea] = useState(ideaId || '');
@@ -140,6 +141,8 @@ function ChallengeCreatePage() {
     root_cause_ar: '',
     root_causes: [],
     theme: '',
+    theme_en: '',
+    theme_ar: '',
     keywords: [],
     challenge_type: 'other',
     category: '',
@@ -151,7 +154,11 @@ function ChallengeCreatePage() {
     affected_services: [],
     ministry_service: '',
     responsible_agency: '',
+    responsible_agency_en: '',
+    responsible_agency_ar: '',
     department: '',
+    department_en: '',
+    department_ar: '',
     challenge_owner: '',
     challenge_owner_email: '',
     city_id: '',
@@ -226,12 +233,12 @@ function ChallengeCreatePage() {
             setCurrentStep(2);
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     }
   }, []);
 
   const createMutation = useMutation({
-    mutationFn: async (data) => {
+    mutationFn: async (/** @type {any} */ data) => {
       const cleanData = { ...data };
       delete cleanData.reviewer;
       delete cleanData.review_date;
@@ -240,19 +247,19 @@ function ChallengeCreatePage() {
       delete cleanData.approval_date;
       delete cleanData.resolution_date;
       delete cleanData.archive_date;
-      
+
       cleanData.entry_date = new Date().toISOString().split('T')[0];
       cleanData.overall_score = Math.round((data.severity_score + data.impact_score) / 2);
-      
+
       // Use Supabase client instead of base44
       const { data: challenge, error } = await supabase
         .from('challenges')
         .insert(cleanData)
         .select()
         .single();
-      
+
       if (error) throw error;
-      
+
       // Generate embedding via edge function
       supabase.functions.invoke('generateEmbeddings', {
         body: {
@@ -262,24 +269,33 @@ function ChallengeCreatePage() {
           content: challenge.description_en || challenge.problem_statement_en || ''
         }
       }).catch(err => console.error('Embedding generation failed:', err));
-      
+
+      // Log activity
+      await supabase.from('challenge_activities').insert({
+        challenge_id: challenge.id,
+        activity_type: 'created',
+        activity_category: 'lifecycle',
+        description: `Challenge created: ${challenge.title_en}`,
+        timestamp: new Date().toISOString()
+      });
+
       return challenge;
     },
     onSuccess: async (challenge) => {
-      queryClient.invalidateQueries(['challenges']);
+      queryClient.invalidateQueries({ queryKey: ['challenges'] });
       localStorage.removeItem('challenge_draft');
-      
+
       // Trigger email notification for challenge creation
       await triggerEmail('challenge.created', {
-        entityType: 'challenge',
-        entityId: challenge.id,
+        entity_type: 'challenge',
+        entity_id: challenge.id,
         variables: {
           challenge_title: challenge.title_en,
           challenge_code: challenge.code,
           municipality_id: challenge.municipality_id
         }
       }).catch(err => console.error('Email trigger failed:', err));
-      
+
       toast.success(t({ en: 'Challenge created successfully!', ar: 'تم إنشاء التحدي بنجاح!' }));
       navigate(createPageUrl(`ChallengeDetail?id=${challenge.id}`));
     }
@@ -290,13 +306,13 @@ function ChallengeCreatePage() {
       toast.error(t({ en: 'Please select municipality first', ar: 'يرجى اختيار البلدية أولاً' }));
       return;
     }
-    
+
     if (!initialThoughts && !formData.title_en && !formData.description_en) {
       toast.error(t({ en: 'Please describe the challenge first', ar: 'يرجى وصف التحدي أولاً' }));
       return;
     }
 
-    setIsAIProcessing(true);
+    // setIsAIProcessing handled by hook
     try {
       const municipality = municipalities.find(m => m.id === formData.municipality_id);
       const ideaContext = selectedIdea ? `
@@ -307,120 +323,24 @@ function ChallengeCreatePage() {
         Votes: ${selectedIdea.votes_count}
       ` : '';
 
-      // Import centralized prompt module
-      const { CHALLENGE_ANALYSIS_PROMPT_TEMPLATE } = await import('@/lib/ai/prompts/challenges/challengeAnalysis');
-      
-      const prompt = CHALLENGE_ANALYSIS_PROMPT_TEMPLATE({
+      // Use centralized prompt template
+      const promptConfig = CHALLENGE_ANALYSIS_PROMPT_TEMPLATE({
         municipality,
         userDescription: initialThoughts || formData.description_en || formData.title_en,
         ideaContext,
         sectors,
         subsectors,
         services
-      }) + `
-28. Ministry Service, Responsible Agency, Department
-29. Strategic Goal alignment
-
-Return actual IDs from the lists provided.`;
+      });
 
       const result = await invokeAI({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            title_en: { type: 'string' },
-            title_ar: { type: 'string' },
-            tagline_en: { type: 'string' },
-            tagline_ar: { type: 'string' },
-            description_en: { type: 'string' },
-            description_ar: { type: 'string' },
-            problem_statement_en: { type: 'string' },
-            problem_statement_ar: { type: 'string' },
-            current_situation_en: { type: 'string' },
-            current_situation_ar: { type: 'string' },
-            desired_outcome_en: { type: 'string' },
-            desired_outcome_ar: { type: 'string' },
-            root_cause_en: { type: 'string' },
-            root_cause_ar: { type: 'string' },
-            root_causes: { type: 'array', items: { type: 'string' } },
-            sector_id: { type: 'string' },
-            subsector_id: { type: 'string' },
-            service_id: { type: 'string' },
-            affected_services: { type: 'array', items: { type: 'string' } },
-            severity_score: { type: 'number' },
-            impact_score: { type: 'number' },
-            affected_population: {
-              type: 'object',
-              properties: {
-                size: { type: 'number' },
-                demographics: { type: 'string' },
-                location: { type: 'string' }
-              }
-            },
-            kpis: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  name_en: { type: 'string' },
-                  name_ar: { type: 'string' },
-                  baseline: { type: 'string' },
-                  target: { type: 'string' },
-                  unit: { type: 'string' }
-                }
-              }
-            },
-            stakeholders: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  name: { type: 'string' },
-                  role: { type: 'string' },
-                  involvement: { type: 'string' }
-                }
-              }
-            },
-            data_evidence: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  type: { type: 'string' },
-                  source: { type: 'string' },
-                  value: { type: 'string' },
-                  date: { type: 'string' }
-                }
-              }
-            },
-            constraints: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  type: { type: 'string' },
-                  description: { type: 'string' }
-                }
-              }
-            },
-            keywords: { type: 'array', items: { type: 'string' } },
-            theme: { type: 'string' },
-            category: { type: 'string' },
-            challenge_type: { type: 'string' },
-            priority_tier: { type: 'number' },
-            tracks: { type: 'array', items: { type: 'string' } },
-            budget_estimate: { type: 'number' },
-            timeline_estimate: { type: 'string' },
-            ministry_service: { type: 'string' },
-            responsible_agency: { type: 'string' },
-            department: { type: 'string' },
-            strategic_goal: { type: 'string' }
-          }
-        }
+        prompt: promptConfig.prompt,
+        system_prompt: promptConfig.system,
+        response_json_schema: promptConfig.schema
       });
 
       const sector = sectors.find(s => s.id === result.sector_id);
-      
+
       setFormData(prev => ({
         ...prev,
         title_en: result.title_en || prev.title_en,
@@ -470,14 +390,14 @@ Return actual IDs from the lists provided.`;
     } catch (error) {
       toast.error(t({ en: 'AI generation failed', ar: 'فشل التوليد الذكي' }));
     } finally {
-      setIsAIProcessing(false);
+      // setIsAIProcessing handled by hook
     }
   };
 
   const handleRetranslate = async (field) => {
     const sourceField = field.includes('_en') ? field.replace('_en', '_ar') : field.replace('_ar', '_en');
     const sourceText = formData[sourceField];
-    
+
     if (!sourceText) {
       toast.error(t({ en: 'Source text is empty', ar: 'النص المصدر فارغ' }));
       return;
@@ -487,6 +407,7 @@ Return actual IDs from the lists provided.`;
       const targetLang = field.includes('_en') ? 'English' : 'Arabic';
       const result = await invokeAI({
         prompt: `Translate this municipal challenge text to ${targetLang} maintaining professional tone and accuracy:\n\n${sourceText}`,
+        system_prompt: 'You are a professional translator for municipal and urban planning content.',
         response_json_schema: {
           type: 'object',
           properties: {
@@ -494,7 +415,7 @@ Return actual IDs from the lists provided.`;
           }
         }
       });
-      
+
       if (result.success && result.data?.translation) {
         setFormData(prev => ({ ...prev, [field]: result.data.translation }));
         setHasUserEdited(prev => ({ ...prev, [field]: false }));
@@ -592,7 +513,7 @@ Return actual IDs from the lists provided.`;
     }));
   };
 
-  const filteredSubsectors = formData.sector_id 
+  const filteredSubsectors = formData.sector_id
     ? subsectors.filter(ss => ss.sector_id === formData.sector_id)
     : [];
 
@@ -640,7 +561,7 @@ Return actual IDs from the lists provided.`;
               {t({ en: 'Step 1: Describe Your Challenge', ar: 'الخطوة 1: صف التحدي' })}
             </CardTitle>
             <p className="text-sm text-slate-600 mt-2">
-              {t({ 
+              {t({
                 en: 'Describe the municipal problem in your own words. AI will structure it into a complete challenge submission.',
                 ar: 'صف المشكلة البلدية بكلماتك. سيقوم الذكاء بتنظيمها إلى تقديم تحدي كامل.'
               })}
@@ -678,12 +599,12 @@ Return actual IDs from the lists provided.`;
                 {t({ en: 'Optional: Link to Existing Entities', ar: 'اختياري: الربط بكيانات موجودة' })}
               </Label>
               <p className="text-xs text-slate-600">
-                {t({ 
+                {t({
                   en: 'Link to approved citizen idea or strategic plan for context enrichment',
                   ar: 'اربط بفكرة مواطن معتمدة أو خطة استراتيجية لإثراء السياق'
                 })}
               </p>
-              
+
               {!ideaId && (
                 <div className="space-y-2">
                   <Label className="text-xs">{t({ en: 'Citizen Idea', ar: 'فكرة مواطن' })}</Label>
@@ -705,7 +626,7 @@ Return actual IDs from the lists provided.`;
                   </Select>
                 </div>
               )}
-              
+
               {ideaId && selectedIdea && (
                 <div className="p-2 bg-green-100 border border-green-300 rounded text-xs">
                   ✓ {t({ en: 'Linked to:', ar: 'مربوط بـ:' })} {selectedIdea.title}
@@ -1064,8 +985,8 @@ Return actual IDs from the lists provided.`;
                     value={formData.city_id}
                     onValueChange={(value) => {
                       const city = cities.find(c => c.id === value);
-                      setFormData({ 
-                        ...formData, 
+                      setFormData({
+                        ...formData,
                         city_id: value,
                         region_id: city?.region_id || formData.region_id,
                         coordinates: city?.coordinates || formData.coordinates

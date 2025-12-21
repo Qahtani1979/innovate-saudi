@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +21,14 @@ function ProposalReviewPortal() {
 
   const { data: proposals = [] } = useQuery({
     queryKey: ['rd-proposals-review'],
-    queryFn: () => base44.entities.RDProposal.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('rd_proposals')
+        .select('*')
+        .eq('is_deleted', false);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const pending = proposals.filter(p => p.status === 'submitted' || p.status === 'under_review');
@@ -34,14 +41,16 @@ function ProposalReviewPortal() {
 
   const handleEvaluationComplete = async () => {
     setShowEvaluationForm(false);
-    
+
     if (selectedProposal) {
-      await base44.functions.invoke('checkConsensus', {
-        entity_type: 'rd_proposal',
-        entity_id: selectedProposal.id
+      await supabase.functions.invoke('check-consensus', {
+        body: {
+          entity_type: 'rd_proposal',
+          entity_id: selectedProposal.id
+        }
       });
     }
-    
+
     setSelectedProposal(null);
     queryClient.invalidateQueries(['rd-proposals-review']);
   };
@@ -122,9 +131,9 @@ function ProposalReviewPortal() {
                   </div>
                 </div>
 
-                <EvaluationConsensusPanel 
-                  entityType="rd_proposal" 
-                  entityId={proposal.id} 
+                <EvaluationConsensusPanel
+                  entityType="rd_proposal"
+                  entityId={proposal.id}
                 />
 
                 <div className="flex gap-2 mt-4">
