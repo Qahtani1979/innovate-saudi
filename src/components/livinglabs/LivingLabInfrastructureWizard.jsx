@@ -8,6 +8,7 @@ import { useLanguage } from '../LanguageContext';
 import { CheckCircle2, Circle, Network, Wrench, Zap, X } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function LivingLabInfrastructureWizard({ livingLab, onClose }) {
   const { t, isRTL } = useLanguage();
@@ -38,7 +39,8 @@ export default function LivingLabInfrastructureWizard({ livingLab, onClose }) {
 
   const updateMutation = useMutation({
     mutationFn: async (updateData) => {
-      await base44.entities.LivingLab.update(livingLab.id, updateData);
+      const { error } = await supabase.from('living_labs').update(updateData).eq('id', livingLab.id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['living-lab']);

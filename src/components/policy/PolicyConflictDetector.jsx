@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { buildPolicyConflictPrompt, POLICY_CONFLICT_SCHEMA } from '@/lib/ai/prompts/policy/conflictDetector';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function PolicyConflictDetector({ policy }) {
   const { language, isRTL, t } = useLanguage();
@@ -17,7 +18,11 @@ export default function PolicyConflictDetector({ policy }) {
 
   const { data: allPolicies = [] } = useQuery({
     queryKey: ['all-policies'],
-    queryFn: () => base44.entities.PolicyRecommendation.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('policy_recommendations').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const detectConflicts = async () => {

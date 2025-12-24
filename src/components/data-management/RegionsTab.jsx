@@ -10,6 +10,7 @@ import { MapPin, Target, TrendingUp } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { EntityTable } from './EntityTable';
 import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 export function RegionsTab({ regions, onEdit, onDelete, onAdd }) {
   const { t, language } = useLanguage();
   const [showStrategicPriorities, setShowStrategicPriorities] = useState(false);
@@ -17,7 +18,11 @@ export function RegionsTab({ regions, onEdit, onDelete, onAdd }) {
   // Fetch strategic plans to show regional alignment
   const { data: strategicPlans = [] } = useQuery({
     queryKey: ['strategic-plans-regions'],
-    queryFn: () => base44.entities.StrategicPlan.list(),
+    queryFn: async () => {
+      const { data, error } = await supabase.from('strategic_plans').select('*');
+      if (error) throw error;
+      return data || [];
+    },
     enabled: showStrategicPriorities
   });
 

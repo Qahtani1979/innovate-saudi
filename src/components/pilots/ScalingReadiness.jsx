@@ -10,6 +10,7 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { getScalingReadinessPrompt, scalingReadinessSchema } from '@/lib/ai/prompts/pilots';
 import { getSystemPrompt } from '@/lib/saudiContext';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function ScalingReadiness({ pilot }) {
   const { language, isRTL, t } = useLanguage();
@@ -30,7 +31,7 @@ export default function ScalingReadiness({ pilot }) {
     if (success && data) {
       setAssessment(data);
       
-      await base44.entities.ScalingReadiness.create({
+      await supabase.from('scaling_readiness').insert({
         pilot_id: pilot.id,
         assessment_date: new Date().toISOString().split('T')[0],
         overall_score: data.overall_score,
@@ -42,6 +43,7 @@ export default function ScalingReadiness({ pilot }) {
       });
 
       toast.success(t({ en: 'Readiness assessment complete', ar: 'اكتمل تقييم الجاهزية' }));
+    }
     }
   };
 

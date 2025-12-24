@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { Calendar, Plus, X, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function LivingLabEventManager({ lab, onClose }) {
   const { t, isRTL } = useLanguage();
@@ -35,9 +36,8 @@ export default function LivingLabEventManager({ lab, onClose }) {
         ...newEvent,
         created_date: new Date().toISOString()
       }];
-      await base44.entities.LivingLab.update(lab.id, {
-        events: updatedEvents
-      });
+      const { error } = await supabase.from('living_labs').update({ events: updatedEvents }).eq('id', lab.id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['living-lab']);
@@ -63,7 +63,11 @@ export default function LivingLabEventManager({ lab, onClose }) {
 
   const deleteEvent = async (index) => {
     const updated = events.filter((_, i) => i !== index);
-    await base44.entities.LivingLab.update(lab.id, { events: updated });
+    const { error } = await supabase.from('living_labs').update({ events: updated }).eq('id', lab.id);
+    if (error) {
+      toast.error(t({ en: 'Failed to remove event', ar: 'فشل إزالة الفعالية' }));
+      return;
+    }
     setEvents(updated);
     queryClient.invalidateQueries(['living-lab']);
     toast.success(t({ en: 'Event removed', ar: 'تم إزالة الفعالية' }));
