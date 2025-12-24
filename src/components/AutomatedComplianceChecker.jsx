@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { Shield, CheckCircle2, XCircle, AlertTriangle, Loader2, RefreshCw } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function AutomatedComplianceChecker({ application, sandbox }) {
   const { language, isRTL, t } = useLanguage();
@@ -12,7 +13,11 @@ export default function AutomatedComplianceChecker({ application, sandbox }) {
 
   const { data: exemptions = [] } = useQuery({
     queryKey: ['regulatory-exemptions'],
-    queryFn: () => base44.entities.RegulatoryExemption.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('regulatory_exemptions').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const checkMutation = useMutation({

@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from './LanguageContext';
 import { Award, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function LivingLabAccreditationWorkflow({ lab, onClose }) {
   const { t, isRTL } = useLanguage();
@@ -37,14 +38,15 @@ export default function LivingLabAccreditationWorkflow({ lab, onClose }) {
 
   const accreditationMutation = useMutation({
     mutationFn: async () => {
-      await base44.entities.LivingLab.update(lab.id, {
+      const { error } = await supabase.from('living_labs').update({
         accreditation_status: 'accredited',
         accreditation_details: {
           ...accreditationData,
           criteria_met: criteria,
           accreditation_date: new Date().toISOString().split('T')[0]
         }
-      });
+      }).eq('id', lab.id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['living-lab']);

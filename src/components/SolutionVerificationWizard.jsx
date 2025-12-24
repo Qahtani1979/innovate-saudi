@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function SolutionVerificationWizard({ solution, onClose }) {
   const { t, isRTL } = useLanguage();
@@ -94,17 +95,18 @@ Provide:
 
   const verifyMutation = useMutation({
     mutationFn: async () => {
-      await base44.entities.Solution.update(solution.id, {
+      const { error: updateError } = await supabase.from('solutions').update({
         is_verified: true,
         verification_date: new Date().toISOString().split('T')[0],
         verification_notes: verificationNotes,
         verification_checklist: checklist,
         ai_verification_recommendation: aiRecommendation,
         workflow_stage: 'verified'
-      });
+      }).eq('id', solution.id);
+      if (updateError) throw updateError;
 
-      await base44.entities.Notification.create({
-        type: 'solution_verified',
+      await supabase.from('notifications').insert({
+        notification_type: 'solution_verified',
         title: `Solution Verified: ${solution.name_en}`,
         message: `${solution.name_en} has been verified and is now available in the marketplace.`,
         severity: 'success',
@@ -112,7 +114,7 @@ Provide:
       });
 
       try {
-        await base44.functions.invoke('autoMatchmakerEnrollment', { solution_id: solution.id });
+        await supabase.functions.invoke('autoMatchmakerEnrollment', { body: { solution_id: solution.id } });
       } catch (error) {
         console.error('Auto-enrollment failed:', error);
       }

@@ -14,6 +14,7 @@ import {
   priorityRecommendationsSchema, 
   PRIORITY_RECOMMENDATIONS_SYSTEM_PROMPT 
 } from '@/lib/ai/prompts/executive';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function PriorityRecommendations() {
   const { language, isRTL, t } = useLanguage();
@@ -22,17 +23,29 @@ export default function PriorityRecommendations() {
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges-priority'],
-    queryFn: () => base44.entities.Challenge.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('challenges').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots-priority'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('pilots').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: municipalities = [] } = useQuery({
     queryKey: ['municipalities-priority'],
-    queryFn: () => base44.entities.Municipality.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('municipalities').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const generateRecommendations = async () => {

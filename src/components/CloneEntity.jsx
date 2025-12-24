@@ -8,6 +8,7 @@ import { Copy, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function CloneEntity({ entity, entityType, buttonVariant = "outline" }) {
   const [open, setOpen] = useState(false);
@@ -15,12 +16,19 @@ export default function CloneEntity({ entity, entityType, buttonVariant = "outli
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
+  const entityTypeToTable = {
+    Challenge: 'challenges',
+    Pilot: 'pilots',
+    Solution: 'solutions',
+    Program: 'programs'
+  };
+
   const cloneMutation = useMutation({
     mutationFn: async () => {
       const clonedData = { ...entity };
       delete clonedData.id;
-      delete clonedData.created_date;
-      delete clonedData.updated_date;
+      delete clonedData.created_at;
+      delete clonedData.updated_at;
       delete clonedData.created_by;
       
       if (newCode) {
@@ -43,7 +51,9 @@ export default function CloneEntity({ entity, entityType, buttonVariant = "outli
       clonedData.stage = 'pre_pilot';
       clonedData.is_published = false;
 
-      const result = await base44.entities[entityType].create(clonedData);
+      const tableName = entityTypeToTable[entityType];
+      const { data: result, error } = await supabase.from(tableName).insert(clonedData).select().single();
+      if (error) throw error;
       return result;
     },
     onSuccess: (newEntity) => {

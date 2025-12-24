@@ -1,26 +1,56 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Activity, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function PlatformHealthMonitor() {
   const { language, t } = useLanguage();
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('challenges').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('pilots').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: tasks = [] } = useQuery({
     queryKey: ['tasks'],
-    queryFn: () => base44.entities.Task.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('tasks').select('*');
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  const { data: solutions = [] } = useQuery({
+    queryKey: ['solutions-health'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('solutions').select('*');
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  const { data: rdProjects = [] } = useQuery({
+    queryKey: ['rd-projects-health'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('rd_projects').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const healthChecks = [

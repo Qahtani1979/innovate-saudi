@@ -8,6 +8,7 @@ import { useLanguage } from './LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Shield, Search, FileText, Calendar, Users } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function SandboxApplicationsList({ sandbox }) {
   const { language, isRTL, t } = useLanguage();
@@ -16,10 +17,12 @@ export default function SandboxApplicationsList({ sandbox }) {
   const { data: applications = [] } = useQuery({
     queryKey: ['sandbox-applications', sandbox.id],
     queryFn: async () => {
-      const all = await base44.entities.SandboxApplication.list();
-      return all.filter(a => a.sandbox_id === sandbox.id).sort((a, b) => 
-        new Date(b.created_date) - new Date(a.created_date)
-      );
+      const { data, error } = await supabase.from('sandbox_applications')
+        .select('*')
+        .eq('sandbox_id', sandbox.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
     }
   });
 
