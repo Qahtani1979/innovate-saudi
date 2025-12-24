@@ -1,24 +1,17 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useSandboxesWithVisibility } from '@/hooks/useSandboxesWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Shield, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useVisibilitySystem } from '@/hooks/visibility/useVisibilitySystem';
 
 function ComplianceDashboard() {
   const { language, isRTL, t } = useLanguage();
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-compliance'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: sandboxes = [] } = useQuery({
-    queryKey: ['sandboxes-compliance'],
-    queryFn: () => base44.entities.Sandbox.list()
-  });
+  const { data: pilots = [] } = usePilotsWithVisibility();
+  const { data: sandboxes = [] } = useSandboxesWithVisibility();
 
   const compliancePassed = pilots.filter(p => p.compliance_passed).length;
   const complianceRate = pilots.length > 0 ? Math.round((compliancePassed / pilots.length) * 100) : 0;

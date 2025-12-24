@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -10,60 +8,26 @@ import { Bell, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { useAuth } from '@/lib/AuthContext';
+import { usePilot } from '@/hooks/usePilotsWithVisibility';
+import { useMyPilotEnrollment } from '@/hooks/useCitizenActions';
+import { usePilotMutations } from '@/hooks/usePilotMutations';
 
 export default function CitizenPilotEnrollment() {
   const { language, isRTL, t } = useLanguage();
   const urlParams = new URLSearchParams(window.location.search);
   const pilotId = urlParams.get('pilot_id');
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
+
+  const { enrollCitizen } = usePilotMutations();
 
   const [enrollmentType, setEnrollmentType] = useState('feedback_provider');
   const [consent, setConsent] = useState(false);
   const [notifications, setNotifications] = useState(true);
 
-  const { data: pilot } = useQuery({
-    queryKey: ['pilot', pilotId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('id', pilotId)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!pilotId
-  });
+  const { data: pilot } = usePilot(pilotId);
 
-  const { data: existingEnrollment } = useQuery({
-    queryKey: ['enrollment', pilotId, user?.email],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('citizen_pilot_enrollments')
-        .select('*')
-        .eq('pilot_id', pilotId)
-        .eq('user_email', user?.email)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!(pilotId && user?.email)
-  });
-
-  const enrollMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase.from('citizen_pilot_enrollments').insert(data);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['enrollment']);
-      queryClient.invalidateQueries(['my-enrollments']);
-      toast.success(t({ en: 'Successfully enrolled in pilot!', ar: 'تم التسجيل بنجاح!' }));
-      setTimeout(() => navigate(createPageUrl('PublicPilotTracker')), 1500);
-    }
-  });
+  const { data: existingEnrollment } = useMyPilotEnrollment(pilotId);
 
   const handleEnroll = () => {
     if (!consent) {
@@ -71,7 +35,7 @@ export default function CitizenPilotEnrollment() {
       return;
     }
 
-    enrollMutation.mutate({
+    enrollCitizen.mutate({
       pilot_id: pilotId,
       citizen_email: user.email,
       citizen_name: user.full_name,
@@ -80,6 +44,10 @@ export default function CitizenPilotEnrollment() {
       notifications_enabled: notifications,
       enrollment_date: new Date().toISOString(),
       status: 'enrolled'
+    }, {
+      onSuccess: () => {
+        setTimeout(() => navigate(createPageUrl('PublicPilotTracker')), 1500);
+      }
     });
   };
 
@@ -101,7 +69,7 @@ export default function CitizenPilotEnrollment() {
               {t({ en: 'Already Enrolled', ar: 'مسجل بالفعل' })}
             </h2>
             <p className="text-slate-700 mb-4">
-              {t({ 
+              {t({
                 en: 'You are already enrolled in this pilot. You will receive updates and can provide feedback.',
                 ar: 'أنت مسجل بالفعل في هذه التجربة. ستتلقى التحديثات ويمكنك تقديم الملاحظات.'
               })}
@@ -210,7 +178,7 @@ export default function CitizenPilotEnrollment() {
                   {t({ en: 'Privacy Consent', ar: 'موافقة الخصوصية' })}
                 </p>
                 <p className="text-sm text-slate-600">
-                  {t({ 
+                  {t({
                     en: 'I consent to my data being collected and used for pilot evaluation purposes.',
                     ar: 'أوافق على جمع بياناتي واستخدامها لأغراض تقييم التجربة.'
                   })}
@@ -229,7 +197,7 @@ export default function CitizenPilotEnrollment() {
                   {t({ en: 'Enable Notifications', ar: 'تفعيل الإشعارات' })}
                 </p>
                 <p className="text-sm text-slate-600">
-                  {t({ 
+                  {t({
                     en: 'Receive email updates about pilot progress and milestones',
                     ar: 'تلقي تحديثات البريد الإلكتروني حول تقدم التجربة'
                   })}

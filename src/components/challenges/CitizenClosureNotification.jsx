@@ -1,58 +1,26 @@
 import React from 'react';
-import { useMutation } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from '../LanguageContext';
 import { Mail, Loader2, Heart } from 'lucide-react';
-import { toast } from 'sonner';
+
+import { useNotifyCitizenResolution } from '@/hooks/useChallengeMutations';
 
 export default function CitizenClosureNotification({ challenge, onSent, onCancel }) {
   const { language, isRTL, t } = useLanguage();
   const [message, setMessage] = React.useState('');
 
-  const sendMutation = useMutation({
-    mutationFn: async () => {
-      if (!challenge.citizen_origin_idea_id) {
-        toast.error(t({ en: 'No citizen to notify', ar: 'لا يوجد مواطن للإشعار' }));
-        return;
+  const sendMutation = useNotifyCitizenResolution();
+
+  const handleSend = () => {
+    sendMutation.mutate({ challenge, message }, {
+      onSuccess: () => {
+        if (onSent) onSent();
       }
-
-      // Get original idea creator
-      const { data: idea, error } = await supabase.from('citizen_ideas')
-        .select('*')
-        .eq('id', challenge.citizen_origin_idea_id)
-        .single();
-      if (error || !idea?.user_id) {
-        throw new Error('Idea creator not found');
-      }
-
-      // Send email notification via email-trigger-hub
-      const { supabase } = await import('@/integrations/supabase/client');
-      await supabase.functions.invoke('email-trigger-hub', {
-        body: {
-          trigger: 'idea.converted',
-          recipient_email: idea.created_by,
-          entity_type: 'challenge',
-          entity_id: challenge.id,
-          variables: {
-            challengeTitle: language === 'ar' && challenge.title_ar ? challenge.title_ar : challenge.title_en,
-            message: message || '',
-            ideaTitle: idea.title
-          },
-          language: language,
-          triggered_by: 'system'
-        }
-      });
-
-      return idea;
-    },
-    onSuccess: () => {
-      toast.success(t({ en: 'Citizen notified successfully!', ar: 'تم إشعار المواطن بنجاح!' }));
-      if (onSent) onSent();
-    }
-  });
+    });
+  };
 
   if (!challenge.citizen_origin_idea_id) {
     return (
@@ -87,9 +55,9 @@ export default function CitizenClosureNotification({ challenge, onSent, onCancel
             <Textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder={t({ 
-                en: 'Add a personal thank you message or describe the outcome...', 
-                ar: 'أضف رسالة شكر شخصية أو صف النتيجة...' 
+              placeholder={t({
+                en: 'Add a personal thank you message or describe the outcome...',
+                ar: 'أضف رسالة شكر شخصية أو صف النتيجة...'
               })}
               rows={4}
             />
@@ -113,7 +81,7 @@ export default function CitizenClosureNotification({ challenge, onSent, onCancel
           {t({ en: 'Skip', ar: 'تخطي' })}
         </Button>
         <Button
-          onClick={() => sendMutation.mutate()}
+          onClick={handleSend}
           disabled={sendMutation.isPending}
           className="bg-gradient-to-r from-green-600 to-teal-600"
         >

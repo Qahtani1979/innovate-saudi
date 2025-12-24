@@ -1,4 +1,4 @@
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,22 +10,41 @@ export default function LivingLabActivityLog({ livingLabId }) {
 
   const { data: activities = [] } = useQuery({
     queryKey: ['lab-activities', livingLabId],
-    queryFn: () => base44.entities.SystemActivity.filter({ 
-      entity_id: livingLabId,
-      entity_type: 'LivingLab'
-    }, '-created_date', 100)
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('system_activities')
+        .select('*')
+        .eq('entity_id', livingLabId)
+        .eq('entity_type', 'LivingLab')
+        .order('created_date', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+      return data;
+    }
   });
 
   const { data: bookings = [] } = useQuery({
     queryKey: ['lab-bookings', livingLabId],
-    queryFn: () => base44.entities.LivingLabBooking.filter({ living_lab_id: livingLabId }, '-created_date', 30)
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('living_lab_bookings')
+        .select('*')
+        .eq('living_lab_id', livingLabId)
+        .order('created_date', { ascending: false })
+        .limit(30);
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!livingLabId
   });
 
   const allEvents = [
     ...activities.map(a => ({ ...a, type: 'activity' })),
-    ...bookings.map(b => ({ 
-      ...b, 
-      type: 'booking', 
+    ...bookings.map(b => ({
+      ...b,
+      type: 'booking',
       activity_description: `Booking: ${b.booking_purpose} (${b.booking_status})`,
       created_by: b.requester_email
     }))
@@ -44,12 +63,10 @@ export default function LivingLabActivityLog({ livingLabId }) {
           {allEvents.map((event, idx) => {
             const Icon = event.type === 'booking' ? Calendar : Activity;
             return (
-              <div key={idx} className={`flex gap-3 p-3 rounded-lg border ${
-                event.type === 'booking' ? 'bg-teal-50 border-teal-200' : 'bg-slate-50'
-              }`}>
-                <div className={`h-8 w-8 rounded-full ${
-                  event.type === 'booking' ? 'bg-teal-100' : 'bg-blue-100'
-                } flex items-center justify-center flex-shrink-0`}>
+              <div key={idx} className={`flex gap-3 p-3 rounded-lg border ${event.type === 'booking' ? 'bg-teal-50 border-teal-200' : 'bg-slate-50'
+                }`}>
+                <div className={`h-8 w-8 rounded-full ${event.type === 'booking' ? 'bg-teal-100' : 'bg-blue-100'
+                  } flex items-center justify-center flex-shrink-0`}>
                   <Icon className={`h-4 w-4 ${event.type === 'booking' ? 'text-teal-600' : 'text-blue-600'}`} />
                 </div>
                 <div className="flex-1">
@@ -68,11 +85,10 @@ export default function LivingLabActivityLog({ livingLabId }) {
                     </Badge>
                   )}
                   {event.booking_status && (
-                    <Badge className={`mt-2 text-xs ${
-                      event.booking_status === 'approved' ? 'bg-green-600' :
-                      event.booking_status === 'pending' ? 'bg-yellow-600' :
-                      'bg-slate-600'
-                    }`}>
+                    <Badge className={`mt-2 text-xs ${event.booking_status === 'approved' ? 'bg-green-600' :
+                        event.booking_status === 'pending' ? 'bg-yellow-600' :
+                          'bg-slate-600'
+                      }`}>
                       {event.booking_status}
                     </Badge>
                   )}

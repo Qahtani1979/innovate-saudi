@@ -14,30 +14,31 @@ import { usePermissions } from '@/components/permissions/usePermissions';
  * - Others: Published events only
  */
 export function useEventsWithVisibility(options = {}) {
-  const { 
+  const {
     status,
     eventType,
     programId,
     sectorId,
     limit = 100,
     includeDeleted = false,
-    upcoming = false
+    upcoming = false,
+    strategicPlanId
   } = options;
 
   const { isAdmin, hasRole, userId, profile } = usePermissions();
-  const { 
-    isNational, 
-    sectorIds, 
-    userMunicipalityId, 
+  const {
+    isNational,
+    sectorIds,
+    userMunicipalityId,
     nationalMunicipalityIds,
     hasFullVisibility,
-    isLoading: visibilityLoading 
+    isLoading: visibilityLoading
   } = useVisibilitySystem();
 
-  const isStaffUser = hasRole('municipality_staff') || 
-                      hasRole('municipality_admin') || 
-                      hasRole('deputyship_staff') || 
-                      hasRole('deputyship_admin');
+  const isStaffUser = hasRole('municipality_staff') ||
+    hasRole('municipality_admin') ||
+    hasRole('deputyship_staff') ||
+    hasRole('deputyship_admin');
 
   return useQuery({
     queryKey: ['events-with-visibility', {
@@ -52,7 +53,8 @@ export function useEventsWithVisibility(options = {}) {
       programId,
       sectorId,
       limit,
-      upcoming
+      upcoming,
+      strategicPlanId
     }],
     queryFn: async () => {
       let baseSelect = `
@@ -95,6 +97,11 @@ export function useEventsWithVisibility(options = {}) {
       // Apply upcoming filter
       if (upcoming) {
         query = query.gte('start_date', new Date().toISOString());
+      }
+
+      // Apply strategic plan filter
+      if (strategicPlanId) {
+        query = query.contains('strategic_plan_ids', [strategicPlanId]);
       }
 
       // Admin or full visibility users see everything

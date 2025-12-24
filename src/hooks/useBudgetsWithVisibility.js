@@ -7,7 +7,7 @@ import { usePermissions } from '@/components/permissions/usePermissions';
  * Hook for fetching budgets with visibility rules applied.
  */
 export function useBudgetsWithVisibility(options = {}) {
-  const { 
+  const {
     status,
     fiscalYear,
     entityType,
@@ -15,17 +15,17 @@ export function useBudgetsWithVisibility(options = {}) {
   } = options;
 
   const { isAdmin, hasRole, userId } = usePermissions();
-  const { 
-    isNational, 
-    userMunicipalityId, 
+  const {
+    isNational,
+    userMunicipalityId,
     hasFullVisibility,
-    isLoading: visibilityLoading 
+    isLoading: visibilityLoading
   } = useVisibilitySystem();
 
-  const isStaffUser = hasRole('municipality_staff') || 
-                      hasRole('municipality_admin') || 
-                      hasRole('deputyship_staff') || 
-                      hasRole('deputyship_admin');
+  const isStaffUser = hasRole('municipality_staff') ||
+    hasRole('municipality_admin') ||
+    hasRole('deputyship_staff') ||
+    hasRole('deputyship_admin');
 
   return useQuery({
     queryKey: ['budgets-with-visibility', {
@@ -37,6 +37,7 @@ export function useBudgetsWithVisibility(options = {}) {
       status,
       fiscalYear,
       entityType,
+      strategicPlanId: options.strategicPlanId,
       limit
     }],
     queryFn: async () => {
@@ -62,6 +63,11 @@ export function useBudgetsWithVisibility(options = {}) {
       // Apply entity type filter
       if (entityType) {
         query = query.eq('entity_type', entityType);
+      }
+
+      // Apply strategic plan filter
+      if (options.strategicPlanId) {
+        query = query.eq('strategic_plan_id', options.strategicPlanId);
       }
 
       // Admin or full visibility users see everything

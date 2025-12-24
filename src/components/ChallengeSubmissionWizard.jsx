@@ -7,23 +7,23 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from './LanguageContext';
 import { CheckCircle2, Send, Sparkles, Loader2, X } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { useChallengeMutations } from '@/hooks/useChallengeMutations';
+
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import {
   SUBMISSION_BRIEF_SYSTEM_PROMPT,
   createSubmissionBriefPrompt,
   SUBMISSION_BRIEF_SCHEMA
 } from '@/lib/ai/prompts/challenges/submissionBrief';
+import { toast } from 'sonner';
 
 export default function ChallengeSubmissionWizard({ challenge, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
   const [submissionNotes, setSubmissionNotes] = useState('');
   const { invokeAI, status, isLoading: generatingBrief, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [aiBrief, setAiBrief] = useState(null);
+  const { submitForReview } = useChallengeMutations();
 
   const [checklist, setChecklist] = useState([
     { id: 'title', label: { en: 'Title is clear and descriptive', ar: 'العنوان واضح ووصفي' }, checked: false },
@@ -36,52 +36,22 @@ export default function ChallengeSubmissionWizard({ challenge, onClose }) {
     { id: 'budget', label: { en: 'Budget estimate provided', ar: 'تقدير الميزانية مقدم' }, checked: false }
   ]);
 
-  const submitMutation = useMutation({
-    mutationFn: async () => {
-      await base44.entities.Challenge.update(challenge.id, {
-        status: 'submitted',
-        submission_date: new Date().toISOString(),
+  const handleSubmit = () => {
+    submitForReview.mutate({
+      id: challenge.id,
+      data: {
         submission_checklist: checklist.reduce((acc, item) => ({ ...acc, [item.id]: item.checked }), {})
-      });
-      await base44.entities.SystemActivity.create({
-        activity_type: 'challenge_submitted',
-        entity_type: 'Challenge',
-        entity_id: challenge.id,
-        description: `Challenge ${challenge.code} submitted for review`,
-        metadata: { submission_notes: submissionNotes, ai_brief: aiBrief }
-      });
-
-      // Send confirmation email to challenge owner via email-trigger-hub
-      if (challenge.challenge_owner_email) {
-        try {
-          const { supabase } = await import('@/integrations/supabase/client');
-          await supabase.functions.invoke('email-trigger-hub', {
-            body: {
-              trigger: 'challenge.submitted',
-              recipient_email: challenge.challenge_owner_email,
-              entity_type: 'challenge',
-              entity_id: challenge.id,
-              variables: {
-                userName: challenge.challenge_owner || challenge.challenge_owner_email.split('@')[0],
-                challengeTitle: language === 'ar' ? (challenge.title_ar || challenge.title_en) : challenge.title_en,
-                challengeCode: challenge.code || challenge.id.substring(0, 8),
-                trackingUrl: window.location.origin + '/challenges/' + challenge.id
-              },
-              language: language,
-              triggered_by: challenge.challenge_owner_email
-            }
-          });
-        } catch (emailError) {
-          console.error('Failed to send challenge submission email:', emailError);
-        }
+      },
+      metadata: {
+        submission_notes: submissionNotes,
+        ai_brief: aiBrief
       }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['challenge']);
-      toast.success(t({ en: 'Challenge submitted successfully', ar: 'تم تقديم التحدي بنجاح' }));
-      onClose();
-    }
-  });
+    }, {
+      onSuccess: () => {
+        onClose();
+      }
+    });
+  };
 
   const generateAIBrief = async () => {
     const result = await invokeAI({
@@ -97,7 +67,7 @@ export default function ChallengeSubmissionWizard({ challenge, onClose }) {
   };
 
   const toggleCheck = (id) => {
-    setChecklist(prev => prev.map(item => 
+    setChecklist(prev => prev.map(item =>
       item.id === id ? { ...item, checked: !item.checked } : item
     ));
   };
@@ -222,8 +192,8 @@ export default function ChallengeSubmissionWizard({ challenge, onClose }) {
                     <p className="text-xs text-slate-500 mb-1">{t({ en: 'Complexity', ar: 'التعقيد' })}</p>
                     <Badge className={
                       aiBrief.complexity === 'high' ? 'bg-red-100 text-red-700' :
-                      aiBrief.complexity === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-green-100 text-green-700'
+                        aiBrief.complexity === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-green-100 text-green-700'
                     }>{aiBrief.complexity}</Badge>
                     <p className="text-xs text-slate-600 mt-2">{language === 'ar' ? aiBrief.complexity_reason_ar : aiBrief.complexity_reason_en}</p>
                   </div>
@@ -289,11 +259,11 @@ export default function ChallengeSubmissionWizard({ challenge, onClose }) {
                 {t({ en: 'Back', ar: 'رجوع' })}
               </Button>
               <Button
-                onClick={() => submitMutation.mutate()}
-                disabled={submitMutation.isPending}
+                onClick={handleSubmit}
+                disabled={submitForReview.isPending}
                 className="bg-gradient-to-r from-blue-600 to-teal-600"
               >
-                {submitMutation.isPending ? (
+                {submitForReview.isPending ? (
                   <Loader2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} animate-spin`} />
                 ) : (
                   <Send className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />

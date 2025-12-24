@@ -12,24 +12,24 @@ export function useUserRoles(userId, userEmail) {
     queryKey: ['user-roles', userId, userEmail],
     queryFn: async () => {
       if (!userId && !userEmail) return [];
-      
+
       let query = supabase
         .from('user_roles')
         .select('role');
-      
+
       if (userId) {
         query = query.eq('user_id', userId);
       } else if (userEmail) {
         query = query.eq('user_email', userEmail);
       }
-      
+
       const { data, error } = await query;
-      
+
       if (error) {
         console.error('Error fetching user roles:', error);
         return [];
       }
-      
+
       return data?.map(r => r.role) || [];
     },
     enabled: !!(userId || userEmail),
@@ -37,13 +37,13 @@ export function useUserRoles(userId, userEmail) {
   });
 
   const hasRole = (role) => roles?.includes(role) || false;
-  
+
   const hasAnyRole = (roleList) => roleList.some(r => roles?.includes(r));
-  
+
   const isAdmin = hasAnyRole(['admin', 'super_admin']);
-  
+
   const isInternalStaff = hasAnyRole(['admin', 'super_admin', 'gdibs_internal', 'municipality_admin']);
-  
+
   const isCitizen = hasRole('citizen') || (!roles?.length);
 
   return {
@@ -57,6 +57,23 @@ export function useUserRoles(userId, userEmail) {
     isInternalStaff,
     isCitizen
   };
+}
+
+/**
+ * Hook to fetch all role definitions (admin only usually)
+ */
+export function useAllRoles() {
+  return useQuery({
+    queryKey: ['all-roles-definitions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('roles')
+        .select('*')
+        .order('name');
+      if (error) throw error;
+      return data || [];
+    }
+  });
 }
 
 export default useUserRoles;

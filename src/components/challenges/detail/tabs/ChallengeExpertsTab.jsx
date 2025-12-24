@@ -1,10 +1,29 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '@/components/LanguageContext';
-import { Award, Star } from 'lucide-react';
+import { Award, Star, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
-export default function ChallengeExpertsTab({ expertEvaluations = [] }) {
+export default function ChallengeExpertsTab({ challengeId }) {
   const { t } = useLanguage();
+
+  const { data: expertEvaluations = [], isLoading } = useQuery({
+    queryKey: ['challenge-expert-evaluations', challengeId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('expert_evaluations')
+        .select('*')
+        .eq('entity_type', 'challenge')
+        .eq('entity_id', challengeId);
+      return data || [];
+    },
+    enabled: !!challengeId
+  });
+
+  if (isLoading) {
+    return <div className="text-center py-8"><Loader2 className="h-8 w-8 animate-spin mx-auto text-amber-600" /></div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -27,14 +46,14 @@ export default function ChallengeExpertsTab({ expertEvaluations = [] }) {
                     </div>
                     <div className="flex items-center gap-1">
                       {[...Array(5)].map((_, i) => (
-                        <Star 
-                          key={i} 
-                          className={`h-4 w-4 ${i < (evaluation.overall_score || 0) ? 'text-amber-400 fill-amber-400' : 'text-gray-200'}`} 
+                        <Star
+                          key={i}
+                          className={`h-4 w-4 ${i < (evaluation.overall_score || 0) ? 'text-amber-400 fill-amber-400' : 'text-gray-200'}`}
                         />
                       ))}
                     </div>
                   </div>
-                  
+
                   {evaluation.criteria_scores && (
                     <div className="grid grid-cols-2 gap-2 mb-3">
                       {Object.entries(evaluation.criteria_scores).map(([key, value]) => (
@@ -45,11 +64,11 @@ export default function ChallengeExpertsTab({ expertEvaluations = [] }) {
                       ))}
                     </div>
                   )}
-                  
+
                   {evaluation.comments && (
                     <p className="text-sm text-muted-foreground">{evaluation.comments}</p>
                   )}
-                  
+
                   {evaluation.recommendations && evaluation.recommendations.length > 0 && (
                     <div className="mt-3 pt-3 border-t">
                       <p className="text-xs font-medium mb-2">{t({ en: 'Recommendations:', ar: 'التوصيات:' })}</p>
@@ -60,7 +79,7 @@ export default function ChallengeExpertsTab({ expertEvaluations = [] }) {
                       </div>
                     </div>
                   )}
-                  
+
                   <p className="text-xs text-muted-foreground mt-2">
                     {new Date(evaluation.created_at).toLocaleDateString()}
                   </p>

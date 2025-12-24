@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useRisks } from '@/hooks/useRisks';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,13 +15,10 @@ function RiskRegister() {
   const [search, setSearch] = useState('');
   const [severityFilter, setSeverityFilter] = useState('all');
 
-  const { data: risks = [], isLoading } = useQuery({
-    queryKey: ['risks'],
-    queryFn: () => base44.entities.Risk.list('-created_date')
-  });
+  const { data: risks = [], isLoading } = useRisks();
 
   const filteredRisks = risks.filter(r => {
-    const matchesSearch = !search || 
+    const matchesSearch = !search ||
       r.risk_title?.toLowerCase().includes(search.toLowerCase()) ||
       r.risk_description?.toLowerCase().includes(search.toLowerCase());
     const matchesSeverity = severityFilter === 'all' || r.severity === severityFilter;
@@ -199,7 +195,7 @@ function RiskRegister() {
                       </Badge>
                     </div>
                     <p className="text-sm text-slate-600 mb-3">{risk.risk_description}</p>
-                    
+
                     <div className="flex items-center gap-4 text-sm text-slate-600">
                       <div>
                         <span className="font-medium">{t({ en: 'Impact:', ar: 'التأثير:' })}</span> {risk.impact || 'N/A'}
@@ -233,6 +229,6 @@ function RiskRegister() {
   );
 }
 
-export default ProtectedPage(RiskRegister, { 
-  requiredPermissions: ['risk_view_all'] 
+export default ProtectedPage(RiskRegister, {
+  requiredPermissions: ['risk_view_all']
 });

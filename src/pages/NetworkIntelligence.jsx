@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useOrganizationsWithVisibility } from '@/hooks/useOrganizationsWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useRDProjects } from '@/hooks/useRDProjects';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,20 +18,9 @@ function NetworkIntelligence() {
   const [networkAnalysis, setNetworkAnalysis] = useState(null);
   const { invokeAI, status, isLoading: analyzing, rateLimitInfo, isAvailable } = useAIWithFallback();
 
-  const { data: organizations = [] } = useQuery({
-    queryKey: ['organizations'],
-    queryFn: () => base44.entities.Organization.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects'],
-    queryFn: () => base44.entities.RDProject.list()
-  });
+  const { data: organizations = [] } = useOrganizationsWithVisibility({ includeAll: true });
+  const { data: pilots = [] } = usePilotsWithVisibility({ includeAll: true });
+  const { data: rdProjects = [] } = useRDProjects();
 
   const analyzeNetwork = async () => {
     const collaborationData = pilots.map(p => ({

@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '@/components/LanguageContext';
@@ -11,79 +10,43 @@ import SpecializationsTab from './lookup/SpecializationsTab';
 import CustomEntriesTab from './lookup/CustomEntriesTab';
 import AutoApprovalRulesTab from './lookup/AutoApprovalRulesTab';
 
+import { useLookupStats } from '@/hooks/useLookupManagement';
+
 export default function LookupDataManager() {
   const { isRTL, t } = useLanguage();
   const [activeTab, setActiveTab] = useState('departments');
 
-  // Fetch counts for stats
-  const { data: departmentsCount = 0 } = useQuery({
-    queryKey: ['lookup-departments-count'],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from('lookup_departments')
-        .select('*', { count: 'exact', head: true });
-      if (error) throw error;
-      return count || 0;
-    }
-  });
-
-  const { data: specializationsCount = 0 } = useQuery({
-    queryKey: ['lookup-specializations-count'],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from('lookup_specializations')
-        .select('*', { count: 'exact', head: true });
-      if (error) throw error;
-      return count || 0;
-    }
-  });
-
-  const { data: pendingEntriesCount = 0 } = useQuery({
-    queryKey: ['custom-entries-pending-count'],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from('custom_entries')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
-      if (error) throw error;
-      return count || 0;
-    }
-  });
-
-  const { data: rulesCount = 0 } = useQuery({
-    queryKey: ['auto-approval-rules-count'],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from('auto_approval_rules')
-        .select('*', { count: 'exact', head: true });
-      if (error) throw error;
-      return count || 0;
-    }
-  });
+  const { data: stats = {} } = useLookupStats();
+  const {
+    departmentsCount = 0,
+    specializationsCount = 0,
+    pendingEntriesCount = 0,
+    rulesCount = 0
+  } = stats;
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatCard 
+        <StatCard
           icon={Building2}
           title={t({ en: 'Departments', ar: 'الأقسام' })}
           value={departmentsCount}
           colorClass="from-blue-500/10 text-blue-600 dark:text-blue-400"
         />
-        <StatCard 
+        <StatCard
           icon={Briefcase}
           title={t({ en: 'Specializations', ar: 'التخصصات' })}
           value={specializationsCount}
           colorClass="from-teal-500/10 text-teal-600 dark:text-teal-400"
         />
-        <StatCard 
+        <StatCard
           icon={FileText}
           title={t({ en: 'Pending Reviews', ar: 'المراجعات المعلقة' })}
           value={pendingEntriesCount}
           colorClass="from-amber-500/10 text-amber-600 dark:text-amber-400"
         />
-        <StatCard 
+        <StatCard
           icon={Shield}
           title={t({ en: 'Auto-Approval Rules', ar: 'قواعد الموافقة التلقائية' })}
           value={rulesCount}

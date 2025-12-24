@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,63 +14,49 @@ import ApprovalStageProgress from '../components/ApprovalStageProgress';
 import SandboxAIRiskAssessment from '../components/SandboxAIRiskAssessment';
 import AutomatedComplianceChecker from '../components/AutomatedComplianceChecker';
 import SandboxCertificationWorkflow from '../components/sandboxes/SandboxCertificationWorkflow';
+import { useSandboxApplication, useSandboxApplicationMutations } from '@/hooks/useSandboxApplications';
+import { useSandbox } from '@/hooks/useSandbox';
+import { useExpertEvaluationsByEntity } from '@/hooks/useExpertData';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function SandboxApplicationDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const appId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
   const [comment, setComment] = useState('');
 
-  const { data: application, isLoading } = useQuery({
-    queryKey: ['sandbox-application', appId],
-    queryFn: async () => {
-      const apps = await base44.entities.SandboxApplication.list();
-      return apps.find(a => a.id === appId);
-    },
-    enabled: !!appId
-  });
+  const { data: application, isLoading } = useSandboxApplication(appId);
+  const { data: sandbox } = useSandbox(application?.sandbox_id);
+  const { data: expertTechnicalReviews = [] } = useExpertEvaluationsByEntity('sandbox_application', appId);
 
-  const { data: sandbox } = useQuery({
-    queryKey: ['sandbox', application?.sandbox_id],
-    queryFn: async () => {
-      const sandboxes = await base44.entities.Sandbox.list();
-      return sandboxes.find(s => s.id === application?.sandbox_id);
-    },
-    enabled: !!application?.sandbox_id
-  });
+  const { updateApplication } = useSandboxApplicationMutations();
 
-  const { data: expertTechnicalReviews = [] } = useQuery({
-    queryKey: ['sandbox-expert-reviews', appId],
-    queryFn: async () => {
-      const all = await base44.entities.ExpertEvaluation.list();
-      return all.filter(e => e.entity_type === 'sandbox_application' && e.entity_id === appId);
-    },
-    enabled: !!appId
-  });
+  const handlePostComment = () => {
+    if (!application || !comment) return;
 
-  const commentMutation = useMutation({
-    mutationFn: async (commentText) => {
-      const updated = await base44.entities.SandboxApplication.update(appId, {
-        review_comments: [
-          ...(application.review_comments || []),
-          {
-            reviewer: 'Current User',
-            role: 'reviewer',
-            stage: application.current_review_stage,
-            comment: commentText,
-            date: new Date().toISOString()
-          }
-        ]
-      });
-      return updated;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['sandbox-application']);
-      setComment('');
-      toast.success('Comment added');
-    }
-  });
+    const updatedComments = [
+      ...(application.review_comments || []),
+      {
+        reviewer: user?.user_metadata?.full_name || user?.email || 'Current User',
+        role: 'reviewer', // Ideally distinguish role based on user perm
+        stage: application.current_review_stage,
+        comment: comment,
+        date: new Date().toISOString()
+      }
+    ];
+
+    updateApplication.mutate(
+      { id: appId, data: { review_comments: updatedComments } },
+      {
+        onSuccess: () => {
+          setComment('');
+          toast.success('Comment added');
+        }
+      }
+    );
+  };
 
   if (isLoading || !application) {
     return (
@@ -548,8 +533,8 @@ export default function SandboxApplicationDetail() {
                   rows={3}
                 />
                 <Button
-                  onClick={() => commentMutation.mutate(comment)}
-                  disabled={!comment || commentMutation.isPending}
+                  onClick={handlePostComment}
+                  disabled={!comment || updateApplication.isPending}
                   className="bg-gradient-to-r from-blue-600 to-teal-600"
                 >
                   <Send className="h-4 w-4 mr-2" />

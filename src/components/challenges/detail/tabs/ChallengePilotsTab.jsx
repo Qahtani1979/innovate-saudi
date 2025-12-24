@@ -3,10 +3,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '@/components/LanguageContext';
 import { createPageUrl } from '@/utils';
-import { TestTube } from 'lucide-react';
+import { TestTube, Loader2 } from 'lucide-react';
+import { usePilotsWithVisibility } from '@/hooks/visibility';
 
-export default function ChallengePilotsTab({ pilots = [] }) {
+export default function ChallengePilotsTab({ pilots: propPilots, challengeId }) {
   const { t } = useLanguage();
+  const { data: allPilots = [], isLoading } = usePilotsWithVisibility();
+
+  // Use prop if provided, otherwise filter fetched data
+  const pilots = propPilots || allPilots.filter(p => p.challenge_id === challengeId);
+
+  if (isLoading && !propPilots) {
+    return <div className="text-center py-8"><Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" /></div>;
+  }
 
   return (
     <div className="space-y-6">

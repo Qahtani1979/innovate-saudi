@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,11 +19,18 @@ function CaseStudyEdit() {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
 
+  const queryClient = useQueryClient();
+
   const { data: caseStudy, isLoading } = useQuery({
     queryKey: ['case-study', caseId],
     queryFn: async () => {
-      const cases = await base44.entities.CaseStudy.list();
-      return cases.find(c => c.id === caseId);
+      const { data, error } = await supabase
+        .from('case_studies')
+        .select('*')
+        .eq('id', caseId)
+        .single();
+      if (error) throw error;
+      return data;
     },
     enabled: !!caseId
   });
@@ -35,8 +42,15 @@ function CaseStudyEdit() {
   }, [caseStudy]);
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.CaseStudy.update(caseId, data),
+    mutationFn: async (data) => {
+      const { error } = await supabase
+        .from('case_studies')
+        .update(data)
+        .eq('id', caseId);
+      if (error) throw error;
+    },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['case-study', caseId] });
       toast.success(t({ en: 'Case study updated', ar: 'تم تحديث دراسة الحالة' }));
       navigate(createPageUrl('Knowledge'));
     }

@@ -1,5 +1,4 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useVersionHistory } from '@/hooks/useVersionHistory';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -11,15 +10,7 @@ export default function VersionHistory() {
   const entityId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
 
-  const { data: activities = [], isLoading } = useQuery({
-    queryKey: ['version-history', entityType, entityId],
-    queryFn: async () => {
-      const all = await base44.entities.SystemActivity.list('-created_date');
-      return entityId 
-        ? all.filter(a => a.entity_id === entityId && a.entity_type === entityType)
-        : all.filter(a => a.entity_type === entityType);
-    }
-  });
+  const { history: activities, isLoading } = useVersionHistory(null, entityId, { entityType });
 
   if (isLoading) {
     return (
@@ -82,7 +73,7 @@ export default function VersionHistory() {
                         {new Date(activity.created_date).toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US')}
                       </span>
                     </div>
-                    
+
                     <p className="text-sm text-slate-900 mb-2">
                       {activity.details?.description || `Entity ${activity.action}`}
                     </p>

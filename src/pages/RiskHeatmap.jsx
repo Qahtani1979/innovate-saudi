@@ -1,5 +1,4 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../components/LanguageContext';
 import { AlertCircle, TrendingUp } from 'lucide-react';
@@ -8,19 +7,17 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 function RiskHeatmap() {
   const { t } = useLanguage();
 
-  const { data: risks = [], isLoading } = useQuery({
-    queryKey: ['risks-all'],
-    queryFn: () => base44.entities.Risk.list()
-  });
+  const { useRisks } = useAnalytics();
+  const { data: risks = [], isLoading } = useRisks({ limit: 1000 });
 
   const impactMap = { low: 1, medium: 2, high: 3, critical: 4 };
   const likelihoodMap = { rare: 1, unlikely: 2, possible: 3, likely: 4, certain: 5 };
 
-  const heatmapData = Array.from({ length: 4 }, (_, i) => 
+  const heatmapData = Array.from({ length: 4 }, (_, i) =>
     Array.from({ length: 5 }, (_, j) => ({
       impact: 4 - i,
       likelihood: j + 1,
-      risks: risks.filter(r => 
+      risks: risks.filter(r =>
         impactMap[r.impact] === (4 - i) && likelihoodMap[r.likelihood] === (j + 1)
       )
     }))

@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,26 +6,22 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, Upload, Download, Trash2, Search, FolderOpen } from 'lucide-react';
-import { toast } from 'sonner';
+import { useKnowledgeDocuments } from '@/hooks/useKnowledgeDocuments';
+import { useKnowledgeDocumentMutations } from '@/hooks/useKnowledgeDocumentMutations';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 
 export default function FileLibrary() {
-  const { language, isRTL, t } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [uploading, setUploading] = useState(false);
-  const queryClient = useQueryClient();
 
-  const { data: knowledgeDocs = [] } = useQuery({
-    queryKey: ['knowledge-docs'],
-    queryFn: () => base44.entities.KnowledgeDocument.list('-created_date')
-  });
+  const { useAllDocuments } = useKnowledgeDocuments();
+  const { data: knowledgeDocs = [] } = useAllDocuments();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-with-files'],
-    queryFn: async () => {
-      const all = await base44.entities.Challenge.list();
-      return all.filter(c => c.attachments && c.attachments.length > 0);
-    }
-  });
+  const { data: allChallenges = [] } = useChallengesWithVisibility();
+  const challenges = allChallenges.filter(c => c.attachments && c.attachments.length > 0);
+
+  const { uploadDocument, deleteDocument } = useKnowledgeDocumentMutations();
 
   const handleFileUpload = async (e, category) => {
     const file = e.target.files[0];
@@ -35,32 +29,13 @@ export default function FileLibrary() {
 
     setUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      
-      await base44.entities.KnowledgeDocument.create({
-        title_en: file.name,
-        doc_type: category,
-        file_url,
-        tags: [category],
-        is_public: true
-      });
-
-      queryClient.invalidateQueries(['knowledge-docs']);
-      toast.success(t({ en: 'File uploaded successfully', ar: 'تم رفع الملف بنجاح' }));
-    } catch (error) {
-      toast.error(t({ en: 'Upload failed', ar: 'فشل الرفع' }));
+      await uploadDocument.mutateAsync({ file, category });
     } finally {
       setUploading(false);
     }
   };
 
-  const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.KnowledgeDocument.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['knowledge-docs']);
-      toast.success(t({ en: 'File deleted', ar: 'تم حذف الملف' }));
-    }
-  });
+
 
   const filteredDocs = knowledgeDocs.filter(doc =>
     doc.title_en?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -164,7 +139,7 @@ export default function FileLibrary() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => deleteMutation.mutate(doc.id)}
+                      onClick={() => deleteDocument.mutate(doc.id)}
                       className="text-red-600 hover:text-red-700 hover:bg-red-50"
                     >
                       <Trash2 className="h-4 w-4" />

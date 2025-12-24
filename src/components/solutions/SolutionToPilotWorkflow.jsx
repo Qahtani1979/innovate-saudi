@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,6 +9,9 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
+import { useCreatePilotProposal } from '@/hooks/useSolutionWorkflows';
 
 export default function SolutionToPilotWorkflow({ solution, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
@@ -27,57 +29,39 @@ export default function SolutionToPilotWorkflow({ solution, onClose, onSuccess }
     kpis: []
   });
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-for-solution-match'],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*')
-        .eq('sector', solution.sectors?.[0])
-        .eq('status', 'approved');
-      return data || [];
-    }
+  const { data: challenges = [] } = useChallengesWithVisibility({
+    sectorId: solution.sectors?.[0], // Assuming first sector ID is relevant
+    status: 'approved',
+    limit: 50
   });
 
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities-for-pilot'],
-    queryFn: async () => {
-      const { data } = await supabase.from('municipalities').select('*');
-      return data || [];
-    }
+  const { data: municipalities = [] } = useMunicipalitiesWithVisibility({
+    includeNational: true
   });
 
-  const createPilotMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: pilot, error } = await supabase.from('pilots').insert(data).select().single();
-      if (error) throw error;
-      
-      await supabase.from('system_activities').insert({
-        entity_type: 'solution',
-        entity_id: solution.id,
-        action: 'proposed_pilot',
-        description: `Provider proposed pilot: ${pilot.title_en}`
-      });
+  const createPilotMutation = useCreatePilotProposal();
 
-      return pilot;
-    },
-    onSuccess: async (pilot) => {
-      // Send pilot created email notification using hook
-      await triggerEmail('pilot.created', {
-        entityType: 'pilot',
-        entityId: pilot.id,
-        variables: {
-          pilot_title: pilot.title_en || pilot.title_ar,
-          pilot_code: pilot.code || `PLT-${pilot.id?.substring(0, 8)}`,
-          solution_name: solution.name_en,
-          start_date: new Date().toISOString().split('T')[0]
-        }
-      }).catch(err => console.error('Email trigger failed:', err));
+  const handleCreatePilot = (data) => {
+    createPilotMutation.mutate({ solution, pilotData: data }, {
+      onSuccess: (pilot) => {
+        // Send pilot created email notification using hook
+        triggerEmail('pilot.created', {
+          entityType: 'pilot',
+          entityId: pilot.id,
+          variables: {
+            pilot_title: pilot.title_en || pilot.title_ar,
+            pilot_code: pilot.code || `PLT-${pilot.id?.substring(0, 8)}`,
+            solution_name: solution.name_en,
+            start_date: new Date().toISOString().split('T')[0]
+          }
+        }).catch(err => console.error('Email trigger failed:', err));
 
-      queryClient.invalidateQueries({ queryKey: ['pilots'] });
-      toast.success(t({ en: 'Pilot proposal created', ar: 'تم إنشاء مقترح التجربة' }));
-      onSuccess?.(pilot);
-      onClose?.();
-    }
-  });
+        toast.success(t({ en: 'Pilot proposal created', ar: 'تم إنشاء مقترح التجربة' }));
+        onSuccess?.(pilot);
+        onClose?.();
+      }
+    });
+  };
 
   const generateWithAI = async () => {
     if (!selectedChallengeId || !selectedMunicipalityId) {
@@ -86,7 +70,7 @@ export default function SolutionToPilotWorkflow({ solution, onClose, onSuccess }
     }
 
     const challenge = challenges.find(c => c.id === selectedChallengeId);
-    
+
     const response = await invokeAI({
       prompt: `Design a pilot to test this solution for a challenge.
 
@@ -145,12 +129,12 @@ Generate pilot design:
       return;
     }
 
-    createPilotMutation.mutate({
+    handleCreatePilot({
       ...pilotData,
       solution_id: solution.id,
       challenge_id: selectedChallengeId,
       municipality_id: selectedMunicipalityId,
-      sector: solution.sectors?.[0],
+      sector: solution.sectors?.[0], // Revisit if ID vs Name mismatch
       trl_start: solution.trl,
       provider_id: solution.provider_id,
       provider_name: solution.provider_name,

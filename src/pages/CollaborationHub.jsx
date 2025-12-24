@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +10,12 @@ import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { useVisibilitySystem } from '@/hooks/visibility/useVisibilitySystem';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useOrganizations, useTeams } from '@/hooks/useCollaborationData';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { Loader2 } from 'lucide-react';
 
 function CollaborationHub() {
   const { language, isRTL, t } = useLanguage();
@@ -19,43 +23,21 @@ function CollaborationHub() {
   const { invokeAI, status: aiStatus, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
   const { user } = useAuth();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('challenges')
-        .select('*')
-        .eq('is_deleted', false);
-      return data || [];
-    }
-  });
+  const { data: challenges = [], isLoading: challengesLoading } = useChallengesWithVisibility({ limit: 1000 });
+  const { data: pilots = [], isLoading: pilotsLoading } = usePilotsWithVisibility({ limit: 1000 });
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('is_deleted', false);
-      return data || [];
-    }
-  });
+  const { data: organizations = [], isLoading: orgsLoading } = useOrganizations();
+  const { data: teams = [], isLoading: teamsLoading } = useTeams();
 
-  const { data: organizations = [] } = useQuery({
-    queryKey: ['organizations'],
-    queryFn: async () => {
-      const { data } = await supabase.from('organizations').select('*');
-      return data || [];
-    }
-  });
+  const isLoading = loading || challengesLoading || pilotsLoading || orgsLoading || teamsLoading;
 
-  const { data: teams = [] } = useQuery({
-    queryKey: ['teams'],
-    queryFn: async () => {
-      const { data } = await supabase.from('teams').select('*');
-      return data || [];
-    }
-  });
+  if (isLoading && !suggestions) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
 
   const generateCollaborationSuggestions = async () => {
     try {
@@ -63,9 +45,9 @@ function CollaborationHub() {
       const myPilots = pilots.filter(p => p.created_by === user?.email);
 
       // Import centralized prompt module
-      const { 
-        COLLABORATION_SUGGESTIONS_PROMPT_TEMPLATE, 
-        COLLABORATION_RESPONSE_SCHEMA 
+      const {
+        COLLABORATION_SUGGESTIONS_PROMPT_TEMPLATE,
+        COLLABORATION_RESPONSE_SCHEMA
       } = await import('@/lib/ai/prompts/collaboration/suggestions');
 
       const response = await invokeAI({
@@ -74,6 +56,7 @@ function CollaborationHub() {
           myPilots,
           organizations
         }),
+        system_prompt: 'You are an expert partnership facilitator.',
         response_json_schema: {
           type: "object",
           properties: {
@@ -126,26 +109,27 @@ function CollaborationHub() {
     }
   };
 
-  const activeCollaborations = teams.filter(team => 
+  // @ts-ignore
+  const activeCollaborations = teams.filter(team =>
     team.members?.some(m => m.email === user?.email)
   );
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">
-            {t({ en: 'Collaboration Hub', ar: 'مركز التعاون' })}
-          </h1>
-          <p className="text-slate-600 mt-1">
-            {t({ en: 'Build strategic partnerships and cross-sector collaborations', ar: 'بناء شراكات استراتيجية وتعاون متعدد القطاعات' })}
-          </p>
-        </div>
-        <Button onClick={generateCollaborationSuggestions} disabled={loading} className="bg-gradient-to-r from-blue-600 to-purple-600">
-          <Sparkles className="h-4 w-4 mr-2" />
-          {loading ? t({ en: 'Generating...', ar: 'جاري الإنشاء...' }) : t({ en: 'AI Suggestions', ar: 'اقتراحات ذكية' })}
-        </Button>
-      </div>
+    <PageLayout>
+      <PageHeader
+        title={{ en: 'Collaboration Hub', ar: 'مركز التعاون' }}
+        subtitle={{ en: 'Build strategic partnerships and cross-sector collaborations', ar: 'بناء شراكات استراتيجية وتعاون متعدد القطاعات' }}
+        icon={<Network className="h-6 w-6 text-white" />}
+        description=""
+        action={
+          <Button onClick={generateCollaborationSuggestions} disabled={loading} className="bg-gradient-to-r from-blue-600 to-purple-600">
+            <Sparkles className="h-4 w-4 mr-2" />
+            {loading ? t({ en: 'Generating...', ar: 'جاري الإنشاء...' }) : t({ en: 'AI Suggestions', ar: 'اقتراحات ذكية' })}
+          </Button>
+        }
+        actions={null}
+        stats={[]}
+      />
 
       {/* My Active Collaborations */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -293,7 +277,7 @@ function CollaborationHub() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
 

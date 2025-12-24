@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRDCallMutations } from '@/hooks/useRDCallMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,41 +10,24 @@ import { useAuth } from '@/lib/AuthContext';
 
 export default function RDCallApprovalWorkflow({ rdCall, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
   const [decision, setDecision] = useState('');
   const [comments, setComments] = useState('');
 
-  const approvalMutation = useMutation({
-    mutationFn: async () => {
-      // Update call status based on decision
-      let newStatus = rdCall.status;
-      if (decision === 'approved') {
-        newStatus = 'published';
-      } else if (decision === 'rejected') {
-        newStatus = 'draft';
-      } else if (decision === 'revision') {
-        newStatus = 'draft';
-      }
+  const { handleRDCallDecision, isDeciding } = useRDCallMutations();
 
-      const { error } = await supabase
-        .from('rd_calls')
-        .update({
-          status: newStatus,
-          approval_status: decision,
-          approval_comments: comments,
-          approved_by: user?.email,
-          approval_date: new Date().toISOString()
-        })
-        .eq('id', rdCall.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['rd-call'] });
-      toast.success(t({ en: 'Approval decision recorded', ar: 'تم تسجيل قرار الموافقة' }));
+  const handleDecision = async () => {
+    try {
+      await handleRDCallDecision({
+        id: rdCall.id,
+        decision,
+        comments
+      });
       onClose();
+    } catch (error) {
+      // Toast handled by hook
     }
-  });
+  };
 
   const checklistItems = [
     { key: 'budget', label: { en: 'Budget allocation verified', ar: 'تم التحقق من تخصيص الميزانية' } },
@@ -135,11 +117,11 @@ export default function RDCallApprovalWorkflow({ rdCall, onClose }) {
             {t({ en: 'Cancel', ar: 'إلغاء' })}
           </Button>
           <Button
-            onClick={() => approvalMutation.mutate()}
-            disabled={!decision || approvalMutation.isPending}
+            onClick={handleDecision}
+            disabled={!decision || isDeciding}
             className="bg-gradient-to-r from-blue-600 to-purple-600"
           >
-            {approvalMutation.isPending ? (
+            {isDeciding ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 {t({ en: 'Submitting...', ar: 'جاري الإرسال...' })}

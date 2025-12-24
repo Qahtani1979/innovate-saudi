@@ -1,0 +1,92 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useLanguage } from '@/components/LanguageContext';
+
+export function useRDProjectMutations() {
+    const queryClient = useQueryClient();
+    const { t } = useLanguage();
+
+    const createRDProject = useMutation({
+        mutationFn: async (newProject) => {
+            const { data, error } = await supabase
+                .from('rd_projects')
+                .insert([/** @type {any} */(newProject)])
+                .select()
+                .single();
+
+            if (error) throw error;
+            return /** @type {any} */(data);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['rd-projects-with-visibility'] });
+            toast.success(t({ en: 'Project created successfully', ar: 'تم إنشاء المشروع بنجاح' }));
+        },
+        onError: (error) => {
+            toast.error(t({ en: 'Failed to create project', ar: 'فشل إنشاء المشروع' }) + ': ' + error.message);
+        }
+    });
+
+    const updateRDProject = useMutation({
+        mutationFn: async ({ id, ...updates }) => {
+            const { data, error } = await supabase
+                .from('rd_projects')
+                .update(/** @type {any} */(updates))
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return /** @type {any} */(data);
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['rd-projects-with-visibility'] });
+            queryClient.invalidateQueries({ queryKey: ['rd-project', data.id] });
+            toast.success(t({ en: 'Project updated successfully', ar: 'تم تحديث المشروع بنجاح' }));
+        },
+        onError: (error) => {
+            toast.error(t({ en: 'Failed to update project', ar: 'فشل تحديث المشروع' }) + ': ' + error.message);
+        }
+    });
+
+    const deleteRDProject = useMutation({
+        mutationFn: async (id) => {
+            const { error } = await supabase
+                .from('rd_projects')
+                .update({ is_deleted: true, deleted_date: new Date().toISOString() })
+                .eq('id', id);
+
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['rd-projects-with-visibility'] });
+            toast.success(t({ en: 'Project deleted', ar: 'تم حذف المشروع' }));
+        },
+        onError: (error) => {
+            toast.error(t({ en: 'Failed to delete project', ar: 'فشل حذف المشروع' }) + ': ' + error.message);
+        }
+    });
+
+    /**
+     * Refresh R&D projects cache (Gold Standard Pattern)
+     */
+    const refreshRDProjects = () => {
+        queryClient.invalidateQueries({ queryKey: ['rd-projects-with-visibility'] });
+        queryClient.invalidateQueries({ queryKey: ['rd-projects'] });
+    };
+
+    return {
+        createRDProject,
+        updateRDProject,
+        deleteRDProject,
+        refreshRDProjects  // ✅ Gold Standard
+    };
+}
+
+export function useRDProjectInvalidator() {
+    const queryClient = useQueryClient();
+    return {
+        invalidateRDProject: (id) => queryClient.invalidateQueries({ queryKey: ['rd-project', id] }),
+        invalidateRDProjects: () => queryClient.invalidateQueries({ queryKey: ['rd-projects-with-visibility'] })
+    };
+}

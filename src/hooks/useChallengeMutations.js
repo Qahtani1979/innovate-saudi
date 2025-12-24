@@ -1,10 +1,8 @@
 /**
  * Challenge Mutations Hook
- * Implements: mh-1 (create), mh-2 (update), mh-3 (delete),
- * mh-4 (optimistic updates), mh-5 (error recovery)
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
@@ -15,19 +13,178 @@ import {
   validateChallengeSubmit,
   getValidationErrors
 } from '@/lib/validations/challengeSchema';
+import { useLanguage } from '@/components/LanguageContext';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem'; // Changed from AutoNotification
+import { useAccessControl } from '@/hooks/useAccessControl';
 
+/**
+ * Hook for managing challenge followers
+ */
+export function useChallengeFollow(challengeId) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { notify } = useNotificationSystem();
+
+  const { data: follows = [], isLoading } = useQuery({
+    queryKey: ['challenge-follows', challengeId, user?.email],
+    queryFn: async () => {
+      if (!user?.email) return [];
+      const { data } = await supabase.from('user_follows').select('*')
+        .eq('follower_email', user.email)
+        .eq('entity_type', 'challenge')
+        .eq('entity_id', challengeId);
+      return data || [];
+    },
+    enabled: !!user?.email && !!challengeId
+  });
+
+  const isFollowing = follows.length > 0;
+
+  const mutation = useMutation({
+    mutationFn: async (action) => {
+      if (action === 'follow') {
+        const { error } = await supabase.from('user_follows').insert({
+          follower_email: user.email,
+          entity_type: 'challenge',
+          entity_id: challengeId,
+          notification_preferences: { status_changes: true, new_proposals: true, pilot_created: true }
+        });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('user_follows').delete().eq('id', follows[0].id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: (_, action) => {
+      queryClient.invalidateQueries({ queryKey: ['challenge-follows'] });
+      toast.success(action === 'follow' ? 'Following challenge' : 'Unfollowed challenge');
+    }
+  });
+
+  return {
+    isFollowing,
+    isLoading: isLoading || mutation.isPending,
+    follow: () => mutation.mutate('follow'),
+    unfollow: () => mutation.mutate('unfollow')
+  };
+}
+
+export function useEscalateChallenge() {
+  const queryClient = useQueryClient();
+  const { triggerEmail } = useEmailTrigger();
+
+  return useMutation({
+    mutationFn: async (challenge) => {
+      const { error } = await supabase.from('challenges').update({
+        escalation_level: (challenge.escalation_level || 0) + 1,
+        escalation_date: new Date().toISOString()
+      }).eq('id', challenge.id);
+      if (error) throw error;
+
+      await triggerEmail('challenge.escalated', {
+        entityType: 'challenge',
+        entityId: challenge.id,
+        variables: {
+          challenge_title: challenge.title_en || challenge.title_ar,
+          challenge_code: challenge.code,
+          days_overdue: challenge.sla?.daysOverdue || 0,
+          current_status: challenge.status,
+          escalation_level: (challenge.escalation_level || 0) + 1
+        }
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['challenges'] });
+      toast.success('Challenge escalated');
+    }
+  });
+}
+
+/**
+ * Hook for batch importing challenges
+ */
+export function useImportChallenges() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (challenges) => {
+      const results = await Promise.allSettled(
+        challenges.map(c =>
+          supabase.from('challenges').insert({
+            ...c,
+            // Ensure defaults
+            status: c.status || 'draft',
+            priority: c.priority || 'medium',
+            origin_source: c.origin_source || 'batch_import'
+          }).select()
+        )
+      );
+
+      const failed = results.filter(r => r.status === 'rejected');
+      if (failed.length > 0) {
+        console.error('Some imports failed:', failed);
+      }
+
+      return {
+        total: results.length,
+        success: results.filter(r => r.status === 'fulfilled').length,
+        failed: failed.length
+      };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['challenges'] });
+      if (data.failed > 0) {
+        toast.warning(`Imported ${data.success} challenges. ${data.failed} failed.`);
+      } else {
+        toast.success(`Successfully imported ${data.total} challenges`);
+      }
+    }
+  });
+}
+
+
+/**
+ * Challenge Mutations Hook
+ * @returns {{
+ *   createChallenge: import('@tanstack/react-query').UseMutationResult<any, Error, any>,
+ *   updateChallenge: import('@tanstack/react-query').UseMutationResult<any, Error, {id: string, data: any, activityLog?: any, metadata?: any}>,
+ *   deleteChallenge: import('@tanstack/react-query').UseMutationResult<any, Error, string>,
+ *   archiveChallenge: import('@tanstack/react-query').UseMutationResult<any, Error, string>,
+ *   submitForReview: import('@tanstack/react-query').UseMutationResult<any, Error, {id: string, data: any, metadata?: any}>,
+ *   changeStatus: import('@tanstack/react-query').UseMutationResult<any, Error, {id: string, newStatus: string, notes?: string, rejectionReason?: string}>,
+ *   assignReviewer: import('@tanstack/react-query').UseMutationResult<any, Error, {id: string, reviewerEmail: string}>,
+ *   checkConsensus: import('@tanstack/react-query').UseMutationResult<any, Error, string>,
+ *   refreshChallenges: function,
+ *   isCreating: boolean,
+ *   isUpdating: boolean,
+ *   isDeleting: boolean,
+ *   isSubmitting: boolean
+ * }}
+ */
 export function useChallengeMutations() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { logCrudOperation, logStatusChange } = useAuditLogger();
   const { notifyStatusChange, notifyAssignment } = useChallengeNotifications();
+  const { notify } = useNotificationSystem();
+  const { t } = useLanguage();
+  const { triggerEmail } = useEmailTrigger();
+
+  /* 
+   * ACCESS CONTROL LAYER
+   */
+  const { checkPermission, checkEntityAccess } = useAccessControl();
 
   /**
-   * mh-1: Create Challenge
+   * Create Challenge
    */
   const createChallenge = useMutation({
+    /** @param {any} data */
     mutationFn: async (data) => {
-      // Validate input
+      // 1. Role Check
+      checkPermission(['admin', 'innovation_manager', 'program_manager']);
+
       const validation = validateChallengeCreate(data);
       if (!validation.success) {
         const errors = getValidationErrors(validation);
@@ -36,6 +193,8 @@ export function useChallengeMutations() {
 
       const challengeData = {
         ...validation.data,
+        title_ar: validation.data.title_ar || '', // Ensure title_ar is provided even if empty
+        title_en: validation.data.title_en || null,
         created_by: user?.id,
         challenge_owner_email: user?.email,
         status: 'draft',
@@ -55,37 +214,58 @@ export function useChallengeMutations() {
 
       if (error) throw error;
 
-      // Audit log
-      await logCrudOperation(
-        AUDIT_ACTIONS.CREATE,
-        ENTITY_TYPES.CHALLENGE,
-        challenge.id,
-        null,
-        challengeData
-      );
+      await logCrudOperation(AUDIT_ACTIONS.CREATE, ENTITY_TYPES.CHALLENGE, challenge.id, null, challengeData);
+
+      await supabase.from('system_activities').insert({
+        entity_type: 'challenge',
+        entity_id: challenge.id,
+        activity_type: 'created',
+        description: `Challenge "${challenge.title_en}" created by ${user?.email}`
+      });
+
+
+      // Generate embedding via edge function
+      supabase.functions.invoke('generateEmbeddings', {
+        body: {
+          entity_type: 'challenge',
+          entity_id: challenge.id,
+          title: challenge.title_en,
+          content: challenge.description_en || challenge.problem_statement_en || ''
+        }
+      }).catch(err => console.error('Embedding generation failed:', err));
 
       return challenge;
     },
     onSuccess: (challenge) => {
       queryClient.invalidateQueries({ queryKey: ['challenges'] });
       toast.success('Challenge created successfully');
-    },
-    onError: (error) => {
-      toast.error(`Failed to create challenge: ${error.message}`);
     }
   });
 
   /**
-   * mh-2: Update Challenge with optimistic updates (mh-4)
+   * Update Challenge
    */
   const updateChallenge = useMutation({
-    mutationFn: async ({ id, data }) => {
-      // Get current challenge for audit logging
+    /** @param {{id: string, data: any, activityLog?: any}} params */
+    mutationFn: async (params) => {
+      const { id, data } = params;
       const { data: currentChallenge } = await supabase
         .from('challenges')
         .select('*')
         .eq('id', id)
         .single();
+
+      // 1. Protection Check: Ensure user owns this challenge OR is admin
+      checkEntityAccess(currentChallenge, 'created_by');
+
+      // 2. Status Change Protection
+      if (data.status && data.status !== 'draft') {
+        // Changing status usually requires specific roles
+        // e.g. only Admins can approve
+        if (data.status === 'approved' || data.status === 'rejected') {
+          checkPermission(['admin', 'program_manager']);
+        }
+      }
 
       const updateData = {
         ...data,
@@ -105,60 +285,88 @@ export function useChallengeMutations() {
 
       if (error) throw error;
 
-      // Audit log with diff (handled by DB trigger, but also log here for completeness)
-      await logCrudOperation(
-        AUDIT_ACTIONS.UPDATE,
-        ENTITY_TYPES.CHALLENGE,
-        id,
-        currentChallenge,
-        updateData
-      );
+      await logCrudOperation(AUDIT_ACTIONS.UPDATE, ENTITY_TYPES.CHALLENGE, id, currentChallenge, updateData);
+
+      if (data.status && data.status !== currentChallenge.status) {
+        // Global activity log
+        await supabase.from('system_activities').insert({
+          entity_type: 'challenge',
+          entity_id: id,
+          activity_type: 'status_change',
+          description: `Challenge status changed from ${currentChallenge.status} to ${data.status}`,
+          metadata: { old_status: currentChallenge.status, new_status: data.status, ...(data.metadata || {}) }
+        });
+
+        // Challenge-specific feed
+        await supabase.from('challenge_activities').insert({
+          challenge_id: id,
+          activity_type: 'status_change',
+          description: `Challenge moved to ${data.status}`,
+          details: { old_status: currentChallenge.status, new_status: data.status, ...(data.metadata || {}) }
+        });
+      }
+
+      // 4. Custom Activity Log (Optional)
+      if (params.activityLog) {
+        await supabase.from('challenge_activities').insert({
+          challenge_id: id,
+          ...params.activityLog,
+          timestamp: new Date().toISOString()
+        });
+      }
 
       return challenge;
     },
-    // mh-4: Optimistic update
-    onMutate: async ({ id, data }) => {
+    onMutate: async (params) => {
+      const { id, data } = params;
       await queryClient.cancelQueries({ queryKey: ['challenge', id] });
-      await queryClient.cancelQueries({ queryKey: ['challenges'] });
-
       const previousChallenge = queryClient.getQueryData(['challenge', id]);
-      const previousChallenges = queryClient.getQueryData(['challenges']);
-
-      // Optimistically update
       if (previousChallenge) {
-        queryClient.setQueryData(['challenge', id], old => ({
-          ...old,
-          ...data,
-          updated_at: new Date().toISOString()
-        }));
+        queryClient.setQueryData(['challenge', id], (old) => {
+          if (!old) return data;
+          return Object.assign({}, old, data);
+        });
       }
-
-      return { previousChallenge, previousChallenges };
+      return { previousChallenge };
     },
-    // mh-5: Error recovery
-    onError: (error, { id }, context) => {
+    onError: (error, variables, context) => {
+      const { id } = variables;
       if (context?.previousChallenge) {
         queryClient.setQueryData(['challenge', id], context.previousChallenge);
       }
-      if (context?.previousChallenges) {
-        queryClient.setQueryData(['challenges'], context.previousChallenges);
-      }
-      toast.error(`Failed to update: ${error.message}`);
+      toast.error(`Update failed: ${error.message}`);
     },
-    onSettled: (_, __, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ['challenge', id] });
+    onSettled: (challenge) => {
+      if (challenge) {
+        queryClient.invalidateQueries({ queryKey: ['challenge', challenge.id] });
+      }
       queryClient.invalidateQueries({ queryKey: ['challenges'] });
     },
-    onSuccess: () => {
+    onSuccess: (challenge, variables) => {
+      if (variables.data.status) {
+        notifyStatusChange.mutate({
+          challenge,
+          newStatus: variables.data.status
+        });
+      }
       toast.success('Challenge updated');
     }
   });
 
   /**
-   * mh-3: Delete Challenge (soft delete)
+   * Delete Challenge
    */
   const deleteChallenge = useMutation({
+    /** @param {string} id */
     mutationFn: async (id) => {
+      const { data: currentChallenge } = await supabase
+        .from('challenges')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      checkEntityAccess(currentChallenge, 'created_by');
+
       const { error } = await supabase
         .from('challenges')
         .update({
@@ -170,36 +378,69 @@ export function useChallengeMutations() {
 
       if (error) throw error;
 
-      await logCrudOperation(
-        AUDIT_ACTIONS.DELETE,
-        ENTITY_TYPES.CHALLENGE,
-        id,
-        { id },
-        { is_deleted: true }
-      );
+      await logCrudOperation(AUDIT_ACTIONS.DELETE, ENTITY_TYPES.CHALLENGE, id, { id }, { is_deleted: true });
+
+      await supabase.from('system_activities').insert({
+        entity_type: 'challenge',
+        entity_id: id,
+        activity_type: 'deleted',
+        description: `Challenge (ID: ${id}) soft-deleted by ${user?.email}`
+      });
 
       return id;
     },
-    onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: ['challenges'] });
-      const previousChallenges = queryClient.getQueryData(['challenges']);
-      
-      // Optimistically remove from list
-      queryClient.setQueryData(['challenges'], old => 
-        old?.filter(c => c.id !== id) || []
-      );
-
-      return { previousChallenges };
-    },
-    onError: (error, _, context) => {
-      if (context?.previousChallenges) {
-        queryClient.setQueryData(['challenges'], context.previousChallenges);
-      }
-      toast.error(`Failed to delete: ${error.message}`);
-    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['challenges'] });
-      toast.success('Challenge deleted');
+      toast.success(t({ en: 'Challenge deleted', ar: 'تم حذف التحدي' }));
+    }
+  });
+
+  /**
+   * Archive Challenge
+   */
+  const archiveChallenge = useMutation({
+    /** @param {string} id */
+    mutationFn: async (id) => {
+      // Fetch challenge first for notifications if necessary, or rely on client invalidation
+      const { data: challenge } = await supabase.from('challenges').select('*').eq('id', id).single();
+
+      checkEntityAccess(challenge, 'created_by');
+
+      const { error } = await supabase
+        .from('challenges')
+        .update({ status: 'archived', is_archived: true })
+        .eq('id', id);
+
+      if (error) throw error;
+      return challenge;
+    },
+    onSuccess: (challenge) => {
+      queryClient.invalidateQueries({ queryKey: ['challenges'] });
+
+      if (challenge) {
+        // Notification logic matching Challenges.jsx
+        notify({
+          title: t({ en: 'Challenge Archived', ar: 'تم أرشفة التحدي' }),
+          message: t({ en: `${challenge.code} has been archived`, ar: `تمت أرشفة ${challenge.code}` }),
+          type: 'alert',
+          entityType: 'challenge',
+          entityId: challenge.id,
+          recipientEmails: [user?.email].filter(Boolean)
+        }).catch(console.error);
+
+        triggerEmail('challenge.status_changed', {
+          entity_type: 'challenge',
+          entity_id: challenge.id,
+          variables: {
+            challenge_title: challenge.title_en || challenge.title_ar,
+            challenge_code: challenge.code,
+            old_status: challenge.status,
+            new_status: 'archived'
+          }
+        }).catch(console.error);
+      }
+
+      toast.success(t({ en: 'Challenge archived', ar: 'تم أرشفة التحدي' }));
     }
   });
 
@@ -207,12 +448,22 @@ export function useChallengeMutations() {
    * Submit challenge for review
    */
   const submitForReview = useMutation({
-    mutationFn: async ({ id, data }) => {
-      // Validate for submission
+    /** @param {any} params */
+    mutationFn: async (params) => {
+      const { id, data, metadata = {} } = params;
+
+      // Access Check needed? Usually yes for submitting YOUR challenge.
+      // We will rely on RLS partially but Double Check offers immediate feedback
+      // Fetch basic info first for check? 
+      // Optimized: Since we update by ID, we can do a quick check via existing cache OR single fetch.
+      // For mutation safety, single fetch is better.
+      const { data: existing } = await supabase.from('challenges').select('created_by').eq('id', id).single();
+      checkEntityAccess(existing, 'created_by');
+
       const validation = validateChallengeSubmit(data);
       if (!validation.success) {
         const errors = getValidationErrors(validation);
-        throw new Error(Object.values(errors)[0] || 'Please complete all required fields');
+        throw new Error(Object.values(errors)[0] || 'Validation failed');
       }
 
       const { data: challenge, error } = await supabase
@@ -229,37 +480,35 @@ export function useChallengeMutations() {
 
       if (error) throw error;
 
-      await logStatusChange(
-        ENTITY_TYPES.CHALLENGE,
-        id,
-        'draft',
-        'submitted'
-      );
+      await logStatusChange(ENTITY_TYPES.CHALLENGE, id, 'draft', 'submitted', metadata);
+
+      await supabase.from('system_activities').insert({
+        entity_type: 'challenge',
+        entity_id: id,
+        activity_type: 'submitted',
+        description: `Challenge "${challenge.title_en}" submitted for review`,
+        metadata: {
+          submission_date: challenge.submission_date,
+          ...metadata
+        }
+      });
 
       return challenge;
     },
     onSuccess: (challenge) => {
-      // Send notifications
-      notifyStatusChange.mutate({
-        challenge,
-        oldStatus: 'draft',
-        newStatus: 'submitted'
-      });
-
+      notifyStatusChange.mutate({ challenge, oldStatus: 'draft', newStatus: 'submitted' });
       queryClient.invalidateQueries({ queryKey: ['challenges'] });
-      queryClient.invalidateQueries({ queryKey: ['challenge', challenge.id] });
       toast.success('Challenge submitted for review');
-    },
-    onError: (error) => {
-      toast.error(`Submission failed: ${error.message}`);
     }
   });
 
   /**
-   * Change challenge status
+   * Change Status
    */
   const changeStatus = useMutation({
-    mutationFn: async ({ id, newStatus, notes, rejectionReason }) => {
+    /** @param {{id: string, newStatus: string, notes?: string, rejectionReason?: string}} params */
+    mutationFn: async (params) => {
+      const { id, newStatus, notes, rejectionReason } = params;
       const { data: currentChallenge } = await supabase
         .from('challenges')
         .select('*')
@@ -271,15 +520,11 @@ export function useChallengeMutations() {
         updated_at: new Date().toISOString()
       };
 
-      // Add status-specific fields
-      if (newStatus === 'approved') {
-        updateData.approval_date = new Date().toISOString();
-      } else if (newStatus === 'published') {
+      if (newStatus === 'approved') updateData.approval_date = new Date().toISOString();
+      else if (newStatus === 'published') {
         updateData.is_published = true;
         updateData.publishing_approved_date = new Date().toISOString();
         updateData.publishing_approved_by = user?.email;
-      } else if (newStatus === 'resolved') {
-        updateData.resolution_date = new Date().toISOString();
       }
 
       const { data: challenge, error } = await supabase
@@ -291,34 +536,44 @@ export function useChallengeMutations() {
 
       if (error) throw error;
 
-      await logStatusChange(
-        ENTITY_TYPES.CHALLENGE,
-        id,
-        currentChallenge.status,
-        newStatus,
-        { notes, rejectionReason }
-      );
+      await logStatusChange(ENTITY_TYPES.CHALLENGE, id, currentChallenge.status, newStatus, { notes, rejectionReason });
+
+      await supabase.from('system_activities').insert({
+        entity_type: 'challenge',
+        entity_id: id,
+        activity_type: 'status_change',
+        description: `Challenge changed status to ${newStatus}`,
+        metadata: { old_status: currentChallenge.status, new_status: newStatus, notes, rejectionReason }
+      });
+
+      await supabase.from('challenge_activities').insert({
+        challenge_id: id,
+        activity_type: 'status_change',
+        description: `Status changed to ${newStatus}`,
+        details: { old_status: currentChallenge.status, new_status: newStatus, notes, rejectionReason }
+      });
 
       return { challenge, oldStatus: currentChallenge.status };
     },
-    onSuccess: ({ challenge, oldStatus }) => {
+    onSuccess: ({ challenge, oldStatus }, variables) => {
       notifyStatusChange.mutate({
         challenge,
         oldStatus,
-        newStatus: challenge.status
+        newStatus: challenge.status,
+        rejectionReason: variables.rejectionReason
       });
-
       queryClient.invalidateQueries({ queryKey: ['challenges'] });
-      queryClient.invalidateQueries({ queryKey: ['challenge', challenge.id] });
       toast.success(`Status changed to ${challenge.status}`);
     }
   });
 
   /**
-   * Assign reviewer
+   * Assign Reviewer
    */
   const assignReviewer = useMutation({
-    mutationFn: async ({ id, reviewerEmail }) => {
+    /** @param {{id: string, reviewerEmail: string}} params */
+    mutationFn: async (params) => {
+      const { id, reviewerEmail } = params;
       const { data: challenge, error } = await supabase
         .from('challenges')
         .update({
@@ -333,101 +588,239 @@ export function useChallengeMutations() {
       return challenge;
     },
     onSuccess: (challenge) => {
-      notifyAssignment.mutate({
-        challenge,
-        assigneeEmail: challenge.review_assigned_to,
-        assignmentType: 'reviewer'
-      });
-
+      notifyAssignment.mutate({ challenge, assigneeEmail: challenge.review_assigned_to, assignmentType: 'reviewer' });
       queryClient.invalidateQueries({ queryKey: ['challenge', challenge.id] });
       toast.success('Reviewer assigned');
     }
   });
 
   /**
-   * Transfer ownership
+   * Refresh challenges cache (Gold Standard Pattern)
+   * Invalidates all challenge-related queries
    */
-  const transferOwnership = useMutation({
-    mutationFn: async ({ id, newOwnerEmail, transferReason }) => {
-      const { data: currentChallenge } = await supabase
-        .from('challenges')
-        .select('challenge_owner_email')
-        .eq('id', id)
-        .single();
-
-      const { data: challenge, error } = await supabase
-        .from('challenges')
-        .update({
-          challenge_owner_email: newOwnerEmail,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id)
-        .select('*')
-        .single();
-
-      if (error) throw error;
-
-      return {
-        challenge,
-        oldOwner: currentChallenge.challenge_owner_email
-      };
-    },
-    onSuccess: ({ challenge, oldOwner }) => {
-      notifyAssignment.mutate({
-        challenge,
-        assigneeEmail: challenge.challenge_owner_email,
-        assignmentType: 'owner'
-      });
-
-      queryClient.invalidateQueries({ queryKey: ['challenge', challenge.id] });
-      toast.success('Ownership transferred');
-    }
-  });
-
-  /**
-   * Bulk status change
-   */
-  const bulkChangeStatus = useMutation({
-    mutationFn: async ({ challengeIds, newStatus }) => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .update({
-          status: newStatus,
-          updated_at: new Date().toISOString()
-        })
-        .in('id', challengeIds)
-        .select('id');
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['challenges'] });
-      toast.success(`${data.length} challenges updated`);
-    }
-  });
+  const refreshChallenges = () => {
+    queryClient.invalidateQueries({ queryKey: ['challenges'] });
+    queryClient.invalidateQueries({ queryKey: ['challenges-with-visibility'] });
+  };
 
   return {
-    // Core mutations
     createChallenge,
     updateChallenge,
     deleteChallenge,
-
-    // Workflow mutations
+    archiveChallenge,
     submitForReview,
     changeStatus,
     assignReviewer,
-    transferOwnership,
-
-    // Bulk operations
-    bulkChangeStatus,
-
-    // Loading states
+    refreshChallenges,  // ✅ Gold Standard: Export refresh method
     isCreating: createChallenge.isPending,
     isUpdating: updateChallenge.isPending,
     isDeleting: deleteChallenge.isPending,
-    isSubmitting: submitForReview.isPending
+    isSubmitting: submitForReview.isPending,
+    checkConsensus: useMutation({
+      /** @param {string} challengeId */
+      mutationFn: async (challengeId) => {
+        const { error } = await supabase.functions.invoke('checkConsensus', {
+          body: { entity_type: 'challenge', entity_id: challengeId }
+        });
+        if (error) throw error;
+      }
+    })
   };
+}
+
+/**
+ * Hook for merging challenges
+ */
+export function useMergeChallenges() {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async ({ primaryChallenge, duplicateChallenges, mergeNotes }) => {
+      // 1. Update primary with combined data
+      const combinedKeywords = new Set([
+        ...(primaryChallenge.keywords || []),
+        ...duplicateChallenges.flatMap(d => d.keywords || [])
+      ]);
+
+      const combinedStakeholders = [
+        ...(primaryChallenge.stakeholders || []),
+        ...duplicateChallenges.flatMap(d => d.stakeholders || [])
+      ];
+
+      const { error: updateError } = await supabase.from('challenges').update({
+        keywords: Array.from(combinedKeywords),
+        stakeholders: combinedStakeholders,
+        citizen_votes_count: (primaryChallenge.citizen_votes_count || 0) +
+          duplicateChallenges.reduce((sum, d) => sum + (d.citizen_votes_count || 0), 0)
+      }).eq('id', primaryChallenge.id);
+
+      if (updateError) throw updateError;
+
+      // 2. Archive duplicates
+      for (const dup of duplicateChallenges) {
+        const { error: archiveError } = await supabase.from('challenges').update({
+          status: 'archived',
+          is_archived: true,
+          archive_date: new Date().toISOString()
+        }).eq('id', dup.id);
+
+        if (archiveError) throw archiveError;
+
+        // 3. Create activity log
+        await supabase.from('challenge_activities').insert({
+          challenge_id: dup.id,
+          activity_type: 'merged',
+          description: `Merged into ${primaryChallenge.code}`,
+          metadata: { merge_notes: mergeNotes, primary_challenge_id: primaryChallenge.id }
+        });
+      }
+
+      // Log on primary as well
+      await supabase.from('challenge_activities').insert({
+        challenge_id: primaryChallenge.id,
+        activity_type: 'merge_primary',
+        description: `Merged ${duplicateChallenges.length} challenges`,
+        metadata: {
+          merged_challenge_ids: duplicateChallenges.map(d => d.id),
+          merge_notes: mergeNotes
+        }
+      });
+
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['challenges'] });
+      toast.success(t({ en: 'Challenges merged successfully', ar: 'تم دمج التحديات بنجاح' }));
+    }
+  });
+}
+
+export function useShareChallenge() {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async ({ challenge, cities }) => {
+      if (!cities || cities.length === 0) return;
+
+      for (const cityId of cities) {
+        await supabase.from('challenge_activities').insert({
+          challenge_id: challenge.id,
+          activity_type: 'cross_city_share',
+          description: `Solution shared with ${cityId}`,
+          metadata: { shared_to_municipality: cityId, shared_date: new Date().toISOString() }
+        });
+
+        // Send email via email-trigger-hub
+        // Dynamically import or just call? The original used dynamic import for supabase client inside? 
+        // We have supabase client in scope of this file usually? 
+        // Ah, this file imports supabase at top.
+        // But the original code was: const { supabase } = await import('@/integrations/supabase/client');
+        // We can use the top level supabase.
+
+        await supabase.functions.invoke('email-trigger-hub', {
+          body: {
+            trigger: 'challenge.match_found',
+            recipient_email: `innovation@${cityId}.gov.sa`,
+            entity_type: 'challenge',
+            entity_id: challenge.id,
+            variables: {
+              challengeTitle: challenge.title_en,
+              sector: challenge.sector,
+              track: challenge.track,
+              viewUrl: `${window.location.origin}/challenge/${challenge.id}`
+            },
+            triggered_by: 'system'
+          }
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['challenge-activities'] });
+      toast.success(t({ en: 'Solution shared successfully', ar: 'تمت مشاركة الحل بنجاح' }));
+    }
+  });
+}
+
+export function useAssignChallengeTracks() {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async ({ challengeId, selectedTracks, rationale, userEmail }) => {
+      const { error } = await supabase
+        .from('challenges')
+        .update({
+          tracks: selectedTracks,
+          track_assignment_rationale: rationale,
+          track_assigned_by: userEmail,
+          track_assigned_date: new Date().toISOString()
+        })
+        .eq('id', challengeId);
+
+      if (error) throw error;
+
+      await supabase.from('system_activities').insert({
+        entity_type: 'Challenge',
+        entity_id: challengeId,
+        activity_type: 'track_assigned',
+        description: `Treatment tracks assigned: ${selectedTracks.join(', ')}`,
+        performed_by: userEmail,
+        timestamp: new Date().toISOString(),
+        metadata: { tracks: selectedTracks, rationale }
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['challenge'] });
+      queryClient.invalidateQueries({ queryKey: ['challenges'] });
+      toast.success(t({ en: 'Tracks assigned successfully', ar: 'تم تعيين المسارات بنجاح' }));
+    }
+  });
+}
+
+export function useNotifyCitizenResolution() {
+  const { t, language } = useLanguage();
+
+  return useMutation({
+    mutationFn: async ({ challenge, message }) => {
+      if (!challenge.citizen_origin_idea_id) {
+        throw new Error('No citizen to notify');
+      }
+
+      // Get original idea creator
+      const { data: idea, error } = await supabase.from('citizen_ideas')
+        .select('*')
+        .eq('id', challenge.citizen_origin_idea_id)
+        .single();
+
+      if (error || !idea?.user_id) {
+        throw new Error('Idea creator not found');
+      }
+
+      // Send email
+      await supabase.functions.invoke('email-trigger-hub', {
+        body: {
+          trigger: 'idea.converted',
+          recipient_email: idea.created_by,
+          entity_type: 'challenge',
+          entity_id: challenge.id,
+          variables: {
+            challengeTitle: language === 'ar' && challenge.title_ar ? challenge.title_ar : challenge.title_en,
+            message: message || '',
+            ideaTitle: idea.title
+          },
+          language: language,
+          triggered_by: 'system'
+        }
+      });
+
+      return idea;
+    },
+    onSuccess: () => {
+      toast.success(t({ en: 'Citizen notified successfully!', ar: 'تم إشعار المواطن بنجاح!' }));
+    }
+  });
 }
 
 export default useChallengeMutations;

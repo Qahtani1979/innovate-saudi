@@ -1,11 +1,12 @@
 import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../components/LanguageContext';
-import { 
+import {
   Users, Building2, Share2, Award
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -35,16 +36,22 @@ function CrossCityLearningHub() {
 
   const shareLearningMutation = useMutation({
     mutationFn: async (data) => {
-      return await base44.entities.KnowledgeDocument.create({
-        title_en: `Learning from ${shareDialog.code}`,
-        content_en: data.learning,
-        document_type: 'best_practice',
-        source_entity_type: shareDialog.type,
-        source_entity_id: shareDialog.id,
-        municipality_id: myMunicipality?.id,
-        tags: ['cross_city_learning', shareDialog.sector],
-        is_public: true
-      });
+      const { data: result, error } = await supabase
+        .from('knowledge_documents')
+        .insert([{
+          title_en: `Learning from ${shareDialog.code}`,
+          content_en: data.learning,
+          document_type: 'best_practice',
+          source_entity_type: shareDialog.type,
+          source_entity_id: shareDialog.id,
+          municipality_id: myMunicipality?.id,
+          tags: ['cross_city_learning', shareDialog.sector],
+          is_public: true
+        }])
+        .select()
+        .single();
+      if (error) throw error;
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['knowledge'] });
@@ -55,17 +62,17 @@ function CrossCityLearningHub() {
   });
 
   // Find similar municipalities
-  const peerMunicipalities = myMunicipality 
-    ? allMunicipalities.filter(m => 
-        m.id !== myMunicipality.id &&
-        (Math.abs((m.population || 0) - (myMunicipality.population || 0)) < myMunicipality.population * 0.5 ||
-         m.city_type === myMunicipality.city_type)
-      )
+  const peerMunicipalities = myMunicipality
+    ? allMunicipalities.filter(m =>
+      m.id !== myMunicipality.id &&
+      (Math.abs((m.population || 0) - (myMunicipality.population || 0)) < myMunicipality.population * 0.5 ||
+        m.city_type === myMunicipality.city_type)
+    )
     : [];
 
   // Success stories from peers
-  const peerSuccesses = pilots.filter(p => 
-    p.stage === 'completed' && 
+  const peerSuccesses = pilots.filter(p =>
+    p.stage === 'completed' &&
     p.recommendation === 'scale' &&
     peerMunicipalities.some(m => m.id === p.municipality_id)
   );
@@ -141,7 +148,7 @@ function CrossCityLearningHub() {
           <div className="space-y-3">
             {peerSuccesses.slice(0, 5).map((pilot) => {
               const municipality = allMunicipalities.find(m => m.id === pilot.municipality_id);
-              
+
               return (
                 <div key={pilot.id} className="p-4 border-2 rounded-lg border-green-200 bg-gradient-to-r from-green-50 to-white">
                   <div className="flex items-start justify-between mb-3">
@@ -157,7 +164,7 @@ function CrossCityLearningHub() {
                         {municipality ? (language === 'ar' && municipality.name_ar ? municipality.name_ar : municipality.name_en) : ''}
                       </p>
                     </div>
-                    <Button 
+                    <Button
                       size="sm"
                       variant="outline"
                       onClick={() => setShareDialog({ ...pilot, type: 'pilot' })}
@@ -206,7 +213,7 @@ function CrossCityLearningHub() {
               </div>
 
               <Textarea
-                placeholder={t({ 
+                placeholder={t({
                   en: 'What did you learn from this pilot that could help other municipalities?',
                   ar: 'ما الذي تعلمته من هذه التجربة ويمكن أن يساعد البلديات الأخرى؟'
                 })}

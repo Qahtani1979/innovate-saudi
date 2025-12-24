@@ -1,6 +1,13 @@
 import React from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useRDProjectsWithVisibility } from '@/hooks/useRDProjectsWithVisibility';
+import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
+import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
+import { useCitizenIdeas } from '@/hooks/useCitizenIdeas';
+import { useChallengeMatches } from '@/hooks/useChallengeMatches';
+import { useChallengeActivities } from '@/hooks/useChallengeActivities';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -55,234 +62,49 @@ function MunicipalityDashboard() {
     }
   }, [authUser]);
 
-  // Direct Supabase query for municipality - server-side RLS
-  const { data: myMunicipality } = useQuery({
-    queryKey: ['my-municipality', myMunicipalityId],
-    queryFn: async () => {
-      if (!myMunicipalityId) return null;
-      const { data, error } = await supabase
-        .from('municipalities')
-        .select('*')
-        .eq('id', myMunicipalityId)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!myMunicipalityId
+  // Visibility hooks using context automatically
+  const { data: municipalitiesList = [] } = useMunicipalitiesWithVisibility();
+  const myMunicipality = municipalitiesList.find(m => m.id === myMunicipalityId) || municipalitiesList[0];
+
+  const { data: challenges = [] } = useChallengesWithVisibility();
+  const { data: pilots = [] } = usePilotsWithVisibility();
+  const { data: rdProjects = [] } = useRDProjectsWithVisibility();
+  const { data: strategicPlans = [] } = useStrategiesWithVisibility();
+  const { data: regionalPrograms = [] } = useProgramsWithVisibility({ publishedOnly: true });
+
+  const { data: ownedChallenges = [] } = useChallengesWithVisibility(); // Reuse hook, will filter client side if needed or rely on context
+
+  // Client-side filtering for specific subsets if needed, matching original logic approximation
+  // or just accepting the hook's scoped data which is usually better (Org wide vs Personal)
+
+  // Escalated challenges - filter client side from the main challenges list if possible, or use specific hook options if available.
+  // The hook returns all challenges visible to user.
+  const escalatedChallenges = challenges.filter(c => c.escalation_level > 0);
+
+  // Pending reviews
+  const pendingReviews = challenges.filter(c => c.status === 'submitted' && c.review_assigned_to === user?.email);
+
+  // Citizen ideas
+  const { data: citizenIdeas = [] } = useCitizenIdeas({
+    municipalityId: myMunicipalityId,
+    status: 'approved'
   });
 
-  // Direct Supabase query for challenges - server-side RLS
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['municipality-challenges', myMunicipalityId, user?.email],
-    queryFn: async () => {
-      if (!myMunicipalityId && !user?.email) return [];
+  const myChallengeIds = challenges.map(c => c.id);
 
-      // Build query with OR conditions for municipality OR ownership
-      let query = supabase
-        .from('challenges')
-        .select('*')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
-
-      if (myMunicipalityId) {
-        // If user has municipality, get challenges from their municipality
-        const { data, error } = await query.eq('municipality_id', myMunicipalityId);
-        if (error) throw error;
-        return data || [];
-      } else if (user?.email) {
-        // Fallback: get only challenges they own/created
-        const { data, error } = await query.or(`created_by.eq.${user.email},challenge_owner_email.eq.${user.email}`);
-        if (error) throw error;
-        return data || [];
-      }
-      return [];
-    },
-    enabled: !!myMunicipalityId || !!user?.email
+  const { data: matchedSolutions = [] } = useChallengeMatches({
+    challengeIds: myChallengeIds,
+    status: 'pending',
+    minScore: 70,
+    limit: 5
   });
 
-  // Direct Supabase query for pilots - server-side RLS
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['municipality-pilots', myMunicipalityId, user?.email],
-    queryFn: async () => {
-      if (!myMunicipalityId && !user?.email) return [];
-
-      let query = supabase
-        .from('pilots')
-        .select('*')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
-
-      if (myMunicipalityId) {
-        const { data, error } = await query.eq('municipality_id', myMunicipalityId);
-        if (error) throw error;
-        return data || [];
-      } else if (user?.email) {
-        const { data, error } = await query.eq('created_by', user.email);
-        if (error) throw error;
-        return data || [];
-      }
-      return [];
-    },
-    enabled: !!myMunicipalityId || !!user?.email
+  const { data: recentActivities = [] } = useChallengeActivities({
+    challengeIds: myChallengeIds,
+    limit: 10
   });
 
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['my-rd-projects', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data, error } = await supabase
-        .from('rd_projects')
-        .select('*')
-        .eq('created_by', user.email)
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
-
-  const { data: ownedChallenges = [] } = useQuery({
-    queryKey: ['owned-challenges', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*')
-        .eq('challenge_owner_email', user.email)
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
-
-  // Escalated challenges - server-side filtering
-  const { data: escalatedChallenges = [] } = useQuery({
-    queryKey: ['escalated-challenges', myMunicipalityId],
-    queryFn: async () => {
-      if (!myMunicipalityId) return [];
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*')
-        .eq('municipality_id', myMunicipalityId)
-        .gt('escalation_level', 0)
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!myMunicipalityId
-  });
-
-  // Pending reviews - server-side filtering
-  const { data: pendingReviews = [] } = useQuery({
-    queryKey: ['pending-reviews', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*')
-        .eq('status', 'submitted')
-        .eq('review_assigned_to', user.email)
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
-
-  // Citizen ideas - server-side filtering (approved ideas not yet converted)
-  const { data: citizenIdeas = [] } = useQuery({
-    queryKey: ['municipality-citizen-ideas', myMunicipalityId],
-    queryFn: async () => {
-      if (!myMunicipalityId) return [];
-      const { data, error } = await supabase
-        .from('citizen_ideas')
-        .select('*')
-        .eq('municipality_id', myMunicipalityId)
-        .eq('status', 'approved'); // 'approved' status means not yet converted
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!myMunicipalityId
-  });
-
-  const { data: matchedSolutions = [] } = useQuery({
-    queryKey: ['matched-solutions-feed', challenges.length],
-    queryFn: async () => {
-      if (challenges.length === 0) return [];
-      const myChallengeIds = challenges.map(c => c.id);
-      const { data, error } = await supabase
-        .from('challenge_solution_matches')
-        .select('*')
-        .in('challenge_id', myChallengeIds)
-        .eq('status', 'pending')
-        .gte('match_score', 70)
-        .limit(5);
-      if (error) return [];
-      return data || [];
-    },
-    enabled: challenges.length > 0
-  });
-
-  const { data: recentActivities = [] } = useQuery({
-    queryKey: ['municipality-activities', challenges.length],
-    queryFn: async () => {
-      if (challenges.length === 0) return [];
-      const myChallengeIds = challenges.map(c => c.id);
-      const { data, error } = await supabase
-        .from('challenge_activities')
-        .select('*')
-        .in('challenge_id', myChallengeIds)
-        .order('created_at', { ascending: false })
-        .limit(10);
-      if (error) return [];
-      return data || [];
-    },
-    enabled: challenges.length > 0
-  });
-
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('strategic_plans')
-        .select('*')
-        .or('is_template.is.null,is_template.eq.false')
-        .or('is_deleted.is.null,is_deleted.eq.false');
-      if (error) return [];
-      return data || [];
-    }
-  });
-
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('municipalities')
-        .select('*');
-      if (error) return [];
-      return data || [];
-    }
-  });
-
-  const { data: regionalPrograms = [] } = useQuery({
-    queryKey: ['regional-programs', myMunicipality?.region_id],
-    queryFn: async () => {
-      if (!myMunicipality) return [];
-      const { data, error } = await supabase
-        .from('programs')
-        .select('*')
-        .eq('is_deleted', false)
-        .eq('is_published', true);
-      if (error) return [];
-      return (data || []).filter(p =>
-        p.region_targets?.includes(myMunicipality?.region_id) ||
-        p.municipality_targets?.includes(myMunicipality?.id) ||
-        (!p.region_targets && !p.municipality_targets)
-      );
-    },
-    enabled: !!myMunicipality
-  });
+  const { data: municipalities = [] } = useMunicipalitiesWithVisibility(); // For AI prompt etc.
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
@@ -309,7 +131,8 @@ Provide:
           quick_wins: { type: 'array', items: { type: 'string' } },
           collaboration_opportunities: { type: 'array', items: { type: 'string' } }
         }
-      }
+      },
+      system_prompt: 'You are an expert AI analyst for municipal innovation ecosystems. Analyze specific data points to provide actionable strategic insights.'
     });
 
     if (result.success && result.data) {
@@ -328,13 +151,10 @@ Provide:
           { icon: TestTube, value: pilots.length, label: t({ en: 'Pilots', ar: 'التجارب' }) },
           { icon: TrendingUp, value: myMunicipality?.mii_score?.toFixed(1) || '—', label: t({ en: 'MII Score', ar: 'مؤشر MII' }) },
         ]}
-        action={
-          <Button onClick={handleAIInsights} variant="outline" className="gap-2">
-            <Sparkles className="h-4 w-4" />
-            {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
-          </Button>
-        }
-      />
+        action={<Button onClick={handleAIInsights} variant="outline" className="gap-2">
+          <Sparkles className="h-4 w-4" />
+          {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
+        </Button>} subtitle={undefined} actions={undefined} children={undefined} />
 
       {/* Alert Banners */}
       <EscalatedChallengesAlert escalatedChallenges={escalatedChallenges} t={t} />
@@ -348,12 +168,17 @@ Provide:
 
       {/* Profile Completeness & First Action */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ProfileCompletenessCoach profile={userProfile} role="municipality_admin" />
+        <ProfileCompletenessCoach
+          profile={userProfile}
+          role="municipality_admin"
+          onComplete={() => { }}
+          onDismiss={() => { }}
+        />
         <FirstActionRecommender user={{ role: 'municipality_admin', email: authUser?.email || user?.email || '' }} />
       </div>
 
       {/* Progressive Profiling Prompt */}
-      <ProgressiveProfilingPrompt />
+      <ProgressiveProfilingPrompt onComplete={undefined} onDismiss={undefined} />
 
       {/* Municipality AI Tools */}
       {myMunicipality && (

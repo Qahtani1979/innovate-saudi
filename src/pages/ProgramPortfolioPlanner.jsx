@@ -1,6 +1,5 @@
-import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { usePrograms } from '@/hooks/usePrograms';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,15 +16,8 @@ function ProgramPortfolioPlanner() {
   const [aiRoadmap, setAiRoadmap] = useState(null);
   const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs'],
-    queryFn: () => base44.entities.Program.list()
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
+  const { programs } = usePrograms();
+  const { data: challenges = [] } = useChallengesWithVisibility();
 
   const generateRoadmap = async () => {
     const result = await invokeAI({

@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+﻿import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import useInnovationProposalsWithVisibility from '@/hooks/useInnovationProposalsWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -14,10 +14,7 @@ function InnovationProposalsCoverageReport() {
   const { language, isRTL, t } = useLanguage();
   const [expandedSections, setExpandedSections] = useState({});
 
-  const { data: proposals = [] } = useQuery({
-    queryKey: ['innovation-proposals-coverage'],
-    queryFn: () => base44.entities.InnovationProposal.list()
-  });
+  const { data: proposals = [] } = useInnovationProposalsWithVisibility({ limit: 1000 });
 
   const toggleSection = (key) => {
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
@@ -30,7 +27,7 @@ function InnovationProposalsCoverageReport() {
       differentiation: 'CitizenIdea = public/anonymous engagement | InnovationProposal = authenticated structured submissions',
       users: 'Startups, Researchers, Organizations, Registered Citizens with verified accounts'
     },
-    
+
     entity: {
       name: 'InnovationProposal',
       status: 'complete',
@@ -124,14 +121,14 @@ function InnovationProposalsCoverageReport() {
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       <div>
         <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-900 to-purple-700 bg-clip-text text-transparent">
-          {t({ en: '🎯 Innovation Proposals (Structured) - Coverage Report', ar: '🎯 المقترحات الابتكارية (المنظمة) - تقرير التغطية' })}
+          {t({ en: 'ðŸŽ¯ Innovation Proposals (Structured) - Coverage Report', ar: 'ðŸŽ¯ Ø§Ù„Ù…Ù‚ØªØ±Ø­Ø§Øª Ø§Ù„Ø§Ø¨ØªÙƒØ§Ø±ÙŠØ© (Ø§Ù„Ù…Ù†Ø¸Ù…Ø©) - ØªÙ‚Ø±ÙŠØ± Ø§Ù„ØªØºØ·ÙŠØ©' })}
         </h1>
         <p className="text-slate-600 mt-2">
-          {t({ en: 'Authenticated structured proposals for programs and challenges', ar: 'المقترحات المنظمة المصادق عليها للبرامج والتحديات' })}
+          {t({ en: 'Authenticated structured proposals for programs and challenges', ar: 'Ø§Ù„Ù…Ù‚ØªØ±Ø­Ø§Øª Ø§Ù„Ù…Ù†Ø¸Ù…Ø© Ø§Ù„Ù…ØµØ§Ø¯Ù‚ Ø¹Ù„ÙŠÙ‡Ø§ Ù„Ù„Ø¨Ø±Ø§Ù…Ø¬ ÙˆØ§Ù„ØªØ­Ø¯ÙŠØ§Øª' })}
         </p>
         <div className="mt-3 p-3 bg-green-100 rounded-lg border border-green-300">
           <p className="text-sm text-green-900">
-            <strong>✅ Scope:</strong> {coverageData.scope.differentiation}
+            <strong>âœ… Scope:</strong> {coverageData.scope.differentiation}
           </p>
         </div>
       </div>
@@ -141,7 +138,7 @@ function InnovationProposalsCoverageReport() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-green-900">
             <Target className="h-6 w-6" />
-            {t({ en: 'Executive Summary - 100% Complete', ar: 'الملخص التنفيذي - 100% مكتمل' })}
+            {t({ en: 'Executive Summary - 100% Complete', ar: 'Ø§Ù„Ù…Ù„Ø®Øµ Ø§Ù„ØªÙ†ÙÙŠØ°ÙŠ - 100% Ù…ÙƒØªÙ…Ù„' })}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -159,20 +156,20 @@ function InnovationProposalsCoverageReport() {
               <p className="text-sm text-slate-600 mt-1">Proposals</p>
             </div>
             <div className="text-center p-4 bg-white rounded-lg border-2 border-green-200">
-              <p className="text-4xl font-bold text-green-600">✅</p>
+              <p className="text-4xl font-bold text-green-600">âœ…</p>
               <p className="text-sm text-slate-600 mt-1">Auth Required</p>
             </div>
           </div>
 
           <div className="p-4 bg-green-100 rounded-lg">
-            <p className="text-sm font-semibold text-green-900 mb-2">✅ All Features Complete</p>
+            <p className="text-sm font-semibold text-green-900 mb-2">âœ… All Features Complete</p>
             <ul className="text-sm text-green-800 space-y-1">
-              <li>• <strong>InnovationProposal entity</strong> - Full taxonomy, strategic alignment, structured fields</li>
-              <li>• <strong>ProgramIdeaSubmission</strong> - Submit to innovation programs with AI enhancement</li>
-              <li>• <strong>ChallengeIdeaResponse</strong> - Respond to challenges with proposals</li>
-              <li>• <strong>InnovationProposalsManagement</strong> - Admin review with authentication</li>
-              <li>• <strong>InnovationProposalDetail</strong> - Full proposal display</li>
-              <li>• <strong>Authentication enforced</strong> - All pages require user login</li>
+              <li>â€¢ <strong>InnovationProposal entity</strong> - Full taxonomy, strategic alignment, structured fields</li>
+              <li>â€¢ <strong>ProgramIdeaSubmission</strong> - Submit to innovation programs with AI enhancement</li>
+              <li>â€¢ <strong>ChallengeIdeaResponse</strong> - Respond to challenges with proposals</li>
+              <li>â€¢ <strong>InnovationProposalsManagement</strong> - Admin review with authentication</li>
+              <li>â€¢ <strong>InnovationProposalDetail</strong> - Full proposal display</li>
+              <li>â€¢ <strong>Authentication enforced</strong> - All pages require user login</li>
             </ul>
           </div>
         </CardContent>
@@ -184,7 +181,7 @@ function InnovationProposalsCoverageReport() {
           <button onClick={() => toggleSection('pages')} className="w-full flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-green-600" />
-              {t({ en: 'Pages & Authentication', ar: 'الصفحات والمصادقة' })}
+              {t({ en: 'Pages & Authentication', ar: 'Ø§Ù„ØµÙØ­Ø§Øª ÙˆØ§Ù„Ù…ØµØ§Ø¯Ù‚Ø©' })}
               <Badge className="bg-green-100 text-green-700">All Authenticated</Badge>
             </CardTitle>
             {expandedSections['pages'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
@@ -211,7 +208,7 @@ function InnovationProposalsCoverageReport() {
                   </div>
                   <div className="mt-2 space-y-1">
                     {page.features.map((f, i) => (
-                      <div key={i} className="text-xs text-green-800">✓ {f}</div>
+                      <div key={i} className="text-xs text-green-800">âœ“ {f}</div>
                     ))}
                   </div>
                 </div>
@@ -225,23 +222,23 @@ function InnovationProposalsCoverageReport() {
       <Card className="border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-white">
         <CardHeader>
           <CardTitle className="text-blue-900">
-            {t({ en: '🎯 Bottom Line', ar: '🎯 الخلاصة' })}
+            {t({ en: 'ðŸŽ¯ Bottom Line', ar: 'ðŸŽ¯ Ø§Ù„Ø®Ù„Ø§ØµØ©' })}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             <div className="p-4 bg-green-100 rounded-lg">
-              <p className="font-bold text-green-900 mb-2">✅ InnovationProposal System - 100% Complete</p>
+              <p className="font-bold text-green-900 mb-2">âœ… InnovationProposal System - 100% Complete</p>
               <p className="text-sm text-green-800">
                 Fully authenticated, structured proposal system for programs and challenges.
                 Separate from CitizenIdea public engagement. All required authentication in place.
               </p>
             </div>
             <div className="p-4 bg-blue-100 rounded-lg">
-              <p className="font-bold text-blue-900 mb-2">📘 Clear Separation</p>
+              <p className="font-bold text-blue-900 mb-2">ðŸ“˜ Clear Separation</p>
               <p className="text-sm text-blue-800">
                 <strong>CitizenIdea:</strong> Public, anonymous, informal community ideas with voting
-                <br/>
+                <br />
                 <strong>InnovationProposal:</strong> Authenticated, structured, formal proposals for programs/challenges
               </p>
             </div>

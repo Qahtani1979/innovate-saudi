@@ -1,5 +1,5 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useLocations } from '@/hooks/useLocations';
+import { useMatchingEntities } from '@/hooks/useMatchingEntities';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -12,20 +12,12 @@ import { Link } from 'react-router-dom';
 function RegionalAnalyticsDashboard() {
   const { t, language } = useLanguage();
 
-  const { data: regions = [] } = useQuery({
-    queryKey: ['regions'],
-    queryFn: () => base44.entities.Region.list()
-  });
+  const { useRegions, useMunicipalities } = useLocations();
+  const { usePilots } = useMatchingEntities();
 
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities'],
-    queryFn: () => base44.entities.Municipality.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
+  const { data: regions = [] } = useRegions();
+  const { data: municipalities = [] } = useMunicipalities();
+  const { data: pilots = [] } = usePilots({ limit: 2000 }); // Increase limit for analytics to be safe
 
   const regionalData = regions.map(region => {
     const regionMunis = municipalities.filter(m => m.region_id === region.id);
@@ -115,7 +107,7 @@ function RegionalAnalyticsDashboard() {
                 </Badge>
               </div>
               <Progress value={region.avgMII} className="mt-2" />
-              
+
               {/* Municipality Links */}
               {region.municipalities.length > 0 && (
                 <div className="pt-3 border-t">
@@ -154,7 +146,7 @@ function RegionalAnalyticsDashboard() {
   );
 }
 
-export default ProtectedPage(RegionalAnalyticsDashboard, { 
+export default ProtectedPage(RegionalAnalyticsDashboard, {
   requiredPermission: 'analytics_view',
   requiredRoles: ['admin', 'executive', 'deputyship_admin', 'deputyship_staff']
 });

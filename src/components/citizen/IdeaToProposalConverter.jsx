@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,22 +30,31 @@ export default function IdeaToProposalConverter({ idea, onClose, onSuccess }) {
     success_metrics_proposed: []
   });
 
+  /** @type {import('@tanstack/react-query').UseMutationResult<any, any, any, any>} */
   const createProposalMutation = useMutation({
+    /** @param {any} data */
     mutationFn: async (data) => {
-      const proposal = await base44.entities.InnovationProposal.create(data);
-      
-      // Update idea status
-      await base44.entities.CitizenIdea.update(idea.id, {
-        status: 'converted_to_proposal',
-        converted_entity_type: 'innovation_proposal',
-        converted_entity_id: proposal.id
-      });
+      const { data: proposal, error: proposalError } = await supabase
+        .from('innovation_proposals')
+        .insert(data)
+        .select()
+        .single();
+
+      if (proposalError) throw proposalError;
+
+      // Update idea status (Note: schema seems missing converted_entity fields, so we only update status)
+      const { error: ideaError } = await supabase
+        .from('citizen_ideas')
+        .update({ status: 'converted_to_proposal' })
+        .eq('id', idea.id);
+
+      if (ideaError) throw ideaError;
 
       // Log activity
-      await base44.entities.SystemActivity.create({
+      await supabase.from('system_activities').insert({
         entity_type: 'citizen_idea',
         entity_id: idea.id,
-        action: 'converted_to_innovation_proposal',
+        activity_type: 'converted_to_innovation_proposal',
         description: `Idea converted to InnovationProposal: ${proposal.title_en}`,
         metadata: { proposal_id: proposal.id }
       });
@@ -70,7 +79,6 @@ export default function IdeaToProposalConverter({ idea, onClose, onSuccess }) {
       system_prompt: IDEA_TO_PROPOSAL_SYSTEM_PROMPT,
       response_json_schema: IDEA_TO_PROPOSAL_SCHEMA
     });
-    });
 
     if (response.success && response.data) {
       setProposalData(response.data);
@@ -84,16 +92,24 @@ export default function IdeaToProposalConverter({ idea, onClose, onSuccess }) {
       return;
     }
 
-    createProposalMutation.mutate({
-      ...proposalData,
+    // Map fields to innovation_proposals schema
+    const payload = {
+      title_en: proposalData.title_en,
+      title_ar: proposalData.title_ar,
+      description_en: proposalData.description_en,
+      description_ar: proposalData.description_ar,
+      proposed_solution: proposalData.implementation_plan_en, // Mapping implementation plan to proposed_solution
+      budget_estimate: proposalData.budget_estimate,
+      timeline: `${proposalData.duration_weeks} weeks`, // Consolidating duration into timeline
+      team_info: proposalData.team_composition, // This is JSONB in schema
+      expected_impact: proposalData.success_metrics_proposed ? JSON.stringify(proposalData.success_metrics_proposed) : null,
       submitter_email: idea.submitter_email,
-      submitter_name: idea.submitter_name,
       municipality_id: idea.municipality_id,
       proposal_type: 'solution',
-      innovation_type: idea.category,
-      origin_idea_id: idea.id,
       status: 'submitted'
-    });
+    };
+
+    createProposalMutation.mutate(payload);
   };
 
   return (
@@ -115,7 +131,7 @@ export default function IdeaToProposalConverter({ idea, onClose, onSuccess }) {
             <p className="text-xs text-slate-600 mt-1">{idea.description?.slice(0, 200)}...</p>
           </div>
 
-          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+          <AIStatusIndicator status={status} error={null} rateLimitInfo={rateLimitInfo} className="mb-4" />
 
           {/* AI Generate Button */}
           <Button

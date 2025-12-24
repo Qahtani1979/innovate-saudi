@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+﻿import { useState } from 'react';
+import { useExperts, useAllExpertAssignments, useAllExpertEvaluations } from '@/hooks/useExpertData';
+import { useExpertPanels } from '@/hooks/useExpertPanelData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -11,25 +11,11 @@ function ExpertSystemClusterAudit() {
   const { t, isRTL } = useLanguage();
   const [expandedSections, setExpandedSections] = useState({});
 
-  const { data: experts = [] } = useQuery({
-    queryKey: ['experts-audit'],
-    queryFn: () => base44.entities.ExpertProfile.list()
-  });
+  const { data: experts = [] } = useExperts();
+  const { data: assignments = [] } = useAllExpertAssignments();
+  const { data: evaluations = [] } = useAllExpertEvaluations();
+  const { data: panels = [] } = useExpertPanels();
 
-  const { data: assignments = [] } = useQuery({
-    queryKey: ['assignments-audit'],
-    queryFn: () => base44.entities.ExpertAssignment.list()
-  });
-
-  const { data: evaluations = [] } = useQuery({
-    queryKey: ['evaluations-audit'],
-    queryFn: () => base44.entities.ExpertEvaluation.list()
-  });
-
-  const { data: panels = [] } = useQuery({
-    queryKey: ['panels-audit'],
-    queryFn: () => base44.entities.ExpertPanel.list()
-  });
 
   const toggleSection = (key) => {
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
@@ -47,11 +33,11 @@ function ExpertSystemClusterAudit() {
       population: experts.length,
       pages: ['ExpertRegistry', 'ExpertDetail', 'ExpertOnboarding', 'ExpertPerformanceDashboard'],
       integration: [
-        '✅ ExpertAssignment entity',
-        '✅ ExpertEvaluation entity',
-        '✅ ExpertMatchingEngine page',
-        '✅ ExpertAssignmentQueue page',
-        '✅ Sector-based matching'
+        'âœ… ExpertAssignment entity',
+        'âœ… ExpertEvaluation entity',
+        'âœ… ExpertMatchingEngine page',
+        'âœ… ExpertAssignmentQueue page',
+        'âœ… Sector-based matching'
       ],
       score: 100
     },
@@ -65,11 +51,11 @@ function ExpertSystemClusterAudit() {
       population: assignments.length,
       pages: ['ExpertMatchingEngine', 'ExpertAssignmentQueue'],
       integration: [
-        '✅ Polymorphic (Challenge, Pilot, Solution, RDProposal, etc.)',
-        '✅ Email notifications on assignment',
-        '✅ Due date tracking',
-        '✅ Expert queue filtering',
-        '✅ autoExpertAssignment function'
+        'âœ… Polymorphic (Challenge, Pilot, Solution, RDProposal, etc.)',
+        'âœ… Email notifications on assignment',
+        'âœ… Due date tracking',
+        'âœ… Expert queue filtering',
+        'âœ… autoExpertAssignment function'
       ],
       score: 100
     },
@@ -83,11 +69,11 @@ function ExpertSystemClusterAudit() {
       population: evaluations.length,
       pages: ['UnifiedEvaluationForm', 'EvaluationConsensusPanel', 'EvaluationPanel'],
       integration: [
-        '✅ Polymorphic (all core entities)',
-        '✅ 8-dimension scorecard',
-        '✅ Multi-expert consensus',
-        '✅ checkConsensus function',
-        '✅ Visible in all Detail pages Experts tab'
+        'âœ… Polymorphic (all core entities)',
+        'âœ… 8-dimension scorecard',
+        'âœ… Multi-expert consensus',
+        'âœ… checkConsensus function',
+        'âœ… Visible in all Detail pages Experts tab'
       ],
       score: 100
     },
@@ -101,10 +87,10 @@ function ExpertSystemClusterAudit() {
       population: panels.length,
       pages: ['ExpertPanelManagement', 'ExpertPanelDetail'],
       integration: [
-        '✅ Multi-expert evaluations',
-        '✅ Panel consensus calculation',
-        '✅ Committee management',
-        '✅ Governance workflows'
+        'âœ… Multi-expert evaluations',
+        'âœ… Panel consensus calculation',
+        'âœ… Committee management',
+        'âœ… Governance workflows'
       ],
       score: 100
     }
@@ -115,10 +101,10 @@ function ExpertSystemClusterAudit() {
       {/* Hero */}
       <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-amber-600 via-orange-600 to-red-600 p-8 text-white">
         <h1 className="text-5xl font-bold mb-2">
-          {t({ en: '🎓 Expert System Cluster Audit', ar: '🎓 تدقيق نظام الخبراء' })}
+          {t({ en: 'ðŸŽ“ Expert System Cluster Audit', ar: 'ðŸŽ“ ØªØ¯Ù‚ÙŠÙ‚ Ù†Ø¸Ø§Ù… Ø§Ù„Ø®Ø¨Ø±Ø§Ø¡' })}
         </h1>
         <p className="text-xl text-white/90">
-          {t({ en: '4 Entities - Expert Management, Assignment, Evaluation, Panels', ar: '4 كيانات - إدارة الخبراء، التكليف، التقييم، اللجان' })}
+          {t({ en: '4 Entities - Expert Management, Assignment, Evaluation, Panels', ar: '4 ÙƒÙŠØ§Ù†Ø§Øª - Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø®Ø¨Ø±Ø§Ø¡ØŒ Ø§Ù„ØªÙƒÙ„ÙŠÙØŒ Ø§Ù„ØªÙ‚ÙŠÙŠÙ…ØŒ Ø§Ù„Ù„Ø¬Ø§Ù†' })}
         </p>
         <div className="mt-4 grid grid-cols-4 gap-4">
           <div>
@@ -145,7 +131,7 @@ function ExpertSystemClusterAudit() {
         <CardContent className="pt-6">
           <div className="text-center">
             <CheckCircle2 className="h-12 w-12 text-green-600 mx-auto mb-3" />
-            <p className="text-3xl font-bold text-green-900">✅ 100% COMPLETE</p>
+            <p className="text-3xl font-bold text-green-900">âœ… 100% COMPLETE</p>
             <p className="text-slate-700 mt-2">All expert system entities operational with polymorphic design, 8-dimension scorecard, multi-expert consensus, sector-based matching</p>
           </div>
         </CardContent>
@@ -201,7 +187,7 @@ function ExpertSystemClusterAudit() {
       {/* Summary */}
       <Card className="border-4 border-green-500">
         <CardHeader>
-          <CardTitle className="text-green-900">✅ Expert System: Production Ready</CardTitle>
+          <CardTitle className="text-green-900">âœ… Expert System: Production Ready</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-green-800">

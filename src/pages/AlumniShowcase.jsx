@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useAllProgramApplications } from '@/hooks/useProgramDetails';
+import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
+import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -16,31 +18,17 @@ export default function AlumniShowcase() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterProgram, setFilterProgram] = useState('all');
 
-  const { data: applications = [] } = useQuery({
-    queryKey: ['program-applications-alumni'],
-    queryFn: async () => {
-      const all = await base44.entities.ProgramApplication.list('-created_date');
-      return all.filter(app => app.status === 'accepted' && app.graduation_status === 'graduated');
-    }
+  const { data: applications = [] } = useAllProgramApplications({
+    status: 'accepted',
+    graduationStatus: 'graduated'
   });
 
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs'],
-    queryFn: () => base44.entities.Program.list()
-  });
-
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions'],
-    queryFn: () => base44.entities.Solution.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
+  const { data: programs = [] } = useProgramsWithVisibility();
+  const { data: solutions = [] } = useSolutionsWithVisibility();
+  const { data: pilots = [] } = usePilotsWithVisibility();
 
   const filteredAlumni = applications.filter(app => {
-    const matchesSearch = !searchTerm || 
+    const matchesSearch = !searchTerm ||
       app.applicant_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       app.applicant_org_name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesProgram = filterProgram === 'all' || app.program_id === filterProgram;
@@ -51,7 +39,7 @@ export default function AlumniShowcase() {
     const achievements = [];
     const alumniSolutions = solutions.filter(s => s.created_by === app.applicant_email);
     const alumniPilots = pilots.filter(p => p.created_by === app.applicant_email);
-    
+
     if (alumniSolutions.length > 0) {
       achievements.push({ type: 'solution', count: alumniSolutions.length, icon: Lightbulb });
     }

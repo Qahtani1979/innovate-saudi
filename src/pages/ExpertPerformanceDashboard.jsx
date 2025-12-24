@@ -1,5 +1,4 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+﻿import { useExperts, useAllExpertAssignments, useAllExpertEvaluations } from '@/hooks/useExpertData';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,20 +27,10 @@ import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 export default function ExpertPerformanceDashboard() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: experts = [], isLoading } = useQuery({
-    queryKey: ['expert-profiles'],
-    queryFn: () => base44.entities.ExpertProfile.list()
-  });
+  const { data: experts = [], isLoading } = useExperts();
+  const { data: assignments = [] } = useAllExpertAssignments();
+  const { data: evaluations = [] } = useAllExpertEvaluations();
 
-  const { data: assignments = [] } = useQuery({
-    queryKey: ['all-assignments'],
-    queryFn: () => base44.entities.ExpertAssignment.list()
-  });
-
-  const { data: evaluations = [] } = useQuery({
-    queryKey: ['all-evaluations'],
-    queryFn: () => base44.entities.ExpertEvaluation.list()
-  });
 
   const activeExperts = experts.filter(e => e.is_active && e.is_verified);
   const avgRating = experts.length > 0
@@ -70,12 +59,12 @@ export default function ExpertPerformanceDashboard() {
     <PageLayout>
       <PageHeader
         icon={BarChart3}
-        title={t({ en: 'Expert Performance Dashboard', ar: 'لوحة أداء الخبراء' })}
-        description={t({ en: 'Monitor expert quality, workload, and performance', ar: 'مراقبة جودة الخبراء، العبء، والأداء' })}
+        title={t({ en: 'Expert Performance Dashboard', ar: 'Ù„ÙˆØ­Ø© Ø£Ø¯Ø§Ø¡ Ø§Ù„Ø®Ø¨Ø±Ø§Ø¡' })}
+        description={t({ en: 'Monitor expert quality, workload, and performance', ar: 'Ù…Ø±Ø§Ù‚Ø¨Ø© Ø¬ÙˆØ¯Ø© Ø§Ù„Ø®Ø¨Ø±Ø§Ø¡ØŒ Ø§Ù„Ø¹Ø¨Ø¡ØŒ ÙˆØ§Ù„Ø£Ø¯Ø§Ø¡' })}
         stats={[
-          { icon: Users, value: activeExperts.length, label: t({ en: 'Active Experts', ar: 'خبراء نشطون' }) },
-          { icon: Star, value: avgRating, label: t({ en: 'Avg. Rating', ar: 'متوسط التقييم' }) },
-          { icon: CheckCircle2, value: totalEvaluations, label: t({ en: 'Evaluations', ar: 'التقييمات' }) },
+          { icon: Users, value: activeExperts.length, label: t({ en: 'Active Experts', ar: 'Ø®Ø¨Ø±Ø§Ø¡ Ù†Ø´Ø·ÙˆÙ†' }) },
+          { icon: Star, value: avgRating, label: t({ en: 'Avg. Rating', ar: 'Ù…ØªÙˆØ³Ø· Ø§Ù„ØªÙ‚ÙŠÙŠÙ…' }) },
+          { icon: CheckCircle2, value: totalEvaluations, label: t({ en: 'Evaluations', ar: 'Ø§Ù„ØªÙ‚ÙŠÙŠÙ…Ø§Øª' }) },
         ]}
       />
 
@@ -85,7 +74,7 @@ export default function ExpertPerformanceDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Active Experts', ar: 'الخبراء النشطون' })}</p>
+                <p className="text-sm text-slate-600">{t({ en: 'Active Experts', ar: 'Ø§Ù„Ø®Ø¨Ø±Ø§Ø¡ Ø§Ù„Ù†Ø´Ø·ÙˆÙ†' })}</p>
                 <p className="text-3xl font-bold text-purple-600">{activeExperts.length}</p>
               </div>
               <Users className="h-8 w-8 text-purple-600" />
@@ -97,7 +86,7 @@ export default function ExpertPerformanceDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Avg. Rating', ar: 'متوسط التقييم' })}</p>
+                <p className="text-sm text-slate-600">{t({ en: 'Avg. Rating', ar: 'Ù…ØªÙˆØ³Ø· Ø§Ù„ØªÙ‚ÙŠÙŠÙ…' })}</p>
                 <p className="text-3xl font-bold text-amber-600">{avgRating}</p>
               </div>
               <Star className="h-8 w-8 text-amber-600" />
@@ -109,7 +98,7 @@ export default function ExpertPerformanceDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Total Evaluations', ar: 'إجمالي التقييمات' })}</p>
+                <p className="text-sm text-slate-600">{t({ en: 'Total Evaluations', ar: 'Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ØªÙ‚ÙŠÙŠÙ…Ø§Øª' })}</p>
                 <p className="text-3xl font-bold text-green-600">{totalEvaluations}</p>
               </div>
               <CheckCircle2 className="h-8 w-8 text-green-600" />
@@ -121,7 +110,7 @@ export default function ExpertPerformanceDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Avg. Response', ar: 'متوسط الرد' })}</p>
+                <p className="text-sm text-slate-600">{t({ en: 'Avg. Response', ar: 'Ù…ØªÙˆØ³Ø· Ø§Ù„Ø±Ø¯' })}</p>
                 <p className="text-3xl font-bold text-blue-600">{avgResponseTime}h</p>
               </div>
               <Clock className="h-8 w-8 text-blue-600" />
@@ -135,21 +124,21 @@ export default function ExpertPerformanceDashboard() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-green-600" />
-            {t({ en: 'Expert Performance Rankings', ar: 'ترتيب أداء الخبراء' })}
+            {t({ en: 'Expert Performance Rankings', ar: 'ØªØ±ØªÙŠØ¨ Ø£Ø¯Ø§Ø¡ Ø§Ù„Ø®Ø¨Ø±Ø§Ø¡' })}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50">
-                <TableHead>{t({ en: 'Rank', ar: 'الترتيب' })}</TableHead>
-                <TableHead>{t({ en: 'Expert', ar: 'الخبير' })}</TableHead>
-                <TableHead>{t({ en: 'Expertise', ar: 'الخبرة' })}</TableHead>
-                <TableHead>{t({ en: 'Rating', ar: 'التقييم' })}</TableHead>
-                <TableHead>{t({ en: 'Evaluations', ar: 'التقييمات' })}</TableHead>
-                <TableHead>{t({ en: 'Completion', ar: 'الإنجاز' })}</TableHead>
-                <TableHead>{t({ en: 'Quality', ar: 'الجودة' })}</TableHead>
-                <TableHead>{t({ en: 'Response Time', ar: 'وقت الرد' })}</TableHead>
+                <TableHead>{t({ en: 'Rank', ar: 'Ø§Ù„ØªØ±ØªÙŠØ¨' })}</TableHead>
+                <TableHead>{t({ en: 'Expert', ar: 'Ø§Ù„Ø®Ø¨ÙŠØ±' })}</TableHead>
+                <TableHead>{t({ en: 'Expertise', ar: 'Ø§Ù„Ø®Ø¨Ø±Ø©' })}</TableHead>
+                <TableHead>{t({ en: 'Rating', ar: 'Ø§Ù„ØªÙ‚ÙŠÙŠÙ…' })}</TableHead>
+                <TableHead>{t({ en: 'Evaluations', ar: 'Ø§Ù„ØªÙ‚ÙŠÙŠÙ…Ø§Øª' })}</TableHead>
+                <TableHead>{t({ en: 'Completion', ar: 'Ø§Ù„Ø¥Ù†Ø¬Ø§Ø²' })}</TableHead>
+                <TableHead>{t({ en: 'Quality', ar: 'Ø§Ù„Ø¬ÙˆØ¯Ø©' })}</TableHead>
+                <TableHead>{t({ en: 'Response Time', ar: 'ÙˆÙ‚Øª Ø§Ù„Ø±Ø¯' })}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -196,8 +185,8 @@ export default function ExpertPerformanceDashboard() {
                   <TableCell>
                     <Badge className={
                       (expert.evaluation_quality_score || 0) >= 80 ? 'bg-green-100 text-green-700' :
-                      (expert.evaluation_quality_score || 0) >= 60 ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-red-100 text-red-700'
+                        (expert.evaluation_quality_score || 0) >= 60 ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
                     }>
                       {expert.evaluation_quality_score || 0}
                     </Badge>

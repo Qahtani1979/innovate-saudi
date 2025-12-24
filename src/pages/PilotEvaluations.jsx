@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,21 +10,19 @@ import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import UnifiedEvaluationForm from '../components/evaluation/UnifiedEvaluationForm';
 import EvaluationConsensusPanel from '../components/evaluation/EvaluationConsensusPanel';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useEvaluationCompletion } from '@/hooks/useEvaluationCompletion';
 
 function PilotEvaluations() {
   const { language, isRTL, t } = useLanguage();
   const [selectedPilot, setSelectedPilot] = useState(null);
   const [showEvaluationForm, setShowEvaluationForm] = useState(false);
-  const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { completeEvaluation } = useEvaluationCompletion();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-for-evaluation'],
-    queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*').eq('is_deleted', false).in('stage', ['monitoring', 'active', 'completed']);
-      return data || [];
-    }
-  });
+  /* Refactored to use usePilotsWithVisibility */
+  const { data: allPilots = [] } = usePilotsWithVisibility({ limit: 1000 });
+  const pilots = allPilots.filter(p => ['monitoring', 'active', 'completed'].includes(p.stage));
 
   const handleEvaluate = (pilot) => {
     setSelectedPilot(pilot);
@@ -35,15 +31,15 @@ function PilotEvaluations() {
 
   const handleEvaluationComplete = async () => {
     setShowEvaluationForm(false);
-    
+
     if (selectedPilot) {
-      await supabase.functions.invoke('checkConsensus', {
-        body: { entity_type: 'pilot', entity_id: selectedPilot.id }
+      await completeEvaluation.mutateAsync({
+        entityType: 'pilot',
+        entityId: selectedPilot.id
       });
     }
-    
+
     setSelectedPilot(null);
-    queryClient.invalidateQueries(['pilots-for-evaluation']);
   };
 
   const criteria = [
@@ -66,6 +62,7 @@ function PilotEvaluations() {
             <UnifiedEvaluationForm
               entityType="pilot"
               entityId={selectedPilot.id}
+              assignmentId={null} // Or appropriate assignment ID context
               onComplete={handleEvaluationComplete}
             />
           </div>
@@ -132,8 +129,8 @@ function PilotEvaluations() {
                     <h3 className="font-semibold text-slate-900">{pilot.title_en}</h3>
                     <Badge className={
                       pilot.stage === 'completed' ? 'bg-green-100 text-green-700' :
-                      pilot.stage === 'monitoring' ? 'bg-blue-100 text-blue-700' :
-                      'bg-purple-100 text-purple-700'
+                        pilot.stage === 'monitoring' ? 'bg-blue-100 text-blue-700' :
+                          'bg-purple-100 text-purple-700'
                     }>
                       {pilot.stage}
                     </Badge>
@@ -150,9 +147,9 @@ function PilotEvaluations() {
                 </div>
               </div>
 
-              <EvaluationConsensusPanel 
-                entityType="pilot" 
-                entityId={pilot.id} 
+              <EvaluationConsensusPanel
+                entityType="pilot"
+                entityId={pilot.id}
               />
 
               <div className="flex gap-2 mt-4">

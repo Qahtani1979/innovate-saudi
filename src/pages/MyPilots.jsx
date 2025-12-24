@@ -1,19 +1,20 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { useQuery } from '@tanstack/react-query';
+import { useMyPilots } from '@/hooks/useMyPilots';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { useLanguage } from '../components/LanguageContext';
+import { useLanguage } from '@/components/LanguageContext';
 import { Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
-import { TestTube, Plus, Search, TrendingUp, Target, LayoutGrid, List, Eye } from 'lucide-react';
-import ProtectedPage from '../components/permissions/ProtectedPage';
+import { createPageUrl } from '@/utils';
+import { TestTube, Plus, TrendingUp, Target, LayoutGrid, List, Eye, AlertCircle } from 'lucide-react';
+import ProtectedPage from '@/components/permissions/ProtectedPage';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { StandardPagination } from '@/components/ui/StandardPagination';
+import { EntityListSkeleton } from '@/components/ui/skeletons/EntityListSkeleton';
+import { EntityFilter } from '@/components/ui/EntityFilter';
 
 function MyPilots() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -21,27 +22,22 @@ function MyPilots() {
   const [viewMode, setViewMode] = useState('grid');
   const { language, isRTL, t } = useLanguage();
   const { user } = useAuth();
+  const [page, setPage] = useState(1);
 
-  const { data: pilots = [], isLoading } = useQuery({
-    queryKey: ['my-pilots', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('is_deleted', false)
-        .eq('created_by', user.email)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
+  // GOLD STANDARD HOOK
+  const {
+    pilots,
+    stats,
+    isLoading,
+    isEmpty,
+    totalPages,
+  } = useMyPilots(user?.email, page);
 
+  // Client-side filtering for current page (standard for Search/Status until API support)
   const filteredPilots = pilots.filter(pilot => {
     const matchesSearch = pilot.title_en?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         pilot.title_ar?.includes(searchTerm) ||
-                         pilot.code?.toLowerCase().includes(searchTerm.toLowerCase());
+      pilot.title_ar?.includes(searchTerm) ||
+      pilot.code?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStage = stageFilter === 'all' || pilot.stage === stageFilter;
     return matchesSearch && matchesStage;
   });
@@ -55,13 +51,23 @@ function MyPilots() {
     scaled: 'bg-teal-100 text-teal-700'
   };
 
+  const stageOptions = [
+    { value: 'pre_pilot', label: t({ en: 'Pre-Pilot', ar: 'ما قبل التجربة' }) },
+    { value: 'approved', label: t({ en: 'Approved', ar: 'معتمد' }) },
+    { value: 'in_progress', label: t({ en: 'In Progress', ar: 'قيد التنفيذ' }) },
+    { value: 'evaluation', label: t({ en: 'Evaluation', ar: 'التقييم' }) },
+    { value: 'completed', label: t({ en: 'Completed', ar: 'مكتمل' }) },
+    { value: 'scaled', label: t({ en: 'Scaled', ar: 'موسع' }) }
+  ];
+
   return (
     <PageLayout>
       <PageHeader
         title={{ en: 'My Pilots', ar: 'تجاربي' }}
         subtitle={{ en: 'Track and manage your pilot projects', ar: 'تتبع وإدارة مشاريعك التجريبية' }}
         icon={<TestTube className="h-6 w-6 text-white" />}
-        actions={
+        description=""
+        action={
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1 border rounded-lg p-1 bg-white/50">
               <Button
@@ -89,94 +95,75 @@ function MyPilots() {
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-blue-50 to-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Total', ar: 'الإجمالي' })}</p>
-                <p className="text-3xl font-bold text-blue-600">{pilots.length}</p>
+      {/* STATS CARDS (Powered by separate stats query) */}
+      {isLoading ? (
+        <EntityListSkeleton mode="grid" rowCount={4} columnCount={1} />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <Card className="bg-gradient-to-br from-blue-50 to-white">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600">{t({ en: 'Total', ar: 'الإجمالي' })}</p>
+                  <p className="text-3xl font-bold text-blue-600">{stats.total}</p>
+                </div>
+                <TestTube className="h-8 w-8 text-blue-600" />
               </div>
-              <TestTube className="h-8 w-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-gradient-to-br from-purple-50 to-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">{t({ en: 'In Progress', ar: 'قيد التنفيذ' })}</p>
-                <p className="text-3xl font-bold text-purple-600">
-                  {pilots.filter(p => p.stage === 'in_progress').length}
-                </p>
+          <Card className="bg-gradient-to-br from-purple-50 to-white">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600">{t({ en: 'In Progress', ar: 'قيد التنفيذ' })}</p>
+                  <p className="text-3xl font-bold text-purple-600">{stats.in_progress}</p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-purple-600" />
               </div>
-              <TrendingUp className="h-8 w-8 text-purple-600" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-gradient-to-br from-green-50 to-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Completed', ar: 'مكتمل' })}</p>
-                <p className="text-3xl font-bold text-green-600">
-                  {pilots.filter(p => p.stage === 'completed').length}
-                </p>
+          <Card className="bg-gradient-to-br from-green-50 to-white">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600">{t({ en: 'Completed', ar: 'مكتمل' })}</p>
+                  <p className="text-3xl font-bold text-green-600">{stats.completed}</p>
+                </div>
+                <Target className="h-8 w-8 text-green-600" />
               </div>
-              <Target className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-gradient-to-br from-amber-50 to-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Avg Success', ar: 'متوسط النجاح' })}</p>
-                <p className="text-3xl font-bold text-amber-600">
-                  {pilots.length > 0 ? Math.round(pilots.reduce((acc, p) => acc + (p.success_probability || 0), 0) / pilots.length) : 0}%
-                </p>
+          <Card className="bg-gradient-to-br from-amber-50 to-white">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600">{t({ en: 'Avg Success', ar: 'متوسط النجاح' })}</p>
+                  <p className="text-3xl font-bold text-amber-600">{stats.avg_success}%</p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-amber-600" />
               </div>
-              <TrendingUp className="h-8 w-8 text-amber-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <Card>
         <CardHeader>
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400`} />
-              <Input
-                placeholder={t({ en: 'Search pilots...', ar: 'بحث عن التجارب...' })}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className={isRTL ? 'pr-10' : 'pl-10'}
-              />
-            </div>
-            <Select value={stageFilter} onValueChange={setStageFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder={t({ en: 'Stage', ar: 'المرحلة' })} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t({ en: 'All Stages', ar: 'جميع المراحل' })}</SelectItem>
-                <SelectItem value="pre_pilot">{t({ en: 'Pre-Pilot', ar: 'ما قبل التجربة' })}</SelectItem>
-                <SelectItem value="approved">{t({ en: 'Approved', ar: 'معتمد' })}</SelectItem>
-                <SelectItem value="in_progress">{t({ en: 'In Progress', ar: 'قيد التنفيذ' })}</SelectItem>
-                <SelectItem value="evaluation">{t({ en: 'Evaluation', ar: 'التقييم' })}</SelectItem>
-                <SelectItem value="completed">{t({ en: 'Completed', ar: 'مكتمل' })}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <EntityFilter
+            searchQuery={searchTerm}
+            onSearchChange={setSearchTerm}
+            statusValue={stageFilter}
+            onStatusChange={setStageFilter}
+            statusOptions={stageOptions}
+            placeholder={t({ en: 'Search pilots...', ar: 'بحث عن التجارب...' })}
+          />
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-            </div>
+            <EntityListSkeleton mode={viewMode} rowCount={6} />
           ) : filteredPilots.length === 0 ? (
             <div className="text-center py-12">
               <TestTube className="h-12 w-12 text-slate-300 mx-auto mb-4" />
@@ -289,6 +276,15 @@ function MyPilots() {
                 </tbody>
               </table>
             </div>
+          )}
+
+          {/* PAGINATION UI */}
+          {!isLoading && !isEmpty && (
+            <StandardPagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+            />
           )}
         </CardContent>
       </Card>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { usePortfolioReviews } from '@/hooks/usePortfolioReviews';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,37 +20,41 @@ export default function PortfolioReviewGate() {
     year: 2025,
     period: 'Q1 2025'
   });
-  const queryClient = useQueryClient();
+  const { reviews, reviewMutation } = usePortfolioReviews();
+  const { data: challenges = [] } = useChallengesWithVisibility();
+  const { data: pilots = [] } = usePilotsWithVisibility();
 
-  const { data: reviews = [] } = useQuery({
-    queryKey: ['portfolio-reviews'],
-    queryFn: async () => {
-      const configs = await base44.entities.PlatformConfig.filter({ category: 'workflow' });
-      return configs.filter(c => c.config_key?.startsWith('portfolio_review_'));
-    }
-  });
+  // Handle onSuccess locally for toast
+  // Wait, reviewMutation from hook already has onSuccess that invalidates queries.
+  // But component wants to reset state and show toast.
+  // I can wrap the mutate call or useEffect.
+  // Or I can just pass options to the mutate function if query v5.
+  // Or I can just rely on the hook returning the mutation and I attach callbacks here?
+  // React Query useMutation callbacks on mutate are deprecated in v5 for side effects that should happen every time, but fine for UI side effects.
+  // Wait, if I defined onSuccess in the hook, it runs. If I pass onSuccess to mutate, it ALSO runs (or overrides depending on version).
+  // I will update the code to use the mutation from hook, and handle UI state reset in the mutate callback.
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
+  const handleCreateReview = () => {
+    reviewMutation.mutate({ action: 'create', review_data: newReview }, {
+      onSuccess: () => {
+        setSelectedReview(null);
+        setShowCreateForm(false);
+        setComments('');
+        toast.success(t({ en: 'Review action completed', ar: 'تم إكمال إجراء المراجعة' }));
+      }
+    });
+  };
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const reviewMutation = useMutation({
-    mutationFn: ({ action, review_id, review_data, comments }) => 
-      base44.functions.invoke('portfolioReview', { action, review_id, review_data, comments }),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['portfolio-reviews']);
-      setSelectedReview(null);
-      setShowCreateForm(false);
-      setComments('');
-      toast.success(t({ en: 'Review action completed', ar: 'تم إكمال إجراء المراجعة' }));
-    }
-  });
+  const handleReviewAction = (action, reviewId) => {
+    reviewMutation.mutate({ action, review_id: reviewId, comments }, {
+      onSuccess: () => {
+        setSelectedReview(null);
+        setShowCreateForm(false);
+        setComments('');
+        toast.success(t({ en: 'Review action completed', ar: 'تم إكمال إجراء المراجعة' }));
+      }
+    });
+  };
 
   const pendingReviews = reviews.filter(r => r.config_value?.status === 'pending');
 
@@ -123,7 +128,7 @@ export default function PortfolioReviewGate() {
             </div>
             <div className="flex gap-2">
               <Button
-                onClick={() => reviewMutation.mutate({ action: 'create', review_data: newReview })}
+                onClick={handleCreateReview}
                 className="bg-purple-600"
               >
                 {t({ en: 'Create & Notify Reviewers', ar: 'إنشاء وإشعار المراجعين' })}
@@ -181,14 +186,14 @@ export default function PortfolioReviewGate() {
                               />
                               <div className="flex gap-2">
                                 <Button
-                                  onClick={() => reviewMutation.mutate({ action: 'approve', review_id: review.config_key, comments })}
+                                  onClick={() => handleReviewAction('approve', review.config_key)}
                                   className="bg-green-600"
                                 >
                                   <CheckCircle2 className="h-4 w-4 mr-2" />
                                   {t({ en: 'Approve Review', ar: 'موافقة المراجعة' })}
                                 </Button>
                                 <Button
-                                  onClick={() => reviewMutation.mutate({ action: 'request_revision', review_id: review.config_key, comments })}
+                                  onClick={() => handleReviewAction('request_revision', review.config_key)}
                                   variant="outline"
                                 >
                                   {t({ en: 'Request Revision', ar: 'طلب مراجعة' })}

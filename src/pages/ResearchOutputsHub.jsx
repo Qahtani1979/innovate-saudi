@@ -1,5 +1,4 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useMatchingEntities } from '@/hooks/useMatchingEntities';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,16 +12,14 @@ import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 function ResearchOutputsHub() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects-outputs'],
-    queryFn: () => base44.entities.RDProject.list()
-  });
+  const { useRDProjects } = useMatchingEntities();
+  const { data: rdProjects = [] } = useRDProjects({ limit: 1000 });
 
-  const allPublications = rdProjects.flatMap(p => 
+  const allPublications = rdProjects.flatMap(p =>
     (p.publications || []).map(pub => ({ ...pub, project: p }))
   );
 
-  const allPatents = rdProjects.flatMap(p => 
+  const allPatents = rdProjects.flatMap(p =>
     (p.patents || []).map(pat => ({ ...pat, project: p }))
   );
 
@@ -31,8 +28,7 @@ function ResearchOutputsHub() {
       <PageHeader
         icon={BookOpen}
         title={t({ en: 'Research Outputs & Publications', ar: 'المخرجات البحثية والمنشورات' })}
-        description={t({ en: 'Publications, patents, and research outcomes', ar: 'المنشورات وبراءات الاختراع والنتائج البحثية' })}
-      />
+        description={t({ en: 'Publications, patents, and research outcomes', ar: 'المنشورات وبراءات الاختراع والنتائج البحثية' })} subtitle={undefined} action={undefined} actions={undefined} children={undefined} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-gradient-to-br from-blue-50 to-white">
@@ -135,8 +131,8 @@ function ResearchOutputsHub() {
                     <div className="flex items-center gap-3">
                       <Badge className={
                         pat.status === 'granted' ? 'bg-green-100 text-green-700' :
-                        pat.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-slate-100 text-slate-700'
+                          pat.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-slate-100 text-slate-700'
                       }>
                         {pat.status}
                       </Badge>

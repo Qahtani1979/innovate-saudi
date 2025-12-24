@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -11,22 +9,24 @@ import { createPageUrl } from '../utils';
 import { Lightbulb, ThumbsUp, MapPin, Search } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useCitizenIdeas } from '@/hooks/useCitizenIdeas';
+import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
 
 function MunicipalityIdeasView() {
   const { language, isRTL, t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const { user } = useAuth();
 
-  const { data: ideas = [], isLoading } = useQuery({
-    queryKey: ['municipality-ideas', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('citizen_ideas').select('*').order('created_at', { ascending: false }).limit(500);
-      return data || [];
-    },
-    enabled: !!user
+  // Get user's municipality
+  const { data: municipalities = [] } = useMunicipalitiesWithVisibility();
+  const myMunicipality = municipalities.find(m => m.contact_email === user?.email);
+
+  const { data: ideas = [], isLoading } = useCitizenIdeas({
+    municipalityId: myMunicipality?.id,
+    status: null // Fetch all statuses
   });
 
-  const filteredIdeas = ideas.filter(i => 
+  const filteredIdeas = ideas.filter(i =>
     i.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     i.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -106,8 +106,8 @@ function MunicipalityIdeasView() {
                       <Badge variant="outline" className="capitalize">{idea.category?.replace(/_/g, ' ')}</Badge>
                       <Badge className={
                         idea.status === 'converted_to_challenge' ? 'bg-purple-100 text-purple-700' :
-                        idea.status === 'approved' ? 'bg-green-100 text-green-700' :
-                        'bg-blue-100 text-blue-700'
+                          idea.status === 'approved' ? 'bg-green-100 text-green-700' :
+                            'bg-blue-100 text-blue-700'
                       }>
                         {idea.status?.replace(/_/g, ' ')}
                       </Badge>
@@ -115,14 +115,14 @@ function MunicipalityIdeasView() {
                   </div>
                   <div className="flex items-center gap-1 text-green-600">
                     <ThumbsUp className="h-4 w-4" />
-                    <span className="font-bold">{idea.vote_count || 0}</span>
+                    <span className="font-bold">{/** @type {any} */(idea).votes_count || 0}</span>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-slate-600 line-clamp-2">{idea.description}</p>
                 <div className="flex items-center gap-4 mt-3 text-xs text-slate-500">
-                  {idea.submitter_name && <span>By: {idea.submitter_name}</span>}
+                  {/** @type {any} */(idea).submitter_name && <span>By: {/** @type {any} */(idea).submitter_name}</span>}
                   {idea.municipality_id && (
                     <div className="flex items-center gap-1">
                       <MapPin className="h-3 w-3" />

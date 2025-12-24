@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,9 +11,12 @@ import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 
 function DecisionSimulator() {
   const { language, isRTL, t } = useLanguage();
+
   const [scenarios, setScenarios] = useState([
     { id: 1, name: 'Current State', budget_pilot: 40, budget_rd: 25, budget_program: 20, budget_scaling: 15 },
     { id: 2, name: 'Scenario A', budget_pilot: 30, budget_rd: 35, budget_program: 20, budget_scaling: 15 },
@@ -24,15 +25,8 @@ function DecisionSimulator() {
   const [predictions, setPredictions] = useState({});
   const { invokeAI, status: aiStatus, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
+  const { data: pilots = [] } = usePilotsWithVisibility();
+  const { data: challenges = [] } = useChallengesWithVisibility();
 
   const updateScenario = (id, field, value) => {
     setScenarios(scenarios.map(s => s.id === id ? { ...s, [field]: parseFloat(value) || 0 } : s));
@@ -44,8 +38,8 @@ function DecisionSimulator() {
       return;
     }
     const newId = Math.max(...scenarios.map(s => s.id)) + 1;
-    setScenarios([...scenarios, { 
-      id: newId, 
+    setScenarios([...scenarios, {
+      id: newId,
       name: `Scenario ${String.fromCharCode(64 + scenarios.length)}`,
       budget_pilot: 33,
       budget_rd: 33,
@@ -85,6 +79,7 @@ function DecisionSimulator() {
     const scenarioPromises = scenarios.map(async (scenario) => {
       const result = await invokeAI({
         prompt: DECISION_SCENARIO_PROMPT_TEMPLATE(scenario, historicalData),
+        system_prompt: 'You are an expert strategic analyst.',
         response_json_schema: DECISION_SCENARIO_RESPONSE_SCHEMA
       });
 
@@ -147,7 +142,7 @@ function DecisionSimulator() {
         </div>
       </div>
 
-      <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} />
+      <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} error={undefined} />
 
       {/* Scenario Builder */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -231,8 +226,8 @@ function DecisionSimulator() {
                   </div>
                   <Badge className={
                     predictions[scenario.id].risk_level === 'low' ? 'bg-green-100 text-green-700' :
-                    predictions[scenario.id].risk_level === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-red-100 text-red-700'
+                      predictions[scenario.id].risk_level === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-red-100 text-red-700'
                   }>
                     {t({ en: 'Risk:', ar: 'المخاطر:' })} {predictions[scenario.id].risk_level}
                   </Badge>

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,10 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Loader2, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
-import { 
-  generatePricingAnalysisPrompt, 
+import { useSimilarSolutions } from '@/hooks/useSolutions';
+import {
+  generatePricingAnalysisPrompt,
   getPricingAnalysisSchema,
-  getPricingSystemPrompt 
+  getPricingSystemPrompt
 } from '@/lib/ai/prompts/solution';
 
 export default function AIPricingSuggester({ solution, onPricingComplete }) {
@@ -18,17 +18,14 @@ export default function AIPricingSuggester({ solution, onPricingComplete }) {
   const [pricingData, setPricingData] = useState(null);
   const { invokeAI, status, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
+  const { data: similarSolutions = [] } = useSimilarSolutions({
+    solutionId: solution?.id,
+    sectors: solution?.sectors || [],
+    limit: 10
+  });
+
   const handleAnalyzePricing = async () => {
     try {
-      // Find similar solutions for pricing comparison
-      const { data: solutions = [] } = await supabase.from('solutions').select('*');
-      const similarSolutions = (solutions || [])
-        .filter(s => 
-          s.id !== solution?.id && 
-          s.pricing_model && 
-          s.sectors?.some(sec => solution?.sectors?.includes(sec))
-        )
-        .slice(0, 10);
 
       const response = await invokeAI({
         prompt: generatePricingAnalysisPrompt(solution, similarSolutions),
@@ -38,7 +35,7 @@ export default function AIPricingSuggester({ solution, onPricingComplete }) {
 
       if (response.success) {
         setPricingData(response.data);
-        
+
         if (onPricingComplete) {
           onPricingComplete(response.data);
         }

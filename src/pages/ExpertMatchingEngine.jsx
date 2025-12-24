@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useExperts, useAllExpertAssignments } from '@/hooks/useExpertData';
+import { useMatchingEntities } from '@/hooks/useMatchingEntities';
+import { useExpertAssignmentMutations } from '@/hooks/useExpertAssignmentMutations';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -48,161 +50,62 @@ function ExpertMatchingEnginePage() {
   const [assignmentNotes, setAssignmentNotes] = useState('');
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-  const { invokeAI, isLoading: matching, status, error, rateLimitInfo } = useAIWithFallback();
+  const { invokeAI, isLoading: matching, status, error: aiError, rateLimitInfo } = useAIWithFallback();
   const { user: currentUser } = useAuth();
+  const { assignExperts } = useExpertAssignmentMutations();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false).order('created_at', { ascending: false }).limit(100);
-      return data || [];
-    }
-  });
+  const {
+    useChallenges, usePilots, useSolutions, useRDProposals,
+    useRDProjects, useProgramApplications, useMatchmakerApplications,
+    useScalingPlans, useEvents
+  } = useMatchingEntities();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*').eq('is_deleted', false).order('created_at', { ascending: false }).limit(100);
-      return data || [];
-    }
-  });
+  const { data: challenges = [] } = useChallenges();
+  const { data: pilots = [] } = usePilots();
+  const { data: solutions = [] } = useSolutions();
+  const { data: rdProposals = [] } = useRDProposals();
+  const { data: rdProjects = [] } = useRDProjects();
+  const { data: programApps = [] } = useProgramApplications();
+  const { data: matchmakerApps = [] } = useMatchmakerApplications();
+  const { data: scalingPlans = [] } = useScalingPlans();
+  const { data: events = [] } = useEvents();
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('solutions')
-        .select('*')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false })
-        .limit(100);
-      return data || [];
-    }
-  });
+  const { data: experts = [] } = useExperts();
+  const { data: existingAssignments = [] } = useAllExpertAssignments();
 
-  const { data: rdProposals = [] } = useQuery({
-    queryKey: ['rd-proposals'],
-    queryFn: async () => {
-      const { data } = await supabase.from('rd_proposals').select('*').order('created_at', { ascending: false }).limit(100);
-      return data || [];
-    }
-  });
+  const handleAssign = () => {
+    const assignments = selectedExperts.map(email => ({
+      expert_email: email,
+      entity_type: entityType,
+      entity_id: selectedEntityId,
+      assignment_type: 'evaluator',
+      assigned_date: new Date().toISOString(),
+      assigned_by: currentUser?.email || '',
+      due_date: dueDate || undefined,
+      hours_estimated: hoursEstimated,
+      compensation: compensation || undefined,
+      notes: assignmentNotes || undefined,
+      status: 'pending'
+    }));
 
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects'],
-    queryFn: async () => {
-      const { data } = await supabase.from('rd_projects').select('*').order('created_at', { ascending: false }).limit(100);
-      return data || [];
-    }
-  });
-
-  const { data: programApps = [] } = useQuery({
-    queryKey: ['program-apps'],
-    queryFn: async () => {
-      const { data } = await supabase.from('program_applications').select('*').order('created_at', { ascending: false }).limit(100);
-      return data || [];
-    }
-  });
-
-  const { data: matchmakerApps = [] } = useQuery({
-    queryKey: ['matchmaker-apps'],
-    queryFn: async () => {
-      const { data } = await supabase.from('matchmaker_applications').select('*').order('created_at', { ascending: false }).limit(100);
-      return data || [];
-    }
-  });
-
-  const { data: scalingPlans = [] } = useQuery({
-    queryKey: ['scaling-plans'],
-    queryFn: async () => {
-      const { data } = await supabase.from('scaling_plans').select('*').order('created_at', { ascending: false }).limit(100);
-      return data || [];
-    }
-  });
-
-  const { data: events = [] } = useQuery({
-    queryKey: ['events-for-matching'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('events')
-        .select('*')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false })
-        .limit(100);
-      return data || [];
-    }
-  });
-
-  const { data: experts = [] } = useQuery({
-    queryKey: ['expert-profiles'],
-    queryFn: async () => {
-      const { data } = await supabase.from('expert_profiles').select('*');
-      return data || [];
-    }
-  });
-
-  const { data: existingAssignments = [] } = useQuery({
-    queryKey: ['all-expert-assignments'],
-    queryFn: async () => {
-      const { data } = await supabase.from('expert_assignments').select('*');
-      return data || [];
-    }
-  });
-
-  const assignMutation = useMutation({
-    mutationFn: async (expertEmails) => {
-      const assignments = expertEmails.map(email => ({
-        expert_email: email,
-        entity_type: entityType,
-        entity_id: selectedEntityId,
-        assignment_type: 'evaluator',
-        assigned_date: new Date().toISOString(),
-        assigned_by: currentUser?.email || '',
-        due_date: dueDate || undefined,
-        hours_estimated: hoursEstimated,
-        compensation: compensation || undefined,
-        notes: assignmentNotes || undefined,
-        status: 'pending'
-      }));
-
-      const created = await Promise.all(assignments.map(a => base44.entities.ExpertAssignment.create(a)));
-
-      // Send notifications via email-trigger-hub
-      const { supabase } = await import('@/integrations/supabase/client');
-      for (const email of expertEmails) {
-        try {
-          await supabase.functions.invoke('email-trigger-hub', {
-            body: {
-              trigger: 'evaluation.assigned',
-              recipient_email: email,
-              entity_type: entityType,
-              entity_id: selectedEntityId,
-              variables: {
-                entityType: entityType.replace(/_/g, ' '),
-                dueDate: dueDate || 'Not specified',
-                notes: assignmentNotes || ''
-              },
-              triggered_by: 'system'
-            }
-          });
-        } catch (error) {
-          console.error('Failed to send notification to', email, error);
-        }
+    assignExperts.mutate({
+      assignments,
+      expertEmails: selectedExperts,
+      entityType,
+      selectedEntityId,
+      assignmentNotes,
+      dueDate
+    }, {
+      onSuccess: () => {
+        setSelectedExperts([]);
+        setMatches([]);
+        setDueDate('');
+        setHoursEstimated(10);
+        setCompensation(0);
+        setAssignmentNotes('');
       }
-
-      return created;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['expert-assignments']);
-      toast.success(t({ en: 'Experts assigned and notified', ar: 'تم تعيين وإخطار الخبراء' }));
-      setSelectedExperts([]);
-      setMatches([]);
-      setDueDate('');
-      setHoursEstimated(10);
-      setCompensation(0);
-      setAssignmentNotes('');
-    }
-  });
+    });
+  };
 
   const findMatches = async () => {
     if (!selectedEntityId) {
@@ -254,7 +157,7 @@ function ExpertMatchingEnginePage() {
         const expertData = experts.find(e => e.user_email === m.expert_email);
         const currentWorkload = expertWorkload[m.expert_email] || 0;
         const availableHours = Math.max(0, (expertData?.availability_hours_per_month || 20) - currentWorkload);
-        
+
         return {
           ...expertData,
           match_score: m.match_score,
@@ -292,12 +195,15 @@ function ExpertMatchingEnginePage() {
     <PageLayout>
       <PageHeader
         icon={Zap}
-        title={t({ en: 'Expert Matching Engine', ar: 'محرك مطابقة الخبراء' })}
-        description={t({ en: 'AI-powered expert assignment with workload balancing', ar: 'تعيين الخبراء بالذكاء الاصطناعي مع توازن الأعباء' })}
+        title={{ en: 'Expert Matching Engine', ar: 'محرك مطابقة الخبراء' }} // Fixed title format
+        subtitle={null}
+        description={{ en: 'AI-powered expert assignment with workload balancing', ar: 'تعيين الخبراء بالذكاء الاصطناعي مع توازن الأعباء' }}
         stats={[
           { icon: Users, value: experts.filter(e => e.is_verified).length, label: t({ en: 'Verified Experts', ar: 'خبراء موثقين' }) },
           { icon: Target, value: matches.length, label: t({ en: 'Matches Found', ar: 'مطابقات' }) },
         ]}
+        action={null}
+        children={null}
       />
 
       {/* Selection Panel */}
@@ -430,11 +336,10 @@ function ExpertMatchingEnginePage() {
           </CardHeader>
           <CardContent className="space-y-3">
             {matches.map((expert) => (
-              <div key={expert.id} className={`p-4 border-2 rounded-lg transition-all ${
-                expert.potential_conflict ? 'border-red-300 bg-red-50' :
+              <div key={expert.id} className={`p-4 border-2 rounded-lg transition-all ${expert.potential_conflict ? 'border-red-300 bg-red-50' :
                 !expert.availability_ok ? 'border-amber-300 bg-amber-50' :
-                'border-slate-200 hover:border-purple-300'
-              }`}>
+                  'border-slate-200 hover:border-purple-300'
+                }`}>
                 <div className="flex items-start gap-4">
                   <Avatar className="h-12 w-12">
                     <AvatarFallback className="bg-purple-100 text-purple-700">
@@ -524,11 +429,11 @@ function ExpertMatchingEnginePage() {
                   </span>
                 </div>
                 <Button
-                  onClick={() => assignMutation.mutate(selectedExperts)}
-                  disabled={assignMutation.isPending || !dueDate}
+                  onClick={handleAssign}
+                  disabled={assignExperts.isPending || !dueDate}
                   className="w-full bg-gradient-to-r from-green-600 to-teal-600"
                 >
-                  {assignMutation.isPending ? (
+                  {assignExperts.isPending ? (
                     <Loader2 className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'} animate-spin`} />
                   ) : (
                     <Send className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />

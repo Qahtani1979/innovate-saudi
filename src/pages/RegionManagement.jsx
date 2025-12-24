@@ -1,59 +1,43 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { MapPin, Plus, Edit2, Trash2, Save, X, Building2 } from 'lucide-react';
-import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useRegions, useCities } from '@/hooks/useRegions';
+import { useRegionMutations } from '@/hooks/useRegionMutations';
 
 function RegionManagement() {
   const { language, isRTL, t } = useLanguage();
   const [editingRegion, setEditingRegion] = useState(null);
   const [newRegion, setNewRegion] = useState(null);
-  const queryClient = useQueryClient();
 
-  const { data: regions = [] } = useQuery({
-    queryKey: ['regions'],
-    queryFn: () => base44.entities.Region.list()
-  });
-
-  const { data: cities = [] } = useQuery({
-    queryKey: ['cities'],
-    queryFn: () => base44.entities.City.list()
-  });
-
-  const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Region.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['regions']);
-      setNewRegion(null);
-      toast.success(t({ en: 'Region created', ar: 'تم إنشاء المنطقة' }));
-    }
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Region.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['regions']);
-      setEditingRegion(null);
-      toast.success(t({ en: 'Region updated', ar: 'تم تحديث المنطقة' }));
-    }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Region.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['regions']);
-      toast.success(t({ en: 'Region deleted', ar: 'تم حذف المنطقة' }));
-    }
-  });
+  const { data: regions = [] } = useRegions();
+  const { data: cities = [] } = useCities();
+  const { createRegion, updateRegion, deleteRegion } = useRegionMutations();
 
   const getCityCount = (regionId) => {
     return cities.filter(c => c.region_id === regionId).length;
+  };
+
+  const handleCreate = () => {
+    createRegion.mutate(newRegion, {
+      onSuccess: () => setNewRegion(null),
+    });
+  };
+
+  const handleUpdate = (id) => {
+    updateRegion.mutate({ id, data: editingRegion }, {
+      onSuccess: () => setEditingRegion(null),
+    });
+  };
+
+  const handleDelete = (id) => {
+    if (window.confirm(t({ en: 'Are you sure you want to delete this region?', ar: 'هل أنت متأكد من حذف هذه المنطقة؟' }))) {
+      deleteRegion.mutate(id);
+    }
   };
 
   return (
@@ -140,7 +124,7 @@ function RegionManagement() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button onClick={() => createMutation.mutate(newRegion)} disabled={!newRegion.name_en || !newRegion.code}>
+              <Button onClick={handleCreate} disabled={!newRegion.name_en || !newRegion.code || createRegion.isPending}>
                 <Save className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                 {t({ en: 'Create', ar: 'إنشاء' })}
               </Button>
@@ -166,9 +150,8 @@ function RegionManagement() {
               const cityCount = getCityCount(region.id);
 
               return (
-                <div key={region.id} className={`p-4 border-2 rounded-lg transition-all ${
-                  isEditing ? 'border-blue-500 bg-blue-50' : 'border-slate-200'
-                }`}>
+                <div key={region.id} className={`p-4 border-2 rounded-lg transition-all ${isEditing ? 'border-blue-500 bg-blue-50' : 'border-slate-200'
+                  }`}>
                   {isEditing ? (
                     <div className="space-y-3">
                       <Input
@@ -188,7 +171,7 @@ function RegionManagement() {
                         placeholder="Code"
                       />
                       <div className="flex gap-2">
-                        <Button size="sm" onClick={() => updateMutation.mutate({ id: region.id, data: editingRegion })}>
+                        <Button size="sm" onClick={() => handleUpdate(region.id)} disabled={updateRegion.isPending}>
                           <Save className="h-3 w-3" />
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => setEditingRegion(null)}>
@@ -204,7 +187,7 @@ function RegionManagement() {
                           <Button variant="outline" size="sm" onClick={() => setEditingRegion(region)}>
                             <Edit2 className="h-3 w-3" />
                           </Button>
-                          <Button variant="outline" size="sm" onClick={() => deleteMutation.mutate(region.id)}>
+                          <Button variant="outline" size="sm" onClick={() => handleDelete(region.id)} disabled={deleteRegion.isPending}>
                             <Trash2 className="h-3 w-3 text-red-600" />
                           </Button>
                         </div>

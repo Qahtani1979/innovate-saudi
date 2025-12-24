@@ -1,61 +1,29 @@
-import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../LanguageContext';
-import { Award, TrendingUp, DollarSign, ThumbsUp } from 'lucide-react';
+import { Award, TrendingUp, DollarSign, ThumbsUp, Loader2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useProviderPerformanceStats } from '@/hooks/useSolutionAnalytics';
 
 export default function ProviderPerformanceDashboard({ providerId }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['provider-solutions', providerId],
-    queryFn: async () => {
-      const { data } = await supabase.from('solutions').select('*').eq('provider_id', providerId);
-      return data || [];
-    }
-  });
+  const { data: stats, isLoading } = useProviderPerformanceStats(providerId);
 
-  const solutionIds = solutions.map(s => s.id);
+  if (isLoading) {
+    return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['provider-pilots', providerId, solutionIds],
-    queryFn: async () => {
-      if (solutionIds.length === 0) return [];
-      const { data } = await supabase.from('pilots').select('*').in('solution_id', solutionIds);
-      return data || [];
-    },
-    enabled: solutionIds.length > 0
-  });
+  const { winRate, successRate, avgRating, totalDeployments, sectorData } = stats || {
+    winRate: 0,
+    successRate: 0,
+    avgRating: 0,
+    totalDeployments: 0,
+    sectorData: []
+  };
 
-  const { data: matches = [] } = useQuery({
-    queryKey: ['solution-matches', providerId, solutionIds],
-    queryFn: async () => {
-      if (solutionIds.length === 0) return [];
-      const { data } = await supabase.from('challenge_solution_matches').select('*').in('solution_id', solutionIds);
-      return data || [];
-    },
-    enabled: solutionIds.length > 0
-  });
-
-  const winRate = matches.length > 0 ? (pilots.length / matches.length) * 100 : 0;
-  const successRate = pilots.length > 0 
-    ? (pilots.filter(p => p.recommendation === 'scale').length / pilots.filter(p => p.stage === 'completed' || p.stage === 'scaled').length) * 100 
-    : 0;
-  const avgRating = solutions.reduce((sum, s) => sum + (s.ratings?.average || 0), 0) / Math.max(solutions.length, 1);
-  const totalDeployments = solutions.reduce((sum, s) => sum + (s.deployment_count || 0), 0);
-
-  const sectorData = solutions.reduce((acc, s) => {
-    s.sectors?.forEach(sector => {
-      acc[sector] = (acc[sector] || 0) + 1;
-    });
-    return acc;
-  }, {});
-
-  const chartData = Object.entries(sectorData).map(([sector, count]) => ({
-    sector: sector.replace(/_/g, ' '),
-    count
-  }));
+  // chartData is just sectorData from the hook
+  const chartData = sectorData;
 
   return (
     <div className="space-y-4">

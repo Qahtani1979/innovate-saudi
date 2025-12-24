@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useMentorDashboardData } from '@/hooks/useMentorDashboardData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,67 +18,7 @@ export default function MentorDashboard() {
   const { user } = useAuth();
   const [selectedProgram, setSelectedProgram] = useState(null);
 
-  const { data: assignments = [] } = useQuery({
-    queryKey: ['mentor-assignments', user?.email],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('expert_assignments')
-        .select('*')
-        .eq('expert_email', user?.email)
-        .eq('task_type', 'mentorship') // Fixed from assignment_type
-        .neq('status', 'declined');
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
-
-  const { data: programs = [] } = useQuery({
-    queryKey: ['mentor-programs', assignments],
-    queryFn: async () => {
-      const programIds = [...new Set(assignments.map(a => a.entity_id || a.task_id))];
-      if (programIds.length === 0) return [];
-
-      const { data, error } = await supabase
-        .from('programs')
-        .select('*')
-        .in('id', programIds)
-        .eq('is_deleted', false);
-
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: assignments.length > 0
-  });
-
-  const { data: mentorships = [] } = useQuery({
-    queryKey: ['mentorships', user?.email],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('mentorship_sessions')
-        .select('*')
-        .eq('mentor_email', user?.email);
-
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
-
-  const { data: evaluations = [] } = useQuery({
-    queryKey: ['mentor-evaluations', user?.email],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('expert_evaluations')
-        .select('*')
-        .eq('evaluator_email', user?.email)
-        .eq('entity_type', 'program_application');
-
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
+  const { assignments, programs, mentorships, evaluations } = useMentorDashboardData(user?.email);
 
   const totalHours = mentorships.reduce((sum, m) => sum + (m.duration_minutes || 0), 0) / 60;
   const upcomingSessions = mentorships.filter(m => m.status === 'scheduled').length;

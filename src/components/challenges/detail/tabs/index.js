@@ -16,3 +16,8 @@ export { default as ChallengeProposalsTab } from './ChallengeProposalsTab';
 export { default as ChallengeKnowledgeTab } from './ChallengeKnowledgeTab';
 export { default as ChallengeExpertsTab } from './ChallengeExpertsTab';
 export { default as ChallengeImpactTab } from './ChallengeImpactTab';
+export { default as ChallengeHistoryTab } from './ChallengeHistoryTab';
+export { default as ChallengeEventsTab } from './ChallengeEventsTab';
+export { default as ChallengePolicyTab } from './ChallengePolicyTab';
+export { default as ChallengeTeamTab } from './ChallengeTeamTab';
+export { default as ChallengeDependenciesTab } from './ChallengeDependenciesTab';

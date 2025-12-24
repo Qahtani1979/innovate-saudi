@@ -1,5 +1,5 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useTeamsWithVisibility } from '@/hooks/useTeamsWithVisibility';
+import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -10,30 +10,15 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 function TeamPerformance() {
   const { t } = useLanguage();
 
-  const { data: teams = [], isLoading: teamsLoading } = useQuery({
-    queryKey: ['teams'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('teams').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: members = [], isLoading: membersLoading } = useQuery({
-    queryKey: ['team-members'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('team_members').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: teams = [], isLoading: teamsLoading } = useTeamsWithVisibility({ includeMembers: false });
+  const { data: members = [], isLoading: membersLoading } = useTeamMembers();
 
   const activeTeams = teams.filter(t => t.status === 'active');
 
   const teamPerformance = teams.map(team => {
     const teamMembers = members.filter(m => m.team_id === team.id);
     const activeMembers = teamMembers.filter(m => m.status === 'active');
-    
+
     return {
       name: team.name?.substring(0, 20) || 'Team',
       members: activeMembers.length,
@@ -129,7 +114,7 @@ function TeamPerformance() {
             {teams.slice(0, 10).map(team => {
               const teamMembers = members.filter(m => m.team_id === team.id && m.status === 'active');
               const utilization = team.capacity ? (teamMembers.length / team.capacity * 100).toFixed(0) : 0;
-              
+
               return (
                 <div key={team.id} className="p-4 border rounded-lg">
                   <div className="flex items-center justify-between mb-3">

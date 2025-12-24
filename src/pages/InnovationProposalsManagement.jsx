@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { toast } from 'sonner';
 import {
   Lightbulb, Search, CheckCircle2, XCircle, Eye, Loader2
 } from 'lucide-react';
@@ -23,6 +21,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useInnovationProposalsWithVisibility } from '../hooks/useInnovationProposalsWithVisibility';
+import { useInnovationProposalMutations } from '../hooks/useInnovationProposalMutations';
 
 function InnovationProposalsManagement() {
   const { language, isRTL, t } = useLanguage();
@@ -30,42 +30,19 @@ function InnovationProposalsManagement() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const { user } = useAuth();
-  const queryClient = useQueryClient();
 
-  const { data: proposals = [], isLoading, error: proposalsError } = useQuery({
-    queryKey: ['innovation-proposals'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('innovation_proposals').select('*').order('created_at', { ascending: false }).limit(200);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user,
-    staleTime: 5 * 60 * 1000
+  const { data: proposals = [], isLoading, error: proposalsError } = useInnovationProposalsWithVisibility({
+    limit: 200
   });
 
-  const updateProposalMutation = useMutation({
-    mutationFn: async ({ id, data }) => {
-      const { error } = await supabase.from('innovation_proposals').update(data).eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['innovation-proposals']);
-      toast.success(t({ en: 'Proposal updated', ar: 'تم التحديث' }));
-    }
-  });
+  const { updateProposal, approveProposal, rejectProposal } = useInnovationProposalMutations();
 
   const handleApprove = async (proposal) => {
-    await updateProposalMutation.mutateAsync({
-      id: proposal.id,
-      data: { status: 'approved' }
-    });
+    approveProposal.mutate(proposal.id);
   };
 
   const handleReject = async (proposal) => {
-    await updateProposalMutation.mutateAsync({
-      id: proposal.id,
-      data: { status: 'rejected' }
-    });
+    rejectProposal.mutate(proposal.id);
   };
 
   const filteredProposals = proposals.filter(p => {

@@ -1,5 +1,6 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { usePrograms } from '@/hooks/usePrograms';
+import { useRDCallsWithVisibility } from '@/hooks/useRDCallsWithVisibility';
+import { useRDCallMutations } from '@/hooks/useRDCallMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,20 +11,14 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 function ProgramRDApprovalGates() {
   const { language, t } = useLanguage();
 
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs-pending-approval'],
-    queryFn: async () => {
-      const all = await base44.entities.Program.list();
-      return all.filter(p => p.approval_status === 'pending' || !p.approval_status);
-    }
+  const { programs, approveProgram, rejectProgram } = usePrograms({
+    filters: { approval_status: 'pending' }
   });
 
-  const { data: rdCalls = [] } = useQuery({
-    queryKey: ['rd-calls-pending-approval'],
-    queryFn: async () => {
-      const all = await base44.entities.RDCall.list();
-      return all.filter(c => c.approval_status === 'pending' || !c.approval_status);
-    }
+  const { approveRDCall, rejectRDCall, isApproving: isApprovingRD, isRejecting: isRejectingRD } = useRDCallMutations();
+
+  const { data: rdCalls = [] } = useRDCallsWithVisibility({
+    approvalStatus: 'pending'
   });
 
   return (
@@ -62,11 +57,19 @@ function ProgramRDApprovalGates() {
                   <p className="text-sm text-slate-600 mt-1">Budget: SAR {(program.funding_details?.total_pool || 0) / 1000000}M</p>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" className="bg-green-600">
+                  <Button
+                    size="sm"
+                    className="bg-green-600"
+                    onClick={() => approveProgram(program.id)}
+                  >
                     <CheckCircle className="h-4 w-4 mr-1" />
                     {t({ en: 'Approve', ar: 'موافقة' })}
                   </Button>
-                  <Button size="sm" variant="outline">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => rejectProgram(program.id)}
+                  >
                     {t({ en: 'Reject', ar: 'رفض' })}
                   </Button>
                 </div>
@@ -82,11 +85,21 @@ function ProgramRDApprovalGates() {
                   <p className="text-sm text-slate-600 mt-1">Budget: SAR {(call.budget_total || 0) / 1000000}M</p>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" className="bg-green-600">
+                  <Button
+                    size="sm"
+                    className="bg-green-600"
+                    onClick={() => approveRDCall(call.id)}
+                    disabled={isApprovingRD}
+                  >
                     <CheckCircle className="h-4 w-4 mr-1" />
                     {t({ en: 'Approve', ar: 'موافقة' })}
                   </Button>
-                  <Button size="sm" variant="outline">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => rejectRDCall(call.id)}
+                    disabled={isRejectingRD}
+                  >
                     {t({ en: 'Reject', ar: 'رفض' })}
                   </Button>
                 </div>

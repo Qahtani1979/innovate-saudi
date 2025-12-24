@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +7,10 @@ import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
 import { ArrowLeft, ArrowRight, CheckCircle2, Plus, X } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+import { usePrograms, useSubmitProgramApplication } from '@/hooks/usePrograms';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
 
 export default function ProgramApplicationWizard() {
   const { language, isRTL, t } = useLanguage();
@@ -21,26 +23,15 @@ export default function ProgramApplicationWizard() {
     team_members: [{ name: '', role: '', email: '' }]
   });
 
-  const { data: programs = [] } = useQuery({
-    queryKey: ['open-programs'],
-    queryFn: async () => {
-      const all = await base44.entities.Program.list();
-      return all.filter(p => p.status === 'open');
-    }
-  });
+  const { programs } = usePrograms({ filters: { status: 'open' } });
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
+  // Or filter here if status 'open' isn't exact match to 'applications_open'
+  const openPrograms = (programs || []).filter(p => p.status === 'applications_open' || p.status === 'active' || p.status === 'open');
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions'],
-    queryFn: () => base44.entities.Solution.list()
-  });
+  const { data: challenges = [] } = useChallengesWithVisibility({ publishedOnly: true });
+  const { data: solutions = [] } = useSolutionsWithVisibility({ publishedOnly: true });
 
-  const submitMutation = useMutation({
-    mutationFn: (data) => base44.entities.ProgramApplication.create(data),
+  const { mutate: submitApplication } = useSubmitProgramApplication({
     onSuccess: () => setStep(4)
   });
 
@@ -65,7 +56,7 @@ export default function ProgramApplicationWizard() {
   };
 
   const handleSubmit = () => {
-    submitMutation.mutate({ ...formData, status: 'submitted' });
+    submitApplication({ ...formData, status: 'submitted' });
   };
 
   const progress = (step / 4) * 100;

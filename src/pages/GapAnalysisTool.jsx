@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,36 +10,22 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { GAP_ANALYSIS_PROMPT_TEMPLATE, GAP_ANALYSIS_SCHEMA } from '@/lib/ai/prompts/gaps/analysisEngine';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
+import { useSectors } from '@/hooks/useSectors';
+import { useRDProjectsWithVisibility } from '@/hooks/useRDProjectsWithVisibility';
 
 function GapAnalysisTool() {
   const { language, isRTL, t } = useLanguage();
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const { invokeAI, status, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions'],
-    queryFn: () => base44.entities.Solution.list()
-  });
-
-  const { data: sectors = [] } = useQuery({
-    queryKey: ['sectors'],
-    queryFn: () => base44.entities.Sector.list()
-  });
-
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects'],
-    queryFn: () => base44.entities.RDProject.list()
-  });
+  const { data: challenges = [] } = useChallengesWithVisibility();
+  const { data: pilots = [] } = usePilotsWithVisibility();
+  const { data: solutions = [] } = useSolutionsWithVisibility();
+  const { data: sectors = [] } = useSectors();
+  const { data: rdProjects = [] } = useRDProjectsWithVisibility();
 
   const runGapAnalysis = async () => {
     const sectorData = sectors.map(s => ({
@@ -144,7 +128,7 @@ function GapAnalysisTool() {
                 {t({ en: 'AI Gap Analysis', ar: 'تحليل الفجوات بالذكاء الاصطناعي' })}
               </p>
               <p className="text-sm text-slate-600">
-                {t({ 
+                {t({
                   en: 'Comprehensive analysis of portfolio gaps, underserved sectors, and strategic opportunities',
                   ar: 'تحليل شامل لفجوات المحفظة والقطاعات غير المخدومة والفرص الاستراتيجية'
                 })}

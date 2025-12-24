@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useRDProposal } from '@/hooks/useRDProposal';
+import { useRDProposalComments, useAddRDProposalComment } from '@/hooks/useRDProposalComments';
+import { useRDCallsWithVisibility } from '@/hooks/useRDCallsWithVisibility';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,7 +27,8 @@ import {
   Eye,
   MessageSquare,
   Loader2,
-  X
+  X,
+  Activity
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ProposalSubmissionWizard from '../components/ProposalSubmissionWizard';
@@ -35,7 +38,7 @@ import ProposalFeedbackWorkflow from '../components/ProposalFeedbackWorkflow';
 import CollaborativeReviewPanel from '../components/CollaborativeReviewPanel';
 import CrossEntityRecommender from '../components/CrossEntityRecommender';
 import { Textarea } from "@/components/ui/textarea";
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import RDProposalActivityLog from '../components/rd/RDProposalActivityLog';
 import RDProposalAIScorerWidget from '../components/rd/RDProposalAIScorerWidget';
@@ -58,61 +61,18 @@ function RDProposalDetail() {
   const [comment, setComment] = useState('');
   const { user } = useAuth();
   const { invokeAI, status, isLoading: aiLoading, rateLimitInfo, isAvailable } = useAIWithFallback();
-  const queryClient = useQueryClient();
 
-  const { data: proposal, isLoading } = useQuery({
-    queryKey: ['rd-proposal', proposalId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_proposals')
-        .select('*')
-        .eq('id', proposalId)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!proposalId
-  });
 
-  const { data: rdCall } = useQuery({
-    queryKey: ['rd-call', proposal?.rd_call_id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_calls')
-        .select('*')
-        .eq('id', proposal?.rd_call_id)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!proposal?.rd_call_id
-  });
+  const {
+    data: proposal,
+    isLoading
+  } = useRDProposal(proposalId);
 
-  const { data: comments = [] } = useQuery({
-    queryKey: ['rdproposal-comments', proposalId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('comments')
-        .select('*')
-        .eq('entity_type', 'rd_proposal')
-        .eq('entity_id', proposalId);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!proposalId
-  });
+  const { mutate: postComment, isPending: isAddingComment } = useAddRDProposalComment();
 
-  const commentMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase.from('comments').insert(data);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['rdproposal-comments'] });
-      setComment('');
-      toast.success(t({ en: 'Comment added', ar: 'تم إضافة التعليق' }));
-    }
-  });
+  const { data: rdCalls = [] } = useRDCallsWithVisibility({ limit: 1000 });
+  const rdCall = rdCalls.find(c => c.id === proposal?.rd_call_id);
+  const { data: comments = [] } = useRDProposalComments(proposalId);
 
   if (isLoading || !proposal) {
     return (
@@ -146,25 +106,10 @@ function RDProposalDetail() {
   const handleAIInsights = async () => {
     setShowAIInsights(true);
     const result = await invokeAI({
+      system_prompt: "You are a strategic R&D analyst specializing in Saudi municipal innovation and Vision 2030 alignment. Provide highly technical yet accessible insights on research proposals, focusing on feasibility, impact, and scaling potential.",
       prompt: `Analyze this research proposal for Saudi municipal innovation R&D and provide strategic insights in BOTH English AND Arabic:
-
-Proposal: ${proposal.title_en}
-Lead Institution: ${proposal.lead_institution}
-Research Area: ${proposal.research_area}
-Status: ${proposal.status}
-TRL Start: ${proposal.trl_start}
-TRL Target: ${proposal.trl_target}
-Budget: ${proposal.requested_budget || 'N/A'} SAR
-Duration: ${proposal.duration_months} months
-AI Score: ${proposal.ai_score || 'N/A'}
-R&D Call: ${rdCall?.title_en || 'N/A'}
-
-Provide bilingual insights (each item should have both English and Arabic versions):
-1. Proposal strengths and competitive advantages
-2. Areas requiring clarification or improvement
-3. Alignment with Saudi Vision 2030 and municipal needs
-4. Commercialization and pilot transition potential
-5. Risk factors and mitigation recommendations`,
+... (trimmed) ...
+ Risk factors and mitigation recommendations`,
       response_json_schema: {
         type: 'object',
         properties: {
@@ -174,7 +119,8 @@ Provide bilingual insights (each item should have both English and Arabic versio
           pilot_potential: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
           risk_mitigation: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
         }
-      }
+      },
+      system_prompt: "You are an expert R&D consultant providing strategic insights on research proposals."
     });
 
     if (result.success) {
@@ -231,10 +177,10 @@ Provide bilingual insights (each item should have both English and Arabic versio
                   <StatusIcon className="h-3 w-3" />
                   {proposal.status?.replace(/_/g, ' ')}
                 </Badge>
-                {proposal.ai_score && (
+                {proposal?.['ai_score'] && (
                   <Badge variant="outline" className="bg-white/20 text-white border-white/40">
                     <Sparkles className="h-3 w-3 mr-1" />
-                    AI Score: {proposal.ai_score}
+                    AI Score: {proposal?.['ai_score']}
                   </Badge>
                 )}
                 {rdCall && (
@@ -244,20 +190,20 @@ Provide bilingual insights (each item should have both English and Arabic versio
                 )}
               </div>
               <h1 className="text-5xl font-bold mb-2">
-                {language === 'ar' && proposal.title_ar ? proposal.title_ar : proposal.title_en}
+                {language === 'ar' && proposal?.['title_ar'] ? proposal?.['title_ar'] : (proposal?.['title_en'] || proposal?.rd_project_id)}
               </h1>
-              <p className="text-xl text-white/90">{proposal.lead_institution}</p>
+              <p className="text-xl text-white/90">{proposal?.['lead_institution'] || proposal?.institution_name}</p>
               <div className="flex items-center gap-4 mt-4 text-sm">
-                {proposal.research_area && (
+                {proposal?.['research_area'] && (
                   <div className="flex items-center gap-1">
                     <Beaker className="h-4 w-4" />
-                    <span>{proposal.research_area}</span>
+                    <span>{proposal?.['research_area']}</span>
                   </div>
                 )}
-                {proposal.duration_months && (
+                {proposal?.['duration_months'] && (
                   <div className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
-                    <span>{proposal.duration_months} {t({ en: 'months', ar: 'شهر' })}</span>
+                    <span>{proposal?.['duration_months']} {t({ en: 'months', ar: 'شهر' })}</span>
                   </div>
                 )}
               </div>
@@ -272,15 +218,15 @@ Provide bilingual insights (each item should have both English and Arabic versio
                 <Button onClick={() => setShowSubmit(true)} className="bg-blue-600 hover:bg-blue-700">
                   <Send className="h-4 w-4 mr-2" />
                   {t({ en: 'Submit', ar: 'تقديم' })}
-                  </Button>
-                  )}
-                  {(proposal.status === 'under_review' || proposal.status === 'shortlisted') && (
-                  <Button disabled className="bg-yellow-600 opacity-70">
+                </Button>
+              )}
+              {(proposal.status === 'under_review' || proposal.status === 'shortlisted') && (
+                <Button disabled className="bg-yellow-600 opacity-70">
                   <Clock className="h-4 w-4 mr-2" />
                   {t({ en: 'Under Review', ar: 'قيد المراجعة' })}
-                  </Button>
-                  )}
-                  {proposal.status === 'submitted' && (
+                </Button>
+              )}
+              {proposal.status === 'submitted' && (
                 <>
                   <Button onClick={() => setShowEligibility(true)} variant="outline" className="bg-white/20 border-white/40 text-white hover:bg-white/30">
                     <CheckCircle2 className="h-4 w-4 mr-2" />
@@ -310,7 +256,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
                   {t({ en: 'Collaborative Review', ar: 'مراجعة تعاونية' })}
                 </Button>
               )}
-              {(proposal.status === 'rejected' || proposal.status === 'not_awarded') && !proposal.feedback_provided && (
+              {(proposal?.status === 'rejected' || proposal?.status === 'not_awarded') && !proposal?.['feedback_provided'] && (
                 <Button onClick={() => setShowFeedback(true)} className="bg-blue-600 hover:bg-blue-700">
                   <MessageSquare className="h-4 w-4 mr-2" />
                   {t({ en: 'Send Feedback', ar: 'إرسال ملاحظات' })}
@@ -320,7 +266,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
                 {aiLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
                 {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
               </Button>
-              <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+              <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={null} />
             </div>
           </div>
         </div>
@@ -419,7 +365,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
               <div>
                 <p className="text-sm text-slate-600">{t({ en: 'Budget', ar: 'الميزانية' })}</p>
                 <p className="text-2xl font-bold text-blue-600 mt-1">
-                  {proposal.requested_budget ? `${(proposal.requested_budget / 1000).toFixed(0)}K` : 'N/A'}
+                  {proposal?.['requested_budget'] ? `${(proposal?.['requested_budget'] / 1000).toFixed(0)}K` : 'N/A'}
                 </p>
               </div>
               <DollarSign className="h-8 w-8 text-blue-600" />
@@ -433,7 +379,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
               <div>
                 <p className="text-sm text-slate-600">{t({ en: 'TRL Target', ar: 'المستوى المستهدف' })}</p>
                 <p className="text-3xl font-bold text-green-600 mt-1">
-                  {proposal.trl_target || 'N/A'}
+                  {proposal?.['trl_target'] || 'N/A'}
                 </p>
               </div>
               <Target className="h-8 w-8 text-green-600" />
@@ -447,7 +393,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
               <div>
                 <p className="text-sm text-slate-600">{t({ en: 'Duration', ar: 'المدة' })}</p>
                 <p className="text-2xl font-bold text-purple-600 mt-1">
-                  {proposal.duration_months ? `${proposal.duration_months}m` : 'N/A'}
+                  {proposal?.['duration_months'] ? `${proposal?.['duration_months']}m` : 'N/A'}
                 </p>
               </div>
               <Calendar className="h-8 w-8 text-purple-600" />
@@ -461,7 +407,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
               <div>
                 <p className="text-sm text-slate-600">{t({ en: 'Team Size', ar: 'حجم الفريق' })}</p>
                 <p className="text-3xl font-bold text-amber-600 mt-1">
-                  {proposal.team_members?.length || 0}
+                  {proposal?.['team_members']?.length || 0}
                 </p>
               </div>
               <User className="h-8 w-8 text-amber-600" />
@@ -489,18 +435,18 @@ Provide bilingual insights (each item should have both English and Arabic versio
             <div>
               <p className="text-xs text-slate-500 mb-1">{t({ en: 'Principal Investigator', ar: 'الباحث الرئيسي' })}</p>
               <p className="text-sm">
-                {typeof proposal.principal_investigator === 'object' 
-                  ? (proposal.principal_investigator?.name || 'N/A')
-                  : (proposal.principal_investigator || 'N/A')}
+                {typeof proposal?.['principal_investigator'] === 'object'
+                  ? (proposal?.['principal_investigator']?.['name'] || 'N/A')
+                  : (proposal?.['principal_investigator'] || 'N/A')}
               </p>
             </div>
             <div>
               <p className="text-xs text-slate-500 mb-1">{t({ en: 'Contact', ar: 'التواصل' })}</p>
-              <p className="text-sm">{proposal.contact_email || 'N/A'}</p>
+              <p className="text-sm">{proposal?.['contact_email'] || 'N/A'}</p>
             </div>
             <div>
               <p className="text-xs text-slate-500 mb-1">{t({ en: 'Submitted', ar: 'تاريخ التقديم' })}</p>
-              <p className="text-sm">{proposal.created_date ? new Date(proposal.created_date).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US') : 'N/A'}</p>
+              <p className="text-sm">{proposal?.['created_date'] ? new Date(proposal?.['created_date']).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US') : 'N/A'}</p>
             </div>
           </CardContent>
         </Card>
@@ -528,7 +474,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
                 <MessageSquare className="h-4 w-4" />
                 <span className="text-xs">{t({ en: 'Discussion', ar: 'نقاش' })}</span>
               </TabsTrigger>
-              </TabsList>
+            </TabsList>
 
             <TabsContent value="abstract">
               <Card>
@@ -536,8 +482,8 @@ Provide bilingual insights (each item should have both English and Arabic versio
                   <CardTitle>{t({ en: 'Proposal Abstract', ar: 'ملخص المقترح' })}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap" dir={language === 'ar' && proposal.abstract_ar ? 'rtl' : 'ltr'}>
-                    {language === 'ar' && proposal.abstract_ar ? proposal.abstract_ar : (proposal.abstract_en || t({ en: 'No abstract provided', ar: 'لا يوجد ملخص' }))}
+                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap" dir={language === 'ar' && proposal?.['abstract_ar'] ? 'rtl' : 'ltr'}>
+                    {language === 'ar' && proposal?.['abstract_ar'] ? proposal?.['abstract_ar'] : (proposal?.['abstract_en'] || t({ en: 'No abstract provided', ar: 'لا يوجد ملخص' }))}
                   </p>
                 </CardContent>
               </Card>
@@ -549,27 +495,27 @@ Provide bilingual insights (each item should have both English and Arabic versio
                   <CardTitle>{t({ en: 'Research Methodology', ar: 'منهجية البحث' })}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap" dir={language === 'ar' && proposal.methodology_ar ? 'rtl' : 'ltr'}>
-                    {language === 'ar' && proposal.methodology_ar ? proposal.methodology_ar : (proposal.methodology_en || t({ en: 'No methodology details provided', ar: 'لا توجد تفاصيل المنهجية' }))}
+                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap" dir={language === 'ar' && proposal?.['methodology_ar'] ? 'rtl' : 'ltr'}>
+                    {language === 'ar' && proposal?.['methodology_ar'] ? proposal?.['methodology_ar'] : (proposal?.['methodology_en'] || t({ en: 'No methodology details provided', ar: 'لا توجد تفاصيل المنهجية' }))}
                   </p>
                 </CardContent>
               </Card>
 
-              {proposal.expected_outputs?.length > 0 && (
+              {proposal?.['expected_outputs']?.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle>{t({ en: 'Expected Outputs', ar: 'المخرجات المتوقعة' })}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {proposal.expected_outputs.map((output, idx) => (
+                      {(proposal?.['expected_outputs'] || []).map((output, idx) => (
                         <div key={idx} className="p-3 border rounded-lg">
                           <div className="flex items-center justify-between mb-1">
-                            <p className="font-medium text-sm">{output.output}</p>
-                            <Badge variant="outline" className="text-xs">{output.type}</Badge>
+                            <p className="font-medium text-sm">{output?.['output'] || output}</p>
+                            <Badge variant="outline" className="text-xs">{output?.['type'] || 'N/A'}</Badge>
                           </div>
-                          {output.target_date && (
-                            <p className="text-xs text-slate-500">{t({ en: 'Target', ar: 'الموعد المستهدف' })}: {output.target_date}</p>
+                          {output?.['target_date'] && (
+                            <p className="text-xs text-slate-500">{t({ en: 'Target', ar: 'الموعد المستهدف' })}: {output?.['target_date']}</p>
                           )}
                         </div>
                       ))}
@@ -578,25 +524,25 @@ Provide bilingual insights (each item should have both English and Arabic versio
                 </Card>
               )}
 
-              {(proposal.impact_statement || proposal.innovation_claim) && (
+              {(proposal?.['impact_statement'] || proposal?.['innovation_claim']) && (
                 <div className="grid grid-cols-2 gap-4">
-                  {proposal.impact_statement && (
+                  {proposal?.['impact_statement'] && (
                     <Card>
                       <CardHeader>
                         <CardTitle className="text-sm">{t({ en: 'Impact Statement', ar: 'بيان التأثير' })}</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <p className="text-sm text-slate-700">{proposal.impact_statement}</p>
+                        <p className="text-sm text-slate-700">{proposal?.['impact_statement']}</p>
                       </CardContent>
                     </Card>
                   )}
-                  {proposal.innovation_claim && (
+                  {proposal?.['innovation_claim'] && (
                     <Card>
                       <CardHeader>
                         <CardTitle className="text-sm">{t({ en: 'Innovation Claim', ar: 'ادعاء الابتكار' })}</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <p className="text-sm text-slate-700">{proposal.innovation_claim}</p>
+                        <p className="text-sm text-slate-700">{proposal?.['innovation_claim']}</p>
                       </CardContent>
                     </Card>
                   )}
@@ -610,18 +556,18 @@ Provide bilingual insights (each item should have both English and Arabic versio
                   <CardTitle>{t({ en: 'Principal Investigator', ar: 'الباحث الرئيسي' })}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {proposal.principal_investigator?.name ? (
+                  {proposal?.['principal_investigator']?.['name'] ? (
                     <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="font-bold text-blue-900">{proposal.principal_investigator.name}</p>
-                      {proposal.principal_investigator.title && (
-                        <p className="text-sm text-slate-700 mt-1">{proposal.principal_investigator.title}</p>
+                      <p className="font-bold text-blue-900">{proposal?.['principal_investigator']?.['name']}</p>
+                      {proposal?.['principal_investigator']?.['title'] && (
+                        <p className="text-sm text-slate-700 mt-1">{proposal?.['principal_investigator']?.['title']}</p>
                       )}
-                      {proposal.principal_investigator.email && (
-                        <p className="text-sm text-blue-600 mt-1">{proposal.principal_investigator.email}</p>
+                      {proposal?.['principal_investigator']?.['email'] && (
+                        <p className="text-sm text-blue-600 mt-1">{proposal?.['principal_investigator']?.['email']}</p>
                       )}
-                      {proposal.principal_investigator.expertise?.length > 0 && (
+                      {(proposal?.['principal_investigator']?.['expertise'] || [])?.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
-                          {proposal.principal_investigator.expertise.map((exp, i) => (
+                          {proposal?.['principal_investigator']?.['expertise']?.map((exp, i) => (
                             <Badge key={i} variant="outline" className="text-xs">{exp}</Badge>
                           ))}
                         </div>
@@ -629,8 +575,8 @@ Provide bilingual insights (each item should have both English and Arabic versio
                     </div>
                   ) : (
                     <p className="text-slate-500 text-sm">
-                      {typeof proposal.principal_investigator === 'string' 
-                        ? proposal.principal_investigator 
+                      {typeof proposal?.['principal_investigator'] === 'string'
+                        ? proposal?.['principal_investigator']
                         : t({ en: 'Not specified', ar: 'غير محدد' })}
                     </p>
                   )}
@@ -642,16 +588,16 @@ Provide bilingual insights (each item should have both English and Arabic versio
                   <CardTitle>{t({ en: 'Team Members', ar: 'أعضاء الفريق' })}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {proposal.team_members && proposal.team_members.length > 0 ? (
+                  {proposal?.['team_members'] && (proposal?.['team_members'] || [])?.length > 0 ? (
                     <div className="space-y-3">
-                      {proposal.team_members.map((member, idx) => (
+                      {(proposal?.['team_members'] || [])?.map((member, idx) => (
                         <div key={idx} className="p-3 bg-slate-50 rounded-lg border">
-                          <p className="font-medium text-slate-900">{member.name}</p>
-                          <p className="text-sm text-slate-600">{member.role}</p>
-                          <p className="text-xs text-slate-500">{member.affiliation}</p>
-                          {member.expertise?.length > 0 && (
+                          <p className="font-medium text-slate-900">{member?.['name'] || member}</p>
+                          <p className="text-sm text-slate-600">{member?.['role'] || 'Team Member'}</p>
+                          <p className="text-xs text-slate-500">{member?.['affiliation'] || 'Expert'}</p>
+                          {(member?.['expertise'] || [])?.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-2">
-                              {member.expertise.map((exp, i) => (
+                              {member?.['expertise']?.map((exp, i) => (
                                 <Badge key={i} variant="outline" className="text-xs">{exp}</Badge>
                               ))}
                             </div>
@@ -665,17 +611,17 @@ Provide bilingual insights (each item should have both English and Arabic versio
                 </CardContent>
               </Card>
 
-              {proposal.partner_institutions?.length > 0 && (
+              {proposal?.['partner_institutions'] && (proposal?.['partner_institutions'] || [])?.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle>{t({ en: 'Partner Institutions', ar: 'المؤسسات الشريكة' })}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      {proposal.partner_institutions.map((partner, idx) => (
+                      {(proposal?.['partner_institutions'] || []).map((partner, idx) => (
                         <div key={idx} className="p-3 border rounded-lg">
-                          <p className="font-medium text-sm">{partner.name}</p>
-                          <p className="text-xs text-slate-600">{partner.role}</p>
+                          <p className="font-medium text-sm">{partner?.['name'] || partner}</p>
+                          <p className="text-xs text-slate-600">{partner?.['role'] || 'Partner'}</p>
                         </div>
                       ))}
                     </div>
@@ -690,7 +636,7 @@ Provide bilingual insights (each item should have both English and Arabic versio
                 <RDProposalAIScorerWidget proposal={proposal} />
               </div>
             </TabsContent>
-            
+
             <TabsContent value="activity">
               <RDProposalActivityLog proposalId={proposalId} />
             </TabsContent>
@@ -710,15 +656,15 @@ Provide bilingual insights (each item should have both English and Arabic versio
                       <div className="flex items-start gap-2">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-medium text-slate-900">{c.created_by}</span>
+                            <span className="text-sm font-medium text-slate-900">{c?.['user_name'] || c?.['user_email'] || c?.['created_by']}</span>
                             {c.is_internal && <Badge variant="outline" className="text-xs">{t({ en: 'Internal', ar: 'داخلي' })}</Badge>}
-                            {c.comment_type && c.comment_type !== 'general' && (
-                              <Badge className="text-xs">{c.comment_type.replace(/_/g, ' ')}</Badge>
+                            {c?.['comment_type'] && c?.['comment_type'] !== 'general' && (
+                              <Badge className="text-xs">{c?.['comment_type']?.replace(/_/g, ' ')}</Badge>
                             )}
                           </div>
                           <p className="text-sm text-slate-700">{c.comment_text}</p>
                           <span className="text-xs text-slate-500 mt-1 block">
-                            {new Date(c.created_date).toLocaleString()}
+                            {new Date(c?.['created_date'] || c?.['created_at']).toLocaleString()}
                           </span>
                         </div>
                       </div>
@@ -731,12 +677,14 @@ Provide bilingual insights (each item should have both English and Arabic versio
                       onChange={(e) => setComment(e.target.value)}
                       rows={3}
                     />
-                    <Button 
-                      onClick={() => commentMutation.mutate({ rd_proposal_id: proposalId, comment_text: comment })}
+                    <Button
+                      onClick={() => postComment({ rd_proposal_id: proposalId, comment_text: comment }, {
+                        onSuccess: () => setComment('')
+                      })}
                       className="bg-gradient-to-r from-blue-600 to-teal-600"
-                      disabled={!comment}
+                      disabled={!comment || isAddingComment}
                     >
-                      <Send className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                      {isAddingComment ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />}
                       {t({ en: 'Post Comment', ar: 'نشر تعليق' })}
                     </Button>
                   </div>
@@ -746,9 +694,9 @@ Provide bilingual insights (each item should have both English and Arabic versio
 
             {/* AI Connections Tab */}
             <TabsContent value="connections">
-              <CrossEntityRecommender 
-                sourceEntity={proposal} 
-                sourceType="RDProposal" 
+              <CrossEntityRecommender
+                sourceEntity={proposal}
+                sourceType="RDProposal"
                 recommendations={['rdcalls', 'rdprojects', 'challenges']}
               />
             </TabsContent>

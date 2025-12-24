@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,11 +7,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from '../components/LanguageContext';
-import { 
-  Network, 
-  Sparkles, 
-  CheckCircle2, 
-  XCircle, 
+import {
+  Network,
+  Sparkles,
+  CheckCircle2,
+  XCircle,
   Play,
   Loader2,
   AlertCircle,
@@ -33,6 +32,7 @@ import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import RelationManager from '../components/RelationManager';
+import { useRelationManagement } from '@/hooks/useRelationManagement';
 
 function RelationManagementHub() {
   const { language, isRTL, t } = useLanguage();
@@ -42,90 +42,43 @@ function RelationManagementHub() {
   const [isMatching, setIsMatching] = useState(false);
   const [matchProgress, setMatchProgress] = useState({ current: 0, total: 0 });
   const [showRelationManager, setShowRelationManager] = useState(false);
-  
+
   // Filters and view
   const [reviewFilter, setReviewFilter] = useState('all');
   const [browseFilter, setBrowseFilter] = useState({ type: 'all', status: 'all', source: 'all' });
   const [browseView, setBrowseView] = useState('list');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Fetch all relations
-  const { data: relations = [], isLoading: relationsLoading } = useQuery({
-    queryKey: ['all-relations'],
-    queryFn: () => base44.entities.ChallengeRelation.list()
-  });
+  const {
+    useAllRelations,
+    useAllChallenges,
+    useAllSolutions,
+    useAllPilots,
+    useAllRDProjects,
+    useAllPrograms,
+    useAllRDCalls,
+    reviewRelation,
+    deleteRelation,
+    createMatch
+  } = useRelationManagement();
 
-  // Fetch pending AI suggestions (AI-created, not reviewed, and pending/no status)
-  const pendingMatches = relations.filter(r => {
-    const isPending = r.created_via === 'ai' && !r.reviewed && (!r.status || r.status === 'pending');
-    console.log('Relation:', r.id, 'created_via:', r.created_via, 'reviewed:', r.reviewed, 'status:', r.status, 'isPending:', isPending);
-    return isPending;
-  });
+  // Fetch all relations
+  const { data: relations = [], isLoading: relationsLoading } = useAllRelations();
+
+  // Fetch pending AI suggestions
+  const pendingMatches = relations.filter(r => r.status === 'pending');
 
   // Fetch entities for matching
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-relations'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
+  const { data: challenges = [] } = useAllChallenges();
+  const { data: solutions = [] } = useAllSolutions();
+  const { data: pilots = [] } = useAllPilots();
+  const { data: rdProjects = [] } = useAllRDProjects();
+  const { data: programs = [] } = useAllPrograms();
+  const { data: rdCalls = [] } = useAllRDCalls();
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions-relations'],
-    queryFn: () => base44.entities.Solution.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-relations'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects-relations'],
-    queryFn: () => base44.entities.RDProject.list()
-  });
-
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs-relations'],
-    queryFn: () => base44.entities.Program.list()
-  });
-
-  const { data: rdCalls = [] } = useQuery({
-    queryKey: ['rd-calls-relations'],
-    queryFn: () => base44.entities.RDCall.list()
-  });
-
-  // Review mutation
-  const reviewMutation = useMutation({
-    mutationFn: async ({ relationId, decision }) => {
-      const result = await base44.entities.ChallengeRelation.update(relationId, {
-        reviewed: true,
-        status: decision,
-        reviewed_date: new Date().toISOString()
-      });
-      console.log('✅ Relation updated:', relationId, decision, result);
-      return result;
-    },
-    onSuccess: async (data, variables) => {
-      await queryClient.invalidateQueries(['all-relations']);
-      await queryClient.refetchQueries(['all-relations']);
-      toast.success(t({ 
-        en: `Relation ${variables.decision} successfully`, 
-        ar: `تم ${variables.decision === 'approved' ? 'الموافقة على' : 'رفض'} العلاقة` 
-      }));
-    },
-    onError: (error) => {
-      console.error('❌ Review error:', error);
-      toast.error(t({ en: 'Failed to review relation', ar: 'فشل في مراجعة العلاقة' }));
-    }
-  });
-
-  // Delete mutation
-  const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.ChallengeRelation.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['all-relations']);
-      toast.success(t({ en: 'Relation deleted', ar: 'تم حذف العلاقة' }));
-    }
-  });
+  // Aliases for mutations to match usage
+  const reviewMutation = reviewRelation;
+  const deleteMutation = deleteRelation;
 
   // Matcher configurations
   const matchers = [
@@ -206,13 +159,13 @@ function RelationManagementHub() {
     console.log('🚀 Starting matcher:', matcherConfig.id);
     setIsMatching(true);
     setSelectedMatcher(matcherConfig.id);
-    
+
     try {
       let sourceEntities = getEntitiesByType(matcherConfig.sourceType);
       let targetEntities = getEntitiesByType(matcherConfig.targetType);
-      
+
       console.log(`📊 Raw counts - Source (${matcherConfig.sourceType}): ${sourceEntities.length}, Target (${matcherConfig.targetType}): ${targetEntities.length}`);
-      
+
       // Filter entities with embeddings only
       sourceEntities = sourceEntities.filter(e => e.embedding && e.embedding.length > 0);
       targetEntities = targetEntities.filter(e => e.embedding && e.embedding.length > 0);
@@ -220,20 +173,20 @@ function RelationManagementHub() {
       console.log(`🎯 With embeddings - Source: ${sourceEntities.length}, Target: ${targetEntities.length}`);
 
       if (sourceEntities.length === 0 || targetEntities.length === 0) {
-        toast.error(t({ 
-          en: `No entities with embeddings. Source: ${sourceEntities.length}, Target: ${targetEntities.length}`, 
-          ar: `لا توجد كيانات. المصدر: ${sourceEntities.length}، الهدف: ${targetEntities.length}` 
+        toast.error(t({
+          en: `No entities with embeddings. Source: ${sourceEntities.length}, Target: ${targetEntities.length}`,
+          ar: `لا توجد كيانات. المصدر: ${sourceEntities.length}، الهدف: ${targetEntities.length}`
         }));
         setIsMatching(false);
         setSelectedMatcher(null);
         return;
       }
-      
+
       toast.info(t({
         en: `Matching ${sourceEntities.length} × ${targetEntities.length}...`,
         ar: `مطابقة ${sourceEntities.length} × ${targetEntities.length}...`
       }));
-      
+
       setMatchProgress({ current: 0, total: sourceEntities.length });
       let matchesCreated = 0;
 
@@ -253,7 +206,7 @@ function RelationManagementHub() {
           if (matchScore >= 70) {
             // Determine challenge_id based on matcher type
             let challengeId, relatedEntityType, relatedEntityId;
-            
+
             if (matcherConfig.sourceType === 'challenge') {
               challengeId = source.id;
               relatedEntityType = matcherConfig.targetType;
@@ -267,14 +220,14 @@ function RelationManagementHub() {
             }
 
             // Check if relation already exists
-            const existingRelation = relations.find(r => 
-              r.challenge_id === challengeId && 
+            const existingRelation = relations.find(r =>
+              r.challenge_id === challengeId &&
               r.related_entity_type === relatedEntityType &&
               r.related_entity_id === relatedEntityId
             );
 
             if (!existingRelation) {
-              const newRelation = await base44.entities.ChallengeRelation.create({
+              await createMatch.mutateAsync({
                 challenge_id: challengeId,
                 related_entity_type: relatedEntityType,
                 related_entity_id: relatedEntityId,
@@ -285,8 +238,9 @@ function RelationManagementHub() {
                 reviewed: false,
                 notes: `AI-generated match (${matchScore}% similarity)`
               });
+
               matchesCreated++;
-              console.log(`✅ Created match:`, newRelation);
+              console.log(`✅ Created match for ${challengeId}`);
             } else {
               console.log(`⏭️ Match exists: ${challengeId} → ${relatedEntityId}`);
             }
@@ -296,25 +250,25 @@ function RelationManagementHub() {
 
       await queryClient.invalidateQueries(['all-relations']);
       await queryClient.refetchQueries(['all-relations']);
-      
+
       console.log(`🎯 Matching complete: ${matchesCreated} new matches created`);
-      
+
       if (matchesCreated === 0) {
-        toast.info(t({ 
-          en: '⚠️ No new matches found. All existing or below 70% similarity threshold.', 
-          ar: '⚠️ لم يتم العثور على مطابقات جديدة. جميعها موجودة أو أقل من 70٪ تشابه.' 
+        toast.info(t({
+          en: '⚠️ No new matches found. All existing or below 70% similarity threshold.',
+          ar: '⚠️ لم يتم العثور على مطابقات جديدة. جميعها موجودة أو أقل من 70٪ تشابه.'
         }), { duration: 5000 });
       } else {
-        toast.success(t({ 
-          en: `✅ Created ${matchesCreated} new matches! Check Review Suggestions tab →`, 
-          ar: `✅ تم إنشاء ${matchesCreated} مطابقة جديدة! راجع تبويب الاقتراحات ←` 
+        toast.success(t({
+          en: `✅ Created ${matchesCreated} new matches! Check Review Suggestions tab →`,
+          ar: `✅ تم إنشاء ${matchesCreated} مطابقة جديدة! راجع تبويب الاقتراحات ←`
         }), { duration: 5000 });
         setTimeout(() => setActiveTab('review'), 500);
       }
     } catch (error) {
-      toast.error(t({ 
-        en: `Error: ${error.message}`, 
-        ar: `خطأ: ${error.message}` 
+      toast.error(t({
+        en: `Error: ${error.message}`,
+        ar: `خطأ: ${error.message}`
       }));
       console.error('Matching error:', error);
     } finally {
@@ -353,7 +307,7 @@ function RelationManagementHub() {
     const entities = getEntitiesByType(entityType);
     const entity = entities.find(e => e.id === entityId);
     if (!entity) return entityId;
-    
+
     return entity.title_ar || entity.name_ar || entity.title_en || entity.name_en || entity.code || entityId;
   };
 
@@ -466,7 +420,7 @@ function RelationManagementHub() {
                 {matchers.map((matcher) => {
                   const Icon = matcher.icon;
                   const isRunning = isMatching && selectedMatcher === matcher.id;
-                  
+
                   return (
                     <Card key={matcher.id} className="border-2 hover:shadow-lg transition-all">
                       <CardContent className="pt-6">
@@ -537,7 +491,7 @@ function RelationManagementHub() {
             filteredPendingMatches.map((relation) => {
               const challenge = challenges.find(c => c.id === relation.challenge_id);
               const targetName = getEntityName(relation.related_entity_type, relation.related_entity_id);
-              
+
               return (
                 <Card key={relation.id} className="border-2 border-purple-200">
                   <CardContent className="pt-6">
@@ -624,7 +578,7 @@ function RelationManagementHub() {
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-2">
                   <Filter className="h-4 w-4 text-slate-500" />
-                  <Select value={browseFilter.type} onValueChange={(v) => setBrowseFilter({...browseFilter, type: v})}>
+                  <Select value={browseFilter.type} onValueChange={(v) => setBrowseFilter({ ...browseFilter, type: v })}>
                     <SelectTrigger className="w-40">
                       <SelectValue />
                     </SelectTrigger>
@@ -639,7 +593,7 @@ function RelationManagementHub() {
                     </SelectContent>
                   </Select>
 
-                  <Select value={browseFilter.status} onValueChange={(v) => setBrowseFilter({...browseFilter, status: v})}>
+                  <Select value={browseFilter.status} onValueChange={(v) => setBrowseFilter({ ...browseFilter, status: v })}>
                     <SelectTrigger className="w-40">
                       <SelectValue />
                     </SelectTrigger>
@@ -651,7 +605,7 @@ function RelationManagementHub() {
                     </SelectContent>
                   </Select>
 
-                  <Select value={browseFilter.source} onValueChange={(v) => setBrowseFilter({...browseFilter, source: v})}>
+                  <Select value={browseFilter.source} onValueChange={(v) => setBrowseFilter({ ...browseFilter, source: v })}>
                     <SelectTrigger className="w-40">
                       <SelectValue />
                     </SelectTrigger>
@@ -721,7 +675,7 @@ function RelationManagementHub() {
               {filteredBrowseRelations.map((relation) => {
                 const challenge = challenges.find(c => c.id === relation.challenge_id);
                 const targetName = getEntityName(relation.related_entity_type, relation.related_entity_id);
-                
+
                 return (
                   <Card key={relation.id} className="hover:shadow-md transition-shadow">
                     <CardContent className="pt-4">
@@ -744,11 +698,10 @@ function RelationManagementHub() {
                               <Badge className="text-xs bg-purple-100 text-purple-700">AI</Badge>
                             )}
                             {relation.status && (
-                              <Badge className={`text-xs ${
-                                relation.status === 'approved' ? 'bg-green-100 text-green-700' :
+                              <Badge className={`text-xs ${relation.status === 'approved' ? 'bg-green-100 text-green-700' :
                                 relation.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                                'bg-yellow-100 text-yellow-700'
-                              }`}>
+                                  'bg-yellow-100 text-yellow-700'
+                                }`}>
                                 {relation.status}
                               </Badge>
                             )}
@@ -787,7 +740,7 @@ function RelationManagementHub() {
               {filteredBrowseRelations.map((relation) => {
                 const challenge = challenges.find(c => c.id === relation.challenge_id);
                 const targetName = getEntityName(relation.related_entity_type, relation.related_entity_id);
-                
+
                 return (
                   <Card key={relation.id} className="hover:shadow-lg transition-shadow">
                     <CardContent className="pt-4">
@@ -823,11 +776,10 @@ function RelationManagementHub() {
                         </div>
 
                         {relation.status && (
-                          <Badge className={`w-full justify-center ${
-                            relation.status === 'approved' ? 'bg-green-100 text-green-700' :
+                          <Badge className={`w-full justify-center ${relation.status === 'approved' ? 'bg-green-100 text-green-700' :
                             relation.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                            'bg-yellow-100 text-yellow-700'
-                          }`}>
+                              'bg-yellow-100 text-yellow-700'
+                            }`}>
                             {relation.status}
                           </Badge>
                         )}

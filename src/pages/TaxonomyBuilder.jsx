@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,9 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
+import { useTaxonomy } from '@/contexts/TaxonomyContext';
+import { useTaxonomyMutations } from '@/hooks/useTaxonomyMutations';
+
 function TaxonomyBuilder() {
   const { language, isRTL, t } = useLanguage();
   const [activeTab, setActiveTab] = useState('manage');
@@ -26,95 +29,39 @@ function TaxonomyBuilder() {
   const [editingItem, setEditingItem] = useState(null);
   const [newSector, setNewSector] = useState(null);
   const [newSubsector, setNewSubsector] = useState(null);
-  const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo, error } = useAIWithFallback();
   const [showWizard, setShowWizard] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: sectors = [] } = useQuery({
-    queryKey: ['sectors'],
-    queryFn: () => base44.entities.Sector.list()
-  });
+  // Data from Context
+  const { sectors, subsectors, services, tags } = useTaxonomy();
 
-  const { data: subsectors = [] } = useQuery({
-    queryKey: ['subsectors'],
-    queryFn: () => base44.entities.Subsector.list()
-  });
+  // Mutations from Hook
+  const {
+    createSector: createSectorMutation,
+    updateSector: updateSectorMutation,
+    deleteSector: deleteSectorMutation,
+    createSubsector: createSubsectorMutation,
+    updateSubsector: updateSubsectorMutation,
+    deleteSubsector: deleteSubsectorMutation
+  } = useTaxonomyMutations();
 
-  const { data: services = [] } = useQuery({
-    queryKey: ['services'],
-    queryFn: () => base44.entities.Service.list()
-  });
-
-  const { data: tags = [] } = useQuery({
-    queryKey: ['tags'],
-    queryFn: () => base44.entities.Tag.list()
-  });
-
-  const createSectorMutation = useMutation({
-    mutationFn: (data) => base44.entities.Sector.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['sectors']);
-      setNewSector(null);
-      toast.success(t({ en: 'Sector created', ar: 'تم إنشاء القطاع' }));
-    }
-  });
-
-  const updateSectorMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Sector.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['sectors']);
-      setEditingItem(null);
-      toast.success(t({ en: 'Updated', ar: 'تم التحديث' }));
-    }
-  });
-
-  const deleteSectorMutation = useMutation({
-    mutationFn: (id) => base44.entities.Sector.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['sectors']);
-      toast.success(t({ en: 'Deleted', ar: 'تم الحذف' }));
-    }
-  });
-
-  const createSubsectorMutation = useMutation({
-    mutationFn: (data) => base44.entities.Subsector.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['subsectors']);
-      setNewSubsector(null);
-      toast.success(t({ en: 'Subsector created', ar: 'تم إنشاء القطاع الفرعي' }));
-    }
-  });
-
-  const updateSubsectorMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Subsector.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['subsectors']);
-      setEditingItem(null);
-      toast.success(t({ en: 'Updated', ar: 'تم التحديث' }));
-    }
-  });
-
-  const deleteSubsectorMutation = useMutation({
-    mutationFn: (id) => base44.entities.Subsector.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['subsectors']);
-      toast.success(t({ en: 'Deleted', ar: 'تم الحذف' }));
-    }
-  });
 
   const generateAISuggestions = async () => {
-    const { 
-      TAXONOMY_SUGGESTIONS_PROMPT_TEMPLATE, 
-      TAXONOMY_SUGGESTIONS_RESPONSE_SCHEMA 
+    const {
+      TAXONOMY_SUGGESTIONS_PROMPT_TEMPLATE,
+      TAXONOMY_SUGGESTIONS_RESPONSE_SCHEMA,
+      TAXONOMY_SUGGESTIONS_SYSTEM_PROMPT
     } = await import('@/lib/ai/prompts/taxonomy/suggestions');
-    
+
     const result = await invokeAI({
       prompt: TAXONOMY_SUGGESTIONS_PROMPT_TEMPLATE({
         sectors,
         subsectorsCount: subsectors.length,
         servicesCount: services.length
       }),
-      response_json_schema: TAXONOMY_SUGGESTIONS_RESPONSE_SCHEMA
+      response_json_schema: TAXONOMY_SUGGESTIONS_RESPONSE_SCHEMA,
+      system_prompt: TAXONOMY_SUGGESTIONS_SYSTEM_PROMPT
     });
 
     if (result.success) {
@@ -137,6 +84,8 @@ function TaxonomyBuilder() {
           { icon: TreePine, value: subsectors.length, label: t({ en: 'Subsectors', ar: 'قطاعات فرعية' }) },
           { icon: Tags, value: services.length, label: t({ en: 'Services', ar: 'خدمات' }) },
         ]}
+        subtitle={null}
+        children={null}
         action={
           <Button onClick={generateAISuggestions} disabled={aiLoading} variant="default">
             {aiLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
@@ -144,7 +93,7 @@ function TaxonomyBuilder() {
           </Button>
         }
       />
-      <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+      <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={error} />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4">
@@ -432,9 +381,9 @@ function TaxonomyBuilder() {
               <div className="space-y-3">
                 {sectors.map(sector => {
                   const sectorSubsectors = subsectors.filter(ss => ss.sector_id === sector.id);
-                  const sectorServices = sectorSubsectors.reduce((sum, ss) => 
+                  const sectorServices = sectorSubsectors.reduce((sum, ss) =>
                     sum + services.filter(srv => srv.subsector_id === ss.id).length, 0);
-                  
+
                   return (
                     <div key={sector.id} className="p-4 border rounded-lg">
                       <div className="flex items-center justify-between mb-2">

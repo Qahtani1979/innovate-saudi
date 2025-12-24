@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { usePilotMutations } from '@/hooks/usePilotMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,23 +13,27 @@ export default function BudgetAllocationApprovalGate() {
   const { language, isRTL, t } = useLanguage();
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [comments, setComments] = useState('');
-  const queryClient = useQueryClient();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
+  /* Use visibility hook for pilots */
+  const { data: pilots = [] } = usePilotsWithVisibility();
 
-  const approvalMutation = useMutation({
-    mutationFn: ({ pilot_id, phase, amount, action, comments }) => 
-      base44.functions.invoke('budgetApproval', { action, pilot_id, phase, amount, comments }),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['pilots']);
+  const { approveBudget } = usePilotMutations();
+
+  /* Note: approveBudget is the mutation function itself, so we can use it directly or wrap it if needed for state management like 'isPending'. 
+     The original code used 'approvalMutation' with isPending state implicitly or explicitly. 
+     The hooks returns 'approveBudget' as the mutateAsync function and 'isApprovingBudget' boolean.
+  */
+  const { isApprovingBudget } = usePilotMutations();
+
+  /* Re-creating the mutation object structure to minimize changes in usage below or updating usage */
+  const approvalMutation = {
+    mutate: (variables) => approveBudget(variables).then(() => {
       setSelectedRequest(null);
       setComments('');
-      toast.success(t({ en: 'Budget decision recorded', ar: 'تم تسجيل قرار الميزانية' }));
-    }
-  });
+      // Toast is handled in hook or we can add specific success logic here if needed, but hook handles generic success.
+    }),
+    isPending: isApprovingBudget
+  };
 
   const pendingRequests = pilots
     .filter(p => p.budget_approvals?.some(a => a.status === 'pending'))
@@ -39,10 +43,10 @@ export default function BudgetAllocationApprovalGate() {
     }))
     .filter(item => item.requests.length > 0);
 
-  const totalApproved = pilots.reduce((sum, p) => 
+  const totalApproved = pilots.reduce((sum, p) =>
     sum + (p.budget_approvals?.filter(a => a.status === 'approved').length || 0), 0);
-  
-  const totalRejected = pilots.reduce((sum, p) => 
+
+  const totalRejected = pilots.reduce((sum, p) =>
     sum + (p.budget_approvals?.filter(a => a.status === 'rejected').length || 0), 0);
 
   return (

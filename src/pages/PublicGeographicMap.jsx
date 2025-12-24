@@ -1,6 +1,10 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import {
+  usePublicMunicipalities,
+  usePublicPilots,
+  usePublicMapChallenges,
+  usePublicSolutions
+} from '@/hooks/usePublicData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,39 +20,18 @@ export default function PublicGeographicMap() {
   const [filter, setFilter] = useState('all');
   const [selectedRegion, setSelectedRegion] = useState('all');
 
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities-map'],
-    queryFn: () => base44.entities.Municipality.list()
-  });
+  const { data: municipalities = [] } = usePublicMunicipalities();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-map'],
-    queryFn: async () => {
-      const all = await base44.entities.Challenge.list();
-      return all.filter(c => c.is_published && c.coordinates);
-    }
-  });
+  const { data: challenges = [] } = usePublicMapChallenges();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-map'],
-    queryFn: async () => {
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => p.is_published && p.coordinates);
-    }
-  });
+  const { data: pilots = [] } = usePublicPilots();
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions-map'],
-    queryFn: async () => {
-      const all = await base44.entities.Solution.list();
-      return all.filter(s => s.is_published);
-    }
-  });
+  const { data: solutions = [] } = usePublicSolutions();
 
   const regions = [...new Set(municipalities.map(m => m.region))].filter(Boolean);
 
-  const filteredMunicipalities = selectedRegion === 'all' 
-    ? municipalities 
+  const filteredMunicipalities = selectedRegion === 'all'
+    ? municipalities
     : municipalities.filter(m => m.region === selectedRegion);
 
   const mapItems = [
@@ -137,7 +120,7 @@ export default function PublicGeographicMap() {
               <TestTube className="h-4 w-4 mr-2" />
               {t({ en: 'Pilots', ar: 'تجارب' })}
             </Button>
-            
+
             <div className="border-l pl-3 flex gap-2">
               <select
                 value={selectedRegion}
@@ -173,24 +156,24 @@ export default function PublicGeographicMap() {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               />
-              
+
               {mapItems.map((item, idx) => {
                 if (!item.coordinates?.latitude || !item.coordinates?.longitude) return null;
-                
+
                 const Icon = item.icon;
-                
+
                 return (
                   <CircleMarker
                     key={`${item.type}-${item.id}`}
                     center={[item.coordinates.latitude, item.coordinates.longitude]}
                     radius={item.type === 'municipality' ? 8 : 6}
-                    pathOptions={{ 
-                      color: item.color === 'red' ? '#dc2626' : 
-                             item.color === 'blue' ? '#2563eb' : 
-                             item.color === 'green' ? '#16a34a' : '#6b7280',
-                      fillColor: item.color === 'red' ? '#dc2626' : 
-                                 item.color === 'blue' ? '#2563eb' : 
-                                 item.color === 'green' ? '#16a34a' : '#6b7280',
+                    pathOptions={{
+                      color: item.color === 'red' ? '#dc2626' :
+                        item.color === 'blue' ? '#2563eb' :
+                          item.color === 'green' ? '#16a34a' : '#6b7280',
+                      fillColor: item.color === 'red' ? '#dc2626' :
+                        item.color === 'blue' ? '#2563eb' :
+                          item.color === 'green' ? '#16a34a' : '#6b7280',
                       fillOpacity: 0.7
                     }}
                   >
@@ -201,7 +184,7 @@ export default function PublicGeographicMap() {
                           <Badge className="text-xs">{item.type}</Badge>
                         </div>
                         <h4 className="font-semibold text-sm">
-                          {item.type === 'municipality' 
+                          {item.type === 'municipality'
                             ? (language === 'ar' && item.name_ar ? item.name_ar : item.name_en)
                             : (language === 'ar' && item.title_ar ? item.title_ar : item.title_en || item.name_en)}
                         </h4>
@@ -209,11 +192,11 @@ export default function PublicGeographicMap() {
                         {item.mii_score && (
                           <p className="text-sm text-blue-600 mt-2">MII: {item.mii_score}</p>
                         )}
-                        <Link 
+                        <Link
                           to={createPageUrl(
                             item.type === 'challenge' ? 'ChallengeDetail' :
-                            item.type === 'pilot' ? 'PilotDetail' :
-                            item.type === 'municipality' ? 'MunicipalityProfile' : 'Home'
+                              item.type === 'pilot' ? 'PilotDetail' :
+                                item.type === 'municipality' ? 'MunicipalityProfile' : 'Home'
                           ) + `?id=${item.id}`}
                         >
                           <Button size="sm" className="w-full mt-2">

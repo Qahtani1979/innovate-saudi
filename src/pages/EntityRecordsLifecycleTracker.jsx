@@ -1,5 +1,5 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+
+import { useEntityLifecycle } from '@/hooks/useEntityLifecycle';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -11,40 +11,18 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 function EntityRecordsLifecycleTracker() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
+  const { useLifecycleData } = useEntityLifecycle();
+  const { data: lifecycleData = {} } = useLifecycleData();
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions'],
-    queryFn: () => base44.entities.Solution.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects'],
-    queryFn: () => base44.entities.RDProject.list()
-  });
-
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs'],
-    queryFn: () => base44.entities.Program.list()
-  });
-
-  const { data: sandboxes = [] } = useQuery({
-    queryKey: ['sandboxes'],
-    queryFn: () => base44.entities.Sandbox.list()
-  });
-
-  const { data: matchmakerApps = [] } = useQuery({
-    queryKey: ['matchmaker-apps'],
-    queryFn: () => base44.entities.MatchmakerApplication.list()
-  });
+  const {
+    challenges = [],
+    solutions = [],
+    pilots = [],
+    rdProjects = [],
+    programs = [],
+    sandboxes = [],
+    matchmakerApps = []
+  } = lifecycleData;
 
   // Challenge Lifecycle Analysis (with visibility tracking)
   const challengesByStatus = {
@@ -147,15 +125,15 @@ function EntityRecordsLifecycleTracker() {
   const matchmakerConversionRate = matchmakerApps.filter(m => m.stage === 'pilot_conversion').length / (matchmakerApps.filter(m => m.stage === 'matched').length || 1) * 100;
 
   // Data Quality Metrics
-  const challengeCompleteness = challenges.filter(c => 
+  const challengeCompleteness = challenges.filter(c =>
     c.title_en && c.description_en && c.sector && c.municipality_id
   ).length / (challenges.length || 1) * 100;
 
-  const pilotCompleteness = pilots.filter(p => 
+  const pilotCompleteness = pilots.filter(p =>
     p.title_en && p.challenge_id && p.kpis?.length > 0 && p.team?.length > 0
   ).length / (pilots.length || 1) * 100;
 
-  const solutionCompleteness = solutions.filter(s => 
+  const solutionCompleteness = solutions.filter(s =>
     s.name_en && s.description_en && s.provider_name && s.features?.length > 0
   ).length / (solutions.length || 1) * 100;
 

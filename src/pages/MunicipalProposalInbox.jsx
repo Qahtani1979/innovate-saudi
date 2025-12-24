@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,71 +11,47 @@ import {
   Inbox, CheckCircle2, XCircle, Clock, Building2, Lightbulb,
   FileText, DollarSign, Calendar, MessageSquare
 } from 'lucide-react';
-import { toast } from 'sonner';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useChallengeProposals } from '@/hooks/useChallengeProposals';
+import { useChallengeProposalMutations } from '@/hooks/useChallengeProposalMutations';
 
 export default function MunicipalProposalInbox() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [selectedProposal, setSelectedProposal] = useState(null);
   const [responseMessage, setResponseMessage] = useState('');
   const { user } = useAuth();
 
-  const { data: myMunicipality } = useQuery({
-    queryKey: ['my-municipality', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('municipalities').select('*');
-      return data?.find(m => m.contact_email === user?.email);
-    },
-    enabled: !!user
-  });
+  // Get user's municipality
+  const { data: municipalities = [] } = useMunicipalitiesWithVisibility({ limit: 1000 });
+  const myMunicipality = municipalities.find(m => m.contact_email === user?.email);
 
-  const { data: myChallenges = [] } = useQuery({
-    queryKey: ['my-challenges', myMunicipality?.id, user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false);
-      return data?.filter(c => 
-        c.municipality_id === myMunicipality?.id || 
-        c.created_by === user?.email
-      ) || [];
-    },
-    enabled: !!myMunicipality || !!user
-  });
+  // Get user's challenges
+  const { data: challenges = [] } = useChallengesWithVisibility({ includeAll: true }); // We filter below
+  const myChallenges = challenges.filter(c =>
+    c.municipality_id === myMunicipality?.id ||
+    c.created_by === user?.email
+  );
 
-  const { data: proposals = [], isLoading } = useQuery({
-    queryKey: ['proposals-for-my-challenges', myChallenges.map(c => c.id)],
-    queryFn: async () => {
-      const challengeIds = myChallenges.map(c => c.id);
-      const { data } = await supabase.from('challenge_proposals').select('*').eq('is_deleted', false);
-      return data?.filter(p => challengeIds.includes(p.challenge_id)) || [];
-    },
-    enabled: myChallenges.length > 0
-  });
+  // Get proposals for these challenges
+  const challengeIds = myChallenges.map(c => c.id);
+  const { data: proposals = [], isLoading } = useChallengeProposals(challengeIds);
 
-  const respondMutation = useMutation({
-    mutationFn: async ({ proposalId, status, message }) => {
-      const proposal = proposals.find(p => p.id === proposalId);
-      
-      await supabase.from('challenge_proposals').update({
-        status,
-        municipality_response_date: new Date().toISOString(),
-        municipality_response_message: message
-      }).eq('id', proposalId);
+  const { respondToProposal } = useChallengeProposalMutations();
 
-      await supabase.from('system_activities').insert({
-        entity_type: 'ChallengeProposal',
-        entity_id: proposalId,
-        activity_type: status === 'accepted' ? 'proposal_accepted' : 'proposal_rejected',
-        description_en: `Municipality responded: ${status}`
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['proposals-for-my-challenges']);
-      setSelectedProposal(null);
-      setResponseMessage('');
-      toast.success(t({ en: 'Response sent', ar: 'تم إرسال الرد' }));
-    }
-  });
+  const handleResponse = (status) => {
+    respondToProposal.mutate({
+      proposalId: selectedProposal.id,
+      status,
+      message: responseMessage
+    }, {
+      onSuccess: () => {
+        setSelectedProposal(null);
+        setResponseMessage('');
+      }
+    });
+  };
 
   const pendingProposals = proposals.filter(p => p.status === 'pending');
   const reviewedProposals = proposals.filter(p => p.status !== 'pending');
@@ -94,6 +68,7 @@ export default function MunicipalProposalInbox() {
         title={{ en: 'Solution Proposal Inbox', ar: 'صندوق مقترحات الحلول' }}
         subtitle={{ en: 'Review and respond to solution proposals from providers', ar: 'مراجعة والرد على مقترحات الحلول من المزودين' }}
         icon={<Inbox className="h-6 w-6 text-white" />}
+        description={{ en: 'Manage incoming proposals for your challenges.', ar: 'إدارة العروض الواردة لتحدياتك.' }}
       />
 
       {/* Stats */}
@@ -160,6 +135,7 @@ export default function MunicipalProposalInbox() {
                   proposal={proposal}
                   onSelect={() => setSelectedProposal(proposal)}
                   isSelected={selectedProposal?.id === proposal.id}
+                  reviewed={false}
                 />
               ))}
             </div>
@@ -217,11 +193,7 @@ export default function MunicipalProposalInbox() {
                 {t({ en: 'Cancel', ar: 'إلغاء' })}
               </Button>
               <Button
-                onClick={() => respondMutation.mutate({
-                  proposalId: selectedProposal.id,
-                  status: 'more_info_requested',
-                  message: responseMessage
-                })}
+                onClick={() => handleResponse('more_info_requested')}
                 variant="outline"
                 className="flex-1"
               >
@@ -229,11 +201,7 @@ export default function MunicipalProposalInbox() {
                 {t({ en: 'Request Info', ar: 'طلب معلومات' })}
               </Button>
               <Button
-                onClick={() => respondMutation.mutate({
-                  proposalId: selectedProposal.id,
-                  status: 'rejected',
-                  message: responseMessage
-                })}
+                onClick={() => handleResponse('rejected')}
                 variant="destructive"
                 className="flex-1"
               >
@@ -241,11 +209,7 @@ export default function MunicipalProposalInbox() {
                 {t({ en: 'Reject', ar: 'رفض' })}
               </Button>
               <Button
-                onClick={() => respondMutation.mutate({
-                  proposalId: selectedProposal.id,
-                  status: 'accepted',
-                  message: responseMessage
-                })}
+                onClick={() => handleResponse('accepted')}
                 className="flex-1 bg-green-600"
               >
                 <CheckCircle2 className="h-4 w-4 mr-2" />
@@ -268,7 +232,13 @@ export default function MunicipalProposalInbox() {
           <CardContent>
             <div className="space-y-3">
               {reviewedProposals.map((proposal) => (
-                <ProposalCard key={proposal.id} proposal={proposal} reviewed />
+                <ProposalCard
+                  key={proposal.id}
+                  proposal={proposal}
+                  reviewed={true}
+                  onSelect={() => { }} // Dummy function
+                  isSelected={false}
+                />
               ))}
             </div>
           </CardContent>

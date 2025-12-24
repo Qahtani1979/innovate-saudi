@@ -1,6 +1,9 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useLocations } from '@/hooks/useLocations';
+import useChallengesWithVisibility from '@/hooks/useChallengesWithVisibility';
+import usePilotsWithVisibility from '@/hooks/usePilotsWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -16,30 +19,12 @@ function GeographyCoverageReport() {
   const { language, isRTL, t } = useLanguage();
   const [expandedSections, setExpandedSections] = useState({});
 
-  const { data: regions = [] } = useQuery({
-    queryKey: ['regions-coverage'],
-    queryFn: () => base44.entities.Region.list()
-  });
-
-  const { data: cities = [] } = useQuery({
-    queryKey: ['cities-coverage'],
-    queryFn: () => base44.entities.City.list()
-  });
-
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities-coverage'],
-    queryFn: () => base44.entities.Municipality.list()
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-geo'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-geo'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
+  const { useRegions, useCities, useMunicipalities } = useLocations();
+  const { data: regions = [] } = useRegions();
+  const { data: cities = [] } = useCities();
+  const { data: municipalities = [] } = useMunicipalities();
+  const { data: challenges = [] } = useChallengesWithVisibility({ limit: 1000 });
+  const { data: pilots = [] } = usePilotsWithVisibility({ limit: 1000 });
 
   const toggleSection = (key) => {
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
@@ -1192,26 +1177,24 @@ function GeographyCoverageReport() {
                   <h4 className="font-semibold text-slate-900 text-lg">{journey.persona}</h4>
                   <Badge className={
                     journey.coverage >= 90 ? 'bg-green-100 text-green-700' :
-                    journey.coverage >= 70 ? 'bg-yellow-100 text-yellow-700' :
-                    journey.coverage >= 50 ? 'bg-orange-100 text-orange-700' :
-                    'bg-red-100 text-red-700'
+                      journey.coverage >= 70 ? 'bg-yellow-100 text-yellow-700' :
+                        journey.coverage >= 50 ? 'bg-orange-100 text-orange-700' :
+                          'bg-red-100 text-red-700'
                   }>{journey.coverage}% Complete</Badge>
                 </div>
                 <div className="space-y-2">
                   {journey.journey.map((step, i) => (
                     <div key={i} className="flex items-start gap-3">
                       <div className="flex flex-col items-center">
-                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                          step.status === 'complete' ? 'bg-green-100 text-green-700' :
+                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${step.status === 'complete' ? 'bg-green-100 text-green-700' :
                           step.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
+                            'bg-red-100 text-red-700'
+                          }`}>
                           {i + 1}
                         </div>
                         {i < journey.journey.length - 1 && (
-                          <div className={`w-0.5 h-8 ${
-                            step.status === 'complete' ? 'bg-green-300' : 'bg-slate-200'
-                          }`} />
+                          <div className={`w-0.5 h-8 ${step.status === 'complete' ? 'bg-green-300' : 'bg-slate-200'
+                            }`} />
                         )}
                       </div>
                       <div className="flex-1 pt-1">
@@ -1276,22 +1259,20 @@ function GeographyCoverageReport() {
             </div>
             <div className="space-y-4">
               {coverageData.aiFeatures.map((ai, idx) => (
-                <div key={idx} className={`p-4 border rounded-lg ${
-                  ai.status === 'implemented' ? 'bg-gradient-to-r from-purple-50 to-pink-50' :
+                <div key={idx} className={`p-4 border rounded-lg ${ai.status === 'implemented' ? 'bg-gradient-to-r from-purple-50 to-pink-50' :
                   ai.status === 'partial' ? 'bg-yellow-50' : 'bg-red-50'
-                }`}>
+                  }`}>
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Sparkles className={`h-5 w-5 ${
-                        ai.status === 'implemented' ? 'text-purple-600' :
+                      <Sparkles className={`h-5 w-5 ${ai.status === 'implemented' ? 'text-purple-600' :
                         ai.status === 'partial' ? 'text-yellow-600' : 'text-red-600'
-                      }`} />
+                        }`} />
                       <h4 className="font-semibold text-slate-900">{ai.name}</h4>
                     </div>
                     <Badge className={
                       ai.status === 'implemented' ? 'bg-green-100 text-green-700' :
-                      ai.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-red-100 text-red-700'
+                        ai.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
                     }>{ai.coverage}%</Badge>
                   </div>
                   <p className="text-sm text-slate-600 mb-2">{ai.description}</p>
@@ -1346,11 +1327,11 @@ function GeographyCoverageReport() {
               <p className="font-bold text-amber-900 mb-2">⚠️ Pattern: Labels Without Intelligence</p>
               <p className="text-sm text-amber-800">
                 Geography is <strong>WELL-STRUCTURED</strong> (85%): 3-tier hierarchy, comprehensive data model.
-                <br/>
+                <br />
                 Entities <strong>PROPERLY LINKED</strong> (90%): challenges/pilots correctly assigned to municipalities.
-                <br/><br/>
+                <br /><br />
                 But <strong>PASSIVE & UNINTELLIGENT</strong> (30%): no regional analytics, no geographic AI, no multi-city orchestration.
-                <br/><br/>
+                <br /><br />
                 Geography used to <strong>LABEL</strong> (where is this?) but not to <strong>COORDINATE</strong> (cross-city), <strong>ANALYZE</strong> (regional patterns), or <strong>OPTIMIZE</strong> (geographic distribution).
               </p>
             </div>
@@ -1359,17 +1340,16 @@ function GeographyCoverageReport() {
               <p className="font-semibold text-green-900 mb-3">← INPUT Paths (Good - 80%)</p>
               <div className="space-y-3">
                 {coverageData.conversionPaths.incoming.map((path, i) => (
-                  <div key={i} className={`p-3 border-2 rounded-lg ${
-                    path.coverage >= 80 ? 'border-green-300 bg-green-50' :
+                  <div key={i} className={`p-3 border-2 rounded-lg ${path.coverage >= 80 ? 'border-green-300 bg-green-50' :
                     path.coverage >= 50 ? 'border-yellow-300 bg-yellow-50' :
-                    'border-red-300 bg-red-50'
-                  }`}>
+                      'border-red-300 bg-red-50'
+                    }`}>
                     <div className="flex items-center justify-between mb-2">
                       <p className="font-bold">{path.path}</p>
                       <Badge className={
                         path.coverage >= 80 ? 'bg-green-600 text-white' :
-                        path.coverage >= 50 ? 'bg-yellow-600 text-white' :
-                        'bg-red-600 text-white'
+                          path.coverage >= 50 ? 'bg-yellow-600 text-white' :
+                            'bg-red-600 text-white'
                       }>{path.coverage}%</Badge>
                     </div>
                     <p className="text-sm text-slate-700 mb-1">{path.description}</p>
@@ -1390,17 +1370,16 @@ function GeographyCoverageReport() {
               <p className="font-semibold text-amber-900 mb-3">→ OUTPUT Paths (LINKING EXCELLENT, ANALYTICS WEAK)</p>
               <div className="space-y-3">
                 {coverageData.conversionPaths.outgoing.map((path, i) => (
-                  <div key={i} className={`p-3 border-2 rounded-lg ${
-                    path.coverage >= 80 ? 'border-green-300 bg-green-50' :
+                  <div key={i} className={`p-3 border-2 rounded-lg ${path.coverage >= 80 ? 'border-green-300 bg-green-50' :
                     path.coverage >= 50 ? 'border-yellow-300 bg-yellow-50' :
-                    'border-red-300 bg-red-50'
-                  }`}>
+                      'border-red-300 bg-red-50'
+                    }`}>
                     <div className="flex items-center justify-between mb-2">
                       <p className="font-bold">{path.path}</p>
                       <Badge className={
                         path.coverage >= 80 ? 'bg-green-600 text-white' :
-                        path.coverage >= 50 ? 'bg-yellow-600 text-white' :
-                        'bg-red-600 text-white'
+                          path.coverage >= 50 ? 'bg-yellow-600 text-white' :
+                            'bg-red-600 text-white'
                       }>{path.coverage}%</Badge>
                     </div>
                     <p className="text-sm text-slate-700 mb-1">{path.description}</p>
@@ -1609,7 +1588,7 @@ function GeographyCoverageReport() {
                       <p className="font-medium text-slate-900">{item.area}</p>
                       <Badge className={
                         item.status === 'complete' ? 'bg-green-600' :
-                        item.status === 'partial' ? 'bg-yellow-600' : 'bg-red-600'
+                          item.status === 'partial' ? 'bg-yellow-600' : 'bg-red-600'
                       }>{item.status}</Badge>
                     </div>
                     <p className="text-xs text-slate-600 mb-2">{item.details} • {item.compliance}</p>
@@ -1835,19 +1814,18 @@ function GeographyCoverageReport() {
         <CardContent>
           <div className="space-y-3">
             {coverageData.recommendations.map((rec, idx) => (
-              <div key={idx} className={`p-4 border-2 rounded-lg ${
-                rec.priority === 'P0' ? 'border-red-300 bg-red-50' :
+              <div key={idx} className={`p-4 border-2 rounded-lg ${rec.priority === 'P0' ? 'border-red-300 bg-red-50' :
                 rec.priority === 'P1' ? 'border-orange-300 bg-orange-50' :
-                rec.priority === 'P2' ? 'border-yellow-300 bg-yellow-50' :
-                'border-blue-300 bg-blue-50'
-              }`}>
+                  rec.priority === 'P2' ? 'border-yellow-300 bg-yellow-50' :
+                    'border-blue-300 bg-blue-50'
+                }`}>
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Badge className={
                       rec.priority === 'P0' ? 'bg-red-600 text-white' :
-                      rec.priority === 'P1' ? 'bg-orange-600 text-white' :
-                      rec.priority === 'P2' ? 'bg-yellow-600 text-white' :
-                      'bg-blue-600 text-white'
+                        rec.priority === 'P1' ? 'bg-orange-600 text-white' :
+                          rec.priority === 'P2' ? 'bg-yellow-600 text-white' :
+                            'bg-blue-600 text-white'
                     }>
                       {rec.priority}
                     </Badge>
@@ -1905,20 +1883,20 @@ function GeographyCoverageReport() {
             <p className="text-sm font-semibold text-amber-900 mb-2">⚠️ Critical Assessment</p>
             <p className="text-sm text-amber-800">
               Geography has {overallCoverage}% coverage - <strong>STRONG STRUCTURE, WEAK INTELLIGENCE</strong>:
-              <br/><br/>
+              <br /><br />
               <strong>DATA MODEL</strong> (85%) is EXCELLENT - 3-tier hierarchy (Region → City → Municipality).
-              <br/>
+              <br />
               <strong>ENTITY LINKING</strong> (90%) is EXCELLENT - challenges/pilots properly linked to municipalities.
-              <br/>
+              <br />
               <strong>INTELLIGENCE</strong> (30%) is WEAK - no regional analytics, no geographic AI, no coordination.
-              <br/><br/>
+              <br /><br />
               Geography is <strong>LABELS WITHOUT INTELLIGENCE</strong> - entities properly tagged but platform does not:
-              <br/>• Analyze regional performance
-              <br/>• Detect geographic patterns
-              <br/>• Coordinate multi-city initiatives
-              <br/>• Identify geographic gaps
-              <br/>• Provide location-based insights
-              <br/><br/>
+              <br />• Analyze regional performance
+              <br />• Detect geographic patterns
+              <br />• Coordinate multi-city initiatives
+              <br />• Identify geographic gaps
+              <br />• Provide location-based insights
+              <br /><br />
               7 municipality AI components exist but ZERO INTEGRATED.
             </p>
           </div>
@@ -1927,18 +1905,18 @@ function GeographyCoverageReport() {
             <p className="text-sm font-semibold text-blue-900 mb-2">🎯 Bottom Line</p>
             <p className="text-sm text-blue-800">
               <strong>GEOGRAPHY is PASSIVE FOUNDATION, needs ACTIVE INTELLIGENCE.</strong>
-              <br/>
+              <br />
               <strong>Fix priorities:</strong>
-              <br/>1. Build regional dashboards & analytics (MOST CRITICAL - regional coordination)
-              <br/>2. Build geographic AI & intelligence (clustering, pattern detection, gaps)
-              <br/>3. Integrate municipality AI components (MII improvement, peer benchmarking, etc.)
-              <br/>4. Build multi-city collaboration workflow
-              <br/>5. Build municipality data quality & validation
-              <br/>6. Build city dashboards & metrics
-              <br/>7. Build public geographic map
-              <br/>8. Build MII time-series visualization
-              <br/>9. Build service coverage mapping
-              <br/>10. Census & official data integration (long-term)
+              <br />1. Build regional dashboards & analytics (MOST CRITICAL - regional coordination)
+              <br />2. Build geographic AI & intelligence (clustering, pattern detection, gaps)
+              <br />3. Integrate municipality AI components (MII improvement, peer benchmarking, etc.)
+              <br />4. Build multi-city collaboration workflow
+              <br />5. Build municipality data quality & validation
+              <br />6. Build city dashboards & metrics
+              <br />7. Build public geographic map
+              <br />8. Build MII time-series visualization
+              <br />9. Build service coverage mapping
+              <br />10. Census & official data integration (long-term)
             </p>
           </div>
 

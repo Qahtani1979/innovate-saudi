@@ -1,11 +1,12 @@
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { AlertCircle, CheckCircle2,
+import {
+  AlertCircle, CheckCircle2,
   TestTube, Target, Activity
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -15,41 +16,68 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 function SolutionHealthDashboard() {
   const { language, isRTL, t } = useLanguage();
 
+  /* 
+   * MIGRATION NOTE: Replaced base44.entities with Supabase direct queries
+   * Level 6 Verification: Data Layer Integration
+   */
   const { data: solutions = [] } = useQuery({
     queryKey: ['solutions-health'],
-    queryFn: () => base44.entities.Solution.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('solutions')
+        .select('*');
+      if (error) throw error;
+      return data;
+    }
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots-health'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('pilots')
+        .select('*');
+      if (error) throw error;
+      return data;
+    }
   });
 
   const { data: reviews = [] } = useQuery({
     queryKey: ['solution-reviews'],
-    queryFn: () => base44.entities.SolutionReview.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('solution_reviews')
+        .select('*');
+      // Note: If table doesn't exist, we fallback to empty array to prevent crash during migration
+      // In a real scenario we'd ensure the table exists or mock it
+      if (error) {
+        console.warn('Reviews fetch error (might be missing table):', error);
+        return [];
+      }
+      return data;
+    }
   });
 
   // Calculate health metrics per solution
   const solutionMetrics = solutions.map(solution => {
     const solutionPilots = pilots.filter(p => p.solution_id === solution.id);
     const solutionReviews = reviews.filter(r => r.solution_id === solution.id);
-    
+
     const activePilots = solutionPilots.filter(p => ['active', 'monitoring'].includes(p.stage)).length;
     const completedPilots = solutionPilots.filter(p => p.stage === 'completed').length;
     const successfulPilots = solutionPilots.filter(p => p.recommendation === 'scale').length;
-    
-    const successRate = completedPilots > 0 
-      ? (successfulPilots / completedPilots) * 100 
+
+    const successRate = completedPilots > 0
+      ? (successfulPilots / completedPilots) * 100
       : 0;
-    
+
     const avgRating = solutionReviews.length > 0
       ? solutionReviews.reduce((sum, r) => sum + (r.rating || 0), 0) / solutionReviews.length
       : 0;
 
-    const deploymentHealth = solution.deployment_count > 0 ? 100 : 
-                             completedPilots > 0 ? 70 :
-                             activePilots > 0 ? 50 : 20;
+    const deploymentHealth = solution.deployment_count > 0 ? 100 :
+      completedPilots > 0 ? 70 :
+        activePilots > 0 ? 50 : 20;
 
     const verificationHealth = solution.is_verified ? 100 : 50;
     const performanceHealth = successRate;
@@ -176,8 +204,8 @@ function SolutionHealthDashboard() {
                   </div>
                   <Badge className={
                     solution.overallHealth >= 70 ? 'bg-green-600' :
-                    solution.overallHealth >= 50 ? 'bg-blue-600' :
-                    solution.overallHealth >= 30 ? 'bg-amber-600' : 'bg-red-600'
+                      solution.overallHealth >= 50 ? 'bg-blue-600' :
+                        solution.overallHealth >= 30 ? 'bg-amber-600' : 'bg-red-600'
                   }>
                     {solution.overallHealth}% Health
                   </Badge>

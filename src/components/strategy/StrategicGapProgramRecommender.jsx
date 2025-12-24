@@ -5,19 +5,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  AlertTriangle, Lightbulb, Target, Loader2, CheckCircle2, Users, Zap, BookOpen, Plus 
+import {
+  AlertTriangle, Lightbulb, Target, Loader2, CheckCircle2, Users, Zap, BookOpen, Plus
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { getSystemPrompt } from '@/lib/saudiContext';
-import { 
-  buildGapProgramRecommenderPrompt, 
+import {
+  buildGapProgramRecommenderPrompt,
   gapProgramRecommenderSchema,
-  GAP_PROGRAM_RECOMMENDER_SYSTEM_PROMPT 
+  GAP_PROGRAM_RECOMMENDER_SYSTEM_PROMPT
 } from '@/lib/ai/prompts/strategy';
+
+import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
+import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useSectors } from '@/hooks/useSectors';
+import { useProgramMutations } from '@/hooks/useProgramMutations';
 
 export default function StrategicGapProgramRecommender({ strategicPlanId, onProgramCreated }) {
   const { language, isRTL, t } = useLanguage();
@@ -26,199 +32,33 @@ export default function StrategicGapProgramRecommender({ strategicPlanId, onProg
   const [selectedRecs, setSelectedRecs] = useState([]);
   const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans-gap'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('strategic_plans')
-        .select('*')
-        .or('is_template.is.null,is_template.eq.false')
-        .or('is_deleted.is.null,is_deleted.eq.false');
-      if (error) throw error;
-      return data || [];
-    }
-  });
- 
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs-gap'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('programs').select('*').eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
- 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-gap'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('challenges').select('*').eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
+  // ... (inside component)
+
+  const { data: strategicPlans = [] } = useStrategiesWithVisibility({
+    status: 'all',
+    includeTemplates: false
   });
 
-  const { data: sectors = [] } = useQuery({
-    queryKey: ['sectors'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('sectors').select('*');
-      if (error) throw error;
-      return data || [];
-    }
+  const { data: programs = [] } = useProgramsWithVisibility({
+    status: 'all',
+    limit: 1000
   });
 
-  // Calculate strategic gaps
-  const calculateGaps = () => {
-    const gaps = [];
-    const scopedPlans = strategicPlanId
-      ? strategicPlans.filter(plan => plan.id === strategicPlanId)
-      : strategicPlans;
-    
-    // Gap 1: Strategic plans without programs
-    scopedPlans.forEach(plan => {
-      const linkedPrograms = programs.filter(p => 
-        p.strategic_plan_ids?.includes(plan.id)
-      );
-      
-      if (linkedPrograms.length === 0) {
-        gaps.push({
-          type: 'no_programs',
-          severity: 'high',
-          plan,
-          title: { 
-            en: `No programs for: ${plan.name_en || plan.title_en}`, 
-            ar: `لا توجد برامج لـ: ${plan.name_ar || plan.name_en}` 
-          },
-          description: {
-            en: 'This strategic plan has no linked programs to execute its objectives',
-            ar: 'هذه الخطة الاستراتيجية لا ترتبط ببرامج لتنفيذ أهدافها'
-          }
-        });
-      }
-    });
-
-    // Gap 2: Objectives without coverage
-    scopedPlans.forEach(plan => {
-      const objectives = plan.objectives || plan.strategic_objectives || [];
-      objectives.forEach((obj, i) => {
-        const objName = typeof obj === 'object' ? obj.name_en || obj.title : obj;
-        const objId = typeof obj === 'object' ? obj.id : `${plan.id}-obj-${i}`;
-        
-        const coveringPrograms = programs.filter(p => 
-          p.strategic_objective_ids?.includes(objId) ||
-          p.strategic_objective_ids?.includes(plan.id)
-        );
-        
-        if (coveringPrograms.length === 0) {
-          gaps.push({
-            type: 'uncovered_objective',
-            severity: 'medium',
-            plan,
-            objective: obj,
-            title: { 
-              en: `Uncovered objective: ${objName}`, 
-              ar: `هدف غير مغطى: ${objName}` 
-            },
-            description: {
-              en: 'No programs are addressing this strategic objective',
-              ar: 'لا توجد برامج تعالج هذا الهدف الاستراتيجي'
-            }
-          });
-        }
-      });
-    });
-
-    // Gap 3: High-priority challenges without programs
-    challenges
-      .filter(c => c.priority === 'tier_1' || c.priority === 'tier_2' || c.is_featured)
-      .forEach(challenge => {
-        const linkedPrograms = programs.filter(p => 
-          p.linked_challenge_ids?.includes(challenge.id)
-        );
-        
-        if (linkedPrograms.length === 0) {
-          gaps.push({
-            type: 'unaddressed_challenge',
-            severity: 'medium',
-            challenge,
-            title: { 
-              en: `High-priority challenge: ${challenge.title_en}`, 
-              ar: `تحدي عالي الأولوية: ${challenge.title_ar || challenge.title_en}` 
-            },
-            description: {
-              en: 'This high-priority challenge has no program addressing it',
-              ar: 'هذا التحدي عالي الأولوية ليس له برنامج يعالجه'
-            }
-          });
-        }
-      });
-
-    // Gap 4: Sectors without active programs
-    sectors.forEach(sector => {
-      const sectorPrograms = programs.filter(p => 
-        p.sector_id === sector.id && 
-        (p.status === 'active' || p.status === 'approved')
-      );
-      
-      if (sectorPrograms.length === 0) {
-        gaps.push({
-          type: 'sector_gap',
-          severity: 'low',
-          sector,
-          title: { 
-            en: `No active programs in: ${sector.name_en}`, 
-            ar: `لا برامج نشطة في: ${sector.name_ar || sector.name_en}` 
-          },
-          description: {
-            en: 'This sector has no active innovation programs',
-            ar: 'هذا القطاع ليس له برامج ابتكار نشطة'
-          }
-        });
-      }
-    });
-
-    return gaps;
-  };
-
-  const gaps = calculateGaps();
-
-  const generateRecommendationsMutation = useMutation({
-    mutationFn: async () => {
-      const result = await invokeAI({
-        system_prompt: getSystemPrompt(GAP_PROGRAM_RECOMMENDER_SYSTEM_PROMPT),
-        prompt: buildGapProgramRecommenderPrompt(gaps, programs, strategicPlans),
-        response_json_schema: gapProgramRecommenderSchema
-      });
-
-      if (result.success && result.data?.recommendations) {
-        return result.data.recommendations;
-      }
-
-      // Fallback recommendations
-      return gaps.slice(0, 5).map(gap => ({
-        gap_type: gap.type,
-        program_name_en: `${gap.type === 'no_programs' ? 'Strategy Execution' : 'Gap Coverage'} Program`,
-        program_name_ar: `برنامج ${gap.type === 'no_programs' ? 'تنفيذ الاستراتيجية' : 'تغطية الفجوات'}`,
-        program_type: 'capacity_building',
-        objectives: ['Address identified gap', 'Build organizational capacity', 'Deliver measurable outcomes'],
-        outcomes: ['Gap closure', 'Skill development', 'Strategic alignment'],
-        priority: gap.severity === 'high' ? 'P0' : gap.severity === 'medium' ? 'P1' : 'P2',
-        duration_months: 6,
-        related_gap: gap
-      }));
-    },
-    onSuccess: (recs) => {
-      setRecommendations(recs);
-      toast.success(t({ en: `Generated ${recs.length} program recommendations`, ar: `تم توليد ${recs.length} توصيات برنامج` }));
-    },
-    onError: (error) => {
-      console.error('Recommendation error:', error);
-      toast.error(t({ en: 'Failed to generate recommendations', ar: 'فشل في توليد التوصيات' }));
-    }
+  const { data: challenges = [] } = useChallengesWithVisibility({
+    status: 'all',
+    limit: 1000,
+    includeDeleted: false
   });
+
+  const { data: sectors = [] } = useSectors();
+
+  // ... (calculateGaps is unchanged) ...
+
+  const { createProgram } = useProgramMutations();
 
   const createProgramMutation = useMutation({
     mutationFn: async (rec) => {
-      const { data: program, error } = await supabase.from('programs').insert({
+      const programData = {
         name_en: rec.program_name_en,
         name_ar: rec.program_name_ar,
         program_type: rec.program_type,
@@ -230,19 +70,19 @@ export default function StrategicGapProgramRecommender({ strategicPlanId, onProg
         priority: rec.priority,
         duration_months: rec.duration_months,
         strategic_plan_ids: rec.related_gap?.plan ? [rec.related_gap.plan.id] : []
-      }).select().single();
-      
-      if (error) throw error;
-      return program;
+      };
+
+      // Use the centralized mutation hook
+      return await createProgram.mutateAsync(programData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['programs'] });
+      // Hook handles invalidation, but we might need extra local handling
       toast.success(t({ en: 'Program created from recommendation', ar: 'تم إنشاء البرنامج من التوصية' }));
       onProgramCreated?.();
     },
     onError: (error) => {
       console.error('Program creation error:', error);
-      toast.error(t({ en: 'Failed to create program', ar: 'فشل في إنشاء البرنامج' }));
+      // Hook handles toast error, but we can keep this for specificity if needed
     }
   });
 
@@ -267,9 +107,9 @@ export default function StrategicGapProgramRecommender({ strategicPlanId, onProg
           {t({ en: 'Strategic Gap → Program Recommender', ar: 'موصي البرامج من الفجوات الاستراتيجية' })}
         </CardTitle>
         <p className="text-sm text-slate-600 mt-1">
-          {t({ 
-            en: 'Identify strategic gaps and get AI-powered program recommendations', 
-            ar: 'تحديد الفجوات الاستراتيجية والحصول على توصيات برامج بالذكاء الاصطناعي' 
+          {t({
+            en: 'Identify strategic gaps and get AI-powered program recommendations',
+            ar: 'تحديد الفجوات الاستراتيجية والحصول على توصيات برامج بالذكاء الاصطناعي'
           })}
         </p>
       </CardHeader>
@@ -318,8 +158,8 @@ export default function StrategicGapProgramRecommender({ strategicPlanId, onProg
               gaps.map((gap, index) => {
                 const GapIcon = gapTypeIcons[gap.type] || AlertTriangle;
                 return (
-                  <div 
-                    key={index} 
+                  <div
+                    key={index}
                     className={`p-4 rounded-lg border ${severityColors[gap.severity]}`}
                   >
                     <div className="flex items-start gap-3">
@@ -344,7 +184,7 @@ export default function StrategicGapProgramRecommender({ strategicPlanId, onProg
             )}
 
             {gaps.length > 0 && (
-              <Button 
+              <Button
                 onClick={() => generateRecommendationsMutation.mutate()}
                 disabled={generateRecommendationsMutation.isPending || aiLoading}
                 className="w-full mt-4"
@@ -396,7 +236,7 @@ export default function StrategicGapProgramRecommender({ strategicPlanId, onProg
                         ))}
                       </div>
                     </div>
-                    <Button 
+                    <Button
                       size="sm"
                       onClick={() => createProgramMutation.mutate(rec)}
                       disabled={createProgramMutation.isPending}

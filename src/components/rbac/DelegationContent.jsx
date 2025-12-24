@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAllUserProfiles } from '@/hooks/useUserProfiles';
+import { useAuth } from '@/lib/AuthContext';
+import { useMyDelegations, useReceivedDelegations, useDelegationMutations } from '@/hooks/useDelegations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,10 +22,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from 'sonner';
+import { useState } from 'react';
 
 export default function DelegationContent() {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     delegate_email: '',
@@ -35,78 +36,10 @@ export default function DelegationContent() {
     reason: ''
   });
 
-  const { data: currentUser } = useQuery({
-    queryKey: ['current-user-delegation'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      return user;
-    }
-  });
-
-  const { data: users = [] } = useQuery({
-    queryKey: ['all-users-delegation'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('user_profiles').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: delegations = [] } = useQuery({
-    queryKey: ['my-delegations', currentUser?.email],
-    queryFn: async () => {
-      if (!currentUser?.email) return [];
-      const { data, error } = await supabase
-        .from('delegation_rules')
-        .select('*')
-        .eq('delegator_email', currentUser.email);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!currentUser?.email
-  });
-
-  const { data: receivedDelegations = [] } = useQuery({
-    queryKey: ['received-delegations', currentUser?.email],
-    queryFn: async () => {
-      if (!currentUser?.email) return [];
-      const { data, error } = await supabase
-        .from('delegation_rules')
-        .select('*')
-        .eq('delegate_email', currentUser.email);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!currentUser?.email
-  });
-
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase
-        .from('delegation_rules')
-        .insert({ ...data, delegator_email: currentUser.email, is_active: true });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['my-delegations']);
-      setDialogOpen(false);
-      setFormData({ delegate_email: '', permission_types: [], start_date: '', end_date: '', reason: '' });
-      toast.success(t({ en: 'Delegation created', ar: 'تم إنشاء التفويض' }));
-    },
-    onError: (error) => toast.error(error.message)
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      const { error } = await supabase.from('delegation_rules').delete().eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['my-delegations']);
-      toast.success(t({ en: 'Delegation removed', ar: 'تم إزالة التفويض' }));
-    },
-    onError: (error) => toast.error(error.message)
-  });
+  const { data: users = [] } = useAllUserProfiles();
+  const { data: delegations = [] } = useMyDelegations(currentUser?.email);
+  const { data: receivedDelegations = [] } = useReceivedDelegations(currentUser?.email);
+  const { createDelegation: createMutation, deleteDelegation: deleteMutation } = useDelegationMutations();
 
   const activeDelegations = delegations.filter(d => {
     const now = new Date();
@@ -255,13 +188,13 @@ export default function DelegationContent() {
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl">
-          <DialogHeader>
+          <DialogHeader className={undefined}>
             <DialogTitle>{t({ en: 'Create New Delegation', ar: 'إنشاء تفويض جديد' })}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
               <label className="text-sm font-medium mb-2 block">{t({ en: 'Delegate to', ar: 'التفويض لـ' })}</label>
-              <Select value={formData.delegate_email} onValueChange={(val) => setFormData({...formData, delegate_email: val})}>
+              <Select value={formData.delegate_email} onValueChange={(val) => setFormData({ ...formData, delegate_email: val })}>
                 <SelectTrigger>
                   <SelectValue placeholder={t({ en: 'Select user...', ar: 'اختر مستخدم...' })} />
                 </SelectTrigger>
@@ -285,9 +218,9 @@ export default function DelegationContent() {
                       checked={formData.permission_types.includes(perm)}
                       onChange={(e) => {
                         if (e.target.checked) {
-                          setFormData({...formData, permission_types: [...formData.permission_types, perm]});
+                          setFormData({ ...formData, permission_types: [...formData.permission_types, perm] });
                         } else {
-                          setFormData({...formData, permission_types: formData.permission_types.filter(p => p !== perm)});
+                          setFormData({ ...formData, permission_types: formData.permission_types.filter(p => p !== perm) });
                         }
                       }}
                       className="rounded"
@@ -301,11 +234,11 @@ export default function DelegationContent() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">{t({ en: 'Start date', ar: 'تاريخ البداية' })}</label>
-                <Input type="date" value={formData.start_date} onChange={(e) => setFormData({...formData, start_date: e.target.value})} />
+                <Input type="date" value={formData.start_date} onChange={(e) => setFormData({ ...formData, start_date: e.target.value })} />
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">{t({ en: 'End date', ar: 'تاريخ النهاية' })}</label>
-                <Input type="date" value={formData.end_date} onChange={(e) => setFormData({...formData, end_date: e.target.value})} />
+                <Input type="date" value={formData.end_date} onChange={(e) => setFormData({ ...formData, end_date: e.target.value })} />
               </div>
             </div>
 
@@ -314,16 +247,16 @@ export default function DelegationContent() {
               <Input
                 placeholder={t({ en: 'e.g., Vacation, Business trip...', ar: 'مثال: إجازة، رحلة عمل...' })}
                 value={formData.reason}
-                onChange={(e) => setFormData({...formData, reason: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className={undefined}>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               {t({ en: 'Cancel', ar: 'إلغاء' })}
             </Button>
-            <Button 
-              onClick={() => createMutation.mutate(formData)}
+            <Button
+              onClick={() => createMutation.mutate({ ...formData, delegator_email: currentUser.email })}
               disabled={!formData.delegate_email || !formData.start_date || !formData.end_date || formData.permission_types.length === 0 || createMutation.isPending}
             >
               {createMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}

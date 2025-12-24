@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,10 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { 
-  Shield, 
-  Plus, 
-  Search, 
+import {
+  Shield,
+  Plus,
+  Search,
   Filter,
   AlertCircle,
   CheckCircle2,
@@ -37,10 +35,17 @@ import PolicyReportTemplates from '../components/policy/PolicyReportTemplates';
 import PolicySemanticSearch from '../components/policy/PolicySemanticSearch';
 import PolicyTemplateLibrary from '../components/policy/PolicyTemplateLibrary';
 import { PageLayout, PageHeader, PersonaButton } from '@/components/layout/PersonaPageLayout';
+import { usePoliciesWithVisibility } from '@/hooks/usePoliciesWithVisibility';
+import { usePolicyMatching } from '@/hooks/usePolicyMatching';
+import { usePolicyMutations, usePolicyInvalidator } from '@/hooks/usePolicyMutations';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useRDProjectsWithVisibility } from '@/hooks/useRDProjectsWithVisibility';
+import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
 
 function PolicyHub() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  const { invalidatePolicies } = usePolicyInvalidator();
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
     status: 'all',
@@ -48,90 +53,38 @@ function PolicyHub() {
     entity_type: 'all',
     regulatory_change: 'all'
   });
-  const [isMatchingPolicies, setIsMatchingPolicies] = useState(false);
+  const [showSemanticSearch, setShowSemanticSearch] = useState(false);
   const [viewMode, setViewMode] = useState('list');
   const [selectedPolicies, setSelectedPolicies] = useState([]);
   const [showReports, setShowReports] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
-  const [showSemanticSearch, setShowSemanticSearch] = useState(false);
 
-  // Fetch all policies
-  const { data: policies = [], isLoading } = useQuery({
-    queryKey: ['all-policies'],
-    queryFn: () => base44.entities.PolicyRecommendation.list()
+  const { runPolicyMatching, isMatching: isMatchingPolicies } = usePolicyMatching();
+
+  // Centralized Mutations
+  const { updatePolicy, bulkUpdatePolicies, bulkDeletePolicies } = usePolicyMutations();
+
+  // Fetch all policies with visibility
+  const { data: policies = [], isLoading } = usePoliciesWithVisibility({
+    status: filters.status,
+    entityType: filters.entity_type,
+    priority: filters.priority
   });
 
-  // Fetch related entities for context
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-policy'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
+  // Fetch related entities with visibility
+  const { data: challenges = [] } = useChallengesWithVisibility();
+  const { data: pilots = [] } = usePilotsWithVisibility();
+  const { data: rdProjects = [] } = useRDProjectsWithVisibility();
+  const { data: programs = [] } = useProgramsWithVisibility();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-policy'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
 
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-policy'],
-    queryFn: () => base44.entities.RDProject.list()
-  });
-
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs-policy'],
-    queryFn: () => base44.entities.Program.list()
-  });
-
-  // AI Policy Matching
-  const runPolicyMatching = async () => {
-    setIsMatchingPolicies(true);
-    try {
-      toast.info(t({ en: 'Running AI policy analysis...', ar: 'تشغيل تحليل السياسات الذكي...' }));
-
-      // For each policy, find relevant entities
-      for (const policy of policies) {
-        if (!policy.embedding) continue;
-
-        // Match with challenges
-        for (const challenge of challenges.filter(c => c.embedding)) {
-          const similarity = cosineSimilarity(policy.embedding, challenge.embedding);
-          const score = Math.round(similarity * 100);
-
-          if (score >= 70 && !policy.challenge_id) {
-            await base44.entities.PolicyRecommendation.update(policy.id, {
-              challenge_id: challenge.id,
-              ai_match_score: score
-            });
-          }
-        }
-      }
-
-      await queryClient.invalidateQueries(['all-policies']);
-      toast.success(t({ en: 'Policy matching complete', ar: 'اكتمل تطابق السياسات' }));
-    } catch (error) {
-      toast.error(t({ en: 'Matching failed', ar: 'فشل التطابق' }));
-    } finally {
-      setIsMatchingPolicies(false);
-    }
-  };
-
-  const cosineSimilarity = (a, b) => {
-    if (!a || !b || a.length !== b.length) return 0;
-    let dotProduct = 0, normA = 0, normB = 0;
-    for (let i = 0; i < a.length; i++) {
-      dotProduct += a[i] * b[i];
-      normA += a[i] * a[i];
-      normB += b[i] * b[i];
-    }
-    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-  };
 
   // Filter policies
   const filteredPolicies = policies.filter(p => {
-    const status = p.workflow_stage || p.status;
+    const status = p.status;
     if (filters.status !== 'all' && status !== filters.status) return false;
-    if (filters.priority !== 'all' && p.priority_level !== filters.priority) return false;
-    if (filters.entity_type !== 'all' && p.entity_type !== filters.entity_type) return false;
+    if (filters.priority !== 'all' && p.priority !== filters.priority) return false;
+    if (filters.entity_type !== 'all' && p.source_entity_type !== filters.entity_type) return false;
     if (filters.regulatory_change !== 'all') {
       if (filters.regulatory_change === 'yes' && !p.regulatory_change_needed) return false;
       if (filters.regulatory_change === 'no' && p.regulatory_change_needed) return false;
@@ -141,27 +94,24 @@ function PolicyHub() {
       return (
         p.title_ar?.toLowerCase().includes(query) ||
         p.title_en?.toLowerCase().includes(query) ||
-        p.recommendation_text_ar?.toLowerCase().includes(query) ||
-        p.recommendation_text_en?.toLowerCase().includes(query)
+        p.description_ar?.toLowerCase().includes(query) ||
+        p.description_en?.toLowerCase().includes(query)
       );
     }
     return true;
   });
 
-  const bulkUpdateMutation = useMutation({
-    mutationFn: async ({ field, value }) => {
-      await Promise.all(
-        selectedPolicies.map(id => 
-          base44.entities.PolicyRecommendation.update(id, { [field]: value })
-        )
-      );
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['all-policies']);
-      setSelectedPolicies([]);
-      toast.success(t({ en: 'Bulk update complete', ar: 'اكتمل التحديث الجماعي' }));
-    }
-  });
+  const handleBulkUpdate = (field, value) => {
+    bulkUpdatePolicies.mutate({
+      ids: selectedPolicies,
+      data: { [field]: value },
+      metadata: { field, value }
+    }, {
+      onSuccess: () => {
+        setSelectedPolicies([]);
+      }
+    });
+  };
 
   const toggleSelectAll = () => {
     if (selectedPolicies.length === filteredPolicies.length) {
@@ -174,28 +124,28 @@ function PolicyHub() {
   // Stats
   const stats = {
     total: policies.length,
-    draft: policies.filter(p => (p.workflow_stage || p.status) === 'draft').length,
-    under_review: policies.filter(p => (p.workflow_stage || p.status) === 'under_review' || (p.workflow_stage || p.status) === 'legal_review').length,
-    approved: policies.filter(p => (p.workflow_stage || p.status) === 'approved' || (p.workflow_stage || p.status) === 'published').length,
-    implemented: policies.filter(p => (p.workflow_stage || p.status) === 'implemented' || (p.workflow_stage || p.status) === 'active').length,
+    draft: policies.filter(p => p.status === 'draft').length,
+    under_review: policies.filter(p => p.status === 'under_review' || p.status === 'legal_review').length,
+    approved: policies.filter(p => p.status === 'approved' || p.status === 'published').length,
+    implemented: policies.filter(p => p.status === 'implemented' || p.status === 'active').length,
     regulatory_changes: policies.filter(p => p.regulatory_change_needed).length
   };
 
   const getEntityName = (policy) => {
-    if (policy.challenge_id) {
-      const c = challenges.find(ch => ch.id === policy.challenge_id);
+    if (policy.source_entity_type === 'challenge') {
+      const c = challenges.find(ch => ch.id === policy.source_entity_id);
       return c?.code || c?.title_ar || c?.title_en || 'Challenge';
     }
-    if (policy.pilot_id) {
-      const p = pilots.find(p => p.id === policy.pilot_id);
+    if (policy.source_entity_type === 'pilot') {
+      const p = pilots.find(p => p.id === policy.source_entity_id);
       return p?.code || p?.title_ar || p?.title_en || 'Pilot';
     }
-    if (policy.rd_project_id) {
-      const r = rdProjects.find(r => r.id === policy.rd_project_id);
+    if (policy.source_entity_type === 'rd_project') {
+      const r = rdProjects.find(r => r.id === policy.source_entity_id);
       return r?.code || r?.title_ar || r?.title_en || 'R&D';
     }
-    if (policy.program_id) {
-      const pr = programs.find(pr => pr.id === policy.program_id);
+    if (policy.source_entity_type === 'program') {
+      const pr = programs.find(pr => pr.id === policy.source_entity_id);
       return pr?.code || pr?.name_ar || pr?.name_en || 'Program';
     }
     return 'Platform-wide';
@@ -206,13 +156,15 @@ function PolicyHub() {
       <PageHeader
         icon={Shield}
         title={{ en: 'Policy Hub', ar: 'مركز السياسات' }}
+        subtitle={{ en: 'Overview', ar: 'نظرة عامة' }}
         description={{ en: 'Manage policy recommendations across the platform', ar: 'إدارة التوصيات السياسية عبر المنصة' }}
         stats={[
           { icon: Shield, value: stats.total, label: { en: 'Total', ar: 'الإجمالي' } },
           { icon: Clock, value: stats.under_review, label: { en: 'Review', ar: 'مراجعة' } },
           { icon: CheckCircle2, value: stats.approved, label: { en: 'Approved', ar: 'موافق' } }
         ]}
-        action={
+        action={null}
+        actions={
           <div className="flex gap-2">
             <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
               <Button
@@ -334,8 +286,8 @@ function PolicyHub() {
             </div>
 
             <Filter className="h-4 w-4 text-slate-500" />
-            
-            <Select value={filters.status} onValueChange={(v) => setFilters({...filters, status: v})}>
+
+            <Select value={filters.status} onValueChange={(v) => setFilters({ ...filters, status: v })}>
               <SelectTrigger className="w-40">
                 <SelectValue />
               </SelectTrigger>
@@ -351,7 +303,7 @@ function PolicyHub() {
               </SelectContent>
             </Select>
 
-            <Select value={filters.priority} onValueChange={(v) => setFilters({...filters, priority: v})}>
+            <Select value={filters.priority} onValueChange={(v) => setFilters({ ...filters, priority: v })}>
               <SelectTrigger className="w-40">
                 <SelectValue />
               </SelectTrigger>
@@ -364,7 +316,7 @@ function PolicyHub() {
               </SelectContent>
             </Select>
 
-            <Select value={filters.entity_type} onValueChange={(v) => setFilters({...filters, entity_type: v})}>
+            <Select value={filters.entity_type} onValueChange={(v) => setFilters({ ...filters, entity_type: v })}>
               <SelectTrigger className="w-40">
                 <SelectValue />
               </SelectTrigger>
@@ -378,7 +330,7 @@ function PolicyHub() {
               </SelectContent>
             </Select>
 
-            <Select value={filters.regulatory_change} onValueChange={(v) => setFilters({...filters, regulatory_change: v})}>
+            <Select value={filters.regulatory_change} onValueChange={(v) => setFilters({ ...filters, regulatory_change: v })}>
               <SelectTrigger className="w-44">
                 <SelectValue />
               </SelectTrigger>
@@ -398,12 +350,22 @@ function PolicyHub() {
 
       {/* Semantic Search */}
       {showSemanticSearch && (
-        <PolicySemanticSearch />
+        <PolicySemanticSearch onResultsFound={(results) => {
+          // Handle results - maybe filter the list or show a modal
+          console.log('Semantic search results:', results);
+          toast.info(t({ en: 'Search results found', ar: 'تم العثور على نتائج' }));
+        }} />
       )}
 
       {/* Templates */}
       {showTemplates && (
-        <PolicyTemplateLibrary />
+        <PolicyTemplateLibrary onTemplateSelect={(template) => {
+          // Navigate to create page with template
+          const params = new URLSearchParams();
+          params.set('template_id', template.id);
+          // navigate(createPageUrl('PolicyCreate') + '?' + params.toString());
+          window.location.href = createPageUrl('PolicyCreate') + '?' + params.toString();
+        }} />
       )}
 
       {/* Reports Section */}
@@ -423,7 +385,7 @@ function PolicyHub() {
                 </span>
               </div>
               <div className="flex gap-2">
-                <Select onValueChange={(v) => bulkUpdateMutation.mutate({ field: 'workflow_stage', value: v })}>
+                <Select onValueChange={(v) => handleBulkUpdate('status', v)}>
                   <SelectTrigger className="w-40 h-8 text-xs">
                     <SelectValue placeholder={t({ en: 'Change Stage', ar: 'تغيير المرحلة' })} />
                   </SelectTrigger>
@@ -433,17 +395,14 @@ function PolicyHub() {
                     <SelectItem value="published">Published</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   variant="outline"
-                  onClick={() => {
+                  onClick={async () => {
                     if (confirm(t({ en: 'Delete selected policies?', ar: 'حذف السياسات المحددة؟' }))) {
-                      Promise.all(selectedPolicies.map(id => base44.entities.PolicyRecommendation.delete(id)))
-                        .then(() => {
-                          queryClient.invalidateQueries(['all-policies']);
-                          setSelectedPolicies([]);
-                          toast.success(t({ en: 'Policies deleted', ar: 'تم حذف السياسات' }));
-                        });
+                      bulkDeletePolicies.mutate(selectedPolicies, {
+                        onSuccess: () => setSelectedPolicies([])
+                      });
                     }
                   }}
                   className="text-red-600"
@@ -472,12 +431,12 @@ function PolicyHub() {
                   {stage.replace(/_/g, ' ').toUpperCase()}
                 </p>
                 <Badge variant="outline" className="mt-1">
-                  {filteredPolicies.filter(p => (p.workflow_stage || p.status) === stage).length}
+                  {filteredPolicies.filter(p => p.status === stage).length}
                 </Badge>
               </div>
               <div className="space-y-2">
                 {filteredPolicies
-                  .filter(p => (p.workflow_stage || p.status) === stage)
+                  .filter(p => p.status === stage)
                   .map(policy => (
                     <Link key={policy.id} to={createPageUrl(`PolicyDetail?id=${policy.id}`)}>
                       <Card className="hover:shadow-md transition-shadow cursor-pointer">
@@ -486,8 +445,8 @@ function PolicyHub() {
                             {language === 'ar' && policy.title_ar ? policy.title_ar : policy.title_en}
                           </p>
                           <div className="flex gap-1 flex-wrap">
-                            {policy.priority_level && (
-                              <Badge className="text-xs">{policy.priority_level}</Badge>
+                            {policy.priority && (
+                              <Badge className="text-xs">{policy.priority}</Badge>
                             )}
                             {policy.regulatory_change_needed && (
                               <Badge className="text-xs bg-orange-100 text-orange-700">Reg</Badge>
@@ -584,9 +543,9 @@ function PolicyHub() {
                             <Badge className={statusColors[policy.status]}>
                               {policy.status?.replace(/_/g, ' ')}
                             </Badge>
-                            {policy.priority_level && (
-                              <Badge className={priorityColors[policy.priority_level]}>
-                                {policy.priority_level}
+                            {policy.priority && (
+                              <Badge className={priorityColors[policy.priority]}>
+                                {policy.priority}
                               </Badge>
                             )}
                             {policy.regulatory_change_needed && (
@@ -600,9 +559,9 @@ function PolicyHub() {
                             {language === 'ar' && policy.title_ar ? policy.title_ar : policy.title_en}
                           </h3>
                           <p className="text-sm text-slate-700 line-clamp-2" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                            {language === 'ar' && policy.recommendation_text_ar 
-                              ? policy.recommendation_text_ar 
-                              : policy.recommendation_text_en}
+                            {language === 'ar' && policy.description_ar
+                              ? policy.description_ar
+                              : policy.description_en}
                           </p>
                         </div>
                         {policy.impact_score && (
@@ -640,7 +599,7 @@ function PolicyHub() {
                         </div>
                       )}
                     </Link>
-                    </div>
+                  </div>
                 </CardContent>
               </Card>
             );

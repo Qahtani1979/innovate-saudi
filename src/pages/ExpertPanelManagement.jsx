@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+﻿import { useState } from 'react';
+import { useExpertPanelMutations } from '@/hooks/useExpertPanelMutations';
+import { useExpertPanels, usePanelChallenges, usePanelPilots, usePanelRDProjects, usePanelScalingPlans } from '@/hooks/useExpertPanelData';
+import { useExperts } from '@/hooks/useExpertData';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,7 +32,6 @@ import { PageLayout, PageHeader, PersonaButton } from '@/components/layout/Perso
 export default function ExpertPanelManagement() {
   const [showCreate, setShowCreate] = useState(false);
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
 
   const [newPanel, setNewPanel] = useState({
     panel_name: '',
@@ -42,52 +42,37 @@ export default function ExpertPanelManagement() {
     consensus_threshold: 75
   });
 
-  const { data: panels = [], isLoading } = useQuery({
-    queryKey: ['expert-panels'],
-    queryFn: () => base44.entities.ExpertPanel.list('-created_date', 50)
-  });
+  // Hooks usage
+  const { data: panels = [], isLoading } = useExpertPanels();
+  const { data: experts = [] } = useExperts();
 
-  const { data: experts = [] } = useQuery({
-    queryKey: ['expert-profiles'],
-    queryFn: () => base44.entities.ExpertProfile.list()
-  });
+  const { data: challenges = [] } = usePanelChallenges();
+  const { data: pilots = [] } = usePanelPilots();
+  const { data: rdProjects = [] } = usePanelRDProjects();
+  const { data: scalingPlans = [] } = usePanelScalingPlans();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-for-panel'],
-    queryFn: () => base44.entities.Challenge.list('-created_date', 100)
-  });
+  const { createPanel } = useExpertPanelMutations();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-for-panel'],
-    queryFn: () => base44.entities.Pilot.list('-created_date', 100)
-  });
+  const handleCreatePanel = () => {
+    createPanel.mutate({
+      ...newPanel,
+      creation_date: new Date().toISOString(),
+      status: 'forming'
+    }, {
+      onSuccess: () => {
+        setShowCreate(false);
+        setNewPanel({
+          panel_name: '',
+          entity_type: 'challenge',
+          entity_id: '',
+          panel_members: [],
+          panel_chair_email: '',
+          consensus_threshold: 75
+        });
+      }
+    });
+  };
 
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects-for-panel'],
-    queryFn: () => base44.entities.RDProject.list('-created_date', 100)
-  });
-
-  const { data: scalingPlans = [] } = useQuery({
-    queryKey: ['scaling-plans-for-panel'],
-    queryFn: () => base44.entities.ScalingPlan.list('-created_date', 100)
-  });
-
-  const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.ExpertPanel.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['expert-panels']);
-      toast.success(t({ en: 'Panel created', ar: 'تم إنشاء اللجنة' }));
-      setShowCreate(false);
-      setNewPanel({
-        panel_name: '',
-        entity_type: 'challenge',
-        entity_id: '',
-        panel_members: [],
-        panel_chair_email: '',
-        consensus_threshold: 75
-      });
-    }
-  });
 
   const getEntitiesByType = () => {
     const map = {
@@ -123,17 +108,17 @@ export default function ExpertPanelManagement() {
     <PageLayout>
       <PageHeader
         icon={UsersRound}
-        title={t({ en: 'Expert Panel Management', ar: 'إدارة لجان الخبراء' })}
-        description={t({ en: 'Create and manage multi-expert evaluation panels', ar: 'إنشاء وإدارة لجان التقييم متعددة الخبراء' })}
+        title={t({ en: 'Expert Panel Management', ar: 'Ø¥Ø¯Ø§Ø±Ø© Ù„Ø¬Ø§Ù† Ø§Ù„Ø®Ø¨Ø±Ø§Ø¡' })}
+        description={t({ en: 'Create and manage multi-expert evaluation panels', ar: 'Ø¥Ù†Ø´Ø§Ø¡ ÙˆØ¥Ø¯Ø§Ø±Ø© Ù„Ø¬Ø§Ù† Ø§Ù„ØªÙ‚ÙŠÙŠÙ… Ù…ØªØ¹Ø¯Ø¯Ø© Ø§Ù„Ø®Ø¨Ø±Ø§Ø¡' })}
         stats={[
-          { icon: Users, value: panels.length, label: t({ en: 'Total Panels', ar: 'إجمالي اللجان' }) },
-          { icon: Clock, value: panels.filter(p => ['forming', 'reviewing', 'discussion'].includes(p.status)).length, label: t({ en: 'Active', ar: 'نشطة' }) },
-          { icon: CheckCircle2, value: panels.filter(p => p.status === 'completed').length, label: t({ en: 'Completed', ar: 'مكتملة' }) },
+          { icon: Users, value: panels.length, label: t({ en: 'Total Panels', ar: 'Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù„Ø¬Ø§Ù†' }) },
+          { icon: Clock, value: panels.filter(p => ['forming', 'reviewing', 'discussion'].includes(p.status)).length, label: t({ en: 'Active', ar: 'Ù†Ø´Ø·Ø©' }) },
+          { icon: CheckCircle2, value: panels.filter(p => p.status === 'completed').length, label: t({ en: 'Completed', ar: 'Ù…ÙƒØªÙ…Ù„Ø©' }) },
         ]}
         action={
           <PersonaButton onClick={() => setShowCreate(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            {t({ en: 'Create Panel', ar: 'إنشاء لجنة' })}
+            {t({ en: 'Create Panel', ar: 'Ø¥Ù†Ø´Ø§Ø¡ Ù„Ø¬Ù†Ø©' })}
           </PersonaButton>
         }
       />
@@ -145,7 +130,7 @@ export default function ExpertPanelManagement() {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <Plus className="h-5 w-5 text-purple-600" />
-                {t({ en: 'Create New Panel', ar: 'إنشاء لجنة جديدة' })}
+                {t({ en: 'Create New Panel', ar: 'Ø¥Ù†Ø´Ø§Ø¡ Ù„Ø¬Ù†Ø© Ø¬Ø¯ÙŠØ¯Ø©' })}
               </CardTitle>
               <Button variant="ghost" size="icon" onClick={() => setShowCreate(false)}>
                 <X className="h-4 w-4" />
@@ -154,7 +139,7 @@ export default function ExpertPanelManagement() {
           </CardHeader>
           <CardContent className="space-y-4">
             <Input
-              placeholder={t({ en: 'Panel Name', ar: 'اسم اللجنة' })}
+              placeholder={t({ en: 'Panel Name', ar: 'Ø§Ø³Ù… Ø§Ù„Ù„Ø¬Ù†Ø©' })}
               value={newPanel.panel_name}
               onChange={(e) => setNewPanel({ ...newPanel, panel_name: e.target.value })}
             />
@@ -162,28 +147,28 @@ export default function ExpertPanelManagement() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-slate-700 mb-2 block">
-                  {t({ en: 'Entity Type', ar: 'نوع الكيان' })}
+                  {t({ en: 'Entity Type', ar: 'Ù†ÙˆØ¹ Ø§Ù„ÙƒÙŠØ§Ù†' })}
                 </label>
                 <Select value={newPanel.entity_type} onValueChange={(val) => setNewPanel({ ...newPanel, entity_type: val, entity_id: '' })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="challenge">{t({ en: 'Challenge', ar: 'تحدي' })}</SelectItem>
-                    <SelectItem value="pilot">{t({ en: 'Pilot', ar: 'تجربة' })}</SelectItem>
-                    <SelectItem value="rd_project">{t({ en: 'R&D Project', ar: 'مشروع بحث' })}</SelectItem>
-                    <SelectItem value="scaling_plan">{t({ en: 'Scaling Plan', ar: 'خطة توسع' })}</SelectItem>
+                    <SelectItem value="challenge">{t({ en: 'Challenge', ar: 'ØªØ­Ø¯ÙŠ' })}</SelectItem>
+                    <SelectItem value="pilot">{t({ en: 'Pilot', ar: 'ØªØ¬Ø±Ø¨Ø©' })}</SelectItem>
+                    <SelectItem value="rd_project">{t({ en: 'R&D Project', ar: 'Ù…Ø´Ø±ÙˆØ¹ Ø¨Ø­Ø«' })}</SelectItem>
+                    <SelectItem value="scaling_plan">{t({ en: 'Scaling Plan', ar: 'Ø®Ø·Ø© ØªÙˆØ³Ø¹' })}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
                 <label className="text-sm font-medium text-slate-700 mb-2 block">
-                  {t({ en: 'Select Entity', ar: 'اختر الكيان' })}
+                  {t({ en: 'Select Entity', ar: 'Ø§Ø®ØªØ± Ø§Ù„ÙƒÙŠØ§Ù†' })}
                 </label>
                 <Select value={newPanel.entity_id} onValueChange={(val) => setNewPanel({ ...newPanel, entity_id: val })}>
                   <SelectTrigger>
-                    <SelectValue placeholder={t({ en: 'Choose...', ar: 'اختر...' })} />
+                    <SelectValue placeholder={t({ en: 'Choose...', ar: 'Ø§Ø®ØªØ±...' })} />
                   </SelectTrigger>
                   <SelectContent>
                     {getEntitiesByType().map((entity) => (
@@ -198,7 +183,7 @@ export default function ExpertPanelManagement() {
 
             <div>
               <label className="text-sm font-medium text-slate-700 mb-2 block">
-                {t({ en: 'Select Panel Members', ar: 'اختر أعضاء اللجنة' })} ({newPanel.panel_members.length})
+                {t({ en: 'Select Panel Members', ar: 'Ø§Ø®ØªØ± Ø£Ø¹Ø¶Ø§Ø¡ Ø§Ù„Ù„Ø¬Ù†Ø©' })} ({newPanel.panel_members.length})
               </label>
               <div className="max-h-64 overflow-y-auto border rounded-lg p-3 space-y-2">
                 {verifiedExperts.map((expert) => (
@@ -212,7 +197,7 @@ export default function ExpertPanelManagement() {
                       <p className="text-xs text-slate-500">{expert.position}</p>
                     </div>
                     {expert.expert_rating > 0 && (
-                      <Badge variant="outline" className="text-xs">{expert.expert_rating.toFixed(1)} ⭐</Badge>
+                      <Badge variant="outline" className="text-xs">{expert.expert_rating.toFixed(1)} â­</Badge>
                     )}
                   </div>
                 ))}
@@ -221,11 +206,11 @@ export default function ExpertPanelManagement() {
 
             <div>
               <label className="text-sm font-medium text-slate-700 mb-2 block">
-                {t({ en: 'Panel Chair', ar: 'رئيس اللجنة' })}
+                {t({ en: 'Panel Chair', ar: 'Ø±Ø¦ÙŠØ³ Ø§Ù„Ù„Ø¬Ù†Ø©' })}
               </label>
               <Select value={newPanel.panel_chair_email} onValueChange={(val) => setNewPanel({ ...newPanel, panel_chair_email: val })}>
                 <SelectTrigger>
-                  <SelectValue placeholder={t({ en: 'Select chair...', ar: 'اختر الرئيس...' })} />
+                  <SelectValue placeholder={t({ en: 'Select chair...', ar: 'Ø§Ø®ØªØ± Ø§Ù„Ø±Ø¦ÙŠØ³...' })} />
                 </SelectTrigger>
                 <SelectContent>
                   {newPanel.panel_members.map((email) => {
@@ -242,7 +227,7 @@ export default function ExpertPanelManagement() {
 
             <div>
               <label className="text-sm font-medium text-slate-700 mb-2 block">
-                {t({ en: 'Consensus Threshold (%)', ar: 'عتبة الإجماع (%)' })}
+                {t({ en: 'Consensus Threshold (%)', ar: 'Ø¹ØªØ¨Ø© Ø§Ù„Ø¥Ø¬Ù…Ø§Ø¹ (%)' })}
               </label>
               <Input
                 type="number"
@@ -254,15 +239,11 @@ export default function ExpertPanelManagement() {
             </div>
 
             <Button
-              onClick={() => createMutation.mutate({
-                ...newPanel,
-                creation_date: new Date().toISOString(),
-                status: 'forming'
-              })}
-              disabled={!newPanel.panel_name || !newPanel.entity_id || newPanel.panel_members.length < 2 || createMutation.isPending}
+              onClick={handleCreatePanel}
+              disabled={!newPanel.panel_name || !newPanel.entity_id || newPanel.panel_members.length < 2 || createPanel.isPending}
               className="w-full bg-gradient-to-r from-purple-600 to-blue-600"
             >
-              {t({ en: 'Create Panel', ar: 'إنشاء اللجنة' })}
+              {t({ en: 'Create Panel', ar: 'Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù„Ø¬Ù†Ø©' })}
             </Button>
           </CardContent>
         </Card>
@@ -282,24 +263,24 @@ export default function ExpertPanelManagement() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-600">{t({ en: 'Entity:', ar: 'الكيان:' })}</span>
+                <span className="text-slate-600">{t({ en: 'Entity:', ar: 'Ø§Ù„ÙƒÙŠØ§Ù†:' })}</span>
                 <Badge variant="outline">{panel.entity_type}</Badge>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-600">{t({ en: 'Members:', ar: 'الأعضاء:' })}</span>
+                <span className="text-slate-600">{t({ en: 'Members:', ar: 'Ø§Ù„Ø£Ø¹Ø¶Ø§Ø¡:' })}</span>
                 <span className="font-medium">{panel.panel_members?.length || 0}</span>
               </div>
               {panel.consensus_threshold && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-600">{t({ en: 'Threshold:', ar: 'العتبة:' })}</span>
+                  <span className="text-slate-600">{t({ en: 'Threshold:', ar: 'Ø§Ù„Ø¹ØªØ¨Ø©:' })}</span>
                   <span className="font-medium">{panel.consensus_threshold}%</span>
                 </div>
               )}
               {panel.decision && (
                 <Badge className={
                   panel.decision === 'approve' ? 'bg-green-100 text-green-700' :
-                  panel.decision === 'reject' ? 'bg-red-100 text-red-700' :
-                  'bg-yellow-100 text-yellow-700'
+                    panel.decision === 'reject' ? 'bg-red-100 text-red-700' :
+                      'bg-yellow-100 text-yellow-700'
                 }>
                   {panel.decision}
                 </Badge>
@@ -307,7 +288,7 @@ export default function ExpertPanelManagement() {
               <Link to={createPageUrl(`ExpertPanelDetail?id=${panel.id}`)}>
                 <Button variant="outline" size="sm" className="w-full mt-2">
                   <Eye className="h-4 w-4 mr-2" />
-                  {t({ en: 'View Panel', ar: 'عرض اللجنة' })}
+                  {t({ en: 'View Panel', ar: 'Ø¹Ø±Ø¶ Ø§Ù„Ù„Ø¬Ù†Ø©' })}
                 </Button>
               </Link>
             </CardContent>
@@ -319,7 +300,7 @@ export default function ExpertPanelManagement() {
         <Card>
           <CardContent className="pt-6 text-center py-12">
             <Users className="h-12 w-12 text-slate-400 mx-auto mb-3" />
-            <p className="text-slate-600">{t({ en: 'No panels created yet', ar: 'لم يتم إنشاء لجان بعد' })}</p>
+            <p className="text-slate-600">{t({ en: 'No panels created yet', ar: 'Ù„Ù… ÙŠØªÙ… Ø¥Ù†Ø´Ø§Ø¡ Ù„Ø¬Ø§Ù† Ø¨Ø¹Ø¯' })}</p>
           </CardContent>
         </Card>
       )}

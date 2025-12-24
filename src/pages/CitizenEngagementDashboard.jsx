@@ -1,5 +1,3 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -7,19 +5,16 @@ import { Users, TrendingUp, MessageSquare, MapPin, BarChart3 } from 'lucide-reac
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useCitizenIdeasWithVisibility } from '@/hooks/useCitizenIdeasWithVisibility';
 
 function CitizenEngagementDashboard() {
   const { language, t } = useLanguage();
 
-  const { data: ideas = [] } = useQuery({
-    queryKey: ['citizen-ideas'],
-    queryFn: () => base44.entities.CitizenIdea.list(),
-    initialData: []
-  });
+  const { data: ideas = [] } = useCitizenIdeasWithVisibility();
 
-  const totalVotes = ideas.reduce((sum, i) => sum + (i.vote_count || 0), 0);
-  const totalComments = ideas.reduce((sum, i) => sum + (i.comment_count || 0), 0);
-  const conversionRate = ideas.length > 0 
+  const totalVotes = ideas.reduce((sum, i) => sum + (i.votes_count || 0), 0);
+  const totalComments = ideas.reduce((sum, i) => sum + (i.comments_count || 0), 0);
+  const conversionRate = ideas.length > 0
     ? Math.round((ideas.filter(i => i.status === 'converted_to_challenge').length / ideas.length) * 100)
     : 0;
 
@@ -40,7 +35,7 @@ function CitizenEngagementDashboard() {
   const COLORS = ['#10b981', '#f59e0b', '#ef4444'];
 
   const topIdeas = [...ideas]
-    .sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0))
+    .sort((a, b) => (b.votes_count || 0) - (a.votes_count || 0))
     .slice(0, 5);
 
   return (
@@ -49,6 +44,10 @@ function CitizenEngagementDashboard() {
         title={{ en: 'Citizen Engagement Analytics', ar: 'تحليلات مشاركة المواطنين' }}
         subtitle={{ en: 'Track citizen participation, trending topics, and sentiment', ar: 'تتبع مشاركة المواطنين والمواضيع الرائجة والمشاعر' }}
         icon={<BarChart3 className="h-6 w-6 text-white" />}
+        description={null}
+        action={null}
+        actions={null}
+        children={null}
       />
 
       {/* Stats */}
@@ -142,7 +141,7 @@ function CitizenEngagementDashboard() {
                 <div className="flex-1">
                   <h4 className="font-semibold text-sm text-slate-900">{idea.title}</h4>
                   <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
-                    <span>{idea.vote_count || 0} votes</span>
+                    <span>{idea.votes_count || 0} votes</span>
                     {idea.location && (
                       <span className="flex items-center gap-1">
                         <MapPin className="h-3 w-3" />

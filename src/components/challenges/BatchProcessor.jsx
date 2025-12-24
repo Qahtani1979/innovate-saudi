@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
@@ -13,14 +11,18 @@ import {
   BATCH_VALIDATION_SCHEMA
 } from '@/lib/ai/prompts/challenges';
 
+import { useImportChallenges } from '@/hooks/useChallengeMutations';
+
 export default function BatchProcessor() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  // queryClient removed
   const [file, setFile] = useState(null);
   const [extractedData, setExtractedData] = useState(null);
   const [validationResults, setValidationResults] = useState(null);
   const [processing, setProcessing] = useState(false);
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+
+  const bulkImportMutation = useImportChallenges();
 
   const handleFileUpload = async (e) => {
     const uploadedFile = e.target.files[0];
@@ -91,22 +93,6 @@ export default function BatchProcessor() {
     }
   };
 
-  const bulkImportMutation = useMutation({
-    mutationFn: async (challenges) => {
-      const { error } = await supabase.from('challenges').insert(
-        challenges.map(c => ({ ...c, status: 'draft' }))
-      );
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['challenges'] });
-      toast.success(t({ en: 'Challenges imported successfully', ar: 'تم استيراد التحديات بنجاح' }));
-      setFile(null);
-      setExtractedData(null);
-      setValidationResults(null);
-    }
-  });
-
   const handleImport = () => {
     const validChallenges = extractedData.filter((c, idx) => {
       const hasDuplicate = validationResults?.duplicates?.some(d => d.challenge_index === idx);
@@ -114,7 +100,13 @@ export default function BatchProcessor() {
       return !hasDuplicate && !hasMissingFields;
     });
 
-    bulkImportMutation.mutate(validChallenges);
+    bulkImportMutation.mutate(validChallenges, {
+      onSuccess: () => {
+        setFile(null);
+        setExtractedData(null);
+        setValidationResults(null);
+      }
+    });
   };
 
   return (
@@ -128,7 +120,7 @@ export default function BatchProcessor() {
         </CardHeader>
         <CardContent>
           <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails className="mb-4" />
-          
+
           {!file ? (
             <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center">
               <FileText className="h-12 w-12 text-slate-400 mx-auto mb-4" />

@@ -2,13 +2,13 @@ import { useLanguage } from '@/components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { 
-  Newspaper, 
-  Calendar, 
-  Lightbulb, 
-  TestTube, 
+import { useContent } from '@/hooks/useContent';
+import { useMatchingEntities } from '@/hooks/useMatchingEntities';
+import {
+  Newspaper,
+  Calendar,
+  Lightbulb,
+  TestTube,
   ArrowRight,
   Building2,
   Award,
@@ -27,53 +27,12 @@ const ViewerDashboard = () => {
   const { t, language, isRTL } = useLanguage();
 
   // Fetch platform statistics
-  const { data: stats } = useQuery({
-    queryKey: ['viewer-platform-stats'],
-    queryFn: async () => {
-      const [challenges, pilots, solutions, municipalities] = await Promise.all([
-        supabase.from('challenges').select('*', { count: 'exact', head: true }).eq('is_deleted', false).eq('is_published', true),
-        supabase.from('pilots').select('*', { count: 'exact', head: true }).eq('is_deleted', false).eq('is_published', true),
-        supabase.from('solutions').select('*', { count: 'exact', head: true }).eq('is_deleted', false).eq('is_published', true),
-        supabase.from('municipalities').select('*', { count: 'exact', head: true }).eq('is_active', true)
-      ]);
-      return {
-        challenges: challenges.count || 0,
-        pilots: pilots.count || 0,
-        solutions: solutions.count || 0,
-        municipalities: municipalities.count || 0
-      };
-    }
-  });
+  const { usePlatformStats, useNews } = useContent();
+  const { useEvents } = useMatchingEntities();
 
-  // Fetch recent news
-  const { data: recentNews } = useQuery({
-    queryKey: ['viewer-recent-news'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('news_articles')
-        .select('id, title_en, title_ar, published_at, image_url')
-        .eq('is_published', true)
-        .order('published_at', { ascending: false })
-        .limit(3);
-      return data || [];
-    }
-  });
-
-  // Fetch upcoming events
-  const { data: upcomingEvents } = useQuery({
-    queryKey: ['viewer-upcoming-events'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('events')
-        .select('id, title_en, title_ar, start_date, location')
-        .eq('is_deleted', false)
-        .eq('is_published', true)
-        .gte('start_date', new Date().toISOString())
-        .order('start_date', { ascending: true })
-        .limit(3);
-      return data || [];
-    }
-  });
+  const { data: stats } = usePlatformStats();
+  const { data: recentNews } = useNews(3);
+  const { data: upcomingEvents } = useEvents({ limit: 3, published: true, future: true });
 
   const quickLinks = [
     { icon: Newspaper, label: { en: 'Latest News', ar: 'آخر الأخبار' }, href: '/news', color: 'text-blue-500' },
@@ -178,9 +137,9 @@ const ViewerDashboard = () => {
                 {recentNews.map((news) => (
                   <div key={news.id} className="flex gap-3 p-2 rounded-lg hover:bg-accent/50 transition-colors">
                     {news.image_url && (
-                      <img 
-                        src={news.image_url} 
-                        alt="" 
+                      <img
+                        src={news.image_url}
+                        alt=""
                         className="w-16 h-16 rounded object-cover"
                       />
                     )}

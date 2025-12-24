@@ -1,5 +1,4 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+﻿import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -8,27 +7,19 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 
 function MultiCityOrchestration() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities-orch'],
-    queryFn: () => base44.entities.Municipality.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-orch'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-orch'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
+  const { data: municipalities = [] } = useMunicipalitiesWithVisibility({ includeAll: true });
+  const { data: pilots = [] } = usePilotsWithVisibility({ includeAll: true });
+  const { data: challenges = [] } = useChallengesWithVisibility({ includeAll: true });
 
   const multiCityPilots = pilots.filter(p => p.scaling_plan?.target_locations?.length > 1);
-  const activeMunicipalities = municipalities.filter(m => 
+  const activeMunicipalities = municipalities.filter(m =>
     pilots.some(p => p.municipality_id === m.id && ['active', 'monitoring'].includes(p.stage))
   );
 
@@ -36,13 +27,17 @@ function MultiCityOrchestration() {
     <PageLayout>
       <PageHeader
         icon={Network}
-        title={{ en: 'Multi-City Orchestration', ar: 'التنسيق متعدد المدن' }}
+        title={{ en: 'Multi-City Orchestration', ar: 'Ø§Ù„ØªÙ†Ø³ÙŠÙ‚ Ù…ØªØ¹Ø¯Ø¯ Ø§Ù„Ù…Ø¯Ù†' }}
         subtitle={{ en: 'Coordinate innovation across municipalities', ar: 'تنسيق الابتكار عبر البلديات' }}
+        description={{ en: '', ar: '' }}
         stats={[
-          { icon: Building2, value: activeMunicipalities.length, label: { en: 'Active Cities', ar: 'مدن نشطة' } },
-          { icon: Network, value: multiCityPilots.length, label: { en: 'Multi-City Pilots', ar: 'تجارب متعددة المدن' } },
-          { icon: Activity, value: pilots.length, label: { en: 'Total Pilots', ar: 'إجمالي التجارب' } },
+          { icon: Building2, value: activeMunicipalities.length, label: { en: 'Active Cities', ar: 'Ù…Ø¯Ù† Ù†Ø´Ø·Ø©' } },
+          { icon: Network, value: multiCityPilots.length, label: { en: 'Multi-City Pilots', ar: 'ØªØ¬Ø§Ø±Ø¨ Ù…ØªØ¹Ø¯Ø¯Ø© Ø§Ù„Ù…Ø¯Ù†' } },
+          { icon: Activity, value: pilots.length, label: { en: 'Total Pilots', ar: 'Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ØªØ¬Ø§Ø±Ø¨' } },
         ]}
+        action={<></>}
+        actions={<></>}
+        children={<></>}
       />
 
       {/* Metrics */}
@@ -51,7 +46,7 @@ function MultiCityOrchestration() {
           <CardContent className="pt-6 text-center">
             <Building2 className="h-8 w-8 text-blue-600 mx-auto mb-2" />
             <p className="text-3xl font-bold text-blue-600">{activeMunicipalities.length}</p>
-            <p className="text-sm text-slate-600">{t({ en: 'Active Cities', ar: 'مدن نشطة' })}</p>
+            <p className="text-sm text-slate-600">{t({ en: 'Active Cities', ar: 'Ù…Ø¯Ù† Ù†Ø´Ø·Ø©' })}</p>
           </CardContent>
         </Card>
 
@@ -59,7 +54,7 @@ function MultiCityOrchestration() {
           <CardContent className="pt-6 text-center">
             <Network className="h-8 w-8 text-purple-600 mx-auto mb-2" />
             <p className="text-3xl font-bold text-purple-600">{multiCityPilots.length}</p>
-            <p className="text-sm text-slate-600">{t({ en: 'Multi-City Pilots', ar: 'تجارب متعددة المدن' })}</p>
+            <p className="text-sm text-slate-600">{t({ en: 'Multi-City Pilots', ar: 'ØªØ¬Ø§Ø±Ø¨ Ù…ØªØ¹Ø¯Ø¯Ø© Ø§Ù„Ù…Ø¯Ù†' })}</p>
           </CardContent>
         </Card>
 
@@ -67,7 +62,7 @@ function MultiCityOrchestration() {
           <CardContent className="pt-6 text-center">
             <Activity className="h-8 w-8 text-green-600 mx-auto mb-2" />
             <p className="text-3xl font-bold text-green-600">{pilots.length}</p>
-            <p className="text-sm text-slate-600">{t({ en: 'Total Pilots', ar: 'إجمالي التجارب' })}</p>
+            <p className="text-sm text-slate-600">{t({ en: 'Total Pilots', ar: 'Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ØªØ¬Ø§Ø±Ø¨' })}</p>
           </CardContent>
         </Card>
 
@@ -75,7 +70,7 @@ function MultiCityOrchestration() {
           <CardContent className="pt-6 text-center">
             <Target className="h-8 w-8 text-amber-600 mx-auto mb-2" />
             <p className="text-3xl font-bold text-amber-600">{challenges.length}</p>
-            <p className="text-sm text-slate-600">{t({ en: 'Total Challenges', ar: 'إجمالي التحديات' })}</p>
+            <p className="text-sm text-slate-600">{t({ en: 'Total Challenges', ar: 'Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ØªØ­Ø¯ÙŠØ§Øª' })}</p>
           </CardContent>
         </Card>
       </div>
@@ -83,14 +78,14 @@ function MultiCityOrchestration() {
       {/* Active Municipalities */}
       <Card>
         <CardHeader>
-          <CardTitle>{t({ en: 'Active Municipalities', ar: 'البلديات النشطة' })}</CardTitle>
+          <CardTitle>{t({ en: 'Active Municipalities', ar: 'Ø§Ù„Ø¨Ù„Ø¯ÙŠØ§Øª Ø§Ù„Ù†Ø´Ø·Ø©' })}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {activeMunicipalities.map((muni) => {
               const muniChallenges = challenges.filter(c => c.municipality_id === muni.id);
               const muniPilots = pilots.filter(p => p.municipality_id === muni.id);
-              
+
               return (
                 <Link key={muni.id} to={createPageUrl(`MunicipalityProfile?id=${muni.id}`)}>
                   <Card className="hover:shadow-lg transition-shadow cursor-pointer">
@@ -104,10 +99,10 @@ function MultiCityOrchestration() {
                           <p className="text-xs text-slate-500">{muni.region}</p>
                           <div className="flex gap-2 mt-2">
                             <Badge variant="outline" className="text-xs">
-                              {muniChallenges.length} {t({ en: 'challenges', ar: 'تحديات' })}
+                              {muniChallenges.length} {t({ en: 'challenges', ar: 'ØªØ­Ø¯ÙŠØ§Øª' })}
                             </Badge>
                             <Badge variant="outline" className="text-xs">
-                              {muniPilots.length} {t({ en: 'pilots', ar: 'تجارب' })}
+                              {muniPilots.length} {t({ en: 'pilots', ar: 'ØªØ¬Ø§Ø±Ø¨' })}
                             </Badge>
                           </div>
                           {muni.mii_score && (
@@ -115,7 +110,7 @@ function MultiCityOrchestration() {
                               <div className="flex items-center gap-2">
                                 <TrendingUp className="h-3 w-3 text-green-600" />
                                 <span className="text-sm font-medium text-slate-700">
-                                  {t({ en: 'MII Score:', ar: 'نقاط MII:' })} {muni.mii_score}
+                                  {t({ en: 'MII Score:', ar: 'Ù†Ù‚Ø§Ø· MII:' })} {muni.mii_score}
                                 </span>
                               </div>
                             </div>
@@ -135,7 +130,7 @@ function MultiCityOrchestration() {
       {multiCityPilots.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>{t({ en: 'Multi-City Pilots', ar: 'التجارب متعددة المدن' })}</CardTitle>
+            <CardTitle>{t({ en: 'Multi-City Pilots', ar: 'Ø§Ù„ØªØ¬Ø§Ø±Ø¨ Ù…ØªØ¹Ø¯Ø¯Ø© Ø§Ù„Ù…Ø¯Ù†' })}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -149,7 +144,7 @@ function MultiCityOrchestration() {
                           {language === 'ar' && pilot.title_ar ? pilot.title_ar : pilot.title_en}
                         </h3>
                         <p className="text-sm text-slate-600 mt-1">
-                          {t({ en: 'Target locations:', ar: 'المواقع المستهدفة:' })} {pilot.scaling_plan.target_locations.join(', ')}
+                          {t({ en: 'Target locations:', ar: 'Ø§Ù„Ù…ÙˆØ§Ù‚Ø¹ Ø§Ù„Ù…Ø³ØªÙ‡Ø¯ÙØ©:' })} {pilot.scaling_plan.target_locations.join(', ')}
                         </p>
                       </div>
                     </div>

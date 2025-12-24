@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation } from '@tanstack/react-query';
+﻿import { useState } from 'react';
+import { useMatchingEntities } from '@/hooks/useMatchingEntities';
+import { useProposals } from '@/hooks/useProposals';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,33 +22,27 @@ function SolutionChallengeMatcher() {
   const [proposalDraft, setProposalDraft] = useState(null);
   const { invokeAI, status: aiStatus, isLoading: generatingProposal, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions-for-reverse-matching'],
-    queryFn: async () => {
-      const all = await base44.entities.Solution.list();
-      return all.filter(s => s.is_verified && s.is_published);
-    }
-  });
+  const { useSubmitProposal } = useProposals();
+  const createProposal = useSubmitProposal();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-for-reverse-matching'],
-    queryFn: async () => {
-      const all = await base44.entities.Challenge.list();
-      return all.filter(c => c.is_published && ['approved', 'in_treatment'].includes(c.status));
-    }
-  });
+  const { useSolutions, useChallenges } = useMatchingEntities();
 
-  const createProposal = useMutation({
-    mutationFn: (data) => base44.entities.ChallengeProposal.create(data),
-    onSuccess: () => {
-      toast.success(t({ en: 'Proposal created', ar: 'تم إنشاء المقترح' }));
-      setProposalDraft(null);
-    }
-  });
+  const { data: solutions = [] } = useSolutions({ limit: 1000 });
+
+  // Note: Original query filtered challenges by status and is_published.
+  // The hook filters by is_deleted=false. I need to filter locally or improve hook.
+  // Hook: .eq('is_deleted', false).
+  // Original: .in('status', ['approved', 'in_treatment']).eq('is_published', true).
+  // I will fetch all (limit 1000) and filter locally to preserve logic, OR add filter options to hook.
+  // For now local filter is safer to avoid changing hook logic too much for one page.
+  const { data: allChallenges = [] } = useChallenges({ limit: 1000, published: true });
+  const challenges = allChallenges.filter(c =>
+    ['approved', 'in_treatment'].includes(c.status)
+  );
 
   const runReverseMatching = async () => {
     if (!selectedSolution) return;
-    
+
     setMatching(true);
     try {
       const scored = challenges.map(challenge => {
@@ -56,16 +50,16 @@ function SolutionChallengeMatcher() {
 
         // Sector match
         if (selectedSolution.sectors?.includes(challenge.sector)) score += 40;
-        
+
         // Maturity alignment
         if (['market_ready', 'proven'].includes(selectedSolution.maturity_level)) score += 20;
-        
+
         // TRL alignment
         if (selectedSolution.trl >= 7) score += 15;
-        
+
         // Priority boost
         if (challenge.priority === 'tier_1') score += 15;
-        
+
         // Budget alignment (if solution has pricing)
         if (challenge.budget_estimate && selectedSolution.pricing_details?.monthly_cost) {
           const affordability = (selectedSolution.pricing_details.monthly_cost * 12) / challenge.budget_estimate;
@@ -74,14 +68,14 @@ function SolutionChallengeMatcher() {
 
         return { ...challenge, match_score: score };
       })
-      .filter(c => c.match_score > 30)
-      .sort((a, b) => b.match_score - a.match_score)
-      .slice(0, 10);
+        .filter(c => c.match_score > 30)
+        .sort((a, b) => b.match_score - a.match_score)
+        .slice(0, 10);
 
       setMatches(scored);
-      toast.success(t({ en: `Found ${scored.length} matching challenges`, ar: `تم إيجاد ${scored.length} تحديات` }));
+      toast.success(t({ en: `Found ${scored.length} matching challenges`, ar: `ØªÙ… Ø¥ÙŠØ¬Ø§Ø¯ ${scored.length} ØªØ­Ø¯ÙŠØ§Øª` }));
     } catch (error) {
-      toast.error(t({ en: 'Matching failed', ar: 'فشلت المطابقة' }));
+      toast.error(t({ en: 'Matching failed', ar: 'ÙØ´Ù„Øª Ø§Ù„Ù…Ø·Ø§Ø¨Ù‚Ø©' }));
     } finally {
       setMatching(false);
     }
@@ -137,7 +131,7 @@ Be persuasive and detailed.`,
 
     if (result.success) {
       setProposalDraft({ ...result.data, challenge_id: challenge.id, challenge });
-      toast.success(t({ en: 'Proposal generated', ar: 'تم توليد المقترح' }));
+      toast.success(t({ en: 'Proposal generated', ar: 'ØªÙ… ØªÙˆÙ„ÙŠØ¯ Ø§Ù„Ù…Ù‚ØªØ±Ø­' }));
     }
   };
 
@@ -153,6 +147,10 @@ Be persuasive and detailed.`,
       expected_outcomes: proposalDraft.expected_outcomes,
       status: 'submitted',
       submitted_date: new Date().toISOString()
+    }, {
+      onSuccess: () => {
+        setProposalDraft(null);
+      }
     });
   };
 
@@ -160,10 +158,10 @@ Be persuasive and detailed.`,
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       <div>
         <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-700 to-pink-600 bg-clip-text text-transparent">
-          {t({ en: 'Solution → Challenge Matcher', ar: 'مطابقة الحلول للتحديات' })}
+          {t({ en: 'Solution â†’ Challenge Matcher', ar: 'Ù…Ø·Ø§Ø¨Ù‚Ø© Ø§Ù„Ø­Ù„ÙˆÙ„ Ù„Ù„ØªØ­Ø¯ÙŠØ§Øª' })}
         </h1>
         <p className="text-slate-600 mt-2">
-          {t({ en: 'Find challenges your solution can address + generate proposals', ar: 'اكتشف التحديات التي يمكن لحلك معالجتها + توليد المقترحات' })}
+          {t({ en: 'Find challenges your solution can address + generate proposals', ar: 'Ø§ÙƒØªØ´Ù Ø§Ù„ØªØ­Ø¯ÙŠØ§Øª Ø§Ù„ØªÙŠ ÙŠÙ…ÙƒÙ† Ù„Ø­Ù„Ùƒ Ù…Ø¹Ø§Ù„Ø¬ØªÙ‡Ø§ + ØªÙˆÙ„ÙŠØ¯ Ø§Ù„Ù…Ù‚ØªØ±Ø­Ø§Øª' })}
         </p>
       </div>
 
@@ -176,10 +174,10 @@ Be persuasive and detailed.`,
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>
-                  {t({ en: 'AI-Generated Proposal', ar: 'المقترح المولد' })}
+                  {t({ en: 'AI-Generated Proposal', ar: 'Ø§Ù„Ù…Ù‚ØªØ±Ø­ Ø§Ù„Ù…ÙˆÙ„Ø¯' })}
                 </CardTitle>
                 <Button variant="ghost" size="icon" onClick={() => setProposalDraft(null)}>
-                  ✕
+                  âœ•
                 </Button>
               </div>
             </CardHeader>
@@ -218,11 +216,11 @@ Be persuasive and detailed.`,
               <div className="flex gap-3">
                 <Button onClick={submitProposal} disabled={createProposal.isPending} className="flex-1 bg-purple-600">
                   <Send className="h-4 w-4 mr-2" />
-                  {t({ en: 'Submit Proposal', ar: 'إرسال المقترح' })}
+                  {t({ en: 'Submit Proposal', ar: 'Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ù…Ù‚ØªØ±Ø­' })}
                 </Button>
                 <Link to={createPageUrl('ProviderProposalWizard') + `?challenge_id=${proposalDraft.challenge_id}&solution_id=${selectedSolution.id}`}>
                   <Button variant="outline">
-                    {t({ en: 'Edit in Full Wizard', ar: 'تعديل في المعالج' })}
+                    {t({ en: 'Edit in Full Wizard', ar: 'ØªØ¹Ø¯ÙŠÙ„ ÙÙŠ Ø§Ù„Ù…Ø¹Ø§Ù„Ø¬' })}
                   </Button>
                 </Link>
               </div>
@@ -237,7 +235,7 @@ Be persuasive and detailed.`,
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Lightbulb className="h-5 w-5 text-purple-600" />
-              {t({ en: 'Select Solution', ar: 'اختر الحل' })}
+              {t({ en: 'Select Solution', ar: 'Ø§Ø®ØªØ± Ø§Ù„Ø­Ù„' })}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 max-h-96 overflow-y-auto">
@@ -245,11 +243,10 @@ Be persuasive and detailed.`,
               <button
                 key={solution.id}
                 onClick={() => setSelectedSolution(solution)}
-                className={`w-full p-3 text-left border-2 rounded-lg transition-all ${
-                  selectedSolution?.id === solution.id
-                    ? 'border-purple-500 bg-purple-50'
-                    : 'border-slate-200 hover:border-purple-300'
-                }`}
+                className={`w-full p-3 text-left border-2 rounded-lg transition-all ${selectedSolution?.id === solution.id
+                  ? 'border-purple-500 bg-purple-50'
+                  : 'border-slate-200 hover:border-purple-300'
+                  }`}
               >
                 <p className="text-sm font-medium text-slate-900 line-clamp-2 mb-1">
                   {language === 'ar' && solution.name_ar ? solution.name_ar : solution.name_en}
@@ -287,12 +284,12 @@ Be persuasive and detailed.`,
                   {matching ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      {t({ en: 'Finding matches...', ar: 'جاري البحث...' })}
+                      {t({ en: 'Finding matches...', ar: 'Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø¨Ø­Ø«...' })}
                     </>
                   ) : (
                     <>
                       <Sparkles className="h-4 w-4 mr-2" />
-                      {t({ en: 'Find Matching Challenges', ar: 'ابحث عن التحديات' })}
+                      {t({ en: 'Find Matching Challenges', ar: 'Ø§Ø¨Ø­Ø« Ø¹Ù† Ø§Ù„ØªØ­Ø¯ÙŠØ§Øª' })}
                     </>
                   )}
                 </Button>
@@ -305,7 +302,7 @@ Be persuasive and detailed.`,
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Target className="h-5 w-5 text-blue-600" />
-                  {t({ en: 'Matching Challenges', ar: 'التحديات المطابقة' })} ({matches.length})
+                  {t({ en: 'Matching Challenges', ar: 'Ø§Ù„ØªØ­Ø¯ÙŠØ§Øª Ø§Ù„Ù…Ø·Ø§Ø¨Ù‚Ø©' })} ({matches.length})
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -329,22 +326,22 @@ Be persuasive and detailed.`,
                           {language === 'ar' && challenge.title_ar ? challenge.title_ar : challenge.title_en}
                         </h3>
                         <p className="text-sm text-slate-600 line-clamp-2">
-                          {language === 'ar' && challenge.description_ar 
-                            ? challenge.description_ar.substring(0, 150) 
+                          {language === 'ar' && challenge.description_ar
+                            ? challenge.description_ar.substring(0, 150)
                             : challenge.description_en?.substring(0, 150)}...
                         </p>
                         <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
                           <span>{challenge.municipality_id?.substring(0, 25)}</span>
-                          <span>• {challenge.sector?.replace(/_/g, ' ')}</span>
+                          <span>â€¢ {challenge.sector?.replace(/_/g, ' ')}</span>
                           {challenge.budget_estimate && (
-                            <span>• {(challenge.budget_estimate / 1000).toFixed(0)}K SAR</span>
+                            <span>â€¢ {(challenge.budget_estimate / 1000).toFixed(0)}K SAR</span>
                           )}
                         </div>
                       </div>
                       <div className="flex flex-col gap-2">
                         <Link to={createPageUrl(`ChallengeDetail?id=${challenge.id}`)}>
                           <Button size="sm" variant="outline">
-                            {t({ en: 'View', ar: 'عرض' })}
+                            {t({ en: 'View', ar: 'Ø¹Ø±Ø¶' })}
                           </Button>
                         </Link>
                         <Button
@@ -358,7 +355,7 @@ Be persuasive and detailed.`,
                           ) : (
                             <>
                               <Sparkles className="h-4 w-4 mr-1" />
-                              {t({ en: 'Generate', ar: 'توليد' })}
+                              {t({ en: 'Generate', ar: 'ØªÙˆÙ„ÙŠØ¯' })}
                             </>
                           )}
                         </Button>

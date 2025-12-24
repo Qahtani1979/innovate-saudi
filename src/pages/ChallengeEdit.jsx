@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,68 +18,30 @@ import { FileText } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
+// Hooks
+import { useChallenge } from '@/hooks/useChallengesWithVisibility';
+import { useChallengeMutations } from '@/hooks/useChallengeMutations';
+import { useSectors } from '@/hooks/useSectors';
+import { useRegions, useCities } from '@/hooks/useRegions';
+import { useSubsectors } from '@/hooks/useSubsectors';
+import { useServices } from '@/hooks/useServices';
+
 function ChallengeEdit() {
   const urlParams = new URLSearchParams(window.location.search);
   const challengeId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { invokeAI, status, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: challenge, isLoading } = useQuery({
-    queryKey: ['challenge', challengeId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*')
-        .eq('id', challengeId)
-        .maybeSingle();
+  // Data Fetching
+  const { data: challenge, isLoading } = useChallenge(challengeId);
+  const { data: regions = [] } = useRegions();
+  const { data: cities = [] } = useCities();
+  const { data: sectors = [] } = useSectors();
+  const { data: subsectors = [] } = useSubsectors();
+  const { data: services = [] } = useServices();
 
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!challengeId
-  });
-
-  const { data: regions = [] } = useQuery({
-    queryKey: ['regions'],
-    queryFn: async () => {
-      const { data } = await supabase.from('regions').select('*').eq('is_deleted', false);
-      return data || [];
-    }
-  });
-
-  const { data: cities = [] } = useQuery({
-    queryKey: ['cities'],
-    queryFn: async () => {
-      const { data } = await supabase.from('cities').select('*').eq('is_deleted', false);
-      return data || [];
-    }
-  });
-
-  const { data: sectors = [] } = useQuery({
-    queryKey: ['sectors'],
-    queryFn: async () => {
-      const { data } = await supabase.from('sectors').select('*').eq('is_deleted', false);
-      return data || [];
-    }
-  });
-
-  const { data: subsectors = [] } = useQuery({
-    queryKey: ['subsectors'],
-    queryFn: async () => {
-      const { data } = await supabase.from('subsectors').select('*').eq('is_deleted', false);
-      return data || [];
-    }
-  });
-
-  const { data: services = [] } = useQuery({
-    queryKey: ['services'],
-    queryFn: async () => {
-      const { data } = await supabase.from('services').select('*').eq('is_deleted', false);
-      return data || [];
-    }
-  });
+  const { updateChallenge } = useChallengeMutations();
 
   const [formData, setFormData] = useState(null);
   const [originalData, setOriginalData] = useState(null);
@@ -134,66 +94,50 @@ function ChallengeEdit() {
     }
   }, [challengeId]);
 
-  const updateMutation = useMutation({
-    mutationFn: async (data) => {
-      const oldStatus = challenge.status;
+  const handleSave = () => {
+    const data = formData;
+    const changes = getChangedFields(originalData, data);
+    const newVersion = (challenge.version_number || 1) + 1;
 
-      // Track changes
-      const changes = getChangedFields(originalData, data);
-      const newVersion = (challenge.version_number || 1) + 1;
-
-      const { error: updateError } = await supabase
-        .from('challenges')
-        .update({
-          ...data,
-          version_number: newVersion,
-          previous_version_id: challengeId
-        })
-        .eq('id', challengeId);
-
-      if (updateError) throw updateError;
-
-      // Log change activity
-      if (changes.length > 0) {
-        await supabase.from('challenge_activities').insert({
-          challenge_id: challengeId,
-          activity_type: 'updated',
-          activity_category: 'data_change',
-          description: `Updated ${changes.length} field(s): ${changes.map(c => c.field).join(', ')}`,
-          metadata: { changes },
-          timestamp: new Date().toISOString()
-        });
-      }
-
-      if (data.status && data.status !== oldStatus) {
-        await createNotification({
-          title: 'Challenge Status Updated',
-          body: `${challenge.code} status changed from ${oldStatus} to ${data.status}`,
-          type: 'alert',
-          priority: 'medium',
-          linkUrl: `ChallengeDetail?id=${challengeId}`,
-          entityType: 'challenge',
-          entityId: challengeId
-        });
-      }
-
-      // Clear auto-save
-      localStorage.removeItem(`challenge_edit_${challengeId}`);
-      localStorage.removeItem(`challenge_edit_${challengeId}_timestamp`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['challenge', challengeId]);
-      // Auto-generate embedding if content changed
-      supabase.functions.invoke('generateEmbeddings', {
-        body: {
-          entity_name: 'Challenge',
-          mode: 'missing'
-        }
-      }).catch(err => console.error('Embedding generation failed:', err));
-      toast.success('Challenge updated');
-      navigate(createPageUrl(`ChallengeDetail?id=${challengeId}`));
+    let activityLog = null;
+    if (changes.length > 0) {
+      activityLog = {
+        activity_type: 'updated',
+        activity_category: 'data_change',
+        description: `Updated ${changes.length} field(s): ${changes.map(c => c.field).join(', ')}`,
+        metadata: { changes }
+      };
     }
-  });
+
+    updateChallenge.mutate({
+      id: challengeId,
+      data: {
+        ...data,
+        version_number: newVersion,
+        previous_version_id: challengeId
+      },
+      activityLog
+    }, {
+      onSuccess: () => {
+        // Auto-generate embedding if content changed
+        // Note: keeping supabase direct call here for edge function invocation is fine as it's not a DB query
+        import('@/integrations/supabase/client').then(({ supabase }) => {
+          supabase.functions.invoke('generateEmbeddings', {
+            body: {
+              entity_name: 'Challenge',
+              mode: 'missing'
+            }
+          }).catch(err => console.error('Embedding generation failed:', err));
+        });
+
+        // Clear auto-save
+        localStorage.removeItem(`challenge_edit_${challengeId}`);
+        localStorage.removeItem(`challenge_edit_${challengeId}_timestamp`);
+
+        navigate(createPageUrl(`ChallengeDetail?id=${challengeId}`));
+      }
+    });
+  };
 
   // Helper to detect changed fields
   const getChangedFields = (original, updated) => {
@@ -509,11 +453,11 @@ function ChallengeEdit() {
                 {t({ en: 'Back to Edit', ar: 'رجوع للتعديل' })}
               </Button>
               <Button
-                onClick={() => updateMutation.mutate(formData)}
-                disabled={updateMutation.isPending}
+                onClick={handleSave}
+                disabled={updateChallenge.isPending}
                 className="bg-gradient-to-r from-blue-600 to-teal-600"
               >
-                {updateMutation.isPending ? (
+                {updateChallenge.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     {t({ en: 'Saving...', ar: 'جاري الحفظ...' })}
@@ -1177,11 +1121,11 @@ function ChallengeEdit() {
                 {t({ en: 'Cancel', ar: 'إلغاء' })}
               </Button>
               <Button
-                onClick={() => updateMutation.mutate(formData)}
-                disabled={updateMutation.isPending}
+                onClick={handleSave}
+                disabled={updateChallenge.isPending}
                 className="bg-gradient-to-r from-blue-600 to-teal-600"
               >
-                {updateMutation.isPending ? (
+                {updateChallenge.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     {t({ en: 'Saving...', ar: 'جاري الحفظ...' })}

@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
+import { useRDCallsWithVisibility } from '@/hooks/useRDCallsWithVisibility';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,29 +19,9 @@ function OpportunityFeed() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['open-challenges'],
-    queryFn: async () => {
-      const all = await base44.entities.Challenge.list();
-      return all.filter(c => c.status === 'approved' && c.is_published);
-    }
-  });
-
-  const { data: programs = [] } = useQuery({
-    queryKey: ['open-programs'],
-    queryFn: async () => {
-      const all = await base44.entities.Program.list();
-      return all.filter(p => p.status === 'applications_open' && p.is_published);
-    }
-  });
-
-  const { data: rdCalls = [] } = useQuery({
-    queryKey: ['open-rd-calls'],
-    queryFn: async () => {
-      const all = await base44.entities.RDCall.list();
-      return all.filter(r => r.status === 'open' && r.is_published);
-    }
-  });
+  const { data: challenges = [] } = useChallengesWithVisibility({ publishedOnly: true, limit: 1000 });
+  const { data: programs = [] } = useProgramsWithVisibility({ status: 'applications_open', limit: 1000 });
+  const { data: rdCalls = [] } = useRDCallsWithVisibility({ status: 'open', limit: 1000 });
 
   const opportunities = [
     ...challenges.map(c => ({ ...c, type: 'challenge', icon: Target })),
@@ -47,7 +29,7 @@ function OpportunityFeed() {
     ...rdCalls.map(r => ({ ...r, type: 'rd_call', icon: Lightbulb }))
   ].filter(opp => {
     const matchesType = filterType === 'all' || opp.type === filterType;
-    const matchesSearch = !searchQuery || 
+    const matchesSearch = !searchQuery ||
       (opp.title_en || opp.name_en || '').toLowerCase().includes(searchQuery.toLowerCase());
     return matchesType && matchesSearch;
   });
@@ -63,6 +45,10 @@ function OpportunityFeed() {
           { icon: Calendar, value: programs.length, label: t({ en: 'Programs', ar: 'برامج' }) },
           { icon: Lightbulb, value: rdCalls.length, label: t({ en: 'R&D Calls', ar: 'دعوات بحث' }) },
         ]}
+        subtitle={null}
+        action={null}
+        actions={null}
+        children={null}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

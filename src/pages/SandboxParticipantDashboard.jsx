@@ -1,6 +1,6 @@
 import React from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { useSandboxes } from '@/hooks/useSandboxes';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,8 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from '../components/LanguageContext';
-import { 
-  Shield, Activity, FileText, AlertCircle, Upload 
+import {
+  Shield, Activity, FileText, AlertCircle, Upload
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
@@ -22,63 +22,31 @@ function SandboxParticipantDashboard() {
   const [selectedProject, setSelectedProject] = React.useState(null);
   const [dataSubmission, setDataSubmission] = React.useState({ metric: '', value: '', notes: '' });
 
-  const { data: myApplications = [] } = useQuery({
-    queryKey: ['my-sandbox-applications', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('sandbox_applications').select('*')
-        .eq('applicant_email', user?.email)
-        .eq('status', 'approved');
-      return data || [];
-    },
-    enabled: !!user
-  });
+  const {
+    useMyApplications,
+    useProjectMilestones,
+    useMonitoringData,
+    useSubmitMonitoringData
+  } = useSandboxes();
 
-  const { data: milestones = [] } = useQuery({
-    queryKey: ['my-sandbox-milestones', myApplications.length],
-    queryFn: async () => {
-      if (myApplications.length === 0) return [];
-      const projectIds = myApplications.map(a => a.id);
-      const { data } = await supabase.from('sandbox_project_milestones').select('*')
-        .in('project_id', projectIds);
-      return data || [];
-    },
-    enabled: myApplications.length > 0
-  });
+  const { data: myApplications = [] } = useMyApplications(user);
 
-  const { data: monitoringData = [] } = useQuery({
-    queryKey: ['my-monitoring-data', myApplications.length],
-    queryFn: async () => {
-      if (myApplications.length === 0) return [];
-      const sandboxIds = [...new Set(myApplications.map(a => a.sandbox_id))];
-      const { data } = await supabase.from('sandbox_monitoring_data').select('*')
-        .in('sandbox_id', sandboxIds)
-        .order('timestamp', { ascending: false })
-        .limit(20);
-      return data || [];
-    },
-    enabled: myApplications.length > 0
-  });
+  const projectIds = myApplications.map(a => a.id);
+  const { data: milestones = [] } = useProjectMilestones(projectIds);
 
-  const submitDataMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: result, error } = await supabase.from('sandbox_monitoring_data').insert({
-        sandbox_id: selectedProject.sandbox_id,
-        project_id: selectedProject.id,
-        metric_name: data.metric,
-        value: parseFloat(data.value),
-        notes: data.notes,
-        timestamp: new Date().toISOString(),
-        submitted_by: user.email
-      }).select().single();
-      if (error) throw error;
-      return result;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['my-monitoring-data'] });
-      toast.success(t({ en: 'Data submitted', ar: 'تم إرسال البيانات' }));
-      setDataSubmission({ metric: '', value: '', notes: '' });
-    }
-  });
+  const sandboxIds = [...new Set(myApplications.map(a => a.sandbox_id))];
+  const { data: monitoringData = [] } = useMonitoringData(sandboxIds);
+
+  const submitDataMutation = useSubmitMonitoringData();
+
+  const handleSubmitData = () => {
+    submitDataMutation.mutate({ selectedProject, data: dataSubmission, user }, {
+      onSuccess: () => {
+        setDataSubmission({ metric: '', value: '', notes: '' });
+        setSelectedProject(null); // Close modal on success
+      }
+    });
+  };
 
   const activeProjects = myApplications.filter(a => a.status === 'approved');
 
@@ -98,8 +66,8 @@ function SandboxParticipantDashboard() {
         {activeProjects.map((project) => {
           const projectMilestones = milestones.filter(m => m.project_id === project.id);
           const completed = projectMilestones.filter(m => m.status === 'completed').length;
-          const progress = projectMilestones.length > 0 
-            ? Math.round((completed / projectMilestones.length) * 100) 
+          const progress = projectMilestones.length > 0
+            ? Math.round((completed / projectMilestones.length) * 100)
             : 0;
 
           return (
@@ -125,9 +93,9 @@ function SandboxParticipantDashboard() {
                 <Progress value={progress} className="h-2" />
 
                 <div className="flex gap-2">
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
+                  <Button
+                    size="sm"
+                    variant="outline"
                     className="flex-1"
                     onClick={() => setSelectedProject(project)}
                   >
@@ -229,7 +197,7 @@ function SandboxParticipantDashboard() {
 
               <div className="flex gap-2">
                 <Button
-                  onClick={() => submitDataMutation.mutate(dataSubmission)}
+                  onClick={handleSubmitData}
                   disabled={!dataSubmission.metric || !dataSubmission.value || submitDataMutation.isPending}
                   className="flex-1 bg-blue-600"
                 >

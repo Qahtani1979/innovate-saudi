@@ -1,5 +1,4 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useMatchingEntities } from '@/hooks/useMatchingEntities';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
@@ -10,25 +9,16 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 function SectorAnalyticsDashboard() {
   const { t } = useLanguage();
 
-  const { data: sectors = [] } = useQuery({
-    queryKey: ['sectors'],
-    queryFn: () => base44.entities.Sector.list()
-  });
+  const { useSectors, useChallenges, usePilots } = useMatchingEntities();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
+  const { data: sectors = [] } = useSectors();
+  const { data: challenges = [] } = useChallenges({ limit: 2000 });
+  const { data: pilots = [] } = usePilots({ limit: 2000 });
 
   const sectorData = sectors.map(sector => {
     const sectorChallenges = challenges.filter(c => c.sector === sector.code);
     const sectorPilots = pilots.filter(p => p.sector === sector.code);
-    const successRate = sectorPilots.length > 0 
+    const successRate = sectorPilots.length > 0
       ? (sectorPilots.filter(p => p.stage === 'completed' || p.stage === 'scaled').length / sectorPilots.length * 100)
       : 0;
 

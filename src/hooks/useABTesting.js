@@ -1,90 +1,114 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
+import { useCallback } from 'react';
 
 /**
- * A/B Testing Hook
+ * A/B Testing Hook (Refactored to Gold Standard)
+ * 
  * Usage:
  *   const { getVariant, trackConversion, isLoading } = useABTesting();
- *   const variant = await getVariant('onboarding_wizard_v2');
- *   if (variant === 'control') { ... } else if (variant === 'treatment') { ... }
- *   trackConversion('onboarding_wizard_v2', 'completed_onboarding', 1);
  */
 export function useABTesting() {
   const { user } = useAuth();
-  const [assignments, setAssignments] = useState({});
-  const [experiments, setExperiments] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  // Load active experiments and user assignments on mount
-  useEffect(() => {
-    if (!user?.id) {
-      setIsLoading(false);
-      return;
-    }
+  // 1. Fetch Active Experiments
+  const { data: experiments = [], isLoading: expsLoading } = useQuery({
+    queryKey: ['ab-experiments'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ab_experiments')
+        .select('*')
+        .eq('status', 'active');
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 1000 * 60 * 10, // 10 mins
+  });
 
-    const loadExperimentsAndAssignments = async () => {
-      try {
-        // Get active experiments
-        const { data: exps, error: expError } = await supabase
-          .from('ab_experiments')
-          .select('*')
-          .eq('status', 'active');
+  // 2. Fetch User Assignments
+  const { data: assignments = {}, isLoading: assignsLoading } = useQuery({
+    queryKey: ['ab-assignments', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return {};
+      const { data, error } = await supabase
+        .from('ab_assignments')
+        .select('*')
+        .eq('user_id', user.id);
 
-        if (expError) throw expError;
-        setExperiments(exps || []);
+      if (error) throw error;
 
-        // Get user's existing assignments
-        const { data: assigns, error: assignError } = await supabase
-          .from('ab_assignments')
-          .select('*')
-          .eq('user_id', user.id);
+      const map = {};
+      (data || []).forEach(a => map[a.experiment_id] = a);
+      return map;
+    },
+    enabled: !!user?.id,
+    staleTime: 1000 * 60 * 10,
+  });
 
-        if (assignError) throw assignError;
-
-        const assignMap = {};
-        (assigns || []).forEach(a => {
-          assignMap[a.experiment_id] = a;
-        });
-        setAssignments(assignMap);
-      } catch (err) {
-        console.warn('Failed to load A/B experiments:', err);
-      } finally {
-        setIsLoading(false);
+  // 3. Assign User Mutation
+  const assignMutation = useMutation({
+    mutationFn: async ({ experimentId, variant }) => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from('ab_assignments')
+        .insert({
+          experiment_id: experimentId,
+          user_id: user.id,
+          user_email: user.email,
+          variant: variant
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (newItem) => {
+      if (newItem) {
+        queryClient.setQueryData(['ab-assignments', user?.id], (old) => ({
+          ...old,
+          [newItem.experiment_id]: newItem
+        }));
       }
-    };
+    }
+  });
 
-    loadExperimentsAndAssignments();
-  }, [user?.id]);
+  // 4. Track Conversion Mutation
+  const trackMutation = useMutation({
+    mutationFn: async ({ experimentId, assignmentId, type, value, metadata }) => {
+      const { error } = await supabase.from('ab_conversions').insert({
+        experiment_id: experimentId,
+        assignment_id: assignmentId,
+        user_id: user.id,
+        conversion_type: type,
+        conversion_value: value,
+        metadata
+      });
+      if (error) throw error;
+    }
+  });
 
-  /**
-   * Get the variant for an experiment
-   * Assigns user to a variant if not already assigned
-   */
+  // Logic: Get or Assign Variant
   const getVariant = useCallback(async (experimentName) => {
     if (!user?.id) return 'control';
 
-    // Find the experiment
+    // Find experiment
     const experiment = experiments.find(e => e.name === experimentName);
-    if (!experiment) {
-      // No experiment found, return control
-      return 'control';
-    }
+    if (!experiment) return 'control';
 
-    // Check if user is already assigned
+    // Check existing assignment (from cache)
     if (assignments[experiment.id]) {
       return assignments[experiment.id].variant;
     }
 
-    // Assign user to a variant based on allocation percentages
+    // Determine new variant locally
     const variants = experiment.variants || ['control', 'treatment'];
     const allocations = experiment.allocation_percentages || {};
-    
-    // Default to 50/50 if no allocations specified
     let selectedVariant = 'control';
     const random = Math.random() * 100;
     let cumulative = 0;
-    
+
     for (const variant of variants) {
       const percentage = allocations[variant] || (100 / variants.length);
       cumulative += percentage;
@@ -94,114 +118,30 @@ export function useABTesting() {
       }
     }
 
-    // Save assignment
-    try {
-      const { data, error } = await supabase
-        .from('ab_assignments')
-        .insert({
-          experiment_id: experiment.id,
-          user_id: user.id,
-          user_email: user.email,
-          variant: selectedVariant
-        })
-        .select()
-        .single();
-
-      if (!error && data) {
-        setAssignments(prev => ({
-          ...prev,
-          [experiment.id]: data
-        }));
-      }
-    } catch (err) {
-      console.warn('Failed to save A/B assignment:', err);
-    }
+    // Persist assignment
+    // We don't await this to return fast, optimistic UI
+    assignMutation.mutate({ experimentId: experiment.id, variant: selectedVariant });
 
     return selectedVariant;
-  }, [user, experiments, assignments]);
+  }, [user, experiments, assignments, assignMutation]);
 
-  /**
-   * Track a conversion event for an experiment
-   */
-  const trackConversion = useCallback(async (experimentName, conversionType, conversionValue = 1, metadata = {}) => {
-    if (!user?.id) return;
-
+  const trackConversion = useCallback((experimentName, type, value = 1, metadata = {}) => {
     const experiment = experiments.find(e => e.name === experimentName);
-    if (!experiment) return;
+    if (!experiment || !assignments[experiment.id]) return;
 
-    const assignment = assignments[experiment.id];
-    if (!assignment) return;
-
-    try {
-      await supabase.from('ab_conversions').insert({
-        experiment_id: experiment.id,
-        assignment_id: assignment.id,
-        user_id: user.id,
-        conversion_type: conversionType,
-        conversion_value: conversionValue,
-        metadata
-      });
-    } catch (err) {
-      console.warn('Failed to track A/B conversion:', err);
-    }
-  }, [user, experiments, assignments]);
-
-  /**
-   * Get experiment statistics (admin use)
-   */
-  const getExperimentStats = useCallback(async (experimentName) => {
-    const experiment = experiments.find(e => e.name === experimentName);
-    if (!experiment) return null;
-
-    try {
-      // Get all assignments for this experiment
-      const { data: allAssignments } = await supabase
-        .from('ab_assignments')
-        .select('variant')
-        .eq('experiment_id', experiment.id);
-
-      // Get all conversions for this experiment
-      const { data: conversions } = await supabase
-        .from('ab_conversions')
-        .select('*, ab_assignments(variant)')
-        .eq('experiment_id', experiment.id);
-
-      // Calculate stats per variant
-      const variants = experiment.variants || ['control', 'treatment'];
-      const stats = {};
-
-      variants.forEach(v => {
-        const variantAssignments = (allAssignments || []).filter(a => a.variant === v).length;
-        const variantConversions = (conversions || []).filter(c => c.ab_assignments?.variant === v);
-        
-        stats[v] = {
-          participants: variantAssignments,
-          conversions: variantConversions.length,
-          conversionRate: variantAssignments > 0 
-            ? ((variantConversions.length / variantAssignments) * 100).toFixed(2)
-            : 0,
-          totalValue: variantConversions.reduce((sum, c) => sum + (c.conversion_value || 0), 0)
-        };
-      });
-
-      return {
-        experiment,
-        stats,
-        totalParticipants: (allAssignments || []).length,
-        totalConversions: (conversions || []).length
-      };
-    } catch (err) {
-      console.warn('Failed to get experiment stats:', err);
-      return null;
-    }
-  }, [experiments]);
+    trackMutation.mutate({
+      experimentId: experiment.id,
+      assignmentId: assignments[experiment.id].id,
+      type,
+      value,
+      metadata
+    });
+  }, [experiments, assignments, trackMutation]);
 
   return {
     getVariant,
     trackConversion,
-    getExperimentStats,
-    experiments,
-    isLoading
+    isLoading: expsLoading || assignsLoading
   };
 }
 

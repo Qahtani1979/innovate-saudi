@@ -1,7 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -34,6 +31,7 @@ import {
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useDataManagement } from '@/hooks/useDataManagement';
 
 // Import tab components
 import { RegionsTab } from '@/components/data-management/RegionsTab';
@@ -46,63 +44,41 @@ import { IntegrityTab } from '@/components/data-management/IntegrityTab';
 
 function DataManagementHub() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [selectedEntity, setSelectedEntity] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  /** @type {[any, React.Dispatch<any>]} */
   const [formData, setFormData] = useState({});
   const { invokeAI, isLoading: enriching } = useAIWithFallback();
 
-  // Fetch all data
-  const { data: regions = [] } = useQuery({
-    queryKey: ['regions'],
-    queryFn: () => base44.entities.Region.list()
-  });
+  const {
+    regions,
+    cities,
+    organizations,
+    challenges,
+    solutions,
+    knowledgeDocs,
+    citizenIdeas,
+    municipalities,
+    createMutation,
+    updateMutation,
+    deleteMutation,
+    isLoading
+  } = useDataManagement(t);
 
-  const { data: cities = [] } = useQuery({
-    queryKey: ['cities'],
-    queryFn: () => base44.entities.City.list()
-  });
-
-  const { data: organizations = [] } = useQuery({
-    queryKey: ['organizations'],
-    queryFn: () => base44.entities.Organization.list()
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
-
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions'],
-    queryFn: () => base44.entities.Solution.list()
-  });
-
-  const { data: knowledgeDocs = [] } = useQuery({
-    queryKey: ['knowledgeDocs'],
-    queryFn: () => base44.entities.KnowledgeDocument.list()
-  });
-
-  const { data: citizenIdeas = [] } = useQuery({
-    queryKey: ['citizenIdeas'],
-    queryFn: () => base44.entities.CitizenIdea.list()
-  });
-
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities-count'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('municipalities').select('id');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
 
   const embeddingStats = [
-    { name: 'Challenge', count: challenges.length, with_embedding: challenges.filter(c => c.embedding?.length > 0).length },
-    { name: 'Solution', count: solutions.length, with_embedding: solutions.filter(s => s.embedding?.length > 0).length },
-    { name: 'KnowledgeDocument', count: knowledgeDocs.length, with_embedding: knowledgeDocs.filter(k => k.embedding?.length > 0).length },
-    { name: 'CitizenIdea', count: citizenIdeas.length, with_embedding: citizenIdeas.filter(i => i.embedding?.length > 0).length },
-    { name: 'Organization', count: organizations.length, with_embedding: organizations.filter(o => o.embedding?.length > 0).length }
+    { name: 'Challenge', count: challenges.length, with_embedding: challenges.filter(c => c.embedding && c.embedding.length > 0).length },
+    { name: 'Solution', count: solutions.length, with_embedding: solutions.filter(s => s.embedding && s.embedding.length > 0).length },
+    { name: 'KnowledgeDocument', count: knowledgeDocs.length, with_embedding: 0 }, // embedding not in schema
+    { name: 'CitizenIdea', count: citizenIdeas.length, with_embedding: 0 }, // embedding not in schema
+    { name: 'Organization', count: organizations.length, with_embedding: 0 } // embedding not in schema
   ];
 
   // AI Enrich Functions
@@ -113,7 +89,8 @@ function DataManagementHub() {
     }
 
     const result = await invokeAI({
-      prompt: `Provide comprehensive data for Saudi Arabian region: ${formData.name_en}
+      system_prompt: "You are a regional data analyst expert for Saudi Arabia.",
+      prompt: `Provide comprehensive data for Saudi Arabian region: ${formData?.name_en}
 
 Using web search, provide:
 1. Official Arabic name (proper transliteration)
@@ -158,19 +135,18 @@ Using web search, provide:
       return;
     }
 
-    const regionName = regions.find(r => r.id === formData.region_id)?.name_en || '';
+    const regionName = regions.find(r => r.id === formData?.region_id)?.name_en || '';
 
     const result = await invokeAI({
-      prompt: `Provide data for Saudi city: ${formData.name_en} in ${regionName}
+      system_prompt: "You are an urban data expert for Saudi Arabian cities.",
+      prompt: `Provide data for Saudi city: ${formData?.name_en} in ${regionName}
 
-Using web search:
 1. Arabic name
 2. Population
 3. Area (km²)
 4. Coordinates (lat, lng)
 5. Mayor name
-6. Website URL
-7. Economic indicators (GDP per capita, unemployment rate, key industries)`,
+6. Website URL`,
       response_json_schema: {
         type: 'object',
         properties: {
@@ -185,15 +161,7 @@ Using web search:
             }
           },
           mayor_name: { type: 'string' },
-          city_website: { type: 'string' },
-          economic_indicators: {
-            type: 'object',
-            properties: {
-              gdp_per_capita: { type: 'number' },
-              unemployment_rate: { type: 'number' },
-              key_industries: { type: 'array', items: { type: 'string' } }
-            }
-          }
+          city_website: { type: 'string' }
         }
       }
     });
@@ -210,10 +178,11 @@ Using web search:
       return;
     }
 
-    const regionName = formData.region_id ? regions.find(r => r.id === formData.region_id)?.name_en : '';
+    const regionName = formData?.region_id ? regions.find(r => r.id === formData.region_id)?.name_en : '';
 
     const result = await invokeAI({
-      prompt: `Provide data for Saudi municipality: ${formData.name_en}${regionName ? ` in ${regionName}` : ''}
+      system_prompt: "You are a local government analyst for Saudi Arabian municipalities.",
+      prompt: `Provide data for Saudi municipality: ${formData?.name_en}${regionName ? ` in ${regionName}` : ''}
 
 Using web search:
 1. Arabic name
@@ -278,8 +247,8 @@ Using web search:
         if (!otherNormalized) continue;
 
         const similarity = normalized === otherNormalized ||
-                          normalized.includes(otherNormalized) ||
-                          otherNormalized.includes(normalized);
+          normalized.includes(otherNormalized) ||
+          otherNormalized.includes(normalized);
 
         if (similarity) {
           const key = [org.id, organizations[i].id].sort().join('-');
@@ -394,111 +363,8 @@ Using web search:
     return score;
   };
 
-  // Generic mutations
-  const createMutation = useMutation({
-    mutationFn: async ({ entity, data }) => {
-      if (entity === 'Region') return base44.entities.Region.create(data);
-      if (entity === 'City') return base44.entities.City.create(data);
-      if (entity === 'Organization') return base44.entities.Organization.create(data);
-      if (entity === 'Municipality') {
-        const { error } = await supabase.from('municipalities').insert([data]);
-        if (error) throw error;
-        return data;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries();
-      setDialogOpen(false);
-      setFormData({});
-      toast.success(t({ en: 'Created successfully', ar: 'تم الإنشاء بنجاح' }));
-    }
-  });
+  // Generic mutations handled by useDataManagement hook
 
-  const updateMutation = useMutation({
-    mutationFn: async ({ entity, id, data }) => {
-      if (entity === 'Region') return base44.entities.Region.update(id, data);
-      if (entity === 'City') return base44.entities.City.update(id, data);
-      if (entity === 'Organization') return base44.entities.Organization.update(id, data);
-      if (entity === 'Municipality') {
-        const { error } = await supabase.from('municipalities').update(data).eq('id', id);
-        if (error) throw error;
-        return data;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries();
-      setDialogOpen(false);
-      setSelectedEntity(null);
-      setFormData({});
-      toast.success(t({ en: 'Updated successfully', ar: 'تم التحديث بنجاح' }));
-    }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async ({ entity, id }) => {
-      if (entity === 'Region') {
-        const dependentCities = cities.filter(c => c.region_id === id);
-        const dependentOrgs = organizations.filter(o => o.region_id === id);
-        const [dependentChallenges, dependentPilots] = await Promise.all([
-          base44.entities.Challenge.list().then(all => all.filter(c => c.region_id === id)),
-          base44.entities.Pilot.list().then(all => all.filter(p => p.region_id === id))
-        ]);
-
-        const deps = [];
-        if (dependentCities.length > 0) deps.push(`${dependentCities.length} cities`);
-        if (dependentOrgs.length > 0) deps.push(`${dependentOrgs.length} organizations`);
-        if (dependentChallenges.length > 0) deps.push(`${dependentChallenges.length} challenges`);
-        if (dependentPilots.length > 0) deps.push(`${dependentPilots.length} pilots`);
-
-        if (deps.length > 0) {
-          throw new Error(`Cannot delete region: ${deps.join(', ')} depend on it. Update or delete them first.`);
-        }
-        return base44.entities.Region.delete(id);
-
-      } else if (entity === 'City') {
-        const dependentOrgs = organizations.filter(o => o.city_id === id);
-        const [dependentChallenges, dependentPilots] = await Promise.all([
-          base44.entities.Challenge.list().then(all => all.filter(c => c.city_id === id)),
-          base44.entities.Pilot.list().then(all => all.filter(p => p.city_id === id))
-        ]);
-
-        const deps = [];
-        if (dependentOrgs.length > 0) deps.push(`${dependentOrgs.length} organizations`);
-        if (dependentChallenges.length > 0) deps.push(`${dependentChallenges.length} challenges`);
-        if (dependentPilots.length > 0) deps.push(`${dependentPilots.length} pilots`);
-
-        if (deps.length > 0) {
-          throw new Error(`Cannot delete city: ${deps.join(', ')} depend on it. Update or delete them first.`);
-        }
-        return base44.entities.City.delete(id);
-
-      } else if (entity === 'Organization') {
-        const [dependentSolutions, dependentPrograms] = await Promise.all([
-          base44.entities.Solution.list().then(all => all.filter(s => s.provider_id === id)),
-          base44.entities.Program.list().then(all => all.filter(p => p.operator_organization_id === id))
-        ]);
-
-        const deps = [];
-        if (dependentSolutions.length > 0) deps.push(`${dependentSolutions.length} solutions`);
-        if (dependentPrograms.length > 0) deps.push(`${dependentPrograms.length} programs`);
-
-        if (deps.length > 0) {
-          throw new Error(`Cannot delete organization: ${deps.join(', ')} depend on it. Update or delete them first.`);
-        }
-        return base44.entities.Organization.delete(id);
-      } else if (entity === 'Municipality') {
-        const { error } = await supabase.from('municipalities').delete().eq('id', id);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries();
-      toast.success(t({ en: 'Deleted successfully', ar: 'تم الحذف بنجاح' }));
-    },
-    onError: (error) => {
-      toast.error(error.message || t({ en: 'Delete failed', ar: 'فشل الحذف' }));
-    }
-  });
 
   const handleCreate = (entity) => {
     setSelectedEntity({ entity, mode: 'create' });
@@ -521,9 +387,10 @@ Using web search:
   };
 
   const handleSubmit = () => {
+    if (!selectedEntity) return;
     if (selectedEntity.mode === 'create') {
       createMutation.mutate({ entity: selectedEntity.entity, data: formData });
-    } else {
+    } else if (selectedEntity.id) {
       updateMutation.mutate({ entity: selectedEntity.entity, id: selectedEntity.id, data: formData });
     }
   };
@@ -534,7 +401,12 @@ Using web search:
         icon={Database}
         title={{ en: 'Data Management Hub', ar: 'مركز إدارة البيانات' }}
         description={{ en: 'Unified interface with AI enrichment & integrity checking', ar: 'واجهة موحدة مع الإثراء الذكي وفحص السلامة' }}
-      />
+        subtitle=""
+        action={null}
+        actions={[]}
+      >
+        <div />
+      </PageHeader>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/30 dark:to-background">
@@ -706,18 +578,18 @@ Using web search:
               {/* Quality Metrics */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {(() => {
-                  const challengeCompleteness = challenges.length > 0 
-                    ? Math.round((challenges.filter(c => c.title_en && c.description_en && c.sector && c.municipality_id).length / challenges.length) * 100) 
+                  const challengeCompleteness = challenges.length > 0
+                    ? Math.round((challenges.filter(c => c.title_en && c.description_en && c.sector && c.municipality_id).length / challenges.length) * 100)
                     : 0;
                   const solutionCompleteness = solutions.length > 0
                     ? Math.round((solutions.filter(s => s.title_en && s.description_en && s.provider_id).length / solutions.length) * 100)
                     : 0;
-                  
+
                   const metrics = [
                     { label: { en: 'Challenge Data Quality', ar: 'جودة بيانات التحديات' }, value: challengeCompleteness, total: challenges.length },
                     { label: { en: 'Solution Data Quality', ar: 'جودة بيانات الحلول' }, value: solutionCompleteness, total: solutions.length },
                   ];
-                  
+
                   return metrics.map((metric, i) => {
                     const color = metric.value >= 80 ? 'green' : metric.value >= 50 ? 'yellow' : 'red';
                     return (
@@ -734,7 +606,7 @@ Using web search:
                             {t({ en: `${metric.total} records analyzed`, ar: `${metric.total} سجل محلل` })}
                           </p>
                           <div className="w-full bg-white rounded-full h-2 mt-3">
-                            <div 
+                            <div
                               className={`h-2 rounded-full transition-all ${color === 'green' ? 'bg-green-600' : color === 'yellow' ? 'bg-yellow-600' : 'bg-red-600'}`}
                               style={{ width: `${metric.value}%` }}
                             />
@@ -745,7 +617,7 @@ Using web search:
                   });
                 })()}
               </div>
-              
+
               {/* Quality Issues */}
               <Card>
                 <CardHeader>
@@ -806,8 +678,8 @@ Using web search:
                 <Button
                   onClick={
                     selectedEntity.entity === 'Region' ? handleAIEnrichRegion :
-                    selectedEntity.entity === 'City' ? handleAIEnrichCity :
-                    handleAIEnrichMunicipality
+                      selectedEntity.entity === 'City' ? handleAIEnrichCity :
+                        handleAIEnrichMunicipality
                   }
                   disabled={enriching || (selectedEntity.entity === 'Region' && !formData.name_en) || (selectedEntity.entity === 'City' && (!formData.name_en || !formData.region_id)) || (selectedEntity.entity === 'Municipality' && !formData.name_en)}
                   size="sm"
@@ -831,27 +703,27 @@ Using web search:
                     <label className="text-sm font-medium mb-2 block">
                       {t({ en: 'Name (EN)', ar: 'الاسم (EN)' })} *
                     </label>
-                    <Input value={formData.name_en || ''} onChange={(e) => setFormData({...formData, name_en: e.target.value})} />
+                    <Input value={formData.name_en || ''} onChange={(e) => setFormData({ ...formData, name_en: e.target.value })} />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">
                       {t({ en: 'Name (AR)', ar: 'الاسم (AR)' })} *
                     </label>
-                    <Input value={formData.name_ar || ''} onChange={(e) => setFormData({...formData, name_ar: e.target.value})} dir="rtl" />
+                    <Input value={formData.name_ar || ''} onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })} dir="rtl" />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">
                       {t({ en: 'Code', ar: 'الرمز' })} *
                     </label>
-                    <Input value={formData.code || ''} onChange={(e) => setFormData({...formData, code: e.target.value.toUpperCase()})} />
+                    <Input value={formData.code || ''} onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <Textarea value={formData.description_en || ''} onChange={(e) => setFormData({...formData, description_en: e.target.value})} placeholder="Description (EN)" rows={2} />
-                  <Textarea value={formData.description_ar || ''} onChange={(e) => setFormData({...formData, description_ar: e.target.value})} placeholder="الوصف (AR)" rows={2} dir="rtl" />
+                  <Textarea value={formData.description_en || ''} onChange={(e) => setFormData({ ...formData, description_en: e.target.value })} placeholder="Description (EN)" rows={2} />
+                  <Textarea value={formData.description_ar || ''} onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })} placeholder="الوصف (AR)" rows={2} dir="rtl" />
                 </div>
                 <div className="grid grid-cols-4 gap-4">
-                  <Select value={formData.region_type || 'mixed'} onValueChange={(v) => setFormData({...formData, region_type: v})}>
+                  <Select value={formData.region_type || 'mixed'} onValueChange={(v) => setFormData({ ...formData, region_type: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="urban">Urban</SelectItem>
@@ -859,13 +731,13 @@ Using web search:
                       <SelectItem value="mixed">Mixed</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Input type="number" value={formData.population || ''} onChange={(e) => setFormData({...formData, population: parseInt(e.target.value)})} placeholder="Population" />
-                  <Input type="number" value={formData.area_sqkm || ''} onChange={(e) => setFormData({...formData, area_sqkm: parseFloat(e.target.value)})} placeholder="Area (km²)" />
-                  <Input value={formData.governor_name || ''} onChange={(e) => setFormData({...formData, governor_name: e.target.value})} placeholder="Governor" />
+                  <Input type="number" value={formData.population || ''} onChange={(e) => setFormData({ ...formData, population: parseInt(e.target.value) })} placeholder="Population" />
+                  <Input type="number" value={formData.area_sqkm || ''} onChange={(e) => setFormData({ ...formData, area_sqkm: parseFloat(e.target.value) })} placeholder="Area (km²)" />
+                  <Input value={formData.governor_name || ''} onChange={(e) => setFormData({ ...formData, governor_name: e.target.value })} placeholder="Governor" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <Input type="number" step="0.0001" value={formData.coordinates?.latitude || ''} onChange={(e) => setFormData({...formData, coordinates: {...formData.coordinates, latitude: parseFloat(e.target.value)}})} placeholder="Latitude" />
-                  <Input type="number" step="0.0001" value={formData.coordinates?.longitude || ''} onChange={(e) => setFormData({...formData, coordinates: {...formData.coordinates, longitude: parseFloat(e.target.value)}})} placeholder="Longitude" />
+                  <Input type="number" step="0.0001" value={formData.coordinates?.latitude || ''} onChange={(e) => setFormData({ ...formData, coordinates: { ...formData.coordinates, latitude: parseFloat(e.target.value) } })} placeholder="Latitude" />
+                  <Input type="number" step="0.0001" value={formData.coordinates?.longitude || ''} onChange={(e) => setFormData({ ...formData, coordinates: { ...formData.coordinates, longitude: parseFloat(e.target.value) } })} placeholder="Longitude" />
                 </div>
               </>
             )}
@@ -874,7 +746,7 @@ Using web search:
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium mb-2 block">Region *</label>
-                    <Select value={formData.region_id || ''} onValueChange={(val) => setFormData({...formData, region_id: val})}>
+                    <Select value={formData.region_id || ''} onValueChange={(val) => setFormData({ ...formData, region_id: val })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select region" />
                       </SelectTrigger>
@@ -887,30 +759,30 @@ Using web search:
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">Name (EN) *</label>
-                    <Input value={formData.name_en || ''} onChange={(e) => setFormData({...formData, name_en: e.target.value})} />
+                    <Input value={formData.name_en || ''} onChange={(e) => setFormData({ ...formData, name_en: e.target.value })} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium mb-2 block">Name (AR) *</label>
-                    <Input value={formData.name_ar || ''} onChange={(e) => setFormData({...formData, name_ar: e.target.value})} dir="rtl" />
+                    <Input value={formData.name_ar || ''} onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })} dir="rtl" />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">Population</label>
-                    <Input type="number" value={formData.population || ''} onChange={(e) => setFormData({...formData, population: parseInt(e.target.value)})} />
+                    <Input type="number" value={formData.population || ''} onChange={(e) => setFormData({ ...formData, population: parseInt(e.target.value) })} />
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
-                  <Input type="number" value={formData.area_sqkm || ''} onChange={(e) => setFormData({...formData, area_sqkm: parseFloat(e.target.value)})} placeholder="Area (km²)" />
-                  <Input type="number" step="0.0001" value={formData.coordinates?.latitude || ''} onChange={(e) => setFormData({...formData, coordinates: {...formData.coordinates, latitude: parseFloat(e.target.value)}})} placeholder="Latitude" />
-                  <Input type="number" step="0.0001" value={formData.coordinates?.longitude || ''} onChange={(e) => setFormData({...formData, coordinates: {...formData.coordinates, longitude: parseFloat(e.target.value)}})} placeholder="Longitude" />
+                  <Input type="number" value={formData.area_sqkm || ''} onChange={(e) => setFormData({ ...formData, area_sqkm: parseFloat(e.target.value) })} placeholder="Area (km²)" />
+                  <Input type="number" step="0.0001" value={formData.coordinates?.latitude || ''} onChange={(e) => setFormData({ ...formData, coordinates: { ...formData.coordinates, latitude: parseFloat(e.target.value) } })} placeholder="Latitude" />
+                  <Input type="number" step="0.0001" value={formData.coordinates?.longitude || ''} onChange={(e) => setFormData({ ...formData, coordinates: { ...formData.coordinates, longitude: parseFloat(e.target.value) } })} placeholder="Longitude" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <Input value={formData.mayor_name || ''} onChange={(e) => setFormData({...formData, mayor_name: e.target.value})} placeholder="Mayor" />
-                  <Input value={formData.city_website || ''} onChange={(e) => setFormData({...formData, city_website: e.target.value})} placeholder="Website" />
+                  <Input value={formData.mayor_name || ''} onChange={(e) => setFormData({ ...formData, mayor_name: e.target.value })} placeholder="Mayor" />
+                  <Input value={formData.city_website || ''} onChange={(e) => setFormData({ ...formData, city_website: e.target.value })} placeholder="Website" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <Switch checked={formData.is_municipality} onCheckedChange={(checked) => setFormData({...formData, is_municipality: checked})} />
+                  <Switch checked={formData.is_municipality} onCheckedChange={(checked) => setFormData({ ...formData, is_municipality: checked })} />
                   <label className="text-sm">{t({ en: 'Has municipality', ar: 'لديها بلدية' })}</label>
                 </div>
               </>
@@ -920,17 +792,17 @@ Using web search:
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium mb-2 block">Name (EN) *</label>
-                    <Input value={formData.name_en || ''} onChange={(e) => setFormData({...formData, name_en: e.target.value})} />
+                    <Input value={formData.name_en || ''} onChange={(e) => setFormData({ ...formData, name_en: e.target.value })} />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">Name (AR) *</label>
-                    <Input value={formData.name_ar || ''} onChange={(e) => setFormData({...formData, name_ar: e.target.value})} dir="rtl" />
+                    <Input value={formData.name_ar || ''} onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })} dir="rtl" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium mb-2 block">Region</label>
-                    <Select value={formData.region_id || ''} onValueChange={(val) => setFormData({...formData, region_id: val})}>
+                    <Select value={formData.region_id || ''} onValueChange={(val) => setFormData({ ...formData, region_id: val })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select region" />
                       </SelectTrigger>
@@ -943,7 +815,7 @@ Using web search:
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">Type</label>
-                    <Select value={formData.municipality_type || 'city'} onValueChange={(val) => setFormData({...formData, municipality_type: val})}>
+                    <Select value={formData.municipality_type || 'city'} onValueChange={(val) => setFormData({ ...formData, municipality_type: val })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -959,50 +831,50 @@ Using web search:
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label className="text-sm font-medium mb-2 block">Population</label>
-                    <Input type="number" value={formData.population || ''} onChange={(e) => setFormData({...formData, population: parseInt(e.target.value)})} />
+                    <Input type="number" value={formData.population || ''} onChange={(e) => setFormData({ ...formData, population: parseInt(e.target.value) })} />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">MII Score</label>
-                    <Input type="number" min="0" max="100" value={formData.mii_score || ''} onChange={(e) => setFormData({...formData, mii_score: parseInt(e.target.value)})} />
+                    <Input type="number" min="0" max="100" value={formData.mii_score || ''} onChange={(e) => setFormData({ ...formData, mii_score: parseInt(e.target.value) })} />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">Area (km²)</label>
-                    <Input type="number" value={formData.area_sqkm || ''} onChange={(e) => setFormData({...formData, area_sqkm: parseFloat(e.target.value)})} />
+                    <Input type="number" value={formData.area_sqkm || ''} onChange={(e) => setFormData({ ...formData, area_sqkm: parseFloat(e.target.value) })} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium mb-2 block">Contact Email</label>
-                    <Input type="email" value={formData.contact_email || ''} onChange={(e) => setFormData({...formData, contact_email: e.target.value})} />
+                    <Input type="email" value={formData.contact_email || ''} onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })} />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">Contact Phone</label>
-                    <Input value={formData.contact_phone || ''} onChange={(e) => setFormData({...formData, contact_phone: e.target.value})} />
+                    <Input value={formData.contact_phone || ''} onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium mb-2 block">Website</label>
-                    <Input value={formData.website || ''} onChange={(e) => setFormData({...formData, website: e.target.value})} />
+                    <Input value={formData.website || ''} onChange={(e) => setFormData({ ...formData, website: e.target.value })} />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">Mayor Name</label>
-                    <Input value={formData.mayor_name || ''} onChange={(e) => setFormData({...formData, mayor_name: e.target.value})} />
+                    <Input value={formData.mayor_name || ''} onChange={(e) => setFormData({ ...formData, mayor_name: e.target.value })} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <Input type="number" step="0.0001" value={formData.coordinates?.latitude || ''} onChange={(e) => setFormData({...formData, coordinates: {...(formData.coordinates || {}), latitude: parseFloat(e.target.value)}})} placeholder="Latitude" />
-                  <Input type="number" step="0.0001" value={formData.coordinates?.longitude || ''} onChange={(e) => setFormData({...formData, coordinates: {...(formData.coordinates || {}), longitude: parseFloat(e.target.value)}})} placeholder="Longitude" />
+                  <Input type="number" step="0.0001" value={formData.coordinates?.latitude || ''} onChange={(e) => setFormData({ ...formData, coordinates: { ...(formData.coordinates || {}), latitude: parseFloat(e.target.value) } })} placeholder="Latitude" />
+                  <Input type="number" step="0.0001" value={formData.coordinates?.longitude || ''} onChange={(e) => setFormData({ ...formData, coordinates: { ...(formData.coordinates || {}), longitude: parseFloat(e.target.value) } })} placeholder="Longitude" />
                 </div>
               </>
             )}
             {selectedEntity?.entity === 'Organization' && (
               <>
                 <div className="grid grid-cols-2 gap-4">
-                  <Input value={formData.name_en || ''} onChange={(e) => setFormData({...formData, name_en: e.target.value})} placeholder="Name (EN)" />
-                  <Input value={formData.name_ar || ''} onChange={(e) => setFormData({...formData, name_ar: e.target.value})} placeholder="Name (AR)" dir="rtl" />
+                  <Input value={formData.name_en || ''} onChange={(e) => setFormData({ ...formData, name_en: e.target.value })} placeholder="Name (EN)" />
+                  <Input value={formData.name_ar || ''} onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })} placeholder="Name (AR)" dir="rtl" />
                 </div>
-                <Select value={formData.org_type || ''} onValueChange={(val) => setFormData({...formData, org_type: val})}>
+                <Select value={formData.org_type || ''} onValueChange={(val) => setFormData({ ...formData, org_type: val })}>
                   <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ministry">Ministry</SelectItem>
@@ -1011,7 +883,7 @@ Using web search:
                     <SelectItem value="university">University</SelectItem>
                   </SelectContent>
                 </Select>
-                <Input type="email" value={formData.contact_email || ''} onChange={(e) => setFormData({...formData, contact_email: e.target.value})} placeholder="Email" />
+                <Input type="email" value={formData.contact_email || ''} onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })} placeholder="Email" />
               </>
             )}
 

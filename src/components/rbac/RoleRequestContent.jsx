@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +8,8 @@ import { UserPlus, Clock, CheckCircle, XCircle } from 'lucide-react';
 import RoleRequestDialog from '@/components/access/RoleRequestDialog';
 import RoleRequestApprovalQueue from '@/components/access/RoleRequestApprovalQueue';
 import { usePermissions } from '@/components/permissions/usePermissions';
+import { useRoles } from '@/hooks/useRoles';
+import { useMyRoleRequests } from '@/hooks/useRoleRequests';
 
 export default function RoleRequestContent() {
   const { t, language } = useLanguage();
@@ -17,29 +17,8 @@ export default function RoleRequestContent() {
   const { isAdmin } = usePermissions();
   const [requestDialogOpen, setRequestDialogOpen] = useState(false);
 
-  const { data: roles = [] } = useQuery({
-    queryKey: ['roles-supabase'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('roles').select('*').order('name');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: myRequests = [] } = useQuery({
-    queryKey: ['role-requests', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data, error } = await supabase
-        .from('role_requests')
-        .select('*')
-        .eq('user_email', user.email)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
+  const { data: roles = [] } = useRoles();
+  const { data: myRequests = [] } = useMyRoleRequests(user?.email);
 
   const userRoleIds = user?.assigned_roles || [];
   const availableRoles = roles.filter(role => !userRoleIds.includes(role.id));
@@ -134,8 +113,7 @@ export default function RoleRequestContent() {
       <RoleRequestDialog
         open={requestDialogOpen}
         onOpenChange={setRequestDialogOpen}
-        availableRoles={availableRoles}
-      />
+        availableRoles={availableRoles} preSelectedRole={undefined} />
     </div>
   );
 }

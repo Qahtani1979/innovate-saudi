@@ -1,10 +1,18 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { usePrograms } from '@/hooks/usePrograms';
+import { useMatchingEntities } from '@/hooks/useMatchingEntities';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
+// import { Program, ProgramApplication, Challenge } from '@/types/supa_ext'; // Can't import types in JS easily for runtime, but for JSDoc yes.
+
+/**
+ * @typedef {import('@/types/supa_ext').Program} Program
+ * @typedef {import('@/types/supa_ext').ProgramApplication} ProgramApplication
+ * @typedef {import('@/types/supa_ext').Challenge} Challenge
+ */
+
 import {
   CheckCircle2, XCircle, AlertTriangle, Target, TrendingUp,
   ChevronDown, ChevronRight, Sparkles, Database, Workflow,
@@ -16,20 +24,12 @@ function ProgramsCoverageReport() {
   const { language, isRTL, t } = useLanguage();
   const [expandedSections, setExpandedSections] = useState({});
 
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs-for-coverage'],
-    queryFn: () => base44.entities.Program.list()
-  });
+  const { programs } = usePrograms({ limit: 1000 });
+  const { useProgramApplications } = usePrograms();
+  const { data: applications = [] } = useProgramApplications();
 
-  const { data: applications = [] } = useQuery({
-    queryKey: ['applications-for-coverage'],
-    queryFn: () => base44.entities.ProgramApplication.list()
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-for-coverage'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
+  const { useChallenges } = useMatchingEntities();
+  const { data: challenges = [] } = useChallenges();
 
   const toggleSection = (key) => {
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
@@ -877,8 +877,8 @@ function ProgramsCoverageReport() {
     ],
 
     comparisons: {
-    programsVsChallenges: [
-      { aspect: 'Nature', programs: 'Innovation campaigns/accelerator cohorts', challenges: 'Problem statements', gap: 'Different purposes ✅' },
+      programsVsChallenges: [
+        { aspect: 'Nature', programs: 'Innovation campaigns/accelerator cohorts', challenges: 'Problem statements', gap: 'Different purposes ✅' },
         { aspect: 'Input', programs: '✅ Challenge→Program (100%)', challenges: '✅ Ideas→Challenges (100%)', gap: 'BOTH have input pipelines ✅' },
         { aspect: 'Output', programs: '✅ Program→Solution/Pilot (100%)', challenges: '✅ Challenge→Pilot (100%)', gap: 'BOTH complete ✅' },
         { aspect: 'Duration', programs: 'Weeks/months (cohort-based)', challenges: 'Ongoing (until resolved)', gap: 'Different lifecycles ✅' },
@@ -984,34 +984,34 @@ function ProgramsCoverageReport() {
     },
 
     workflowImplementation: {
-    current: 'COMPLETE (100%): Program entity at full completion with comprehensive workflow infrastructure (Dec 2025)',
-    consistencyNote: '✅ Uses unified ExpertEvaluation system for program application reviews - migrated Dec 2025',
-    actualState: [
-      '✅ ProgramDetail with 16 tabs (Overview, Timeline, Eligibility, Benefits, Funding, Curriculum, Mentors, Applications, Participants, Outcomes, Media, Workflow, Activity, Discussion, Policy, Conversions)',
-      '✅ workflow_stage field in entity (10 stages: planning → completed)',
-      '✅ UnifiedWorkflowApprovalTab integrated in Workflow tab',
-      '✅ 4 gates in ApprovalGateConfig (launch_approval, selection_approval, mid_review, completion_review)',
-      '✅ ProgramActivityLog component created and integrated',
-      '✅ ProgramExpertEvaluation integrated in completion_review gate',
-      '✅ Expert mentor integration via ExpertAssignment entity',
-      '✅ ApprovalCenter with separate Programs tab (distinct from ProgramApplication)',
-      '✅ RequesterAI and ReviewerAI for all 4 gates',
-      '✅ InlineApprovalWizard in ApprovalCenter',
-      '✅ programSLAAutomation function with escalation',
-      '✅ All 4 AI widgets integrated',
-      '✅ Conversions tab with 3 workflows'
-    ],
-    evaluationSystem: [
-      '✅ ProgramApplication evaluated via ExpertEvaluation (entity_type: program_application)',
-      '✅ ApplicationReviewHub uses UnifiedEvaluationForm',
-      '✅ Multi-evaluator consensus for admissions',
-      '✅ Program entity has evaluation/approval workflow via UnifiedWorkflowApprovalTab',
-      '✅ Launch approval gate tracking via ApprovalRequest entity',
-      '✅ Completion review gate tracking via ApprovalRequest entity',
-      '✅ ProgramExpertEvaluation component for completion_review gate',
-      '✅ Multi-expert consensus for program completion'
-    ],
-    gaps: []
+      current: 'COMPLETE (100%): Program entity at full completion with comprehensive workflow infrastructure (Dec 2025)',
+      consistencyNote: '✅ Uses unified ExpertEvaluation system for program application reviews - migrated Dec 2025',
+      actualState: [
+        '✅ ProgramDetail with 16 tabs (Overview, Timeline, Eligibility, Benefits, Funding, Curriculum, Mentors, Applications, Participants, Outcomes, Media, Workflow, Activity, Discussion, Policy, Conversions)',
+        '✅ workflow_stage field in entity (10 stages: planning → completed)',
+        '✅ UnifiedWorkflowApprovalTab integrated in Workflow tab',
+        '✅ 4 gates in ApprovalGateConfig (launch_approval, selection_approval, mid_review, completion_review)',
+        '✅ ProgramActivityLog component created and integrated',
+        '✅ ProgramExpertEvaluation integrated in completion_review gate',
+        '✅ Expert mentor integration via ExpertAssignment entity',
+        '✅ ApprovalCenter with separate Programs tab (distinct from ProgramApplication)',
+        '✅ RequesterAI and ReviewerAI for all 4 gates',
+        '✅ InlineApprovalWizard in ApprovalCenter',
+        '✅ programSLAAutomation function with escalation',
+        '✅ All 4 AI widgets integrated',
+        '✅ Conversions tab with 3 workflows'
+      ],
+      evaluationSystem: [
+        '✅ ProgramApplication evaluated via ExpertEvaluation (entity_type: program_application)',
+        '✅ ApplicationReviewHub uses UnifiedEvaluationForm',
+        '✅ Multi-evaluator consensus for admissions',
+        '✅ Program entity has evaluation/approval workflow via UnifiedWorkflowApprovalTab',
+        '✅ Launch approval gate tracking via ApprovalRequest entity',
+        '✅ Completion review gate tracking via ApprovalRequest entity',
+        '✅ ProgramExpertEvaluation component for completion_review gate',
+        '✅ Multi-expert consensus for program completion'
+      ],
+      gaps: []
     },
 
     evaluatorGaps: {
@@ -1305,7 +1305,7 @@ function ProgramsCoverageReport() {
               <p className="font-bold text-amber-900 mb-2">⚠️ Clarification: Programs are INNOVATION CAMPAIGNS & COHORTS, NOT Educational Training</p>
               <p className="text-sm text-amber-800">
                 Program types: Innovation Accelerator, Matchmaker Cohort, Innovation Challenge/Campaign, Pilot Sprint, Solution Showcase, R&D Consortium, Capacity Building.
-                <br/><br/>
+                <br /><br />
                 Focus: Accelerating innovation, matching providers, running innovation campaigns, building cohorts - NOT generic education.
               </p>
             </div>
@@ -1314,24 +1314,24 @@ function ProgramsCoverageReport() {
               <p className="font-bold text-green-900 mb-2">✅ Taxonomy & Strategic Linkage COMPLETE</p>
               <p className="text-sm text-green-800">
                 Program entity now has FULL taxonomy and strategic linkage:
-                <br/><br/>
+                <br /><br />
                 <strong>✅ 7 Taxonomy Fields Added:</strong>
-                <br/>✅ subsector_id, service_focus_ids, municipality_targets, region_targets, city_targets
-                <br/>✅ challenge_theme_alignment (which challenge types program addresses)
-                <br/>✅ taxonomy_weights (sector priorities within program)
-                <br/><br/>
+                <br />✅ subsector_id, service_focus_ids, municipality_targets, region_targets, city_targets
+                <br />✅ challenge_theme_alignment (which challenge types program addresses)
+                <br />✅ taxonomy_weights (sector priorities within program)
+                <br /><br />
                 <strong>✅ 5 Strategic Fields Added:</strong>
-                <br/>✅ strategic_pillar_id, strategic_objective_ids, strategic_priority_level
-                <br/>✅ mii_dimension_targets (which MII dimensions program improves)
-                <br/>✅ strategic_kpi_contributions
-                <br/><br/>
+                <br />✅ strategic_pillar_id, strategic_objective_ids, strategic_priority_level
+                <br />✅ mii_dimension_targets (which MII dimensions program improves)
+                <br />✅ strategic_kpi_contributions
+                <br /><br />
                 <strong>✅ 11 Outcome/Relation Fields Added:</strong>
-                <br/>✅ challenge_clusters_inspiration, idea_themes_inspiration
-                <br/>✅ solution_types_targeted, graduate_solutions_produced, graduate_pilots_launched
-                <br/>✅ partner_organizations_strategic, municipal_capacity_impact
-                <br/>✅ challenge_submissions_generated, partnership_agreements_formed
-                <br/>✅ peer_projects, resources, assignments, attendance_records, alumni_success_stories
-                <br/><br/>
+                <br />✅ challenge_clusters_inspiration, idea_themes_inspiration
+                <br />✅ solution_types_targeted, graduate_solutions_produced, graduate_pilots_launched
+                <br />✅ partner_organizations_strategic, municipal_capacity_impact
+                <br />✅ challenge_submissions_generated, partnership_agreements_formed
+                <br />✅ peer_projects, resources, assignments, attendance_records, alumni_success_stories
+                <br /><br />
                 Programs NOW aligned to taxonomy, strategy, and ecosystem with full outcome tracking.
               </p>
             </div>
@@ -1438,8 +1438,8 @@ function ProgramsCoverageReport() {
                         <h4 className="font-semibold text-slate-900">{page.name}</h4>
                         <Badge className={
                           page.status === 'complete' ? 'bg-green-100 text-green-700' :
-                          page.status === 'exists' ? 'bg-blue-100 text-blue-700' :
-                          'bg-yellow-100 text-yellow-700'
+                            page.status === 'exists' ? 'bg-blue-100 text-blue-700' :
+                              'bg-yellow-100 text-yellow-700'
                         }>
                           {page.status}
                         </Badge>
@@ -1573,25 +1573,23 @@ function ProgramsCoverageReport() {
                   <h4 className="font-semibold text-slate-900 text-lg">{journey.persona}</h4>
                   <Badge className={
                     journey.coverage >= 90 ? 'bg-green-100 text-green-700' :
-                    journey.coverage >= 70 ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-red-100 text-red-700'
+                      journey.coverage >= 70 ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-red-100 text-red-700'
                   }>{journey.coverage}% Complete</Badge>
                 </div>
                 <div className="space-y-2">
                   {journey.journey.map((step, i) => (
                     <div key={i} className="flex items-start gap-3">
                       <div className="flex flex-col items-center">
-                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                          step.status === 'complete' ? 'bg-green-100 text-green-700' :
+                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${step.status === 'complete' ? 'bg-green-100 text-green-700' :
                           step.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
+                            'bg-red-100 text-red-700'
+                          }`}>
                           {i + 1}
                         </div>
                         {i < journey.journey.length - 1 && (
-                          <div className={`w-0.5 h-8 ${
-                            step.status === 'complete' ? 'bg-green-300' : 'bg-slate-200'
-                          }`} />
+                          <div className={`w-0.5 h-8 ${step.status === 'complete' ? 'bg-green-300' : 'bg-slate-200'
+                            }`} />
                         )}
                       </div>
                       <div className="flex-1 pt-1">
@@ -1650,22 +1648,20 @@ function ProgramsCoverageReport() {
           <CardContent>
             <div className="space-y-4">
               {coverageData.aiFeatures.map((ai, idx) => (
-                <div key={idx} className={`p-4 border rounded-lg ${
-                  ai.status === 'implemented' ? 'bg-gradient-to-r from-purple-50 to-pink-50' :
+                <div key={idx} className={`p-4 border rounded-lg ${ai.status === 'implemented' ? 'bg-gradient-to-r from-purple-50 to-pink-50' :
                   ai.status === 'partial' ? 'bg-yellow-50' : 'bg-red-50'
-                }`}>
+                  }`}>
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Sparkles className={`h-5 w-5 ${
-                        ai.status === 'implemented' ? 'text-purple-600' :
+                      <Sparkles className={`h-5 w-5 ${ai.status === 'implemented' ? 'text-purple-600' :
                         ai.status === 'partial' ? 'text-yellow-600' : 'text-red-600'
-                      }`} />
+                        }`} />
                       <h4 className="font-semibold text-slate-900">{ai.name}</h4>
                     </div>
                     <Badge className={
                       ai.status === 'implemented' ? 'bg-green-100 text-green-700' :
-                      ai.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-red-100 text-red-700'
+                        ai.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
                     }>{ai.coverage}%</Badge>
                   </div>
                   <p className="text-sm text-slate-600 mb-2">{ai.description}</p>
@@ -1720,10 +1716,10 @@ function ProgramsCoverageReport() {
               <p className="font-bold text-red-900 mb-2">🚨 CRITICAL: Ecosystem Isolation</p>
               <p className="text-sm text-red-800">
                 Programs are <strong>ISOLATED</strong> from the innovation pipeline:
-                <br/>• <strong>No INPUT:</strong> Programs not created FROM challenges or ideas
-                <br/>• <strong>No OUTPUT:</strong> Graduates don't automatically launch solutions or pilots
-                <br/>• <strong>No FEEDBACK:</strong> Program outcomes don't close loops with challenges
-                <br/><br/>
+                <br />• <strong>No INPUT:</strong> Programs not created FROM challenges or ideas
+                <br />• <strong>No OUTPUT:</strong> Graduates don't automatically launch solutions or pilots
+                <br />• <strong>No FEEDBACK:</strong> Program outcomes don't close loops with challenges
+                <br /><br />
                 This makes programs <strong>capacity-building islands</strong> disconnected from problem-solving.
               </p>
             </div>
@@ -1753,15 +1749,14 @@ function ProgramsCoverageReport() {
               <p className="font-semibold text-amber-900 mb-3">⚠️ Partial/Missing OUTPUT Paths</p>
               <div className="space-y-3">
                 {coverageData.conversionPaths.outgoing.map((path, i) => (
-                  <div key={i} className={`p-3 border-2 rounded-lg ${
-                    path.status === 'partial' ? 'border-yellow-300 bg-yellow-50' :
+                  <div key={i} className={`p-3 border-2 rounded-lg ${path.status === 'partial' ? 'border-yellow-300 bg-yellow-50' :
                     'border-red-300 bg-red-50'
-                  }`}>
+                    }`}>
                     <div className="flex items-center justify-between mb-2">
                       <p className="font-bold">{path.path}</p>
                       <Badge className={
                         path.status === 'partial' ? 'bg-yellow-600 text-white' :
-                        'bg-red-600 text-white'
+                          'bg-red-600 text-white'
                       }>{path.coverage}%</Badge>
                     </div>
                     <p className="text-sm text-slate-700 mb-1">{path.description}</p>
@@ -2293,19 +2288,18 @@ function ProgramsCoverageReport() {
         <CardContent>
           <div className="space-y-3">
             {coverageData.recommendations.map((rec, idx) => (
-              <div key={idx} className={`p-4 border-2 rounded-lg ${
-                rec.priority === 'P0' ? 'border-red-300 bg-red-50' :
+              <div key={idx} className={`p-4 border-2 rounded-lg ${rec.priority === 'P0' ? 'border-red-300 bg-red-50' :
                 rec.priority === 'P1' ? 'border-orange-300 bg-orange-50' :
-                rec.priority === 'P2' ? 'border-yellow-300 bg-yellow-50' :
-                'border-blue-300 bg-blue-50'
-              }`}>
+                  rec.priority === 'P2' ? 'border-yellow-300 bg-yellow-50' :
+                    'border-blue-300 bg-blue-50'
+                }`}>
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Badge className={
                       rec.priority === 'P0' ? 'bg-red-600 text-white' :
-                      rec.priority === 'P1' ? 'bg-orange-600 text-white' :
-                      rec.priority === 'P2' ? 'bg-yellow-600 text-white' :
-                      'bg-blue-600 text-white'
+                        rec.priority === 'P1' ? 'bg-orange-600 text-white' :
+                          rec.priority === 'P2' ? 'bg-yellow-600 text-white' :
+                            'bg-blue-600 text-white'
                     }>
                       {rec.priority}
                     </Badge>
@@ -2363,27 +2357,27 @@ function ProgramsCoverageReport() {
             <p className="text-sm font-semibold text-purple-900 mb-2">✅ COMPLETE (100%)</p>
             <p className="text-sm text-purple-800">
               Innovation Programs & Campaigns now at <strong>COMPLETE (100%)</strong> - comprehensive workflow infrastructure operational.
-              <br/><br/>
+              <br /><br />
               <strong>What Programs Are:</strong> Innovation Accelerators, Matchmaker Cohorts, Innovation Challenges/Campaigns, Pilot Sprints, Solution Showcases, R&D Consortia, Capacity Building - NOT educational training.
-              <br/><br/>
+              <br /><br />
               <strong>✅ Achievements:</strong>
-              <br/>✅ WORKFLOW: 4 gates with UnifiedWorkflowApprovalTab, dual AI, SLA automation
-              <br/>✅ EDIT: Auto-save, version tracking, change tracking, preview mode (100%)
-              <br/>✅ CREATE: 6-step wizard with AI enhancement (100%)
-              <br/>✅ EXPERT EVAL: ProgramExpertEvaluation integrated in completion review
-              <br/>✅ AI WIDGETS: 4 widgets (Success, Cohort, Dropout, Alumni) all integrated
-              <br/>✅ CONVERSIONS: 3 workflows (Challenge→, →Solution, →Pilot) all implemented
-              <br/>✅ ACTIVITY: ProgramActivityLog comprehensive timeline
-              <br/>✅ TABS: 16 tabs including new Conversions tab
-              <br/>✅ PARTICIPANT SYSTEM: Assignment system, attendance tracking, onboarding workflow
-              <br/>✅ MENTOR SYSTEM: Scheduler, hour logging via ProgramMentorship entity
-              <br/>✅ ALUMNI SYSTEM: Real data integration, impact tracking, network hub
-              <br/>✅ WAITLIST: Manager component with promotion workflow
-              <br/><br/>
+              <br />✅ WORKFLOW: 4 gates with UnifiedWorkflowApprovalTab, dual AI, SLA automation
+              <br />✅ EDIT: Auto-save, version tracking, change tracking, preview mode (100%)
+              <br />✅ CREATE: 6-step wizard with AI enhancement (100%)
+              <br />✅ EXPERT EVAL: ProgramExpertEvaluation integrated in completion review
+              <br />✅ AI WIDGETS: 4 widgets (Success, Cohort, Dropout, Alumni) all integrated
+              <br />✅ CONVERSIONS: 3 workflows (Challenge→, →Solution, →Pilot) all implemented
+              <br />✅ ACTIVITY: ProgramActivityLog comprehensive timeline
+              <br />✅ TABS: 16 tabs including new Conversions tab
+              <br />✅ PARTICIPANT SYSTEM: Assignment system, attendance tracking, onboarding workflow
+              <br />✅ MENTOR SYSTEM: Scheduler, hour logging via ProgramMentorship entity
+              <br />✅ ALUMNI SYSTEM: Real data integration, impact tracking, network hub
+              <br />✅ WAITLIST: Manager component with promotion workflow
+              <br /><br />
               <strong>⚠️ Remaining Gaps (Optional):</strong>
-              <br/>• Peer collaboration tools (P3 priority)
-              <br/>• Resource library for participants (P3 priority)
-              <br/>• Dedicated mentor dashboard (currently uses ExpertAssignmentQueue)
+              <br />• Peer collaboration tools (P3 priority)
+              <br />• Resource library for participants (P3 priority)
+              <br />• Dedicated mentor dashboard (currently uses ExpertAssignmentQueue)
             </p>
           </div>
 
@@ -2391,23 +2385,23 @@ function ProgramsCoverageReport() {
             <p className="text-sm font-semibold text-green-900 mb-2">✅ Bottom Line - COMPLETE (100%)</p>
             <p className="text-sm text-green-800">
               <strong>Innovation Programs/Campaigns: COMPLETE (100%)</strong>
-              <br/><br/>
+              <br /><br />
               <strong>✅ COMPLETE (All 7 Phases):</strong>
-              <br/>✓ Phase 1-2: Workflow gates + enhanced edit + wizard (100%)
-              <br/>✓ Phase 3: Expert evaluation system integrated (100%)
-              <br/>✓ Phase 4: All 4 AI widgets implemented (100%)
-              <br/>✓ Phase 5: All 3 conversion workflows (100%)
-              <br/>✓ Phase 6: Conversions tab + detail enhancements (100%)
-              <br/>✓ Phase 7: Participant/Mentor/Alumni lifecycle (100%)
-              <br/>✓ Phase 8: P3 Enhancements - Collaboration/Resources/Stories (100%)
-              <br/><br/>
+              <br />✓ Phase 1-2: Workflow gates + enhanced edit + wizard (100%)
+              <br />✓ Phase 3: Expert evaluation system integrated (100%)
+              <br />✓ Phase 4: All 4 AI widgets implemented (100%)
+              <br />✓ Phase 5: All 3 conversion workflows (100%)
+              <br />✓ Phase 6: Conversions tab + detail enhancements (100%)
+              <br />✓ Phase 7: Participant/Mentor/Alumni lifecycle (100%)
+              <br />✓ Phase 8: P3 Enhancements - Collaboration/Resources/Stories (100%)
+              <br /><br />
               <strong>✅ ALL ENHANCEMENTS COMPLETE (100%):</strong>
-              <br/>✅ Peer collaboration platform (PeerCollaborationHub - team projects, peer reviews)
-              <br/>✅ Resource library UI (ResourceLibrary - upload/organize/filter)
-              <br/>✅ Dedicated mentor dashboard (MentorDashboard - sessions/mentees/evaluations)
-              <br/>✅ Alumni success story generator (AlumniSuccessStoryGenerator - AI storytelling)
-              <br/>✅ Municipal capacity impact automation (MunicipalImpactCalculator - AI analysis)
-              <br/><br/>
+              <br />✅ Peer collaboration platform (PeerCollaborationHub - team projects, peer reviews)
+              <br />✅ Resource library UI (ResourceLibrary - upload/organize/filter)
+              <br />✅ Dedicated mentor dashboard (MentorDashboard - sessions/mentees/evaluations)
+              <br />✅ Alumni success story generator (AlumniSuccessStoryGenerator - AI storytelling)
+              <br />✅ Municipal capacity impact automation (MunicipalImpactCalculator - AI analysis)
+              <br /><br />
               Program has complete end-to-end lifecycle with all core workflows operational.
             </p>
           </div>

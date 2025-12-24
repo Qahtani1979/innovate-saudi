@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -84,21 +83,30 @@ export default function SandboxLaunchChecklist({ sandbox, onClose }) {
 
   const launchMutation = useMutation({
     mutationFn: async () => {
-      await base44.entities.Sandbox.update(sandbox.id, {
-        status: 'active',
-        launch_date: new Date().toISOString().split('T')[0],
-        launch_checklist: checklist,
-        launch_notes: notes
-      });
+      const { supabase } = await import('@/integrations/supabase/client');
+
+      const { error: updateError } = await supabase
+        .from('sandboxes')
+        .update({
+          status: 'active',
+          launch_date: new Date().toISOString().split('T')[0],
+          launch_checklist: checklist,
+          launch_notes: notes
+        })
+        .eq('id', sandbox.id);
+      if (updateError) throw updateError;
 
       // Create notification
-      await base44.entities.Notification.create({
-        type: 'sandbox_launched',
-        title: `Sandbox Launched: ${sandbox.name_en}`,
-        message: `${sandbox.name_en} is now active and accepting applications.`,
-        severity: 'success',
-        link: `/SandboxDetail?id=${sandbox.id}`
-      });
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .insert([{
+          type: 'sandbox_launched',
+          title: `Sandbox Launched: ${sandbox.name_en}`,
+          message: `${sandbox.name_en} is now active and accepting applications.`,
+          severity: 'success',
+          link: `/SandboxDetail?id=${sandbox.id}`
+        }]);
+      if (notifError) throw notifError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['sandbox']);
@@ -167,7 +175,7 @@ export default function SandboxLaunchChecklist({ sandbox, onClose }) {
                   <div key={item.id} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-slate-50">
                     <Checkbox
                       checked={checklist[item.id]}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setChecklist({ ...checklist, [item.id]: checked })
                       }
                       className="mt-0.5"

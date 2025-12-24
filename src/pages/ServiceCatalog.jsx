@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,32 +6,23 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { FileText, Plus, Search, AlertCircle, TrendingUp, CheckCircle2 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useServiceCatalog } from '@/hooks/useServices';
+import { useSubsectors } from '@/hooks/useSubsectors';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 
 function ServiceCatalog() {
   const { language, isRTL, t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSubsector, setFilterSubsector] = useState('all');
-  const queryClient = useQueryClient();
 
-  const { data: services = [] } = useQuery({
-    queryKey: ['services'],
-    queryFn: () => base44.entities.Service.list()
-  });
-
-  const { data: subsectors = [] } = useQuery({
-    queryKey: ['subsectors'],
-    queryFn: () => base44.entities.Subsector.list()
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
+  const { data: services = [] } = useServiceCatalog();
+  const { data: subsectors = [] } = useSubsectors();
+  const { data: challenges = [] } = useChallengesWithVisibility();
 
   const filteredServices = services.filter(s => {
-    const matchesSearch = !searchQuery || 
-      (s.name_en?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-       s.name_ar?.includes(searchQuery));
+    const matchesSearch = !searchQuery ||
+      (s.name_en?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.name_ar?.includes(searchQuery));
     const matchesSubsector = filterSubsector === 'all' || s.subsector_id === filterSubsector;
     return matchesSearch && matchesSubsector;
   });

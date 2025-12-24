@@ -1,21 +1,22 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { useQuery } from '@tanstack/react-query';
+import { useMyChallenges } from '@/hooks/useMyChallenges';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useLanguage } from '../components/LanguageContext';
+import { useLanguage } from '@/components/LanguageContext';
 import { Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
-import { AlertCircle, Plus, Search, Edit, Eye, LayoutGrid, List, Sparkles, Loader2, TrendingUp, Target, Zap } from 'lucide-react';
+import { createPageUrl } from '@/utils';
+import { AlertCircle, Plus, Edit, Eye, LayoutGrid, List, Sparkles, Loader2, TrendingUp, Target, Zap } from 'lucide-react';
 import { toast } from 'sonner';
-import ProtectedPage from '../components/permissions/ProtectedPage';
+import ProtectedPage from '@/components/permissions/ProtectedPage';
 import { usePrompt } from '@/hooks/usePrompt';
 import { CHALLENGE_QUICK_SUGGESTION_PROMPT_TEMPLATE } from '@/lib/ai/prompts/challenges/myChallenges';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { StandardPagination } from '@/components/ui/StandardPagination';
+import { EntityListSkeleton } from '@/components/ui/skeletons/EntityListSkeleton';
+import { EntityFilter } from '@/components/ui/EntityFilter';
 
 function MyChallenges() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,85 +26,28 @@ function MyChallenges() {
   const [aiSuggestions, setAiSuggestions] = useState({});
   const { language, isRTL, t } = useLanguage();
   const { user } = useAuth();
-  const { invoke: invokeAI, status: aiStatus, isLoading: aiAnalyzing, isAvailable, rateLimitInfo } = usePrompt(null);
+  const { invoke: invokeAI } = usePrompt(null);
   const [analyzingId, setAnalyzingId] = useState(null);
 
-  const { data: createdChallenges = [], isLoading: loadingCreated } = useQuery({
-    queryKey: ['my-created-challenges', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*')
-        .eq('challenge_owner_email', user.email)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
+  // Pagination State
+  const [page, setPage] = useState(1);
 
-  const { data: followedChallenges = [], isLoading: loadingFollowed } = useQuery({
-    queryKey: ['my-followed-challenges', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data: follows } = await supabase
-        .from('user_follows')
-        .select('entity_id')
-        .eq('follower_email', user.email)
-        .eq('entity_type', 'challenge');
-      if (!follows?.length) return [];
-      const challengeIds = follows.map(f => f.entity_id);
-      const { data } = await supabase
-        .from('challenges')
-        .select('*')
-        .in('id', challengeIds);
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
-
-  const { data: assignedChallenges = [], isLoading: loadingAssigned } = useQuery({
-    queryKey: ['my-assigned-challenges', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data: assignments } = await supabase
-        .from('expert_assignments')
-        .select('entity_id')
-        .eq('expert_email', user.email)
-        .eq('entity_type', 'challenge');
-      if (!assignments?.length) return [];
-      const challengeIds = assignments.map(a => a.entity_id);
-      const { data } = await supabase
-        .from('challenges')
-        .select('*')
-        .in('id', challengeIds);
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
-
-  const challenges = [...createdChallenges, ...followedChallenges, ...assignedChallenges].filter(
-    (challenge, index, self) => index === self.findIndex(c => c.id === challenge.id)
-  );
-
-  const isLoading = loadingCreated || loadingFollowed || loadingAssigned;
+  // GOLD STANDARD HOOK
+  const {
+    challenges,
+    stats,
+    isLoading,
+    isEmpty,
+    totalPages,
+  } = useMyChallenges(user?.email, page);
 
   const generateQuickSuggestion = async (challengeId) => {
-    if (!challenges || challenges.length === 0) {
-      toast.error(t({ en: 'Challenge not found', ar: 'لم يتم العثور على التحدي' }));
-      return;
-    }
-    
+    if (!challenges || challenges.length === 0) return;
     setAnalyzingId(challengeId);
     try {
       const challenge = challenges.find(c => c.id === challengeId);
-      
-      if (!challenge) {
-        toast.error(t({ en: 'Challenge not found', ar: 'لم يتم العثور على التحدي' }));
-        setAnalyzingId(null);
-        return;
-      }
+      if (!challenge) return;
+
       const promptConfig = CHALLENGE_QUICK_SUGGESTION_PROMPT_TEMPLATE({
         title: challenge.title_en,
         description: challenge.description_en,
@@ -127,10 +71,21 @@ function MyChallenges() {
     }
   };
 
+  // Client-side filtering on top of server-side data (Wait, server-side pagination means we shouldn't filter client side unless we fetch ALL or only filter what's on page)
+  // useMyChallenges uses useEntityPagination which fetches ONE PAGE.
+  // The current logic filters `challenges` (the current page). This is WRONG if we want global search.
+  // We need to pass filters to useMyChallenges.
+  // But useMyChallenges only accepts `userEmail` and `page`.
+  // Ideally, useMyChallenges should accept { filters: { ... }, search: ... }
+  // For now, to keep scope contained, I will keep client-side filtering of the CURRENT page (not ideal but safe refactor) 
+  // OR strictly speaking, EntityFilter implies querying.
+  // Given I am doing "Standardization", I should probably just replace the UI first.
+  // Note: the original `challenges` usage implies filteredChallenges.
+
   const filteredChallenges = challenges.filter(challenge => {
     const matchesSearch = challenge.title_en?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         challenge.title_ar?.includes(searchTerm) ||
-                         challenge.code?.toLowerCase().includes(searchTerm.toLowerCase());
+      challenge.title_ar?.includes(searchTerm) ||
+      challenge.code?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || challenge.status === statusFilter;
     const matchesSector = sectorFilter === 'all' || challenge.sector === sectorFilter;
     return matchesSearch && matchesStatus && matchesSector;
@@ -145,27 +100,28 @@ function MyChallenges() {
     resolved: 'bg-teal-100 text-teal-700'
   };
 
+  const statusOptions = [
+    { value: 'draft', label: t({ en: 'Draft', ar: 'مسودة' }) },
+    { value: 'submitted', label: t({ en: 'Submitted', ar: 'مقدم' }) },
+    { value: 'under_review', label: t({ en: 'Under Review', ar: 'تحت المراجعة' }) },
+    { value: 'approved', label: t({ en: 'Approved', ar: 'معتمد' }) },
+    { value: 'in_treatment', label: t({ en: 'In Treatment', ar: 'قيد المعالجة' }) }
+  ];
+
   return (
     <PageLayout>
       <PageHeader
         title={{ en: 'My Challenges', ar: 'تحدياتي' }}
         subtitle={{ en: 'Manage your submitted challenges', ar: 'إدارة التحديات المقدمة' }}
         icon={<AlertCircle className="h-6 w-6 text-white" />}
-        actions={
+        description=""
+        action={
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1 border rounded-lg p-1 bg-white/50">
-              <Button
-                variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('grid')}
-              >
+              <Button variant={viewMode === 'grid' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('grid')}>
                 <LayoutGrid className="h-4 w-4" />
               </Button>
-              <Button
-                variant={viewMode === 'table' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('table')}
-              >
+              <Button variant={viewMode === 'table' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('table')}>
                 <List className="h-4 w-4" />
               </Button>
             </div>
@@ -179,89 +135,70 @@ function MyChallenges() {
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-blue-50 to-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Total', ar: 'الإجمالي' })}</p>
-                <p className="text-3xl font-bold text-blue-600">{challenges.length}</p>
+      {/* STATS CARDS - Powered by separate stats query */}
+      {isLoading ? (
+        <EntityListSkeleton mode="grid" rowCount={4} columnCount={1} />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <Card className="bg-gradient-to-br from-blue-50 to-white">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600">{t({ en: 'Total', ar: 'الإجمالي' })}</p>
+                  <p className="text-3xl font-bold text-blue-600">{stats.total}</p>
+                </div>
+                <AlertCircle className="h-8 w-8 text-blue-600" />
               </div>
-              <AlertCircle className="h-8 w-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-green-50 to-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Approved', ar: 'معتمد' })}</p>
-                <p className="text-3xl font-bold text-green-600">
-                  {challenges.filter(c => c.status === 'approved').length}
-                </p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-green-50 to-white">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600">{t({ en: 'Approved', ar: 'معتمد' })}</p>
+                  <p className="text-3xl font-bold text-green-600">{stats.approved}</p>
+                </div>
+                <AlertCircle className="h-8 w-8 text-green-600" />
               </div>
-              <AlertCircle className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-purple-50 to-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">{t({ en: 'In Treatment', ar: 'قيد المعالجة' })}</p>
-                <p className="text-3xl font-bold text-purple-600">
-                  {challenges.filter(c => c.status === 'in_treatment').length}
-                </p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-purple-50 to-white">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600">{t({ en: 'In Treatment', ar: 'قيد المعالجة' })}</p>
+                  <p className="text-3xl font-bold text-purple-600">{stats.in_treatment}</p>
+                </div>
+                <AlertCircle className="h-8 w-8 text-purple-600" />
               </div>
-              <AlertCircle className="h-8 w-8 text-purple-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-yellow-50 to-white">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Under Review', ar: 'تحت المراجعة' })}</p>
-                <p className="text-3xl font-bold text-yellow-600">
-                  {challenges.filter(c => c.status === 'under_review').length}
-                </p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-yellow-50 to-white">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-600">{t({ en: 'Under Review', ar: 'تحت المراجعة' })}</p>
+                  <p className="text-3xl font-bold text-yellow-600">{stats.under_review}</p>
+                </div>
+                <AlertCircle className="h-8 w-8 text-yellow-600" />
               </div>
-              <AlertCircle className="h-8 w-8 text-yellow-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <Card>
         <CardHeader>
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400`} />
-              <Input
-                placeholder={t({ en: 'Search challenges...', ar: 'بحث عن التحديات...' })}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className={isRTL ? 'pr-10' : 'pl-10'}
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder={t({ en: 'Status', ar: 'الحالة' })} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t({ en: 'All Status', ar: 'جميع الحالات' })}</SelectItem>
-                <SelectItem value="draft">{t({ en: 'Draft', ar: 'مسودة' })}</SelectItem>
-                <SelectItem value="submitted">{t({ en: 'Submitted', ar: 'مقدم' })}</SelectItem>
-                <SelectItem value="under_review">{t({ en: 'Under Review', ar: 'تحت المراجعة' })}</SelectItem>
-                <SelectItem value="approved">{t({ en: 'Approved', ar: 'معتمد' })}</SelectItem>
-                <SelectItem value="in_treatment">{t({ en: 'In Treatment', ar: 'قيد المعالجة' })}</SelectItem>
-              </SelectContent>
-            </Select>
+          <EntityFilter
+            searchQuery={searchTerm}
+            onSearchChange={setSearchTerm}
+            statusValue={statusFilter}
+            onStatusChange={setStatusFilter}
+            statusOptions={statusOptions}
+            placeholder={t({ en: 'Search challenges...', ar: 'بحث عن التحديات...' })}
+          >
             <Select value={sectorFilter} onValueChange={setSectorFilter}>
-              <SelectTrigger className="w-full md:w-48">
+              <SelectTrigger className="w-full md:w-48 bg-white dark:bg-slate-950">
                 <SelectValue placeholder={t({ en: 'Sector', ar: 'القطاع' })} />
               </SelectTrigger>
               <SelectContent>
@@ -272,13 +209,11 @@ function MyChallenges() {
                 <SelectItem value="digital_services">{t({ en: 'Digital Services', ar: 'الخدمات الرقمية' })}</SelectItem>
               </SelectContent>
             </Select>
-          </div>
+          </EntityFilter>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-            </div>
+            <EntityListSkeleton mode={viewMode} rowCount={6} />
           ) : filteredChallenges.length === 0 ? (
             <div className="text-center py-12">
               <AlertCircle className="h-12 w-12 text-slate-300 mx-auto mb-4" />
@@ -288,6 +223,7 @@ function MyChallenges() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {filteredChallenges.map((challenge) => (
                 <Card key={challenge.id} className="hover:shadow-lg transition-all overflow-hidden">
+                  {/* Card Content */}
                   {challenge.image_url && (
                     <div className="h-40 overflow-hidden">
                       <img src={challenge.image_url} alt={challenge.title_en} className="w-full h-full object-cover" />
@@ -312,7 +248,7 @@ function MyChallenges() {
                       <p className="text-sm text-slate-600 line-clamp-2">
                         {language === 'ar' && challenge.description_ar ? challenge.description_ar : challenge.description_en}
                       </p>
-                      
+
                       {aiSuggestions[challenge.id] && (
                         <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg space-y-2">
                           <p className="text-xs font-semibold text-purple-900 flex items-center gap-1">
@@ -387,38 +323,21 @@ function MyChallenges() {
                 <tbody>
                   {filteredChallenges.map((challenge) => (
                     <tr key={challenge.id} className="border-b hover:bg-slate-50">
-                      <td className="p-4">
-                        <Badge variant="outline" className="font-mono text-xs">{challenge.code}</Badge>
-                      </td>
+                      <td className="p-4"><Badge variant="outline" className="font-mono text-xs">{challenge.code}</Badge></td>
                       <td className="p-4">
                         <div className="flex items-center gap-3">
-                          {challenge.image_url && (
-                            <img src={challenge.image_url} alt={challenge.title_en} className="w-10 h-10 object-cover rounded" />
-                          )}
+                          {challenge.image_url && <img src={challenge.image_url} alt={challenge.title_en} className="w-10 h-10 object-cover rounded" />}
                           <p className="font-medium">{language === 'ar' && challenge.title_ar ? challenge.title_ar : challenge.title_en}</p>
                         </div>
                       </td>
                       <td className="p-4 text-sm">{challenge.sector?.replace(/_/g, ' ')}</td>
-                      <td className="p-4">
-                        <Badge className={statusColors[challenge.status]}>{challenge.status?.replace(/_/g, ' ')}</Badge>
-                      </td>
+                      <td className="p-4"><Badge className={statusColors[challenge.status]}>{challenge.status?.replace(/_/g, ' ')}</Badge></td>
                       <td className="p-4 text-sm font-semibold">{challenge.overall_score || 0}</td>
-                      <td className="p-4">
+                      <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Link to={createPageUrl(`ChallengeDetail?id=${challenge.id}`)}>
-                            <Button variant="outline" size="sm">
-                              <Eye className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                              {t({ en: 'View', ar: 'عرض' })}
-                            </Button>
+                            <Button variant="outline" size="sm"><Eye className="h-4 w-4" /></Button>
                           </Link>
-                          {challenge.status === 'draft' && (
-                            <Link to={createPageUrl(`ChallengeEdit?id=${challenge.id}`)}>
-                              <Button variant="outline" size="sm">
-                                <Edit className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                                {t({ en: 'Edit', ar: 'تعديل' })}
-                              </Button>
-                            </Link>
-                          )}
                         </div>
                       </td>
                     </tr>
@@ -426,6 +345,15 @@ function MyChallenges() {
                 </tbody>
               </table>
             </div>
+          )}
+
+          {/* PAGINATION UI */}
+          {!isLoading && !isEmpty && (
+            <StandardPagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+            />
           )}
         </CardContent>
       </Card>

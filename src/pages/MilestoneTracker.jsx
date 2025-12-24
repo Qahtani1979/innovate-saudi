@@ -1,6 +1,4 @@
-import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+﻿import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
 import { Target, Search, Plus, Calendar, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useMilestones } from '@/hooks/useMilestones';
 
 function MilestoneTracker() {
   const { t } = useLanguage();
@@ -16,13 +15,10 @@ function MilestoneTracker() {
   const [entityFilter, setEntityFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  const { data: milestones = [], isLoading } = useQuery({
-    queryKey: ['milestones'],
-    queryFn: () => base44.entities.Milestone.list('-due_date')
-  });
+  const { data: milestones = [], isLoading } = useMilestones();
 
   const filteredMilestones = milestones.filter(m => {
-    const matchesSearch = !search || 
+    const matchesSearch = !search ||
       m.milestone_name?.toLowerCase().includes(search.toLowerCase()) ||
       m.description?.toLowerCase().includes(search.toLowerCase());
     const matchesEntity = entityFilter === 'all' || m.entity_type === entityFilter;
@@ -42,8 +38,8 @@ function MilestoneTracker() {
       return new Date(m.due_date) < new Date();
     }).length,
     completed: milestones.filter(m => m.status === 'completed').length,
-    completion_rate: milestones.length > 0 
-      ? (milestones.filter(m => m.status === 'completed').length / milestones.length) * 100 
+    completion_rate: milestones.length > 0
+      ? (milestones.filter(m => m.status === 'completed').length / milestones.length) * 100
       : 0
   };
 
@@ -191,9 +187,9 @@ function MilestoneTracker() {
         <CardContent>
           <div className="space-y-3">
             {filteredMilestones.slice(0, 20).map(milestone => {
-              const isOverdue = milestone.due_date && milestone.status !== 'completed' && 
+              const isOverdue = milestone.due_date && milestone.status !== 'completed' &&
                 new Date(milestone.due_date) < new Date();
-              const daysUntil = milestone.due_date 
+              const daysUntil = milestone.due_date
                 ? Math.floor((new Date(milestone.due_date) - new Date()) / (1000 * 60 * 60 * 24))
                 : null;
 

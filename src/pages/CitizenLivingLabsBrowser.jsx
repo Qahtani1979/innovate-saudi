@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/components/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,13 +8,15 @@ import { FlaskConical, MapPin, Calendar, Users, Bookmark, ArrowRight, UserPlus, 
 import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { 
-  CitizenPageLayout, 
-  CitizenPageHeader, 
-  CitizenSearchFilter, 
-  CitizenCardGrid, 
-  CitizenEmptyState 
+import {
+  CitizenPageLayout,
+  CitizenPageHeader,
+  CitizenSearchFilter,
+  CitizenCardGrid,
+  CitizenEmptyState
 } from '@/components/citizen/CitizenPageLayout';
+import { useLivingLabsWithVisibility } from '@/hooks/useLivingLabsWithVisibility';
+import { useUserBookmarks, useUserEnrollments, useCitizenMutations } from '@/hooks/useCitizenActions';
 
 function CitizenLivingLabsBrowser() {
   const { language, isRTL, t } = useLanguage();
@@ -26,48 +26,15 @@ function CitizenLivingLabsBrowser() {
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [viewMode, setViewMode] = useState('grid');
 
-  const { data: livingLabs = [], isLoading } = useQuery({
-    queryKey: ['citizen-living-labs-browser'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('living_labs')
-        .select('*, municipalities(name_en, name_ar), regions(name_en, name_ar)')
-        .eq('is_deleted', false)
-        .eq('is_published', true)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
+  const { toggleBookmark, enrollInLab } = useCitizenMutations();
+
+  const { data: livingLabs = [], isLoading } = useLivingLabsWithVisibility({
+    limit: 100,
+    // Ensure we fetch active/published types by default in the hook logic for citizens
   });
 
-  const { data: userBookmarks = [], refetch: refetchBookmarks } = useQuery({
-    queryKey: ['citizen-lab-bookmarks', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data, error } = await supabase
-        .from('bookmarks')
-        .select('entity_id')
-        .eq('user_email', user.email)
-        .eq('entity_type', 'living_lab');
-      if (error) throw error;
-      return data?.map(b => b.entity_id) || [];
-    },
-    enabled: !!user?.email
-  });
-
-  const { data: userEnrollments = [], refetch: refetchEnrollments } = useQuery({
-    queryKey: ['citizen-lab-enrollments', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data, error } = await supabase
-        .from('living_lab_participants')
-        .select('living_lab_id')
-        .eq('participant_email', user.email);
-      if (error) throw error;
-      return data?.map(e => e.living_lab_id) || [];
-    },
-    enabled: !!user?.email
-  });
+  const { data: userBookmarks = [] } = useUserBookmarks('living_lab');
+  const { data: userEnrollments = [] } = useUserEnrollments();
 
   const statuses = [
     { value: 'active', label: t({ en: 'Active', ar: 'نشط' }) },
@@ -77,7 +44,7 @@ function CitizenLivingLabsBrowser() {
 
   const filteredLabs = livingLabs.filter(lab => {
     const statusMatch = selectedStatus === 'all' || lab.status === selectedStatus;
-    const searchMatch = !searchTerm || 
+    const searchMatch = !searchTerm ||
       lab.name_en?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lab.name_ar?.includes(searchTerm) ||
       lab.description_en?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -89,26 +56,8 @@ function CitizenLivingLabsBrowser() {
       toast({ title: t({ en: 'Please login to bookmark', ar: 'يرجى تسجيل الدخول للحفظ' }), variant: 'destructive' });
       return;
     }
-    try {
-      const isBookmarked = userBookmarks.includes(labId);
-      if (isBookmarked) {
-        await supabase.from('bookmarks').delete()
-          .eq('user_email', user.email)
-          .eq('entity_id', labId)
-          .eq('entity_type', 'living_lab');
-        toast({ title: t({ en: 'Bookmark removed', ar: 'تم إزالة الإشارة' }) });
-      } else {
-        await supabase.from('bookmarks').insert({
-          user_email: user.email,
-          entity_id: labId,
-          entity_type: 'living_lab'
-        });
-        toast({ title: t({ en: 'Bookmarked!', ar: 'تم حفظ الإشارة!' }) });
-      }
-      refetchBookmarks();
-    } catch (err) {
-      toast({ title: t({ en: 'Error', ar: 'خطأ' }), variant: 'destructive' });
-    }
+    const isBookmarked = userBookmarks.includes(labId);
+    toggleBookmark.mutate({ entityId: labId, entityType: 'living_lab', isBookmarked });
   };
 
   const handleEnroll = async (labId) => {
@@ -116,30 +65,14 @@ function CitizenLivingLabsBrowser() {
       toast({ title: t({ en: 'Please login to enroll', ar: 'يرجى تسجيل الدخول للتسجيل' }), variant: 'destructive' });
       return;
     }
-    try {
-      if (userEnrollments.includes(labId)) {
-        toast({ 
-          title: t({ en: 'Already enrolled', ar: 'مسجل بالفعل' }),
-          description: t({ en: 'You are already participating in this lab', ar: 'أنت مشارك بالفعل في هذا المختبر' })
-        });
-        return;
-      }
-      
-      await supabase.from('living_lab_participants').insert({
-        living_lab_id: labId,
-        participant_email: user.email,
-        participant_type: 'citizen',
-        status: 'pending',
-        joined_at: new Date().toISOString()
+    if (userEnrollments.includes(labId)) {
+      toast({
+        title: t({ en: 'Already enrolled', ar: 'مسجل بالفعل' }),
+        description: t({ en: 'You are already participating in this lab', ar: 'أنت مشارك بالفعل في هذا المختبر' })
       });
-      toast({ 
-        title: t({ en: 'Enrollment submitted!', ar: 'تم تقديم التسجيل!' }),
-        description: t({ en: 'Your participation request is pending approval', ar: 'طلب مشاركتك في انتظار الموافقة' })
-      });
-      refetchEnrollments();
-    } catch (err) {
-      toast({ title: t({ en: 'Error enrolling', ar: 'خطأ في التسجيل' }), variant: 'destructive' });
+      return;
     }
+    enrollInLab.mutate({ labId });
   };
 
   const getStatusBadge = (status) => {
@@ -194,7 +127,7 @@ function CitizenLivingLabsBrowser() {
         ]}
       />
 
-      <CitizenCardGrid 
+      <CitizenCardGrid
         viewMode={viewMode}
         emptyState={
           <CitizenEmptyState
@@ -205,11 +138,10 @@ function CitizenLivingLabsBrowser() {
         }
       >
         {filteredLabs.map(lab => (
-          <Card 
-            key={lab.id} 
-            className={`group overflow-hidden border-border/50 hover:border-primary/30 hover:shadow-lg transition-all duration-300 ${
-              viewMode === 'list' ? 'flex flex-row' : ''
-            }`}
+          <Card
+            key={lab.id}
+            className={`group overflow-hidden border-border/50 hover:border-primary/30 hover:shadow-lg transition-all duration-300 ${viewMode === 'list' ? 'flex flex-row' : ''
+              }`}
           >
             <CardContent className={`p-5 ${viewMode === 'list' ? 'flex items-center gap-6 w-full' : ''}`}>
               <div className={viewMode === 'list' ? 'flex-1' : ''}>
@@ -266,8 +198,8 @@ function CitizenLivingLabsBrowser() {
                     </Button>
                   </Link>
                   {lab.status === 'active' && !userEnrollments.includes(lab.id) && (
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       onClick={() => handleEnroll(lab.id)}
                       className="bg-gradient-to-r from-slate-600 to-gray-500 hover:opacity-90"
                     >

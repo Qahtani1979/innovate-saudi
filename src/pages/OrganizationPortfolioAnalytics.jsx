@@ -1,55 +1,34 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
-import { Lightbulb, TestTube, Microscope, Handshake, TrendingUp, Activity, BarChart3, Calendar
+import {
+  Lightbulb, TestTube, Microscope, Handshake, TrendingUp, Activity, BarChart3, Calendar
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import {
+  useOrganization,
+  useOrganizationSolutions,
+  useOrganizationPilots,
+  useOrganizationRDProjects,
+  useOrganizationPrograms
+} from '@/hooks/useOrganization';
+import { useOrganizationPartnerships } from '@/hooks/useOrganizationPartnerships';
 
 function OrganizationPortfolioAnalytics() {
   const { t, isRTL } = useLanguage();
   const urlParams = new URLSearchParams(window.location.search);
   const orgId = urlParams.get('id');
 
-  const { data: org, isLoading } = useQuery({
-    queryKey: ['org', orgId],
-    queryFn: () => base44.entities.Organization.get(orgId),
-    enabled: !!orgId
-  });
+  const { data: org, isLoading } = useOrganization(orgId);
+  const { data: solutions = [] } = useOrganizationSolutions(orgId);
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['org-solutions', orgId],
-    queryFn: () => base44.entities.Solution.filter({ provider_id: orgId }),
-    enabled: !!orgId
-  });
+  const solutionIds = solutions.map(s => s.id);
+  const { data: pilots = [] } = useOrganizationPilots(solutionIds);
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['org-pilots', orgId],
-    queryFn: () => base44.entities.Pilot.filter({ solution_id: { $in: solutions.map(s => s.id) } }),
-    enabled: !!orgId && solutions.length > 0
-  });
-
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['org-rd', orgId],
-    queryFn: () => base44.entities.RDProject.filter({ institution_en: org?.name_en }),
-    enabled: !!orgId && !!org
-  });
-
-  const { data: partnerships = [] } = useQuery({
-    queryKey: ['org-partnerships', orgId],
-    queryFn: () => base44.entities.OrganizationPartnership.filter({
-      $or: [{ organization_a_id: orgId }, { organization_b_id: orgId }]
-    }),
-    enabled: !!orgId
-  });
-
-  const { data: programs = [] } = useQuery({
-    queryKey: ['org-programs', orgId],
-    queryFn: () => base44.entities.Program.filter({ operator_organization_id: orgId }),
-    enabled: !!orgId
-  });
+  const { data: rdProjects = [] } = useOrganizationRDProjects(org?.name_en);
+  const { data: partnerships = [] } = useOrganizationPartnerships(orgId);
+  const { data: programs = [] } = useOrganizationPrograms(orgId);
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-96">
@@ -69,7 +48,7 @@ function OrganizationPortfolioAnalytics() {
     activePartnerships: partnerships.filter(p => p.status === 'active').length,
     programs: programs.length,
     activePrograms: programs.filter(p => p.status === 'active').length,
-    avgSolutionRating: solutions.reduce((sum, s) => sum + (s.average_rating || 0), 0) / Math.max(solutions.length, 1),
+    avgSolutionRating: solutions.length ? solutions.reduce((sum, s) => sum + (s.average_rating || 0), 0) / Math.max(solutions.length, 1) : 0,
     totalDeployments: solutions.reduce((sum, s) => sum + (s.deployment_count || 0), 0),
     pilotSuccessRate: pilots.length > 0 ? Math.round((pilots.filter(p => p.recommendation === 'scale').length / pilots.length) * 100) : 0
   };

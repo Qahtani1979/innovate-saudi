@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,46 +6,50 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from './LanguageContext';
 import { Calendar, Plus, X, Edit } from 'lucide-react';
-import { toast } from 'sonner';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { usePilotIntegrations } from '@/hooks/usePilotIntegrations';
 
 export default function MilestoneTracker({ pilot }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [newMilestone, setNewMilestone] = useState({ name: '', due_date: '', status: 'pending' });
   const { triggerEmail } = useEmailTrigger();
+  const pilotIntegrations = usePilotIntegrations(pilot?.id);
 
   const milestones = pilot?.milestones || [];
 
-  const updateMutation = useMutation({
-    mutationFn: (updatedMilestones) => base44.entities.Pilot.update(pilot.id, { milestones: updatedMilestones }),
-    onSuccess: async (_, updatedMilestones) => {
-      // Check if any milestone was just completed
-      const justCompleted = updatedMilestones.find((m, i) => 
-        m.completed && (!milestones[i] || !milestones[i].completed)
-      );
-      
-      if (justCompleted) {
-        await triggerEmail('pilot.milestone_completed', {
-          entityType: 'pilot',
-          entityId: pilot.id,
-          variables: {
-            pilot_title: pilot.title_en,
-            pilot_code: pilot.code,
-            milestone_name: justCompleted.name,
-            milestone_due_date: justCompleted.due_date,
-            completed_count: updatedMilestones.filter(m => m.completed).length,
-            total_milestones: updatedMilestones.length
-          }
-        }).catch(err => console.error('Email trigger failed:', err));
-      }
+  const updateMilestones = async (updatedMilestones) => {
+    // Check if any milestone was just completed
+    const justCompleted = updatedMilestones.find((m, i) =>
+      m.completed && (!milestones[i] || !milestones[i].completed)
+    );
 
-      queryClient.invalidateQueries(['pilot']);
-      toast.success(t({ en: 'Milestones updated', ar: 'تم تحديث المعالم' }));
-      setEditing(false);
+    if (justCompleted) {
+      await triggerEmail('pilot.milestone_completed', {
+        entity_type: 'pilot',
+        entity_id: pilot.id,
+        variables: {
+          pilot_title: pilot.title_en,
+          pilot_code: pilot.code,
+          milestone_name: justCompleted.name,
+          milestone_due_date: justCompleted.due_date,
+          completed_count: updatedMilestones.filter(m => m.completed).length,
+          total_milestones: updatedMilestones.length
+        }
+      }).catch(err => console.error('Email trigger failed:', err));
     }
-  });
+
+    // Use pilot integrations to update (this would need to be added to the hook)
+    // For now, we'll keep the direct update pattern but with static import
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { error } = await supabase
+      .from('pilots')
+      .update({ milestones: updatedMilestones })
+      .eq('id', pilot.id);
+
+    if (error) throw error;
+    setEditing(false);
+  };
 
   const toggleMilestone = (index) => {
     const updated = [...milestones];
@@ -98,9 +100,8 @@ export default function MilestoneTracker({ pilot }) {
 
         <div className="space-y-2">
           {milestones.map((milestone, index) => (
-            <div key={index} className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
-              milestone.completed ? 'bg-green-50 border-green-200' : 'bg-white'
-            }`}>
+            <div key={index} className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${milestone.completed ? 'bg-green-50 border-green-200' : 'bg-white'
+              }`}>
               <Checkbox
                 checked={milestone.completed}
                 onCheckedChange={() => toggleMilestone(index)}

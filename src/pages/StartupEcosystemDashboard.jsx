@@ -1,5 +1,8 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useStartups } from '../hooks/useStartupProfiles';
+import { useSolutionsWithVisibility } from '../hooks/useSolutionsWithVisibility';
+import { usePilotsWithVisibility } from '../hooks/usePilotsWithVisibility';
+import { useMatchmakerApplications } from '../hooks/useMatchmakerApplications';
+import { useAllChallengeProposals } from '../hooks/useChallengeProposals';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
@@ -12,30 +15,20 @@ import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 function StartupEcosystemDashboard() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: startups = [] } = useQuery({
-    queryKey: ['startups'],
-    queryFn: () => base44.entities.StartupProfile.list()
-  });
+  const { data: startups = [] } = useStartups();
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions'],
-    queryFn: () => base44.entities.Solution.list()
-  });
+  const { data: solutions = [] } = useSolutionsWithVisibility();
+  const { data: pilots = [] } = usePilotsWithVisibility();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
+  // Need a hook for challenge proposals if not exists, or use useChallengeProposals with 'all' if supported?
+  // Checking useChallengeProposals.js, it takes an array of challengeIds. We want ALL proposals for the ecosystem dashboard.
+  // Creating a specific query here or adding to useChallengeProposals. 
+  // Let's use a direct generic query for "all proposals" wrapped in a new hook or just inline for now (though goal is to remove inline).
+  // Actually, useMatchmakerApplications is available.
 
-  const { data: proposals = [] } = useQuery({
-    queryKey: ['proposals'],
-    queryFn: () => base44.entities.ChallengeProposal.list()
-  });
+  const { data: matchmakerApps = [] } = useMatchmakerApplications();
+  const { data: proposals = [] } = useAllChallengeProposals();
 
-  const { data: matchmakerApps = [] } = useQuery({
-    queryKey: ['matchmaker-apps'],
-    queryFn: () => base44.entities.MatchmakerApplication.list()
-  });
 
   const startupSolutions = solutions.filter(s => s.provider_type === 'startup');
   const startupPilots = pilots.filter(p => {
@@ -70,8 +63,7 @@ function StartupEcosystemDashboard() {
           { icon: Lightbulb, value: stats.totalSolutions, label: t({ en: 'Solutions', ar: 'حلول' }) },
           { icon: TestTube, value: stats.pilotsWon, label: t({ en: 'Pilots Won', ar: 'تجارب فائزة' }) },
           { icon: Activity, value: `${stats.avgSuccessRate}%`, label: t({ en: 'Success Rate', ar: 'معدل النجاح' }) },
-        ]}
-      />
+        ]} subtitle={undefined} action={undefined} actions={undefined} children={undefined} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
         <Card className="bg-gradient-to-br from-blue-50 to-white">

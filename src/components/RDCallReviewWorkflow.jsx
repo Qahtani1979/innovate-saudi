@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,13 +6,15 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
-import { CheckCircle2, X, AlertCircle } from 'lucide-react';
+import { useRDCallMutations } from '@/hooks/useRDCallMutations';
+import { useAuth } from '@/lib/AuthContext';
+import { CheckCircle2, X, AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function RDCallReviewWorkflow({ rdCall, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
-  
+  const { user } = useAuth();
+
   const [checklist, setChecklist] = useState({
     objectives_clear: false,
     budget_justified: false,
@@ -25,37 +25,30 @@ export default function RDCallReviewWorkflow({ rdCall, onClose }) {
     documentation_complete: false,
     compliance_checked: false
   });
-  
+
   const [reviewNotes, setReviewNotes] = useState('');
-  const [decision, setDecision] = useState('');
+  const { updateRDCall, isUpdating } = useRDCallMutations();
 
-  const reviewMutation = useMutation({
-    mutationFn: async (data) => {
-      await base44.entities.RDCall.update(rdCall.id, data);
-      
-      await base44.entities.ChallengeActivity.create({
-        challenge_id: rdCall.id,
-        activity_type: 'status_change',
-        description: `R&D Call reviewed and ${data.status}`,
-        details: { review_notes: reviewNotes, checklist, decision }
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['rd-call']);
-      toast.success(t({ en: 'Review submitted', ar: 'تم تقديم المراجعة' }));
-      onClose();
-    }
-  });
-
-  const handleSubmit = (approvalDecision) => {
+  const handleSubmit = async (approvalDecision) => {
     const newStatus = approvalDecision === 'approve' ? 'published' : 'draft';
-    reviewMutation.mutate({
-      status: newStatus,
-      review_notes: reviewNotes,
-      review_checklist: checklist,
-      review_decision: approvalDecision,
-      review_date: new Date().toISOString()
-    });
+    try {
+      await updateRDCall({
+        id: rdCall.id,
+        status: newStatus,
+        review_notes: reviewNotes,
+        review_checklist: checklist,
+        review_decision: approvalDecision,
+        review_date: new Date().toISOString()
+      }, {
+        activityLog: {
+          type: 'reviewed',
+          description: `R&D Call reviewed with status "${newStatus}" by ${user?.email}`
+        }
+      });
+      onClose();
+    } catch (error) {
+      // Toast handled by hook
+    }
   };
 
   const allCriticalChecked = checklist.objectives_clear && checklist.budget_justified && checklist.evaluation_criteria_defined;
@@ -76,7 +69,7 @@ export default function RDCallReviewWorkflow({ rdCall, onClose }) {
 
         <div className="space-y-3">
           <Label className="text-base font-semibold">{t({ en: 'Review Checklist', ar: 'قائمة المراجعة' })}</Label>
-          
+
           <div className="space-y-2">
             {[
               { key: 'objectives_clear', label: t({ en: 'Objectives are clear and measurable', ar: 'الأهداف واضحة وقابلة للقياس' }), critical: true },
@@ -128,16 +121,24 @@ export default function RDCallReviewWorkflow({ rdCall, onClose }) {
           <Button
             onClick={() => handleSubmit('revisions')}
             variant="outline"
+            disabled={isUpdating}
             className="flex-1 border-yellow-300 text-yellow-700 hover:bg-yellow-50"
           >
+            {isUpdating ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : null}
             {t({ en: 'Request Changes', ar: 'طلب تعديلات' })}
           </Button>
           <Button
             onClick={() => handleSubmit('approve')}
-            disabled={!allCriticalChecked || reviewMutation.isPending}
+            disabled={!allCriticalChecked || isUpdating}
             className="flex-1 bg-green-600 hover:bg-green-700"
           >
-            <CheckCircle2 className="h-4 w-4 mr-2" />
+            {isUpdating ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+            )}
             {t({ en: 'Approve', ar: 'موافقة' })}
           </Button>
         </div>

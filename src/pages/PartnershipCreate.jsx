@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,11 +11,12 @@ import { Handshake, ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
+import { useOrganizationsList } from '@/hooks/useOrganizations';
+import { usePartnershipMutations } from '@/hooks/usePartnershipMutations';
 
 function PartnershipCreate() {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
 
   const [formData, setFormData] = useState({
@@ -39,38 +38,10 @@ function PartnershipCreate() {
     contact_email: ''
   });
 
-  const { data: organizations = [] } = useQuery({
-    queryKey: ['organizations-list'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('organizations')
-        .select('id, name_en, name_ar')
-        .eq('is_deleted', false)
-        .limit(100);
-      return data || [];
-    }
-  });
-
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase
-        .from('partnerships')
-        .insert({
-          ...data,
-          status: 'prospect',
-          created_by: user?.email
-        });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['partnerships']);
-      toast.success(t({ en: 'Partnership created successfully', ar: 'تم إنشاء الشراكة بنجاح' }));
-      navigate(createPageUrl('PartnershipRegistry'));
-    },
-    onError: (error) => {
-      toast.error(t({ en: 'Failed to create partnership', ar: 'فشل في إنشاء الشراكة' }));
-      console.error(error);
-    }
+  // Use existing hooks
+  const { data: organizations = [] } = useOrganizationsList();
+  const { createPartnership } = usePartnershipMutations(() => {
+    navigate(createPageUrl('PartnershipRegistry'));
   });
 
   const handleChange = (field, value) => {
@@ -100,9 +71,12 @@ function PartnershipCreate() {
       toast.error(t({ en: 'Please enter partnership name', ar: 'يرجى إدخال اسم الشراكة' }));
       return;
     }
-    createMutation.mutate({
-      ...formData,
-      budget_shared: formData.budget_shared ? parseFloat(formData.budget_shared) : null
+    createPartnership.mutate({
+      data: {
+        ...formData,
+        budget_shared: formData.budget_shared ? parseFloat(formData.budget_shared) : null
+      },
+      userEmail: user?.email
     });
   };
 
@@ -301,9 +275,9 @@ function PartnershipCreate() {
           <Button type="button" variant="outline" onClick={() => navigate(createPageUrl('PartnershipRegistry'))}>
             {t({ en: 'Cancel', ar: 'إلغاء' })}
           </Button>
-          <Button type="submit" className="bg-indigo-600" disabled={createMutation.isPending}>
+          <Button type="submit" className="bg-indigo-600" disabled={createPartnership.isPending}>
             <Save className="h-4 w-4 mr-2" />
-            {createMutation.isPending 
+            {createPartnership.isPending
               ? t({ en: 'Creating...', ar: 'جاري الإنشاء...' })
               : t({ en: 'Create Partnership', ar: 'إنشاء الشراكة' })
             }

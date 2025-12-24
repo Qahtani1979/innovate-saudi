@@ -5,6 +5,9 @@ import * as ProgressPrimitive from "@radix-ui/react-progress"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * @type {React.ForwardRefExoticComponent<React.HTMLAttributes<HTMLDivElement> & { value?: number | null } & React.RefAttributes<HTMLDivElement>>}
+ */
 const Progress = React.forwardRef(({ className, value, ...props }, ref) => (
   <ProgressPrimitive.Root
     ref={ref}

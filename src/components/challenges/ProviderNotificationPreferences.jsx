@@ -1,63 +1,52 @@
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from '../LanguageContext';
 import { Bell, Loader2, CheckCircle2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+import { useSectors } from '@/hooks/useSectors';
+import { useNotificationPreferences } from '@/hooks/useNotificationPreferences';
 
 export default function ProviderNotificationPreferences() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
 
-  const { data: sectors = [] } = useQuery({
-    queryKey: ['sectors'],
-    queryFn: async () => {
-      const { data } = await supabase.from('sectors').select('*');
-      return data || [];
+  const { data: sectors = [] } = useSectors();
+
+  const {
+    preferences,
+    isLoading: prefsLoading,
+    savePreferences
+  } = useNotificationPreferences(user?.email);
+
+  // Use bracket notation to bypass TS strict check if types are outdated
+  const [selectedSectors, setSelectedSectors] = useState(preferences?.['challenge_sectors'] || []);
+  const [notifyNewChallenges, setNotifyNewChallenges] = useState(preferences?.['notify_new_challenges'] ?? true);
+  const [notifyMatchedChallenges, setNotifyMatchedChallenges] = useState(preferences?.['notify_matched_challenges'] ?? true);
+
+  // Sync state with loaded preferences
+  useEffect(() => {
+    if (preferences) {
+      setSelectedSectors(preferences['challenge_sectors'] || []);
+      setNotifyNewChallenges(preferences['notify_new_challenges'] ?? true);
+      setNotifyMatchedChallenges(preferences['notify_matched_challenges'] ?? true);
     }
-  });
+  }, [preferences]);
 
-  const { data: preferences } = useQuery({
-    queryKey: ['notification-prefs', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('user_notification_preferences').select('*').eq('user_email', user.email).single();
-      return data;
-    },
-    enabled: !!user
-  });
-
-  const [selectedSectors, setSelectedSectors] = useState(preferences?.challenge_sectors || []);
-  const [notifyNewChallenges, setNotifyNewChallenges] = useState(preferences?.notify_new_challenges ?? true);
-  const [notifyMatchedChallenges, setNotifyMatchedChallenges] = useState(preferences?.notify_matched_challenges ?? true);
-
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      const data = {
-        user_email: user.email,
+  const handleSave = () => {
+    savePreferences.mutate({
+      data: {
+        challenge_sectors: selectedSectors,
         notify_new_challenges: notifyNewChallenges,
-        notify_matched_challenges: notifyMatchedChallenges,
-        challenge_sectors: selectedSectors
-      };
+        notify_matched_challenges: notifyMatchedChallenges
+      },
+      userId: user?.id
+    });
+  };
 
-      if (preferences?.id) {
-        const { error } = await supabase.from('user_notification_preferences').update(data).eq('id', preferences.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('user_notification_preferences').insert(data);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['notification-prefs']);
-      toast.success(t({ en: 'Preferences saved', ar: 'تم حفظ التفضيلات' }));
-    }
-  });
+  if (prefsLoading) return <div className="p-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>;
 
   return (
     <Card dir={isRTL ? 'rtl' : 'ltr'}>
@@ -124,11 +113,11 @@ export default function ProviderNotificationPreferences() {
         </div>
 
         <Button
-          onClick={() => saveMutation.mutate()}
-          disabled={saveMutation.isPending}
+          onClick={handleSave}
+          disabled={savePreferences.isPending}
           className="w-full bg-gradient-to-r from-blue-600 to-teal-600"
         >
-          {saveMutation.isPending ? (
+          {savePreferences.isPending ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               {t({ en: 'Saving...', ar: 'جاري الحفظ...' })}

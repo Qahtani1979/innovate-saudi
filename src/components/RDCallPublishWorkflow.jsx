@@ -4,18 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { useRDCallMutations } from '@/hooks/useRDCallMutations';
 import { toast } from 'sonner';
 import { CheckCircle2, X, AlertTriangle, Send, Loader2 } from 'lucide-react';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function RDCallPublishWorkflow({ rdCall, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
-  const [notes, setNotes] = useState('');
+  const { publishRDCall, isPublishing } = useRDCallMutations();
   const { triggerEmail } = useEmailTrigger();
-  
+  const [notes, setNotes] = useState('');
+
   const [checklist, setChecklist] = useState({
     title_complete: false,
     objectives_clear: false,
@@ -27,23 +26,13 @@ export default function RDCallPublishWorkflow({ rdCall, onClose }) {
     contact_info: false
   });
 
-  const publishMutation = useMutation({
-    mutationFn: async () => {
-      await base44.entities.RDCall.update(rdCall.id, {
-        status: 'open',
-        announcement_date: new Date().toISOString(),
-        publication_notes: notes
+  const handlePublish = async () => {
+    try {
+      await publishRDCall({
+        id: rdCall.id,
+        notes
       });
-      
-      await base44.entities.ChallengeActivity.create({
-        challenge_id: rdCall.id,
-        activity_type: 'status_change',
-        description: `R&D Call published and opened for proposals`,
-        details: { old_status: rdCall.status, new_status: 'open', notes }
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['rdCall']);
+
       // Trigger email notification for R&D call published
       triggerEmail('rd.call_published', {
         entity_type: 'rd_call',
@@ -53,10 +42,12 @@ export default function RDCallPublishWorkflow({ rdCall, onClose }) {
           call_type: rdCall.call_type || 'general'
         }
       }).catch(err => console.error('Email trigger failed:', err));
-      toast.success(t({ en: 'R&D Call published', ar: 'تم نشر دعوة البحث' }));
+
       onClose();
+    } catch (error) {
+      // Toast handled by hook
     }
-  });
+  };
 
   const toggleCheck = (key) => {
     setChecklist(prev => ({ ...prev, [key]: !prev[key] }));
@@ -88,7 +79,7 @@ export default function RDCallPublishWorkflow({ rdCall, onClose }) {
         {/* Publication Checklist */}
         <div className="space-y-3">
           <h4 className="font-semibold text-slate-900">{t({ en: 'Publication Checklist', ar: 'قائمة التحقق من النشر' })}</h4>
-          
+
           {[
             { key: 'title_complete', label: { en: 'Title in both languages', ar: 'العنوان باللغتين' }, critical: true },
             { key: 'objectives_clear', label: { en: 'Clear research objectives', ar: 'أهداف بحثية واضحة' }, critical: true },
@@ -101,14 +92,12 @@ export default function RDCallPublishWorkflow({ rdCall, onClose }) {
           ].map(item => (
             <div
               key={item.key}
-              className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
-                checklist[item.key] ? 'bg-green-50 border-green-300' : 'bg-white border-slate-200'
-              }`}
+              className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all ${checklist[item.key] ? 'bg-green-50 border-green-300' : 'bg-white border-slate-200'
+                }`}
               onClick={() => toggleCheck(item.key)}
             >
-              <div className={`h-5 w-5 rounded border-2 flex items-center justify-center ${
-                checklist[item.key] ? 'bg-green-600 border-green-600' : 'border-slate-300'
-              }`}>
+              <div className={`h-5 w-5 rounded border-2 flex items-center justify-center ${checklist[item.key] ? 'bg-green-600 border-green-600' : 'border-slate-300'
+                }`}>
                 {checklist[item.key] && <CheckCircle2 className="h-4 w-4 text-white" />}
               </div>
               <div className="flex-1">
@@ -134,7 +123,7 @@ export default function RDCallPublishWorkflow({ rdCall, onClose }) {
                 {t({ en: 'Incomplete Checklist', ar: 'قائمة التحقق غير مكتملة' })}
               </p>
               <p className="text-xs text-yellow-700 mt-1">
-                {t({ 
+                {t({
                   en: 'All critical items must be checked before publication. Non-critical items are recommended.',
                   ar: 'يجب فحص جميع العناصر الحرجة قبل النشر. يُوصى بالعناصر غير الحرجة.'
                 })}
@@ -151,7 +140,7 @@ export default function RDCallPublishWorkflow({ rdCall, onClose }) {
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder={t({ 
+            placeholder={t({
               en: 'Add any notes about this publication...',
               ar: 'أضف أي ملاحظات حول هذا النشر...'
             })}
@@ -165,11 +154,11 @@ export default function RDCallPublishWorkflow({ rdCall, onClose }) {
             {t({ en: 'Cancel', ar: 'إلغاء' })}
           </Button>
           <Button
-            onClick={() => publishMutation.mutate()}
-            disabled={!allChecked || publishMutation.isPending}
+            onClick={handlePublish}
+            disabled={!allChecked || isPublishing}
             className="bg-gradient-to-r from-blue-600 to-teal-600"
           >
-            {publishMutation.isPending ? (
+            {isPublishing ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 {t({ en: 'Publishing...', ar: 'جاري النشر...' })}

@@ -1,5 +1,4 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+﻿import { useExpertProfileById, useExpertAssignments, useExpertEvaluations } from '@/hooks/useExpertData';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Button } from "@/components/ui/button";
@@ -28,34 +27,10 @@ export default function ExpertDetail() {
   const expertId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
 
-  const { data: expert, isLoading } = useQuery({
-    queryKey: ['expert-profile', expertId],
-    queryFn: async () => {
-      const experts = await base44.entities.ExpertProfile.list();
-      return experts.find(e => e.id === expertId);
-    },
-    enabled: !!expertId
-  });
+  const { data: expert, isLoading } = useExpertProfileById(expertId);
+  const { data: assignments = [] } = useExpertAssignments(expert?.user_email);
+  const { data: evaluations = [] } = useExpertEvaluations(expert?.user_email);
 
-  const { data: assignments = [] } = useQuery({
-    queryKey: ['expert-assignments', expert?.user_email],
-    queryFn: async () => {
-      if (!expert?.user_email) return [];
-      const all = await base44.entities.ExpertAssignment.list();
-      return all.filter(a => a.expert_email === expert.user_email);
-    },
-    enabled: !!expert?.user_email
-  });
-
-  const { data: evaluations = [] } = useQuery({
-    queryKey: ['expert-evaluations', expert?.user_email],
-    queryFn: async () => {
-      if (!expert?.user_email) return [];
-      const all = await base44.entities.ExpertEvaluation.list();
-      return all.filter(e => e.expert_email === expert.user_email);
-    },
-    enabled: !!expert?.user_email
-  });
 
   if (isLoading || !expert) {
     return (
@@ -77,18 +52,18 @@ export default function ExpertDetail() {
         title={`${expert.title || ''} ${expert.user_email?.split('@')[0] || ''}`}
         description={language === 'en' ? expert.position : (expert.position_ar || expert.position)}
         stats={[
-          { icon: CheckCircle2, value: completedAssignments, label: t({ en: 'Completed', ar: 'مكتمل' }) },
-          { icon: Star, value: avgEvaluationScore, label: t({ en: 'Avg Score', ar: 'متوسط النقاط' }) },
-          { icon: Briefcase, value: expert.years_of_experience || 0, label: t({ en: 'Years Exp.', ar: 'سنوات خبرة' }) },
+          { icon: CheckCircle2, value: completedAssignments, label: t({ en: 'Completed', ar: 'Ù…ÙƒØªÙ…Ù„' }) },
+          { icon: Star, value: avgEvaluationScore, label: t({ en: 'Avg Score', ar: 'Ù…ØªÙˆØ³Ø· Ø§Ù„Ù†Ù‚Ø§Ø·' }) },
+          { icon: Briefcase, value: expert.years_of_experience || 0, label: t({ en: 'Years Exp.', ar: 'Ø³Ù†ÙˆØ§Øª Ø®Ø¨Ø±Ø©' }) },
         ]}
         badges={[
-          expert.is_verified && <Badge key="verified" className="bg-green-100 text-green-700"><CheckCircle2 className="h-3 w-3 mr-1" />{t({ en: 'Verified', ar: 'موثق' })}</Badge>,
+          expert.is_verified && <Badge key="verified" className="bg-green-100 text-green-700"><CheckCircle2 className="h-3 w-3 mr-1" />{t({ en: 'Verified', ar: 'Ù…ÙˆØ«Ù‚' })}</Badge>,
           expert.expert_rating > 0 && <Badge key="rating" className="bg-amber-100 text-amber-700"><Star className="h-3 w-3 mr-1 fill-current" />{expert.expert_rating.toFixed(1)}</Badge>
         ].filter(Boolean)}
         action={
           <Link to={createPageUrl(`ExpertProfileEdit?id=${expertId}`)}>
             <PersonaButton variant="outline">
-              {t({ en: 'Edit Profile', ar: 'تعديل الملف' })}
+              {t({ en: 'Edit Profile', ar: 'ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„Ù…Ù„Ù' })}
             </PersonaButton>
           </Link>
         }
@@ -97,11 +72,11 @@ export default function ExpertDetail() {
       {/* Main Content */}
       <Tabs defaultValue="profile" className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="profile">{t({ en: 'Profile', ar: 'الملف' })}</TabsTrigger>
-          <TabsTrigger value="expertise">{t({ en: 'Expertise', ar: 'الخبرة' })}</TabsTrigger>
-          <TabsTrigger value="experience">{t({ en: 'Experience', ar: 'التجربة' })}</TabsTrigger>
-          <TabsTrigger value="performance">{t({ en: 'Performance', ar: 'الأداء' })}</TabsTrigger>
-          <TabsTrigger value="availability">{t({ en: 'Availability', ar: 'التوفر' })}</TabsTrigger>
+          <TabsTrigger value="profile">{t({ en: 'Profile', ar: 'Ø§Ù„Ù…Ù„Ù' })}</TabsTrigger>
+          <TabsTrigger value="expertise">{t({ en: 'Expertise', ar: 'Ø§Ù„Ø®Ø¨Ø±Ø©' })}</TabsTrigger>
+          <TabsTrigger value="experience">{t({ en: 'Experience', ar: 'Ø§Ù„ØªØ¬Ø±Ø¨Ø©' })}</TabsTrigger>
+          <TabsTrigger value="performance">{t({ en: 'Performance', ar: 'Ø§Ù„Ø£Ø¯Ø§Ø¡' })}</TabsTrigger>
+          <TabsTrigger value="availability">{t({ en: 'Availability', ar: 'Ø§Ù„ØªÙˆÙØ±' })}</TabsTrigger>
         </TabsList>
 
         {/* Profile Tab */}
@@ -110,12 +85,12 @@ export default function ExpertDetail() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-blue-600" />
-                {t({ en: 'Biography', ar: 'السيرة الذاتية' })}
+                {t({ en: 'Biography', ar: 'Ø§Ù„Ø³ÙŠØ±Ø© Ø§Ù„Ø°Ø§ØªÙŠØ©' })}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                {language === 'ar' ? (expert.bio_ar || expert.bio_en) : expert.bio_en || t({ en: 'No biography provided', ar: 'لا توجد سيرة ذاتية' })}
+                {language === 'ar' ? (expert.bio_ar || expert.bio_en) : expert.bio_en || t({ en: 'No biography provided', ar: 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ø³ÙŠØ±Ø© Ø°Ø§ØªÙŠØ©' })}
               </p>
             </CardContent>
           </Card>
@@ -125,7 +100,7 @@ export default function ExpertDetail() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Award className="h-5 w-5 text-amber-600" />
-                  {t({ en: 'Certifications', ar: 'الشهادات' })}
+                  {t({ en: 'Certifications', ar: 'Ø§Ù„Ø´Ù‡Ø§Ø¯Ø§Øª' })}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -138,14 +113,14 @@ export default function ExpertDetail() {
                           <p className="text-sm text-slate-600">{cert.issuer}</p>
                           {cert.date && (
                             <p className="text-xs text-slate-500 mt-1">
-                              {t({ en: 'Issued:', ar: 'تاريخ الإصدار:' })} {new Date(cert.date).toLocaleDateString()}
+                              {t({ en: 'Issued:', ar: 'ØªØ§Ø±ÙŠØ® Ø§Ù„Ø¥ØµØ¯Ø§Ø±:' })} {new Date(cert.date).toLocaleDateString()}
                             </p>
                           )}
                         </div>
                         {cert.certificate_url && (
                           <Button variant="outline" size="sm" asChild>
                             <a href={cert.certificate_url} target="_blank" rel="noopener noreferrer">
-                              {t({ en: 'View', ar: 'عرض' })}
+                              {t({ en: 'View', ar: 'Ø¹Ø±Ø¶' })}
                             </a>
                           </Button>
                         )}
@@ -160,7 +135,7 @@ export default function ExpertDetail() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">{t({ en: 'Contact', ar: 'التواصل' })}</CardTitle>
+                <CardTitle className="text-sm">{t({ en: 'Contact', ar: 'Ø§Ù„ØªÙˆØ§ØµÙ„' })}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center gap-2 text-sm">
@@ -190,12 +165,12 @@ export default function ExpertDetail() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">{t({ en: 'Preferences', ar: 'التفضيلات' })}</CardTitle>
+                <CardTitle className="text-sm">{t({ en: 'Preferences', ar: 'Ø§Ù„ØªÙØ¶ÙŠÙ„Ø§Øª' })}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
                 {expert.preferred_engagement_types && expert.preferred_engagement_types.length > 0 && (
                   <div>
-                    <span className="text-slate-500">{t({ en: 'Engagement:', ar: 'نوع المشاركة:' })}</span>
+                    <span className="text-slate-500">{t({ en: 'Engagement:', ar: 'Ù†ÙˆØ¹ Ø§Ù„Ù…Ø´Ø§Ø±ÙƒØ©:' })}</span>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {expert.preferred_engagement_types.map((type, idx) => (
                         <Badge key={idx} variant="outline">{type}</Badge>
@@ -205,24 +180,24 @@ export default function ExpertDetail() {
                 )}
                 {expert.availability_hours_per_month && (
                   <div>
-                    <span className="text-slate-500">{t({ en: 'Availability:', ar: 'التوفر:' })}</span>{' '}
-                    {expert.availability_hours_per_month} {t({ en: 'hours/month', ar: 'ساعة/شهر' })}
+                    <span className="text-slate-500">{t({ en: 'Availability:', ar: 'Ø§Ù„ØªÙˆÙØ±:' })}</span>{' '}
+                    {expert.availability_hours_per_month} {t({ en: 'hours/month', ar: 'Ø³Ø§Ø¹Ø©/Ø´Ù‡Ø±' })}
                   </div>
                 )}
                 {expert.languages && expert.languages.length > 0 && (
                   <div>
-                    <span className="text-slate-500">{t({ en: 'Languages:', ar: 'اللغات:' })}</span>{' '}
+                    <span className="text-slate-500">{t({ en: 'Languages:', ar: 'Ø§Ù„Ù„ØºØ§Øª:' })}</span>{' '}
                     {expert.languages.join(', ')}
                   </div>
                 )}
                 {expert.travel_willing && (
                   <div className="text-green-600">
                     <CheckCircle2 className="h-4 w-4 inline mr-1" />
-                    {t({ en: 'Willing to travel', ar: 'مستعد للسفر' })}
+                    {t({ en: 'Willing to travel', ar: 'Ù…Ø³ØªØ¹Ø¯ Ù„Ù„Ø³ÙØ±' })}
                   </div>
                 )}
                 {expert.remote_only && (
-                  <Badge variant="outline">{t({ en: 'Remote Only', ar: 'عن بُعد فقط' })}</Badge>
+                  <Badge variant="outline">{t({ en: 'Remote Only', ar: 'Ø¹Ù† Ø¨ÙØ¹Ø¯ ÙÙ‚Ø·' })}</Badge>
                 )}
               </CardContent>
             </Card>
@@ -235,7 +210,7 @@ export default function ExpertDetail() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Target className="h-5 w-5 text-purple-600" />
-                {t({ en: 'Areas of Expertise', ar: 'مجالات الخبرة' })}
+                {t({ en: 'Areas of Expertise', ar: 'Ù…Ø¬Ø§Ù„Ø§Øª Ø§Ù„Ø®Ø¨Ø±Ø©' })}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -248,7 +223,7 @@ export default function ExpertDetail() {
                   ))}
                 </div>
               ) : (
-                <p className="text-slate-500 text-sm">{t({ en: 'No expertise areas specified', ar: 'لا توجد مجالات خبرة محددة' })}</p>
+                <p className="text-slate-500 text-sm">{t({ en: 'No expertise areas specified', ar: 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ù…Ø¬Ø§Ù„Ø§Øª Ø®Ø¨Ø±Ø© Ù…Ø­Ø¯Ø¯Ø©' })}</p>
               )}
             </CardContent>
           </Card>
@@ -257,7 +232,7 @@ export default function ExpertDetail() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <GraduationCap className="h-5 w-5 text-blue-600" />
-                {t({ en: 'Sector Specializations', ar: 'التخصصات القطاعية' })}
+                {t({ en: 'Sector Specializations', ar: 'Ø§Ù„ØªØ®ØµØµØ§Øª Ø§Ù„Ù‚Ø·Ø§Ø¹ÙŠØ©' })}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -270,7 +245,7 @@ export default function ExpertDetail() {
                   ))}
                 </div>
               ) : (
-                <p className="text-slate-500 text-sm">{t({ en: 'No sectors specified', ar: 'لا توجد قطاعات محددة' })}</p>
+                <p className="text-slate-500 text-sm">{t({ en: 'No sectors specified', ar: 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ù‚Ø·Ø§Ø¹Ø§Øª Ù…Ø­Ø¯Ø¯Ø©' })}</p>
               )}
             </CardContent>
           </Card>
@@ -280,7 +255,7 @@ export default function ExpertDetail() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5 text-green-600" />
-                  {t({ en: 'Publications', ar: 'المنشورات' })}
+                  {t({ en: 'Publications', ar: 'Ø§Ù„Ù…Ù†Ø´ÙˆØ±Ø§Øª' })}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -294,7 +269,7 @@ export default function ExpertDetail() {
                       <p className="text-xs text-slate-500 mt-1">{pub.publication}</p>
                       {pub.url && (
                         <a href={pub.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline mt-1 inline-block">
-                          {t({ en: 'View Publication', ar: 'عرض المنشور' })}
+                          {t({ en: 'View Publication', ar: 'Ø¹Ø±Ø¶ Ø§Ù„Ù…Ù†Ø´ÙˆØ±' })}
                         </a>
                       )}
                     </div>
@@ -311,7 +286,7 @@ export default function ExpertDetail() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Briefcase className="h-5 w-5 text-blue-600" />
-                {t({ en: 'Assignment History', ar: 'سجل المهام' })}
+                {t({ en: 'Assignment History', ar: 'Ø³Ø¬Ù„ Ø§Ù„Ù…Ù‡Ø§Ù…' })}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -323,8 +298,8 @@ export default function ExpertDetail() {
                         <Badge variant="outline">{assignment.entity_type}</Badge>
                         <Badge className={
                           assignment.status === 'completed' ? 'bg-green-100 text-green-700' :
-                          assignment.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
-                          'bg-yellow-100 text-yellow-700'
+                            assignment.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                              'bg-yellow-100 text-yellow-700'
                         }>
                           {assignment.status}
                         </Badge>
@@ -340,7 +315,7 @@ export default function ExpertDetail() {
                 </div>
               ) : (
                 <p className="text-slate-500 text-sm text-center py-8">
-                  {t({ en: 'No assignments yet', ar: 'لا توجد مهام بعد' })}
+                  {t({ en: 'No assignments yet', ar: 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ù…Ù‡Ø§Ù… Ø¨Ø¹Ø¯' })}
                 </p>
               )}
             </CardContent>
@@ -350,7 +325,7 @@ export default function ExpertDetail() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Star className="h-5 w-5 text-amber-600" />
-                {t({ en: 'Evaluation History', ar: 'سجل التقييمات' })}
+                {t({ en: 'Evaluation History', ar: 'Ø³Ø¬Ù„ Ø§Ù„ØªÙ‚ÙŠÙŠÙ…Ø§Øª' })}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -362,13 +337,13 @@ export default function ExpertDetail() {
                         <Badge variant="outline">{evaluation.entity_type}</Badge>
                         <div className="text-right">
                           <div className="text-xl font-bold text-blue-600">{evaluation.overall_score}</div>
-                          <div className="text-xs text-slate-500">{t({ en: 'Score', ar: 'النقاط' })}</div>
+                          <div className="text-xs text-slate-500">{t({ en: 'Score', ar: 'Ø§Ù„Ù†Ù‚Ø§Ø·' })}</div>
                         </div>
                       </div>
                       <Badge className={
                         evaluation.recommendation === 'approve' ? 'bg-green-100 text-green-700' :
-                        evaluation.recommendation === 'reject' ? 'bg-red-100 text-red-700' :
-                        'bg-yellow-100 text-yellow-700'
+                          evaluation.recommendation === 'reject' ? 'bg-red-100 text-red-700' :
+                            'bg-yellow-100 text-yellow-700'
                       }>
                         {evaluation.recommendation}
                       </Badge>
@@ -380,7 +355,7 @@ export default function ExpertDetail() {
                 </div>
               ) : (
                 <p className="text-slate-500 text-sm text-center py-8">
-                  {t({ en: 'No evaluations yet', ar: 'لا توجد تقييمات بعد' })}
+                  {t({ en: 'No evaluations yet', ar: 'Ù„Ø§ ØªÙˆØ¬Ø¯ ØªÙ‚ÙŠÙŠÙ…Ø§Øª Ø¨Ø¹Ø¯' })}
                 </p>
               )}
             </CardContent>
@@ -394,7 +369,7 @@ export default function ExpertDetail() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-600">{t({ en: 'Quality Score', ar: 'نقاط الجودة' })}</p>
+                    <p className="text-sm text-slate-600">{t({ en: 'Quality Score', ar: 'Ù†Ù‚Ø§Ø· Ø§Ù„Ø¬ÙˆØ¯Ø©' })}</p>
                     <p className="text-3xl font-bold text-green-600">{expert.evaluation_quality_score || 0}</p>
                   </div>
                   <TrendingUp className="h-8 w-8 text-green-600" />
@@ -406,7 +381,7 @@ export default function ExpertDetail() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-600">{t({ en: 'Response Time', ar: 'وقت الرد' })}</p>
+                    <p className="text-sm text-slate-600">{t({ en: 'Response Time', ar: 'ÙˆÙ‚Øª Ø§Ù„Ø±Ø¯' })}</p>
                     <p className="text-3xl font-bold text-blue-600">{expert.response_time_avg_hours || 0}h</p>
                   </div>
                   <Calendar className="h-8 w-8 text-blue-600" />
@@ -418,7 +393,7 @@ export default function ExpertDetail() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-600">{t({ en: 'Acceptance Rate', ar: 'معدل القبول' })}</p>
+                    <p className="text-sm text-slate-600">{t({ en: 'Acceptance Rate', ar: 'Ù…Ø¹Ø¯Ù„ Ø§Ù„Ù‚Ø¨ÙˆÙ„' })}</p>
                     <p className="text-3xl font-bold text-purple-600">{expert.acceptance_rate || 0}%</p>
                   </div>
                   <CheckCircle2 className="h-8 w-8 text-purple-600" />
@@ -434,13 +409,13 @@ export default function ExpertDetail() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-green-600" />
-                {t({ en: 'Availability', ar: 'التوفر' })}
+                {t({ en: 'Availability', ar: 'Ø§Ù„ØªÙˆÙØ±' })}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-slate-600 mb-2">{t({ en: 'Monthly Capacity:', ar: 'القدرة الشهرية:' })}</p>
+                  <p className="text-sm text-slate-600 mb-2">{t({ en: 'Monthly Capacity:', ar: 'Ø§Ù„Ù‚Ø¯Ø±Ø© Ø§Ù„Ø´Ù‡Ø±ÙŠØ©:' })}</p>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-3 bg-slate-200 rounded-full overflow-hidden">
                       <div
@@ -454,13 +429,13 @@ export default function ExpertDetail() {
 
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="p-3 bg-slate-50 rounded-lg">
-                    <p className="text-slate-600">{t({ en: 'Current Load:', ar: 'الحمل الحالي:' })}</p>
-                    <p className="font-medium text-slate-900">{assignments.filter(a => a.status === 'in_progress').length} {t({ en: 'active', ar: 'نشط' })}</p>
+                    <p className="text-slate-600">{t({ en: 'Current Load:', ar: 'Ø§Ù„Ø­Ù…Ù„ Ø§Ù„Ø­Ø§Ù„ÙŠ:' })}</p>
+                    <p className="font-medium text-slate-900">{assignments.filter(a => a.status === 'in_progress').length} {t({ en: 'active', ar: 'Ù†Ø´Ø·' })}</p>
                   </div>
                   <div className="p-3 bg-slate-50 rounded-lg">
-                    <p className="text-slate-600">{t({ en: 'Status:', ar: 'الحالة:' })}</p>
+                    <p className="text-slate-600">{t({ en: 'Status:', ar: 'Ø§Ù„Ø­Ø§Ù„Ø©:' })}</p>
                     <Badge className={expert.is_active ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700'}>
-                      {expert.is_active ? t({ en: 'Available', ar: 'متاح' }) : t({ en: 'Unavailable', ar: 'غير متاح' })}
+                      {expert.is_active ? t({ en: 'Available', ar: 'Ù…ØªØ§Ø­' }) : t({ en: 'Unavailable', ar: 'ØºÙŠØ± Ù…ØªØ§Ø­' })}
                     </Badge>
                   </div>
                 </div>

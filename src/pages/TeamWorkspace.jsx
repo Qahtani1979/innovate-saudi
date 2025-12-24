@@ -1,22 +1,15 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '../components/LanguageContext';
 import TeamWorkspace from '../components/access/TeamWorkspace';
 import TeamPerformanceAnalytics from '../components/access/TeamPerformanceAnalytics';
+import { useTeams } from '@/hooks/useTeams';
 
 export default function TeamWorkspacePage() {
   const { language, isRTL, t } = useLanguage();
   const urlParams = new URLSearchParams(window.location.search);
   const teamId = urlParams.get('id');
 
-  const { data: team } = useQuery({
-    queryKey: ['team', teamId],
-    queryFn: async () => {
-      const teams = await base44.entities.Team.list();
-      return teams.find(t => t.id === teamId);
-    },
-    enabled: !!teamId
-  });
+  const { data: teams = [] } = useTeams();
+  const team = teams.find(t => t.id === teamId);
 
   if (!team) {
     return (

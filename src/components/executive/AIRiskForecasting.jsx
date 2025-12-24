@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,10 +10,10 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { getSystemPrompt } from '@/lib/saudiContext';
-import { 
-  buildRiskForecastPrompt, 
-  riskForecastSchema, 
-  RISK_FORECAST_SYSTEM_PROMPT 
+import {
+  buildRiskForecastPrompt,
+  riskForecastSchema,
+  RISK_FORECAST_SYSTEM_PROMPT
 } from '@/lib/ai/prompts/executive';
 
 export default function AIRiskForecasting() {
@@ -21,15 +21,8 @@ export default function AIRiskForecasting() {
   const [risks, setRisks] = useState(null);
   const { invokeAI, status, isLoading: forecasting, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-risk'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-risk'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
+  const { data: pilots = [] } = usePilotsWithVisibility();
+  const { data: challenges = [] } = useChallengesWithVisibility();
 
   const generateForecast = async () => {
     const activePilots = pilots.filter(p => p.stage === 'active' || p.stage === 'monitoring');
@@ -88,7 +81,7 @@ export default function AIRiskForecasting() {
             {risks.map((risk, i) => {
               const config = severityConfig[risk.severity?.toLowerCase()] || severityConfig.medium;
               const Icon = config.icon;
-              
+
               return (
                 <div key={i} className={`p-4 border-2 rounded-lg ${config.color}`}>
                   <div className="flex items-start gap-3">

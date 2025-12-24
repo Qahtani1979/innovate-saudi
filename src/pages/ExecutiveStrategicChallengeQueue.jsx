@@ -1,4 +1,5 @@
-import { base44 } from '@/api/base44Client';
+
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,15 +18,27 @@ function ExecutiveStrategicChallengeQueue() {
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['strategic-challenges'],
-    queryFn: () => base44.entities.Challenge.list('-overall_score', 100)
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('*')
+        .order('overall_score', { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const fastTrackMutation = useMutation({
     mutationFn: async (challengeId) => {
-      return await base44.entities.Challenge.update(challengeId, {
-        priority: 'tier_1',
-        is_featured: true
-      });
+      const { error } = await supabase
+        .from('challenges')
+        .update({
+          priority: 'tier_1',
+          is_featured: true
+        })
+        .eq('id', challengeId);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['strategic-challenges']);
@@ -33,15 +46,15 @@ function ExecutiveStrategicChallengeQueue() {
     }
   });
 
-  const strategicChallenges = challenges.filter(c => 
-    c.strategic_plan_ids?.length > 0 || 
-    c.priority === 'tier_1' || 
+  const strategicChallenges = challenges.filter(c =>
+    c.strategic_plan_ids?.length > 0 ||
+    c.priority === 'tier_1' ||
     c.is_featured ||
     c.overall_score >= 80
   );
 
   const highImpact = strategicChallenges.filter(c => c.impact_score >= 80);
-  const needingAttention = strategicChallenges.filter(c => 
+  const needingAttention = strategicChallenges.filter(c =>
     c.status === 'under_review' || (c.status === 'approved' && !c.track)
   );
 
@@ -123,8 +136,8 @@ function ExecutiveStrategicChallengeQueue() {
                       )}
                       <Badge className={
                         challenge.priority === 'tier_1' ? 'bg-red-600' :
-                        challenge.priority === 'tier_2' ? 'bg-orange-600' :
-                        'bg-blue-600'
+                          challenge.priority === 'tier_2' ? 'bg-orange-600' :
+                            'bg-blue-600'
                       }>
                         {challenge.priority}
                       </Badge>

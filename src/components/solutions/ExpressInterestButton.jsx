@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -11,6 +10,8 @@ import { useLanguage } from '../LanguageContext';
 import { Heart, Loader2, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+import { useExpressInterest } from '@/hooks/useSolutionInteractions';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 
 export default function ExpressInterestButton({ solution, challenge = null, variant = "default" }) {
   const { language, isRTL, t } = useLanguage();
@@ -18,21 +19,11 @@ export default function ExpressInterestButton({ solution, challenge = null, vari
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-for-interest'],
-    queryFn: async () => {
-      if (challenge) return [];
-      const { data } = await supabase
-        .from('challenges')
-        .select('*')
-        .eq('is_deleted', false)
-        .in('status', ['approved', 'in_treatment'])
-        .order('created_at', { ascending: false })
-        .limit(50);
-      return data || [];
-    },
-    enabled: !challenge
-  });
+  // Fetch approved/in_treatment challenges for linking
+  const { challenges: allChallenges = [] } = useChallengesWithVisibility({ enabled: !challenge });
+  const challenges = challenge
+    ? []
+    : allChallenges.filter(c => ['approved', 'in_treatment'].includes(c.status)).slice(0, 50);
 
   const [formData, setFormData] = useState({
     challenge_id: challenge?.id || '',
@@ -43,73 +34,11 @@ export default function ExpressInterestButton({ solution, challenge = null, vari
     expected_budget_max: ''
   });
 
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: interest, error } = await supabase
-        .from('solution_interests')
-        .insert(data)
-        .select()
-        .single();
-      if (error) throw error;
-      
-      // Notify provider
-      await supabase.functions.invoke('email-trigger-hub', {
-        body: {
-          trigger: 'solution.interest_received',
-          recipient_email: solution.contact_email || solution.support_contact_email,
-          entity_type: 'solution',
-          entity_id: solution.id,
-          variables: {
-            solutionName: solution.name_en,
-            interestedByName: data.interested_by_name,
-            municipalityId: data.municipality_id,
-            interestType: data.interest_type,
-            challengeId: data.challenge_id || null,
-            expectedTimeline: data.expected_timeline || 'Not specified',
-            budgetMin: data.expected_budget_min || null,
-            budgetMax: data.expected_budget_max || null,
-            message: data.message
-          }
-        }
-      });
-
-      // Log activity
-      await supabase.from('system_activities').insert({
-        entity_type: 'Solution',
-        entity_id: solution.id,
-        activity_type: 'interest_expressed',
-        description: `Interest expressed by ${data.interested_by_name}${data.challenge_id ? ' for challenge ' + data.challenge_id : ''}`,
-        metadata: {
-          municipality: data.municipality_id,
-          challenge: data.challenge_id,
-          interest_type: data.interest_type
-        }
-      });
-
-      return interest;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['solution-activities']);
-      queryClient.invalidateQueries(['solution-interests']);
-      toast.success(t({ en: 'Interest expressed! Provider will be notified.', ar: 'تم إبداء الاهتمام! سيتم إشعار المزود.' }));
-      setOpen(false);
-      setFormData({
-        challenge_id: challenge?.id || '',
-        interest_type: challenge ? 'for_challenge' : 'general',
-        message: '',
-        expected_timeline: '',
-        expected_budget_min: '',
-        expected_budget_max: ''
-      });
-    },
-    onError: () => {
-      toast.error(t({ en: 'Failed to express interest', ar: 'فشل إبداء الاهتمام' }));
-    }
-  });
+  const createMutation = useExpressInterest();
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!user) {
       toast.error(t({ en: 'Please login to express interest', ar: 'يرجى تسجيل الدخول' }));
       return;
@@ -128,7 +57,19 @@ export default function ExpressInterestButton({ solution, challenge = null, vari
       ...formData
     };
 
-    createMutation.mutate(data);
+    createMutation.mutate({ solution, data, user }, {
+      onSuccess: () => {
+        setOpen(false);
+        setFormData({
+          challenge_id: challenge?.id || '',
+          interest_type: challenge ? 'for_challenge' : 'general',
+          message: '',
+          expected_timeline: '',
+          expected_budget_min: '',
+          expected_budget_max: ''
+        });
+      }
+    });
   };
 
   return (
@@ -148,9 +89,9 @@ export default function ExpressInterestButton({ solution, challenge = null, vari
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <p className="text-sm text-slate-600">
-              {t({ 
-                en: `Express interest in "${solution.name_en}" to receive more information and connect with the provider.`, 
-                ar: `أبدِ اهتمامك بـ "${solution.name_ar || solution.name_en}" لتلقي المزيد من المعلومات والتواصل مع المزود.` 
+              {t({
+                en: `Express interest in "${solution.name_en}" to receive more information and connect with the provider.`,
+                ar: `أبدِ اهتمامك بـ "${solution.name_ar || solution.name_en}" لتلقي المزيد من المعلومات والتواصل مع المزود.`
               })}
             </p>
           </div>
@@ -160,10 +101,10 @@ export default function ExpressInterestButton({ solution, challenge = null, vari
               <Label>{t({ en: 'Link to Challenge (Optional)', ar: 'ربط بتحدي (اختياري)' })}</Label>
               <Select
                 value={formData.challenge_id || 'none'}
-                onValueChange={(v) => setFormData({ 
-                  ...formData, 
-                  challenge_id: v === 'none' ? null : v, 
-                  interest_type: v !== 'none' ? 'for_challenge' : 'general' 
+                onValueChange={(v) => setFormData({
+                  ...formData,
+                  challenge_id: v === 'none' ? null : v,
+                  interest_type: v !== 'none' ? 'for_challenge' : 'general'
                 })}
               >
                 <SelectTrigger>
@@ -217,9 +158,9 @@ export default function ExpressInterestButton({ solution, challenge = null, vari
               value={formData.message}
               onChange={(e) => setFormData({ ...formData, message: e.target.value })}
               rows={4}
-              placeholder={t({ 
-                en: 'Describe your needs and how this solution could help...', 
-                ar: 'صف احتياجاتك وكيف يمكن لهذا الحل المساعدة...' 
+              placeholder={t({
+                en: 'Describe your needs and how this solution could help...',
+                ar: 'صف احتياجاتك وكيف يمكن لهذا الحل المساعدة...'
               })}
               dir={isRTL ? 'rtl' : 'ltr'}
             />

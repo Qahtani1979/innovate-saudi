@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -11,6 +10,7 @@ import { useLanguage } from '../LanguageContext';
 import { Calendar, Loader2, Video } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+import { useRequestDemo } from '@/hooks/useSolutionWorkflows';
 
 export default function RequestDemoButton({ solution, challenge = null }) {
   const { language, isRTL, t } = useLanguage();
@@ -26,50 +26,11 @@ export default function RequestDemoButton({ solution, challenge = null }) {
     attendee_count: 1
   });
 
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: demoRequest, error } = await supabase
-        .from('demo_requests')
-        .insert(data)
-        .select()
-        .single();
-      if (error) throw error;
-
-      // Log activity
-      await supabase.from('system_activities').insert({
-        entity_type: 'Solution',
-        entity_id: solution.id,
-        activity_type: 'demo_requested',
-        description: `Demo requested by ${data.requester_name}`,
-        metadata: {
-          requester: data.requester_email,
-          municipality: data.municipality_id,
-          demo_type: data.demo_type
-        }
-      });
-
-      return demoRequest;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['solution-activities'] });
-      toast.success(t({ en: 'Demo request sent to provider!', ar: 'تم إرسال طلب العرض للمزود!' }));
-      setOpen(false);
-      setFormData({
-        preferred_date: '',
-        preferred_time: '',
-        message: '',
-        demo_type: 'online',
-        attendee_count: 1
-      });
-    },
-    onError: (error) => {
-      toast.error(t({ en: 'Failed to send demo request', ar: 'فشل إرسال طلب العرض' }));
-    }
-  });
+  const createMutation = useRequestDemo();
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!user) {
       toast.error(t({ en: 'Please login to request a demo', ar: 'يرجى تسجيل الدخول لطلب عرض' }));
       return;
@@ -85,7 +46,18 @@ export default function RequestDemoButton({ solution, challenge = null }) {
       ...formData
     };
 
-    createMutation.mutate(data);
+    createMutation.mutate(data, {
+      onSuccess: () => {
+        setOpen(false);
+        setFormData({
+          preferred_date: '',
+          preferred_time: '',
+          message: '',
+          demo_type: 'online',
+          attendee_count: 1
+        });
+      }
+    });
   };
 
   return (
@@ -105,9 +77,9 @@ export default function RequestDemoButton({ solution, challenge = null }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <p className="text-sm text-slate-600 mb-4">
-              {t({ 
-                en: `Request a demo of "${solution.name_en}"`, 
-                ar: `طلب عرض تجريبي لـ "${solution.name_ar || solution.name_en}"` 
+              {t({
+                en: `Request a demo of "${solution.name_en}"`,
+                ar: `طلب عرض تجريبي لـ "${solution.name_ar || solution.name_en}"`
               })}
             </p>
           </div>
@@ -164,9 +136,9 @@ export default function RequestDemoButton({ solution, challenge = null }) {
               value={formData.message}
               onChange={(e) => setFormData({ ...formData, message: e.target.value })}
               rows={3}
-              placeholder={t({ 
-                en: 'Any specific requirements or questions...', 
-                ar: 'أي متطلبات أو أسئلة محددة...' 
+              placeholder={t({
+                en: 'Any specific requirements or questions...',
+                ar: 'أي متطلبات أو أسئلة محددة...'
               })}
               dir={isRTL ? 'rtl' : 'ltr'}
             />

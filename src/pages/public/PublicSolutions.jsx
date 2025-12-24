@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { usePublicSolutions } from '@/hooks/usePublicData';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/components/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,19 +13,7 @@ export default function PublicSolutions() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMaturity, setSelectedMaturity] = useState('all');
 
-  const { data: solutions = [], isLoading } = useQuery({
-    queryKey: ['public-solutions-list'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('solutions')
-        .select('*, providers(name_en, name_ar)')
-        .eq('is_deleted', false)
-        .eq('is_published', true)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: solutions = [], isLoading } = usePublicSolutions();
 
   const maturities = [
     { value: 'concept', label: t({ en: 'Concept', ar: 'فكرة' }) },
@@ -38,7 +25,7 @@ export default function PublicSolutions() {
 
   const filteredSolutions = solutions.filter(s => {
     const maturityMatch = selectedMaturity === 'all' || s.maturity_level === selectedMaturity;
-    const searchMatch = !searchTerm || 
+    const searchMatch = !searchTerm ||
       s.name_en?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.name_ar?.includes(searchTerm) ||
       s.description_en?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -57,7 +44,7 @@ export default function PublicSolutions() {
 
   return (
     <>
-      
+
       {/* Hero Section */}
       <section className="py-16 px-4 bg-gradient-to-br from-primary/5 via-background to-muted/30">
         <div className="container mx-auto max-w-6xl text-center">
@@ -68,9 +55,9 @@ export default function PublicSolutions() {
             {t({ en: 'Innovation Solutions', ar: 'الحلول المبتكرة' })}
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            {t({ 
-              en: 'Discover verified solutions from innovative providers ready to transform municipal services.', 
-              ar: 'اكتشف الحلول المعتمدة من مزودين مبتكرين جاهزين لتحويل الخدمات البلدية.' 
+            {t({
+              en: 'Discover verified solutions from innovative providers ready to transform municipal services.',
+              ar: 'اكتشف الحلول المعتمدة من مزودين مبتكرين جاهزين لتحويل الخدمات البلدية.'
             })}
           </p>
         </div>
@@ -147,22 +134,22 @@ export default function PublicSolutions() {
                         </Badge>
                       )}
                     </div>
-                    
+
                     <h3 className="font-bold text-lg text-foreground mb-3 group-hover:text-primary transition-colors line-clamp-2">
                       {language === 'ar' && solution.name_ar ? solution.name_ar : solution.name_en}
                     </h3>
-                    
+
                     <p className="text-muted-foreground text-sm mb-4 line-clamp-3">
                       {language === 'ar' && solution.description_ar ? solution.description_ar : solution.description_en}
                     </p>
-                    
+
                     <div className="space-y-2 text-sm text-muted-foreground mb-4">
                       {solution.providers && (
                         <div className="flex items-center gap-2">
                           <Building2 className="h-4 w-4" />
                           <span>
-                            {language === 'ar' && solution.providers.name_ar 
-                              ? solution.providers.name_ar 
+                            {language === 'ar' && solution.providers.name_ar
+                              ? solution.providers.name_ar
                               : solution.providers.name_en}
                           </span>
                         </div>
@@ -174,7 +161,7 @@ export default function PublicSolutions() {
                         </div>
                       )}
                     </div>
-                    
+
                     <Link to="/auth">
                       <Button variant="outline" className="w-full gap-2">
                         {t({ en: 'View Details', ar: 'عرض التفاصيل' })}
@@ -196,9 +183,9 @@ export default function PublicSolutions() {
             {t({ en: 'Are You a Solution Provider?', ar: 'هل أنت مزود حلول؟' })}
           </h2>
           <p className="text-muted-foreground mb-8">
-            {t({ 
-              en: 'Join our marketplace to showcase your solutions and connect with municipalities looking for innovation.', 
-              ar: 'انضم إلى سوقنا لعرض حلولك والتواصل مع البلديات التي تبحث عن الابتكار.' 
+            {t({
+              en: 'Join our marketplace to showcase your solutions and connect with municipalities looking for innovation.',
+              ar: 'انضم إلى سوقنا لعرض حلولك والتواصل مع البلديات التي تبحث عن الابتكار.'
             })}
           </p>
           <Link to="/auth">

@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMyDelegations, useDelegationMutations } from '@/hooks/useDelegations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,35 +14,9 @@ export default function MobileDelegationManager() {
   const { user } = useAuth();
   const [delegatee, setDelegatee] = useState('');
   const [selectedPermissions, setSelectedPermissions] = useState([]);
-  const queryClient = useQueryClient();
 
-  const { data: myDelegations = [] } = useQuery({
-    queryKey: ['my-delegations', user?.email],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('delegation_rules')
-        .select('*')
-        .eq('delegator_email', user?.email);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user
-  });
-
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase
-        .from('delegation_rules')
-        .insert(data);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['my-delegations']);
-      toast.success('Delegation created');
-      setDelegatee('');
-      setSelectedPermissions([]);
-    }
-  });
+  const { data: myDelegations = [] } = useMyDelegations(user?.email);
+  const { createDelegation: createMutation } = useDelegationMutations();
 
   const permissions = ['challenge_create', 'pilot_create', 'solution_create', 'challenge_approve'];
 
@@ -54,7 +27,7 @@ export default function MobileDelegationManager() {
       delegator_email: user?.email,
       delegate_email: delegatee,
       permission_types: selectedPermissions,
-      is_active: false,
+      is_active: true, // Ensuring it starts active if created manually here or handled by backend
       start_date: new Date().toISOString(),
       end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
     });
@@ -77,12 +50,12 @@ export default function MobileDelegationManager() {
             onChange={(e) => setDelegatee(e.target.value)}
             className="w-full px-3 py-2 border rounded text-sm"
           />
-          
+
           <div className="flex flex-wrap gap-2">
             {permissions.map(perm => (
               <Badge
                 key={perm}
-                onClick={() => setSelectedPermissions(prev => 
+                onClick={() => setSelectedPermissions(prev =>
                   prev.includes(perm) ? prev.filter(p => p !== perm) : [...prev, perm]
                 )}
                 className={`cursor-pointer ${selectedPermissions.includes(perm) ? 'bg-blue-600' : 'bg-slate-300'}`}

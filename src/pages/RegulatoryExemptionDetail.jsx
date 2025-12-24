@@ -1,5 +1,3 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,39 +7,22 @@ import { Shield, FileText, History, AlertTriangle, CheckCircle2, Clock, Target }
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import RegulatoryVersionHistory from '../components/RegulatoryVersionHistory';
+import { useRegulatoryExemption, useExemptionAuditLogs } from '@/hooks/useRegulatoryExemptions';
+import { useSandboxApplications } from '@/hooks/useSandboxApplications';
 
 export default function RegulatoryExemptionDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const exemptionId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
 
-  const { data: exemption, isLoading } = useQuery({
-    queryKey: ['exemption', exemptionId],
-    queryFn: async () => {
-      const exemptions = await base44.entities.RegulatoryExemption.list();
-      return exemptions.find(e => e.id === exemptionId);
-    },
-    enabled: !!exemptionId
-  });
+  const { data: exemption, isLoading } = useRegulatoryExemption(exemptionId);
+  const { data: auditLogs = [] } = useExemptionAuditLogs(exemptionId);
+  const { data: allApplications = [] } = useSandboxApplications();
 
-  const { data: auditLogs = [] } = useQuery({
-    queryKey: ['exemption-audit', exemptionId],
-    queryFn: async () => {
-      const logs = await base44.entities.ExemptionAuditLog.list();
-      return logs.filter(l => l.exemption_id === exemptionId)
-        .sort((a, b) => new Date(b.action_date) - new Date(a.action_date));
-    },
-    enabled: !!exemptionId
-  });
-
-  const { data: applications = [] } = useQuery({
-    queryKey: ['exemption-usage'],
-    queryFn: async () => {
-      const apps = await base44.entities.SandboxApplication.list();
-      return apps.filter(a => a.requested_exemptions?.includes(exemption?.title_en));
-    },
-    enabled: !!exemption
-  });
+  // Filter applications client-side for now
+  const applications = exemption
+    ? allApplications.filter(a => a.requested_exemptions?.includes(exemption?.title_en))
+    : [];
 
   if (isLoading || !exemption) {
     return (
@@ -56,12 +37,6 @@ export default function RegulatoryExemptionDetail() {
     active: 'bg-green-100 text-green-700',
     suspended: 'bg-yellow-100 text-yellow-700',
     expired: 'bg-red-100 text-red-700'
-  };
-
-  const riskColors = {
-    low: 'text-green-600',
-    medium: 'text-yellow-600',
-    high: 'text-red-600'
   };
 
   const actionIcons = {

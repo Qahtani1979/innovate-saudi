@@ -47,6 +47,28 @@ export default function ChallengeKPIsTab({ challenge }) {
           )}
         </CardContent>
       </Card>
-    </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t({ en: 'Score Breakdown', ar: 'تفصيل النقاط' })}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center p-4 bg-red-50 rounded-lg">
+              <div className="text-3xl font-bold text-red-600">{challenge.severity_score || 0}</div>
+              <div className="text-xs text-muted-foreground mt-1">{t({ en: 'Severity', ar: 'الخطورة' })}</div>
+            </div>
+            <div className="text-center p-4 bg-orange-50 rounded-lg">
+              <div className="text-3xl font-bold text-orange-600">{challenge.impact_score || 0}</div>
+              <div className="text-xs text-muted-foreground mt-1">{t({ en: 'Impact', ar: 'التأثير' })}</div>
+            </div>
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="text-3xl font-bold text-blue-600">{challenge.overall_score || 0}</div>
+              <div className="text-xs text-muted-foreground mt-1">{t({ en: 'Overall', ar: 'الإجمالي' })}</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div >
   );
 }

@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { usePublicChallenges } from '@/hooks/usePublicData';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/components/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,25 +13,13 @@ export default function PublicChallenges() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSector, setSelectedSector] = useState('all');
 
-  const { data: challenges = [], isLoading } = useQuery({
-    queryKey: ['public-challenges-list'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*, municipalities(name_en, name_ar)')
-        .eq('is_published', true)
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: challenges = [], isLoading } = usePublicChallenges();
 
   const sectors = [...new Set(challenges.map(c => c.sector).filter(Boolean))];
 
   const filteredChallenges = challenges.filter(c => {
     const sectorMatch = selectedSector === 'all' || c.sector === selectedSector;
-    const searchMatch = !searchTerm || 
+    const searchMatch = !searchTerm ||
       c.title_en?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.title_ar?.includes(searchTerm) ||
       c.description_en?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -50,7 +37,7 @@ export default function PublicChallenges() {
 
   return (
     <>
-      
+
       {/* Hero Section */}
       <section className="py-16 px-4 bg-gradient-to-br from-primary/5 via-background to-muted/30">
         <div className="container mx-auto max-w-6xl text-center">
@@ -61,9 +48,9 @@ export default function PublicChallenges() {
             {t({ en: 'Municipal Challenges', ar: 'التحديات البلدية' })}
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            {t({ 
-              en: 'Explore the challenges facing municipalities and discover opportunities for innovation.', 
-              ar: 'استكشف التحديات التي تواجه البلديات واكتشف فرص الابتكار.' 
+            {t({
+              en: 'Explore the challenges facing municipalities and discover opportunities for innovation.',
+              ar: 'استكشف التحديات التي تواجه البلديات واكتشف فرص الابتكار.'
             })}
           </p>
         </div>
@@ -137,22 +124,22 @@ export default function PublicChallenges() {
                         <Badge variant="outline">{challenge.sector}</Badge>
                       )}
                     </div>
-                    
+
                     <h3 className="font-bold text-lg text-foreground mb-3 group-hover:text-primary transition-colors line-clamp-2">
                       {language === 'ar' && challenge.title_ar ? challenge.title_ar : challenge.title_en}
                     </h3>
-                    
+
                     <p className="text-muted-foreground text-sm mb-4 line-clamp-3">
                       {language === 'ar' && challenge.description_ar ? challenge.description_ar : challenge.description_en}
                     </p>
-                    
+
                     <div className="space-y-2 text-sm text-muted-foreground mb-4">
                       {challenge.municipalities && (
                         <div className="flex items-center gap-2">
                           <Building2 className="h-4 w-4" />
                           <span>
-                            {language === 'ar' && challenge.municipalities.name_ar 
-                              ? challenge.municipalities.name_ar 
+                            {language === 'ar' && challenge.municipalities.name_ar
+                              ? challenge.municipalities.name_ar
                               : challenge.municipalities.name_en}
                           </span>
                         </div>
@@ -164,7 +151,7 @@ export default function PublicChallenges() {
                         </div>
                       )}
                     </div>
-                    
+
                     <Link to="/auth">
                       <Button variant="outline" className="w-full gap-2">
                         {t({ en: 'View Details', ar: 'عرض التفاصيل' })}
@@ -186,9 +173,9 @@ export default function PublicChallenges() {
             {t({ en: 'Have a Solution?', ar: 'لديك حل؟' })}
           </h2>
           <p className="text-muted-foreground mb-8">
-            {t({ 
-              en: 'Join our platform to submit your innovative solutions and connect with municipalities.', 
-              ar: 'انضم إلى منصتنا لتقديم حلولك المبتكرة والتواصل مع البلديات.' 
+            {t({
+              en: 'Join our platform to submit your innovative solutions and connect with municipalities.',
+              ar: 'انضم إلى منصتنا لتقديم حلولك المبتكرة والتواصل مع البلديات.'
             })}
           </p>
           <Link to="/auth">

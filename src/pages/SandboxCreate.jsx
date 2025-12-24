@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQuery } from '@tanstack/react-query';
+
 import { useNavigate } from 'react-router-dom';
+import { useSandboxes } from '@/hooks/useSandboxes';
+import { useLocations } from '@/hooks/useLocations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +24,7 @@ function SandboxCreate() {
   const { language, isRTL, t } = useLanguage();
   const [step, setStep] = useState(1);
   const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
-  
+
   const [formData, setFormData] = useState({
     code: '',
     name_en: '',
@@ -67,20 +68,17 @@ function SandboxCreate() {
     strategic_gaps_addressed: []
   });
 
-  const { data: cities = [] } = useQuery({
-    queryKey: ['cities'],
-    queryFn: () => base44.entities.City.list()
-  });
+  const {
+    useCreateSandbox,
+    useLivingLabs,
+    useOrganizations
+  } = useSandboxes();
 
-  const { data: organizations = [] } = useQuery({
-    queryKey: ['organizations'],
-    queryFn: () => base44.entities.Organization.list()
-  });
+  const { useCities } = useLocations();
 
-  const { data: livingLabs = [] } = useQuery({
-    queryKey: ['living-labs'],
-    queryFn: () => base44.entities.LivingLab.list()
-  });
+  const { data: cities = [] } = useCities();
+  const { data: organizations = [] } = useOrganizations();
+  const { data: livingLabs = [] } = useLivingLabs();
 
   const handleAIEnhancement = async () => {
     if (!formData.name_en || !formData.domain) {
@@ -89,11 +87,11 @@ function SandboxCreate() {
     }
     try {
       // Import centralized prompt module
-      const { 
-        SANDBOX_CREATE_PROMPT_TEMPLATE, 
-        SANDBOX_CREATE_RESPONSE_SCHEMA 
+      const {
+        SANDBOX_CREATE_PROMPT_TEMPLATE,
+        SANDBOX_CREATE_RESPONSE_SCHEMA
       } = await import('@/lib/ai/prompts/sandbox/creation');
-      
+
       const result = await invokeAI({
         prompt: SANDBOX_CREATE_PROMPT_TEMPLATE(formData),
         response_json_schema: SANDBOX_CREATE_RESPONSE_SCHEMA
@@ -118,13 +116,15 @@ function SandboxCreate() {
     }
   };
 
-  const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Sandbox.create(data),
-    onSuccess: (sandbox) => {
-      toast.success(t({ en: 'Sandbox created successfully', ar: 'تم إنشاء المنطقة بنجاح' }));
-      navigate(createPageUrl(`SandboxDetail?id=${sandbox.id}`));
-    }
-  });
+  const createMutation = useCreateSandbox();
+
+  const handleCreate = () => {
+    createMutation.mutate(formData, {
+      onSuccess: (sandbox) => {
+        navigate(createPageUrl(`SandboxDetail?id=${sandbox.id}`));
+      }
+    });
+  };
 
   const steps = [
     { id: 1, title: { en: 'Basic Info', ar: 'المعلومات الأساسية' }, icon: FileText },
@@ -159,11 +159,10 @@ function SandboxCreate() {
               return (
                 <div key={s.id} className="flex items-center">
                   <div className={`flex flex-col items-center ${idx > 0 ? 'ml-4' : ''}`}>
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      isComplete ? 'bg-green-600 text-white' :
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isComplete ? 'bg-green-600 text-white' :
                       isActive ? 'bg-blue-600 text-white' :
-                      'bg-slate-200 text-slate-500'
-                    }`}>
+                        'bg-slate-200 text-slate-500'
+                      }`}>
                       <Icon className="h-5 w-5" />
                     </div>
                     <span className={`text-xs mt-2 ${isActive ? 'font-semibold' : ''}`}>
@@ -193,7 +192,7 @@ function SandboxCreate() {
                 <Label>{t({ en: 'Sandbox Code', ar: 'رمز المنطقة' })}</Label>
                 <Input
                   value={formData.code}
-                  onChange={(e) => setFormData({...formData, code: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                   placeholder="SB-RUH-001"
                 />
               </div>
@@ -202,14 +201,14 @@ function SandboxCreate() {
                   <Label>{t({ en: 'Name (English) *', ar: 'الاسم (إنجليزي) *' })}</Label>
                   <Input
                     value={formData.name_en}
-                    onChange={(e) => setFormData({...formData, name_en: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
                   />
                 </div>
                 <div>
                   <Label>{t({ en: 'Name (Arabic)', ar: 'الاسم (عربي)' })}</Label>
                   <Input
                     value={formData.name_ar}
-                    onChange={(e) => setFormData({...formData, name_ar: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
                   />
                 </div>
               </div>
@@ -218,7 +217,7 @@ function SandboxCreate() {
                   <Label>{t({ en: 'Tagline (English)', ar: 'الشعار (إنجليزي)' })}</Label>
                   <Input
                     value={formData.tagline_en}
-                    onChange={(e) => setFormData({...formData, tagline_en: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, tagline_en: e.target.value })}
                     placeholder="Testing tomorrow's mobility solutions"
                   />
                 </div>
@@ -226,13 +225,13 @@ function SandboxCreate() {
                   <Label>{t({ en: 'Tagline (Arabic)', ar: 'الشعار (عربي)' })}</Label>
                   <Input
                     value={formData.tagline_ar}
-                    onChange={(e) => setFormData({...formData, tagline_ar: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, tagline_ar: e.target.value })}
                   />
                 </div>
               </div>
               <div>
                 <Label>{t({ en: 'Domain *', ar: 'المجال *' })}</Label>
-                <Select value={formData.domain} onValueChange={(val) => setFormData({...formData, domain: val})}>
+                <Select value={formData.domain} onValueChange={(val) => setFormData({ ...formData, domain: val })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -252,7 +251,7 @@ function SandboxCreate() {
                 <Label>{t({ en: 'Description (English)', ar: 'الوصف (إنجليزي)' })}</Label>
                 <Textarea
                   value={formData.description_en}
-                  onChange={(e) => setFormData({...formData, description_en: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
                   rows={4}
                 />
               </div>
@@ -260,18 +259,18 @@ function SandboxCreate() {
                 <Label>{t({ en: 'Description (Arabic)', ar: 'الوصف (عربي)' })}</Label>
                 <Textarea
                   value={formData.description_ar}
-                  onChange={(e) => setFormData({...formData, description_ar: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
                   rows={4}
                 />
               </div>
-              
+
               {/* Strategic Alignment Section */}
               <div className="border-t pt-4 mt-4">
                 <StrategicPlanSelector
                   selectedPlanIds={formData.strategic_plan_ids}
                   selectedObjectiveIds={formData.strategic_objective_ids}
-                  onPlanChange={(ids) => setFormData({...formData, strategic_plan_ids: ids, is_strategy_derived: ids.length > 0})}
-                  onObjectiveChange={(ids) => setFormData({...formData, strategic_objective_ids: ids})}
+                  onPlanChange={(ids) => setFormData({ ...formData, strategic_plan_ids: ids, is_strategy_derived: ids.length > 0 })}
+                  onObjectiveChange={(ids) => setFormData({ ...formData, strategic_objective_ids: ids })}
                   showObjectives={true}
                 />
               </div>
@@ -283,7 +282,7 @@ function SandboxCreate() {
             <>
               <div>
                 <Label>{t({ en: 'City *', ar: 'المدينة *' })}</Label>
-                <Select value={formData.city_id} onValueChange={(val) => setFormData({...formData, city_id: val})}>
+                <Select value={formData.city_id} onValueChange={(val) => setFormData({ ...formData, city_id: val })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select city" />
                   </SelectTrigger>
@@ -296,7 +295,7 @@ function SandboxCreate() {
               </div>
               <div>
                 <Label>{t({ en: 'Managing Organization', ar: 'المنظمة المسؤولة' })}</Label>
-                <Select value={formData.organization_id} onValueChange={(val) => setFormData({...formData, organization_id: val})}>
+                <Select value={formData.organization_id} onValueChange={(val) => setFormData({ ...formData, organization_id: val })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select organization" />
                   </SelectTrigger>
@@ -309,7 +308,7 @@ function SandboxCreate() {
               </div>
               <div>
                 <Label>{t({ en: 'Linked Living Lab', ar: 'المختبر الحي المرتبط' })}</Label>
-                <Select value={formData.living_lab_id || 'none'} onValueChange={(val) => setFormData({...formData, living_lab_id: val === 'none' ? null : val})}>
+                <Select value={formData.living_lab_id || 'none'} onValueChange={(val) => setFormData({ ...formData, living_lab_id: val === 'none' ? null : val })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Optional" />
                   </SelectTrigger>
@@ -325,7 +324,7 @@ function SandboxCreate() {
                 <Label>{t({ en: 'Address', ar: 'العنوان' })}</Label>
                 <Input
                   value={formData.address}
-                  onChange={(e) => setFormData({...formData, address: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -334,7 +333,7 @@ function SandboxCreate() {
                   <Input
                     type="number"
                     value={formData.area_sqm}
-                    onChange={(e) => setFormData({...formData, area_sqm: parseFloat(e.target.value)})}
+                    onChange={(e) => setFormData({ ...formData, area_sqm: parseFloat(e.target.value) })}
                   />
                 </div>
                 <div>
@@ -342,14 +341,14 @@ function SandboxCreate() {
                   <Input
                     type="number"
                     value={formData.capacity}
-                    onChange={(e) => setFormData({...formData, capacity: parseInt(e.target.value)})}
+                    onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) })}
                   />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>{t({ en: 'Status', ar: 'الحالة' })}</Label>
-                  <Select value={formData.status} onValueChange={(val) => setFormData({...formData, status: val})}>
+                  <Select value={formData.status} onValueChange={(val) => setFormData({ ...formData, status: val })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -365,7 +364,7 @@ function SandboxCreate() {
                   <Input
                     type="date"
                     value={formData.launch_date}
-                    onChange={(e) => setFormData({...formData, launch_date: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, launch_date: e.target.value })}
                   />
                 </div>
               </div>
@@ -383,7 +382,7 @@ function SandboxCreate() {
                       checked={formData.connectivity['5g_available']}
                       onCheckedChange={(checked) => setFormData({
                         ...formData,
-                        connectivity: {...formData.connectivity, '5g_available': checked}
+                        connectivity: { ...formData.connectivity, '5g_available': checked }
                       })}
                     />
                     <span className="text-sm">5G Network Available</span>
@@ -393,7 +392,7 @@ function SandboxCreate() {
                       checked={formData.connectivity.iot_network}
                       onCheckedChange={(checked) => setFormData({
                         ...formData,
-                        connectivity: {...formData.connectivity, iot_network: checked}
+                        connectivity: { ...formData.connectivity, iot_network: checked }
                       })}
                     />
                     <span className="text-sm">IoT Network</span>
@@ -403,7 +402,7 @@ function SandboxCreate() {
                       checked={formData.connectivity.edge_computing}
                       onCheckedChange={(checked) => setFormData({
                         ...formData,
-                        connectivity: {...formData.connectivity, edge_computing: checked}
+                        connectivity: { ...formData.connectivity, edge_computing: checked }
                       })}
                     />
                     <span className="text-sm">Edge Computing</span>
@@ -417,7 +416,7 @@ function SandboxCreate() {
                   value={formData.connectivity.fiber_speed_mbps}
                   onChange={(e) => setFormData({
                     ...formData,
-                    connectivity: {...formData.connectivity, fiber_speed_mbps: parseInt(e.target.value)}
+                    connectivity: { ...formData.connectivity, fiber_speed_mbps: parseInt(e.target.value) }
                   })}
                 />
               </div>
@@ -425,14 +424,14 @@ function SandboxCreate() {
                 <Label>{t({ en: 'Operational Hours', ar: 'ساعات التشغيل' })}</Label>
                 <Input
                   value={formData.operational_hours}
-                  onChange={(e) => setFormData({...formData, operational_hours: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, operational_hours: e.target.value })}
                 />
               </div>
               <div>
                 <Label>{t({ en: 'Regulatory Framework', ar: 'الإطار التنظيمي' })}</Label>
                 <Textarea
                   value={formData.regulatory_framework}
-                  onChange={(e) => setFormData({...formData, regulatory_framework: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, regulatory_framework: e.target.value })}
                   rows={3}
                 />
               </div>
@@ -450,7 +449,7 @@ function SandboxCreate() {
                     value={formData.usage_fees.daily_rate}
                     onChange={(e) => setFormData({
                       ...formData,
-                      usage_fees: {...formData.usage_fees, daily_rate: parseFloat(e.target.value)}
+                      usage_fees: { ...formData.usage_fees, daily_rate: parseFloat(e.target.value) }
                     })}
                   />
                 </div>
@@ -461,7 +460,7 @@ function SandboxCreate() {
                     value={formData.usage_fees.monthly_rate}
                     onChange={(e) => setFormData({
                       ...formData,
-                      usage_fees: {...formData.usage_fees, monthly_rate: parseFloat(e.target.value)}
+                      usage_fees: { ...formData.usage_fees, monthly_rate: parseFloat(e.target.value) }
                     })}
                   />
                 </div>
@@ -470,7 +469,7 @@ function SandboxCreate() {
                 <Label>{t({ en: 'Manager Name', ar: 'اسم المدير' })}</Label>
                 <Input
                   value={formData.manager_name}
-                  onChange={(e) => setFormData({...formData, manager_name: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, manager_name: e.target.value })}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -479,14 +478,14 @@ function SandboxCreate() {
                   <Input
                     type="email"
                     value={formData.manager_email}
-                    onChange={(e) => setFormData({...formData, manager_email: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, manager_email: e.target.value })}
                   />
                 </div>
                 <div>
                   <Label>{t({ en: 'Manager Phone', ar: 'هاتف المدير' })}</Label>
                   <Input
                     value={formData.manager_phone}
-                    onChange={(e) => setFormData({...formData, manager_phone: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, manager_phone: e.target.value })}
                   />
                 </div>
               </div>
@@ -520,7 +519,7 @@ function SandboxCreate() {
 
               <div className="border-t pt-6 space-y-4">
                 <h3 className="font-semibold text-slate-900">{t({ en: 'Sandbox Media', ar: 'وسائط المنطقة' })}</h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>{t({ en: 'Sandbox Image', ar: 'صورة المنطقة' })}</Label>
@@ -528,7 +527,7 @@ function SandboxCreate() {
                       type="image"
                       label={t({ en: 'Upload Image', ar: 'رفع صورة' })}
                       maxSize={10}
-                      onUploadComplete={(url) => setFormData({...formData, image_url: url})}
+                      onUploadComplete={(url) => setFormData({ ...formData, image_url: url })}
                     />
                   </div>
 
@@ -539,7 +538,7 @@ function SandboxCreate() {
                       label={t({ en: 'Upload Video', ar: 'رفع فيديو' })}
                       maxSize={200}
                       preview={false}
-                      onUploadComplete={(url) => setFormData({...formData, video_url: url})}
+                      onUploadComplete={(url) => setFormData({ ...formData, video_url: url })}
                     />
                   </div>
                 </div>
@@ -551,7 +550,7 @@ function SandboxCreate() {
                     label={t({ en: 'Upload PDF', ar: 'رفع PDF' })}
                     maxSize={50}
                     preview={false}
-                    onUploadComplete={(url) => setFormData({...formData, brochure_url: url})}
+                    onUploadComplete={(url) => setFormData({ ...formData, brochure_url: url })}
                   />
                 </div>
               </div>
@@ -559,7 +558,7 @@ function SandboxCreate() {
               <div className="flex items-center gap-2">
                 <Checkbox
                   checked={formData.is_published}
-                  onCheckedChange={(checked) => setFormData({...formData, is_published: checked})}
+                  onCheckedChange={(checked) => setFormData({ ...formData, is_published: checked })}
                 />
                 <span className="text-sm">{t({ en: 'Publish immediately', ar: 'النشر فورًا' })}</span>
               </div>
@@ -587,7 +586,7 @@ function SandboxCreate() {
               </Button>
             ) : (
               <Button
-                onClick={() => createMutation.mutate(formData)}
+                onClick={handleCreate}
                 disabled={createMutation.isPending}
                 className="bg-gradient-to-r from-green-600 to-teal-600"
               >

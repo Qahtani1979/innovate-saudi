@@ -1,12 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
 import { Building2, FileText, Award, Users } from 'lucide-react';
-import { toast } from 'sonner';
 import ScreeningChecklist from '../components/matchmaker/ScreeningChecklist';
 import EvaluationRubrics from '../components/matchmaker/EvaluationRubrics';
 import StrategicChallengeMapper from '../components/matchmaker/StrategicChallengeMapper';
@@ -22,127 +19,57 @@ import PilotConversionWizard from '../components/matchmaker/PilotConversionWizar
 import SolutionProposalWizard from '../components/matchmaker/SolutionProposalWizard';
 import EngagementScheduler from '../components/matchmaker/EngagementScheduler';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useMatchmakerApplicationDetails } from '@/hooks/useMatchmakerApplicationDetails';
 
-export default function MatchmakerApplicationDetail() {
+function MatchmakerApplicationDetail() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(window.location.search);
   const applicationId = urlParams.get('id');
 
-  const { data: application, isLoading } = useQuery({
-    queryKey: ['matchmaker-application', applicationId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('matchmaker_applications')
-        .select('*')
-        .eq('id', applicationId)
-        .single();
+  // Use gold standard hook
+  const {
+    useApplication,
+    useMatchedChallenges,
+    useConvertedPilots,
+    useExpertEvaluations,
+    updateApplication,
+    createEvaluationSession
+  } = useMatchmakerApplicationDetails(applicationId);
 
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!applicationId
-  });
+  const { data: application, isLoading } = useApplication();
+  const { data: matchedChallenges = [] } = useMatchedChallenges(application);
+  const { data: convertedPilots = [] } = useConvertedPilots(application);
+  const { data: expertEvaluations = [] } = useExpertEvaluations();
 
-  const { data: matchedChallenges = [] } = useQuery({
-    queryKey: ['matched-challenges', applicationId],
-    queryFn: async () => {
-      if (!application?.matched_challenges?.length) return [];
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*')
-        .in('id', application.matched_challenges);
+  // Handle evaluation session creation with application update
+  const handleEvaluationSession = (sessionData) => {
+    const baseScore = sessionData.calculated_base_score;
+    const bonusPoints = application.strategic_challenges?.reduce((sum, c) => sum + (c.bonus_points || 0), 0) || 0;
+    const totalScore = baseScore + bonusPoints;
 
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!application
-  });
-
-  const { data: convertedPilots = [] } = useQuery({
-    queryKey: ['converted-pilots', applicationId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('solution_id', application.organization_id);
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!application
-  });
-
-  const { data: expertEvaluations = [] } = useQuery({
-    queryKey: ['matchmaker-expert-evaluations', applicationId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('expert_evaluations')
-        .select('*')
-        .eq('entity_type', 'matchmaker_application')
-        .eq('entity_id', applicationId);
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!applicationId
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }) => {
-      const { data: updated, error } = await supabase
-        .from('matchmaker_applications')
-        .update(data)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return updated;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['matchmaker-application', applicationId]);
-      toast.success(t({ en: 'Updated successfully', ar: 'تم التحديث بنجاح' }));
+    let classification = 'not_qualified';
+    if (totalScore >= 85 && baseScore >= 75 && bonusPoints >= 10) {
+      classification = 'fast_pass';
+    } else if (totalScore >= 75) {
+      classification = 'strong_qualified';
+    } else if (totalScore >= 60) {
+      classification = 'conditional';
     }
-  });
 
-  const createEvaluationSession = useMutation({
-    mutationFn: async (sessionData) => {
-      // Logic moved to client - simply calculate and return data for next step
-      // In a real app we might log this session to a `matchmaker_evaluation_sessions` table if it existed
-      return sessionData;
-    },
-    onSuccess: (response) => {
-      // Update application with calculated scores
-      const baseScore = response.calculated_base_score;
-      const bonusPoints = application.strategic_challenges?.reduce((sum, c) => sum + (c.bonus_points || 0), 0) || 0;
-      const totalScore = baseScore + bonusPoints;
-
-      let classification = 'not_qualified';
-      if (totalScore >= 85 && baseScore >= 75 && bonusPoints >= 10) {
-        classification = 'fast_pass';
-      } else if (totalScore >= 75) {
-        classification = 'strong_qualified';
-      } else if (totalScore >= 60) {
-        classification = 'conditional';
+    updateApplication.mutate({
+      id: applicationId,
+      data: {
+        evaluation_score: {
+          ...sessionData.scores,
+          base_score: baseScore,
+          bonus_points: bonusPoints,
+          total_score: totalScore
+        },
+        classification,
+        stage: 'detailed_evaluation'
       }
-
-      updateMutation.mutate({
-        id: applicationId,
-        data: {
-          evaluation_score: {
-            ...response.scores,
-            base_score: baseScore,
-            bonus_points: bonusPoints,
-            total_score: totalScore
-          },
-          classification,
-          stage: 'detailed_evaluation',
-          // evaluation_date: new Date().toISOString().split('T')[0] // Use DB default or current date
-        }
-      });
-    }
-  });
+    });
+  };
 
   if (isLoading) {
     return <div className="text-center py-12">{t({ en: 'Loading...', ar: 'جاري التحميل...' })}</div>;
@@ -245,7 +172,7 @@ export default function MatchmakerApplicationDetail() {
           <ScreeningChecklist
             application={application}
             onComplete={(screeningData) => {
-              updateMutation.mutate({
+              updateApplication.mutate({
                 id: applicationId,
                 data: {
                   intake_gate: screeningData,
@@ -260,7 +187,7 @@ export default function MatchmakerApplicationDetail() {
           <StakeholderReviewGate
             application={application}
             onComplete={(reviewData) => {
-              updateMutation.mutate({
+              updateApplication.mutate({
                 id: applicationId,
                 data: {
                   stakeholder_review_gate: reviewData,
@@ -275,7 +202,7 @@ export default function MatchmakerApplicationDetail() {
           <EvaluationRubrics
             application={application}
             sessionType="post_meeting"
-            onSave={(sessionData) => createEvaluationSession.mutate(sessionData)}
+            onSave={(sessionData) => handleEvaluationSession(sessionData)}
           />
         </TabsContent>
 
@@ -284,7 +211,7 @@ export default function MatchmakerApplicationDetail() {
             application={application}
             onUpdate={(challenges) => {
               const bonusPoints = challenges.reduce((sum, c) => sum + (c.bonus_points || 0), 0);
-              updateMutation.mutate({
+              updateApplication.mutate({
                 id: applicationId,
                 data: {
                   strategic_challenges: challenges,
@@ -299,7 +226,7 @@ export default function MatchmakerApplicationDetail() {
           <ExecutiveReviewGate
             application={application}
             onComplete={(executiveData) => {
-              updateMutation.mutate({
+              updateApplication.mutate({
                 id: applicationId,
                 data: {
                   executive_review_gate: {
@@ -319,7 +246,7 @@ export default function MatchmakerApplicationDetail() {
           <EnhancedMatchingEngine
             application={application}
             onMatchComplete={(matches) => {
-              updateMutation.mutate({
+              updateApplication.mutate({
                 id: applicationId,
                 data: {
                   matched_challenges: matches.map(m => m.id)
@@ -334,7 +261,7 @@ export default function MatchmakerApplicationDetail() {
             application={application}
             matchedChallenges={matchedChallenges}
             onApprove={(qualityData) => {
-              updateMutation.mutate({
+              updateApplication.mutate({
                 id: applicationId,
                 data: {
                   match_quality_score: qualityData.overall_quality,
@@ -349,7 +276,7 @@ export default function MatchmakerApplicationDetail() {
           <EngagementReadinessGate
             application={application}
             onComplete={(readinessData) => {
-              updateMutation.mutate({
+              updateApplication.mutate({
                 id: applicationId,
                 data: {
                   engagement_readiness: readinessData,
@@ -385,7 +312,7 @@ export default function MatchmakerApplicationDetail() {
           <MatchmakerEngagementHub
             application={application}
             onUpdate={(data) => {
-              updateMutation.mutate({
+              updateApplication.mutate({
                 id: applicationId,
                 data
               });

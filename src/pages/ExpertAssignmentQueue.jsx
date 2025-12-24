@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useExpertAssignments } from '@/hooks/useExpertData';
+import { useExpertAssignmentMutations } from '@/hooks/useExpertAssignmentMutations';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client'; // Kept for details fetching
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Button } from "@/components/ui/button";
@@ -26,24 +28,10 @@ import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function ExpertAssignmentQueue() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('pending');
   const { user } = useAuth();
 
-  const { data: assignments = [], isLoading } = useQuery({
-    queryKey: ['expert-assignments', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data, error } = await supabase
-        .from('expert_assignments')
-        .select('*')
-        .eq('expert_email', user.email)
-        .neq('is_deleted', true);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
+  const { data: assignments = [], isLoading } = useExpertAssignments(user?.email);
 
   // Fetch entity details for each assignment
   const { data: assignmentDetails = [] } = useQuery({
@@ -54,21 +42,14 @@ function ExpertAssignmentQueue() {
         assignments.map(async (a) => {
           try {
             let entity;
-            if (a.entity_type === 'challenge') {
-              const challenges = await base44.entities.Challenge.list();
-              entity = challenges.find(c => c.id === a.entity_id);
-            } else if (a.entity_type === 'pilot') {
-              const pilots = await base44.entities.Pilot.list();
-              entity = pilots.find(p => p.id === a.entity_id);
-            } else if (a.entity_type === 'solution') {
-              const solutions = await base44.entities.Solution.list();
-              entity = solutions.find(s => s.id === a.entity_id);
-            } else if (a.entity_type === 'program') {
-              const programs = await base44.entities.Program.list();
-              entity = programs.find(p => p.id === a.entity_id);
-            } else if (a.entity_type === 'rd_proposal') {
-              const proposals = await base44.entities.RDProposal.list();
-              entity = proposals.find(p => p.id === a.entity_id);
+            const { data, error } = await supabase
+              .from(a.entity_type === 'rd_proposal' ? 'rd_proposals' : `${a.entity_type}s`)
+              .select('*')
+              .eq('id', a.entity_id)
+              .single();
+
+            if (!error) {
+              entity = data;
             }
             return { ...a, entity };
           } catch {
@@ -81,27 +62,8 @@ function ExpertAssignmentQueue() {
     enabled: assignments.length > 0
   });
 
-  const acceptMutation = useMutation({
-    mutationFn: (id) => base44.entities.ExpertAssignment.update(id, {
-      status: 'accepted',
-      accepted_date: new Date().toISOString()
-    }),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['expert-assignments']);
-      toast.success(t({ en: 'Assignment accepted', ar: 'تم قبول المهمة' }));
-    }
-  });
+  const { acceptAssignment, declineAssignment } = useExpertAssignmentMutations();
 
-  const declineMutation = useMutation({
-    mutationFn: ({ id, reason }) => base44.entities.ExpertAssignment.update(id, {
-      status: 'declined',
-      declined_reason: reason
-    }),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['expert-assignments']);
-      toast.success(t({ en: 'Assignment declined', ar: 'تم رفض المهمة' }));
-    }
-  });
 
   const pendingAssignments = assignmentDetails.filter(a => a.status === 'pending');
   const activeAssignments = assignmentDetails.filter(a => ['accepted', 'in_progress'].includes(a.status));
@@ -269,11 +231,11 @@ function ExpertAssignmentQueue() {
 
                   <div className="flex gap-3">
                     <Button
-                      onClick={() => acceptMutation.mutate(assignment.id)}
-                      disabled={acceptMutation.isPending}
+                      onClick={() => acceptAssignment.mutate(assignment.id)}
+                      disabled={acceptAssignment.isPending}
                       className="bg-green-600 hover:bg-green-700"
                     >
-                      {acceptMutation.isPending ? (
+                      {acceptAssignment.isPending ? (
                         <Loader2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} animate-spin`} />
                       ) : (
                         <CheckCircle2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
@@ -285,10 +247,10 @@ function ExpertAssignmentQueue() {
                       onClick={() => {
                         const reason = prompt(t({ en: 'Reason for declining (optional):', ar: 'سبب الرفض (اختياري):' }));
                         if (reason !== null) {
-                          declineMutation.mutate({ id: assignment.id, reason });
+                          declineAssignment.mutate({ id: assignment.id, reason });
                         }
                       }}
-                      disabled={declineMutation.isPending}
+                      disabled={declineAssignment.isPending}
                     >
                       <XCircle className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                       {t({ en: 'Decline', ar: 'رفض' })}

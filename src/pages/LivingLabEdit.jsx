@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,29 +10,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '../components/LanguageContext';
 import { Save, Loader2, Sparkles, Beaker, Target } from 'lucide-react';
 import FileUploader from '../components/FileUploader';
-import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import StrategicPlanSelector from '@/components/strategy/StrategicPlanSelector';
+import { useLivingLab, useLivingLabMutations } from '@/hooks/useLivingLab';
 
 function LivingLabEdit() {
   const urlParams = new URLSearchParams(window.location.search);
   const labId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: lab, isLoading } = useQuery({
-    queryKey: ['living-lab', labId],
-    queryFn: async () => {
-      const labs = await base44.entities.LivingLab.list();
-      return labs.find(l => l.id === labId);
-    },
-    enabled: !!labId
-  });
+  // Use custom hooks
+  const { data: lab, isLoading } = useLivingLab(labId);
+  const { updateLivingLab } = useLivingLabMutations(labId);
 
   const [formData, setFormData] = useState(null);
 
@@ -42,7 +34,7 @@ function LivingLabEdit() {
     if (lab && !formData) {
       setFormData(lab);
     }
-  }, [lab]);
+  }, [lab, formData]);
 
   const handleAIEnhancement = async () => {
     const response = await invokeAI({
@@ -71,18 +63,8 @@ Provide bilingual improvements:
 
     if (response.success) {
       setFormData({ ...formData, ...response.data });
-      toast.success(t({ en: 'AI enhanced content', ar: 'حسّن الذكاء المحتوى' }));
     }
   };
-
-  const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.LivingLab.update(labId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['living-lab', labId]);
-      toast.success(t({ en: 'Living lab updated', ar: 'تم تحديث المختبر' }));
-      navigate(createPageUrl(`LivingLabDetail?id=${labId}`));
-    }
-  });
 
   if (isLoading || !formData) {
     return (
@@ -97,29 +79,28 @@ Provide bilingual improvements:
       <PageHeader
         icon={Beaker}
         title={{ en: 'Edit Living Lab', ar: 'تعديل المختبر الحي' }}
-        description={formData.name_en}
-      />
+        description={formData.name_en} subtitle={undefined} action={undefined} actions={undefined} />
 
       <Card>
         <CardHeader>
           <CardTitle>{t({ en: 'Lab Information', ar: 'معلومات المختبر' })}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={undefined} />
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Name (English)</Label>
               <Input
                 value={formData.name_en}
-                onChange={(e) => setFormData({...formData, name_en: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
               />
             </div>
             <div className="space-y-2">
               <Label>الاسم (عربي)</Label>
               <Input
                 value={formData.name_ar || ''}
-                onChange={(e) => setFormData({...formData, name_ar: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
                 dir="rtl"
               />
             </div>
@@ -130,14 +111,14 @@ Provide bilingual improvements:
               <Label>Tagline (English)</Label>
               <Input
                 value={formData.tagline_en || ''}
-                onChange={(e) => setFormData({...formData, tagline_en: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, tagline_en: e.target.value })}
               />
             </div>
             <div className="space-y-2">
               <Label>الشعار (عربي)</Label>
               <Input
                 value={formData.tagline_ar || ''}
-                onChange={(e) => setFormData({...formData, tagline_ar: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, tagline_ar: e.target.value })}
                 dir="rtl"
               />
             </div>
@@ -147,7 +128,7 @@ Provide bilingual improvements:
             <Label>Description (English)</Label>
             <Textarea
               value={formData.description_en || ''}
-              onChange={(e) => setFormData({...formData, description_en: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
               rows={4}
             />
           </div>
@@ -156,7 +137,7 @@ Provide bilingual improvements:
             <Label>الوصف (عربي)</Label>
             <Textarea
               value={formData.description_ar || ''}
-              onChange={(e) => setFormData({...formData, description_ar: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
               rows={4}
               dir="rtl"
             />
@@ -167,7 +148,7 @@ Provide bilingual improvements:
               <Label>Type</Label>
               <Select
                 value={formData.type}
-                onValueChange={(v) => setFormData({...formData, type: v})}
+                onValueChange={(v) => setFormData({ ...formData, type: v })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -183,7 +164,7 @@ Provide bilingual improvements:
               <Label>Status</Label>
               <Select
                 value={formData.status}
-                onValueChange={(v) => setFormData({...formData, status: v})}
+                onValueChange={(v) => setFormData({ ...formData, status: v })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -205,7 +186,7 @@ Provide bilingual improvements:
               <Input
                 type="number"
                 value={formData.capacity || ''}
-                onChange={(e) => setFormData({...formData, capacity: parseInt(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) })}
               />
             </div>
             <div className="space-y-2">
@@ -213,7 +194,7 @@ Provide bilingual improvements:
               <Input
                 type="number"
                 value={formData.area_sqm || ''}
-                onChange={(e) => setFormData({...formData, area_sqm: parseFloat(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, area_sqm: parseFloat(e.target.value) })}
               />
             </div>
             <div className="space-y-2">
@@ -221,7 +202,7 @@ Provide bilingual improvements:
               <Input
                 type="date"
                 value={formData.launch_date || ''}
-                onChange={(e) => setFormData({...formData, launch_date: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, launch_date: e.target.value })}
               />
             </div>
           </div>
@@ -230,7 +211,7 @@ Provide bilingual improvements:
             <Label>Address</Label>
             <Input
               value={formData.address || ''}
-              onChange={(e) => setFormData({...formData, address: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
             />
           </div>
 
@@ -239,7 +220,7 @@ Provide bilingual improvements:
               <Label>Director Name</Label>
               <Input
                 value={formData.director_name || ''}
-                onChange={(e) => setFormData({...formData, director_name: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, director_name: e.target.value })}
               />
             </div>
             <div className="space-y-2">
@@ -247,7 +228,7 @@ Provide bilingual improvements:
               <Input
                 type="email"
                 value={formData.director_email || ''}
-                onChange={(e) => setFormData({...formData, director_email: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, director_email: e.target.value })}
               />
             </div>
           </div>
@@ -261,15 +242,14 @@ Provide bilingual improvements:
             <StrategicPlanSelector
               selectedPlanIds={formData.strategic_plan_ids || []}
               selectedObjectiveIds={formData.strategic_objective_ids || []}
-              onPlanChange={(ids) => setFormData({...formData, strategic_plan_ids: ids, is_strategy_derived: ids.length > 0})}
-              onObjectiveChange={(ids) => setFormData({...formData, strategic_objective_ids: ids})}
-              showObjectives={true}
-            />
+              onPlanChange={(ids) => setFormData({ ...formData, strategic_plan_ids: ids, is_strategy_derived: ids.length > 0 })}
+              onObjectiveChange={(ids) => setFormData({ ...formData, strategic_objective_ids: ids })}
+              showObjectives={true} label={undefined} />
           </div>
 
           <div className="border-t pt-6 space-y-4">
             <h3 className="font-semibold text-slate-900">{t({ en: 'Lab Media', ar: 'وسائط المختبر' })}</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t({ en: 'Lab Image', ar: 'صورة المختبر' })}</Label>
@@ -277,8 +257,7 @@ Provide bilingual improvements:
                   type="image"
                   label={t({ en: 'Upload Image', ar: 'رفع صورة' })}
                   maxSize={10}
-                  onUploadComplete={(url) => setFormData({...formData, image_url: url})}
-                />
+                  onUploadComplete={(url) => setFormData({ ...formData, image_url: url })} description={undefined} />
               </div>
 
               <div className="space-y-2">
@@ -288,8 +267,7 @@ Provide bilingual improvements:
                   label={t({ en: 'Upload Video', ar: 'رفع فيديو' })}
                   maxSize={200}
                   preview={false}
-                  onUploadComplete={(url) => setFormData({...formData, video_url: url})}
-                />
+                  onUploadComplete={(url) => setFormData({ ...formData, video_url: url })} description={undefined} />
               </div>
             </div>
 
@@ -300,14 +278,13 @@ Provide bilingual improvements:
                 label={t({ en: 'Upload PDF', ar: 'رفع PDF' })}
                 maxSize={50}
                 preview={false}
-                onUploadComplete={(url) => setFormData({...formData, brochure_url: url})}
-              />
+                onUploadComplete={(url) => setFormData({ ...formData, brochure_url: url })} description={undefined} />
             </div>
           </div>
 
           <div className="flex justify-between pt-6 border-t">
-            <Button 
-              type="button" 
+            <Button
+              type="button"
               onClick={handleAIEnhancement}
               disabled={aiLoading || !isAvailable}
               variant="outline"
@@ -330,11 +307,13 @@ Provide bilingual improvements:
                 {t({ en: 'Cancel', ar: 'إلغاء' })}
               </Button>
               <Button
-                onClick={() => updateMutation.mutate(formData)}
-                disabled={updateMutation.isPending}
+                onClick={() => updateLivingLab.mutate(formData, {
+                  onSuccess: () => navigate(createPageUrl(`LivingLabDetail?id=${labId}`))
+                })}
+                disabled={updateLivingLab.isPending}
                 className="bg-gradient-to-r from-blue-600 to-teal-600"
               >
-                {updateMutation.isPending ? (
+                {updateLivingLab.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     {t({ en: 'Saving...', ar: 'جاري الحفظ...' })}

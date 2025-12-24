@@ -1,4 +1,4 @@
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,8 +16,13 @@ function ContractDetail() {
   const { data: contract, isLoading } = useQuery({
     queryKey: ['contract', contractId],
     queryFn: async () => {
-      const contracts = await base44.entities.Contract.filter({ id: contractId });
-      return contracts[0];
+      const { data, error } = await supabase
+        .from('contracts')
+        .select('*')
+        .eq('id', contractId)
+        .single();
+      if (error) throw error;
+      return data;
     },
     enabled: !!contractId
   });

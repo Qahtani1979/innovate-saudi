@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useMatchingEntities } from '@/hooks/useMatchingEntities';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -16,25 +15,12 @@ function SolutionsCoverageReport() {
   const { language, isRTL, t } = useLanguage();
   const [expandedSections, setExpandedSections] = useState({});
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions-for-coverage'],
-    queryFn: () => base44.entities.Solution.list()
-  });
+  const { useSolutions, useChallenges, usePilots, useOrganizations } = useMatchingEntities();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-for-coverage'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-for-coverage'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: organizations = [] } = useQuery({
-    queryKey: ['organizations-for-coverage'],
-    queryFn: () => base44.entities.Organization.list()
-  });
+  const { data: solutions = [] } = useSolutions({ limit: 1000 });
+  const { data: challenges = [] } = useChallenges({ limit: 1000 });
+  const { data: pilots = [] } = usePilots({ limit: 1000 });
+  const { data: organizations = [] } = useOrganizations({ limit: 1000 });
 
   const toggleSection = (key) => {
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
@@ -1173,7 +1159,7 @@ function SolutionsCoverageReport() {
         <div className="mt-3 p-3 bg-blue-100 rounded-lg border border-blue-300">
           <p className="text-sm text-blue-900">
             <strong>ℹ️ Solution Flow:</strong> Startup enters Matchmaker → AI matches to Challenges → Startup provides Solution → Municipality evaluates → Pilot tests Solution → Sandbox/Lab (if needed) → Deployment/Scaling
-            <br/>
+            <br />
             Solutions are startup OFFERINGS matched to municipal NEEDS via Matchmaker
           </p>
         </div>
@@ -1386,8 +1372,8 @@ function SolutionsCoverageReport() {
                         <h4 className="font-semibold text-slate-900">{page.name}</h4>
                         <Badge className={
                           page.status === 'complete' ? 'bg-green-100 text-green-700' :
-                          page.status === 'exists' ? 'bg-blue-100 text-blue-700' :
-                          'bg-yellow-100 text-yellow-700'
+                            page.status === 'exists' ? 'bg-blue-100 text-blue-700' :
+                              'bg-yellow-100 text-yellow-700'
                         }>
                           {page.status}
                         </Badge>
@@ -1521,25 +1507,23 @@ function SolutionsCoverageReport() {
                   <h4 className="font-semibold text-slate-900 text-lg">{journey.persona}</h4>
                   <Badge className={
                     journey.coverage >= 90 ? 'bg-green-100 text-green-700' :
-                    journey.coverage >= 70 ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-red-100 text-red-700'
+                      journey.coverage >= 70 ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-red-100 text-red-700'
                   }>{journey.coverage}% Complete</Badge>
                 </div>
                 <div className="space-y-2">
                   {journey.journey.map((step, i) => (
                     <div key={i} className="flex items-start gap-3">
                       <div className="flex flex-col items-center">
-                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                          step.status === 'complete' ? 'bg-green-100 text-green-700' :
+                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${step.status === 'complete' ? 'bg-green-100 text-green-700' :
                           step.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
+                            'bg-red-100 text-red-700'
+                          }`}>
                           {i + 1}
                         </div>
                         {i < journey.journey.length - 1 && (
-                          <div className={`w-0.5 h-8 ${
-                            step.status === 'complete' ? 'bg-green-300' : 'bg-slate-200'
-                          }`} />
+                          <div className={`w-0.5 h-8 ${step.status === 'complete' ? 'bg-green-300' : 'bg-slate-200'
+                            }`} />
                         )}
                       </div>
                       <div className="flex-1 pt-1">
@@ -1598,22 +1582,20 @@ function SolutionsCoverageReport() {
           <CardContent>
             <div className="space-y-4">
               {coverageData.aiFeatures.map((ai, idx) => (
-                <div key={idx} className={`p-4 border rounded-lg ${
-                  ai.status === 'implemented' ? 'bg-gradient-to-r from-purple-50 to-pink-50' :
+                <div key={idx} className={`p-4 border rounded-lg ${ai.status === 'implemented' ? 'bg-gradient-to-r from-purple-50 to-pink-50' :
                   ai.status === 'partial' ? 'bg-yellow-50' : 'bg-red-50'
-                }`}>
+                  }`}>
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Sparkles className={`h-5 w-5 ${
-                        ai.status === 'implemented' ? 'text-purple-600' :
+                      <Sparkles className={`h-5 w-5 ${ai.status === 'implemented' ? 'text-purple-600' :
                         ai.status === 'partial' ? 'text-yellow-600' : 'text-red-600'
-                      }`} />
+                        }`} />
                       <h4 className="font-semibold text-slate-900">{ai.name}</h4>
                     </div>
                     <Badge className={
                       ai.status === 'implemented' ? 'bg-green-100 text-green-700' :
-                      ai.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-red-100 text-red-700'
+                        ai.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
                     }>{ai.coverage}%</Badge>
                   </div>
                   <p className="text-sm text-slate-600 mb-2">{ai.description}</p>
@@ -1668,10 +1650,10 @@ function SolutionsCoverageReport() {
               <p className="font-bold text-green-900 mb-2">✅ INPUT Pipeline - 100% COMPLETE</p>
               <p className="text-sm text-green-800">
                 Solutions have <strong>complete traceability</strong> from all platform sources:
-                <br/>✅ Ideas (citizen/provider solution ideas → IdeaToSolutionConverter 233L)
-                <br/>✅ R&D Projects (research outputs → RDToSolutionConverter 327L)
-                <br/>✅ Programs (accelerator graduates → ProgramToSolutionWorkflow 154L)
-                <br/><br/>
+                <br />✅ Ideas (citizen/provider solution ideas → IdeaToSolutionConverter 233L)
+                <br />✅ R&D Projects (research outputs → RDToSolutionConverter 327L)
+                <br />✅ Programs (accelerator graduates → ProgramToSolutionWorkflow 154L)
+                <br /><br />
                 All converters include <strong>AI enhancement, auto-classification, and relation tracking</strong>.
               </p>
             </div>
@@ -1701,11 +1683,10 @@ function SolutionsCoverageReport() {
               <p className="font-semibold text-blue-900 mb-3">→ OUTPUT Conversion Paths (Where Solutions Go)</p>
               <div className="space-y-3">
                 {coverageData.conversionPaths.outgoing.map((path, i) => (
-                  <div key={i} className={`p-3 border-2 rounded-lg ${
-                    path.status === 'complete' ? 'border-green-300 bg-green-50' :
+                  <div key={i} className={`p-3 border-2 rounded-lg ${path.status === 'complete' ? 'border-green-300 bg-green-50' :
                     path.status === 'partial' ? 'border-yellow-300 bg-yellow-50' :
-                    'border-red-300 bg-red-50'
-                  }`}>
+                      'border-red-300 bg-red-50'
+                    }`}>
                     <div className="flex items-center justify-between mb-2">
                       <p className="font-bold flex items-center gap-2">
                         {path.status === 'complete' ? (
@@ -1719,8 +1700,8 @@ function SolutionsCoverageReport() {
                       </p>
                       <Badge className={
                         path.status === 'complete' ? 'bg-green-600 text-white' :
-                        path.status === 'partial' ? 'bg-yellow-600 text-white' :
-                        'bg-red-600 text-white'
+                          path.status === 'partial' ? 'bg-yellow-600 text-white' :
+                            'bg-red-600 text-white'
                       }>{path.coverage || 0}%</Badge>
                     </div>
                     <p className="text-sm text-slate-700 mb-1">{path.description}</p>
@@ -1745,7 +1726,7 @@ function SolutionsCoverageReport() {
                 ))}
               </div>
             </div>
-            
+
             {/* Comparison Summary */}
             <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-300">
               <p className="font-bold text-blue-900 mb-3">📊 Solutions vs Challenges - Conversion Symmetry</p>
@@ -1768,7 +1749,7 @@ function SolutionsCoverageReport() {
               <div className="mt-3 pt-3 border-t border-blue-200">
                 <p className="text-xs text-blue-800">
                   <strong>Key Difference:</strong> Solutions = Provider OFFERINGS (what startups provide) | Challenges = Municipal NEEDS (problems to solve)
-                  <br/>Both have complete bidirectional matching and conversion workflows ✅
+                  <br />Both have complete bidirectional matching and conversion workflows ✅
                 </p>
               </div>
             </div>
@@ -2067,19 +2048,18 @@ function SolutionsCoverageReport() {
         <CardContent>
           <div className="space-y-3">
             {coverageData.recommendations.map((rec, idx) => (
-              <div key={idx} className={`p-4 border-2 rounded-lg ${
-                rec.priority === 'P0' ? 'border-red-300 bg-red-50' :
+              <div key={idx} className={`p-4 border-2 rounded-lg ${rec.priority === 'P0' ? 'border-red-300 bg-red-50' :
                 rec.priority === 'P1' ? 'border-orange-300 bg-orange-50' :
-                rec.priority === 'P2' ? 'border-yellow-300 bg-yellow-50' :
-                'border-blue-300 bg-blue-50'
-              }`}>
+                  rec.priority === 'P2' ? 'border-yellow-300 bg-yellow-50' :
+                    'border-blue-300 bg-blue-50'
+                }`}>
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Badge className={
                       rec.priority === 'P0' ? 'bg-red-600 text-white' :
-                      rec.priority === 'P1' ? 'bg-orange-600 text-white' :
-                      rec.priority === 'P2' ? 'bg-yellow-600 text-white' :
-                      'bg-blue-600 text-white'
+                        rec.priority === 'P1' ? 'bg-orange-600 text-white' :
+                          rec.priority === 'P2' ? 'bg-yellow-600 text-white' :
+                            'bg-blue-600 text-white'
                     }>
                       {rec.priority}
                     </Badge>
@@ -2137,9 +2117,9 @@ function SolutionsCoverageReport() {
             <p className="text-sm font-semibold text-green-900 mb-2">🎉 Complete Implementation</p>
             <p className="text-sm text-green-800">
               Solutions have {overallCoverage}% coverage with <strong>comprehensive workflow system</strong> (100% AI - all 11 features implemented).
-              <br/><br/>
+              <br /><br />
               <strong>Achievements:</strong> Full proposal workflow, contract automation, scaling commercial tracking, input conversions (Idea/R&D/Program), success story automation, expert verification, engagement features, AI enhancement, performance tracking.
-              <br/>
+              <br />
               <strong>Status:</strong> All 68 critical gaps implemented - 1 enhancement opportunity remains (RFP generator).
             </p>
           </div>
@@ -2148,19 +2128,19 @@ function SolutionsCoverageReport() {
             <p className="text-sm font-semibold text-blue-900 mb-2">🎯 Bottom Line - Production Ready</p>
             <p className="text-sm text-blue-800">
               <strong>Solutions MODULE 100% CORE WORKFLOWS COMPLETE</strong> - All critical gaps resolved.
-              <br/>
+              <br />
               <strong>All systems operational:</strong>
-              <br/>✅ INPUT paths (IdeaToSolution 233L, RDToSolution 327L, ProgramToSolution 154L with AI enhancement)
-              <br/>✅ PROPOSAL workflow (ProviderProposalWizard 181L → MunicipalProposalInbox 360L → ProposalToPilotConverter 112L)
-              <br/>✅ CONTRACT automation (ContractGeneratorWizard 280L + ContractPipelineTracker 166L + templates)
-              <br/>✅ SCALING commercial (ProviderScalingCommercial 140L + MultiCityOps 135L + revenue tracking)
-              <br/>✅ SUCCESS stories (autoGenerateSuccessStory 115L + ClientTestimonialsShowcase 110L)
-              <br/>✅ OUTPUT feedback (ratings with auto-aggregation, reviews, performance tracking)
-              <br/>✅ Active engagement (Express Interest 236L, Request Demo 215L, SolutionReview with aggregation)
-              <br/>✅ Technical verifiers (Expert system, blind review option, consensus panel)
-              <br/>✅ Quality features (version history, success stories, deprecation workflow, competitive analysis)
-              <br/>✅ 4-gate approval workflow matching Challenge/Pilot standards
-              <br/><br/>
+              <br />✅ INPUT paths (IdeaToSolution 233L, RDToSolution 327L, ProgramToSolution 154L with AI enhancement)
+              <br />✅ PROPOSAL workflow (ProviderProposalWizard 181L → MunicipalProposalInbox 360L → ProposalToPilotConverter 112L)
+              <br />✅ CONTRACT automation (ContractGeneratorWizard 280L + ContractPipelineTracker 166L + templates)
+              <br />✅ SCALING commercial (ProviderScalingCommercial 140L + MultiCityOps 135L + revenue tracking)
+              <br />✅ SUCCESS stories (autoGenerateSuccessStory 115L + ClientTestimonialsShowcase 110L)
+              <br />✅ OUTPUT feedback (ratings with auto-aggregation, reviews, performance tracking)
+              <br />✅ Active engagement (Express Interest 236L, Request Demo 215L, SolutionReview with aggregation)
+              <br />✅ Technical verifiers (Expert system, blind review option, consensus panel)
+              <br />✅ Quality features (version history, success stories, deprecation workflow, competitive analysis)
+              <br />✅ 4-gate approval workflow matching Challenge/Pilot standards
+              <br /><br />
               <strong>Enhancement Opportunities (1):</strong> RFP generator for procurement workflow
             </p>
           </div>

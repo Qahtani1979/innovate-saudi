@@ -1,12 +1,11 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+﻿import { useQueryClient } from '@tanstack/react-query';
+import { useIdea, useIdeaMutations } from '@/hooks/useCitizenIdeas';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { toast } from 'sonner';
 import {
   Lightbulb, ThumbsUp, MessageSquare, MapPin, User, Calendar,
   CheckCircle2, Sparkles, Network, AlertTriangle, Share2
@@ -22,28 +21,9 @@ function IdeaDetail() {
   const { language, isRTL, t } = useLanguage();
   const urlParams = new URLSearchParams(window.location.search);
   const ideaId = urlParams.get('id');
-  const queryClient = useQueryClient();
 
-  const { data: idea, isLoading } = useQuery({
-    queryKey: ['citizen-idea', ideaId],
-    queryFn: async () => {
-      const ideas = await base44.entities.CitizenIdea.list();
-      return ideas.find(i => i.id === ideaId);
-    },
-    enabled: !!ideaId
-  });
-
-  const voteMutation = useMutation({
-    mutationFn: async () => {
-      await base44.entities.CitizenIdea.update(ideaId, {
-        vote_count: (idea.vote_count || 0) + 1
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['citizen-idea', ideaId]);
-      toast.success(t({ en: 'Vote recorded!', ar: 'تم تسجيل التصويت!' }));
-    }
-  });
+  const { data: idea, isLoading } = useIdea(ideaId);
+  const { voteIdea } = useIdeaMutations();
 
   if (isLoading || !idea) {
     return (
@@ -90,7 +70,7 @@ function IdeaDetail() {
                 )}
                 <div className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
-                  {new Date(idea.created_date).toLocaleDateString()}
+                  {new Date(idea.created_at).toLocaleDateString()}
                 </div>
               </div>
             </div>
@@ -104,12 +84,12 @@ function IdeaDetail() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
               <Button
-                onClick={() => voteMutation.mutate()}
-                disabled={voteMutation.isPending}
+                onClick={() => voteIdea.mutate({ id: ideaId, currentVotes: idea.votes_count })}
+                disabled={voteIdea.isPending}
                 className="gap-2 bg-green-600 hover:bg-green-700"
               >
                 <ThumbsUp className="h-5 w-5" />
-                <span className="text-lg font-bold">{idea.vote_count || 0}</span>
+                <span className="text-lg font-bold">{idea.votes_count || 0}</span>
                 <span>{t({ en: 'Votes', ar: 'أصوات' })}</span>
               </Button>
               <div className="flex items-center gap-2 text-slate-600">
@@ -161,7 +141,7 @@ function IdeaDetail() {
                   <p className="text-xs text-slate-600 mb-2">{t({ en: 'Priority Score', ar: 'نقاط الأولوية' })}</p>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
-                      <div 
+                      <div
                         className="h-full bg-purple-600"
                         style={{ width: `${idea.ai_classification.priority_score || 0}%` }}
                       />
@@ -237,7 +217,7 @@ function IdeaDetail() {
               )}
               <div>
                 <p className="text-xs text-slate-500 mb-1">{t({ en: 'Submitted', ar: 'تاريخ التقديم' })}</p>
-                <p className="font-medium">{new Date(idea.created_date).toLocaleDateString()}</p>
+                <p className="font-medium">{new Date(idea.created_at).toLocaleDateString()}</p>
               </div>
             </CardContent>
           </Card>
@@ -277,9 +257,9 @@ function IdeaDetail() {
         entityId={ideaId}
         currentStage={
           idea.status === 'submitted' ? 'screening' :
-          idea.status === 'under_review' ? 'review' :
-          idea.status === 'approved' ? 'approved' :
-          idea.status === 'rejected' ? 'rejected' : 'screening'
+            idea.status === 'under_review' ? 'review' :
+              idea.status === 'approved' ? 'approved' :
+                idea.status === 'rejected' ? 'rejected' : 'screening'
         }
       />
 

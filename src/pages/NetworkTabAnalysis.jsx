@@ -1,6 +1,10 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
+import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
+import { useRDProjects } from '@/hooks/useRDProjects';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -12,30 +16,11 @@ function NetworkTabAnalysis() {
   const { t, isRTL } = useLanguage();
   const [selectedEntity, setSelectedEntity] = useState('Challenge');
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-network'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-network'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions-network'],
-    queryFn: () => base44.entities.Solution.list()
-  });
-
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs-network'],
-    queryFn: () => base44.entities.Program.list()
-  });
-
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-network'],
-    queryFn: () => base44.entities.RDProject.list()
-  });
+  const { data: challenges = [] } = useChallengesWithVisibility({ includeAll: true });
+  const { data: pilots = [] } = usePilotsWithVisibility({ includeAll: true });
+  const { data: solutions = [] } = useSolutionsWithVisibility({ includeAll: true });
+  const { data: programs = [] } = useProgramsWithVisibility({ includeAll: true });
+  const { data: rdProjects = [] } = useRDProjects();
 
   const entityNetworkAnalysis = {
     Challenge: {
@@ -150,8 +135,8 @@ function NetworkTabAnalysis() {
           <Progress value={networkScore} className="h-4 mb-4" />
           <p className="text-sm text-slate-600">
             {networkScore >= 80 ? '✅ Excellent network connectivity' :
-             networkScore >= 50 ? '⚠️ Moderate connectivity - room for improvement' :
-             '🚨 Low connectivity - many isolated entities'}
+              networkScore >= 50 ? '⚠️ Moderate connectivity - room for improvement' :
+                '🚨 Low connectivity - many isolated entities'}
           </p>
         </CardContent>
       </Card>

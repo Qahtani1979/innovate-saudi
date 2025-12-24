@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useOrganizationsWithVisibility } from '@/hooks/useOrganizationsWithVisibility';
+import { usePartnershipsWithVisibility } from '@/hooks/usePartnershipsWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -16,15 +16,8 @@ function OrganizationsCoverageReport() {
   const { language, isRTL, t } = useLanguage();
   const [expandedSections, setExpandedSections] = useState({});
 
-  const { data: organizations = [] } = useQuery({
-    queryKey: ['organizations-coverage'],
-    queryFn: () => base44.entities.Organization.list()
-  });
-
-  const { data: partnerships = [] } = useQuery({
-    queryKey: ['partnerships-coverage'],
-    queryFn: () => base44.entities.OrganizationPartnership.list()
-  });
+  const { data: organizations = [] } = useOrganizationsWithVisibility({ includeAll: true });
+  const { data: partnerships = [] } = usePartnershipsWithVisibility({ includeAll: true });
 
   const toggleSection = (key) => {
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
@@ -1273,8 +1266,8 @@ function OrganizationsCoverageReport() {
                     <div key={i} className="flex items-start gap-3">
                       <div className="flex flex-col items-center">
                         <div className={`h-8 w-8 rounded-full flex items-center justify-center ${step.status === 'complete' ? 'bg-green-100 text-green-700' :
-                            step.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-red-100 text-red-700'
+                          step.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-red-100 text-red-700'
                           }`}>
                           {i + 1}
                         </div>
@@ -1347,12 +1340,12 @@ function OrganizationsCoverageReport() {
             <div className="space-y-4">
               {coverageData.aiFeatures.map((ai, idx) => (
                 <div key={idx} className={`p-4 border rounded-lg ${ai.status === 'implemented' ? 'bg-gradient-to-r from-purple-50 to-pink-50' :
-                    ai.status === 'partial' ? 'bg-yellow-50' : 'bg-red-50'
+                  ai.status === 'partial' ? 'bg-yellow-50' : 'bg-red-50'
                   }`}>
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <Sparkles className={`h-5 w-5 ${ai.status === 'implemented' ? 'text-purple-600' :
-                          ai.status === 'partial' ? 'text-yellow-600' : 'text-red-600'
+                        ai.status === 'partial' ? 'text-yellow-600' : 'text-red-600'
                         }`} />
                       <h4 className="font-semibold text-slate-900">{ai.name}</h4>
                     </div>
@@ -1432,8 +1425,8 @@ function OrganizationsCoverageReport() {
               <div className="space-y-3">
                 {coverageData.conversionPaths.incoming.map((path, i) => (
                   <div key={i} className={`p-3 border-2 rounded-lg ${path.coverage >= 80 ? 'border-green-300 bg-green-50' :
-                      path.coverage >= 50 ? 'border-yellow-300 bg-yellow-50' :
-                        'border-red-300 bg-red-50'
+                    path.coverage >= 50 ? 'border-yellow-300 bg-yellow-50' :
+                      'border-red-300 bg-red-50'
                     }`}>
                     <div className="flex items-center justify-between mb-2">
                       <p className="font-bold">{path.path}</p>
@@ -1462,8 +1455,8 @@ function OrganizationsCoverageReport() {
               <div className="space-y-3">
                 {coverageData.conversionPaths.outgoing.map((path, i) => (
                   <div key={i} className={`p-3 border-2 rounded-lg ${path.coverage >= 80 ? 'border-green-300 bg-green-50' :
-                      path.coverage >= 50 ? 'border-yellow-300 bg-yellow-50' :
-                        'border-red-300 bg-red-50'
+                    path.coverage >= 50 ? 'border-yellow-300 bg-yellow-50' :
+                      'border-red-300 bg-red-50'
                     }`}>
                     <div className="flex items-center justify-between mb-2">
                       <p className="font-bold">{path.path}</p>
@@ -1929,9 +1922,9 @@ function OrganizationsCoverageReport() {
           <div className="space-y-3">
             {coverageData.recommendations.map((rec, idx) => (
               <div key={idx} className={`p-4 border-2 rounded-lg ${rec.priority === 'P0' ? 'border-red-300 bg-red-50' :
-                  rec.priority === 'P1' ? 'border-orange-300 bg-orange-50' :
-                    rec.priority === 'P2' ? 'border-yellow-300 bg-yellow-50' :
-                      'border-blue-300 bg-blue-50'
+                rec.priority === 'P1' ? 'border-orange-300 bg-orange-50' :
+                  rec.priority === 'P2' ? 'border-yellow-300 bg-yellow-50' :
+                    'border-blue-300 bg-blue-50'
                 }`}>
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">

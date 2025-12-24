@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
 import { useLanguage } from '../LanguageContext';
 import { FileText, Sparkles, Loader2, Download } from 'lucide-react';
 import { toast } from 'sonner';
@@ -10,10 +12,10 @@ import ReactMarkdown from 'react-markdown';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { getSystemPrompt } from '@/lib/saudiContext';
-import { 
-  buildNarrativeGeneratorPrompt, 
+import {
+  buildNarrativeGeneratorPrompt,
   narrativeGeneratorSchema,
-  NARRATIVE_GENERATOR_SYSTEM_PROMPT 
+  NARRATIVE_GENERATOR_SYSTEM_PROMPT
 } from '@/lib/ai/prompts/strategy';
 
 export default function StrategicNarrativeGenerator({ planId }) {
@@ -25,44 +27,15 @@ export default function StrategicNarrativeGenerator({ planId }) {
     fallbackData: null
   });
 
-  const { data: plan } = useQuery({
-    queryKey: ['strategic-plan-narrative', planId],
-    queryFn: async () => {
-      if (!planId) return null;
-      const { data, error } = await supabase
-        .from('strategic_plans')
-        .select('*')
-        .eq('id', planId)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!planId
-  });
+  // Fetch plan details
+  const { data: plans = [] } = useStrategiesWithVisibility({ id: planId });
+  const plan = plans[0];
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-narrative'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('id, status')
-        .eq('is_deleted', false);
-      if (error) return [];
-      return data || [];
-    }
-  });
+  // Fetch pilots context
+  const { data: pilots = [] } = usePilotsWithVisibility({ limit: 100 });
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-narrative'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('id, status')
-        .eq('is_deleted', false);
-      if (error) return [];
-      return data || [];
-    }
-  });
+  // Fetch challenges context
+  const { data: challenges = [] } = useChallengesWithVisibility({ limit: 100 });
 
   const generateNarrative = async () => {
     try {
@@ -82,9 +55,9 @@ export default function StrategicNarrativeGenerator({ planId }) {
 
   const downloadNarrative = () => {
     if (!narrative) return;
-    
-    const content = `# ${narrative.title_en}\n\n${narrative.vision_section}\n\n${narrative.context_section}\n\n${narrative.journey_section}\n\n${narrative.impact_section}\n\n${narrative.future_section}`;
-    
+
+    const content = `# ${narrative.title_en} \n\n${narrative.vision_section} \n\n${narrative.context_section} \n\n${narrative.journey_section} \n\n${narrative.impact_section} \n\n${narrative.future_section} `;
+
     const blob = new Blob([content], { type: 'text/markdown' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -94,7 +67,7 @@ export default function StrategicNarrativeGenerator({ planId }) {
     a.click();
     window.URL.revokeObjectURL(url);
     a.remove();
-    
+
     toast.success(t({ en: 'Downloaded', ar: 'تم التنزيل' }));
   };
 
@@ -120,7 +93,7 @@ export default function StrategicNarrativeGenerator({ planId }) {
       </CardHeader>
       <CardContent className="pt-6">
         <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
-        
+
         {!narrative && !isLoading && (
           <div className="text-center py-8">
             <FileText className="h-12 w-12 text-indigo-300 mx-auto mb-3" />

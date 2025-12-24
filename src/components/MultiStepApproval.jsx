@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,8 +35,8 @@ export default function MultiStepApproval({ entity, entityType, currentUser }) {
   const workflow = APPROVAL_WORKFLOWS[entityType] || [];
   const approvals = entity.approvals || [];
 
-  const currentStep = approvals.length > 0 
-    ? Math.max(...approvals.map(a => a.step)) + 1 
+  const currentStep = approvals.length > 0
+    ? Math.max(...approvals.map(a => a.step)) + 1
     : 1;
 
   const currentStepConfig = workflow.find(s => s.step === currentStep);
@@ -45,6 +44,8 @@ export default function MultiStepApproval({ entity, entityType, currentUser }) {
 
   const approveMutation = useMutation({
     mutationFn: async ({ decision, comment }) => {
+      const { supabase } = await import('@/integrations/supabase/client');
+
       const approval = {
         entity_type: entityType.toLowerCase(),
         entity_id: entity.id,
@@ -56,7 +57,10 @@ export default function MultiStepApproval({ entity, entityType, currentUser }) {
         approved_date: new Date().toISOString()
       };
 
-      await base44.entities.PilotApproval.create(approval);
+      const { error } = await supabase
+        .from('pilot_approvals')
+        .insert([approval]);
+      if (error) throw error;
 
       // Notify next approver
       if (decision === 'approved' && currentStep < workflow.length) {
@@ -114,19 +118,18 @@ export default function MultiStepApproval({ entity, entityType, currentUser }) {
             const approval = approvals.find(a => a.step === step.step);
             const isCompleted = !!approval;
             const isCurrent = step.step === currentStep;
-            
+
             return (
               <React.Fragment key={step.step}>
                 <div className="flex flex-col items-center gap-2">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                    isCompleted 
-                      ? approval.decision === 'approved' 
-                        ? 'bg-green-100 text-green-600' 
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isCompleted
+                      ? approval.decision === 'approved'
+                        ? 'bg-green-100 text-green-600'
                         : 'bg-red-100 text-red-600'
-                      : isCurrent 
-                        ? 'bg-blue-100 text-blue-600 ring-4 ring-blue-200' 
+                      : isCurrent
+                        ? 'bg-blue-100 text-blue-600 ring-4 ring-blue-200'
                         : 'bg-slate-100 text-slate-400'
-                  }`}>
+                    }`}>
                     {isCompleted ? (
                       approval.decision === 'approved' ? (
                         <CheckCircle2 className="h-6 w-6" />

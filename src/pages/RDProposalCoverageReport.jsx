@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useRDProposalsWithVisibility } from '@/hooks/useRDProposalsWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -786,7 +785,7 @@ function RDProposalCoverageReport() {
                         const automationLevel = parseInt(path.automation);
                         return (
                           <div key={i} className={`p-4 border rounded-lg ${automationLevel >= 80 ? 'bg-green-50 border-green-200' :
-                              'bg-yellow-50 border-yellow-200'
+                            'bg-yellow-50 border-yellow-200'
                             }`}>
                             <div className="flex items-center justify-between mb-2">
                               <h4 className="font-semibold">{path.from} → {path.to}</h4>

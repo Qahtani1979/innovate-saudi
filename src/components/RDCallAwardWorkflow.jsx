@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,45 +6,28 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
-import { Award, X, Send, CheckCircle2 } from 'lucide-react';
+import { Award, X, Send, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { createNotification } from './AutoNotification';
+import { useRDCallMutations } from '@/hooks/useRDCallMutations';
 
 export default function RDCallAwardWorkflow({ rdCall, selectedProposals, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [awardMessage, setAwardMessage] = useState('');
   const [notifyAll, setNotifyAll] = useState(true);
+  const { awardRDCall, isAwarding } = useRDCallMutations();
 
-  const awardMutation = useMutation({
-    mutationFn: async (data) => {
-      // Update proposals
-      for (const proposal of data.awarded) {
-        await base44.entities.RDProposal.update(proposal.id, {
-          status: 'awarded',
-          award_date: new Date().toISOString(),
-          award_message: data.message
-        });
+  const handleAnnounce = async () => {
+    try {
+      await awardRDCall({
+        id: rdCall.id,
+        awardedProposals: selectedProposals,
+        message: awardMessage,
+        notifyAll
+      });
 
-        // Create R&D Project from awarded proposal
-        await base44.entities.RDProject.create({
-          code: `RD-${new Date().getFullYear()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-          title_en: proposal.title_en,
-          title_ar: proposal.title_ar,
-          abstract_en: proposal.abstract_en,
-          abstract_ar: proposal.abstract_ar,
-          rd_call_id: rdCall.id,
-          institution: proposal.lead_institution,
-          principal_investigator: proposal.principal_investigator,
-          budget: proposal.budget_requested,
-          duration_months: proposal.duration_months,
-          trl_start: proposal.trl_start,
-          trl_target: proposal.trl_target,
-          status: 'approved',
-          research_area: proposal.research_themes?.[0] || 'General'
-        });
-
-        // Notify winner
+      // Simple notifications (can be moved deeper too if needed)
+      for (const proposal of selectedProposals) {
         await createNotification({
           title: 'R&D Proposal Awarded!',
           body: `Congratulations! Your proposal "${proposal.title_en}" has been awarded funding.`,
@@ -59,51 +40,10 @@ export default function RDCallAwardWorkflow({ rdCall, selectedProposals, onClose
         });
       }
 
-      // Update R&D Call
-      await base44.entities.RDCall.update(rdCall.id, {
-        status: 'awarded',
-        awards_announced_date: new Date().toISOString()
-      });
-
-      // Notify all if requested
-      if (data.notifyAll) {
-        const allProposals = await base44.entities.RDProposal.list();
-        const rejectedProposals = allProposals.filter(
-          p => p.rd_call_id === rdCall.id && !data.awarded.find(a => a.id === p.id)
-        );
-
-        for (const proposal of rejectedProposals) {
-          await base44.entities.RDProposal.update(proposal.id, {
-            status: 'not_awarded'
-          });
-
-          await createNotification({
-            title: 'R&D Call Results Announced',
-            body: `The results for "${rdCall.title_en}" have been announced. Unfortunately, your proposal was not selected this time.`,
-            type: 'info',
-            priority: 'medium',
-            linkUrl: `RDCallDetail?id=${rdCall.id}`,
-            entityType: 'rd_call',
-            entityId: rdCall.id,
-            recipientEmail: proposal.principal_investigator?.email
-          });
-        }
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['rd-call']);
-      queryClient.invalidateQueries(['proposals']);
-      toast.success(t({ en: 'Awards announced successfully', ar: 'تم الإعلان عن الجوائز بنجاح' }));
       onClose();
+    } catch (error) {
+      // Toast handled by hook
     }
-  });
-
-  const handleAnnounce = () => {
-    awardMutation.mutate({
-      awarded: selectedProposals,
-      message: awardMessage,
-      notifyAll
-    });
   };
 
   return (
@@ -152,9 +92,9 @@ export default function RDCallAwardWorkflow({ rdCall, selectedProposals, onClose
           <Textarea
             value={awardMessage}
             onChange={(e) => setAwardMessage(e.target.value)}
-            placeholder={t({ 
-              en: 'Congratulations message to be sent to award winners...', 
-              ar: 'رسالة التهنئة التي سيتم إرسالها للفائزين...' 
+            placeholder={t({
+              en: 'Congratulations message to be sent to award winners...',
+              ar: 'رسالة التهنئة التي سيتم إرسالها للفائزين...'
             })}
             rows={4}
           />
@@ -173,9 +113,9 @@ export default function RDCallAwardWorkflow({ rdCall, selectedProposals, onClose
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-900">
             <CheckCircle2 className="h-4 w-4 inline mr-2" />
-            {t({ 
-              en: 'R&D Projects will be automatically created for each winning proposal', 
-              ar: 'سيتم إنشاء مشاريع بحث تلقائياً لكل مقترح فائز' 
+            {t({
+              en: 'R&D Projects will be automatically created for each winning proposal',
+              ar: 'سيتم إنشاء مشاريع بحث تلقائياً لكل مقترح فائز'
             })}
           </p>
         </div>
@@ -186,11 +126,20 @@ export default function RDCallAwardWorkflow({ rdCall, selectedProposals, onClose
           </Button>
           <Button
             onClick={handleAnnounce}
-            disabled={awardMutation.isPending || selectedProposals.length === 0}
+            disabled={isAwarding || selectedProposals.length === 0}
             className="flex-1 bg-amber-600 hover:bg-amber-700"
           >
-            <Send className="h-4 w-4 mr-2" />
-            {t({ en: 'Announce Awards', ar: 'الإعلان عن الجوائز' })}
+            {isAwarding ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                {t({ en: 'Announcing...', ar: 'جاري الإعلان...' })}
+              </>
+            ) : (
+              <>
+                <Send className="h-4 w-4 mr-2" />
+                {t({ en: 'Announce Awards', ar: 'الإعلان عن الجوائز' })}
+              </>
+            )}
           </Button>
         </div>
       </CardContent>

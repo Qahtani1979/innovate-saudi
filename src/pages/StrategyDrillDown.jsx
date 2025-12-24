@@ -1,6 +1,10 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useSandboxesWithVisibility } from '@/hooks/useSandboxesWithVisibility';
+import { useLivingLabsWithVisibility } from '@/hooks/useLivingLabsWithVisibility';
+import { usePartnershipsWithVisibility } from '@/hooks/usePartnershipsWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,8 +12,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useLanguage } from '../components/LanguageContext';
 import { useActivePlan } from '@/contexts/StrategicPlanContext';
 import { Link } from 'react-router-dom';
-import { 
-  Target, ChevronDown, ChevronRight, TrendingUp, Beaker, Shield, 
+import {
+  Target, ChevronDown, ChevronRight, TrendingUp, Beaker, Shield,
   Users, Zap, CheckCircle2, AlertCircle, Layers
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
@@ -27,77 +31,12 @@ function StrategyDrillDown() {
     pilots: false
   });
 
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs-drill'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('programs')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-drill'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: sandboxes = [] } = useQuery({
-    queryKey: ['sandboxes-drill'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('sandboxes')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: livingLabs = [] } = useQuery({
-    queryKey: ['living-labs-drill'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('living_labs')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: partnerships = [] } = useQuery({
-    queryKey: ['partnerships-drill'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('partnerships')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-drill'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: programs = [] } = useProgramsWithVisibility();
+  const { data: challenges = [] } = useChallengesWithVisibility();
+  const { data: sandboxes = [] } = useSandboxesWithVisibility();
+  const { data: livingLabs = [] } = useLivingLabsWithVisibility();
+  const { data: partnerships = [] } = usePartnershipsWithVisibility();
+  const { data: pilots = [] } = usePilotsWithVisibility();
 
   // Filter entities by active plan from context
   const filteredData = activePlanId ? {
@@ -124,8 +63,8 @@ function StrategyDrillDown() {
   };
 
   const entitySections = [
-    { 
-      key: 'programs', 
+    {
+      key: 'programs',
       label: { en: 'Programs', ar: 'البرامج' },
       icon: TrendingUp,
       color: 'text-blue-600',
@@ -133,8 +72,8 @@ function StrategyDrillDown() {
       data: filteredData.programs,
       linkPath: '/program-detail'
     },
-    { 
-      key: 'challenges', 
+    {
+      key: 'challenges',
       label: { en: 'Challenges', ar: 'التحديات' },
       icon: Target,
       color: 'text-purple-600',
@@ -142,8 +81,8 @@ function StrategyDrillDown() {
       data: filteredData.challenges,
       linkPath: '/challenge-detail'
     },
-    { 
-      key: 'sandboxes', 
+    {
+      key: 'sandboxes',
       label: { en: 'Sandboxes', ar: 'مناطق الاختبار' },
       icon: Shield,
       color: 'text-amber-600',
@@ -151,8 +90,8 @@ function StrategyDrillDown() {
       data: filteredData.sandboxes,
       linkPath: '/sandbox-detail'
     },
-    { 
-      key: 'livingLabs', 
+    {
+      key: 'livingLabs',
       label: { en: 'Living Labs', ar: 'المختبرات الحية' },
       icon: Beaker,
       color: 'text-green-600',
@@ -160,8 +99,8 @@ function StrategyDrillDown() {
       data: filteredData.livingLabs,
       linkPath: '/living-lab-detail'
     },
-    { 
-      key: 'partnerships', 
+    {
+      key: 'partnerships',
       label: { en: 'Partnerships', ar: 'الشراكات' },
       icon: Users,
       color: 'text-teal-600',
@@ -169,8 +108,8 @@ function StrategyDrillDown() {
       data: filteredData.partnerships,
       linkPath: '/partnership-detail'
     },
-    { 
-      key: 'pilots', 
+    {
+      key: 'pilots',
       label: { en: 'Pilots', ar: 'التجارب' },
       icon: Zap,
       color: 'text-orange-600',
@@ -185,7 +124,7 @@ function StrategyDrillDown() {
   return (
     <div className="space-y-6 container mx-auto py-6 px-4" dir={isRTL ? 'rtl' : 'ltr'}>
       <ActivePlanBanner />
-      
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">

@@ -1,6 +1,4 @@
-import React, { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -45,7 +43,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Textarea } from "@/components/ui/textarea";
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+
 import { toast } from 'sonner';
 import { usePrompt } from '@/hooks/usePrompt';
 import { PILOT_DETAIL_PROMPT_TEMPLATE } from '@/lib/ai/prompts/pilots/pilotDetail';
@@ -72,167 +70,33 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import PolicyTabWidget from '../components/policy/PolicyTabWidget';
 import SolutionFeedbackLoop from '../components/pilots/SolutionFeedbackLoop';
 
+import { usePilot, usePilotApprovals, usePilotComments, usePilotExpertEvaluations } from '@/hooks/usePilots';
+import { usePilotMutations } from '@/hooks/usePilotMutations';
+
 function PilotDetailPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const pilotId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
   const { invoke: invokeAI, status: aiStatus, isLoading: aiLoadingHook, isAvailable, rateLimitInfo } = usePrompt(null);
 
-  const { data: pilot, isLoading } = useQuery({
-    queryKey: ['pilot', pilotId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('id', pilotId)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!pilotId
-  });
+  const { data: pilot, isLoading } = usePilot(pilotId);
+  const { data: approvals = [] } = usePilotApprovals(pilotId);
+  const { comments = [], addComment } = usePilotComments(pilotId);
+  const { data: expertEvaluations = [] } = usePilotExpertEvaluations(pilotId);
+  const { updatePilot } = usePilotMutations();
 
-  const { data: challenge } = useQuery({
-    queryKey: ['challenge', pilot?.challenge_id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*')
-        .eq('id', pilot.challenge_id)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!pilot?.challenge_id
-  });
-
-  const { data: solution } = useQuery({
-    queryKey: ['solution', pilot?.solution_id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('solutions')
-        .select('*')
-        .eq('id', pilot.solution_id)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!pilot?.solution_id
-  });
-
-  const { data: municipality } = useQuery({
-    queryKey: ['municipality', pilot?.municipality_id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('municipalities')
-        .select('*')
-        .eq('id', pilot.municipality_id)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!pilot?.municipality_id
-  });
-
-  const { data: region } = useQuery({
-    queryKey: ['region', pilot?.region_id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('regions')
-        .select('*')
-        .eq('id', pilot.region_id)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!pilot?.region_id
-  });
-
-  const { data: city } = useQuery({
-    queryKey: ['city', pilot?.city_id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('cities')
-        .select('*')
-        .eq('id', pilot.city_id)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!pilot?.city_id
-  });
-
-  const { data: livingLab } = useQuery({
-    queryKey: ['livingLab', pilot?.living_lab_id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('living_labs')
-        .select('*')
-        .eq('id', pilot.living_lab_id)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!pilot?.living_lab_id
-  });
-
-  const { data: sandbox } = useQuery({
-    queryKey: ['sandbox', pilot?.sandbox_id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('sandboxes')
-        .select('*')
-        .eq('id', pilot.sandbox_id)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!pilot?.sandbox_id
-  });
-
-  const { data: approvals = [] } = useQuery({
-    queryKey: ['pilot-approvals', pilotId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilot_approvals')
-        .select('*')
-        .eq('pilot_id', pilotId);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!pilotId
-  });
-
-  const { data: comments = [] } = useQuery({
-    queryKey: ['pilot-comments', pilotId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilot_comments')
-        .select('*')
-        .eq('pilot_id', pilotId);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!pilotId
-  });
-
-  const { data: expertEvaluations = [] } = useQuery({
-    queryKey: ['pilot-expert-evaluations', pilotId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('expert_evaluations')
-        .select('*')
-        .eq('entity_type', 'pilot')
-        .eq('entity_id', pilotId);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!pilotId
-  });
+  // Destructure related entities for easier access
+  const challenge = pilot?.challenge;
+  const solution = pilot?.solution;
+  const municipality = pilot?.municipality;
+  const region = pilot?.region;
+  const city = pilot?.city;
+  const livingLab = pilot?.living_lab;
+  const sandbox = pilot?.sandbox;
 
   const [comment, setComment] = useState('');
   const [user, setUser] = useState(null);
-  const queryClient = useQueryClient();
+
   const [holdReason, setHoldReason] = useState('');
   const [showSubmissionWizard, setShowSubmissionWizard] = useState(false);
   const [showTermination, setShowTermination] = useState(false);
@@ -251,53 +115,41 @@ function PilotDetailPage() {
     if (authUser) setUser({ id: authUser.id, email: authUser.email });
   }, [authUser]);
 
-  const commentMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase.from('pilot_comments').insert(data);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['pilot-comments']);
-      setComment('');
-      toast.success('Comment added');
-    }
-  });
+  const handleAddComment = () => {
+    if (!comment.trim()) return;
+    addComment({
+      pilot_id: pilotId,
+      content: comment,
+      user_email: user?.email || 'Unknown',
+      created_at: new Date().toISOString()
+    });
+    setComment('');
+  };
 
-  const holdMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('pilots')
-        .update({
-          stage: 'on_hold',
-          hold_reason: holdReason,
-          hold_date: new Date().toISOString()
-        })
-        .eq('id', pilotId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['pilot']);
-      toast.success(t({ en: 'Pilot paused', ar: 'تم إيقاف التجربة' }));
-      setHoldReason('');
-    }
-  });
+  const handleHoldPilot = async () => {
+    if (!holdReason) return;
+    await updatePilot.mutateAsync({
+      id: pilotId,
+      data: {
+        stage: 'on_hold',
+        hold_reason: holdReason,
+        hold_date: new Date().toISOString()
+      }
+    });
+    setHoldReason('');
+    toast.success(t({ en: 'Pilot paused', ar: 'تم إيقاف التجربة' }));
+  };
 
-  const resumeMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('pilots')
-        .update({
-          stage: 'active',
-          resumed_date: new Date().toISOString()
-        })
-        .eq('id', pilotId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['pilot']);
-      toast.success(t({ en: 'Pilot resumed', ar: 'تم استئناف التجربة' }));
-    }
-  });
+  const handleResumePilot = async () => {
+    await updatePilot.mutateAsync({
+      id: pilotId,
+      data: {
+        stage: 'active',
+        resumed_date: new Date().toISOString()
+      }
+    });
+    toast.success(t({ en: 'Pilot resumed', ar: 'تم استئناف التجربة' }));
+  };
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
@@ -2005,8 +1857,8 @@ function PilotDetailPage() {
                   rows={2}
                 />
                 <Button
-                  onClick={() => holdMutation.mutate()}
-                  disabled={!holdReason || holdMutation.isPending}
+                  onClick={handleHoldPilot}
+                  disabled={!holdReason || updatePilot.isPending}
                   variant="outline"
                   className="w-full border-amber-600 text-amber-600 hover:bg-amber-100"
                 >
@@ -2035,8 +1887,8 @@ function PilotDetailPage() {
                   <p className="text-xs text-slate-500">{t({ en: 'Paused on:', ar: 'تم الإيقاف في:' })} {new Date(pilot.hold_date).toLocaleDateString()}</p>
                 )}
                 <Button
-                  onClick={() => resumeMutation.mutate()}
-                  disabled={resumeMutation.isPending}
+                  onClick={handleResumePilot}
+                  disabled={updatePilot.isPending}
                   className="w-full bg-gradient-to-r from-blue-600 to-teal-600"
                 >
                   <Play className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
@@ -2082,9 +1934,9 @@ function PilotDetailPage() {
                   rows={3}
                 />
                 <Button
-                  onClick={() => commentMutation.mutate({ pilot_id: pilotId, comment_text: comment })}
+                  onClick={handleAddComment}
                   className="bg-gradient-to-r from-blue-600 to-teal-600"
-                  disabled={!comment}
+                  disabled={!comment.trim()}
                 >
                   <Send className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                   {t({ en: 'Post Comment', ar: 'نشر تعليق' })}

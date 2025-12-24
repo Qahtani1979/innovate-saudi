@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +11,8 @@ import { useLanguage } from '../components/LanguageContext';
 import { Save, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { useRDProposal } from '@/hooks/useRDProposal';
+import { useRDProposalMutations } from '@/hooks/useRDProposalMutations';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function RDProposalEdit() {
@@ -19,22 +20,11 @@ export default function RDProposalEdit() {
   const proposalId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+
   const { invokeAI, status, isLoading: aiEnhancing, rateLimitInfo, isAvailable } = useAIWithFallback();
 
-  const { data: proposal, isLoading } = useQuery({
-    queryKey: ['rd-proposal', proposalId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_proposals')
-        .select('*')
-        .eq('id', proposalId)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!proposalId
-  });
+  const { data: proposal, isLoading } = useRDProposal(proposalId);
+  const { updateRDProposal } = useRDProposalMutations();
 
   const [formData, setFormData] = useState(null);
 
@@ -50,20 +40,13 @@ export default function RDProposalEdit() {
     }
   }, [proposal]);
 
-  const updateMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase
-        .from('rd_proposals')
-        .update(data)
-        .eq('id', proposalId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['rd-proposal']);
-      toast.success(t({ en: 'Proposal updated', ar: 'تم تحديث المقترح' }));
-      navigate(createPageUrl(`RDProposalDetail?id=${proposalId}`));
-    }
-  });
+  const handleUpdate = () => {
+    updateRDProposal.mutate({ id: proposalId, updates: formData }, {
+      onSuccess: () => {
+        navigate(createPageUrl(`RDProposalDetail?id=${proposalId}`));
+      }
+    });
+  };
 
   const handleAIEnhance = async () => {
     const prompt = `Enhance this research proposal with professional academic content:
@@ -99,14 +82,16 @@ Generate comprehensive bilingual (English + Arabic) enhanced content:
           impact_statement: { type: 'string' },
           innovation_claim: { type: 'string' },
           keywords: { type: 'array', items: { type: 'string' } },
-          expected_outputs: { type: 'array', items: { 
-            type: 'object',
-            properties: {
-              output: { type: 'string' },
-              type: { type: 'string' },
-              description: { type: 'string' }
+          expected_outputs: {
+            type: 'array', items: {
+              type: 'object',
+              properties: {
+                output: { type: 'string' },
+                type: { type: 'string' },
+                description: { type: 'string' }
+              }
             }
-          }}
+          }
         }
       }
     });
@@ -145,56 +130,56 @@ Generate comprehensive bilingual (English + Arabic) enhanced content:
                 <><Sparkles className="h-4 w-4 mr-2" />{t({ en: 'AI Enhance', ar: 'تحسين ذكي' })}</>
               )}
             </Button>
-            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+            <AIStatusIndicator status={status} error={null} rateLimitInfo={rateLimitInfo} />
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>{t({ en: 'Title (English) *', ar: 'العنوان (إنجليزي) *' })}</Label>
-              <Input value={formData.title_en} onChange={(e) => setFormData({...formData, title_en: e.target.value})} />
+              <Input value={formData.title_en} onChange={(e) => setFormData({ ...formData, title_en: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label>{t({ en: 'Title (Arabic)', ar: 'العنوان (عربي)' })}</Label>
-              <Input value={formData.title_ar || ''} onChange={(e) => setFormData({...formData, title_ar: e.target.value})} dir="rtl" />
+              <Input value={formData.title_ar || ''} onChange={(e) => setFormData({ ...formData, title_ar: e.target.value })} dir="rtl" />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>{t({ en: 'Tagline (English)', ar: 'الشعار (إنجليزي)' })}</Label>
-              <Input value={formData.tagline_en || ''} onChange={(e) => setFormData({...formData, tagline_en: e.target.value})} />
+              <Input value={formData.tagline_en || ''} onChange={(e) => setFormData({ ...formData, tagline_en: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label>{t({ en: 'Tagline (Arabic)', ar: 'الشعار (عربي)' })}</Label>
-              <Input value={formData.tagline_ar || ''} onChange={(e) => setFormData({...formData, tagline_ar: e.target.value})} dir="rtl" />
+              <Input value={formData.tagline_ar || ''} onChange={(e) => setFormData({ ...formData, tagline_ar: e.target.value })} dir="rtl" />
             </div>
           </div>
 
           <div className="space-y-2">
             <Label>{t({ en: 'Abstract (English) *', ar: 'الملخص (إنجليزي) *' })}</Label>
-            <Textarea value={formData.abstract_en || ''} onChange={(e) => setFormData({...formData, abstract_en: e.target.value})} rows={6} />
+            <Textarea value={formData.abstract_en || ''} onChange={(e) => setFormData({ ...formData, abstract_en: e.target.value })} rows={6} />
           </div>
 
           <div className="space-y-2">
             <Label>{t({ en: 'Abstract (Arabic)', ar: 'الملخص (عربي)' })}</Label>
-            <Textarea value={formData.abstract_ar || ''} onChange={(e) => setFormData({...formData, abstract_ar: e.target.value})} rows={6} dir="rtl" />
+            <Textarea value={formData.abstract_ar || ''} onChange={(e) => setFormData({ ...formData, abstract_ar: e.target.value })} rows={6} dir="rtl" />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>{t({ en: 'Lead Institution *', ar: 'المؤسسة الرائدة *' })}</Label>
-              <Input value={formData.lead_institution || ''} onChange={(e) => setFormData({...formData, lead_institution: e.target.value})} />
+              <Input value={formData.lead_institution || ''} onChange={(e) => setFormData({ ...formData, lead_institution: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label>{t({ en: 'Research Area', ar: 'مجال البحث' })}</Label>
-              <Input value={formData.research_area || ''} onChange={(e) => setFormData({...formData, research_area: e.target.value})} />
+              <Input value={formData.research_area || ''} onChange={(e) => setFormData({ ...formData, research_area: e.target.value })} />
             </div>
           </div>
 
           <div className="space-y-2">
             <Label>{t({ en: 'Methodology (English)', ar: 'المنهجية (إنجليزي)' })}</Label>
-            <Textarea value={formData.methodology_en || ''} onChange={(e) => setFormData({...formData, methodology_en: e.target.value})} rows={4} />
+            <Textarea value={formData.methodology_en || ''} onChange={(e) => setFormData({ ...formData, methodology_en: e.target.value })} rows={4} />
           </div>
 
           <div className="border-t pt-6 space-y-4">
@@ -202,33 +187,33 @@ Generate comprehensive bilingual (English + Arabic) enhanced content:
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>{t({ en: 'Name *', ar: 'الاسم *' })}</Label>
-                <Input 
-                  value={formData.principal_investigator?.name || ''} 
+                <Input
+                  value={formData.principal_investigator?.name || ''}
                   onChange={(e) => setFormData({
-                    ...formData, 
-                    principal_investigator: {...(formData.principal_investigator || {}), name: e.target.value}
-                  })} 
+                    ...formData,
+                    principal_investigator: { ...(formData.principal_investigator || {}), name: e.target.value }
+                  })}
                 />
               </div>
               <div className="space-y-2">
                 <Label>{t({ en: 'Title', ar: 'اللقب' })}</Label>
-                <Input 
-                  value={formData.principal_investigator?.title || ''} 
+                <Input
+                  value={formData.principal_investigator?.title || ''}
                   onChange={(e) => setFormData({
-                    ...formData, 
-                    principal_investigator: {...(formData.principal_investigator || {}), title: e.target.value}
-                  })} 
+                    ...formData,
+                    principal_investigator: { ...(formData.principal_investigator || {}), title: e.target.value }
+                  })}
                 />
               </div>
               <div className="space-y-2">
                 <Label>{t({ en: 'Email *', ar: 'البريد الإلكتروني *' })}</Label>
-                <Input 
+                <Input
                   type="email"
-                  value={formData.principal_investigator?.email || ''} 
+                  value={formData.principal_investigator?.email || ''}
                   onChange={(e) => setFormData({
-                    ...formData, 
-                    principal_investigator: {...(formData.principal_investigator || {}), email: e.target.value}
-                  })} 
+                    ...formData,
+                    principal_investigator: { ...(formData.principal_investigator || {}), email: e.target.value }
+                  })}
                 />
               </div>
             </div>
@@ -237,19 +222,19 @@ Generate comprehensive bilingual (English + Arabic) enhanced content:
           <div className="grid grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label>{t({ en: 'TRL Start', ar: 'المستوى التقني الحالي' })}</Label>
-              <Input type="number" min="1" max="9" value={formData.trl_start || ''} onChange={(e) => setFormData({...formData, trl_start: parseInt(e.target.value)})} />
+              <Input type="number" min="1" max="9" value={formData.trl_start || ''} onChange={(e) => setFormData({ ...formData, trl_start: parseInt(e.target.value) })} />
             </div>
             <div className="space-y-2">
               <Label>{t({ en: 'TRL Target', ar: 'المستوى المستهدف' })}</Label>
-              <Input type="number" min="1" max="9" value={formData.trl_target || ''} onChange={(e) => setFormData({...formData, trl_target: parseInt(e.target.value)})} />
+              <Input type="number" min="1" max="9" value={formData.trl_target || ''} onChange={(e) => setFormData({ ...formData, trl_target: parseInt(e.target.value) })} />
             </div>
             <div className="space-y-2">
               <Label>{t({ en: 'Duration (months)', ar: 'المدة (شهور)' })}</Label>
-              <Input type="number" value={formData.duration_months || ''} onChange={(e) => setFormData({...formData, duration_months: parseInt(e.target.value)})} />
+              <Input type="number" value={formData.duration_months || ''} onChange={(e) => setFormData({ ...formData, duration_months: parseInt(e.target.value) })} />
             </div>
             <div className="space-y-2">
               <Label>{t({ en: 'Budget (SAR)', ar: 'الميزانية (ريال)' })}</Label>
-              <Input type="number" value={formData.budget_requested || ''} onChange={(e) => setFormData({...formData, budget_requested: parseFloat(e.target.value)})} />
+              <Input type="number" value={formData.budget_requested || ''} onChange={(e) => setFormData({ ...formData, budget_requested: parseFloat(e.target.value) })} />
             </div>
           </div>
 
@@ -258,11 +243,11 @@ Generate comprehensive bilingual (English + Arabic) enhanced content:
               {t({ en: 'Cancel', ar: 'إلغاء' })}
             </Button>
             <Button
-              onClick={() => updateMutation.mutate(formData)}
-              disabled={updateMutation.isPending || !formData.title_en || !formData.lead_institution}
+              onClick={handleUpdate}
+              disabled={updateRDProposal.isPending || !formData.title_en || !formData.lead_institution}
               className="bg-gradient-to-r from-blue-600 to-teal-600"
             >
-              {updateMutation.isPending ? (
+              {updateRDProposal.isPending ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t({ en: 'Saving...', ar: 'جاري الحفظ...' })}</>
               ) : (
                 <><Save className="h-4 w-4 mr-2" />{t({ en: 'Save Changes', ar: 'حفظ التغييرات' })}</>

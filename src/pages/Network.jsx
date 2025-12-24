@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+
+import { supabase } from '@/integrations/supabase/client';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { NETWORK_INSIGHTS_PROMPT_TEMPLATE, NETWORK_INSIGHTS_RESPONSE_SCHEMA } from '@/lib/ai/prompts/network/insights';
+import { useOrganizationsWithVisibility } from '@/hooks/useOrganizationsWithVisibility';
+import { useOrganizationMutations } from '@/hooks/useOrganizationMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,22 +44,11 @@ function NetworkPage() {
   const [aiInsights, setAiInsights] = useState(null);
   const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const queryClient = useQueryClient();
-
-  const { data: organizations = [], isLoading } = useQuery({
-    queryKey: ['organizations'],
-    queryFn: () => base44.entities.Organization.list()
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Organization.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['organizations']);
-    }
-  });
+  const { data: organizations = [], isLoading } = useOrganizationsWithVisibility();
+  const { deleteOrganization } = useOrganizationMutations();
 
   const filteredOrgs = organizations.filter(org => {
-    const matchesSearch = !searchTerm || 
+    const matchesSearch = !searchTerm ||
       org.name_en?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       org.name_ar?.includes(searchTerm);
     const matchesType = filterType === 'all' || org.org_type === filterType;
@@ -92,6 +83,7 @@ function NetworkPage() {
       }));
 
       const response = await invokeAI({
+        system_prompt: "Analyze the following innovation network data and provide strategic insights.",
         prompt: NETWORK_INSIGHTS_PROMPT_TEMPLATE({
           orgSummary,
           stats
@@ -340,56 +332,63 @@ function NetworkPage() {
         <TabsContent value="directory">
           {viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredOrgs.map((org) => (
-              <Card key={org.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between mb-2">
-                    <Badge className={typeColors[org.org_type]}>
-                      {org.org_type?.replace(/_/g, ' ')}
-                    </Badge>
-                    {org.is_partner && (
-                      <Badge variant="outline" className="border-green-300 text-green-700">
-                        Partner
+              {filteredOrgs.map((org) => (
+                <Card key={org.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <div className="flex items-start justify-between mb-2">
+                      <Badge className={typeColors[org.org_type]}>
+                        {org.org_type?.replace(/_/g, ' ')}
                       </Badge>
-                    )}
-                  </div>
-                  <CardTitle className="text-lg">
-                    {language === 'ar' && org.name_ar ? org.name_ar : org.name_en}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm text-slate-600 line-clamp-2">
-                    {language === 'ar' && org.description_ar ? org.description_ar : org.description_en}
-                  </p>
-
-                  {org.sectors && org.sectors.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {org.sectors.slice(0, 3).map((sector, i) => (
-                        <Badge key={i} variant="outline" className="text-xs capitalize">
-                          {sector.replace(/_/g, ' ')}
+                      {org.is_partner && (
+                        <Badge variant="outline" className="border-green-300 text-green-700">
+                          Partner
                         </Badge>
-                      ))}
+                      )}
                     </div>
-                  )}
+                    <CardTitle className="text-lg">
+                      {language === 'ar' && org.name_ar ? org.name_ar : org.name_en}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <p className="text-sm text-slate-600 line-clamp-2">
+                      {language === 'ar' && org.description_ar ? org.description_ar : org.description_en}
+                    </p>
 
-                  <div className="flex items-center gap-2 pt-3 border-t">
-                    <Link to={createPageUrl(`OrganizationDetail?id=${org.id}`)} className="flex-1">
-                      <Button variant="outline" className="w-full text-sm">
-                        {t({ en: 'View', ar: 'عرض' })}
+                    {org.sectors && org.sectors.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {org.sectors.slice(0, 3).map((sector, i) => (
+                          <Badge key={i} variant="outline" className="text-xs capitalize">
+                            {sector.replace(/_/g, ' ')}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-2 pt-3 border-t">
+                      <Link to={createPageUrl(`OrganizationDetail?id=${org.id}`)} className="flex-1">
+                        <Button variant="outline" className="w-full text-sm">
+                          {t({ en: 'View', ar: 'عرض' })}
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => deleteOrganization.mutate(org.id)}
+                        disabled={deleteOrganization.isPending}
+                      >
+                        {deleteOrganization.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <X className="h-4 w-4 text-red-500" />
+                        )}
                       </Button>
-                    </Link>
-                    <Link to={createPageUrl(`OrganizationEdit?id=${org.id}`)}>
-                      <Button variant="ghost" size="icon">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           ) : (
-            <NetworkGraph organizations={filteredOrgs} />
+            <NetworkGraph />
           )}
         </TabsContent>
 
@@ -428,10 +427,7 @@ function NetworkPage() {
           </Card>
         </TabsContent>
 
-        {/* Network Map */}
-        <TabsContent value="map">
-          <NetworkGraph organizations={organizations} />
-        </TabsContent>
+        <NetworkGraph />
       </Tabs>
     </div>
   );

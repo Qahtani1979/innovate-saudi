@@ -1,5 +1,3 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,58 +11,27 @@ import {
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import FirstActionRecommender from '../components/onboarding/FirstActionRecommender';
 import { CitizenPageLayout, CitizenPageHeader } from '@/components/citizen/CitizenPageLayout';
+import { useCitizenStats } from '@/hooks/useCitizenData';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useEventsWithVisibility } from '@/hooks/useEventsWithVisibility';
 
 function CitizenDashboard() {
   const { user } = useAuth();
   const { language, isRTL, t } = useLanguage();
 
   // Fetch citizen stats
-  const { data: stats } = useQuery({
-    queryKey: ['citizen-stats', user?.id],
-    queryFn: async () => {
-      const [ideasRes, votesRes, pointsRes] = await Promise.all([
-        supabase.from('citizen_ideas').select('id', { count: 'exact', head: true }).eq('user_id', user?.id),
-        supabase.from('citizen_votes').select('id', { count: 'exact', head: true }).eq('user_id', user?.id),
-        supabase.from('citizen_points').select('*').eq('user_id', user?.id).maybeSingle()
-      ]);
-      return {
-        ideasCount: ideasRes.count || 0,
-        votesCount: votesRes.count || 0,
-        points: pointsRes.data?.points || 0,
-        level: pointsRes.data?.level || 1
-      };
-    },
-    enabled: !!user?.id
-  });
+  const { data: stats } = useCitizenStats();
 
   // Fetch recent public challenges
-  const { data: recentChallenges = [] } = useQuery({
-    queryKey: ['public-challenges-preview'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('challenges')
-        .select('id, title_en, title_ar, category, status')
-        .eq('is_published', true)
-        .order('created_at', { ascending: false })
-        .limit(3);
-      return data || [];
-    }
+  const { data: recentChallenges = [] } = useChallengesWithVisibility({
+    publishedOnly: true,
+    limit: 3
   });
 
   // Fetch upcoming events
-  const { data: upcomingEvents = [] } = useQuery({
-    queryKey: ['upcoming-events-preview'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('events')
-        .select('id, title_en, title_ar, start_date, event_type')
-        .gte('start_date', new Date().toISOString())
-        .eq('is_published', true)
-        .eq('is_deleted', false)
-        .order('start_date')
-        .limit(3);
-      return data || [];
-    }
+  const { data: upcomingEvents = [] } = useEventsWithVisibility({
+    upcoming: true,
+    limit: 3
   });
 
   const quickActions = [
@@ -79,7 +46,11 @@ function CitizenDashboard() {
       <CitizenPageHeader
         icon={LayoutDashboard}
         title={t({ en: 'Welcome Back!', ar: 'مرحباً بعودتك!' })}
+        subtitle={null}
         description={t({ en: 'Your civic participation hub', ar: 'مركز مشاركتك المدنية' })}
+        action={null}
+        actions={null}
+        children={null}
         stats={[
           { icon: Lightbulb, value: stats?.ideasCount || 0, label: t({ en: 'Ideas', ar: 'الأفكار' }) },
           { icon: Heart, value: stats?.votesCount || 0, label: t({ en: 'Votes', ar: 'الأصوات' }) },

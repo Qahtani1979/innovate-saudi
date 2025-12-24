@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,19 +7,21 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../components/LanguageContext';
 import { Building2, Sparkles, Save, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import FileUploader from '../components/FileUploader';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useMatchmakerApplicationDetails } from '@/hooks/useMatchmakerApplicationDetails';
 
 function MatchmakerApplicationCreate() {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { invokeAI, status, isLoading: aiGenerating, isAvailable, rateLimitInfo } = useAIWithFallback();
+
+  // Use gold standard hook
+  const { createApplication } = useMatchmakerApplicationDetails();
 
   const [formData, setFormData] = useState({
     organization_name_en: '',
@@ -42,37 +42,13 @@ function MatchmakerApplicationCreate() {
     stage: 'intake'
   });
 
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      // Auto-generate application code
-      const year = new Date().getFullYear();
-
-      const { count } = await supabase
-        .from('matchmaker_applications')
-        .select('*', { count: 'exact', head: true })
-        .ilike('application_code', `MMA-${year}-%`);
-
-      const nextNum = (count || 0) + 1;
-      const application_code = `MMA-${year}-${String(nextNum).padStart(3, '0')}`;
-
-      const { data: newApp, error } = await supabase
-        .from('matchmaker_applications')
-        .insert({
-          ...data,
-          application_code
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return newApp;
-    },
-    onSuccess: (response) => {
-      queryClient.invalidateQueries(['matchmaker-applications']);
-      toast.success(t({ en: 'Application submitted successfully', ar: 'تم تقديم الطلب بنجاح' }));
-      navigate(createPageUrl('MatchmakerApplicationDetail') + `?id=${response.id}`);
-    }
-  });
+  const handleSubmit = () => {
+    createApplication.mutate(formData, {
+      onSuccess: (response) => {
+        navigate(createPageUrl('MatchmakerApplicationDetail') + `?id=${response.id}`);
+      }
+    });
+  };
 
   const handleAIEnhance = async () => {
     const { MATCHMAKER_PROFILE_ENHANCE_PROMPT_TEMPLATE } = await import('@/lib/ai/prompts/matchmaker/application');
@@ -300,11 +276,11 @@ function MatchmakerApplicationCreate() {
 
       <div className="flex gap-3">
         <Button
-          onClick={() => createMutation.mutate(formData)}
-          disabled={createMutation.isPending || !formData.organization_name_en || !formData.contact_email}
+          onClick={handleSubmit}
+          disabled={createApplication.isPending || !formData.organization_name_en || !formData.contact_email}
           className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600"
         >
-          {createMutation.isPending ? (
+          {createApplication.isPending ? (
             <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t({ en: 'Submitting...', ar: 'جاري التقديم...' })}</>
           ) : (
             <><Save className="h-4 w-4 mr-2" />{t({ en: 'Submit Application', ar: 'تقديم الطلب' })}</>

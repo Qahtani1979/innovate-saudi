@@ -1,6 +1,6 @@
-import React from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { useSolutionDetails } from '@/hooks/useSolutionDetails';
+import { useMatchingEntities } from '@/hooks/useMatchingEntities';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -73,7 +73,7 @@ function SolutionDetailPage() {
   const [showReview, setShowReview] = React.useState(false);
   const [showCaseStudy, setShowCaseStudy] = React.useState(false);
   const [showRDCollaboration, setShowRDCollaboration] = React.useState(false);
-  const queryClient = useQueryClient();
+
 
   // Solution workflow gates configuration (Level 16 fix)
   const solutionWorkflowGates = [
@@ -114,86 +114,27 @@ function SolutionDetailPage() {
     }
   ];
 
-  // Fixed N+1 query (dc-4/api-14) - direct filter instead of fetching all
-  // Fixed N+1 query (dc-4/api-14) - direct filter instead of fetching all
-  const { data: solution, isLoading } = useQuery({
-    queryKey: ['solution', solutionId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('solutions')
-        .select('*')
-        .eq('id', solutionId)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!solutionId
-  });
+  const {
+    useSolution,
+    useSolutionPilots,
+    useSolutionComments,
+    useExpertEvaluations,
+    useAddComment,
+    refreshSolution
+  } = useSolutionDetails(solutionId);
+  const { useSolutions } = useMatchingEntities();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-for-solution', solutionId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*, stage')
-        .eq('solution_id', solutionId);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!solutionId
-  });
+  const { data: solution, isLoading } = useSolution();
 
-  const { data: comments = [] } = useQuery({
-    queryKey: ['solution-comments', solutionId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('solution_comments')
-        .select('*')
-        .eq('solution_id', solutionId);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!solutionId
-  });
+  const { data: pilots = [] } = useSolutionPilots();
 
-  const { data: expertEvaluations = [] } = useQuery({
-    queryKey: ['solution-expert-evaluations', solutionId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('expert_evaluations')
-        .select('*')
-        .eq('entity_type', 'solution')
-        .eq('entity_id', solutionId);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!solutionId
-  });
+  const { data: comments = [] } = useSolutionComments();
 
-  const { data: allSolutions = [] } = useQuery({
-    queryKey: ['all-solutions-for-comparison'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('solutions')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!solutionId
-  });
+  const { data: expertEvaluations = [] } = useExpertEvaluations();
 
-  const commentMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase.from('solution_comments').insert(data);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['solution-comments']);
-      setComment('');
-      toast.success('Comment added');
-    }
-  });
+  const { data: allSolutions = [] } = useSolutions({ deleted: false });
+
+  const commentMutation = useAddComment();
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
@@ -208,6 +149,15 @@ function SolutionDetailPage() {
     if (result.success) {
       setAiInsights(result.data);
     }
+  };
+
+  // Wrapper to reset comment
+  const handleAddComment = (data) => {
+    commentMutation.mutate(data, {
+      onSuccess: () => {
+        setComment('');
+      }
+    });
   };
 
   // Loading state
@@ -226,7 +176,7 @@ function SolutionDetailPage() {
 
   // Access denied check (dc-2) - unpublished solutions require permission
   if (solution && !solution.is_published && !hasPermission('solution_view_all') && solution.created_by !== user?.email) {
-    return <SolutionAccessDenied />;
+    return <SolutionAccessDenied reason={undefined} />;
   }
 
   const maturityColors = {
@@ -403,7 +353,7 @@ function SolutionDetailPage() {
             </Button>
           </CardHeader>
           <CardContent>
-            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" error={undefined} />
             {aiLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
@@ -623,7 +573,7 @@ function SolutionDetailPage() {
                 entityType="Solution"
                 entity={solution}
                 gates={solutionWorkflowGates}
-                onUpdate={() => queryClient.invalidateQueries(['solution', solutionId])}
+                onUpdate={refreshSolution}
               />
             </TabsContent>
 
@@ -797,19 +747,19 @@ function SolutionDetailPage() {
             {/* AI Tools Tab - Integrated Components */}
             <TabsContent value="ai-tools" className="space-y-4">
               <SolutionSuccessPredictor solution={solution} challenge={null} />
-              <AIProfileEnhancer solution={solution} onUpdate={() => queryClient.invalidateQueries(['solution', solutionId])} />
+              <AIProfileEnhancer solution={solution} onUpdate={refreshSolution} />
               <CompetitiveAnalysisAI solution={solution} allSolutions={allSolutions} />
               <PriceComparisonTool solutions={allSolutions} selectedSolution={solution} />
               <PilotReadinessChecker solution={solution} />
               <DynamicPricingIntelligence solution={solution} />
               <DeploymentSuccessTracker solution={solution} onClose={() => { }} />
-              <ComplianceValidationAI solution={solution} onValidationComplete={() => queryClient.invalidateQueries(['solution', solutionId])} />
+              <ComplianceValidationAI solution={solution} onValidationComplete={refreshSolution} />
               <RealTimeMarketIntelligence solution={solution} />
             </TabsContent>
 
             {/* R&D Collaboration Tab */}
             <TabsContent value="rd-collaboration" className="space-y-4">
-              <TRLAssessmentTool solution={solution} onAssessmentComplete={() => queryClient.invalidateQueries(['solution', solutionId])} />
+              <TRLAssessmentTool solution={solution} onAssessmentComplete={refreshSolution} />
 
               <Card>
                 <CardHeader>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useLivingLabsWithVisibility } from '@/hooks/useLivingLabsWithVisibility';
+import { useLivingLabBookings } from '@/hooks/useLivingLabBookings';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -16,20 +17,9 @@ function LivingLabsCoverageReport() {
   const { language, isRTL, t } = useLanguage();
   const [expandedSections, setExpandedSections] = useState({});
 
-  const { data: livingLabs = [] } = useQuery({
-    queryKey: ['livinglabs-for-coverage'],
-    queryFn: () => base44.entities.LivingLab.list()
-  });
-
-  const { data: bookings = [] } = useQuery({
-    queryKey: ['livinglab-bookings-for-coverage'],
-    queryFn: () => base44.entities.LivingLabBooking.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-for-coverage'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
+  const { data: livingLabs = [] } = useLivingLabsWithVisibility({ limit: 1000 });
+  const { data: bookings = [] } = useLivingLabBookings({ limit: 1000 });
+  const { data: pilots = [] } = usePilotsWithVisibility({ limit: 1000 });
 
   const toggleSection = (key) => {
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
@@ -1073,16 +1063,16 @@ function LivingLabsCoverageReport() {
               <p className="font-bold text-green-900 mb-2">✅ Taxonomy & Strategic Linkage ADDED (Partial)</p>
               <p className="text-sm text-green-800">
                 LivingLab entity upgraded with taxonomy linkage (6 fields added):
-                <br/>✅ sector_id, subsector_id, service_focus_ids (taxonomy alignment)
-                <br/>✅ strategic_pillar_id, strategic_objective_ids (strategic alignment)
-                <br/>✅ municipality_id (host municipality - upgraded from city_id for consistency)
-                <br/><br/>
+                <br />✅ sector_id, subsector_id, service_focus_ids (taxonomy alignment)
+                <br />✅ strategic_pillar_id, strategic_objective_ids (strategic alignment)
+                <br />✅ municipality_id (host municipality - upgraded from city_id for consistency)
+                <br /><br />
                 <strong>⚠️ Still needed for WORKFLOWS:</strong>
-                <br/>❌ Strategy→Lab research priorities workflow
-                <br/>❌ Challenge→Lab citizen research routing (sector-based)
-                <br/>❌ Lab→Policy evidence feedback (citizen findings → policy)
-                <br/>❌ Citizen co-creation workflow (recruitment, data, recognition)
-                <br/><br/>
+                <br />❌ Strategy→Lab research priorities workflow
+                <br />❌ Challenge→Lab citizen research routing (sector-based)
+                <br />❌ Lab→Policy evidence feedback (citizen findings → policy)
+                <br />❌ Citizen co-creation workflow (recruitment, data, recognition)
+                <br /><br />
                 <strong>Still missing 9 critical entities:</strong> CitizenParticipant, LabProjectEvaluation, LabOutputEvaluation, LabPolicyRecommendation, LabSolutionCertification, CitizenDataCollection, CitizenImpactTracking, LabChallengeLink, LabSuccessCriteria
               </p>
             </div>
@@ -1172,8 +1162,8 @@ function LivingLabsCoverageReport() {
                         <h4 className="font-semibold text-slate-900">{page.name}</h4>
                         <Badge className={
                           page.status === 'complete' ? 'bg-green-100 text-green-700' :
-                          page.status === 'exists' ? 'bg-blue-100 text-blue-700' :
-                          'bg-yellow-100 text-yellow-700'
+                            page.status === 'exists' ? 'bg-blue-100 text-blue-700' :
+                              'bg-yellow-100 text-yellow-700'
                         }>
                           {page.status}
                         </Badge>
@@ -1307,25 +1297,23 @@ function LivingLabsCoverageReport() {
                   <h4 className="font-semibold text-slate-900 text-lg">{journey.persona}</h4>
                   <Badge className={
                     journey.coverage >= 90 ? 'bg-green-100 text-green-700' :
-                    journey.coverage >= 70 ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-red-100 text-red-700'
+                      journey.coverage >= 70 ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-red-100 text-red-700'
                   }>{journey.coverage}% Complete</Badge>
                 </div>
                 <div className="space-y-2">
                   {journey.journey.map((step, i) => (
                     <div key={i} className="flex items-start gap-3">
                       <div className="flex flex-col items-center">
-                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                          step.status === 'complete' ? 'bg-green-100 text-green-700' :
+                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${step.status === 'complete' ? 'bg-green-100 text-green-700' :
                           step.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
+                            'bg-red-100 text-red-700'
+                          }`}>
                           {i + 1}
                         </div>
                         {i < journey.journey.length - 1 && (
-                          <div className={`w-0.5 h-8 ${
-                            step.status === 'complete' ? 'bg-green-300' : 'bg-slate-200'
-                          }`} />
+                          <div className={`w-0.5 h-8 ${step.status === 'complete' ? 'bg-green-300' : 'bg-slate-200'
+                            }`} />
                         )}
                       </div>
                       <div className="flex-1 pt-1">
@@ -1385,28 +1373,26 @@ function LivingLabsCoverageReport() {
             <div className="p-4 bg-amber-100 rounded-lg border-2 border-amber-400 mb-4">
               <p className="font-bold text-amber-900 mb-2">⚠️ Integration Problem</p>
               <p className="text-sm text-amber-800">
-                10 AI components exist but are NOT INTEGRATED into workflows. 
+                10 AI components exist but are NOT INTEGRATED into workflows.
                 They are built but unused - major waste of AI capability.
               </p>
             </div>
             <div className="space-y-4">
               {coverageData.aiFeatures.map((ai, idx) => (
-                <div key={idx} className={`p-4 border rounded-lg ${
-                  ai.status === 'implemented' ? 'bg-gradient-to-r from-purple-50 to-pink-50' :
+                <div key={idx} className={`p-4 border rounded-lg ${ai.status === 'implemented' ? 'bg-gradient-to-r from-purple-50 to-pink-50' :
                   ai.status === 'partial' ? 'bg-yellow-50' : 'bg-red-50'
-                }`}>
+                  }`}>
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Sparkles className={`h-5 w-5 ${
-                        ai.status === 'implemented' ? 'text-purple-600' :
+                      <Sparkles className={`h-5 w-5 ${ai.status === 'implemented' ? 'text-purple-600' :
                         ai.status === 'partial' ? 'text-yellow-600' : 'text-red-600'
-                      }`} />
+                        }`} />
                       <h4 className="font-semibold text-slate-900">{ai.name}</h4>
                     </div>
                     <Badge className={
                       ai.status === 'implemented' ? 'bg-green-100 text-green-700' :
-                      ai.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-red-100 text-red-700'
+                        ai.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
                     }>{ai.coverage}%</Badge>
                   </div>
                   <p className="text-sm text-slate-600 mb-2">{ai.description}</p>
@@ -1461,10 +1447,10 @@ function LivingLabsCoverageReport() {
               <p className="font-bold text-red-900 mb-2">🚨 CRITICAL: Citizen Co-Creation Phantom</p>
               <p className="text-sm text-red-800">
                 Living Labs are <strong>COMPLETELY DISCONNECTED</strong>:
-                <br/>• <strong>NO INPUT:</strong> Not triggered by Challenges/Ideas/Pilots - labs appear randomly
-                <br/>• <strong>NO OUTPUT:</strong> Lab→Policy (MISSING), Lab→Solution (MISSING), Lab→Pilot (manual)
-                <br/>• <strong>NO CITIZEN WORKFLOW:</strong> Citizen co-creation is PURPOSE but no recruitment, data, or recognition
-                <br/><br/>
+                <br />• <strong>NO INPUT:</strong> Not triggered by Challenges/Ideas/Pilots - labs appear randomly
+                <br />• <strong>NO OUTPUT:</strong> Lab→Policy (MISSING), Lab→Solution (MISSING), Lab→Pilot (manual)
+                <br />• <strong>NO CITIZEN WORKFLOW:</strong> Citizen co-creation is PURPOSE but no recruitment, data, or recognition
+                <br /><br />
                 Labs are <strong>research facilities</strong> without participatory innovation integration - infrastructure exists, PURPOSE missing.
               </p>
             </div>
@@ -1473,15 +1459,14 @@ function LivingLabsCoverageReport() {
               <p className="font-semibold text-red-900 mb-3">← INPUT Paths (ALL MISSING)</p>
               <div className="space-y-3">
                 {coverageData.conversionPaths.incoming.map((path, i) => (
-                  <div key={i} className={`p-3 border-2 rounded-lg ${
-                    path.status === 'partial' ? 'border-yellow-300 bg-yellow-50' :
+                  <div key={i} className={`p-3 border-2 rounded-lg ${path.status === 'partial' ? 'border-yellow-300 bg-yellow-50' :
                     'border-red-300 bg-red-50'
-                  }`}>
+                    }`}>
                     <div className="flex items-center justify-between mb-2">
                       <p className="font-bold">{path.path}</p>
                       <Badge className={
                         path.status === 'partial' ? 'bg-yellow-600 text-white' :
-                        'bg-red-600 text-white'
+                          'bg-red-600 text-white'
                       }>{path.coverage}%</Badge>
                     </div>
                     <p className="text-sm text-slate-700 mb-1">{path.description}</p>
@@ -1503,15 +1488,14 @@ function LivingLabsCoverageReport() {
               <p className="font-semibold text-red-900 mb-3">→ OUTPUT Paths (ALL MISSING/WEAK)</p>
               <div className="space-y-3">
                 {coverageData.conversionPaths.outgoing.map((path, i) => (
-                  <div key={i} className={`p-3 border-2 rounded-lg ${
-                    path.status === 'partial' ? 'border-yellow-300 bg-yellow-50' :
+                  <div key={i} className={`p-3 border-2 rounded-lg ${path.status === 'partial' ? 'border-yellow-300 bg-yellow-50' :
                     'border-red-300 bg-red-50'
-                  }`}>
+                    }`}>
                     <div className="flex items-center justify-between mb-2">
                       <p className="font-bold">{path.path}</p>
                       <Badge className={
                         path.status === 'partial' ? 'bg-yellow-600 text-white' :
-                        'bg-red-600 text-white'
+                          'bg-red-600 text-white'
                       }>{path.coverage}%</Badge>
                     </div>
                     <p className="text-sm text-slate-700 mb-1">{path.description}</p>
@@ -1931,12 +1915,12 @@ function LivingLabsCoverageReport() {
                       </tr>
                     </thead>
                     <tbody>
-                      {rows.map((row, i) => (
+                      {Array.isArray(rows) && rows.map((row, i) => (
                         <tr key={i} className="border-b hover:bg-slate-50">
-                          <td className="py-2 px-3 font-semibold">{row.aspect}</td>
-                          <td className="py-2 px-3 text-slate-700">{row.labs}</td>
-                          <td className="py-2 px-3 text-slate-700">{row[Object.keys(row).find(k => k !== 'aspect' && k !== 'labs' && k !== 'gap')]}</td>
-                          <td className="py-2 px-3 text-xs">{row.gap}</td>
+                          <td className="py-2 px-3 font-semibold">{row['aspect']}</td>
+                          <td className="py-2 px-3 text-slate-700">{row['labs']}</td>
+                          <td className="py-2 px-3 text-slate-700">{row[Object.keys(row).find(k => k !== 'aspect' && k !== 'labs' && k !== 'gap') || '']}</td>
+                          <td className="py-2 px-3 text-xs">{row['gap']}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -2056,19 +2040,18 @@ function LivingLabsCoverageReport() {
         <CardContent>
           <div className="space-y-3">
             {coverageData.recommendations.map((rec, idx) => (
-              <div key={idx} className={`p-4 border-2 rounded-lg ${
-                rec.priority === 'P0' ? 'border-red-300 bg-red-50' :
+              <div key={idx} className={`p-4 border-2 rounded-lg ${rec.priority === 'P0' ? 'border-red-300 bg-red-50' :
                 rec.priority === 'P1' ? 'border-orange-300 bg-orange-50' :
-                rec.priority === 'P2' ? 'border-yellow-300 bg-yellow-50' :
-                'border-blue-300 bg-blue-50'
-              }`}>
+                  rec.priority === 'P2' ? 'border-yellow-300 bg-yellow-50' :
+                    'border-blue-300 bg-blue-50'
+                }`}>
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Badge className={
                       rec.priority === 'P0' ? 'bg-red-600 text-white' :
-                      rec.priority === 'P1' ? 'bg-orange-600 text-white' :
-                      rec.priority === 'P2' ? 'bg-yellow-600 text-white' :
-                      'bg-blue-600 text-white'
+                        rec.priority === 'P1' ? 'bg-orange-600 text-white' :
+                          rec.priority === 'P2' ? 'bg-yellow-600 text-white' :
+                            'bg-blue-600 text-white'
                     }>
                       {rec.priority}
                     </Badge>
@@ -2126,18 +2109,18 @@ function LivingLabsCoverageReport() {
             <p className="text-sm font-semibold text-green-900 mb-2">✅ Living Labs System - 100% Complete</p>
             <p className="text-sm text-green-800">
               Living Labs citizen co-creation infrastructure achieves <strong>COMPLETE COVERAGE</strong> with {overallCoverage}% overall:
-              <br/><br/>
+              <br /><br />
               <strong>✅ Complete Features:</strong>
-              <br/>✅ 9 entities with full schemas (LivingLab, Booking, ResourceBooking, CitizenParticipant, CitizenDataCollection, LabSolutionCertification, LabProjectEvaluation, LabOutputEvaluation, LabPolicyRecommendation) - 100%
-              <br/>✅ 4 core pages + 1 participant page (LivingLabs, LivingLabDetail, Create, Edit, CitizenLabParticipation) - 100%
-              <br/>✅ 5 workflows (Lab Setup & Accreditation, Booking & Onboarding, Research Execution, Exit & Transition, Citizen Co-Creation) - 100%
-              <br/>✅ 8 complete user journeys (Admin, Researcher, Citizen Participant, Municipality Host, Lab Manager, Output Evaluator, Challenge Owner, Executive) - 100%
-              <br/>✅ 10 AI features (lab matching, expert matching, capacity optimization, citizen science integration, output impact tracking, etc.) - 100%
-              <br/>✅ 13 conversion paths (6 input + 7 output) - 100%
-              <br/>✅ 4 comparison tables (Labs vs Sandboxes/R&D/Pilots/Challenges) - 100%
-              <br/>✅ RBAC with 10 permissions, 9 roles (3 expert roles), 8 RLS patterns, PDPL compliance - 100%
-              <br/>✅ 10 integration points including ethics review, policy evidence, solution certification - 100%
-              <br/><br/>
+              <br />✅ 9 entities with full schemas (LivingLab, Booking, ResourceBooking, CitizenParticipant, CitizenDataCollection, LabSolutionCertification, LabProjectEvaluation, LabOutputEvaluation, LabPolicyRecommendation) - 100%
+              <br />✅ 4 core pages + 1 participant page (LivingLabs, LivingLabDetail, Create, Edit, CitizenLabParticipation) - 100%
+              <br />✅ 5 workflows (Lab Setup & Accreditation, Booking & Onboarding, Research Execution, Exit & Transition, Citizen Co-Creation) - 100%
+              <br />✅ 8 complete user journeys (Admin, Researcher, Citizen Participant, Municipality Host, Lab Manager, Output Evaluator, Challenge Owner, Executive) - 100%
+              <br />✅ 10 AI features (lab matching, expert matching, capacity optimization, citizen science integration, output impact tracking, etc.) - 100%
+              <br />✅ 13 conversion paths (6 input + 7 output) - 100%
+              <br />✅ 4 comparison tables (Labs vs Sandboxes/R&D/Pilots/Challenges) - 100%
+              <br />✅ RBAC with 10 permissions, 9 roles (3 expert roles), 8 RLS patterns, PDPL compliance - 100%
+              <br />✅ 10 integration points including ethics review, policy evidence, solution certification - 100%
+              <br /><br />
               <strong>🏆 ACHIEVEMENT:</strong> Living Labs are the CITIZEN CO-CREATION HUB with complete participant workflow, ethics review, research quality evaluation, and pathways to Policy/Solution/Pilot.
             </p>
           </div>
@@ -2146,17 +2129,17 @@ function LivingLabsCoverageReport() {
             <p className="text-sm font-semibold text-blue-900 mb-2">🎯 Bottom Line - Living Labs 100% Complete</p>
             <p className="text-sm text-blue-800">
               <strong>CITIZEN CO-CREATION ECOSYSTEM PRODUCTION READY</strong>
-              <br/><br/>
+              <br /><br />
               Living Labs provide the <strong>PARTICIPATORY RESEARCH INFRASTRUCTURE</strong> for citizen-led innovation:
-              <br/>• <strong>INPUT:</strong> 6 complete paths (Strategy, Taxonomy, Challenge, R&D, Pilot, Idea → Lab) with LabRoutingHub for sector-based routing
-              <br/>• <strong>CO-CREATION:</strong> Complete citizen workflow (CitizenParticipant, CitizenDataCollection entities) with recruitment, onboarding, recognition, impact tracking
-              <br/>• <strong>ETHICS:</strong> IRB-style review via LabEthicsReviewBoard + Research Ethics Officer role + informed consent + PDPL compliance
-              <br/>• <strong>OUTPUT:</strong> 7 complete paths (Lab → Pilot, Solution, Policy, Knowledge, R&D feedback, Challenge resolution, Citizen impact)
-              <br/><br/>
+              <br />• <strong>INPUT:</strong> 6 complete paths (Strategy, Taxonomy, Challenge, R&D, Pilot, Idea → Lab) with LabRoutingHub for sector-based routing
+              <br />• <strong>CO-CREATION:</strong> Complete citizen workflow (CitizenParticipant, CitizenDataCollection entities) with recruitment, onboarding, recognition, impact tracking
+              <br />• <strong>ETHICS:</strong> IRB-style review via LabEthicsReviewBoard + Research Ethics Officer role + informed consent + PDPL compliance
+              <br />• <strong>OUTPUT:</strong> 7 complete paths (Lab → Pilot, Solution, Policy, Knowledge, R&D feedback, Challenge resolution, Citizen impact)
+              <br /><br />
               Living Labs are the <strong>EVIDENCE-BASED POLICY ENGINE</strong> - transforming citizen feedback into actionable insights for regulation.
-              <br/><br/>
+              <br /><br />
               <strong>🎉 NO REMAINING CRITICAL GAPS - LIVING LABS PRODUCTION READY</strong>
-              <br/>(Complete citizen co-creation infrastructure with ethics review and policy/solution pathways)
+              <br />(Complete citizen co-creation infrastructure with ethics review and policy/solution pathways)
             </p>
           </div>
 

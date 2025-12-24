@@ -10,8 +10,6 @@ import { MapPin, Target, TrendingUp } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { EntityTable } from './EntityTable';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
-
 export function RegionsTab({ regions, onEdit, onDelete, onAdd }) {
   const { t, language } = useLanguage();
   const [showStrategicPriorities, setShowStrategicPriorities] = useState(false);

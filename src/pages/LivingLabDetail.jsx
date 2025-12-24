@@ -1,4 +1,4 @@
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import LabPolicyEvidenceWorkflow from '../components/livinglab/LabPolicyEvidence
 import LivingLabWorkflowTab from '../components/livinglab/LivingLabWorkflowTab';
 import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowApprovalTab';
 import { createPageUrl } from '../utils';
-import { 
+import {
   Beaker, MapPin, Building2, Wifi, Database, Users, Phone, Mail,
   Clock, DollarSign, FileText, Image, Video, Globe, Calendar,
   Award, BookOpen, Sparkles, CheckCircle2, TestTube, Microscope,
@@ -44,11 +44,18 @@ export default function LivingLabDetail() {
   const [showInfrastructure, setShowInfrastructure] = useState(false);
   const [showCapacityOptimizer, setShowCapacityOptimizer] = useState(false);
 
+  /** @type {{ data: import('@/types/supa_ext').LivingLab | null, isLoading: boolean }} */
   const { data: lab, isLoading } = useQuery({
     queryKey: ['living-lab', labId],
     queryFn: async () => {
-      const labs = await base44.entities.LivingLab.list();
-      return labs.find(l => l.id === labId);
+      const { data, error } = await supabase
+        .from('living_labs')
+        .select('*')
+        .eq('id', labId)
+        .single();
+
+      if (error) throw error;
+      return data;
     },
     enabled: !!labId
   });
@@ -56,8 +63,13 @@ export default function LivingLabDetail() {
   const { data: projects = [] } = useQuery({
     queryKey: ['rd-projects', labId],
     queryFn: async () => {
-      const allProjects = await base44.entities.RDProject.list();
-      return allProjects.filter(p => p.living_lab_id === labId);
+      const { data, error } = await supabase
+        .from('rd_projects')
+        .select('*')
+        .eq('living_lab_id', labId);
+
+      if (error) throw error;
+      return data;
     },
     enabled: !!labId
   });
@@ -65,20 +77,30 @@ export default function LivingLabDetail() {
   const { data: sandboxes = [] } = useQuery({
     queryKey: ['sandboxes-linked', labId],
     queryFn: async () => {
-      const all = await base44.entities.Sandbox.list();
-      return all.filter(s => s.living_lab_id === labId);
+      // @ts-ignore
+      const { data, error } = await supabase
+        .from('sandboxes')
+        .select('*')
+        .eq('living_lab_id', labId);
+
+      if (error) throw error;
+      return data;
     },
     enabled: !!labId
   });
 
+  /** @type {{ data: import('@/types/supa_ext').ExpertEvaluation[] }} */
   const { data: expertEvaluations = [] } = useQuery({
     queryKey: ['lab-expert-evaluations', labId],
     queryFn: async () => {
-      const all = await base44.entities.ExpertEvaluation.list();
-      return all.filter(e => 
-        (e.entity_type === 'livinglab_project' || e.entity_type === 'lab_output' || e.entity_type === 'LivingLab') && 
-        e.entity_id === labId
-      );
+      const { data, error } = await supabase
+        .from('expert_evaluations')
+        .select('*')
+        .eq('entity_id', labId)
+        .in('entity_type', ['livinglab_project', 'lab_output', 'LivingLab']);
+
+      if (error) throw error;
+      return data;
     },
     enabled: !!labId
   });
@@ -411,15 +433,15 @@ export default function LivingLabDetail() {
             entityId={labId}
             currentStage={
               lab.status === 'setup' ? 'setup' :
-              lab.status === 'accreditation_pending' ? 'accreditation' :
-              lab.status === 'operational' ? 'operational' : 'setup'
+                lab.status === 'accreditation_pending' ? 'accreditation' :
+                  lab.status === 'operational' ? 'operational' : 'setup'
             }
           />
         </TabsContent>
 
         <TabsContent value="overview" className="space-y-6">
           <LivingLabDashboard lab={lab} projects={projects} />
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               <Card>
@@ -687,9 +709,9 @@ export default function LivingLabDetail() {
                       <div className="text-right ml-4">
                         <Badge className={
                           item.availability === 'available' ? 'bg-green-100 text-green-700' :
-                          item.availability === 'reserved' ? 'bg-amber-100 text-amber-700' :
-                          item.availability === 'maintenance' ? 'bg-blue-100 text-blue-700' :
-                          'bg-red-100 text-red-700'
+                            item.availability === 'reserved' ? 'bg-amber-100 text-amber-700' :
+                              item.availability === 'maintenance' ? 'bg-blue-100 text-blue-700' :
+                                'bg-red-100 text-red-700'
                         }>
                           {item.availability}
                         </Badge>
@@ -884,8 +906,8 @@ export default function LivingLabDetail() {
                             <div className="text-3xl font-bold text-purple-600">{evaluation.overall_score}</div>
                             <Badge className={
                               evaluation.recommendation === 'approve' ? 'bg-green-100 text-green-700' :
-                              evaluation.recommendation === 'reject' ? 'bg-red-100 text-red-700' :
-                              'bg-yellow-100 text-yellow-700'
+                                evaluation.recommendation === 'reject' ? 'bg-red-100 text-red-700' :
+                                  'bg-yellow-100 text-yellow-700'
                             }>
                               {evaluation.recommendation?.replace(/_/g, ' ')}
                             </Badge>

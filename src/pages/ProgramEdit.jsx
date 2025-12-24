@@ -1,6 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,30 +21,20 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useAuth } from '@/lib/AuthContext';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useProgram } from '@/hooks/useProgramDetails';
+import { useProgramMutations } from '@/hooks/useProgramMutations';
 
 function ProgramEditPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const programId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
   const { invokeAI, status, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
   const { handleMediaSelect, registerUploadedMedia } = useMediaIntegration('programs', programId);
 
-  const { data: program, isLoading } = useQuery({
-    queryKey: ['program', programId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('programs')
-        .select('*')
-        .eq('id', programId)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!programId
-  });
+  const { data: program, isLoading } = useProgram(programId);
+  const { updateProgram, isUpdating } = useProgramMutations();
 
   const [formData, setFormData] = useState(null);
   const [previewMode, setPreviewMode] = useState(false);
@@ -62,12 +50,12 @@ function ProgramEditPage() {
       // Check for draft
       const draftKey = `program_edit_draft_${programId}`;
       const savedDraft = localStorage.getItem(draftKey);
-      
+
       if (savedDraft) {
         try {
           const { data, timestamp } = JSON.parse(savedDraft);
           const draftAge = Date.now() - timestamp;
-          
+
           // Recover draft if less than 24 hours old
           if (draftAge < 24 * 60 * 60 * 1000) {
             setFormData(data);
@@ -83,7 +71,7 @@ function ProgramEditPage() {
       } else {
         setFormData(program);
       }
-      
+
       originalDataRef.current = program;
     }
   }, [program]);
@@ -120,43 +108,18 @@ function ProgramEditPage() {
     setChangedFields(changes);
   }, [formData]);
 
-  const updateMutation = useMutation({
-    mutationFn: async (data) => {
-      // Increment version and log changes
-      const updates = {
-        ...data,
-        version_number: (program.version_number || 1) + 1,
-        previous_version_id: programId
-      };
-
-      const { error } = await supabase
-        .from('programs')
-        .update(updates)
-        .eq('id', programId);
-      if (error) throw error;
-
-      // Log activity
-      await supabase.from('system_activities').insert({
-        entity_type: 'program',
-        entity_id: programId,
-        activity_type: 'program_updated',
-        performed_by: user?.email,
-        timestamp: new Date().toISOString(),
-        metadata: {
-          changed_fields: Object.keys(changedFields),
-          version: updates.version_number
-        }
+  const handleSave = async () => {
+    try {
+      // updateProgram handles logging and invalidation
+      await updateProgram({
+        programId,
+        updates: formData
       });
-
-      // Clear draft
-      localStorage.removeItem(`program_edit_draft_${programId}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['program', programId] });
-      toast.success(t({ en: 'Program updated', ar: 'تم تحديث البرنامج' }));
       navigate(createPageUrl(`ProgramDetail?id=${programId}`));
+    } catch (error) {
+      toast.error(t({ en: 'Failed to update program', ar: 'فشل تحديث البرنامج' }));
     }
-  });
+  };
 
   const handleAIEnhance = async () => {
     const prompt = `Enhance this program description with professional, detailed bilingual content:
@@ -245,7 +208,7 @@ Generate comprehensive bilingual (English + Arabic) content:
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            {t({ 
+            {t({
               en: `${changeCount} unsaved changes: ${Object.keys(changedFields).slice(0, 3).join(', ')}${changeCount > 3 ? '...' : ''}`,
               ar: `${changeCount} تغييرات غير محفوظة`
             })}
@@ -313,289 +276,289 @@ Generate comprehensive bilingual (English + Arabic) content:
             <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mt-2" />
           </CardHeader>
           <CardContent className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Name (English)</Label>
+                <Input
+                  value={formData.name_en}
+                  onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>اسم البرنامج (عربي)</Label>
+                <Input
+                  value={formData.name_ar || ''}
+                  onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
+                  dir="rtl"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Tagline (English)</Label>
+                <Input
+                  value={formData.tagline_en || ''}
+                  onChange={(e) => setFormData({ ...formData, tagline_en: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>الشعار (عربي)</Label>
+                <Input
+                  value={formData.tagline_ar || ''}
+                  onChange={(e) => setFormData({ ...formData, tagline_ar: e.target.value })}
+                  dir="rtl"
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label>Name (English)</Label>
-              <Input
-                value={formData.name_en}
-                onChange={(e) => setFormData({...formData, name_en: e.target.value})}
+              <Label>Description (English)</Label>
+              <Textarea
+                value={formData.description_en || ''}
+                onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
+                rows={4}
               />
             </div>
+
             <div className="space-y-2">
-              <Label>اسم البرنامج (عربي)</Label>
-              <Input
-                value={formData.name_ar || ''}
-                onChange={(e) => setFormData({...formData, name_ar: e.target.value})}
+              <Label>الوصف (عربي)</Label>
+              <Textarea
+                value={formData.description_ar || ''}
+                onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
+                rows={4}
                 dir="rtl"
               />
             </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Tagline (English)</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Program Type</Label>
+                <Select
+                  value={formData.program_type || formData.type || 'accelerator'}
+                  onValueChange={(v) => setFormData({ ...formData, program_type: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="accelerator">Accelerator</SelectItem>
+                    <SelectItem value="incubator">Incubator</SelectItem>
+                    <SelectItem value="hackathon">Hackathon</SelectItem>
+                    <SelectItem value="challenge">Challenge</SelectItem>
+                    <SelectItem value="fellowship">Fellowship</SelectItem>
+                    <SelectItem value="training">Training</SelectItem>
+                    <SelectItem value="matchmaker">Matchmaker</SelectItem>
+                    <SelectItem value="sandbox_wave">Sandbox Wave</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(v) => setFormData({ ...formData, status: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="planning">Planning</SelectItem>
+                    <SelectItem value="applications_open">Applications Open</SelectItem>
+                    <SelectItem value="selection">Selection</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <Label>Duration (weeks)</Label>
               <Input
-                value={formData.tagline_en || ''}
-                onChange={(e) => setFormData({...formData, tagline_en: e.target.value})}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>الشعار (عربي)</Label>
-              <Input
-                value={formData.tagline_ar || ''}
-                onChange={(e) => setFormData({...formData, tagline_ar: e.target.value})}
-                dir="rtl"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Description (English)</Label>
-            <Textarea
-              value={formData.description_en || ''}
-              onChange={(e) => setFormData({...formData, description_en: e.target.value})}
-              rows={4}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>الوصف (عربي)</Label>
-            <Textarea
-              value={formData.description_ar || ''}
-              onChange={(e) => setFormData({...formData, description_ar: e.target.value})}
-              rows={4}
-              dir="rtl"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Program Type</Label>
-              <Select
-                value={formData.program_type || formData.type || 'accelerator'}
-                onValueChange={(v) => setFormData({...formData, program_type: v})}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="accelerator">Accelerator</SelectItem>
-                  <SelectItem value="incubator">Incubator</SelectItem>
-                  <SelectItem value="hackathon">Hackathon</SelectItem>
-                  <SelectItem value="challenge">Challenge</SelectItem>
-                  <SelectItem value="fellowship">Fellowship</SelectItem>
-                  <SelectItem value="training">Training</SelectItem>
-                  <SelectItem value="matchmaker">Matchmaker</SelectItem>
-                  <SelectItem value="sandbox_wave">Sandbox Wave</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(v) => setFormData({...formData, status: v})}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="planning">Planning</SelectItem>
-                  <SelectItem value="applications_open">Applications Open</SelectItem>
-                  <SelectItem value="selection">Selection</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div>
-            <Label>Duration (weeks)</Label>
-            <Input
-              type="number"
-              value={formData.duration_weeks || ''}
-              onChange={(e) => setFormData({...formData, duration_weeks: parseInt(e.target.value)})}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Application Open</Label>
-              <Input
-                type="date"
-                value={formData.timeline?.application_open || ''}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  timeline: {...(formData.timeline || {}), application_open: e.target.value}
-                })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Application Close</Label>
-              <Input
-                type="date"
-                value={formData.timeline?.application_close || ''}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  timeline: {...(formData.timeline || {}), application_close: e.target.value}
-                })}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Program Start Date</Label>
-              <Input
-                type="date"
-                value={formData.timeline?.program_start || formData.start_date || ''}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  timeline: {...(formData.timeline || {}), program_start: e.target.value}
-                })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Program End Date</Label>
-              <Input
-                type="date"
-                value={formData.timeline?.program_end || formData.end_date || ''}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  timeline: {...(formData.timeline || {}), program_end: e.target.value}
-                })}
-              />
-            </div>
-          </div>
-
-          <div className="border-t pt-6 space-y-4">
-            <h3 className="font-semibold text-slate-900">{t({ en: 'Curriculum', ar: 'المنهج' })}</h3>
-            <AICurriculumGenerator
-              programType={formData.program_type}
-              duration_weeks={formData.duration_weeks}
-              objectives={formData.objectives_en}
-              onCurriculumGenerated={(curriculum) => {
-                setFormData(prev => ({ ...prev, curriculum }));
-                toast.success(t({ en: 'Curriculum updated', ar: 'تم تحديث المنهج' }));
-              }}
-            />
-          </div>
-
-          <div className="border-t pt-6 space-y-4">
-            <h3 className="font-semibold text-slate-900">{t({ en: 'Program Media', ar: 'وسائط البرنامج' })}</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <MediaFieldWithPicker
-                label={t({ en: 'Program Image', ar: 'صورة البرنامج' })}
-                value={formData.image_url || ''}
-                onChange={(url) => setFormData({...formData, image_url: url})}
-                onMediaSelect={handleMediaSelect}
-                fieldName="image_url"
-                entityType="programs"
-                entityId={programId}
-                mediaType="image"
-                bucket="programs"
-              />
-
-              <MediaFieldWithPicker
-                label={t({ en: 'Promotional Video', ar: 'فيديو ترويجي' })}
-                value={formData.video_url || ''}
-                onChange={(url) => setFormData({...formData, video_url: url})}
-                onMediaSelect={handleMediaSelect}
-                fieldName="video_url"
-                entityType="programs"
-                entityId={programId}
-                mediaType="video"
-                bucket="programs"
+                type="number"
+                value={formData.duration_weeks || ''}
+                onChange={(e) => setFormData({ ...formData, duration_weeks: parseInt(e.target.value) })}
               />
             </div>
 
-            <MediaFieldWithPicker
-              label={t({ en: 'Program Brochure (PDF)', ar: 'كتيب البرنامج' })}
-              value={formData.brochure_url || ''}
-              onChange={(url) => setFormData({...formData, brochure_url: url})}
-              onMediaSelect={handleMediaSelect}
-              fieldName="brochure_url"
-              entityType="programs"
-              entityId={programId}
-              mediaType="document"
-              allowedTypes={['pdf', 'document']}
-              bucket="programs"
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Application Open</Label>
+                <Input
+                  type="date"
+                  value={formData.timeline?.application_open || ''}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    timeline: { ...(formData.timeline || {}), application_open: e.target.value }
+                  })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Application Close</Label>
+                <Input
+                  type="date"
+                  value={formData.timeline?.application_close || ''}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    timeline: { ...(formData.timeline || {}), application_close: e.target.value }
+                  })}
+                />
+              </div>
+            </div>
 
-            <div className="space-y-2">
-              <Label>{t({ en: 'Gallery Images', ar: 'معرض الصور' })}</Label>
-              <FileUploader
-                type="image"
-                label={t({ en: 'Add to Gallery', ar: 'إضافة للمعرض' })}
-                maxSize={10}
-                bucket="programs"
-                enableImageSearch={true}
-                searchContext={formData.name_en}
-                onUploadComplete={async (url) => {
-                  await registerUploadedMedia(url, 'gallery_urls');
-                  setFormData(prev => ({
-                    ...prev,
-                    gallery_urls: [...(prev.gallery_urls || []), url]
-                  }));
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Program Start Date</Label>
+                <Input
+                  type="date"
+                  value={formData.timeline?.program_start || formData.start_date || ''}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    timeline: { ...(formData.timeline || {}), program_start: e.target.value }
+                  })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Program End Date</Label>
+                <Input
+                  type="date"
+                  value={formData.timeline?.program_end || formData.end_date || ''}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    timeline: { ...(formData.timeline || {}), program_end: e.target.value }
+                  })}
+                />
+              </div>
+            </div>
+
+            <div className="border-t pt-6 space-y-4">
+              <h3 className="font-semibold text-slate-900">{t({ en: 'Curriculum', ar: 'المنهج' })}</h3>
+              <AICurriculumGenerator
+                programType={formData.program_type}
+                duration_weeks={formData.duration_weeks}
+                objectives={formData.objectives_en}
+                onCurriculumGenerated={(curriculum) => {
+                  setFormData(prev => ({ ...prev, curriculum }));
+                  toast.success(t({ en: 'Curriculum updated', ar: 'تم تحديث المنهج' }));
                 }}
               />
-              {formData.gallery_urls?.length > 0 && (
-                <div className="grid grid-cols-4 gap-2 mt-2">
-                  {formData.gallery_urls.map((url, idx) => (
-                    <div key={idx} className="relative group">
-                      <img src={url} alt={`Gallery ${idx + 1}`} className="w-full h-20 object-cover rounded" />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 bg-red-500 hover:bg-red-600 h-6 w-6"
-                        onClick={() => {
-                          setFormData(prev => ({
-                            ...prev,
-                            gallery_urls: prev.gallery_urls.filter((_, i) => i !== idx)
-                          }));
-                        }}
-                      >
-                        <X className="h-3 w-3 text-white" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
-          </div>
 
-          <div className="flex justify-end gap-3 pt-6 border-t">
-            <Button variant="outline" onClick={() => navigate(createPageUrl(`ProgramDetail?id=${programId}`))}>
-              {t({ en: 'Cancel', ar: 'إلغاء' })}
-            </Button>
-            <Button
-              onClick={() => updateMutation.mutate(formData)}
-              disabled={updateMutation.isPending}
-              className="bg-gradient-to-r from-blue-600 to-teal-600"
-            >
-              {updateMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {t({ en: 'Saving...', ar: 'جاري الحفظ...' })}
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  {t({ en: 'Save Changes', ar: 'حفظ التغييرات' })}
-                </>
-              )}
-            </Button>
-          </div>
+            <div className="border-t pt-6 space-y-4">
+              <h3 className="font-semibold text-slate-900">{t({ en: 'Program Media', ar: 'وسائط البرنامج' })}</h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <MediaFieldWithPicker
+                  label={t({ en: 'Program Image', ar: 'صورة البرنامج' })}
+                  value={formData.image_url || ''}
+                  onChange={(url) => setFormData({ ...formData, image_url: url })}
+                  onMediaSelect={handleMediaSelect}
+                  fieldName="image_url"
+                  entityType="programs"
+                  entityId={programId}
+                  mediaType="image"
+                  bucket="programs"
+                />
+
+                <MediaFieldWithPicker
+                  label={t({ en: 'Promotional Video', ar: 'فيديو ترويجي' })}
+                  value={formData.video_url || ''}
+                  onChange={(url) => setFormData({ ...formData, video_url: url })}
+                  onMediaSelect={handleMediaSelect}
+                  fieldName="video_url"
+                  entityType="programs"
+                  entityId={programId}
+                  mediaType="video"
+                  bucket="programs"
+                />
+              </div>
+
+              <MediaFieldWithPicker
+                label={t({ en: 'Program Brochure (PDF)', ar: 'كتيب البرنامج' })}
+                value={formData.brochure_url || ''}
+                onChange={(url) => setFormData({ ...formData, brochure_url: url })}
+                onMediaSelect={handleMediaSelect}
+                fieldName="brochure_url"
+                entityType="programs"
+                entityId={programId}
+                mediaType="document"
+                allowedTypes={['pdf', 'document']}
+                bucket="programs"
+              />
+
+              <div className="space-y-2">
+                <Label>{t({ en: 'Gallery Images', ar: 'معرض الصور' })}</Label>
+                <FileUploader
+                  type="image"
+                  label={t({ en: 'Add to Gallery', ar: 'إضافة للمعرض' })}
+                  maxSize={10}
+                  bucket="programs"
+                  enableImageSearch={true}
+                  searchContext={formData.name_en}
+                  onUploadComplete={async (url) => {
+                    await registerUploadedMedia(url, 'gallery_urls');
+                    setFormData(prev => ({
+                      ...prev,
+                      gallery_urls: [...(prev.gallery_urls || []), url]
+                    }));
+                  }}
+                />
+                {formData.gallery_urls?.length > 0 && (
+                  <div className="grid grid-cols-4 gap-2 mt-2">
+                    {formData.gallery_urls.map((url, idx) => (
+                      <div key={idx} className="relative group">
+                        <img src={url} alt={`Gallery ${idx + 1}`} className="w-full h-20 object-cover rounded" />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 bg-red-500 hover:bg-red-600 h-6 w-6"
+                          onClick={() => {
+                            setFormData(prev => ({
+                              ...prev,
+                              gallery_urls: prev.gallery_urls.filter((_, i) => i !== idx)
+                            }));
+                          }}
+                        >
+                          <X className="h-3 w-3 text-white" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-6 border-t">
+              <Button variant="outline" onClick={() => navigate(createPageUrl(`ProgramDetail?id=${programId}`))}>
+                {t({ en: 'Cancel', ar: 'إلغاء' })}
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={isUpdating}
+                className="bg-gradient-to-r from-blue-600 to-teal-600"
+              >
+                {isUpdating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {t({ en: 'Saving...', ar: 'جاري الحفظ...' })}
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    {t({ en: 'Save Changes', ar: 'حفظ التغييرات' })}
+                  </>
+                )}
+              </Button>
+            </div>
           </CardContent>
-          </Card>
-          )}
+        </Card>
+      )}
     </PageLayout>
-          );
-          }
+  );
+}
 
 export default ProtectedPage(ProgramEditPage, {
   requiredPermissions: ['program_edit']

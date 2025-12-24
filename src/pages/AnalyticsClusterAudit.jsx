@@ -1,5 +1,5 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useAllMIIResults } from '@/hooks/useMIIData';
+import { useUserActivities, useSystemActivities } from '@/hooks/useSystemAudit';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -9,20 +9,9 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 function AnalyticsClusterAudit() {
   const { t, isRTL } = useLanguage();
 
-  const { data: miiResults = [] } = useQuery({
-    queryKey: ['mii-results-audit'],
-    queryFn: () => base44.entities.MIIResult.list()
-  });
-
-  const { data: userActivities = [] } = useQuery({
-    queryKey: ['user-activities-audit'],
-    queryFn: () => base44.entities.UserActivity.list()
-  });
-
-  const { data: systemActivities = [] } = useQuery({
-    queryKey: ['system-activities-audit'],
-    queryFn: () => base44.entities.SystemActivity.list()
-  });
+  const { data: miiResults = [] } = useAllMIIResults();
+  const { data: userActivities = [] } = useUserActivities();
+  const { data: systemActivities = [] } = useSystemActivities();
 
   const entities = [
     {

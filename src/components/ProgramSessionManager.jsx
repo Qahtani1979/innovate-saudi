@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,9 +7,10 @@ import { useLanguage } from './LanguageContext';
 import { Calendar, Plus, Users, X, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useProgramMutations } from '@/hooks/useProgramMutations';
+
 export default function ProgramSessionManager({ program, onClose }) {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
 
   const [sessions, setSessions] = useState(program?.curriculum || []);
   const [newSession, setNewSession] = useState({
@@ -27,16 +26,16 @@ export default function ProgramSessionManager({ program, onClose }) {
     resources: []
   });
 
-  const addSessionMutation = useMutation({
-    mutationFn: async () => {
-      const updatedCurriculum = [...sessions, newSession];
-      await base44.entities.Program.update(program.id, {
-        curriculum: updatedCurriculum
+  const { updateProgram, isUpdating } = useProgramMutations();
+
+  const handleAddSession = async () => {
+    const updatedCurriculum = [...sessions, newSession];
+    try {
+      await updateProgram({
+        id: program.id,
+        data: { curriculum: updatedCurriculum }
       });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['program']);
-      setSessions([...sessions, newSession]);
+      setSessions(updatedCurriculum);
       setNewSession({
         week: sessions.length + 2,
         topic: '',
@@ -49,16 +48,18 @@ export default function ProgramSessionManager({ program, onClose }) {
         activities: [],
         resources: []
       });
-      toast.success(t({ en: 'Session added', ar: 'تمت إضافة الجلسة' }));
-    }
-  });
+    } catch (error) { }
+  };
 
-  const deleteSession = async (index) => {
+  const handleDeleteSession = async (index) => {
     const updated = sessions.filter((_, i) => i !== index);
-    await base44.entities.Program.update(program.id, { curriculum: updated });
-    setSessions(updated);
-    queryClient.invalidateQueries(['program']);
-    toast.success(t({ en: 'Session removed', ar: 'تم إزالة الجلسة' }));
+    try {
+      await updateProgram({
+        id: program.id,
+        data: { curriculum: updated }
+      });
+      setSessions(updated);
+    } catch (error) { }
   };
 
   return (
@@ -99,7 +100,7 @@ export default function ProgramSessionManager({ program, onClose }) {
                     </p>
                   )}
                 </div>
-                <Button size="sm" variant="ghost" onClick={() => deleteSession(i)}>
+                <Button size="sm" variant="ghost" onClick={() => handleDeleteSession(i)}>
                   <X className="h-4 w-4 text-red-600" />
                 </Button>
               </div>
@@ -193,11 +194,15 @@ export default function ProgramSessionManager({ program, onClose }) {
           </div>
 
           <Button
-            onClick={() => addSessionMutation.mutate()}
-            disabled={!newSession.topic || addSessionMutation.isPending}
+            onClick={handleAddSession}
+            disabled={!newSession.topic || isUpdating}
             className="w-full bg-blue-600 hover:bg-blue-700"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            {isUpdating ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4 mr-2" />
+            )}
             {t({ en: 'Add Session', ar: 'إضافة جلسة' })}
           </Button>
         </div>

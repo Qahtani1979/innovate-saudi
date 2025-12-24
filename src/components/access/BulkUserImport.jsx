@@ -1,26 +1,24 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRoles } from '@/hooks/useRoles';
+import { useUserMutations } from '@/hooks/useUserMutations';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Upload, Download, Users, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, Download, Users, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function BulkUserImport() {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
+  const { data: roles = [] } = useRoles();
+  const { inviteUsers } = useUserMutations();
+  const { notify } = useNotificationSystem();
+
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState([]);
   const [validationResults, setValidationResults] = useState(null);
-
-  const { data: roles = [] } = useQuery({
-    queryKey: ['roles'],
-    queryFn: () => base44.entities.Role.list()
-  });
 
   const downloadTemplate = () => {
     const template = [
@@ -44,7 +42,7 @@ export default function BulkUserImport() {
   const parseCSV = (text) => {
     const lines = text.split('\n').filter(l => l.trim());
     const headers = lines[0].split(',').map(h => h.trim());
-    
+
     return lines.slice(1).map(line => {
       const values = line.split(',');
       const obj = {};
@@ -110,77 +108,69 @@ export default function BulkUserImport() {
     reader.readAsText(uploadedFile);
   };
 
-  const importMutation = useMutation({
-    mutationFn: async (users) => {
-      const results = { success: [], failed: [] };
-
-      for (const userData of users) {
-        try {
-          // Map role names to IDs
-          const roleNames = userData.role_names ? userData.role_names.split(',').map(r => r.trim()) : [];
-          const roleIds = roleNames
-            .map(rn => roles.find(r => r.name === rn)?.id)
-            .filter(Boolean);
-
-          // Create user invitation
-          const user = await base44.entities.User.create({
-            email: userData.email,
-            full_name: userData.full_name,
-            assigned_roles: roleIds,
-            organization: userData.organization,
-            job_title: userData.job_title,
-            onboarding_completed: false
-          });
-
-          // Send welcome email
-          await supabase.functions.invoke('email-trigger-hub', {
-            body: {
-              trigger: 'auth.signup',
-              recipient_email: userData.email,
-              variables: {
-                userName: userData.full_name,
-                assignedRoles: roleNames.join(', '),
-                organization: userData.organization,
-                loginUrl: `${window.location.origin}/auth`
-              }
-            }
-          });
-
-          results.success.push(userData.email);
-        } catch (error) {
-          results.failed.push({ email: userData.email, error: error.message });
-        }
-      }
-
-      return results;
-    },
-    onSuccess: (results) => {
-      queryClient.invalidateQueries(['users']);
-      toast.success(t({ 
-        en: `Imported ${results.success.length} users successfully!`, 
-        ar: `تم استيراد ${results.success.length} مستخدم بنجاح!` 
-      }));
-      
-      if (results.failed.length > 0) {
-        toast.error(t({ 
-          en: `${results.failed.length} users failed`, 
-          ar: `فشل ${results.failed.length} مستخدم` 
-        }));
-      }
-
-      setFile(null);
-      setPreview([]);
-      setValidationResults(null);
-    }
-  });
-
-  const handleImport = () => {
+  const handleImport = async () => {
     if (!validationResults || validationResults.valid.length === 0) {
       toast.error(t({ en: 'No valid users to import', ar: 'لا يوجد مستخدمين صالحين للاستيراد' }));
       return;
     }
 
-    importMutation.mutate(validationResults.valid);
+    const users = validationResults.valid;
+
+    try {
+      // 1. Send Invitations (Bulk)
+      const invitationPayload = users.map(row => {
+        const roleNames = row.role_names ? row.role_names.split(',').map(r => r.trim()) : [];
+        const role = roles.find(r => r.name === roleNames[0]);
+        return {
+          email: row.email,
+          full_name: row.full_name,
+          role: role?.name || roleNames[0],
+          organization_id: row.organization || null,
+          metadata: {
+            job_title: row.job_title,
+            imported: true,
+            role_names: row.role_names
+          }
+        };
+      });
+
+      await inviteUsers.mutateAsync(invitationPayload);
+
+      // 2. Send Welcome Emails (if invitations were successful)
+      await Promise.all(users.map(row =>
+        notify({
+          type: 'system_alert',
+          entityType: 'user',
+          entityId: 'bulk_import',
+          recipientEmails: [row.email],
+          title: 'Welcome to Innovate Saudi',
+          message: `You have been invited to join the platform as ${row.role_names}.`,
+          sendEmail: true,
+          emailTemplate: 'auth.signup',
+          emailVariables: {
+            userName: row.full_name,
+            assignedRoles: row.role_names,
+            organization: row.organization || 'Innovate Saudi',
+            loginUrl: `${window.location.origin}/login`
+          }
+        })
+      ));
+
+      toast.success(t({
+        en: `Imported ${users.length} users successfully!`,
+        ar: `تم استيراد ${users.length} مستخدم بنجاح!`
+      }));
+
+      setFile(null);
+      setPreview([]);
+      setValidationResults(null);
+
+    } catch (error) {
+      toast.error(t({
+        en: `Failed to import users: ${error.message}`,
+        ar: `فشل استيراد المستخدمين: ${error.message}`
+      }));
+    }
   };
 
   return (
@@ -269,12 +259,16 @@ export default function BulkUserImport() {
                   )}
                 </div>
 
-                <Button 
-                  onClick={handleImport} 
-                  disabled={importMutation.isPending}
-                  className="w-full bg-indigo-600"
+                <Button
+                  onClick={handleImport} // Changed to handleImport
+                  disabled={!file || validationResults.errors.length > 0 || inviteUsers.isPending} // Adjusted disabled logic
+                  className="w-full bg-indigo-600 flex items-center gap-2" // Added flex items-center gap-2
                 >
-                  <Upload className="h-4 w-4 mr-2" />
+                  {inviteUsers.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
                   {t({ en: `Import ${validationResults.valid.length} Users`, ar: `استيراد ${validationResults.valid.length} مستخدم` })}
                 </Button>
               </>

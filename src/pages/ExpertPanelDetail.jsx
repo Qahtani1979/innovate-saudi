@@ -18,80 +18,63 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import EvaluationConsensusPanel from '../components/evaluation/EvaluationConsensusPanel';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
+import { useExpertPanel, usePanelEvaluations } from '@/hooks/useExpertPanelData';
+import { useExpertPanelMutations } from '@/hooks/useExpertPanelMutations';
+
 function ExpertPanelDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const panelId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
   const [vote, setVote] = useState('');
   const [notes, setNotes] = useState('');
 
-  const { data: panel, isLoading } = useQuery({
-    queryKey: ['expert-panel', panelId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('expert_panels')
-        .select('*')
-        .eq('id', panelId)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!panelId
-  });
+  const { data: panel, isLoading } = useExpertPanel(panelId);
+  // We need entity type from panel to fetch evaluations, but hooks rules prevent conditional hooks.
+  // We pass panel?.entity_type which will be undefined initially.
+  const { data: allEvaluations = [] } = usePanelEvaluations(panel?.entity_id, panel?.entity_type);
 
-  const { data: evaluations = [] } = useQuery({
-    queryKey: ['panel-evaluations', panel?.entity_id],
-    queryFn: async () => {
-      if (!panel) return [];
-      const { data, error } = await supabase
-        .from('expert_evaluations')
-        .select('*')
-        .eq('entity_type', panel.entity_type)
-        .eq('entity_id', panel.entity_id);
-      if (error) throw error;
-      return (data || []).filter(e => panel.panel_members?.includes(e.expert_email));
-    },
-    enabled: !!panel
-  });
+  // Filter evaluations to only show those from panel members
+  const evaluations = allEvaluations.filter(e => panel?.panel_members?.includes(e.expert_email));
 
-  const recordDecisionMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase
-        .from('expert_panels')
-        .update(data)
-        .eq('id', panelId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['expert-panel']);
-      toast.success(t({ en: 'Decision recorded', ar: 'تم تسجيل القرار' }));
-    }
-  });
+  const { updatePanel } = useExpertPanelMutations();
 
   const submitVote = () => {
     if (!vote) return;
-    
+
     const votingResults = panel.voting_results || {};
     votingResults[user?.email] = { vote, timestamp: new Date().toISOString(), notes };
 
-    recordDecisionMutation.mutate({
-      voting_results: votingResults,
-      status: 'discussion'
+    updatePanel.mutate({
+      id: panelId,
+      data: {
+        voting_results: votingResults,
+        status: 'discussion'
+      }
+    }, {
+      onSuccess: () => {
+        setVote('');
+        setNotes('');
+        toast.success(t({ en: 'Vote submitted', ar: 'تم إرسال التصويت' }));
+      }
     });
-
-    setVote('');
-    setNotes('');
   };
 
   const recordFinalDecision = (decision) => {
-    recordDecisionMutation.mutate({
-      decision,
-      final_recommendation: decision,
-      status: 'completed'
+    updatePanel.mutate({
+      id: panelId,
+      data: {
+        decision,
+        final_recommendation: decision,
+        status: 'completed'
+      }
+    }, {
+      onSuccess: () => {
+        toast.success(t({ en: 'Decision recorded', ar: 'تم تسجيل القرار' }));
+      }
     });
   };
+
 
   if (isLoading || !panel) {
     return (
@@ -121,10 +104,10 @@ function ExpertPanelDetail() {
         badges={[
           <Badge key="status" className={
             panel.status === 'forming' ? 'bg-yellow-100 text-yellow-700' :
-            panel.status === 'reviewing' ? 'bg-blue-100 text-blue-700' :
-            panel.status === 'discussion' ? 'bg-purple-100 text-purple-700' :
-            panel.status === 'consensus' ? 'bg-green-100 text-green-700' :
-            'bg-teal-100 text-teal-700'
+              panel.status === 'reviewing' ? 'bg-blue-100 text-blue-700' :
+                panel.status === 'discussion' ? 'bg-purple-100 text-purple-700' :
+                  panel.status === 'consensus' ? 'bg-green-100 text-green-700' :
+                    'bg-teal-100 text-teal-700'
           }>{panel.status}</Badge>,
           <Badge key="type" variant="outline">{panel.entity_type}</Badge>
         ]}
@@ -141,13 +124,12 @@ function ExpertPanelDetail() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Link to={createPageUrl(`${
-                panel.entity_type === 'challenge' ? 'ChallengeDetail' :
-                panel.entity_type === 'pilot' ? 'PilotDetail' :
-                panel.entity_type === 'rd_project' ? 'RDProjectDetail' :
-                panel.entity_type === 'scaling_plan' ? 'ScalingPlanDetail' :
-                'ChallengeDetail'
-              }?id=${panel.entity_id}`)}>
+              <Link to={createPageUrl(`${panel.entity_type === 'challenge' ? 'ChallengeDetail' :
+                  panel.entity_type === 'pilot' ? 'PilotDetail' :
+                    panel.entity_type === 'rd_project' ? 'RDProjectDetail' :
+                      panel.entity_type === 'scaling_plan' ? 'ScalingPlanDetail' :
+                        'ChallengeDetail'
+                }?id=${panel.entity_id}`)}>
                 <Button variant="outline" className="w-full">
                   <Eye className="h-4 w-4 mr-2" />
                   {t({ en: 'View Full Details', ar: 'عرض التفاصيل' })}
@@ -226,8 +208,8 @@ function ExpertPanelDetail() {
                       <span className="text-sm font-medium">{email}</span>
                       <Badge className={
                         voteData.vote === 'approve' ? 'bg-green-100 text-green-700' :
-                        voteData.vote === 'revise' ? 'bg-amber-100 text-amber-700' :
-                        'bg-red-100 text-red-700'
+                          voteData.vote === 'revise' ? 'bg-amber-100 text-amber-700' :
+                            'bg-red-100 text-red-700'
                       }>
                         {voteData.vote}
                       </Badge>
@@ -255,7 +237,7 @@ function ExpertPanelDetail() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <p className="text-sm text-green-800">
-                  Consensus reached ({approveVotes}/{voteCount} approve - {Math.round((approveVotes/voteCount)*100)}%)
+                  Consensus reached ({approveVotes}/{voteCount} approve - {Math.round((approveVotes / voteCount) * 100)}%)
                 </p>
                 <div className="flex gap-3">
                   <Button onClick={() => recordFinalDecision('approve')} className="flex-1 bg-green-600">
@@ -327,8 +309,8 @@ function ExpertPanelDetail() {
                       {voteCount > 0 ? Math.round((approveVotes / voteCount) * 100) : 0}%
                     </span>
                   </div>
-                  <Progress 
-                    value={voteCount > 0 ? (approveVotes / voteCount) * 100 : 0} 
+                  <Progress
+                    value={voteCount > 0 ? (approveVotes / voteCount) * 100 : 0}
                     className={`h-2 ${consensusReached ? 'bg-green-200' : ''}`}
                   />
                 </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { useRDCall } from '@/hooks/useRDCallsWithVisibility';
+import { useRDCallMutations } from '@/hooks/useRDCallMutations';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,22 +23,11 @@ function RDCallEdit() {
   const callId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+
   const { invokeAI, isLoading: aiEnhancing, status, error, rateLimitInfo } = useAIWithFallback();
 
-  const { data: call, isLoading } = useQuery({
-    queryKey: ['rd-call', callId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_calls')
-        .select('*')
-        .eq('id', callId)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!callId
-  });
+  const { data: call, isLoading } = useRDCall(callId);
+  const { updateRDCall, isUpdating } = useRDCallMutations();
 
   const [formData, setFormData] = useState(null);
 
@@ -47,20 +37,14 @@ function RDCallEdit() {
     }
   }, [call]);
 
-  const updateMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase
-        .from('rd_calls')
-        .update(data)
-        .eq('id', callId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['rd-call', callId]);
-      toast.success(t({ en: 'Call updated', ar: 'تم تحديث الدعوة' }));
+  const handleUpdate = async () => {
+    try {
+      await updateRDCall(formData);
       navigate(createPageUrl(`RDCallDetail?id=${callId}`));
+    } catch (error) {
+      // Toast handled in hook
     }
-  });
+  };
 
   const handleAIEnhance = async () => {
     const prompt = `Enhance this R&D call with professional content for Saudi municipal innovation:
@@ -96,15 +80,15 @@ Generate comprehensive enhanced bilingual content:
           objectives_ar: { type: 'string' },
           expected_outcomes: { type: 'array', items: { type: 'string' } },
           eligibility_criteria: { type: 'array', items: { type: 'string' } },
-          research_themes: { 
-            type: 'array', 
-            items: { 
+          research_themes: {
+            type: 'array',
+            items: {
               type: 'object',
               properties: {
                 theme: { type: 'string' },
                 description: { type: 'string' }
               }
-            } 
+            }
           },
           evaluation_criteria: {
             type: 'array',
@@ -130,7 +114,8 @@ Generate comprehensive enhanced bilingual content:
           },
           focus_areas: { type: 'array', items: { type: 'string' } }
         }
-      }
+      },
+      system_prompt: "You are an expert R&D consultant helping to draft professional research calls."
     });
 
     if (result.success && result.data) {
@@ -187,20 +172,20 @@ Generate comprehensive enhanced bilingual content:
         </CardHeader>
         <CardContent className="space-y-6">
           <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>{t({ en: 'Title (English)', ar: 'العنوان (إنجليزي)' })}</Label>
               <Input
                 value={formData.title_en}
-                onChange={(e) => setFormData({...formData, title_en: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, title_en: e.target.value })}
               />
             </div>
             <div className="space-y-2">
               <Label>{t({ en: 'Title (Arabic)', ar: 'العنوان (عربي)' })}</Label>
               <Input
                 value={formData.title_ar || ''}
-                onChange={(e) => setFormData({...formData, title_ar: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, title_ar: e.target.value })}
                 dir="rtl"
               />
             </div>
@@ -211,14 +196,14 @@ Generate comprehensive enhanced bilingual content:
               <Label>{t({ en: 'Tagline (English)', ar: 'الشعار (إنجليزي)' })}</Label>
               <Input
                 value={formData.tagline_en || ''}
-                onChange={(e) => setFormData({...formData, tagline_en: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, tagline_en: e.target.value })}
               />
             </div>
             <div className="space-y-2">
               <Label>{t({ en: 'Tagline (Arabic)', ar: 'الشعار (عربي)' })}</Label>
               <Input
                 value={formData.tagline_ar || ''}
-                onChange={(e) => setFormData({...formData, tagline_ar: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, tagline_ar: e.target.value })}
                 dir="rtl"
               />
             </div>
@@ -228,7 +213,7 @@ Generate comprehensive enhanced bilingual content:
             <Label>{t({ en: 'Description (English)', ar: 'الوصف (إنجليزي)' })}</Label>
             <Textarea
               value={formData.description_en || ''}
-              onChange={(e) => setFormData({...formData, description_en: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
               rows={4}
             />
           </div>
@@ -237,7 +222,7 @@ Generate comprehensive enhanced bilingual content:
             <Label>{t({ en: 'Description (Arabic)', ar: 'الوصف (عربي)' })}</Label>
             <Textarea
               value={formData.description_ar || ''}
-              onChange={(e) => setFormData({...formData, description_ar: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
               rows={4}
               dir="rtl"
             />
@@ -248,7 +233,7 @@ Generate comprehensive enhanced bilingual content:
               <Label>{t({ en: 'Call Type', ar: 'نوع الدعوة' })}</Label>
               <Select
                 value={formData.call_type || 'open_call'}
-                onValueChange={(v) => setFormData({...formData, call_type: v})}
+                onValueChange={(v) => setFormData({ ...formData, call_type: v })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -266,7 +251,7 @@ Generate comprehensive enhanced bilingual content:
               <Label>{t({ en: 'Status', ar: 'الحالة' })}</Label>
               <Select
                 value={formData.status}
-                onValueChange={(v) => setFormData({...formData, status: v})}
+                onValueChange={(v) => setFormData({ ...formData, status: v })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -292,7 +277,7 @@ Generate comprehensive enhanced bilingual content:
                 value={formData.timeline?.submission_open || formData.open_date || ''}
                 onChange={(e) => setFormData({
                   ...formData,
-                  timeline: {...(formData.timeline || {}), submission_open: e.target.value}
+                  timeline: { ...(formData.timeline || {}), submission_open: e.target.value }
                 })}
               />
             </div>
@@ -303,7 +288,7 @@ Generate comprehensive enhanced bilingual content:
                 value={formData.timeline?.submission_close || formData.close_date || ''}
                 onChange={(e) => setFormData({
                   ...formData,
-                  timeline: {...(formData.timeline || {}), submission_close: e.target.value}
+                  timeline: { ...(formData.timeline || {}), submission_close: e.target.value }
                 })}
               />
             </div>
@@ -314,7 +299,7 @@ Generate comprehensive enhanced bilingual content:
                 value={formData.timeline?.award_date || ''}
                 onChange={(e) => setFormData({
                   ...formData,
-                  timeline: {...(formData.timeline || {}), award_date: e.target.value}
+                  timeline: { ...(formData.timeline || {}), award_date: e.target.value }
                 })}
               />
             </div>
@@ -326,7 +311,7 @@ Generate comprehensive enhanced bilingual content:
               <Input
                 type="number"
                 value={formData.total_funding || formData.budget_total || ''}
-                onChange={(e) => setFormData({...formData, total_funding: parseFloat(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, total_funding: parseFloat(e.target.value) })}
               />
             </div>
             <div className="space-y-2">
@@ -334,14 +319,14 @@ Generate comprehensive enhanced bilingual content:
               <Input
                 type="number"
                 value={formData.number_of_awards || ''}
-                onChange={(e) => setFormData({...formData, number_of_awards: parseInt(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, number_of_awards: parseInt(e.target.value) })}
               />
             </div>
           </div>
 
           <div className="border-t pt-6 space-y-4">
             <h3 className="font-semibold text-slate-900">{t({ en: 'Call Media', ar: 'وسائط الدعوة' })}</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t({ en: 'Call Image/Banner', ar: 'صورة/بانر الدعوة' })}</Label>
@@ -351,7 +336,8 @@ Generate comprehensive enhanced bilingual content:
                   maxSize={10}
                   enableImageSearch={true}
                   searchContext={formData.title_en}
-                  onUploadComplete={(url) => setFormData({...formData, image_url: url})}
+                  onUploadComplete={(url) => setFormData({ ...formData, image_url: url })}
+                  description="Upload a cover image for the call (JPG, PNG)"
                 />
                 {formData.image_url && (
                   <img src={formData.image_url} alt="Preview" className="w-full h-32 object-cover rounded mt-2" />
@@ -365,7 +351,8 @@ Generate comprehensive enhanced bilingual content:
                   label={t({ en: 'Upload PDF', ar: 'رفع PDF' })}
                   maxSize={50}
                   preview={false}
-                  onUploadComplete={(url) => setFormData({...formData, brochure_url: url})}
+                  onUploadComplete={(url) => setFormData({ ...formData, brochure_url: url })}
+                  description="Upload the official call document (PDF, Max 50MB)"
                 />
               </div>
             </div>
@@ -376,11 +363,11 @@ Generate comprehensive enhanced bilingual content:
               {t({ en: 'Cancel', ar: 'إلغاء' })}
             </Button>
             <Button
-              onClick={() => updateMutation.mutate(formData)}
-              disabled={updateMutation.isPending}
+              onClick={handleUpdate}
+              disabled={isUpdating}
               className="bg-gradient-to-r from-blue-600 to-teal-600"
             >
-              {updateMutation.isPending ? (
+              {isUpdating ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {t({ en: 'Saving...', ar: 'جاري الحفظ...' })}

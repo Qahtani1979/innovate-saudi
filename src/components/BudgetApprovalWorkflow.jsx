@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,8 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { DollarSign, CheckCircle2, XCircle, Loader2, TrendingUp, TrendingDown } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+import { usePilotMutations } from '@/hooks/usePilotMutations';
 
 function BudgetApprovalWorkflow({ pilot, phase, onClose }) {
   const { language, isRTL, t } = useLanguage();
@@ -17,7 +15,8 @@ function BudgetApprovalWorkflow({ pilot, phase, onClose }) {
   const [comments, setComments] = useState('');
   const [adjustedAmount, setAdjustedAmount] = useState('');
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+
+  const { processBudgetApproval } = usePilotMutations();
 
   const phases = {
     initial: { amount: pilot.budget, label: { en: 'Initial Budget', ar: 'الميزانية الأولية' } },
@@ -29,44 +28,21 @@ function BudgetApprovalWorkflow({ pilot, phase, onClose }) {
 
   const currentPhase = phases[phase] || phases.initial;
 
-  const approveMutation = useMutation({
-    mutationFn: async (approved) => {
-      const budgetApprovals = pilot.budget_approvals || [];
-      const newApproval = {
-        phase,
-        amount: adjustedAmount ? parseFloat(adjustedAmount) : currentPhase.amount,
-        approved,
-        approved_by: user?.email,
-        approval_date: new Date().toISOString(),
-        comments
-      };
+  const handleDecision = (approved) => {
+    const amount = adjustedAmount ? parseFloat(adjustedAmount) : currentPhase.amount;
 
-      const { error: pilotError } = await supabase.from('pilots').update({
-        budget_approvals: [...budgetApprovals, newApproval],
-        budget_released: approved
-          ? (pilot.budget_released || 0) + newApproval.amount
-          : pilot.budget_released
-      }).eq('id', pilot.id);
-      if (pilotError) throw pilotError;
-
-      const { error: activityError } = await supabase.from('system_activities').insert({
-        activity_type: 'budget_approval',
-        entity_type: 'Pilot',
-        entity_id: pilot.id,
-        description: `Budget ${phase} ${approved ? 'approved' : 'rejected'} for "${pilot.title_en}"`,
-        metadata: { phase, amount: newApproval.amount, decision: approved ? 'approved' : 'rejected' }
-      });
-      if (activityError) throw activityError;
-    },
-    onSuccess: (_, approved) => {
-      queryClient.invalidateQueries(['pilot']);
-      toast.success(t({
-        en: approved ? 'Budget approved' : 'Budget rejected',
-        ar: approved ? 'تمت الموافقة على الميزانية' : 'تم رفض الميزانية'
-      }));
-      if (onClose) onClose();
-    }
-  });
+    processBudgetApproval.mutate({
+      pilot,
+      phase,
+      amount,
+      approved,
+      comments
+    }, {
+      onSuccess: () => {
+        if (onClose) onClose();
+      }
+    });
+  };
 
   const budgetUtilization = pilot.budget_released
     ? ((pilot.budget_released / pilot.budget) * 100).toFixed(1)
@@ -199,11 +175,11 @@ function BudgetApprovalWorkflow({ pilot, phase, onClose }) {
             {t({ en: 'Cancel', ar: 'إلغاء' })}
           </Button>
           <Button
-            onClick={() => approveMutation.mutate(false)}
-            disabled={approveMutation.isPending}
+            onClick={() => handleDecision(false)}
+            disabled={processBudgetApproval.isPending}
             className="flex-1 bg-red-600 hover:bg-red-700"
           >
-            {approveMutation.isPending ? (
+            {processBudgetApproval.isPending ? (
               <Loader2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} animate-spin`} />
             ) : (
               <XCircle className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
@@ -211,11 +187,11 @@ function BudgetApprovalWorkflow({ pilot, phase, onClose }) {
             {t({ en: 'Reject', ar: 'رفض' })}
           </Button>
           <Button
-            onClick={() => approveMutation.mutate(true)}
-            disabled={approveMutation.isPending}
+            onClick={() => handleDecision(true)}
+            disabled={processBudgetApproval.isPending}
             className="flex-1 bg-green-600 hover:bg-green-700"
           >
-            {approveMutation.isPending ? (
+            {processBudgetApproval.isPending ? (
               <Loader2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} animate-spin`} />
             ) : (
               <CheckCircle2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />

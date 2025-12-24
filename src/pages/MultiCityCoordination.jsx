@@ -1,5 +1,4 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+﻿import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,20 +6,18 @@ import { useLanguage } from '../components/LanguageContext';
 import { Handshake, MapPin, TrendingUp, CheckCircle2, Plus } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { usePilotCollaborations } from '@/hooks/usePilotCollaborations';
 
 function MultiCityCoordination() {
   const { t } = useLanguage();
 
-  const { data: collaborations = [], isLoading } = useQuery({
-    queryKey: ['pilot-collaborations'],
-    queryFn: () => base44.entities.PilotCollaboration.list('-created_date')
-  });
+  const { data: collaborations = [], isLoading } = usePilotCollaborations();
 
-  const activeCollaborations = collaborations.filter(c => c.collaboration_status === 'active');
-  const successfulCollaborations = collaborations.filter(c => c.collaboration_status === 'completed');
+  const activeCollaborations = collaborations.filter(c => /** @type {any} */(c).collaboration_status === 'active');
+  const successfulCollaborations = collaborations.filter(c => /** @type {any} */(c).collaboration_status === 'completed');
 
   const totalCities = new Set(
-    collaborations.flatMap(c => c.participating_cities || [])
+    collaborations.flatMap(c => /** @type {any} */(c).participating_cities || [])
   ).size;
 
   const stats = {
@@ -44,6 +41,7 @@ function MultiCityCoordination() {
         icon={Handshake}
         title={{ en: 'Multi-City Coordination', ar: 'التنسيق بين المدن' }}
         subtitle={{ en: 'Cross-municipality pilot collaborations and knowledge sharing', ar: 'تعاونات التجارب بين البلديات ومشاركة المعرفة' }}
+        description={{ en: '', ar: '' }}
         stats={[
           { icon: Handshake, value: stats.total, label: { en: 'Total Collaborations', ar: 'إجمالي التعاونات' } },
           { icon: TrendingUp, value: stats.active, label: { en: 'Active', ar: 'نشط' } },
@@ -55,6 +53,8 @@ function MultiCityCoordination() {
             {t({ en: 'New Collaboration', ar: 'تعاون جديد' })}
           </Button>
         }
+        actions={<></>}
+        children={<></>}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -104,8 +104,8 @@ function MultiCityCoordination() {
                     <h3 className="font-semibold text-slate-900 mb-2">
                       {t({ en: 'Pilot ID:', ar: 'رقم التجربة:' })} {collab.pilot_id}
                     </h3>
-                    {collab.collaboration_type && (
-                      <Badge variant="outline" className="mb-2">{collab.collaboration_type}</Badge>
+                    {/** @type {any} */(collab).collaboration_type && (
+                      <Badge variant="outline" className="mb-2">{/** @type {any} */(collab).collaboration_type}</Badge>
                     )}
                   </div>
                   <Badge className="bg-green-200 text-green-700">
@@ -121,25 +121,25 @@ function MultiCityCoordination() {
                         {t({ en: 'Participating Cities:', ar: 'المدن المشاركة:' })}
                       </p>
                       <div className="flex flex-wrap gap-1">
-                        {(collab.participating_cities || []).map((city, i) => (
+                        {(/** @type {any} */(collab).participating_cities || []).map((city, i) => (
                           <Badge key={i} variant="outline" className="text-xs">{city}</Badge>
                         ))}
                       </div>
                     </div>
                   </div>
 
-                  {collab.lead_municipality_id && (
+                  {/** @type {any} */(collab).lead_municipality_id && (
                     <div className="text-sm text-slate-600">
-                      <span className="font-medium">{t({ en: 'Lead Municipality:', ar: 'البلدية الرائدة:' })}</span> {collab.lead_municipality_id}
+                      <span className="font-medium">{t({ en: 'Lead Municipality:', ar: 'البلدية الرائدة:' })}</span> {/** @type {any} */(collab).lead_municipality_id}
                     </div>
                   )}
 
-                  {collab.shared_learnings && (
+                  {/** @type {any} */(collab).shared_learnings && (
                     <div className="mt-3 p-3 bg-blue-50 rounded-lg">
                       <p className="text-xs font-medium text-blue-900 mb-1">
                         {t({ en: 'Shared Learnings:', ar: 'التعلم المشترك:' })}
                       </p>
-                      <p className="text-sm text-slate-700">{collab.shared_learnings}</p>
+                      <p className="text-sm text-slate-700">{/** @type {any} */(collab).shared_learnings}</p>
                     </div>
                   )}
                 </div>
@@ -148,7 +148,7 @@ function MultiCityCoordination() {
 
             {activeCollaborations.length === 0 && (
               <div className="text-center py-12 text-slate-500">
-                {t({ en: 'No active collaborations', ar: 'لا توجد تعاونات نشطة' })}
+                {t({ en: 'No active collaborations', ar: 'Ù„Ø§ ØªÙˆØ¬Ø¯ ØªØ¹Ø§ÙˆÙ†Ø§Øª Ù†Ø´Ø·Ø©' })}
               </div>
             )}
           </div>

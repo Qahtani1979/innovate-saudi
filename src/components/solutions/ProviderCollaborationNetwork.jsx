@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,10 +8,11 @@ import { Users, Sparkles, Loader2, CheckCircle, ArrowRight } from 'lucide-react'
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { 
-  PROVIDER_COLLABORATION_SYSTEM_PROMPT, 
-  buildProviderCollaborationPrompt, 
-  PROVIDER_COLLABORATION_SCHEMA 
+import { useSolutions } from '@/hooks/useSolutions';
+import {
+  PROVIDER_COLLABORATION_SYSTEM_PROMPT,
+  buildProviderCollaborationPrompt,
+  PROVIDER_COLLABORATION_SCHEMA
 } from '@/lib/ai/prompts/solutions/providerCollaboration';
 
 export default function ProviderCollaborationNetwork({ providerId }) {
@@ -20,19 +20,11 @@ export default function ProviderCollaborationNetwork({ providerId }) {
   const [suggestions, setSuggestions] = useState(null);
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('solutions').select('*');
-      if (error) throw error;
-      return data || [];
-    },
-    initialData: []
-  });
+  const { solutions = [] } = useSolutions({ publishedOnly: true });
 
   const findPartners = async () => {
     const currentSolution = solutions.find(s => s.provider_id === providerId);
-    
+
     const result = await invokeAI({
       system_prompt: PROVIDER_COLLABORATION_SYSTEM_PROMPT,
       prompt: buildProviderCollaborationPrompt({
@@ -88,7 +80,7 @@ export default function ProviderCollaborationNetwork({ providerId }) {
       </CardHeader>
       <CardContent className="pt-6">
         <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
-        
+
         {!suggestions && !isLoading && (
           <div className="text-center py-8">
             <Users className="h-12 w-12 text-teal-300 mx-auto mb-3" />

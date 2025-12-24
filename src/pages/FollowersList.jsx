@@ -1,5 +1,5 @@
-import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -14,10 +14,15 @@ function FollowersList() {
 
   const { data: followers = [], isLoading } = useQuery({
     queryKey: ['followers', entityType, entityId],
-    queryFn: () => base44.entities.UserFollow.filter({
-      followed_entity_type: entityType,
-      followed_entity_id: entityId
-    }),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_follows')
+        .select('*')
+        .eq('followed_entity_type', entityType)
+        .eq('followed_entity_id', entityId);
+      if (error) throw error;
+      return data || [];
+    },
     enabled: !!entityType && !!entityId
   });
 
@@ -79,7 +84,7 @@ function FollowersList() {
                     <p className="font-medium text-slate-900">{follower.follower_email}</p>
                     <p className="text-xs text-slate-500">
                       {t({ en: 'Following since', ar: 'يتابع منذ' })}{' '}
-                      {follower.created_date && new Date(follower.created_date).toLocaleDateString()}
+                      {follower.created_at && new Date(follower.created_at).toLocaleDateString()}
                     </p>
                   </div>
                 </div>

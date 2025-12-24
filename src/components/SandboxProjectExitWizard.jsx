@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,29 +37,42 @@ export default function SandboxProjectExitWizard({ pilot, sandbox, onClose }) {
 
   const exitMutation = useMutation({
     mutationFn: async () => {
+      const { supabase } = await import('@/integrations/supabase/client');
+
       // Update pilot
-      await base44.entities.Pilot.update(pilot.id, {
-        stage: 'completed',
-        sandbox_exit_date: new Date().toISOString().split('T')[0],
-        sandbox_exit_type: exitData.exit_type,
-        sandbox_exit_data: exitData,
-        recommendation: exitData.recommendation
-      });
+      const { error: pilotError } = await supabase
+        .from('pilots')
+        .update({
+          stage: 'completed',
+          sandbox_exit_date: new Date().toISOString().split('T')[0],
+          sandbox_exit_type: exitData.exit_type,
+          sandbox_exit_data: exitData,
+          recommendation: exitData.recommendation
+        })
+        .eq('id', pilot.id);
+      if (pilotError) throw pilotError;
 
       // Update sandbox capacity
-      await base44.entities.Sandbox.update(sandbox.id, {
-        current_pilots: (sandbox.current_pilots || 1) - 1,
-        total_completed_projects: (sandbox.total_completed_projects || 0) + 1
-      });
+      const { error: sandboxError } = await supabase
+        .from('sandboxes')
+        .update({
+          current_pilots: (sandbox.current_pilots || 1) - 1,
+          total_completed_projects: (sandbox.total_completed_projects || 0) + 1
+        })
+        .eq('id', sandbox.id);
+      if (sandboxError) throw sandboxError;
 
       // Create notification
-      await base44.entities.Notification.create({
-        type: 'sandbox_exit',
-        title: `Project Exited Sandbox: ${pilot.title_en}`,
-        message: `${pilot.title_en} has completed its sandbox phase with ${exitData.exit_type}.`,
-        severity: exitData.exit_type === 'successful_completion' ? 'success' : 'warning',
-        link: `/PilotDetail?id=${pilot.id}`
-      });
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .insert([{
+          type: 'sandbox_exit',
+          title: `Project Exited Sandbox: ${pilot.title_en}`,
+          message: `${pilot.title_en} has completed its sandbox phase with ${exitData.exit_type}.`,
+          severity: exitData.exit_type === 'successful_completion' ? 'success' : 'warning',
+          link: `/PilotDetail?id=${pilot.id}`
+        }]);
+      if (notifError) throw notifError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['pilot']);
@@ -110,9 +122,8 @@ export default function SandboxProjectExitWizard({ pilot, sandbox, onClose }) {
         <div className="flex items-center justify-between">
           {[1, 2, 3].map((s) => (
             <div key={s} className="flex items-center flex-1">
-              <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                step >= s ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'
-              }`}>
+              <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold ${step >= s ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'
+                }`}>
                 {s}
               </div>
               {s < 3 && <div className={`flex-1 h-1 ${step > s ? 'bg-blue-600' : 'bg-slate-200'}`} />}
@@ -161,9 +172,9 @@ export default function SandboxProjectExitWizard({ pilot, sandbox, onClose }) {
                 value={exitData.outcomes_achieved}
                 onChange={(e) => setExitData({ ...exitData, outcomes_achieved: e.target.value })}
                 rows={4}
-                placeholder={t({ 
-                  en: 'Describe what was achieved during the sandbox period...', 
-                  ar: 'صف ما تم إنجازه خلال فترة المنطقة...' 
+                placeholder={t({
+                  en: 'Describe what was achieved during the sandbox period...',
+                  ar: 'صف ما تم إنجازه خلال فترة المنطقة...'
                 })}
               />
             </div>
@@ -197,9 +208,9 @@ export default function SandboxProjectExitWizard({ pilot, sandbox, onClose }) {
                 value={exitData.lessons_learned}
                 onChange={(e) => setExitData({ ...exitData, lessons_learned: e.target.value })}
                 rows={5}
-                placeholder={t({ 
-                  en: 'Key learnings from this sandbox experience...', 
-                  ar: 'التعلمات الرئيسية من هذه التجربة...' 
+                placeholder={t({
+                  en: 'Key learnings from this sandbox experience...',
+                  ar: 'التعلمات الرئيسية من هذه التجربة...'
                 })}
               />
             </div>
@@ -272,7 +283,7 @@ export default function SandboxProjectExitWizard({ pilot, sandbox, onClose }) {
                 <div key={key} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-slate-50">
                   <Checkbox
                     checked={exitData.exit_checklist[key]}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked) =>
                       setExitData({
                         ...exitData,
                         exit_checklist: { ...exitData.exit_checklist, [key]: checked }

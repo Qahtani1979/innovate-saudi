@@ -1,10 +1,10 @@
 import { useState, useMemo } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useActivePlan } from '@/contexts/StrategicPlanContext';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useStrategicPlanInvalidator } from '@/hooks/useStrategicPlanInvalidator';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 import { usePermissions } from '@/components/permissions/usePermissions';
+import { useApprovalRequest } from '@/hooks/useApprovalRequest';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -83,18 +83,9 @@ function StrategyHub() {
   const filteredRecalibrationTools = useMemo(() => filterByPermission(recalibrationTools), [isAdmin, hasPermission]);
 
   // Fetch approval requests for pending actions
-  const { data: pendingApprovals = [] } = useQuery({
-    queryKey: ['pending-strategy-approvals'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('approval_requests')
-        .select('*')
-        .eq('entity_type', 'strategic_plan')
-        .eq('approval_status', 'pending')
-        .limit(5);
-      if (error) throw error;
-      return data || [];
-    }
+  const { data: pendingApprovals = [] } = useApprovalRequest({
+    entityType: 'strategic_plan',
+    status: 'pending'
   });
 
   // Filter plans based on selection
@@ -127,10 +118,9 @@ function StrategyHub() {
 
   const currentPhaseIndex = getCurrentPhase();
 
-  const queryClient = useQueryClient();
+  const { invalidateStrategicPlans } = useStrategicPlanInvalidator();
   const handleProgramCreated = () => {
-    queryClient.invalidateQueries({ queryKey: ['strategic-plans'] });
-    queryClient.invalidateQueries({ queryKey: ['programs-gap'] });
+    invalidateStrategicPlans();
   };
 
   return (

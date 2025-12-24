@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,10 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../components/LanguageContext';
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  Microscope, 
-  TrendingUp, 
-  MapPin, 
+import {
+  Microscope,
+  TrendingUp,
+  MapPin,
   Calendar,
   Activity,
   Package,
@@ -35,6 +33,7 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { useLivingLabsWithVisibility } from '@/hooks/useLivingLabsWithVisibility';
+import { useLivingLabBookings, usePilotsForLabs } from '@/hooks/useLivingLabData';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Loading skeleton component
@@ -75,24 +74,15 @@ function LivingLabsPage() {
     status: statusFilter !== 'all' ? statusFilter : undefined
   });
 
-  const { data: bookings = [], error: bookingsError } = useQuery({
-    queryKey: ['lab-bookings'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('living_lab_bookings')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    },
-    staleTime: 5 * 60 * 1000 // 5 minutes
-  });
+  // Use custom hooks for bookings and pilots
+  const { data: bookings = [], error: bookingsError } = useLivingLabBookings();
+  const { data: pilots = [] } = usePilotsForLabs();
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
     const typeDist = Object.entries(labs.reduce((acc, l) => { acc[l.type] = (acc[l.type] || 0) + 1; return acc; }, {}))
       .map(([type, count]) => `- ${type}: ${count}`).join('\n');
-    
+
     const result = await invokeAI({
       prompt: `Analyze the Living Labs ecosystem and provide strategic insights:
 
@@ -119,7 +109,7 @@ Provide:
         }
       }
     });
-    
+
     if (result.success) {
       setAiInsights(result.data);
     } else {
@@ -127,21 +117,8 @@ Provide:
     }
   };
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-for-labs'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('id, living_lab_id')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    },
-    staleTime: 5 * 60 * 1000 // 5 minutes
-  });
-
   const filteredLabs = labs.filter(lab => {
-    const matchesSearch = !searchTerm || 
+    const matchesSearch = !searchTerm ||
       lab.name_en?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lab.name_ar?.includes(searchTerm) ||
       lab.code?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -422,7 +399,7 @@ Provide:
           {filteredLabs.map((lab) => {
             const labBookings = bookings.filter(b => b.living_lab_id === lab.id && b.status === 'active');
             const labPilots = pilots.filter(p => p.living_lab_id === lab.id);
-            
+
             return (
               <Link key={lab.id} to={createPageUrl(`LivingLabDetail?id=${lab.id}`)}>
                 <Card className="hover:shadow-lg transition-all border-t-4 border-t-purple-500 h-full overflow-hidden">
@@ -573,10 +550,10 @@ Provide:
         <div className="text-center py-12">
           <Microscope className="h-12 w-12 text-slate-300 mx-auto mb-4" />
           <p className="text-slate-500">
-          {t({ en: 'No living labs found', ar: 'لم يتم العثور على مختبرات' })}
-        </p>
-      </div>
-    )}
+            {t({ en: 'No living labs found', ar: 'لم يتم العثور على مختبرات' })}
+          </p>
+        </div>
+      )}
     </PageLayout>
   );
 }

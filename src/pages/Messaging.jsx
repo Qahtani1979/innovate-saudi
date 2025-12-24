@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,39 +7,36 @@ import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../components/LanguageContext';
 import { Send, Search, User } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useMessages, useMessageMutations } from '@/hooks/useMessaging';
 
 function Messaging() {
   const { language, isRTL, t } = useLanguage();
   const [selectedThread, setSelectedThread] = useState(null);
   const [messageText, setMessageText] = useState('');
-  const queryClient = useQueryClient();
   const { user } = useAuth();
 
-  const { data: messages = [] } = useQuery({
-    queryKey: ['messages'],
-    queryFn: async () => {
-      const { data } = await supabase.from('messages').select('*');
-      return data || [];
-    }
-  });
+  const { data: messages = [] } = useMessages();
+  const { sendMessage } = useMessageMutations();
 
-  const sendMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase.from('messages').insert(data);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['messages']);
-      setMessageText('');
-    }
-  });
-
+  // Group messages by thread
   const threads = {};
   messages.forEach(msg => {
-    const threadKey = msg.thread_id || msg.recipient_email || 'general';
+    const threadKey = msg.conversation_id || msg.recipient_email || 'general';
     if (!threads[threadKey]) threads[threadKey] = [];
     threads[threadKey].push(msg);
   });
+
+  const handleSendMessage = () => {
+    if (!messageText.trim() || !selectedThread) return;
+
+    sendMessage.mutate({
+      content: messageText,
+      recipientEmail: selectedThread,
+      conversationId: selectedThread,
+    }, {
+      onSuccess: () => setMessageText(''),
+    });
+  };
 
   return (
     <div className="h-[calc(100vh-8rem)]" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -66,9 +61,8 @@ function Messaging() {
                 <div
                   key={threadKey}
                   onClick={() => setSelectedThread(threadKey)}
-                  className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                    selectedThread === threadKey ? 'bg-blue-100 border-2 border-blue-300' : 'bg-slate-50 hover:bg-slate-100'
-                  }`}
+                  className={`p-3 rounded-lg cursor-pointer transition-colors ${selectedThread === threadKey ? 'bg-blue-100 border-2 border-blue-300' : 'bg-slate-50 hover:bg-slate-100'
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-teal-500 flex items-center justify-center">
@@ -78,7 +72,7 @@ function Messaging() {
                       <p className="font-medium text-sm text-slate-900 truncate">{threadKey}</p>
                       <p className="text-xs text-slate-500 truncate">{threads[threadKey][0]?.content?.substring(0, 30)}...</p>
                     </div>
-                    {threads[threadKey].some(m => !m.read && m.recipient_email === user?.email) && (
+                    {threads[threadKey].some(m => !m.is_read && m.recipient_email === user?.email) && (
                       <div className="h-2 w-2 rounded-full bg-blue-600" />
                     )}
                   </div>
@@ -101,14 +95,13 @@ function Messaging() {
                   key={msg.id}
                   className={`flex ${msg.sender_email === user?.email ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div className={`max-w-[70%] p-3 rounded-lg ${
-                    msg.sender_email === user?.email
+                  <div className={`max-w-[70%] p-3 rounded-lg ${msg.sender_email === user?.email
                       ? 'bg-blue-600 text-white'
                       : 'bg-slate-100 text-slate-900'
-                  }`}>
+                    }`}>
                     <p className="text-sm">{msg.content}</p>
                     <p className="text-xs opacity-70 mt-1">
-                      {new Date(msg.created_date).toLocaleTimeString()}
+                      {new Date(msg.created_at).toLocaleTimeString()}
                     </p>
                   </div>
                 </div>
@@ -122,14 +115,16 @@ function Messaging() {
                   onChange={(e) => setMessageText(e.target.value)}
                   rows={2}
                   className="flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
                 />
                 <Button
-                  onClick={() => sendMutation.mutate({
-                    thread_id: selectedThread,
-                    content: messageText,
-                    sender_email: user?.email
-                  })}
-                  disabled={!messageText}
+                  onClick={handleSendMessage}
+                  disabled={!messageText.trim() || sendMessage.isPending}
                   className="bg-blue-600"
                 >
                   <Send className="h-4 w-4" />

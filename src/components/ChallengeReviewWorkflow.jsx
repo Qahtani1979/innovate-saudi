@@ -6,28 +6,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from './LanguageContext';
 import { CheckCircle2, XCircle, AlertCircle, X, Loader2, Send, Users, Award } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { useChallengeMutations } from '@/hooks/useChallengeMutations';
+import { useEvaluationsByEntity } from '@/hooks/useEvaluations';
 
 export default function ChallengeReviewWorkflow({ challenge, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
-  const { triggerEmail } = useEmailTrigger();
   const [reviewNotes, setReviewNotes] = useState('');
   const [decision, setDecision] = useState(null);
   const [showExpertAssignment, setShowExpertAssignment] = useState(false);
+  const { updateChallenge } = useChallengeMutations();
 
-  const { data: expertEvaluations = [] } = useQuery({
-    queryKey: ['challenge-expert-evaluations', challenge.id],
-    queryFn: async () => {
-      const all = await base44.entities.ExpertEvaluation.list();
-      return all.filter(e => e.entity_type === 'challenge' && e.entity_id === challenge.id);
-    }
-  });
+  const { data: expertEvaluations = [] } = useEvaluationsByEntity('challenge', challenge.id);
 
   const [checklist, setChecklist] = useState([
     { id: 'clarity', label: { en: 'Problem is clearly defined', ar: 'المشكلة محددة بوضوح' }, checked: false, critical: true },
@@ -40,55 +32,30 @@ export default function ChallengeReviewWorkflow({ challenge, onClose }) {
     { id: 'duplicates', label: { en: 'No duplicate challenges exist', ar: 'لا توجد تحديات مكررة' }, checked: false, critical: true }
   ]);
 
-  const reviewMutation = useMutation({
-    mutationFn: async () => {
-      const newStatus = decision === 'approve' ? 'approved' : 
-                        decision === 'reject' ? 'draft' : 
-                        'under_review';
+  const handleReviewSubmit = () => {
+    const newStatus = decision === 'approve' ? 'approved' :
+      decision === 'reject' ? 'draft' :
+        'under_review';
 
-      await base44.entities.Challenge.update(challenge.id, {
+    updateChallenge.mutate({
+      id: challenge.id,
+      data: {
         status: newStatus,
         review_date: new Date().toISOString(),
         review_notes: reviewNotes,
         review_checklist: checklist.reduce((acc, item) => ({ ...acc, [item.id]: item.checked }), {}),
-        approval_date: decision === 'approve' ? new Date().toISOString() : null
-      });
-
-      await base44.entities.ChallengeActivity.create({
-        challenge_id: challenge.id,
-        activity_type: decision === 'approve' ? 'status_change' : 'comment_added',
-        description: `Challenge reviewed: ${decision}`,
-        details: { decision, review_notes: reviewNotes }
-      });
-
-      // Send email notification on approval using unified trigger
-      if (decision === 'approve' && challenge.challenge_owner_email) {
-        try {
-          await triggerEmail('challenge.approved', {
-            entity_type: 'challenge',
-            entity_id: challenge.id,
-            recipient_email: challenge.challenge_owner_email,
-            variables: {
-              challengeTitle: language === 'ar' ? (challenge.title_ar || challenge.title_en) : challenge.title_en,
-              challengeCode: challenge.code || challenge.id.substring(0, 8),
-              detailUrl: window.location.origin + '/challenges/' + challenge.id
-            },
-            language: language
-          });
-        } catch (emailError) {
-          console.error('Failed to send challenge approval email:', emailError);
-        }
+        approval_date: decision === 'approve' ? new Date().toISOString() : null,
+        metadata: { decision, review_notes: reviewNotes }
       }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['challenge']);
-      toast.success(t({ en: 'Review submitted', ar: 'تم تقديم المراجعة' }));
-      onClose();
-    }
-  });
+    }, {
+      onSuccess: () => {
+        onClose();
+      }
+    });
+  };
 
   const toggleCheck = (id) => {
-    setChecklist(prev => prev.map(item => 
+    setChecklist(prev => prev.map(item =>
       item.id === id ? { ...item, checked: !item.checked } : item
     ));
   };
@@ -128,8 +95,8 @@ export default function ChallengeReviewWorkflow({ challenge, onClose }) {
                       <div className="text-xl font-bold text-purple-600">{evaluation.overall_score}</div>
                       <Badge className={
                         evaluation.recommendation === 'approve' ? 'bg-green-100 text-green-700 text-xs' :
-                        evaluation.recommendation === 'reject' ? 'bg-red-100 text-red-700 text-xs' :
-                        'bg-yellow-100 text-yellow-700 text-xs'
+                          evaluation.recommendation === 'reject' ? 'bg-red-100 text-red-700 text-xs' :
+                            'bg-yellow-100 text-yellow-700 text-xs'
                       }>
                         {evaluation.recommendation}
                       </Badge>
@@ -250,11 +217,11 @@ export default function ChallengeReviewWorkflow({ challenge, onClose }) {
 
         {/* Submit Review */}
         <Button
-          onClick={() => reviewMutation.mutate()}
-          disabled={!decision || !reviewNotes || reviewMutation.isPending}
+          onClick={handleReviewSubmit}
+          disabled={!decision || !reviewNotes || updateChallenge.isPending}
           className="w-full bg-gradient-to-r from-blue-600 to-purple-600"
         >
-          {reviewMutation.isPending ? (
+          {updateChallenge.isPending ? (
             <Loader2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} animate-spin`} />
           ) : (
             <Send className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />

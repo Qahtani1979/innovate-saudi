@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEvaluations, useEvaluationInvalidator } from '@/hooks/useEvaluations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,73 +7,51 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { 
-  Calendar, Microscope, Users, CheckCircle, Clock, 
+import {
+  Calendar, Microscope, Users, CheckCircle, Clock,
   FileText, Star
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import UnifiedEvaluationForm from '../components/evaluation/UnifiedEvaluationForm';
 import EvaluationConsensusPanel from '../components/evaluation/EvaluationConsensusPanel';
+import { useAllProgramApplications } from '@/hooks/useProgramDetails';
+import { useRDProposals, useMatchmakerApplications } from '@/hooks/useMatchmakerApplications';
+import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
+import { useRDCallsWithVisibility } from '@/hooks/useRDCallsWithVisibility';
+import { useOrganizationsWithVisibility } from '@/hooks/useOrganizationsWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
 
 function ApplicationReviewHub() {
   const [selectedApp, setSelectedApp] = useState(null);
   const [showEvaluationForm, setShowEvaluationForm] = useState(false);
   const { language, isRTL, t } = useLanguage();
 
-  const queryClient = useQueryClient();
+  const { invalidateAll } = useEvaluationInvalidator();
 
-  // Fetch Program Applications
-  const { data: programApps = [] } = useQuery({
-    queryKey: ['program-applications-review'],
-    queryFn: async () => {
-      const all = await base44.entities.ProgramApplication.list('-created_date');
-      return all.filter(app => ['submitted', 'under_review', 'screening'].includes(app.status));
-    }
+  // Fetch Program Applications (using new standardized hook)
+  const { data: programApps = [] } = useAllProgramApplications({
+    status: ['submitted', 'under_review', 'screening']
   });
 
-  // Fetch R&D Proposals
-  const { data: rdProposals = [] } = useQuery({
-    queryKey: ['rd-proposals-review'],
-    queryFn: async () => {
-      const all = await base44.entities.RDProposal.list('-created_date');
-      return all.filter(p => ['submitted', 'under_review', 'screening'].includes(p.status));
-    }
+  // Fetch R&D Proposals (using hook)
+  const { data: rdProposals = [] } = useRDProposals({
+    status: ['submitted', 'under_review', 'screening']
   });
 
-  // Fetch Matchmaker Applications
-  const { data: matchmakerApps = [] } = useQuery({
-    queryKey: ['matchmaker-apps-review'],
-    queryFn: async () => {
-      const all = await base44.entities.MatchmakerApplication.list('-created_date');
-      return all.filter(app => ['submitted', 'screening', 'under_review'].includes(app.status));
-    }
+  // Fetch Matchmaker Applications (using hook)
+  const { data: matchmakerApps = [] } = useMatchmakerApplications({
+    status: ['submitted', 'screening', 'under_review']
   });
 
-  // Fetch related data
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs'],
-    queryFn: () => base44.entities.Program.list()
-  });
+  // Fetch related data using visibility-aware hooks
+  const { data: programs = [] } = useProgramsWithVisibility({ limit: 1000 });
+  const { data: rdCalls = [] } = useRDCallsWithVisibility({ limit: 1000 });
+  const { data: organizations = [] } = useOrganizationsWithVisibility({ limit: 1000 });
+  const { data: challenges = [] } = useChallengesWithVisibility({ limit: 1000 });
+  const { data: solutions = [] } = useSolutionsWithVisibility({ limit: 1000 });
 
-  const { data: rdCalls = [] } = useQuery({
-    queryKey: ['rd-calls'],
-    queryFn: () => base44.entities.RDCall.list()
-  });
-
-  const { data: organizations = [] } = useQuery({
-    queryKey: ['organizations'],
-    queryFn: () => base44.entities.Organization.list()
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
-
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions'],
-    queryFn: () => base44.entities.Solution.list()
-  });
+  const { checkConsensus } = useEvaluations();
 
   const handleEvaluate = (app, type) => {
     setSelectedApp({ ...app, type });
@@ -84,7 +61,7 @@ function ApplicationReviewHub() {
   const handleEvaluationComplete = async () => {
     setShowEvaluationForm(false);
     setSelectedApp(null);
-    
+
     // Check consensus
     if (selectedApp) {
       const entityTypeMap = {
@@ -92,14 +69,14 @@ function ApplicationReviewHub() {
         'rd': 'rd_proposal',
         'matchmaker': 'matchmaker_application'
       };
-      
-      await base44.functions.invoke('checkConsensus', {
-        entity_type: entityTypeMap[selectedApp.type],
-        entity_id: selectedApp.id
+
+      await checkConsensus({
+        entityType: entityTypeMap[selectedApp.type],
+        entityId: selectedApp.id
       });
     }
-    
-    queryClient.invalidateQueries();
+
+    invalidateAll();
   };
 
   const totalPending = programApps.length + rdProposals.length + matchmakerApps.length;
@@ -111,13 +88,10 @@ function ApplicationReviewHub() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="max-w-3xl w-full max-h-[90vh] overflow-auto">
             <UnifiedEvaluationForm
-              entityType={
-                selectedApp.type === 'program' ? 'program_application' :
-                selectedApp.type === 'rd' ? 'rd_proposal' : 'matchmaker_application'
-              }
+              entityType={selectedApp.type === 'program' ? 'program_application' :
+                selectedApp.type === 'rd' ? 'rd_proposal' : 'matchmaker_application'}
               entityId={selectedApp.id}
-              onComplete={handleEvaluationComplete}
-            />
+              onComplete={handleEvaluationComplete} assignmentId={undefined} />
           </div>
         </div>
       )}
@@ -200,8 +174,8 @@ function ApplicationReviewHub() {
                   const program = programs.find(p => p.id === app.program_id);
                   const organization = organizations.find(o => o.id === app.applicant_org_id);
                   return (
-                    <Card 
-                      key={app.id} 
+                    <Card
+                      key={app.id}
                       className={`cursor-pointer transition-all ${selectedApp?.id === app.id ? 'border-teal-500 border-2' : ''}`}
                       onClick={() => setSelectedApp({ ...app, type: 'program', organization })}
                     >
@@ -235,7 +209,7 @@ function ApplicationReviewHub() {
                         </div>
                         <div className="flex items-center gap-2 text-xs text-slate-500">
                           <Clock className="h-3 w-3" />
-                          <span>{app.submission_date?.split('T')[0] || app.created_date?.split('T')[0]}</span>
+                          <span>{app.submission_date?.split('T')[0] || app.created_at?.split('T')[0]}</span>
                         </div>
                       </CardContent>
                     </Card>
@@ -262,9 +236,9 @@ function ApplicationReviewHub() {
                         </div>
                       )}
 
-                      <EvaluationConsensusPanel 
-                        entityType="program_application" 
-                        entityId={selectedApp.id} 
+                      <EvaluationConsensusPanel
+                        entityType="program_application"
+                        entityId={selectedApp.id}
                       />
 
                       <Link to={createPageUrl(`ProgramApplicationDetail?id=${selectedApp.id}`)}>
@@ -304,8 +278,8 @@ function ApplicationReviewHub() {
                 {rdProposals.map((proposal) => {
                   const call = rdCalls.find(c => c.id === proposal.rd_call_id);
                   return (
-                    <Card 
-                      key={proposal.id} 
+                    <Card
+                      key={proposal.id}
                       className={`cursor-pointer transition-all ${selectedApp?.id === proposal.id ? 'border-amber-500 border-2' : ''}`}
                       onClick={() => setSelectedApp({ ...proposal, type: 'rd' })}
                     >
@@ -359,9 +333,9 @@ function ApplicationReviewHub() {
                         </div>
                       )}
 
-                      <EvaluationConsensusPanel 
-                        entityType="rd_proposal" 
-                        entityId={selectedApp.id} 
+                      <EvaluationConsensusPanel
+                        entityType="rd_proposal"
+                        entityId={selectedApp.id}
                       />
 
                       <Link to={createPageUrl(`RDProposalDetail?id=${selectedApp.id}`)}>
@@ -398,45 +372,48 @@ function ApplicationReviewHub() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div className="space-y-4">
                 <h3 className="font-semibold text-lg">{t({ en: 'Applications', ar: 'الطلبات' })}</h3>
-                {matchmakerApps.map((app) => (
-                  <Card 
-                    key={app.id} 
-                    className={`cursor-pointer transition-all ${selectedApp?.id === app.id ? 'border-green-500 border-2' : ''}`}
-                    onClick={() => setSelectedApp({ ...app, type: 'matchmaker' })}
-                  >
-                    <CardContent className="pt-6">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <Badge className="mb-2">{app.status}</Badge>
-                          <h4 className="font-semibold text-lg">{app.organization_name}</h4>
-                          <p className="text-sm text-slate-600">{app.organization_type}</p>
-                          {app.sectors?.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {app.sectors.slice(0, 3).map((sector, i) => (
-                                <Badge key={i} variant="outline" className="text-xs">{sector}</Badge>
-                              ))}
-                            </div>
-                          )}
+                {matchmakerApps.map((app) => {
+                  const organization = organizations.find(o => o.id === app.organization_id);
+                  return (
+                    <Card
+                      key={app.id}
+                      className={`cursor-pointer transition-all ${selectedApp?.id === app.id ? 'border-green-500 border-2' : ''}`}
+                      onClick={() => setSelectedApp({ ...app, type: 'matchmaker', organization })}
+                    >
+                      <CardContent className="pt-6">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <Badge className="mb-2">{app.status}</Badge>
+                            <h4 className="font-semibold text-lg">{organization?.name_en || app.organization_name_en}</h4>
+                            <p className="text-sm text-slate-600">{app.classification}</p>
+                            {app.tags?.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {app.tags.slice(0, 3).map((tag, i) => (
+                                  <Badge key={i} variant="outline" className="text-xs">{tag}</Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEvaluate(app, 'matchmaker');
+                            }}
+                            size="sm"
+                            className="bg-green-600"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            {t({ en: 'Evaluate', ar: 'تقييم' })}
+                          </Button>
                         </div>
-                        <Button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEvaluate(app, 'matchmaker');
-                          }}
-                          size="sm"
-                          className="bg-green-600"
-                        >
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          {t({ en: 'Evaluate', ar: 'تقييم' })}
-                        </Button>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-slate-500">
-                        <Clock className="h-3 w-3" />
-                        <span>{app.created_date?.split('T')[0]}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                          <Clock className="h-3 w-3" />
+                          <span>{app.created_at?.split('T')[0]}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
 
               <div>
@@ -447,13 +424,13 @@ function ApplicationReviewHub() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div>
-                        <h4 className="font-semibold mb-2">{selectedApp.organization_name_en}</h4>
+                        <h4 className="font-semibold mb-2">{selectedApp.organization?.name_en || selectedApp.organization_name_en}</h4>
                         <p className="text-sm text-slate-600">{selectedApp.contact_email}</p>
                       </div>
 
-                      <EvaluationConsensusPanel 
-                        entityType="matchmaker_application" 
-                        entityId={selectedApp.id} 
+                      <EvaluationConsensusPanel
+                        entityType="matchmaker_application"
+                        entityId={selectedApp.id}
                       />
 
                       <Link to={createPageUrl(`MatchmakerApplicationDetail?id=${selectedApp.id}`)}>

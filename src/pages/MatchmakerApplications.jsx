@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +8,7 @@ import { Users, Search, Plus, Filter, Zap, Award, CheckCircle2 } from 'lucide-re
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useMatchmakerApplications } from '@/hooks/useMatchmakerApplications';
 
 function MatchmakerApplicationsPage() {
   const { language, isRTL, t } = useLanguage();
@@ -17,20 +16,8 @@ function MatchmakerApplicationsPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [classificationFilter, setClassificationFilter] = useState('all');
 
-  const { data: applications = [], isLoading } = useQuery({
-    queryKey: ['matchmaker-applications'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('matchmaker_applications')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100);
-
-      if (error) throw error;
-      return data;
-    },
-    initialData: []
-  });
+  // Use existing hook
+  const { data: applications = [], isLoading } = useMatchmakerApplications();
 
   const stages = [
     { id: 'all', label_en: 'All', label_ar: 'الكل' },

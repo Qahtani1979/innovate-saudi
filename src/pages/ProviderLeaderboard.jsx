@@ -1,5 +1,4 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useOrganizationLeaderboard } from '@/hooks/useOrganizations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -12,15 +11,9 @@ import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 export default function ProviderLeaderboard() {
   const { t, language } = useLanguage();
 
-  const { data: organizations = [] } = useQuery({
-    queryKey: ['org-leaderboard'],
-    queryFn: () => base44.entities.Organization.list()
-  });
+  const { data: rankedOrgs = [] } = useOrganizationLeaderboard();
 
-  const rankedOrgs = organizations
-    .filter(o => o.reputation_score > 0)
-    .sort((a, b) => (b.reputation_score || 0) - (a.reputation_score || 0))
-    .slice(0, 20);
+
 
   const medalColors = {
     0: 'from-yellow-400 to-amber-500',
@@ -37,8 +30,7 @@ export default function ProviderLeaderboard() {
         stats={[
           { icon: Building2, value: rankedOrgs.length, label: t({ en: 'Ranked Providers', ar: 'مزودون مصنفون' }) },
           { icon: Award, value: rankedOrgs[0]?.reputation_score || 0, label: t({ en: 'Top Score', ar: 'أعلى نتيجة' }) },
-        ]}
-      />
+        ]} subtitle={undefined} action={undefined} actions={undefined} children={undefined} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {rankedOrgs.slice(0, 3).map((org, idx) => (
@@ -56,7 +48,7 @@ export default function ProviderLeaderboard() {
                 </Link>
                 <Badge className="mb-3">{org.org_type?.replace(/_/g, ' ')}</Badge>
                 <div className="text-3xl font-bold text-purple-600 mb-4">{org.reputation_score}</div>
-                
+
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="p-2 bg-slate-50 rounded">
                     <p className="font-semibold">{org.performance_metrics?.solution_count || 0}</p>
@@ -99,7 +91,7 @@ export default function ProviderLeaderboard() {
                       <Progress value={org.reputation_score} className="w-24 h-2" />
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-5 gap-2 mt-3 text-xs text-center">
                     <div className="p-2 bg-blue-50 rounded">
                       <p className="font-semibold text-blue-700">{org.reputation_factors?.delivery_quality || 0}</p>

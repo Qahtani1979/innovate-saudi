@@ -1,24 +1,17 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Eye, Bell, BellOff, TrendingUp, AlertCircle } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
+import { useUserFollows } from '@/hooks/useUserFollows';
 
 function MyFollowing() {
   const { t } = useLanguage();
   const { user } = useAuth();
 
-  const { data: following = [], isLoading } = useQuery({
-    queryKey: ['my-following', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('user_follows').select('*').eq('follower_email', user?.email);
-      return data || [];
-    },
-    enabled: !!user
-  });
+  const { useFollowing } = useUserFollows(user?.email);
+  const { data: following = [], isLoading } = useFollowing();
 
   const byEntityType = following.reduce((acc, f) => {
     const type = f.entity_type || 'other';

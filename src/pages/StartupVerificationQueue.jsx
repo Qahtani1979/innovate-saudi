@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { useStartups, useStartupProfiles } from '../hooks/useStartupProfiles';
+import { useStartupVerifications, useStartupVerificationMutations } from '../hooks/useStartupVerification';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,7 +16,7 @@ import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function StartupVerificationQueue() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+
   const [selectedStartup, setSelectedStartup] = useState(null);
   const [verificationData, setVerificationData] = useState({
     legal_verification: { cr_number_verified: false, company_registered: false, documents_valid: false },
@@ -26,63 +26,24 @@ function StartupVerificationQueue() {
   });
   const [notes, setNotes] = useState('');
 
-  const { data: startups = [], isLoading } = useQuery({
-    queryKey: ['startups-verification'],
-    queryFn: () => base44.entities.StartupProfile.list()
-  });
+  const { data: startups = [], isLoading } = useStartups();
 
-  const { data: verifications = [] } = useQuery({
-    queryKey: ['verifications'],
-    queryFn: () => base44.entities.StartupVerification.list()
-  });
+  const { data: verifications = [] } = useStartupVerifications();
 
-  const verifyMutation = useMutation({
-    mutationFn: async ({ startupId, status, score }) => {
-      await base44.entities.StartupVerification.create({
-        startup_profile_id: startupId,
-        status,
-        legal_verification: verificationData.legal_verification,
-        financial_verification: verificationData.financial_verification,
-        team_verification: verificationData.team_verification,
-        product_verification: verificationData.product_verification,
-        overall_verification_score: score,
-        verification_notes: notes,
-        verification_date: new Date().toISOString()
-      });
+  const { verifyStartup } = useStartupVerificationMutations();
 
-      await base44.entities.StartupProfile.update(startupId, {
-        is_verified: status === 'verified',
-        verification_date: new Date().toISOString()
-      });
+  // Wrapper to match old mutation signature if needed, or update call sites
+  const verifyMutation = {
+    mutate: (variables) => verifyStartup.mutate({
+      startupId: variables.startupId,
+      status: variables.status,
+      verificationData,
+      notes,
+      score: variables.score
+    })
+  };
 
-      const startup = startups.find(s => s.id === startupId);
-      if (startup?.user_email) {
-        await supabase.functions.invoke('email-trigger-hub', {
-          body: {
-            trigger: status === 'verified' ? 'STARTUP_VERIFIED' : 'STARTUP_VERIFICATION_UPDATE',
-            recipientEmail: startup.user_email,
-            entityType: 'startup',
-            entityId: startupId,
-            variables: {
-              startupName: startup.name_en || startup.company_name_en,
-              verificationStatus: status,
-              verificationNotes: notes,
-              verificationScore: score
-            }
-          }
-        });
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['startups-verification']);
-      queryClient.invalidateQueries(['verifications']);
-      setSelectedStartup(null);
-      setNotes('');
-      toast.success(t({ en: 'Verification submitted', ar: 'تم إرسال التحقق' }));
-    }
-  });
-
-  const pendingStartups = startups.filter(s => 
+  const pendingStartups = startups.filter(s =>
     !s.is_verified && !verifications.some(v => v.startup_profile_id === s.id && v.status !== 'rejected')
   );
 

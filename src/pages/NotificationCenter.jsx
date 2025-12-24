@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNotifications } from '@/hooks/useNotifications';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,63 +13,13 @@ function NotificationCenter() {
   const { language, isRTL, t } = useLanguage();
   const [filter, setFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
-  const queryClient = useQueryClient();
   const { user } = useAuth();
 
-  const { data: notifications = [] } = useQuery({
-    queryKey: ['notifications', user?.email],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_email', user?.email)
-        .order('created_at', { ascending: false })
-        .limit(100);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
-
-  const markAsRead = useMutation({
-    mutationFn: async (id) => {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => queryClient.invalidateQueries(['notifications'])
-  });
-
-  const deleteNotification = useMutation({
-    mutationFn: async (id) => {
-      const { error } = await supabase
-        .from('notifications')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => queryClient.invalidateQueries(['notifications'])
-  });
-
-  const markAllAsRead = useMutation({
-    mutationFn: async () => {
-      const unreadIds = notifications.filter(n => !n.is_read).map(n => n.id);
-      if (unreadIds.length > 0) {
-        const { error } = await supabase
-          .from('notifications')
-          .update({ is_read: true })
-          .in('id', unreadIds);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => queryClient.invalidateQueries(['notifications'])
-  });
+  const { notifications, markAsRead, deleteNotification, markAllAsRead } = useNotifications(user?.email);
 
   const filteredNotifications = notifications.filter(n => {
     const readMatch = filter === 'all' || (filter === 'unread' && !n.is_read) || (filter === 'read' && n.is_read);
-    const typeMatch = typeFilter === 'all' || 
+    const typeMatch = typeFilter === 'all' ||
       (typeFilter === 'expert' && (n.type === 'expert_assignment' || n.category === 'expert')) ||
       (typeFilter === 'approval' && n.type === 'approval') ||
       (typeFilter === 'alert' && n.type === 'alert') ||
@@ -120,7 +69,7 @@ function NotificationCenter() {
             </Button>
           ))}
         </div>
-        
+
         <div className="flex gap-2">
           <Filter className="h-5 w-5 text-slate-500 self-center" />
           {['all', 'expert', 'approval', 'alert', 'reminder'].map(tf => (
@@ -131,15 +80,15 @@ function NotificationCenter() {
               onClick={() => setTypeFilter(tf)}
               className={typeFilter === tf && tf === 'expert' ? 'bg-purple-600' : ''}
             >
-              {t({ 
-                en: tf === 'all' ? 'All Types' : 
-                    tf === 'expert' ? 'Expert' : 
-                    tf === 'approval' ? 'Approvals' : 
-                    tf === 'alert' ? 'Alerts' : 'Reminders',
-                ar: tf === 'all' ? 'كل الأنواع' : 
-                    tf === 'expert' ? 'خبير' : 
-                    tf === 'approval' ? 'موافقات' : 
-                    tf === 'alert' ? 'تنبيهات' : 'تذكيرات'
+              {t({
+                en: tf === 'all' ? 'All Types' :
+                  tf === 'expert' ? 'Expert' :
+                    tf === 'approval' ? 'Approvals' :
+                      tf === 'alert' ? 'Alerts' : 'Reminders',
+                ar: tf === 'all' ? 'كل الأنواع' :
+                  tf === 'expert' ? 'خبير' :
+                    tf === 'approval' ? 'موافقات' :
+                      tf === 'alert' ? 'تنبيهات' : 'تذكيرات'
               })}
             </Button>
           ))}

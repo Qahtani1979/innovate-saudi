@@ -1,5 +1,7 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useTeamsWithVisibility } from '@/hooks/useTeamsWithVisibility';
+import { useLivingLabsWithVisibility } from '@/hooks/useLivingLabsWithVisibility';
+import { useSandboxesWithVisibility } from '@/hooks/useSandboxesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -9,45 +11,14 @@ import { Users, Beaker, Shield, DollarSign, AlertTriangle } from 'lucide-react';
 export default function ResourceAllocationView() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: teams = [] } = useQuery({
-    queryKey: ['teams'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('teams').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: labs = [] } = useQuery({
-    queryKey: ['living-labs'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('living_labs').select('*').eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: sandboxes = [] } = useQuery({
-    queryKey: ['sandboxes'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('sandboxes').select('*').eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('pilots').select('*').eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: teams = [] } = useTeamsWithVisibility();
+  const { data: labs = [] } = useLivingLabsWithVisibility();
+  const { data: sandboxes = [] } = useSandboxesWithVisibility();
+  const { data: pilots = [] } = usePilotsWithVisibility();
 
   const teamCapacity = teams.reduce((sum, t) => sum + (t.member_count || 0), 0);
   const teamUtilization = (pilots.filter(p => p.stage === 'active').length / Math.max(1, teamCapacity)) * 100;
-  
+
   const labUtilization = labs.reduce((sum, l) => sum + (l.current_utilization || 0), 0) / Math.max(1, labs.length);
   const sandboxUtilization = (sandboxes.filter(s => s.status === 'active').length / Math.max(1, sandboxes.length)) * 100;
 

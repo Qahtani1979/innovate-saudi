@@ -1,0 +1,146 @@
+/**
+ * Milestone Mutations Hook
+ * Handles CRUD operations for milestones (pilot/sandbox/project milestones)
+ */
+
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
+import { useAuditLogger, AUDIT_ACTIONS } from './useAuditLogger';
+
+export function useMilestoneMutations(entityType, entityId) {
+    const queryClient = useQueryClient();
+    const { user } = useAuth();
+    const { logCrudOperation } = useAuditLogger();
+
+    const tableMap = {
+        pilot: 'pilot_milestones',
+        sandbox: 'sandbox_project_milestones',
+        rd_project: 'rd_project_milestones'
+    };
+
+    const table = tableMap[entityType] || 'pilot_milestones';
+
+    /**
+     * Create Milestone
+     */
+    const createMilestone = useMutation({
+        mutationFn: async (data) => {
+            const milestoneData = {
+                ...data,
+                [`${entityType}_id`]: entityId,
+                created_by: user?.id,
+                created_at: new Date().toISOString()
+            };
+
+            const { data: milestone, error } = await supabase
+                .from(table)
+                .insert(milestoneData)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            await logCrudOperation(
+                AUDIT_ACTIONS.CREATE,
+                entityType.toUpperCase(),
+                entityId,
+                null,
+                { milestone_added: milestoneData }
+            );
+
+            return milestone;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [`${entityType}-milestones`, entityId] });
+            queryClient.invalidateQueries({ queryKey: [entityType, entityId] });
+            toast.success('Milestone created');
+        },
+        onError: (error) => {
+            toast.error(`Failed to create milestone: ${error.message}`);
+        }
+    });
+
+    /**
+     * Update Milestone
+     */
+    const updateMilestone = useMutation({
+        mutationFn: async ({ id, data }) => {
+            const { data: milestone, error } = await supabase
+                .from(table)
+                .update(data)
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return milestone;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [`${entityType}-milestones`, entityId] });
+            toast.success('Milestone updated');
+        }
+    });
+
+    /**
+     * Delete Milestone
+     */
+    const deleteMilestone = useMutation({
+        mutationFn: async (id) => {
+            const { error } = await supabase
+                .from(table)
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            return id;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [`${entityType}-milestones`, entityId] });
+            toast.success('Milestone deleted');
+        }
+    });
+
+    /**
+     * Update milestone status
+     */
+    const updateMilestoneStatus = useMutation({
+        mutationFn: async ({ id, status }) => {
+            const updateData = {
+                status,
+                updated_at: new Date().toISOString()
+            };
+
+            if (status === 'completed') {
+                updateData.completed_date = new Date().toISOString().split('T')[0];
+            }
+
+            const { data: milestone, error } = await supabase
+                .from(table)
+                .update(updateData)
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return milestone;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [`${entityType}-milestones`, entityId] });
+            toast.success('Milestone status updated');
+        }
+    });
+
+    return {
+        createMilestone,
+        updateMilestone,
+        deleteMilestone,
+        updateMilestoneStatus,
+        isCreating: createMilestone.isPending,
+        isUpdating: updateMilestone.isPending,
+        isDeleting: deleteMilestone.isPending
+    };
+}
+
+export default useMilestoneMutations;

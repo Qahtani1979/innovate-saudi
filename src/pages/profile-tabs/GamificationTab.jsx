@@ -1,5 +1,3 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,70 +5,17 @@ import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { Trophy, Award, Star, Medal, Target, Zap, Users } from 'lucide-react';
 import { ProfileStatCard, ProfileStatGrid } from '@/components/profile/ProfileStatCard';
+import { useAchievements, useUserAchievements, useCitizenPoints, useCitizenBadges, useLeaderboard } from '@/hooks/useGamification';
 
 export default function GamificationTab() {
   const { t, isRTL, language } = useLanguage();
   const { user } = useAuth();
 
-  const { data: achievements = [] } = useQuery({
-    queryKey: ['achievements'],
-    queryFn: async () => {
-      const { data } = await supabase.from('achievements').select('*').eq('is_active', true);
-      return data || [];
-    }
-  });
-
-  const { data: userAchievements = [] } = useQuery({
-    queryKey: ['user-achievements', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data } = await supabase
-        .from('user_achievements')
-        .select('*')
-        .eq('user_email', user.email);
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
-
-  const { data: citizenPoints } = useQuery({
-    queryKey: ['citizen-points', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return null;
-      const { data } = await supabase
-        .from('citizen_points')
-        .select('*')
-        .eq('user_email', user.email)
-        .maybeSingle();
-      return data;
-    },
-    enabled: !!user?.email
-  });
-
-  const { data: citizenBadges = [] } = useQuery({
-    queryKey: ['citizen-badges', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data } = await supabase
-        .from('citizen_badges')
-        .select('*')
-        .eq('user_email', user.email);
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
-
-  const { data: leaderboardData = [] } = useQuery({
-    queryKey: ['leaderboard'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('citizen_points')
-        .select('user_email, points, level')
-        .order('points', { ascending: false })
-        .limit(10);
-      return data || [];
-    }
-  });
+  const { data: achievements = [] } = useAchievements({ isActive: true });
+  const { data: userAchievements = [] } = useUserAchievements(user?.email);
+  const { data: citizenPoints } = useCitizenPoints(user?.email);
+  const { data: citizenBadges = [] } = useCitizenBadges(user?.email);
+  const { data: leaderboardData = [] } = useLeaderboard();
 
   // Calculate stats
   const totalPoints = userAchievements.reduce((sum, ua) => {
@@ -245,22 +190,20 @@ export default function GamificationTab() {
                 {leaderboardData.map((entry, idx) => (
                   <div
                     key={idx}
-                    className={`flex items-center gap-4 p-3 rounded-lg border ${
-                      entry.user_email === user?.email ? 'bg-primary/5 border-primary/20' : 'bg-muted/30'
-                    }`}
+                    className={`flex items-center gap-4 p-3 rounded-lg border ${entry.user_email === user?.email ? 'bg-primary/5 border-primary/20' : 'bg-muted/30'
+                      }`}
                   >
-                    <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold text-sm ${
-                      idx === 0 ? 'bg-gradient-to-br from-yellow-400 to-amber-500 text-white' :
-                      idx === 1 ? 'bg-gradient-to-br from-slate-300 to-slate-400 text-white' :
-                      idx === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-500 text-white' :
-                      'bg-muted text-muted-foreground'
-                    }`}>
+                    <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold text-sm ${idx === 0 ? 'bg-gradient-to-br from-yellow-400 to-amber-500 text-white' :
+                        idx === 1 ? 'bg-gradient-to-br from-slate-300 to-slate-400 text-white' :
+                          idx === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-500 text-white' :
+                            'bg-muted text-muted-foreground'
+                      }`}>
                       {idx < 3 ? (idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉') : `#${idx + 1}`}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">
-                        {entry.user_email === user?.email 
-                          ? entry.user_email 
+                        {entry.user_email === user?.email
+                          ? entry.user_email
                           : entry.user_email?.replace(/(.{2})(.*)(@.*)/, '$1***$3')}
                       </p>
                       <p className="text-xs text-muted-foreground">Level {entry.level || 1}</p>

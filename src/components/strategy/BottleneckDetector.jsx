@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,45 +8,42 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { getSystemPrompt } from '@/lib/saudiContext';
-import { 
-  buildBottleneckDetectorPrompt, 
+import {
+  buildBottleneckDetectorPrompt,
   bottleneckDetectorSchema,
-  BOTTLENECK_DETECTOR_SYSTEM_PROMPT 
+  BOTTLENECK_DETECTOR_SYSTEM_PROMPT
 } from '@/lib/ai/prompts/strategy';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsList } from '@/hooks/usePilots';
 
 export default function BottleneckDetector() {
   const { language, isRTL, t } = useLanguage();
   const [bottlenecks, setBottlenecks] = useState(null);
   const { invokeAI, status, isLoading: loading, rateLimitInfo, isAvailable } = useAIWithFallback();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('challenges').select('*').eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
+  // Fetch 'under_review' challenges directly using the hook
+  const { data: challenges = [] } = useChallengesWithVisibility({
+    status: 'under_review'
   });
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('pilots').select('*').eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
+  // Fetch 'approval_pending' pilots directly using the new hook
+  const { data: pilots = [] } = usePilotsList({
+    stage: 'approval_pending'
   });
 
   const detectBottlenecks = async () => {
     const now = new Date();
-    const challengesInReview = challenges.filter(c => c.status === 'under_review').map(c => {
-      const reviewDate = new Date(c.submission_date || c.created_date);
+
+    // Process challenges (already filtered by hook, but matching data shape expectations)
+    const challengesInReview = challenges.map(c => {
+      const reviewDate = new Date(c.submission_date || c.created_at); // Note: created_date vs created_at standardization
       const days = Math.floor((now - reviewDate) / (1000 * 60 * 60 * 24));
       return { ...c, days_in_review: days };
     });
 
-    const pilotsInApproval = pilots.filter(p => p.stage === 'approval_pending').map(p => {
-      const submissionDate = new Date(p.timeline?.submission_date || p.created_date);
+    // Process pilots (already filtered by hook)
+    const pilotsInApproval = pilots.map(p => {
+      const submissionDate = new Date(p.timeline?.submission_date || p.created_at);
       const days = Math.floor((now - submissionDate) / (1000 * 60 * 60 * 24));
       return { ...p, days_pending: days };
     });

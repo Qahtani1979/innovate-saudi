@@ -1,5 +1,3 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -7,28 +5,19 @@ import { useActivePlan } from '@/contexts/StrategicPlanContext';
 import { Target, Network, AlertCircle, CheckCircle2 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 
 function StrategyAlignment() {
   const { t } = useLanguage();
   const { activePlanId, activePlan } = useActivePlan();
 
-  const { data: challenges = [], isLoading } = useQuery({
-    queryKey: ['challenges-alignment', activePlanId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('id, title_en, title_ar, strategic_plan_ids, status')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: challenges = [], isLoading } = useChallengesWithVisibility();
 
   // Filter challenges by active plan
-  const linkedChallenges = activePlanId 
+  const linkedChallenges = activePlanId
     ? challenges.filter(c => c.strategic_plan_ids?.includes(activePlanId))
     : challenges.filter(c => c.strategic_plan_ids?.length > 0);
-  
+
   const alignedChallenges = linkedChallenges.filter(c => c.status === 'approved' || c.status === 'active' || c.status === 'in_progress');
   const misalignedChallenges = linkedChallenges.filter(c => c.status === 'rejected' || c.status === 'archived');
 
@@ -50,7 +39,7 @@ function StrategyAlignment() {
   return (
     <div className="space-y-6 container mx-auto py-6 px-4">
       <ActivePlanBanner />
-      
+
       <div>
         <h1 className="text-3xl font-bold">
           {t({ en: 'Strategy Alignment', ar: 'التوافق الاستراتيجي' })}
@@ -115,7 +104,7 @@ function StrategyAlignment() {
                     <span className="font-medium">{challenge.title_en}</span>
                     <Badge className={
                       challenge.status === 'approved' || challenge.status === 'active' ? 'bg-green-600' :
-                      challenge.status === 'rejected' ? 'bg-red-600' : 'bg-slate-500'
+                        challenge.status === 'rejected' ? 'bg-red-600' : 'bg-slate-500'
                     }>
                       {challenge.status}
                     </Badge>

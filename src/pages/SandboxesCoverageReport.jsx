@@ -1,47 +1,17 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '../components/LanguageContext';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import BaseCoverageReport from '../components/reports/BaseCoverageReport';
 import { getSandboxesCoverageData } from './sandboxesCoverageData';
+import { useSandboxesWithVisibility } from '@/hooks/useSandboxesWithVisibility';
+import { useSandboxApplications } from '@/hooks/useSandboxApplications';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 
 function SandboxesCoverageReport() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: sandboxes = [] } = useQuery({
-    queryKey: ['sandboxes-coverage'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('sandboxes')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: applications = [] } = useQuery({
-    queryKey: ['sandbox-applications-coverage'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('sandbox_applications')
-        .select('*');
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-coverage-sandboxes'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data;
-    }
-  });
+  const { data: sandboxes = [] } = useSandboxesWithVisibility({ limit: 1000 });
+  const { data: applications = [] } = useSandboxApplications({ limit: 1000 });
+  const { data: pilots = [] } = usePilotsWithVisibility({ limit: 1000 });
 
   const coverageData = getSandboxesCoverageData(sandboxes, applications, pilots);
 

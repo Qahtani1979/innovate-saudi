@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ import { createPageUrl } from '../../utils';
  * Generic Strategic Alignment Widget for any entity type
  * Displays linked strategic plans and objectives
  */
-export default function StrategicAlignmentWidget({ 
+export default function StrategicAlignmentWidget({
   entityType,
   entityId,
   title,
@@ -36,25 +37,14 @@ export default function StrategicAlignmentWidget({
   });
 
   // Fetch all strategic plans
-  const { data: strategicPlans = [], isLoading: plansLoading } = useQuery({
-    queryKey: ['strategic-plans-for-widget'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('strategic_plans')
-        .select('*')
-        .or('is_template.is.null,is_template.eq.false')
-        .or('is_deleted.is.null,is_deleted.eq.false');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: strategicPlans = [], isLoading: plansLoading } = useStrategiesWithVisibility();
 
   const isLoading = entityLoading || plansLoading;
 
   // Get linked strategic plans
   const linkedPlanIds = entity?.strategic_plan_ids || [];
   const linkedPlans = strategicPlans.filter(p => linkedPlanIds.includes(p.id));
-  
+
   // Check if entity is strategy-derived
   const isStrategyDerived = entity?.is_strategy_derived || false;
 
@@ -164,7 +154,7 @@ export default function StrategicAlignmentWidget({
               {t({ en: 'No strategic plans linked', ar: 'لا توجد خطط استراتيجية مرتبطة' })}
             </p>
             <p className="text-xs text-slate-400">
-              {t({ 
+              {t({
                 en: 'Link this entity to strategic plans for alignment tracking',
                 ar: 'اربط هذا الكيان بالخطط الاستراتيجية لتتبع التوافق'
               })}

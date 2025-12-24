@@ -1,19 +1,14 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Building2, Star, TrendingUp, CheckCircle2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useVendors } from '@/hooks/useVendors';
 
 function VendorPerformance() {
   const { t } = useLanguage();
-
-  const { data: vendors = [], isLoading } = useQuery({
-    queryKey: ['vendors'],
-    queryFn: () => base44.entities.Vendor.list()
-  });
+  const { data: vendors = [], isLoading } = useVendors();
 
   const topVendors = vendors
     .filter(v => v.performance_rating)

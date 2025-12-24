@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,19 +27,33 @@ export default function ProposalToRDConverter({ proposal, onClose, onSuccess }) 
 
   const createRDMutation = useMutation({
     mutationFn: async (data) => {
-      const rdProject = await base44.entities.RDProject.create(data);
-      
-      await base44.entities.InnovationProposal.update(proposal.id, {
-        converted_entity_type: 'rd_project',
-        converted_entity_id: rdProject.id
-      });
+      const { supabase } = await import('@/integrations/supabase/client');
 
-      await base44.entities.SystemActivity.create({
-        entity_type: 'innovation_proposal',
-        entity_id: proposal.id,
-        action: 'converted_to_rd_project',
-        description: `Proposal converted to R&D Project: ${rdProject.title_en}`
-      });
+      const { data: rdProject, error: createError } = await supabase
+        .from('rd_projects')
+        .insert([data])
+        .select()
+        .single();
+      if (createError) throw createError;
+
+      const { error: updateError } = await supabase
+        .from('innovation_proposals')
+        .update({
+          converted_entity_type: 'rd_project',
+          converted_entity_id: rdProject.id
+        })
+        .eq('id', proposal.id);
+      if (updateError) throw updateError;
+
+      const { error: activityError } = await supabase
+        .from('system_activities')
+        .insert([{
+          entity_type: 'innovation_proposal',
+          entity_id: proposal.id,
+          action: 'converted_to_rd_project',
+          description: `Proposal converted to R&D Project: ${rdProject.title_en}`
+        }]);
+      if (activityError) throw activityError;
 
       return rdProject;
     },
@@ -55,7 +68,7 @@ export default function ProposalToRDConverter({ proposal, onClose, onSuccess }) 
 
   const generateWithAI = async () => {
     if (!isAvailable) return;
-    
+
     const response = await invokeAI({
       prompt: buildProposalToRDPrompt(proposal),
       response_json_schema: PROPOSAL_TO_RD_SCHEMA
@@ -100,7 +113,7 @@ export default function ProposalToRDConverter({ proposal, onClose, onSuccess }) 
         </CardHeader>
         <CardContent className="pt-6 space-y-4">
           <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
-          
+
           <Button
             onClick={generateWithAI}
             disabled={generating || !isAvailable}

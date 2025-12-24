@@ -1,22 +1,15 @@
-import { supabase } from '@/lib/supabase';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '@/components/LanguageContext';
 import { Loader2, Gift, Award } from 'lucide-react';
+import { useRewards } from '@/hooks/useRewards';
+import { useCitizenStats } from '@/hooks/useCitizenData';
 
 export default function CitizenRewardsCenter() {
     const { t } = useLanguage();
-
-    const { data: rewards = [], isLoading } = useQuery({
-        queryKey: ['available-rewards'],
-        queryFn: async () => {
-            const { data, error } = await supabase.from('rewards').select('*').eq('status', 'active');
-            if (error) throw error;
-            return data;
-        }
-    });
+    const { data: rewards = [], isLoading } = useRewards();
+    const { data: stats } = useCitizenStats();
 
     return (
         <div className="container mx-auto p-6 space-y-6">
@@ -24,7 +17,7 @@ export default function CitizenRewardsCenter() {
                 <h1 className="text-3xl font-bold">{t({ en: 'Rewards Center', ar: 'مركز المكافآت' })}</h1>
                 <div className="flex items-center gap-2 bg-yellow-100 px-4 py-2 rounded-full">
                     <Award className="h-5 w-5 text-yellow-600" />
-                    <span className="font-bold text-yellow-800">0 Points</span>
+                    <span className="font-bold text-yellow-800">{stats?.points || 0} Points</span>
                 </div>
             </div>
 

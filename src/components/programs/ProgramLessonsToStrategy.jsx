@@ -1,24 +1,26 @@
 import { useState } from 'react';
+import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
+import { usePrograms } from '@/hooks/usePrograms';
+import { useStrategyMutations } from '@/hooks/useStrategyMutations';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Lightbulb, BookOpen, AlertTriangle, TrendingUp, 
-  Loader2, Send, CheckCircle2 
+import {
+  Lightbulb, BookOpen, AlertTriangle, TrendingUp,
+  Loader2, Send, CheckCircle2
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { 
-  LESSONS_STRATEGY_SYSTEM_PROMPT, 
-  buildLessonsStrategyPrompt, 
-  LESSONS_STRATEGY_SCHEMA 
+import {
+  LESSONS_STRATEGY_SYSTEM_PROMPT,
+  buildLessonsStrategyPrompt,
+  LESSONS_STRATEGY_SCHEMA
 } from '@/lib/ai/prompts/programs/lessonsStrategy';
 
 export default function ProgramLessonsToStrategy({ program }) {
@@ -29,14 +31,11 @@ export default function ProgramLessonsToStrategy({ program }) {
   const [aiSummary, setAiSummary] = useState(null);
   const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans-lessons'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('strategic_plans').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: strategicPlans = [] } = useStrategiesWithVisibility();
+  const linkedPlans = strategicPlans.filter(p =>
+    program?.['strategic_plan_ids']?.includes(p.id) ||
+    program?.['strategic_objective_ids']?.includes(p.id)
+  );
 
   // Get existing lessons
   const lessons = program.lessons_learned || [];
@@ -44,15 +43,13 @@ export default function ProgramLessonsToStrategy({ program }) {
   const challengeLessons = lessons.filter(l => l.type === 'challenge' || l.type === 'failure');
   const improvementLessons = lessons.filter(l => l.type === 'improvement');
 
-  // Linked strategic plans
-  const linkedPlans = strategicPlans.filter(p => 
-    program.strategic_plan_ids?.includes(p.id)
-  );
+  const { updateProgram, isUpdating: isUpdatingProgram } = usePrograms();
+  const { updateStrategy } = useStrategyMutations();
 
-  const addLessonMutation = useMutation({
-    mutationFn: async () => {
-      if (!newLesson.trim()) throw new Error('Lesson is empty');
+  const handleAddLesson = async () => {
+    if (!newLesson.trim()) return;
 
+    try {
       const updatedLessons = [
         ...lessons,
         {
@@ -60,34 +57,64 @@ export default function ProgramLessonsToStrategy({ program }) {
           type: lessonType,
           description: newLesson,
           created_at: new Date().toISOString(),
-          program_id: program.id,
-          program_name: program.name_en
+          program_id: program?.['id'],
+          program_name: program?.['name_en']
         }
       ];
 
-      const { error } = await supabase
-        .from('programs')
-        .update({
+      await updateProgram({
+        programId: program?.['id'],
+        updates: {
           lessons_learned: updatedLessons,
           last_lesson_date: new Date().toISOString()
-        })
-        .eq('id', program.id);
-      if (error) throw error;
+        }
+      });
 
-      return updatedLessons;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['programs'] });
       toast.success(t({ en: 'Lesson added', ar: 'تمت إضافة الدرس' }));
       setNewLesson('');
-    },
-    onError: (error) => {
-      console.error('Add lesson error:', error);
+    } catch (error) {
       toast.error(t({ en: 'Failed to add lesson', ar: 'فشل في إضافة الدرس' }));
     }
-  });
+  };
 
-  const generateStrategySummaryMutation = useMutation({
+  const handleFeedbackToStrategy = async () => {
+    if (!aiSummary || linkedPlans.length === 0) return;
+
+    try {
+      const operations = linkedPlans.map(plan => {
+        const existingFeedback = plan?.['program_feedback'] || [];
+        const newFeedback = {
+          program_id: program?.['id'],
+          program_name: program?.['name_en'],
+          feedback_date: new Date().toISOString(),
+          strategy_refinements: aiSummary.strategy_refinements,
+          capacity_needs: aiSummary.capacity_needs,
+          process_improvements: aiSummary.process_improvements,
+          replication_opportunities: aiSummary.replication_opportunities
+        };
+
+        return updateStrategy.mutateAsync({
+          id: plan.id,
+          data: {
+            program_feedback: [...existingFeedback, newFeedback],
+            last_feedback_date: new Date().toISOString()
+          }
+        });
+      });
+
+      await Promise.all(operations);
+
+      toast.success(t({
+        en: `Feedback sent to ${linkedPlans.length} strategic plan(s)`,
+        ar: `تم إرسال الملاحظات إلى ${linkedPlans.length} خطة استراتيجية`
+      }));
+    } catch (error) {
+      toast.error(t({ en: 'Failed to submit feedback', ar: 'فشل في إرسال الملاحظات' }));
+    }
+  };
+
+  // LESSON_STRATEGY AI generator function wrapped in useMutation for state management
+  const generateSummaryMutation = useMutation({
     mutationFn: async () => {
       const result = await invokeAI({
         system_prompt: LESSONS_STRATEGY_SYSTEM_PROMPT,
@@ -101,76 +128,12 @@ export default function ProgramLessonsToStrategy({ program }) {
         response_json_schema: LESSONS_STRATEGY_SCHEMA
       });
 
-      if (result.success && result.data) {
-        return result.data;
-      }
-
-      // Fallback
-      return {
-        strategy_refinements: [
-          { en: 'Consider adjusting timeline expectations based on lessons', ar: 'النظر في تعديل توقعات الجدول الزمني بناءً على الدروس' }
-        ],
-        capacity_needs: [
-          { en: 'Build digital skills capacity for future programs', ar: 'بناء قدرات المهارات الرقمية للبرامج المستقبلية' }
-        ],
-        process_improvements: [
-          { en: 'Implement earlier stakeholder engagement', ar: 'تنفيذ مشاركة أصحاب المصلحة في وقت مبكر' }
-        ],
-        replication_opportunities: [
-          { en: 'Apply learnings to similar programs in other sectors', ar: 'تطبيق الدروس على برامج مماثلة في قطاعات أخرى' }
-        ]
-      };
+      if (result.success && result.data) return result.data;
+      throw new Error('AI failed');
     },
     onSuccess: (data) => {
       setAiSummary(data);
       toast.success(t({ en: 'Strategic summary generated', ar: 'تم توليد الملخص الاستراتيجي' }));
-    },
-    onError: (error) => {
-      console.error('Summary generation error:', error);
-      toast.error(t({ en: 'Failed to generate summary', ar: 'فشل في توليد الملخص' }));
-    }
-  });
-
-  const feedbackToStrategyMutation = useMutation({
-    mutationFn: async () => {
-      if (!aiSummary || linkedPlans.length === 0) {
-        throw new Error('No summary or linked plans');
-      }
-
-      // Update each linked strategic plan with feedback
-      for (const plan of linkedPlans) {
-        const existingFeedback = plan.program_feedback || [];
-        const newFeedback = {
-          program_id: program.id,
-          program_name: program.name_en,
-          feedback_date: new Date().toISOString(),
-          strategy_refinements: aiSummary.strategy_refinements,
-          capacity_needs: aiSummary.capacity_needs,
-          process_improvements: aiSummary.process_improvements,
-          replication_opportunities: aiSummary.replication_opportunities
-        };
-
-        await supabase
-          .from('strategic_plans')
-          .update({
-            program_feedback: [...existingFeedback, newFeedback],
-            last_feedback_date: new Date().toISOString()
-          })
-          .eq('id', plan.id);
-      }
-
-      return linkedPlans.length;
-    },
-    onSuccess: (count) => {
-      queryClient.invalidateQueries({ queryKey: ['strategic-plans'] });
-      toast.success(t({ 
-        en: `Feedback sent to ${count} strategic plan(s)`, 
-        ar: `تم إرسال الملاحظات إلى ${count} خطة استراتيجية` 
-      }));
-    },
-    onError: (error) => {
-      console.error('Feedback submission error:', error);
-      toast.error(t({ en: 'Failed to submit feedback', ar: 'فشل في إرسال الملاحظات' }));
     }
   });
 
@@ -188,14 +151,14 @@ export default function ProgramLessonsToStrategy({ program }) {
           {t({ en: 'Program Lessons → Strategy Feedback', ar: 'دروس البرنامج → ملاحظات الاستراتيجية' })}
         </CardTitle>
         <p className="text-sm text-slate-600 mt-1">
-          {t({ 
-            en: 'Capture lessons learned and feed them back to strategic planning', 
-            ar: 'تسجيل الدروس المستفادة وإعادتها للتخطيط الاستراتيجي' 
+          {t({
+            en: 'Capture lessons learned and feed them back to strategic planning',
+            ar: 'تسجيل الدروس المستفادة وإعادتها للتخطيط الاستراتيجي'
           })}
         </p>
       </CardHeader>
       <CardContent className="space-y-6 pt-6">
-        <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} />
+        <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} error={null} />
 
         {/* Lessons Stats */}
         <div className="grid grid-cols-3 gap-3">
@@ -236,19 +199,19 @@ export default function ProgramLessonsToStrategy({ program }) {
                 </SelectContent>
               </Select>
 
-              <Textarea 
+              <Textarea
                 placeholder={t({ en: 'Describe the lesson learned...', ar: 'صف الدرس المستفاد...' })}
                 value={newLesson}
                 onChange={(e) => setNewLesson(e.target.value)}
                 rows={3}
               />
 
-              <Button 
-                onClick={() => addLessonMutation.mutate()}
-                disabled={!newLesson.trim() || addLessonMutation.isPending}
+              <Button
+                onClick={handleAddLesson}
+                disabled={!newLesson.trim() || isUpdatingProgram}
                 className="w-full"
               >
-                {addLessonMutation.isPending ? (
+                {isUpdatingProgram ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <>
@@ -305,19 +268,19 @@ export default function ProgramLessonsToStrategy({ program }) {
                   <div className="flex flex-wrap gap-1 mt-2">
                     {linkedPlans.map(plan => (
                       <Badge key={plan.id} variant="secondary">
-                        {language === 'ar' && plan.name_ar ? plan.name_ar : plan.name_en || plan.title_en}
+                        {language === 'ar' && plan?.['name_ar'] ? plan?.['name_ar'] : plan?.['name_en'] || plan?.['title_en']}
                       </Badge>
                     ))}
                   </div>
                 </div>
 
-                <Button 
-                  onClick={() => generateStrategySummaryMutation.mutate()}
-                  disabled={lessons.length === 0 || generateStrategySummaryMutation.isPending || aiLoading}
+                <Button
+                  onClick={() => generateSummaryMutation.mutate()}
+                  disabled={lessons.length === 0 || generateSummaryMutation.isPending || aiLoading}
                   variant="outline"
                   className="w-full"
                 >
-                  {generateStrategySummaryMutation.isPending ? (
+                  {generateSummaryMutation.isPending ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   ) : (
                     <Lightbulb className="h-4 w-4 mr-2" />
@@ -340,12 +303,12 @@ export default function ProgramLessonsToStrategy({ program }) {
                       </div>
                     )}
 
-                    <Button 
-                      onClick={() => feedbackToStrategyMutation.mutate()}
-                      disabled={feedbackToStrategyMutation.isPending}
+                    <Button
+                      onClick={handleFeedbackToStrategy}
+                      disabled={updateStrategy.isPending}
                       className="w-full bg-teal-600 hover:bg-teal-700"
                     >
-                      {feedbackToStrategyMutation.isPending ? (
+                      {updateStrategy.isPending ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <>

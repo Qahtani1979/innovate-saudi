@@ -1,50 +1,45 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from './LanguageContext';
 import { Award, Loader2, CheckCircle2, TrendingUp, RotateCcw, XCircle } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { usePilotMutations } from '@/hooks/usePilotMutations';
 
-function PilotEvaluationGate({ pilot, onClose }) {
+export default function PilotEvaluationGate({ pilot, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const [recommendation, setRecommendation] = useState('');
   const [summary, setSummary] = useState('');
   const { invokeAI, status, isLoading: generatingEvaluation, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [aiEvaluation, setAiEvaluation] = useState(null);
-  const queryClient = useQueryClient();
+  const { updatePilot } = usePilotMutations();
 
-  const closeAndEvaluateMutation = useMutation({
-    mutationFn: async (recommendationType) => {
-      await base44.entities.Pilot.update(pilot.id, {
+  const handleEvaluate = (recommendationType) => {
+    updatePilot.mutate({
+      id: pilot.id,
+      data: {
         stage: 'evaluation',
         recommendation: recommendationType,
         evaluation_summary_en: summary,
         timeline: {
           ...pilot.timeline,
           evaluation_start: new Date().toISOString()
-        }
-      });
-      await base44.entities.SystemActivity.create({
+        },
         activity_type: 'pilot_evaluation_started',
-        entity_type: 'Pilot',
-        entity_id: pilot.id,
-        description: `Pilot "${pilot.title_en}" closed and moved to evaluation`,
-        metadata: { recommendation: recommendationType, ai_evaluation: aiEvaluation }
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['pilot']);
-      toast.success(t({ en: 'Pilot moved to evaluation', ar: 'تم نقل التجربة للتقييم' }));
-      if (onClose) onClose();
-    }
-  });
+        activity_description: `Pilot "${pilot.title_en}" closed and moved to evaluation`,
+        activity_metadata: { recommendation: recommendationType, ai_evaluation: aiEvaluation }
+      }
+    }, {
+      onSuccess: () => {
+        if (onClose) onClose();
+      }
+    });
+  };
 
   const generateAIEvaluation = async () => {
     const result = await invokeAI({
+      system_prompt: "You are an expert innovation evaluator. Assess the completed pilot project based on provided data.",
       prompt: `Evaluate this completed pilot and provide a comprehensive assessment:
 
 Title: ${pilot.title_en}
@@ -202,11 +197,11 @@ Provide:
             {t({ en: 'Cancel', ar: 'إلغاء' })}
           </Button>
           <Button
-            onClick={() => closeAndEvaluateMutation.mutate(recommendation)}
-            disabled={!summary || !recommendation || closeAndEvaluateMutation.isPending}
+            onClick={() => handleEvaluate(recommendation)}
+            disabled={!summary || !recommendation || updatePilot.isPending}
             className="flex-1 bg-gradient-to-r from-blue-600 to-teal-600"
           >
-            {closeAndEvaluateMutation.isPending ? (
+            {updatePilot.isPending ? (
               <Loader2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} animate-spin`} />
             ) : (
               <Award className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
@@ -218,5 +213,3 @@ Provide:
     </Card>
   );
 }
-
-export default PilotEvaluationGate;

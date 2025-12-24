@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -19,7 +18,13 @@ export default function ProposalEligibilityChecker({ proposal, rdCall, onClose }
 
   const updateMutation = useMutation({
     mutationFn: async (data) => {
-      await base44.entities.RDProposal.update(proposal.id, data);
+      const { supabase } = await import('@/integrations/supabase/client');
+
+      const { error } = await supabase
+        .from('rd_proposals')
+        .update(data)
+        .eq('id', proposal.id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['proposals']);
@@ -99,7 +104,7 @@ export default function ProposalEligibilityChecker({ proposal, rdCall, onClose }
                     <AlertCircle className="h-6 w-6 text-red-600" />
                   )}
                   <span className="font-semibold text-lg">
-                    {results.overall_eligible 
+                    {results.overall_eligible
                       ? t({ en: 'ELIGIBLE', ar: 'مؤهل' })
                       : t({ en: 'NOT ELIGIBLE', ar: 'غير مؤهل' })}
                   </span>

@@ -16,7 +16,7 @@ import { usePermissions } from '@/components/permissions/usePermissions';
 
 export function useOrganizationsWithVisibility(options = {}) {
   const { orgType, includeAll = false } = options;
-  
+
   const {
     hasFullVisibility,
     isNational,
@@ -34,18 +34,18 @@ export function useOrganizationsWithVisibility(options = {}) {
         let query = supabase
           .from('organizations')
           .select('*');
-        
+
         // Only filter is_deleted if column exists (graceful handling)
         try {
           query = query.or('is_deleted.eq.false,is_deleted.is.null');
         } catch (e) {
           // Column might not exist yet
         }
-        
+
         if (orgType) {
           query = query.or(`org_type.eq.${orgType},type.eq.${orgType}`);
         }
-        
+
         const { data, error } = await query.order('name_en');
         if (error) throw error;
         return data || [];
@@ -58,11 +58,11 @@ export function useOrganizationsWithVisibility(options = {}) {
           .select('*')
           .or('is_deleted.eq.false,is_deleted.is.null')
           .or(`is_active.eq.true,municipality_id.eq.${userMunicipalityId}`);
-        
+
         if (orgType) {
           query = query.or(`org_type.eq.${orgType},type.eq.${orgType}`);
         }
-        
+
         const { data, error } = await query.order('name_en');
         if (error) throw error;
         return data || [];
@@ -75,11 +75,11 @@ export function useOrganizationsWithVisibility(options = {}) {
           .select('*')
           .or('is_deleted.eq.false,is_deleted.is.null')
           .or(`is_active.eq.true,id.eq.${organizationId}`);
-        
+
         if (orgType) {
           query = query.or(`org_type.eq.${orgType},type.eq.${orgType}`);
         }
-        
+
         const { data, error } = await query.order('name_en');
         if (error) throw error;
         return data || [];
@@ -91,16 +91,37 @@ export function useOrganizationsWithVisibility(options = {}) {
         .select('*')
         .or('is_deleted.eq.false,is_deleted.is.null')
         .eq('is_active', true);
-      
+
       if (orgType) {
         query = query.or(`org_type.eq.${orgType},type.eq.${orgType}`);
       }
-      
+
       const { data, error } = await query.order('name_en');
       if (error) throw error;
       return data || [];
     },
     enabled: !visibilityLoading,
+    staleTime: 5 * 60 * 1000
+  });
+}
+
+export function useMyManagedOrganization() {
+  const { userEmail } = usePermissions();
+
+  return useQuery({
+    queryKey: ['my-managed-organization', userEmail],
+    queryFn: async () => {
+      if (!userEmail) return null;
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('contact_email', userEmail)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!userEmail,
     staleTime: 5 * 60 * 1000
   });
 }

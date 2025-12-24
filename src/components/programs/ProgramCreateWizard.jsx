@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { useMutation, useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +19,10 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useMunicipalitiesWithVisibility, useOrganizationsWithVisibility } from '@/hooks/visibility';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { useSectors } from '@/hooks/useSectors';
+import { useRegions, useCities, useServices, useSubsectors } from '@/hooks/useReferenceData';
+import { useProgramMutations } from '@/hooks/useProgramMutations';
+import { useStrategicPlans } from '@/hooks/useStrategicPlans';
 
 export default function ProgramCreateWizard({ onComplete, initialData = {} }) {
   const { language, isRTL, t } = useLanguage();
@@ -49,7 +51,20 @@ export default function ProgramCreateWizard({ onComplete, initialData = {} }) {
     timeline: {},
     target_participants: { min_participants: 10, max_participants: 30 },
     funding_available: false,
+    funding_details: { min_amount: null, max_amount: null, total_pool: null },
     is_published: false,
+    sector_id: '',
+    subsector_id: '',
+    service_focus_ids: [],
+    municipality_targets: [],
+    region_targets: [],
+    city_targets: [],
+    strategic_plan_ids: [],
+    operator_organization_id: '',
+    image_url: '',
+    brochure_url: '',
+    curriculum: null,
+    id: null,
     ...initialData
   });
 
@@ -57,101 +72,31 @@ export default function ProgramCreateWizard({ onComplete, initialData = {} }) {
   const { data: organizations = [] } = useOrganizationsWithVisibility();
   const { data: municipalities = [] } = useMunicipalitiesWithVisibility();
 
-  // Reference data (public - no visibility needed)
-  const { data: sectors = [] } = useQuery({
-    queryKey: ['sectors'],
-    queryFn: async () => {
-      const { data } = await supabase.from('sectors').select('*');
-      return data || [];
-    }
+  // Use standardized hooks for reference data
+  const { data: sectors = [] } = useSectors();
+  const { data: subsectors = [] } = useSubsectors();
+  const { data: services = [] } = useServices();
+  const { data: regions = [] } = useRegions();
+  const { data: cities = [] } = useCities();
+
+  const { data: strategicPlans = [] } = useStrategicPlans({
+    status: ['active', 'draft']
   });
 
-  const { data: subsectors = [] } = useQuery({
-    queryKey: ['subsectors'],
-    queryFn: async () => {
-      const { data } = await supabase.from('subsectors').select('*');
-      return data || [];
-    }
-  });
+  const { createProgram, isCreating } = useProgramMutations();
 
-  const { data: services = [] } = useQuery({
-    queryKey: ['services'],
-    queryFn: async () => {
-      const { data } = await supabase.from('services').select('*');
-      return data || [];
-    }
-  });
-
-  const { data: regions = [] } = useQuery({
-    queryKey: ['regions'],
-    queryFn: async () => {
-      const { data } = await supabase.from('regions').select('*');
-      return data || [];
-    }
-  });
-
-  const { data: cities = [] } = useQuery({
-    queryKey: ['cities'],
-    queryFn: async () => {
-      const { data } = await supabase.from('cities').select('*');
-      return data || [];
-    }
-  });
-
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans-program-wizard'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('strategic_plans')
-        .select('*')
-        .or('is_template.is.null,is_template.eq.false')
-        .or('is_deleted.is.null,is_deleted.eq.false')
-        .in('status', ['active', 'draft']);
-      return data || [];
-    }
-  });
-
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: program, error } = await supabase
-        .from('programs')
-        .insert(data)
-        .select()
-        .single();
-      if (error) throw error;
-      
-      // Log creation
-      await supabase.from('system_activities').insert({
-        entity_type: 'program',
-        entity_id: program.id,
-        activity_type: 'program_created',
-        performed_by: user?.email,
-        timestamp: new Date().toISOString(),
-        metadata: { wizard: true }
-      });
-
-      return program;
-    },
-    onSuccess: async (program) => {
-      // Trigger email notification for program creation
-      await triggerEmail('program.created', {
-        entityType: 'program',
-        entityId: program.id,
-        variables: {
-          program_name: program.name_en,
-          program_type: program.program_type,
-          duration_weeks: program.duration_weeks
-        }
-      }).catch(err => console.error('Email trigger failed:', err));
-      
-      toast.success(t({ en: 'Program created successfully!', ar: 'تم إنشاء البرنامج بنجاح!' }));
+  const handleCreate = async () => {
+    try {
+      const program = await createProgram(formData);
       if (onComplete) {
         onComplete(program);
       } else {
         navigate(createPageUrl(`ProgramDetail?id=${program.id}`));
       }
+    } catch (error) {
+      // toast is handled by hook
     }
-  });
+  };
 
   const handleAIEnhance = async () => {
     const prompt = `Generate comprehensive bilingual content for a ${formData.program_type} program:
@@ -171,6 +116,7 @@ Generate:
 
     const result = await invokeAI({
       prompt,
+      system_prompt: 'You are an export program designer specializing in the Saudi Arabian innovation ecosystem. Provide expert-level bilingual content.',
       response_json_schema: {
         type: 'object',
         properties: {
@@ -273,11 +219,10 @@ Generate:
             const StepIcon = step.icon;
             return (
               <div key={step.number} className="flex flex-col items-center gap-1">
-                <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                  step.number < currentStep ? 'bg-green-500 text-white' :
+                <div className={`h-10 w-10 rounded-full flex items-center justify-center ${step.number < currentStep ? 'bg-green-500 text-white' :
                   step.number === currentStep ? 'bg-blue-600 text-white' :
-                  'bg-slate-200 text-slate-500'
-                }`}>
+                    'bg-slate-200 text-slate-500'
+                  }`}>
                   {step.number < currentStep ? (
                     <CheckCircle2 className="h-5 w-5" />
                   ) : (
@@ -312,7 +257,7 @@ Generate:
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} />
+          <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} error={null} />
           {/* Step 1: Basic Info */}
           {currentStep === 1 && (
             <>
@@ -321,7 +266,7 @@ Generate:
                   <Label>Program Name (English) *</Label>
                   <Input
                     value={formData.name_en}
-                    onChange={(e) => setFormData({...formData, name_en: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
                     placeholder="Innovation Accelerator 2025"
                   />
                 </div>
@@ -329,7 +274,7 @@ Generate:
                   <Label>اسم البرنامج (عربي)</Label>
                   <Input
                     value={formData.name_ar || ''}
-                    onChange={(e) => setFormData({...formData, name_ar: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
                     placeholder="برنامج التسريع للابتكار 2025"
                     dir="rtl"
                   />
@@ -340,7 +285,7 @@ Generate:
                 <Label>Program Type *</Label>
                 <Select
                   value={formData.program_type}
-                  onValueChange={(v) => setFormData({...formData, program_type: v})}
+                  onValueChange={(v) => setFormData({ ...formData, program_type: v })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -364,7 +309,7 @@ Generate:
                   <Label>Tagline (English)</Label>
                   <Input
                     value={formData.tagline_en || ''}
-                    onChange={(e) => setFormData({...formData, tagline_en: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, tagline_en: e.target.value })}
                     placeholder="Accelerating innovation across Saudi cities"
                   />
                 </div>
@@ -372,7 +317,7 @@ Generate:
                   <Label>الشعار (عربي)</Label>
                   <Input
                     value={formData.tagline_ar || ''}
-                    onChange={(e) => setFormData({...formData, tagline_ar: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, tagline_ar: e.target.value })}
                     placeholder="تسريع الابتكار عبر المدن السعودية"
                     dir="rtl"
                   />
@@ -388,7 +333,7 @@ Generate:
                 <Label>Description (English) *</Label>
                 <Textarea
                   value={formData.description_en || ''}
-                  onChange={(e) => setFormData({...formData, description_en: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
                   rows={5}
                   placeholder="Comprehensive program description..."
                 />
@@ -398,7 +343,7 @@ Generate:
                 <Label>الوصف (عربي)</Label>
                 <Textarea
                   value={formData.description_ar || ''}
-                  onChange={(e) => setFormData({...formData, description_ar: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
                   rows={5}
                   dir="rtl"
                 />
@@ -408,7 +353,7 @@ Generate:
                 <Label>Objectives (English)</Label>
                 <Textarea
                   value={formData.objectives_en || ''}
-                  onChange={(e) => setFormData({...formData, objectives_en: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, objectives_en: e.target.value })}
                   rows={4}
                 />
               </div>
@@ -417,7 +362,7 @@ Generate:
                 <Label>الأهداف (عربي)</Label>
                 <Textarea
                   value={formData.objectives_ar || ''}
-                  onChange={(e) => setFormData({...formData, objectives_ar: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, objectives_ar: e.target.value })}
                   rows={4}
                   dir="rtl"
                 />
@@ -432,7 +377,7 @@ Generate:
                 programType={formData.program_type}
                 duration_weeks={formData.duration_weeks}
                 objectives={formData.objectives_en}
-                onCurriculumGenerated={(curriculum) => setFormData({...formData, curriculum})}
+                onCurriculumGenerated={(curriculum) => setFormData({ ...formData, curriculum })}
               />
 
               <div className="space-y-2">
@@ -440,7 +385,7 @@ Generate:
                 <Input
                   type="number"
                   value={formData.duration_weeks}
-                  onChange={(e) => setFormData({...formData, duration_weeks: parseInt(e.target.value)})}
+                  onChange={(e) => setFormData({ ...formData, duration_weeks: parseInt(e.target.value) })}
                 />
               </div>
 
@@ -452,7 +397,7 @@ Generate:
                     value={formData.timeline?.application_open || ''}
                     onChange={(e) => setFormData({
                       ...formData,
-                      timeline: {...(formData.timeline || {}), application_open: e.target.value}
+                      timeline: { ...(formData.timeline || {}), application_open: e.target.value }
                     })}
                   />
                 </div>
@@ -463,7 +408,7 @@ Generate:
                     value={formData.timeline?.application_close || ''}
                     onChange={(e) => setFormData({
                       ...formData,
-                      timeline: {...(formData.timeline || {}), application_close: e.target.value}
+                      timeline: { ...(formData.timeline || {}), application_close: e.target.value }
                     })}
                   />
                 </div>
@@ -477,7 +422,7 @@ Generate:
                     value={formData.timeline?.program_start || ''}
                     onChange={(e) => setFormData({
                       ...formData,
-                      timeline: {...(formData.timeline || {}), program_start: e.target.value}
+                      timeline: { ...(formData.timeline || {}), program_start: e.target.value }
                     })}
                   />
                 </div>
@@ -488,7 +433,7 @@ Generate:
                     value={formData.timeline?.program_end || ''}
                     onChange={(e) => setFormData({
                       ...formData,
-                      timeline: {...(formData.timeline || {}), program_end: e.target.value}
+                      timeline: { ...(formData.timeline || {}), program_end: e.target.value }
                     })}
                   />
                 </div>
@@ -507,7 +452,10 @@ Generate:
                     value={formData.target_participants?.min_participants || 10}
                     onChange={(e) => setFormData({
                       ...formData,
-                      target_participants: {...(formData.target_participants || {}), min_participants: parseInt(e.target.value)}
+                      target_participants: {
+                        min_participants: parseInt(e.target.value) || 0,
+                        max_participants: formData.target_participants?.max_participants || 30
+                      }
                     })}
                   />
                 </div>
@@ -518,7 +466,10 @@ Generate:
                     value={formData.target_participants?.max_participants || 30}
                     onChange={(e) => setFormData({
                       ...formData,
-                      target_participants: {...(formData.target_participants || {}), max_participants: parseInt(e.target.value)}
+                      target_participants: {
+                        min_participants: formData.target_participants?.min_participants || 10,
+                        max_participants: parseInt(e.target.value) || 0
+                      }
                     })}
                   />
                 </div>
@@ -533,7 +484,7 @@ Generate:
                       onChange={(e) => {
                         const updated = [...(formData.eligibility_criteria || [])];
                         updated[idx] = e.target.value;
-                        setFormData({...formData, eligibility_criteria: updated});
+                        setFormData({ ...formData, eligibility_criteria: updated });
                       }}
                     />
                     <Button
@@ -541,7 +492,7 @@ Generate:
                       size="icon"
                       onClick={() => {
                         const updated = formData.eligibility_criteria.filter((_, i) => i !== idx);
-                        setFormData({...formData, eligibility_criteria: updated});
+                        setFormData({ ...formData, eligibility_criteria: updated });
                       }}
                     >
                       <X className="h-4 w-4" />
@@ -569,7 +520,7 @@ Generate:
                 <input
                   type="checkbox"
                   checked={formData.funding_available}
-                  onChange={(e) => setFormData({...formData, funding_available: e.target.checked})}
+                  onChange={(e) => setFormData({ ...formData, funding_available: e.target.checked })}
                   className="h-4 w-4"
                 />
                 <Label>Funding Available</Label>
@@ -584,7 +535,11 @@ Generate:
                       value={formData.funding_details?.min_amount || ''}
                       onChange={(e) => setFormData({
                         ...formData,
-                        funding_details: {...(formData.funding_details || {}), min_amount: parseInt(e.target.value)}
+                        funding_details: {
+                          min_amount: parseInt(e.target.value) || 0,
+                          max_amount: formData.funding_details?.max_amount || 0,
+                          total_pool: formData.funding_details?.total_pool || 0
+                        }
                       })}
                     />
                   </div>
@@ -595,7 +550,11 @@ Generate:
                       value={formData.funding_details?.max_amount || ''}
                       onChange={(e) => setFormData({
                         ...formData,
-                        funding_details: {...(formData.funding_details || {}), max_amount: parseInt(e.target.value)}
+                        funding_details: {
+                          min_amount: formData.funding_details?.min_amount || 0,
+                          max_amount: parseInt(e.target.value) || 0,
+                          total_pool: formData.funding_details?.total_pool || 0
+                        }
                       })}
                     />
                   </div>
@@ -606,7 +565,11 @@ Generate:
                       value={formData.funding_details?.total_pool || ''}
                       onChange={(e) => setFormData({
                         ...formData,
-                        funding_details: {...(formData.funding_details || {}), total_pool: parseInt(e.target.value)}
+                        funding_details: {
+                          min_amount: formData.funding_details?.min_amount || 0,
+                          max_amount: formData.funding_details?.max_amount || 0,
+                          total_pool: parseInt(e.target.value) || 0
+                        }
                       })}
                     />
                   </div>
@@ -623,7 +586,7 @@ Generate:
                   <Label>{t({ en: 'Primary Sector', ar: 'القطاع الأساسي' })}</Label>
                   <Select
                     value={formData.sector_id || ''}
-                    onValueChange={(v) => setFormData({...formData, sector_id: v, subsector_id: ''})}
+                    onValueChange={(v) => setFormData({ ...formData, sector_id: v, subsector_id: '' })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder={t({ en: 'Select sector...', ar: 'اختر القطاع...' })} />
@@ -641,7 +604,7 @@ Generate:
                   <Label>{t({ en: 'Subsector', ar: 'القطاع الفرعي' })}</Label>
                   <Select
                     value={formData.subsector_id || ''}
-                    onValueChange={(v) => setFormData({...formData, subsector_id: v})}
+                    onValueChange={(v) => setFormData({ ...formData, subsector_id: v })}
                     disabled={!formData.sector_id}
                   >
                     <SelectTrigger>
@@ -666,10 +629,10 @@ Generate:
                     return service ? (
                       <Badge key={sId} className="gap-1">
                         {language === 'ar' && service.name_ar ? service.name_ar : service.name_en}
-                        <X 
-                          className="h-3 w-3 cursor-pointer" 
+                        <X
+                          className="h-3 w-3 cursor-pointer"
                           onClick={() => setFormData({
-                            ...formData, 
+                            ...formData,
                             service_focus_ids: formData.service_focus_ids.filter(id => id !== sId)
                           })}
                         />
@@ -680,7 +643,7 @@ Generate:
                 <Select
                   onValueChange={(v) => {
                     if (!formData.service_focus_ids?.includes(v)) {
-                      setFormData({...formData, service_focus_ids: [...(formData.service_focus_ids || []), v]});
+                      setFormData({ ...formData, service_focus_ids: [...(formData.service_focus_ids || []), v] });
                     }
                   }}
                 >
@@ -705,10 +668,10 @@ Generate:
                     return muni ? (
                       <Badge key={mId} className="gap-1">
                         {language === 'ar' && muni.name_ar ? muni.name_ar : muni.name_en}
-                        <X 
-                          className="h-3 w-3 cursor-pointer" 
+                        <X
+                          className="h-3 w-3 cursor-pointer"
                           onClick={() => setFormData({
-                            ...formData, 
+                            ...formData,
                             municipality_targets: formData.municipality_targets.filter(id => id !== mId)
                           })}
                         />
@@ -719,7 +682,7 @@ Generate:
                 <Select
                   onValueChange={(v) => {
                     if (!formData.municipality_targets?.includes(v)) {
-                      setFormData({...formData, municipality_targets: [...(formData.municipality_targets || []), v]});
+                      setFormData({ ...formData, municipality_targets: [...(formData.municipality_targets || []), v] });
                     }
                   }}
                 >
@@ -745,10 +708,10 @@ Generate:
                       return region ? (
                         <Badge key={rId} variant="outline" className="gap-1">
                           {language === 'ar' && region.name_ar ? region.name_ar : region.name_en}
-                          <X 
-                            className="h-3 w-3 cursor-pointer" 
+                          <X
+                            className="h-3 w-3 cursor-pointer"
                             onClick={() => setFormData({
-                              ...formData, 
+                              ...formData,
                               region_targets: formData.region_targets.filter(id => id !== rId)
                             })}
                           />
@@ -759,7 +722,7 @@ Generate:
                   <Select
                     onValueChange={(v) => {
                       if (!formData.region_targets?.includes(v)) {
-                        setFormData({...formData, region_targets: [...(formData.region_targets || []), v]});
+                        setFormData({ ...formData, region_targets: [...(formData.region_targets || []), v] });
                       }
                     }}
                   >
@@ -783,10 +746,10 @@ Generate:
                       return city ? (
                         <Badge key={cId} variant="outline" className="gap-1">
                           {language === 'ar' && city.name_ar ? city.name_ar : city.name_en}
-                          <X 
-                            className="h-3 w-3 cursor-pointer" 
+                          <X
+                            className="h-3 w-3 cursor-pointer"
                             onClick={() => setFormData({
-                              ...formData, 
+                              ...formData,
                               city_targets: formData.city_targets.filter(id => id !== cId)
                             })}
                           />
@@ -797,7 +760,7 @@ Generate:
                   <Select
                     onValueChange={(v) => {
                       if (!formData.city_targets?.includes(v)) {
-                        setFormData({...formData, city_targets: [...(formData.city_targets || []), v]});
+                        setFormData({ ...formData, city_targets: [...(formData.city_targets || []), v] });
                       }
                     }}
                   >
@@ -828,10 +791,10 @@ Generate:
                     return plan ? (
                       <Badge key={spId} className="gap-1">
                         {language === 'ar' && plan.name_ar ? plan.name_ar : plan.name_en}
-                        <X 
-                          className="h-3 w-3 cursor-pointer" 
+                        <X
+                          className="h-3 w-3 cursor-pointer"
                           onClick={() => setFormData({
-                            ...formData, 
+                            ...formData,
                             strategic_plan_ids: formData.strategic_plan_ids.filter(id => id !== spId)
                           })}
                         />
@@ -842,7 +805,7 @@ Generate:
                 <Select
                   onValueChange={(v) => {
                     if (!formData.strategic_plan_ids?.includes(v)) {
-                      setFormData({...formData, strategic_plan_ids: [...(formData.strategic_plan_ids || []), v]});
+                      setFormData({ ...formData, strategic_plan_ids: [...(formData.strategic_plan_ids || []), v] });
                     }
                   }}
                 >
@@ -864,7 +827,7 @@ Generate:
                   {t({ en: '💡 Strategic Alignment', ar: '💡 التوافق الاستراتيجي' })}
                 </p>
                 <p className="text-xs text-slate-700">
-                  {t({ 
+                  {t({
                     en: 'Link this program to strategic plans, pillars, and objectives to track contribution to national goals.',
                     ar: 'اربط هذا البرنامج بالخطط والركائز والأهداف الاستراتيجية لتتبع المساهمة في الأهداف الوطنية.'
                   })}
@@ -880,7 +843,7 @@ Generate:
                 <Label>Operating Organization</Label>
                 <Select
                   value={formData.operator_organization_id || ''}
-                  onValueChange={(v) => setFormData({...formData, operator_organization_id: v})}
+                  onValueChange={(v) => setFormData({ ...formData, operator_organization_id: v })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select organization..." />
@@ -898,10 +861,12 @@ Generate:
               <MediaFieldWithPicker
                 label={t({ en: 'Program Image', ar: 'صورة البرنامج' })}
                 value={formData.image_url || ''}
-                onChange={(url) => setFormData({...formData, image_url: url})}
+                onChange={(url) => setFormData({ ...formData, image_url: url })}
+                onMediaSelect={(url) => setFormData({ ...formData, image_url: url })}
                 fieldName="image_url"
                 entityType="programs"
-                mediaType="image"
+                entityId={formData.id || 'new'}
+                allowedTypes={['image/*']}
                 bucket="programs"
                 placeholder={t({ en: 'Image URL...', ar: 'رابط الصورة...' })}
               />
@@ -909,10 +874,12 @@ Generate:
               <MediaFieldWithPicker
                 label={t({ en: 'Program Brochure', ar: 'كتيب البرنامج' })}
                 value={formData.brochure_url || ''}
-                onChange={(url) => setFormData({...formData, brochure_url: url})}
+                onChange={(url) => setFormData({ ...formData, brochure_url: url })}
+                onMediaSelect={(url) => setFormData({ ...formData, brochure_url: url })}
                 fieldName="brochure_url"
                 entityType="programs"
-                mediaType="document"
+                entityId={formData.id || 'new'}
+                allowedTypes={['application/pdf']}
                 bucket="programs"
                 placeholder={t({ en: 'Brochure URL...', ar: 'رابط الكتيب...' })}
               />
@@ -926,7 +893,7 @@ Generate:
         <Button
           variant="outline"
           onClick={() => currentStep > 1 ? setCurrentStep(currentStep - 1) : navigate(createPageUrl('Programs'))}
-          disabled={createMutation.isPending}
+          disabled={isCreating}
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           {currentStep === 1 ? t({ en: 'Cancel', ar: 'إلغاء' }) : t({ en: 'Back', ar: 'رجوع' })}
@@ -937,13 +904,13 @@ Generate:
             if (currentStep < steps.length) {
               setCurrentStep(currentStep + 1);
             } else {
-              createMutation.mutate(formData);
+              handleCreate();
             }
           }}
-          disabled={!canProceed() || createMutation.isPending}
+          disabled={!canProceed() || isCreating}
           className="bg-gradient-to-r from-blue-600 to-teal-600"
         >
-          {createMutation.isPending ? (
+          {isCreating ? (
             <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> {t({ en: 'Creating...', ar: 'جاري الإنشاء...' })}</>
           ) : currentStep === steps.length ? (
             <><Save className="h-4 w-4 mr-2" /> {t({ en: 'Create Program', ar: 'إنشاء البرنامج' })}</>

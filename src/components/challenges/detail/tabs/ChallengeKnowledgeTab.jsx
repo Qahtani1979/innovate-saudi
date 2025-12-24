@@ -1,10 +1,33 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '@/components/LanguageContext';
-import { Network, BookOpen } from 'lucide-react';
+import { Network, BookOpen, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
-export default function ChallengeKnowledgeTab({ challenge, relations = [], allChallenges = [] }) {
+export default function ChallengeKnowledgeTab({ challenge, challengeId }) {
   const { language, t } = useLanguage();
+
+  const { data: relations = [], isLoading: loadingRelations } = useQuery({
+    queryKey: ['challenge-relations', challengeId],
+    queryFn: async () => {
+      const { data } = await supabase.from('challenge_interests').select('*').eq('challenge_id', challengeId);
+      return data || [];
+    },
+    enabled: !!challengeId
+  });
+
+  const { data: allChallenges = [] } = useQuery({
+    queryKey: ['all-challenges'],
+    queryFn: async () => {
+      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false);
+      return data || [];
+    }
+  });
+
+  if (loadingRelations) {
+    return <div className="text-center py-8"><Loader2 className="h-8 w-8 animate-spin mx-auto text-purple-600" /></div>;
+  }
 
   const similarRelations = relations.filter(r => r.relation_role === 'similar_to');
 
@@ -18,7 +41,7 @@ export default function ChallengeKnowledgeTab({ challenge, relations = [], allCh
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {challenge.lessons_learned && challenge.lessons_learned.length > 0 ? (
+          {challenge?.lessons_learned && challenge.lessons_learned.length > 0 ? (
             <div className="space-y-3">
               {challenge.lessons_learned.map((lesson, i) => (
                 <div key={i} className="p-4 border-l-4 border-indigo-500 bg-indigo-50 rounded-r-lg">
@@ -59,7 +82,7 @@ export default function ChallengeKnowledgeTab({ challenge, relations = [], allCh
               {similarRelations.slice(0, 3).map((rel) => {
                 const similar = allChallenges.find(c => c.id === rel.related_entity_id);
                 if (!similar) return null;
-                
+
                 return (
                   <div key={rel.id} className="p-3 bg-teal-50 border border-teal-200 rounded-lg">
                     <div className="flex items-start justify-between mb-2">
@@ -69,7 +92,7 @@ export default function ChallengeKnowledgeTab({ challenge, relations = [], allCh
                       </div>
                       <Badge className={
                         similar.status === 'resolved' ? 'bg-green-100 text-green-700' :
-                        'bg-blue-100 text-blue-700'
+                          'bg-blue-100 text-blue-700'
                       }>
                         {similar.status}
                       </Badge>

@@ -1,4 +1,5 @@
-import { base44 } from '@/api/base44Client';
+
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +12,14 @@ function CollaborativePilots() {
 
   const { data: collaborations = [], isLoading } = useQuery({
     queryKey: ['pilot-collaborations'],
-    queryFn: () => base44.entities.PilotCollaboration.list('-created_date')
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('pilot_collaborations')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const activeCollaborations = collaborations.filter(c => c.collaboration_status === 'active');

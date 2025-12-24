@@ -1,9 +1,6 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '@/components/LanguageContext';
-import { toast } from 'sonner';
 import {
   LookupTableCard,
   SearchInput,
@@ -16,59 +13,33 @@ import {
 } from './shared/LookupTableStyles';
 import LookupItemDialog from './shared/LookupItemDialog';
 
+import { useLookupData, useLookupMutations } from '@/hooks/useLookupManagement';
+
 export default function DepartmentsTab() {
   const { isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  // queryClient removed
   const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
 
-  const { data: departments = [], isLoading } = useQuery({
+  const { data: departments = [] } = useLookupData({
+    tableName: 'lookup_departments',
     queryKey: ['lookup-departments-admin'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('lookup_departments')
-        .select('*')
-        .order('display_order');
-      if (error) throw error;
-      return data || [];
-    }
+    sortColumn: 'display_order'
   });
 
-  const saveMutation = useMutation({
-    mutationFn: async (data) => {
-      if (data.id) {
-        const { error } = await supabase
-          .from('lookup_departments')
-          .update(data)
-          .eq('id', data.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('lookup_departments')
-          .insert(data);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['lookup-departments-admin']);
-      toast.success(t({ en: 'Department saved', ar: 'تم حفظ القسم' }));
-      setDialogOpen(false);
-    },
-    onError: () => toast.error(t({ en: 'Failed to save', ar: 'فشل في الحفظ' }))
+  const { saveMutation, deleteMutation } = useLookupMutations({
+    tableName: 'lookup_departments',
+    queryKey: ['lookup-departments-admin'],
+    entityName: { en: 'Department', ar: 'القسم' }
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      const { error } = await supabase.from('lookup_departments').delete().eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['lookup-departments-admin']);
-      toast.success(t({ en: 'Department deleted', ar: 'تم حذف القسم' }));
-    },
-    onError: () => toast.error(t({ en: 'Failed to delete', ar: 'فشل في الحذف' }))
-  });
+  // Wrapper for save success to close dialog
+  const handleSaveWrapper = (formData) => {
+    saveMutation.mutate(formData, {
+      onSuccess: () => setDialogOpen(false)
+    });
+  };
 
   const handleCreate = () => {
     setEditingItem(null);
@@ -81,7 +52,7 @@ export default function DepartmentsTab() {
   };
 
   const handleSave = (formData) => {
-    saveMutation.mutate(formData);
+    handleSaveWrapper(formData);
   };
 
   const filteredItems = filterBySearchTerm(departments, searchTerm);
@@ -108,7 +79,7 @@ export default function DepartmentsTab() {
           onChange={setSearchTerm}
           placeholder={t({ en: 'Search departments...', ar: 'بحث في الأقسام...' })}
         />
-        
+
         <LookupTable headers={headers}>
           {filteredItems.map((dept) => (
             <LookupTableRow key={dept.id}>

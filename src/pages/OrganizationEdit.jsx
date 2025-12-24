@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,62 +8,38 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../components/LanguageContext';
-import { Save, Loader2, Sparkles, X } from 'lucide-react';
+import { Save, Loader2, Sparkles, X, Building2 } from 'lucide-react';
 import FileUploader from '../components/FileUploader';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useOrganization } from '@/hooks/useOrganization';
+import { useOrganizationMutations } from '@/hooks/useOrganizationMutations';
+import { useLocations } from '@/hooks/useLocations';
 
 function OrganizationEdit() {
   const urlParams = new URLSearchParams(window.location.search);
   const orgId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
-  const { data: organization, isLoading } = useQuery({
-    queryKey: ['organization', orgId],
-    queryFn: async () => {
-      const orgs = await base44.entities.Organization.list();
-      return orgs.find(o => o.id === orgId);
-    },
-    enabled: !!orgId
-  });
-
-  const { data: cities = [] } = useQuery({
-    queryKey: ['cities'],
-    queryFn: () => base44.entities.City.list()
-  });
-
-  const { data: regions = [] } = useQuery({
-    queryKey: ['regions'],
-    queryFn: () => base44.entities.Region.list()
-  });
+  const { data: organization, isLoading } = useOrganization(orgId);
+  const { useCities, useRegions } = useLocations();
+  const { data: cities = [] } = useCities();
+  const { data: regions = [] } = useRegions();
 
   const [formData, setFormData] = useState(null);
   const { invokeAI, status, isLoading: isAIProcessing, rateLimitInfo, isAvailable } = useAIWithFallback();
+
+  const { updateOrganization } = useOrganizationMutations(orgId);
 
   React.useEffect(() => {
     if (organization && !formData) {
       setFormData(organization);
     }
   }, [organization]);
-
-  const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.Organization.update(orgId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['organization', orgId]);
-      // Auto-generate embedding if content changed
-      base44.functions.invoke('generateEmbeddings', {
-        entity_name: 'Organization',
-        mode: 'missing'
-      }).catch(err => console.error('Embedding generation failed:', err));
-      toast.success(t({ en: 'Organization updated', ar: 'تم تحديث الجهة' }));
-      navigate(createPageUrl(`OrganizationDetail?id=${orgId}`));
-    }
-  });
 
   const handleAIEnhance = async () => {
     const prompt = `Enhance this organization profile with professional, detailed bilingual content:
@@ -88,7 +62,8 @@ Generate comprehensive bilingual (English + Arabic) content:
           description_en: { type: 'string' },
           description_ar: { type: 'string' }
         }
-      }
+      },
+      system_prompt: 'You are an expert bilingual content writer.'
     });
 
     if (result.success) {
@@ -150,14 +125,14 @@ Generate comprehensive bilingual (English + Arabic) content:
               <Label>Name (English)</Label>
               <Input
                 value={formData.name_en}
-                onChange={(e) => setFormData({...formData, name_en: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
               />
             </div>
             <div className="space-y-2">
               <Label>اسم الجهة (عربي)</Label>
               <Input
                 value={formData.name_ar || ''}
-                onChange={(e) => setFormData({...formData, name_ar: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
                 dir="rtl"
               />
             </div>
@@ -167,7 +142,7 @@ Generate comprehensive bilingual (English + Arabic) content:
             <Label>Description (English)</Label>
             <Textarea
               value={formData.description_en || ''}
-              onChange={(e) => setFormData({...formData, description_en: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
               rows={3}
             />
           </div>
@@ -176,7 +151,7 @@ Generate comprehensive bilingual (English + Arabic) content:
             <Label>الوصف (عربي)</Label>
             <Textarea
               value={formData.description_ar || ''}
-              onChange={(e) => setFormData({...formData, description_ar: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
               rows={3}
               dir="rtl"
             />
@@ -187,7 +162,7 @@ Generate comprehensive bilingual (English + Arabic) content:
               <Label>Type</Label>
               <Select
                 value={formData.org_type}
-                onValueChange={(v) => setFormData({...formData, org_type: v})}
+                onValueChange={(v) => setFormData({ ...formData, org_type: v })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -210,7 +185,7 @@ Generate comprehensive bilingual (English + Arabic) content:
               <Label>Partnership Status</Label>
               <Select
                 value={formData.partnership_status || 'none'}
-                onValueChange={(v) => setFormData({...formData, partnership_status: v, is_partner: v === 'active'})}
+                onValueChange={(v) => setFormData({ ...formData, partnership_status: v, is_partner: v === 'active' })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -231,7 +206,7 @@ Generate comprehensive bilingual (English + Arabic) content:
               <Label>Region</Label>
               <Select
                 value={formData.region_id || ''}
-                onValueChange={(v) => setFormData({...formData, region_id: v})}
+                onValueChange={(v) => setFormData({ ...formData, region_id: v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select region..." />
@@ -249,7 +224,7 @@ Generate comprehensive bilingual (English + Arabic) content:
               <Label>City</Label>
               <Select
                 value={formData.city_id || ''}
-                onValueChange={(v) => setFormData({...formData, city_id: v})}
+                onValueChange={(v) => setFormData({ ...formData, city_id: v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select city..." />
@@ -270,7 +245,7 @@ Generate comprehensive bilingual (English + Arabic) content:
               <Label>Team Size</Label>
               <Select
                 value={formData.team_size || ''}
-                onValueChange={(v) => setFormData({...formData, team_size: v})}
+                onValueChange={(v) => setFormData({ ...formData, team_size: v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select range..." />
@@ -289,7 +264,7 @@ Generate comprehensive bilingual (English + Arabic) content:
               <Label>Maturity Level</Label>
               <Select
                 value={formData.maturity_level || ''}
-                onValueChange={(v) => setFormData({...formData, maturity_level: v})}
+                onValueChange={(v) => setFormData({ ...formData, maturity_level: v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select maturity..." />
@@ -309,7 +284,7 @@ Generate comprehensive bilingual (English + Arabic) content:
             <Textarea
               placeholder="e.g., AI, IoT, Smart City Solutions"
               value={formData.specializations?.join(', ') || ''}
-              onChange={(e) => setFormData({...formData, specializations: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})}
+              onChange={(e) => setFormData({ ...formData, specializations: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
               rows={2}
             />
           </div>
@@ -318,7 +293,7 @@ Generate comprehensive bilingual (English + Arabic) content:
             <Label>Website</Label>
             <Input
               value={formData.website || ''}
-              onChange={(e) => setFormData({...formData, website: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, website: e.target.value })}
             />
           </div>
 
@@ -327,7 +302,7 @@ Generate comprehensive bilingual (English + Arabic) content:
               <Label>Region</Label>
               <Select
                 value={formData.region_id || ''}
-                onValueChange={(v) => setFormData({...formData, region_id: v})}
+                onValueChange={(v) => setFormData({ ...formData, region_id: v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select region..." />
@@ -345,7 +320,7 @@ Generate comprehensive bilingual (English + Arabic) content:
               <Label>City</Label>
               <Select
                 value={formData.city_id || ''}
-                onValueChange={(v) => setFormData({...formData, city_id: v})}
+                onValueChange={(v) => setFormData({ ...formData, city_id: v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select city..." />
@@ -366,7 +341,7 @@ Generate comprehensive bilingual (English + Arabic) content:
               <Label>Team Size</Label>
               <Select
                 value={formData.team_size || ''}
-                onValueChange={(v) => setFormData({...formData, team_size: v})}
+                onValueChange={(v) => setFormData({ ...formData, team_size: v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select range..." />
@@ -385,7 +360,7 @@ Generate comprehensive bilingual (English + Arabic) content:
               <Label>Maturity Level</Label>
               <Select
                 value={formData.maturity_level || ''}
-                onValueChange={(v) => setFormData({...formData, maturity_level: v})}
+                onValueChange={(v) => setFormData({ ...formData, maturity_level: v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select maturity..." />
@@ -404,7 +379,7 @@ Generate comprehensive bilingual (English + Arabic) content:
             <Label>Address</Label>
             <Input
               value={formData.address || ''}
-              onChange={(e) => setFormData({...formData, address: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
             />
           </div>
 
@@ -413,7 +388,7 @@ Generate comprehensive bilingual (English + Arabic) content:
             <Textarea
               placeholder="e.g., AI, IoT, Smart City Solutions"
               value={formData.specializations?.join(', ') || ''}
-              onChange={(e) => setFormData({...formData, specializations: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})}
+              onChange={(e) => setFormData({ ...formData, specializations: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
               rows={2}
             />
           </div>
@@ -424,14 +399,14 @@ Generate comprehensive bilingual (English + Arabic) content:
               <Input
                 type="email"
                 value={formData.contact_email || ''}
-                onChange={(e) => setFormData({...formData, contact_email: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
               />
             </div>
             <div className="space-y-2">
               <Label>Contact Phone</Label>
               <Input
                 value={formData.contact_phone || ''}
-                onChange={(e) => setFormData({...formData, contact_phone: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
               />
             </div>
           </div>
@@ -440,7 +415,7 @@ Generate comprehensive bilingual (English + Arabic) content:
             <Label>Website</Label>
             <Input
               value={formData.website || ''}
-              onChange={(e) => setFormData({...formData, website: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, website: e.target.value })}
             />
           </div>
 
@@ -452,7 +427,7 @@ Generate comprehensive bilingual (English + Arabic) content:
                 <Label>Funding Stage</Label>
                 <Select
                   value={formData.funding_stage || ''}
-                  onValueChange={(v) => setFormData({...formData, funding_stage: v})}
+                  onValueChange={(v) => setFormData({ ...formData, funding_stage: v })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select stage..." />
@@ -472,7 +447,7 @@ Generate comprehensive bilingual (English + Arabic) content:
                 <Label>Annual Revenue Range</Label>
                 <Select
                   value={formData.annual_revenue_range || ''}
-                  onValueChange={(v) => setFormData({...formData, annual_revenue_range: v})}
+                  onValueChange={(v) => setFormData({ ...formData, annual_revenue_range: v })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select range..." />
@@ -495,8 +470,8 @@ Generate comprehensive bilingual (English + Arabic) content:
                 value={JSON.stringify(formData.funding_rounds || [], null, 2)}
                 onChange={(e) => {
                   try {
-                    setFormData({...formData, funding_rounds: JSON.parse(e.target.value)});
-                  } catch {}
+                    setFormData({ ...formData, funding_rounds: JSON.parse(e.target.value) });
+                  } catch { }
                 }}
                 rows={4}
               />
@@ -509,8 +484,8 @@ Generate comprehensive bilingual (English + Arabic) content:
                 value={JSON.stringify(formData.key_investors || [], null, 2)}
                 onChange={(e) => {
                   try {
-                    setFormData({...formData, key_investors: JSON.parse(e.target.value)});
-                  } catch {}
+                    setFormData({ ...formData, key_investors: JSON.parse(e.target.value) });
+                  } catch { }
                 }}
                 rows={4}
               />
@@ -527,8 +502,8 @@ Generate comprehensive bilingual (English + Arabic) content:
                 value={JSON.stringify(formData.partnership_agreements || [], null, 2)}
                 onChange={(e) => {
                   try {
-                    setFormData({...formData, partnership_agreements: JSON.parse(e.target.value)});
-                  } catch {}
+                    setFormData({ ...formData, partnership_agreements: JSON.parse(e.target.value) });
+                  } catch { }
                 }}
                 rows={4}
               />
@@ -545,8 +520,8 @@ Generate comprehensive bilingual (English + Arabic) content:
                     type="checkbox"
                     checked={formData.regulatory_compliance?.iso_certified || false}
                     onChange={(e) => setFormData({
-                      ...formData, 
-                      regulatory_compliance: {...(formData.regulatory_compliance || {}), iso_certified: e.target.checked}
+                      ...formData,
+                      regulatory_compliance: { ...(formData.regulatory_compliance || {}), iso_certified: e.target.checked }
                     })}
                   />
                   <Label>ISO Certified</Label>
@@ -558,8 +533,8 @@ Generate comprehensive bilingual (English + Arabic) content:
                     type="checkbox"
                     checked={formData.regulatory_compliance?.gdpr_compliant || false}
                     onChange={(e) => setFormData({
-                      ...formData, 
-                      regulatory_compliance: {...(formData.regulatory_compliance || {}), gdpr_compliant: e.target.checked}
+                      ...formData,
+                      regulatory_compliance: { ...(formData.regulatory_compliance || {}), gdpr_compliant: e.target.checked }
                     })}
                   />
                   <Label>GDPR Compliant</Label>
@@ -571,8 +546,8 @@ Generate comprehensive bilingual (English + Arabic) content:
                     type="checkbox"
                     checked={formData.regulatory_compliance?.pdpl_compliant || false}
                     onChange={(e) => setFormData({
-                      ...formData, 
-                      regulatory_compliance: {...(formData.regulatory_compliance || {}), pdpl_compliant: e.target.checked}
+                      ...formData,
+                      regulatory_compliance: { ...(formData.regulatory_compliance || {}), pdpl_compliant: e.target.checked }
                     })}
                   />
                   <Label>PDPL Compliant</Label>
@@ -613,7 +588,7 @@ Generate comprehensive bilingual (English + Arabic) content:
                         patents: JSON.parse(e.target.value)
                       }
                     });
-                  } catch {}
+                  } catch { }
                 }}
                 rows={4}
               />
@@ -633,7 +608,7 @@ Generate comprehensive bilingual (English + Arabic) content:
                         trademarks: JSON.parse(e.target.value)
                       }
                     });
-                  } catch {}
+                  } catch { }
                 }}
                 rows={4}
               />
@@ -642,7 +617,7 @@ Generate comprehensive bilingual (English + Arabic) content:
 
           <div className="border-t pt-6 space-y-4">
             <h3 className="font-semibold text-slate-900">{t({ en: 'Branding & Media', ar: 'العلامة التجارية والوسائط' })}</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>{t({ en: 'Logo', ar: 'الشعار' })}</Label>
@@ -650,7 +625,7 @@ Generate comprehensive bilingual (English + Arabic) content:
                   type="image"
                   label={t({ en: 'Upload Logo', ar: 'رفع الشعار' })}
                   maxSize={5}
-                  onUploadComplete={(url) => setFormData({...formData, logo_url: url})}
+                  onUploadComplete={(url) => setFormData({ ...formData, logo_url: url })}
                 />
               </div>
 
@@ -660,7 +635,7 @@ Generate comprehensive bilingual (English + Arabic) content:
                   type="image"
                   label={t({ en: 'Upload Image', ar: 'رفع صورة' })}
                   maxSize={10}
-                  onUploadComplete={(url) => setFormData({...formData, image_url: url})}
+                  onUploadComplete={(url) => setFormData({ ...formData, image_url: url })}
                 />
               </div>
 
@@ -670,7 +645,7 @@ Generate comprehensive bilingual (English + Arabic) content:
                   type="image"
                   label={t({ en: 'Upload Banner', ar: 'رفع بانر' })}
                   maxSize={10}
-                  onUploadComplete={(url) => setFormData({...formData, banner_url: url})}
+                  onUploadComplete={(url) => setFormData({ ...formData, banner_url: url })}
                 />
               </div>
             </div>
@@ -682,7 +657,7 @@ Generate comprehensive bilingual (English + Arabic) content:
                 label={t({ en: 'Upload PDF', ar: 'رفع PDF' })}
                 maxSize={50}
                 preview={false}
-                onUploadComplete={(url) => setFormData({...formData, brochure_url: url})}
+                onUploadComplete={(url) => setFormData({ ...formData, brochure_url: url })}
               />
             </div>
 
@@ -731,11 +706,11 @@ Generate comprehensive bilingual (English + Arabic) content:
               {t({ en: 'Cancel', ar: 'إلغاء' })}
             </Button>
             <Button
-              onClick={() => updateMutation.mutate(formData)}
-              disabled={updateMutation.isPending}
+              onClick={() => updateOrganization.mutate(formData)}
+              disabled={updateOrganization.isPending}
               className="bg-gradient-to-r from-blue-600 to-teal-600"
             >
-              {updateMutation.isPending ? (
+              {updateOrganization.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {t({ en: 'Saving...', ar: 'جاري الحفظ...' })}

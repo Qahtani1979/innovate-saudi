@@ -1,5 +1,5 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { usePrograms } from '@/hooks/usePrograms';
+import { useMatchingEntities } from '@/hooks/useMatchingEntities';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -10,40 +10,30 @@ import {
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
+import { Link } from 'react-router-dom';
+
 function ProgramROIDashboard() {
-  const { language, isRTL, t } = useLanguage();
+  const { language, isRTL, t, createPageUrl } = useLanguage();
 
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs'],
-    queryFn: () => base44.entities.Program.list()
-  });
+  const { programs } = usePrograms({ limit: 1000 });
+  const { useProgramApplications } = usePrograms();
+  const { data: applications = [] } = useProgramApplications();
 
-  const { data: applications = [] } = useQuery({
-    queryKey: ['program-applications'],
-    queryFn: () => base44.entities.ProgramApplication.list()
-  });
-
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions'],
-    queryFn: () => base44.entities.Solution.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
+  const { useSolutions, usePilots } = useMatchingEntities();
+  const { data: solutions = [] } = useSolutions();
+  const { data: pilots = [] } = usePilots();
 
   const calculateROI = (program) => {
     const budget = program.funding_details?.total_pool || 0;
-    const graduates = applications.filter(a => 
+    const graduates = applications.filter(a =>
       a.program_id === program.id && a.graduation_status === 'graduated'
     ).length;
-    
-    const alumniSolutions = solutions.filter(s => 
+
+    const alumniSolutions = solutions.filter(s =>
       applications.some(a => a.program_id === program.id && a.applicant_email === s.created_by)
     ).length;
-    
-    const alumniPilots = pilots.filter(p => 
+
+    const alumniPilots = pilots.filter(p =>
       applications.some(a => a.program_id === program.id && a.applicant_email === p.created_by)
     ).length;
 
@@ -216,8 +206,8 @@ function ProgramROIDashboard() {
                     <td className="p-3">
                       <Badge className={
                         program.roi.outputsPerGraduate >= 0.5 ? 'bg-green-600 text-white' :
-                        program.roi.outputsPerGraduate >= 0.3 ? 'bg-yellow-600 text-white' :
-                        'bg-slate-400 text-white'
+                          program.roi.outputsPerGraduate >= 0.3 ? 'bg-yellow-600 text-white' :
+                            'bg-slate-400 text-white'
                       }>
                         {program.roi.outputsPerGraduate.toFixed(2)} outputs/grad
                       </Badge>

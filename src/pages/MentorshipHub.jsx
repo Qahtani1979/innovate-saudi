@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,15 @@ function MentorshipHub() {
 
   const { data: mentorships = [], isLoading } = useQuery({
     queryKey: ['mentorships'],
-    queryFn: () => base44.entities.ProgramMentorship.list('-created_date')
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('program_mentorships')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return (data || []).filter(item => !item.is_deleted);
+    }
   });
 
   const activeMentorships = mentorships.filter(m => m.status === 'active');

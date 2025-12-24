@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { base44 } from '@/api/base44Client';
 import { useLanguage } from '../LanguageContext';
 import { CheckCircle2, ArrowRight, ArrowLeft, Sparkles, MapPin, Calendar, DollarSign, Users, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";

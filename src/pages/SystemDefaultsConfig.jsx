@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSystemConfig, useSystemConfigMutations } from '@/hooks/useSystemConfig';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,26 +11,9 @@ import { toast } from 'sonner';
 
 function SystemDefaultsConfig() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
-  
-  // Fetch system defaults from database
-  const { data: configData } = useQuery({
-    queryKey: ['platform-system-defaults'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('platform_configs')
-        .select('*')
-        .eq('category', 'system_defaults');
-      if (error) throw error;
-      
-      const configObj = {};
-      (data || []).forEach(item => {
-        configObj[item.config_key] = item.config_value;
-      });
-      return configObj;
-    }
-  });
-  
+  const { config: configData } = useSystemConfig();
+  const { updateConfig: saveMutation } = useSystemConfigMutations();
+
   const [defaults, setDefaults] = useState({
     default_challenge_status: 'draft',
     default_pilot_duration: 90,
@@ -41,10 +23,12 @@ function SystemDefaultsConfig() {
     business_hours_start: '08:00',
     business_hours_end: '17:00'
   });
-  
+
   // Load config from database when available
   useEffect(() => {
     if (configData) {
+      // configData is the raw row from system_defaults
+      // Mapped to component state
       setDefaults(prev => ({
         default_challenge_status: configData.default_challenge_status || prev.default_challenge_status,
         default_pilot_duration: configData.default_pilot_duration || prev.default_pilot_duration,
@@ -56,30 +40,8 @@ function SystemDefaultsConfig() {
       }));
     }
   }, [configData]);
-  
-  // Save mutation
-  const saveMutation = useMutation({
-    mutationFn: async (data) => {
-      for (const [key, value] of Object.entries(data)) {
-        await supabase
-          .from('platform_configs')
-          .upsert({
-            config_key: key,
-            config_value: value,
-            category: 'system_defaults',
-            is_active: true,
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'config_key' });
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['platform-system-defaults']);
-      toast.success(t({ en: 'System defaults saved', ar: 'تم حفظ الإعدادات الافتراضية' }));
-    },
-    onError: () => {
-      toast.error(t({ en: 'Failed to save', ar: 'فشل في الحفظ' }));
-    }
-  });
+
+
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -100,7 +62,7 @@ function SystemDefaultsConfig() {
           <CardContent className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-2 block">{t({ en: 'New Challenge Status', ar: 'حالة التحدي الجديد' })}</label>
-              <Select value={defaults.default_challenge_status} onValueChange={(v) => setDefaults({...defaults, default_challenge_status: v})}>
+              <Select value={defaults.default_challenge_status} onValueChange={(v) => setDefaults({ ...defaults, default_challenge_status: v })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -112,7 +74,7 @@ function SystemDefaultsConfig() {
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">{t({ en: 'Default Pilot Duration (days)', ar: 'مدة التجربة الافتراضية (أيام)' })}</label>
-              <Input type="number" value={defaults.default_pilot_duration} onChange={(e) => setDefaults({...defaults, default_pilot_duration: parseInt(e.target.value)})} />
+              <Input type="number" value={defaults.default_pilot_duration} onChange={(e) => setDefaults({ ...defaults, default_pilot_duration: parseInt(e.target.value) })} />
             </div>
           </CardContent>
         </Card>
@@ -124,11 +86,11 @@ function SystemDefaultsConfig() {
           <CardContent className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-2 block">{t({ en: 'Approval SLA (days)', ar: 'اتفاقية الموافقة (أيام)' })}</label>
-              <Input type="number" value={defaults.default_approval_sla} onChange={(e) => setDefaults({...defaults, default_approval_sla: parseInt(e.target.value)})} />
+              <Input type="number" value={defaults.default_approval_sla} onChange={(e) => setDefaults({ ...defaults, default_approval_sla: parseInt(e.target.value) })} />
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">{t({ en: 'Escalate After (days)', ar: 'التصعيد بعد (أيام)' })}</label>
-              <Input type="number" value={defaults.escalation_after_days} onChange={(e) => setDefaults({...defaults, escalation_after_days: parseInt(e.target.value)})} />
+              <Input type="number" value={defaults.escalation_after_days} onChange={(e) => setDefaults({ ...defaults, escalation_after_days: parseInt(e.target.value) })} />
             </div>
           </CardContent>
         </Card>
@@ -140,11 +102,11 @@ function SystemDefaultsConfig() {
           <CardContent className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-2 block">{t({ en: 'Start Time', ar: 'وقت البدء' })}</label>
-              <Input type="time" value={defaults.business_hours_start} onChange={(e) => setDefaults({...defaults, business_hours_start: e.target.value})} />
+              <Input type="time" value={defaults.business_hours_start} onChange={(e) => setDefaults({ ...defaults, business_hours_start: e.target.value })} />
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">{t({ en: 'End Time', ar: 'وقت الانتهاء' })}</label>
-              <Input type="time" value={defaults.business_hours_end} onChange={(e) => setDefaults({...defaults, business_hours_end: e.target.value})} />
+              <Input type="time" value={defaults.business_hours_end} onChange={(e) => setDefaults({ ...defaults, business_hours_end: e.target.value })} />
             </div>
           </CardContent>
         </Card>
@@ -156,14 +118,14 @@ function SystemDefaultsConfig() {
           <CardContent>
             <div>
               <label className="text-sm font-medium mb-2 block">{t({ en: 'Archive Inactive Records After (days)', ar: 'أرشفة السجلات غير النشطة بعد (أيام)' })}</label>
-              <Input type="number" value={defaults.auto_archive_after_days} onChange={(e) => setDefaults({...defaults, auto_archive_after_days: parseInt(e.target.value)})} />
+              <Input type="number" value={defaults.auto_archive_after_days} onChange={(e) => setDefaults({ ...defaults, auto_archive_after_days: parseInt(e.target.value) })} />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <Button 
-        className="w-full bg-slate-700 text-lg py-6" 
+      <Button
+        className="w-full bg-slate-700 text-lg py-6"
         onClick={() => saveMutation.mutate(defaults)}
         disabled={saveMutation.isPending}
       >

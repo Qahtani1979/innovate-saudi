@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { usePublicPrograms, usePublicSectors } from '@/hooks/usePublicData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,24 +25,12 @@ export default function PublicProgramsDirectory() {
   const [viewMode, setViewMode] = useState('grid');
 
   // Public only sees published and open/active programs
-  const { data: programs = [], isLoading } = useQuery({
-    queryKey: ['public-programs'],
-    queryFn: async () => {
-      const all = await base44.entities.Program.list('-created_date');
-      return all.filter(p => 
-        p.is_published && 
-        ['applications_open', 'active', 'planning'].includes(p.status)
-      );
-    }
-  });
+  const { data: programs = [], isLoading } = usePublicPrograms();
 
-  const { data: sectors = [] } = useQuery({
-    queryKey: ['sectors'],
-    queryFn: () => base44.entities.Sector.list()
-  });
+  const { data: sectors = [] } = usePublicSectors();
 
   const filteredPrograms = programs.filter(program => {
-    const matchesSearch = !searchTerm || 
+    const matchesSearch = !searchTerm ||
       program.name_en?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       program.name_ar?.includes(searchTerm) ||
       program.focus_areas?.some(f => f.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -168,10 +155,10 @@ export default function PublicProgramsDirectory() {
       {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPrograms.map((program) => {
-            const daysUntilDeadline = program.timeline?.application_close 
+            const daysUntilDeadline = program.timeline?.application_close
               ? Math.ceil((new Date(program.timeline.application_close) - new Date()) / (1000 * 60 * 60 * 24))
               : null;
-            const spotsAvailable = program.target_participants?.max_participants 
+            const spotsAvailable = program.target_participants?.max_participants
               ? (program.target_participants.max_participants - (program.accepted_count || 0))
               : null;
 
@@ -179,10 +166,10 @@ export default function PublicProgramsDirectory() {
               <Card key={program.id} className="hover:shadow-xl transition-all overflow-hidden group">
                 {program.image_url && (
                   <div className="h-48 overflow-hidden">
-                    <img 
-                      src={program.image_url} 
-                      alt={program.name_en} 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                    <img
+                      src={program.image_url}
+                      alt={program.name_en}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                   </div>
                 )}
@@ -218,7 +205,7 @@ export default function PublicProgramsDirectory() {
                       <div className="flex items-center gap-2 text-red-600 font-medium">
                         <Calendar className="h-4 w-4" />
                         <span>
-                          {daysUntilDeadline > 0 
+                          {daysUntilDeadline > 0
                             ? `${daysUntilDeadline} ${t({ en: 'days left', ar: 'يوم متبقي' })}`
                             : t({ en: 'Closed', ar: 'مغلقة' })
                           }
@@ -271,7 +258,7 @@ export default function PublicProgramsDirectory() {
           <CardContent className="p-0">
             <div className="divide-y">
               {filteredPrograms.map((program) => {
-                const daysUntilDeadline = program.timeline?.application_close 
+                const daysUntilDeadline = program.timeline?.application_close
                   ? Math.ceil((new Date(program.timeline.application_close) - new Date()) / (1000 * 60 * 60 * 24))
                   : null;
 

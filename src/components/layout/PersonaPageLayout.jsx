@@ -17,85 +17,85 @@ export function usePersonaColors() {
   const defaultMenu = { color: 'from-slate-600 to-gray-500', label: { en: 'Dashboard', ar: 'لوحة التحكم' } };
   const menuConfig = (SIDEBAR_MENUS && SIDEBAR_MENUS[persona]) || (SIDEBAR_MENUS && SIDEBAR_MENUS.citizen) || defaultMenu;
   const gradientColor = menuConfig?.color || 'from-slate-600 to-gray-500';
-  
+
   // Map persona gradients to color names for styling
   const colorMap = {
-    'from-red-600 to-rose-500': { 
-      name: 'red', 
-      gradient: gradientColor, 
-      bgGradient: 'from-red-500/10 via-rose-500/5 to-transparent', 
-      iconColor: 'text-red-500', 
+    'from-red-600 to-rose-500': {
+      name: 'red',
+      gradient: gradientColor,
+      bgGradient: 'from-red-500/10 via-rose-500/5 to-transparent',
+      iconColor: 'text-red-500',
       buttonGradient: 'from-red-600 to-rose-500',
       borderColor: 'border-red-200/50 dark:border-red-800/30'
     },
-    'from-purple-600 to-violet-500': { 
-      name: 'purple', 
-      gradient: gradientColor, 
-      bgGradient: 'from-purple-500/10 via-violet-500/5 to-transparent', 
-      iconColor: 'text-purple-500', 
+    'from-purple-600 to-violet-500': {
+      name: 'purple',
+      gradient: gradientColor,
+      bgGradient: 'from-purple-500/10 via-violet-500/5 to-transparent',
+      iconColor: 'text-purple-500',
       buttonGradient: 'from-purple-600 to-violet-500',
       borderColor: 'border-purple-200/50 dark:border-purple-800/30'
     },
-    'from-indigo-600 to-blue-500': { 
-      name: 'indigo', 
-      gradient: gradientColor, 
-      bgGradient: 'from-indigo-500/10 via-blue-500/5 to-transparent', 
-      iconColor: 'text-indigo-500', 
+    'from-indigo-600 to-blue-500': {
+      name: 'indigo',
+      gradient: gradientColor,
+      bgGradient: 'from-indigo-500/10 via-blue-500/5 to-transparent',
+      iconColor: 'text-indigo-500',
       buttonGradient: 'from-indigo-600 to-blue-500',
       borderColor: 'border-indigo-200/50 dark:border-indigo-800/30'
     },
-    'from-emerald-600 to-green-500': { 
-      name: 'emerald', 
-      gradient: gradientColor, 
-      bgGradient: 'from-emerald-500/10 via-green-500/5 to-transparent', 
-      iconColor: 'text-emerald-500', 
+    'from-emerald-600 to-green-500': {
+      name: 'emerald',
+      gradient: gradientColor,
+      bgGradient: 'from-emerald-500/10 via-green-500/5 to-transparent',
+      iconColor: 'text-emerald-500',
       buttonGradient: 'from-emerald-600 to-green-500',
       borderColor: 'border-emerald-200/50 dark:border-emerald-800/30'
     },
-    'from-orange-600 to-amber-500': { 
-      name: 'orange', 
-      gradient: gradientColor, 
-      bgGradient: 'from-orange-500/10 via-amber-500/5 to-transparent', 
-      iconColor: 'text-orange-500', 
+    'from-orange-600 to-amber-500': {
+      name: 'orange',
+      gradient: gradientColor,
+      bgGradient: 'from-orange-500/10 via-amber-500/5 to-transparent',
+      iconColor: 'text-orange-500',
       buttonGradient: 'from-orange-600 to-amber-500',
       borderColor: 'border-orange-200/50 dark:border-orange-800/30'
     },
-    'from-amber-600 to-yellow-500': { 
-      name: 'amber', 
-      gradient: gradientColor, 
-      bgGradient: 'from-amber-500/10 via-yellow-500/5 to-transparent', 
-      iconColor: 'text-amber-500', 
+    'from-amber-600 to-yellow-500': {
+      name: 'amber',
+      gradient: gradientColor,
+      bgGradient: 'from-amber-500/10 via-yellow-500/5 to-transparent',
+      iconColor: 'text-amber-500',
       buttonGradient: 'from-amber-600 to-yellow-500',
       borderColor: 'border-amber-200/50 dark:border-amber-800/30'
     },
-    'from-teal-600 to-cyan-500': { 
-      name: 'teal', 
-      gradient: gradientColor, 
-      bgGradient: 'from-teal-500/10 via-cyan-500/5 to-transparent', 
-      iconColor: 'text-teal-500', 
+    'from-teal-600 to-cyan-500': {
+      name: 'teal',
+      gradient: gradientColor,
+      bgGradient: 'from-teal-500/10 via-cyan-500/5 to-transparent',
+      iconColor: 'text-teal-500',
       buttonGradient: 'from-teal-600 to-cyan-500',
       borderColor: 'border-teal-200/50 dark:border-teal-800/30'
     },
-    'from-slate-600 to-gray-500': { 
-      name: 'slate', 
-      gradient: gradientColor, 
-      bgGradient: 'from-slate-500/10 via-gray-500/5 to-transparent', 
-      iconColor: 'text-slate-500', 
+    'from-slate-600 to-gray-500': {
+      name: 'slate',
+      gradient: gradientColor,
+      bgGradient: 'from-slate-500/10 via-gray-500/5 to-transparent',
+      iconColor: 'text-slate-500',
       buttonGradient: 'from-slate-600 to-gray-500',
       borderColor: 'border-slate-200/50 dark:border-slate-800/30'
     },
-    'from-gray-600 to-slate-500': { 
-      name: 'gray', 
-      gradient: gradientColor, 
-      bgGradient: 'from-gray-500/10 via-slate-500/5 to-transparent', 
-      iconColor: 'text-gray-500', 
+    'from-gray-600 to-slate-500': {
+      name: 'gray',
+      gradient: gradientColor,
+      bgGradient: 'from-gray-500/10 via-slate-500/5 to-transparent',
+      iconColor: 'text-gray-500',
       buttonGradient: 'from-gray-600 to-slate-500',
       borderColor: 'border-gray-200/50 dark:border-gray-800/30'
     },
   };
-  
+
   const defaultColors = colorMap['from-slate-600 to-gray-500'];
-  
+
   return {
     ...(colorMap[gradientColor] || defaultColors),
     persona,
@@ -108,24 +108,24 @@ export function usePersonaColors() {
  * Persona-aware page header with dynamic colors
  * Works for all personas - admin, municipality, provider, citizen, etc.
  */
-export function PageHeader({ 
-  icon: Icon, 
-  title, 
+export function PageHeader({
+  icon: Icon,
+  title,
   subtitle,
-  description, 
+  description,
   stats = [],
   action,
   actions,
-  children
+  children = null
 }) {
   const languageContext = useLanguage();
   const isRTL = languageContext?.isRTL || false;
   const language = languageContext?.language || 'en';
-  
+
   const personaColors = usePersonaColors();
   const bgGradient = personaColors?.bgGradient || 'from-slate-500/10 via-gray-500/5 to-transparent';
   const iconColor = personaColors?.iconColor || 'text-slate-500';
-  
+
   // Helper to resolve bilingual text
   const resolveText = (text) => {
     if (text === null || text === undefined) return null;
@@ -145,19 +145,19 @@ export function PageHeader({
   const resolvedTitle = resolveText(title);
   const resolvedSubtitle = resolveText(subtitle);
   const resolvedDescription = resolveText(description);
-  
+
   // Support both 'action' and 'actions' props
   const actionContent = actions || action;
-  
+
   return (
-    <div 
+    <div
       className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${bgGradient} border border-border/50 p-6 md:p-8`}
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       {/* Decorative background elements */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-primary/5 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
       <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-secondary/10 to-transparent rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
-      
+
       <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center gap-4">
           {Icon && (
@@ -173,14 +173,14 @@ export function PageHeader({
             )}
           </div>
         </div>
-        
+
         {actionContent && <div className="flex-shrink-0">{actionContent}</div>}
       </div>
 
       {/* Stats row */}
       {Array.isArray(stats) && stats.length > 0 && (
         <div className="relative flex flex-wrap gap-4 mt-6 pt-6 border-t border-border/50">
-      {stats.map((stat, idx) => {
+          {stats.map((stat, idx) => {
             if (!stat) return null;
             const StatIcon = stat.icon;
             const statValue = stat.value !== undefined && stat.value !== null ? String(stat.value) : '—';
@@ -217,7 +217,7 @@ export function SearchFilter({
   const { isRTL, t } = useLanguage();
 
   return (
-    <div 
+    <div
       className="flex flex-col md:flex-row gap-3 items-stretch md:items-center"
       dir={isRTL ? 'rtl' : 'ltr'}
     >
@@ -235,9 +235,9 @@ export function SearchFilter({
       {/* Filters */}
       <div className="flex flex-wrap gap-2 items-center">
         {filters.map((filter, idx) => (
-          <Select 
-            key={idx} 
-            value={filter.value} 
+          <Select
+            key={idx}
+            value={filter.value}
             onValueChange={filter.onChange}
           >
             <SelectTrigger className="w-[140px] bg-background/80 backdrop-blur-sm border-border/50">
@@ -298,11 +298,11 @@ export function SearchFilter({
 /**
  * Responsive card grid with list/grid view modes
  */
-export function CardGrid({ 
-  children, 
+export function CardGrid({
+  children,
   viewMode = 'grid',
   columns = { sm: 1, md: 2, lg: 3 },
-  emptyState 
+  emptyState
 }) {
   const isEmpty = React.Children.count(children) === 0;
 
@@ -313,7 +313,7 @@ export function CardGrid({
   const gridCols = `grid-cols-1 ${columns.sm > 1 ? `sm:grid-cols-${columns.sm}` : ''} md:grid-cols-${columns.md} lg:grid-cols-${columns.lg}`;
 
   return (
-    <div className={viewMode === 'grid' 
+    <div className={viewMode === 'grid'
       ? `grid gap-4 md:gap-6 ${gridCols}`
       : 'flex flex-col gap-3'
     }>
@@ -325,17 +325,17 @@ export function CardGrid({
 /**
  * Empty state component with persona-aware icon styling
  */
-export function EmptyState({ 
-  icon: Icon, 
-  title, 
-  description, 
-  action 
+export function EmptyState({
+  icon: Icon,
+  title,
+  description,
+  action
 }) {
   const { isRTL } = useLanguage();
   const { iconColor } = usePersonaColors();
 
   return (
-    <div 
+    <div
       className="flex flex-col items-center justify-center py-16 px-4 text-center"
       dir={isRTL ? 'rtl' : 'ltr'}
     >
@@ -360,7 +360,7 @@ export function PageLayout({ children, className = '' }) {
   const { isRTL } = useLanguage();
 
   return (
-    <div 
+    <div
       className={`space-y-6 ${className}`}
       dir={isRTL ? 'rtl' : 'ltr'}
     >
@@ -374,9 +374,9 @@ export function PageLayout({ children, className = '' }) {
  */
 export function PersonaButton({ children, className = '', ...props }) {
   const { buttonGradient } = usePersonaColors();
-  
+
   return (
-    <Button 
+    <Button
       className={`bg-gradient-to-r ${buttonGradient} hover:opacity-90 text-white shadow-lg ${className}`}
       {...props}
     >

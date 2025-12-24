@@ -13,7 +13,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
-import { Save, Loader2, Plus, X, Sparkles, ChevronRight, ChevronLeft,
+import {
+  Save, Loader2, Plus, X, Sparkles, ChevronRight, ChevronLeft,
   FileText, Code, DollarSign, CheckCircle2, Upload, Target, AlertCircle
 } from 'lucide-react';
 import FileUploader from '../FileUploader';
@@ -21,26 +22,16 @@ import { toast } from 'sonner';
 import CompetitiveAnalysisWidget from './CompetitiveAnalysisWidget';
 import AIPricingSuggester from './AIPricingSuggester';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import { solutionStep1Schema, solutionStep2Schema, solutionStep4Schema, validateSolution } from '@/lib/validations/solutionSchema';
+import { useSolutionMutations } from '../../hooks/useSolutionMutations';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 
 export default function SolutionCreateWizard({ onComplete }) {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState(1);
-  const [matchingChallenges, setMatchingChallenges] = useState([]);
-  const { triggerEmail } = useEmailTrigger();
   const { invokeAI, status: aiStatus, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-active'],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*')
-        .in('status', ['approved', 'in_treatment']);
-      return data || [];
-    }
-  });
 
   const [formData, setFormData] = useState({
     code: '',
@@ -83,6 +74,17 @@ export default function SolutionCreateWizard({ onComplete }) {
     is_verified: false
   });
 
+  const { data: challenges = [] } = useChallengesWithVisibility({
+    status: ['approved', 'in_treatment']
+  });
+
+  const { data: matchedChallenges = [] } = useChallengesWithVisibility({
+    status: ['approved', 'in_treatment'],
+    sectorsOverlap: formData.sectors,
+    limit: 5,
+    enabled: formData.sectors?.length > 0
+  });
+
   const [newFeature, setNewFeature] = useState('');
 
   const steps = [
@@ -94,46 +96,8 @@ export default function SolutionCreateWizard({ onComplete }) {
     { num: 6, title: { en: 'Review & Submit', ar: 'المراجعة والإرسال' }, icon: CheckCircle2 }
   ];
 
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: solution, error } = await supabase.from('solutions').insert(data).select().single();
-      if (error) throw error;
+  const { createSolution } = useSolutionMutations();
 
-      // Log creation
-      await supabase.from('system_activities').insert({
-        entity_type: 'Solution',
-        entity_id: solution.id,
-        activity_type: 'created',
-        description: `Solution "${data.name_en}" created by ${data.provider_name}`
-      });
-
-      return solution;
-    },
-    onSuccess: async (solution) => {
-      queryClient.invalidateQueries(['solutions']);
-      
-      // Trigger email notification for solution creation
-      await triggerEmail('solution.created', {
-        entityType: 'solution',
-        entityId: solution.id,
-        variables: {
-          solution_name: solution.name_en,
-          solution_code: solution.code,
-          provider_name: solution.provider_name
-        }
-      }).catch(err => console.error('Email trigger failed:', err));
-      
-      toast.success(t({ en: 'Solution created successfully!', ar: 'تم إنشاء الحل بنجاح!' }));
-      if (onComplete) {
-        onComplete(solution);
-      } else {
-        navigate(createPageUrl(`SolutionDetail?id=${solution.id}`));
-      }
-    },
-    onError: () => {
-      toast.error(t({ en: 'Failed to create solution', ar: 'فشل إنشاء الحل' }));
-    }
-  });
 
   // AI Enhancement
   const handleAIEnhancement = async () => {
@@ -169,6 +133,7 @@ Generate:
 
     const aiResult = await invokeAI({
       prompt,
+      system_prompt: "You are an expert innovation consultant specializing in Saudi Arabia's municipal sector.",
       response_json_schema: {
         type: 'object',
         properties: {
@@ -233,20 +198,6 @@ Generate:
         tags: result.keywords || prev.tags || []
       }));
 
-      // Auto-match to challenges based on sector
-      if (result.sectors?.length > 0) {
-        try {
-          const { data: matchingChallengesData } = await supabase.from('challenges').select('*')
-            .in('status', ['approved', 'in_treatment'])
-            .overlaps('sectors', result.sectors)
-            .limit(5);
-          
-          setMatchingChallenges(matchingChallengesData || []);
-        } catch (err) {
-          console.error('Auto-matching failed:', err);
-        }
-      }
-
       toast.success(t({ en: '✨ AI enhancement complete!', ar: '✨ تم التحسين الذكي!' }));
     }
   };
@@ -305,12 +256,21 @@ Generate:
       toast.error(errorMessages || t({ en: 'Please complete required fields', ar: 'يرجى إكمال الحقول المطلوبة' }));
       return;
     }
-    
-    createMutation.mutate({
+
+    createSolution.mutate({
       ...formData,
       submission_date: new Date().toISOString()
+    }, {
+      onSuccess: (solution) => {
+        if (onComplete) {
+          onComplete(solution);
+        } else {
+          navigate(createPageUrl(`SolutionDetail?id=${solution.id}`));
+        }
+      }
     });
   };
+
 
   return (
     <div className="max-w-5xl mx-auto space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -336,19 +296,17 @@ Generate:
           const StepIcon = step.icon;
           const isActive = currentStep === step.num;
           const isCompleted = currentStep > step.num;
-          
+
           return (
             <div
               key={step.num}
-              className={`flex flex-col items-center gap-2 flex-1 ${
-                isActive ? 'opacity-100' : isCompleted ? 'opacity-75' : 'opacity-40'
-              }`}
+              className={`flex flex-col items-center gap-2 flex-1 ${isActive ? 'opacity-100' : isCompleted ? 'opacity-75' : 'opacity-40'
+                }`}
             >
-              <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                isCompleted ? 'bg-green-600 text-white' :
+              <div className={`h-10 w-10 rounded-full flex items-center justify-center ${isCompleted ? 'bg-green-600 text-white' :
                 isActive ? 'bg-blue-600 text-white' :
-                'bg-slate-200 text-slate-500'
-              }`}>
+                  'bg-slate-200 text-slate-500'
+                }`}>
                 {isCompleted ? <CheckCircle2 className="h-5 w-5" /> : <StepIcon className="h-5 w-5" />}
               </div>
               <p className="text-xs text-center font-medium">{step.title[language]}</p>
@@ -617,7 +575,7 @@ Generate:
                     {t({ en: 'AI-Powered Enhancement', ar: 'التحسين الذكي' })}
                   </h3>
                   <p className="text-sm text-slate-600">
-                    {t({ 
+                    {t({
                       en: 'Let AI analyze and enhance your solution profile with professional descriptions, features, use cases, and technical details.',
                       ar: 'دع الذكاء الاصطناعي يحلل ويحسن ملف الحل مع وصف احترافي وميزات وحالات استخدام وتفاصيل تقنية.'
                     })}
@@ -665,7 +623,7 @@ Generate:
                 }} />
               </div>
 
-              {matchingChallenges.length > 0 && (
+              {matchedChallenges.length > 0 && (
                 <Card className="border-2 border-green-200 bg-green-50">
                   <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
@@ -677,13 +635,13 @@ Generate:
                     <p className="text-sm text-green-900 mb-3">
                       {t({ en: 'Your solution could help these challenges:', ar: 'يمكن لحلك أن يساعد هذه التحديات:' })}
                     </p>
-                    {matchingChallenges.map((match, idx) => (
+                    {matchedChallenges.map((match, idx) => (
                       <div key={idx} className="p-3 bg-white rounded-lg border flex items-start justify-between">
                         <div className="flex-1">
                           <p className="font-medium text-sm text-slate-900">{match.title_en}</p>
                           <p className="text-xs text-slate-600">{match.municipality_id}</p>
                         </div>
-                        <Badge className="bg-green-600">{Math.round(match.score * 100)}% match</Badge>
+                        {match.score && <Badge className="bg-green-600">{Math.round(match.score * 100)}% match</Badge>}
                       </div>
                     ))}
                   </CardContent>
@@ -692,7 +650,7 @@ Generate:
 
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <p className="text-sm text-blue-900">
-                  💡 {t({ 
+                  💡 {t({
                     en: 'AI provides: competitive analysis, pricing intelligence, TRL assessment, sector classification, and challenge matching.',
                     ar: 'يوفر الذكاء الاصطناعي: تحليل تنافسي، ذكاء التسعير، تقييم TRL، تصنيف القطاع، ومطابقة التحديات.'
                   })}
@@ -799,6 +757,7 @@ Generate:
                   <FileUploader
                     type="image"
                     label={t({ en: 'Upload Image', ar: 'رفع صورة' })}
+                    description={t({ en: 'JPEG, PNG up to 10MB', ar: 'JPEG, PNG حتى 10 ميجابايت' })}
                     maxSize={10}
                     enableImageSearch={true}
                     searchContext={formData.name_en || formData.description_en?.substring(0, 100)}
@@ -814,6 +773,7 @@ Generate:
                   <FileUploader
                     type="video"
                     label={t({ en: 'Upload Demo', ar: 'رفع عرض' })}
+                    description={t({ en: 'MP4 up to 200MB', ar: 'MP4 حتى 200 ميجابايت' })}
                     maxSize={200}
                     preview={false}
                     onUploadComplete={(url) => setFormData({ ...formData, video_url: url })}
@@ -826,6 +786,7 @@ Generate:
                 <FileUploader
                   type="document"
                   label={t({ en: 'Upload PDF', ar: 'رفع PDF' })}
+                  description={t({ en: 'PDF up to 50MB', ar: 'PDF حتى 50 ميجابايت' })}
                   maxSize={50}
                   preview={false}
                   onUploadComplete={(url) => setFormData({ ...formData, brochure_url: url })}
@@ -880,14 +841,14 @@ Generate:
 
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <p className="text-sm text-blue-900">
-                  💡 {t({ 
+                  💡 {t({
                     en: 'After submission, your solution will enter verification where technical experts will review it. You will be notified of any matching municipal challenges.',
                     ar: 'بعد الإرسال، سيدخل الحل مرحلة التحقق حيث سيراجعه الخبراء التقنيون. سيتم إشعارك بأي تحديات بلدية مطابقة.'
                   })}
                 </p>
               </div>
 
-              {matchingChallenges.length > 0 && (
+              {matchedChallenges.length > 0 && (
                 <Card className="border-2 border-green-300 bg-green-50">
                   <CardHeader>
                     <CardTitle className="text-base text-green-900">
@@ -895,10 +856,10 @@ Generate:
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    {matchingChallenges.map((match, idx) => (
+                    {matchedChallenges.map((match, idx) => (
                       <div key={idx} className="flex items-center justify-between p-2 bg-white rounded">
                         <span className="text-sm text-slate-700">{match.title_en}</span>
-                        <Badge className="bg-green-600">{Math.round(match.score * 100)}%</Badge>
+                        {match.score && <Badge className="bg-green-600">{Math.round(match.score * 100)}%</Badge>}
                       </div>
                     ))}
                   </CardContent>
@@ -931,10 +892,10 @@ Generate:
         ) : (
           <Button
             onClick={handleSubmit}
-            disabled={createMutation.isPending || !canProceed(6)}
+            disabled={createSolution.isPending || !canProceed(6)}
             className="bg-gradient-to-r from-green-600 to-teal-600"
           >
-            {createMutation.isPending ? (
+            {createSolution.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 {t({ en: 'Creating...', ar: 'جاري الإنشاء...' })}

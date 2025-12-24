@@ -1,44 +1,21 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { usePlatformInsights } from '@/hooks/usePlatformInsights';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
-import { 
-  Megaphone, Bell, Sparkles, 
-  AlertCircle, X 
+import {
+  Megaphone, Bell, Sparkles,
+  AlertCircle, X
 } from 'lucide-react';
 import { format } from 'date-fns';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function WhatsNewHub() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
 
-  const { data: announcements = [] } = useQuery({
-    queryKey: ['platform-insights'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('platform_insights')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const markAsRead = useMutation({
-    mutationFn: async (announcementId) => {
-      // In real implementation, track read status per user
-      return announcementId;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['platform-insights'] });
-    }
-  });
+  const { announcements, markAsRead } = usePlatformInsights();
 
   const typeIcons = {
     trend: Sparkles,

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useRDProjectsWithVisibility } from '@/hooks/useRDProjectsWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,29 +18,18 @@ function RiskPortfolio() {
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const { invokeAI, isLoading: analyzing, status, error, rateLimitInfo } = useAIWithFallback();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
-
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects'],
-    queryFn: () => base44.entities.RDProject.list()
-  });
+  const { data: pilots = [] } = usePilotsWithVisibility();
+  const { data: challenges = [] } = useChallengesWithVisibility();
+  const { data: rdProjects = [] } = useRDProjectsWithVisibility();
 
   const analyzeRisks = async () => {
     // Import centralized prompt module
     const { RISK_PORTFOLIO_PROMPT_TEMPLATE, RISK_PORTFOLIO_RESPONSE_SCHEMA } = await import('@/lib/ai/prompts/analytics/riskPortfolio');
-    
+
     const highRiskPilots = pilots.filter(p => p.risk_level === 'high' || p.risk_level === 'critical');
     const activePilotsCount = pilots.filter(p => p.stage === 'active' || p.stage === 'monitoring').length;
     const activeChallengesCount = challenges.filter(c => c.status === 'approved' || c.status === 'in_treatment').length;
-    
+
     const result = await invokeAI({
       prompt: RISK_PORTFOLIO_PROMPT_TEMPLATE({
         highRiskPilots,

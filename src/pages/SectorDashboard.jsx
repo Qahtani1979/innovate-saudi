@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+
+import { useMatchingEntities } from '@/hooks/useMatchingEntities';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -24,42 +25,26 @@ function SectorDashboard() {
     { value: 'safety', label: { en: 'Safety', ar: 'السلامة' } }
   ];
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges', selectedSector],
-    queryFn: async () => {
-      const all = await base44.entities.Challenge.list();
-      return all.filter(c => c.sector === selectedSector);
-    }
-  });
+  const { useChallenges, usePilots, useSolutions } = useMatchingEntities();
+  const { useTrendEntries } = useAnalytics();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots', selectedSector],
-    queryFn: async () => {
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => p.sector === selectedSector);
-    }
-  });
+  const { data: allChallenges = [] } = useChallenges({ limit: 1000 });
+  const challenges = allChallenges.filter(c => c.sector === selectedSector);
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions', selectedSector],
-    queryFn: async () => {
-      const all = await base44.entities.Solution.list();
-      return all.filter(s => s.sectors?.includes(selectedSector));
-    }
-  });
+  const { data: allPilots = [] } = usePilots({ limit: 1000 });
+  const pilots = allPilots.filter(p => p.sector === selectedSector);
 
-  const { data: allTrends = [] } = useQuery({
-    queryKey: ['sector-trends', selectedSector],
-    queryFn: async () => {
-      const trends = await base44.entities.TrendEntry.list();
-      return trends.filter(t => t.sector === selectedSector && t.period?.includes('2025'));
-    }
-  });
+  const { data: allSolutions = [] } = useSolutions({ limit: 1000 });
+  const solutions = allSolutions.filter(s => s.sectors?.includes(selectedSector));
+
+  const { data: allTrends = [] } = useTrendEntries({ sector: selectedSector, limit: 1000 });
+  // Filter for 2025 as in original code
+  const trendDataRaw = allTrends.filter(t => t.period?.includes('2025'));
 
   const trendData = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'].map(month => ({
     month,
-    challenges: allTrends.filter(t => t.period?.includes(month) && t.metric_name === 'challenges_count')[0]?.metric_value || 0,
-    pilots: allTrends.filter(t => t.period?.includes(month) && t.metric_name === 'pilots_count')[0]?.metric_value || 0,
+    challenges: trendDataRaw.filter(t => t.period?.includes(month) && t.metric_name === 'challenges_count')[0]?.metric_value || 0,
+    pilots: trendDataRaw.filter(t => t.period?.includes(month) && t.metric_name === 'pilots_count')[0]?.metric_value || 0,
   }));
 
   const statusData = [
@@ -149,14 +134,14 @@ function SectorDashboard() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={trendData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="challenges" stroke="#3b82f6" name="Challenges" />
-              <Line type="monotone" dataKey="pilots" stroke="#a855f7" name="Pilots" />
-            </LineChart>
+              <LineChart data={trendData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="challenges" stroke="#3b82f6" name="Challenges" />
+                <Line type="monotone" dataKey="pilots" stroke="#a855f7" name="Pilots" />
+              </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>

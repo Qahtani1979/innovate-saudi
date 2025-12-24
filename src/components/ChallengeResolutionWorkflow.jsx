@@ -6,14 +6,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from './LanguageContext';
 import { CheckCircle2, Plus, X, Loader2, AlertCircle } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useChallengeMutations } from '@/hooks/useChallengeMutations';
 import CitizenClosureNotification from './challenges/CitizenClosureNotification';
 
 export default function ChallengeResolutionWorkflow({ challenge, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
 
   const [resolutionSummary, setResolutionSummary] = useState('');
   const [outcome, setOutcome] = useState('fully_resolved');
@@ -21,37 +19,35 @@ export default function ChallengeResolutionWorkflow({ challenge, onClose }) {
   const [lessonsLearned, setLessonsLearned] = useState(challenge?.lessons_learned || []);
   const [showCitizenNotification, setShowCitizenNotification] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
+  const { updateChallenge } = useChallengeMutations();
 
-  const resolveMutation = useMutation({
-    mutationFn: async () => {
-      await base44.entities.Challenge.update(challenge.id, {
+  const handleResolve = () => {
+    updateChallenge.mutate({
+      id: challenge.id,
+      data: {
         status: 'resolved',
         resolution_date: new Date().toISOString(),
         resolution_summary: resolutionSummary,
         resolution_outcome: outcome,
         impact_achieved: impactAchieved,
-        lessons_learned: lessonsLearned
-      });
-
-      await base44.entities.ChallengeActivity.create({
-        challenge_id: challenge.id,
-        activity_type: 'status_change',
-        description: `Challenge resolved: ${outcome}`,
-        details: { resolution_summary: resolutionSummary, impact_achieved: impactAchieved }
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['challenge']);
-      toast.success(t({ en: 'Challenge resolved', ar: 'تم حل التحدي' }));
-      
-      // Show citizen notification if challenge originated from idea
-      if (challenge.citizen_origin_idea_id) {
-        setShowCitizenNotification(true);
-      } else {
-        onClose();
+        lessons_learned: lessonsLearned,
+        metadata: {
+          resolution_summary: resolutionSummary,
+          impact_achieved: impactAchieved,
+          resolution_outcome: outcome
+        }
       }
-    }
-  });
+    }, {
+      onSuccess: () => {
+        // Show citizen notification if challenge originated from idea
+        if (challenge.citizen_origin_idea_id) {
+          setShowCitizenNotification(true);
+        } else {
+          onClose();
+        }
+      }
+    });
+  };
 
   const addLesson = () => {
     setLessonsLearned([...lessonsLearned, {
@@ -163,9 +159,9 @@ export default function ChallengeResolutionWorkflow({ challenge, onClose }) {
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
               <AlertCircle className="h-4 w-4 text-red-600" />
               <p className="text-sm text-red-700">
-                {t({ 
-                  en: 'At least 1 complete lesson is required to resolve this challenge', 
-                  ar: 'مطلوب درس واحد كامل على الأقل لحل هذا التحدي' 
+                {t({
+                  en: 'At least 1 complete lesson is required to resolve this challenge',
+                  ar: 'مطلوب درس واحد كامل على الأقل لحل هذا التحدي'
                 })}
               </p>
             </div>
@@ -221,19 +217,19 @@ export default function ChallengeResolutionWorkflow({ challenge, onClose }) {
           </Button>
           <Button
             onClick={() => {
-              const isValid = lessonsLearned && lessonsLearned.length >= 1 && 
+              const isValid = lessonsLearned && lessonsLearned.length >= 1 &&
                 lessonsLearned.every(l => l.lesson && l.recommendation);
               if (!isValid) {
                 setShowValidation(true);
                 toast.error(t({ en: 'Please add at least 1 complete lesson', ar: 'يرجى إضافة درس واحد كامل على الأقل' }));
                 return;
               }
-              resolveMutation.mutate();
+              handleResolve();
             }}
-            disabled={!resolutionSummary || !impactAchieved || resolveMutation.isPending}
+            disabled={!resolutionSummary || !impactAchieved || updateChallenge.isPending}
             className="bg-gradient-to-r from-green-600 to-teal-600"
           >
-            {resolveMutation.isPending ? (
+            {updateChallenge.isPending ? (
               <Loader2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} animate-spin`} />
             ) : (
               <CheckCircle2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />

@@ -1,23 +1,18 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { useLanguage } from '../components/LanguageContext';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { ArrowRight, TrendingUp } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function FlowVisualizerPage() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-flow'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-flow'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
+  const { data: challenges = [] } = useChallengesWithVisibility();
+  const { data: pilots = [] } = usePilotsWithVisibility();
 
   const stages = [
     { name: { en: 'Discovery', ar: 'الاكتشاف' }, count: challenges.filter(c => c.status === 'draft' || c.status === 'submitted').length },

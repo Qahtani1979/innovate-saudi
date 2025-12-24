@@ -1,119 +1,112 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { useVisibilitySystem } from './visibility/useVisibilitySystem';
-import { usePermissions } from '@/components/permissions/usePermissions';
 
-/**
- * Hook for fetching solutions with visibility rules applied.
- * 
- * Visibility:
- * - Admin / Full Visibility Users: All solutions
- * - National Deputyship: All solutions in their sector(s)
- * - Municipality Staff: Own + national solutions
- * - Others: Published/approved solutions only
- */
 export function useSolutionsWithVisibility(options = {}) {
-  const { 
-    sectorId,
-    maturityLevel,
+  const {
     limit = 100,
-    includeDeleted = false,
-    publishedOnly = false
+    verifiedOnly = false,
+    publishedOnly = false,
+    // Pagination
+    page,
+    pageSize,
+    paginate = false
   } = options;
 
-  const { isAdmin, hasRole, userId } = usePermissions();
-  const { 
-    isNational, 
-    sectorIds, 
-    userMunicipalityId, 
-    nationalMunicipalityIds,
-    hasFullVisibility,
-    isLoading: visibilityLoading 
-  } = useVisibilitySystem();
-
-  const isStaffUser = hasRole('municipality_staff') || 
-                      hasRole('municipality_admin') || 
-                      hasRole('deputyship_staff') || 
-                      hasRole('deputyship_admin');
+  const { fetchWithVisibility, isLoading: visibilityLoading } = useVisibilitySystem();
 
   return useQuery({
     queryKey: ['solutions-with-visibility', {
-      userId,
-      isAdmin,
-      hasFullVisibility,
-      isNational,
-      sectorIds,
-      userMunicipalityId,
-      sectorId,
-      maturityLevel,
       limit,
-      publishedOnly
+      verifiedOnly,
+      publishedOnly,
+      page,
+      pageSize,
+      paginate
     }],
     queryFn: async () => {
-      let query = supabase
-        .from('solutions')
-        .select(`
-          *,
-          provider:providers(id, name_en, name_ar),
-          sector:sectors(id, name_en, name_ar, code)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-      // Apply deleted filter
-      if (!includeDeleted) {
-        query = query.eq('is_deleted', false);
+      // Pagination Logic
+      let range = null;
+      let count = null;
+      if (paginate && page && pageSize) {
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize - 1;
+        range = { start: from, end: to };
+        count = 'exact';
       }
 
-      // Apply sector filter if provided
-      if (sectorId) {
-        query = query.eq('sector_id', sectorId);
+      // Additional Filters
+      const additionalFilters = {};
+      if (verifiedOnly) additionalFilters.is_verified = true;
+      if (publishedOnly) additionalFilters.is_published = true;
+
+      // Use the centralized visibility fetcher
+      const result = await fetchWithVisibility('solutions', '*', {
+        limit: paginate ? undefined : limit,
+        range,
+        count,
+        publishedOnly,
+        additionalFilters
+      });
+
+      if (paginate && count) {
+        // @ts-ignore
+        const data = result.data || [];
+        // @ts-ignore
+        const totalCount = result.count || 0;
+
+        return {
+          data,
+          totalCount,
+          totalPages: totalCount ? Math.ceil(totalCount / (pageSize || 10)) : 0
+        };
       }
 
-      // Apply maturity filter if provided
-      if (maturityLevel) {
-        query = query.eq('maturity_level', maturityLevel);
-      }
-
-      // Non-staff users only see published/approved solutions
-      if (publishedOnly || !isStaffUser) {
-        query = query.eq('is_published', true);
-        const { data, error } = await query;
-        if (error) throw error;
-        return data || [];
-      }
-
-      // Admin or full visibility users see everything
-      if (hasFullVisibility) {
-        const { data, error } = await query;
-        if (error) throw error;
-        return data || [];
-      }
-
-      // National deputyship: Filter by sector
-      if (isNational && sectorIds?.length > 0) {
-        query = query.in('sector_id', sectorIds);
-        const { data, error } = await query;
-        if (error) throw error;
-        return data || [];
-      }
-
-      // All staff users can see all solutions (solutions are typically shared across the platform)
-      if (isStaffUser) {
-        const { data, error } = await query;
-        if (error) throw error;
-        return data || [];
-      }
-
-      // Fallback: published only
-      query = query.eq('is_published', true);
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
+      return result || [];
     },
     enabled: !visibilityLoading,
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    placeholderData: paginate ? keepPreviousData : undefined
   });
 }
 
-export default useSolutionsWithVisibility;
+export function useSolution(solutionId) {
+  const { fetchWithVisibility, isLoading: visibilityLoading } = useVisibilitySystem();
+
+  return useQuery({
+    queryKey: ['solution', solutionId],
+    queryFn: async () => {
+      if (!solutionId) return null;
+      // Fetch single entity with visibility check
+      const data = await fetchWithVisibility('solutions', '*', {
+        additionalFilters: { id: solutionId }
+      });
+      // fetchWithVisibility returns array
+      // @ts-ignore
+      return Array.isArray(data) ? data[0] : null;
+    },
+    enabled: !!solutionId && !visibilityLoading,
+    staleTime: 1000 * 60 * 5
+  });
+}
+
+/**
+ * Hook to fetch solutions created by the specified user (usually current user).
+ */
+export function useMySolutions(email) {
+  const { fetchWithVisibility, isLoading: visibilityLoading } = useVisibilitySystem();
+
+  return useQuery({
+    queryKey: ['my-solutions', email],
+    queryFn: async () => {
+      if (!email) return [];
+
+      return fetchWithVisibility('solutions', '*', {
+        additionalFilters: { created_by: email },
+        includeDeleted: false,
+        limit: 1000
+      });
+    },
+    enabled: !!email && !visibilityLoading,
+    staleTime: 1000 * 60 * 2 // 2 minutes
+  });
+}

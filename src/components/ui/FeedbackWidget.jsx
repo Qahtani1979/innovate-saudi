@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MessageSquare, X, Send } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { useLogActivity } from '@/hooks/useUserActivity';
 import { useAuth } from '@/lib/AuthContext';
 
 export default function FeedbackWidget() {
@@ -12,31 +12,32 @@ export default function FeedbackWidget() {
   const [feedback, setFeedback] = useState('');
   const [rating, setRating] = useState(0);
   const { user } = useAuth();
+  const { mutate: logActivity } = useLogActivity();
 
-  const submitFeedback = async () => {
+  const submitFeedback = () => {
     if (!feedback.trim()) return;
 
-    try {
-      // Store feedback in user_activities table
-      await supabase.from('user_activities').insert({
-        user_email: user?.email || 'anonymous',
-        activity_type: 'feedback',
-        activity_description: `Platform Feedback - Rating: ${rating}/5`,
-        metadata: {
-          rating,
-          feedback,
-          page: window.location.pathname,
-          timestamp: new Date().toISOString()
-        }
-      });
-
-      toast.success('Feedback sent! Thank you.');
-      setFeedback('');
-      setRating(0);
-      setOpen(false);
-    } catch (error) {
-      toast.error('Failed to send feedback');
-    }
+    logActivity({
+      user_email: user?.email || 'anonymous',
+      activity_type: 'feedback',
+      activity_description: `Platform Feedback - Rating: ${rating}/5`,
+      metadata: {
+        rating,
+        feedback,
+        page: window.location.pathname,
+        timestamp: new Date().toISOString()
+      }
+    }, {
+      onSuccess: () => {
+        toast.success('Feedback sent! Thank you.');
+        setFeedback('');
+        setRating(0);
+        setOpen(false);
+      },
+      onError: () => {
+        toast.error('Failed to send feedback');
+      }
+    });
   };
 
   return (

@@ -1,57 +1,35 @@
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { 
+import {
   Beaker, Microscope, Calendar, TrendingUp, Activity, Plus,
-  BookOpen, CheckCircle2, BarChart3, Wrench
+  BookOpen, CheckCircle2, BarChart3, Wrench, Loader2
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useMyLivingLabs } from '../hooks/useLivingLabs';
+import { useRDProjects } from '../hooks/useRDProjects';
+import { useMyLabBookings } from '../hooks/useLivingLabBookings';
 
 function LivingLabOperatorPortal() {
   const { language, isRTL, t } = useLanguage();
   const { user } = useAuth();
 
   // RLS: Labs I manage
-  const { data: myLabs = [] } = useQuery({
-    queryKey: ['my-labs', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('living_labs').select('*').eq('is_deleted', false);
-      return data?.filter(l => 
-        l.director_email === user?.email || 
-        l.manager_email === user?.email ||
-        l.created_by === user?.email
-      ) || [];
-    },
-    enabled: !!user
-  });
+  const { data: myLabs = [], isLoading: loadingLabs } = useMyLivingLabs(user?.email);
+
+  const myLabIds = myLabs.map(l => l.id);
 
   // Projects in my labs
-  const { data: labProjects = [] } = useQuery({
-    queryKey: ['my-lab-projects', myLabs.map(l => l.id)],
-    queryFn: async () => {
-      const myLabIds = myLabs.map(l => l.id);
-      const { data } = await supabase.from('rd_projects').select('*').eq('is_deleted', false);
-      return data?.filter(p => myLabIds.includes(p.living_lab_id)) || [];
-    },
-    enabled: myLabs.length > 0
+  const { data: labProjects = [], isLoading: loadingProjects } = useRDProjects({
+    living_lab_id: myLabIds.length > 0 ? myLabIds : null
   });
 
   // Bookings for my labs
-  const { data: bookings = [] } = useQuery({
-    queryKey: ['my-lab-bookings', myLabs.map(l => l.id)],
-    queryFn: async () => {
-      const myLabIds = myLabs.map(l => l.id);
-      const { data } = await supabase.from('living_lab_bookings').select('*');
-      return data?.filter(b => myLabIds.includes(b.living_lab_id)) || [];
-    },
-    enabled: myLabs.length > 0
-  });
+  const { data: bookings = [], isLoading: loadingBookings } = useMyLabBookings(myLabIds);
 
   const activeProjects = labProjects.filter(p => p.status === 'active');
   const completedProjects = labProjects.filter(p => p.status === 'completed');
@@ -59,6 +37,10 @@ function LivingLabOperatorPortal() {
   const totalCapacity = myLabs.reduce((sum, l) => sum + (l.capacity || 0), 0);
   const totalUsed = myLabs.reduce((sum, l) => sum + (l.current_projects || 0), 0);
   const avgUtilization = totalCapacity > 0 ? Math.round((totalUsed / totalCapacity) * 100) : 0;
+
+  if (loadingLabs || (myLabIds.length > 0 && (loadingProjects || loadingBookings))) {
+    return <div className="p-8 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-teal-600" /></div>;
+  }
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -204,7 +186,7 @@ function LivingLabOperatorPortal() {
         {myLabs.map((lab) => {
           const projects = labProjects.filter(p => p.living_lab_id === lab.id);
           const labBookings = bookings.filter(b => b.living_lab_id === lab.id);
-          
+
           return (
             <Card key={lab.id} className="border-l-4 border-l-teal-500">
               <CardContent className="pt-6">
@@ -214,7 +196,7 @@ function LivingLabOperatorPortal() {
                       <Badge variant="outline" className="font-mono text-xs">{lab.code}</Badge>
                       <Badge className={
                         lab.status === 'active' ? 'bg-green-100 text-green-700' :
-                        'bg-slate-100 text-slate-700'
+                          'bg-slate-100 text-slate-700'
                       }>{lab.status}</Badge>
                     </div>
                     <h3 className="font-bold text-xl text-slate-900 mb-1">
@@ -261,6 +243,6 @@ function LivingLabOperatorPortal() {
   );
 }
 
-export default ProtectedPage(LivingLabOperatorPortal, { 
-  requiredPermissions: ['livinglab_manage'] 
+export default ProtectedPage(LivingLabOperatorPortal, {
+  requiredPermissions: ['livinglab_manage']
 });

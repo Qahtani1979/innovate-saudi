@@ -1,4 +1,5 @@
-import { base44 } from '@/api/base44Client';
+import React from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,22 +15,46 @@ export default function LivingLabDashboard() {
 
   const { data: labs = [] } = useQuery({
     queryKey: ['living-labs'],
-    queryFn: () => base44.entities.LivingLab.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('living_labs')
+        .select('*');
+      if (error) throw error;
+      return data;
+    }
   });
 
   const { data: bookings = [] } = useQuery({
     queryKey: ['lab-bookings'],
-    queryFn: () => base44.entities.LivingLabBooking.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('living_lab_bookings')
+        .select('*');
+      if (error) throw error;
+      return data;
+    }
   });
 
   const { data: resourceBookings = [] } = useQuery({
     queryKey: ['resource-bookings'],
-    queryFn: () => base44.entities.LivingLabResourceBooking.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('living_lab_resource_bookings')
+        .select('*');
+      if (error) throw error;
+      return data;
+    }
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('pilots')
+        .select('*');
+      if (error) throw error;
+      return data;
+    }
   });
 
   // Calculate metrics
@@ -51,7 +76,7 @@ export default function LivingLabDashboard() {
 
   // Lab type distribution
   const labTypeData = labs.reduce((acc, lab) => {
-    const type = lab.lab_type || 'other';
+    const type = lab.type || 'other';
     acc[type] = (acc[type] || 0) + 1;
     return acc;
   }, {});
@@ -222,7 +247,7 @@ export default function LivingLabDashboard() {
                       </p>
                       <div className="flex items-center gap-2 mt-1">
                         <Badge variant="outline" className="text-xs">{lab.code}</Badge>
-                        <Badge className="text-xs">{lab.lab_type?.replace(/_/g, ' ')}</Badge>
+                        <Badge className="text-xs">{lab.type?.replace(/_/g, ' ')}</Badge>
                       </div>
                     </div>
                   </div>
@@ -259,9 +284,9 @@ export default function LivingLabDashboard() {
                   <div className="flex items-center gap-3 flex-1">
                     <Badge className={
                       lab.status === 'active' ? 'bg-green-100 text-green-700' :
-                      lab.status === 'maintenance' ? 'bg-amber-100 text-amber-700' :
-                      lab.status === 'full' ? 'bg-red-100 text-red-700' :
-                      'bg-slate-100 text-slate-700'
+                        lab.status === 'maintenance' ? 'bg-amber-100 text-amber-700' :
+                          lab.status === 'full' ? 'bg-red-100 text-red-700' :
+                            'bg-slate-100 text-slate-700'
                     }>
                       {lab.status}
                     </Badge>

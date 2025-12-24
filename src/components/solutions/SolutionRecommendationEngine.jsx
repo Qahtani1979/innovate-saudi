@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Sparkles, Target, Zap, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { useSolutions } from '@/hooks/useSolutions';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
@@ -14,10 +14,13 @@ export default function SolutionRecommendationEngine({ challenge, userProfile, c
   const { language, isRTL, t } = useLanguage();
   const [recommendations, setRecommendations] = useState([]);
   const { invokeAI, status: aiStatus, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { solutions } = useSolutions({ publishedOnly: true, limit: 1000 }); // Fetch all published solutions for AI analysis
 
   const generateRecommendations = async () => {
-    const { data: solutions = [] } = await supabase.from('solutions').select('*').eq('is_published', true);
-    
+    if (!solutions.length) return;
+
+    if (!solutions.length) return;
+
     const result = await invokeAI({
       prompt: `Recommend the best 5 solutions for this ${context} in BOTH English and Arabic:
 
@@ -35,10 +38,10 @@ Available Solutions:
 ${solutions.slice(0, 20).map(s => `${s.name_en} - ${s.provider_name} (${s.maturity_level}): ${s.value_proposition}`).join('\n')}
 
 For each recommendation provide:
-1. Solution match score (0-100)
-2. Key match reasons (bilingual)
-3. Implementation considerations (bilingual)
-4. Expected impact (bilingual)`,
+1. Solution match score(0 - 100)
+2. Key match reasons(bilingual)
+3. Implementation considerations(bilingual)
+4. Expected impact(bilingual)`,
       response_json_schema: {
         type: 'object',
         properties: {
@@ -77,10 +80,10 @@ For each recommendation provide:
   };
 
   useEffect(() => {
-    if (challenge || userProfile) {
+    if ((challenge || userProfile) && solutions.length > 0) {
       generateRecommendations();
     }
-  }, [challenge?.id, userProfile?.id]);
+  }, [challenge?.id, userProfile?.id, solutions.length]);
 
   return (
     <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200">
@@ -151,7 +154,7 @@ For each recommendation provide:
                   </span>
                 </div>
 
-                <Link to={createPageUrl(`SolutionDetail?id=${rec.solution_id}`)}>
+                <Link to={createPageUrl(`SolutionDetail ? id = ${rec.solution_id} `)}>
                   <Button size="sm" className="w-full bg-purple-600 hover:bg-purple-700 text-xs">
                     {t({ en: 'View Solution Details', ar: 'عرض تفاصيل الحل' })}
                   </Button>

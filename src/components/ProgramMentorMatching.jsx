@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,21 +8,19 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
+import { useProgramApplications } from '@/hooks/useProgramDetails';
+import { useProgramMutations } from '@/hooks/useProgramMutations';
+
 export default function ProgramMentorMatching({ program, onClose }) {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
   const [matches, setMatches] = useState(null);
-  
+
   const { invokeAI, status, isLoading: matching, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: participants = [] } = useQuery({
-    queryKey: ['program-participants', program?.id],
-    queryFn: async () => {
-      const apps = await base44.entities.ProgramApplication.list();
-      return apps.filter(a => a.program_id === program?.id && a.status === 'accepted');
-    },
-    enabled: !!program?.id
-  });
+  const { data: allApplications = [] } = useProgramApplications(program?.id);
+  const participants = allApplications.filter(a => a.status === 'accepted');
+
+  const { updateApplicationBatch, isBatchUpdating } = useProgramMutations();
 
   const handleAIMatching = async () => {
     const prompt = `Match mentors with participants for this innovation program:
@@ -34,13 +30,13 @@ Type: ${program.program_type}
 Focus: ${program.focus_areas?.join(', ') || 'N/A'}
 
 Mentors (${program.mentors?.length || 0}):
-${program.mentors?.map((m, i) => 
-  `${i+1}. ${m.name} - Expertise: ${m.expertise?.join(', ')}, Organization: ${m.organization}`
-).join('\n') || 'No mentors listed'}
+${program.mentors?.map((m, i) =>
+      `${i + 1}. ${m.name} - Expertise: ${m.expertise?.join(', ')}, Organization: ${m.organization}`
+    ).join('\n') || 'No mentors listed'}
 
 Participants (${participants.length}):
-${participants.map((p, i) => 
-  `${i+1}. ${p.applicant_name} (${p.organization_type})
+${participants.map((p, i) =>
+      `${i + 1}. ${p.applicant_name} (${p.organization_type})
    Focus: ${p.focus_area || 'N/A'}
    Needs: ${p.mentorship_needs || 'General guidance'}
 `).join('\n')}
@@ -78,7 +74,6 @@ Return matched pairs with reasoning.`;
       // Map to IDs
       const mappedMatches = result.data.matches.map(m => {
         const participant = participants.find(p => p.applicant_name === m.participant_name);
-        const mentor = program.mentors?.find(men => men.name === m.mentor_name);
         return {
           participantId: participant?.id,
           participantName: m.participant_name,
@@ -93,22 +88,24 @@ Return matched pairs with reasoning.`;
     }
   };
 
-  const applyMatchesMutation = useMutation({
-    mutationFn: async () => {
-      const updates = matches.map(match =>
-        base44.entities.ProgramApplication.update(match.participantId, {
-          assigned_mentor: match.mentorName,
-          mentor_match_score: match.matchScore
-        })
-      );
-      await Promise.all(updates);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['program-participants']);
-      toast.success(t({ en: 'Mentors assigned', ar: 'تم تعيين الموجهين' }));
+  const handleConfirmMatches = async () => {
+    if (!matches) return;
+
+    const updates = matches.map(match => ({
+      id: match.participantId,
+      data: {
+        assigned_mentor: match.mentorName,
+        mentor_match_score: match.matchScore
+      }
+    }));
+
+    try {
+      await updateApplicationBatch(updates);
       onClose();
+    } catch (error) {
+      // toast is handled by hook
     }
-  });
+  };
 
   return (
     <Card className="w-full" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -123,7 +120,7 @@ Return matched pairs with reasoning.`;
       </CardHeader>
       <CardContent className="space-y-4">
         <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
-        
+
         <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
           <p className="text-sm font-medium text-purple-900">{program?.name_en}</p>
           <p className="text-xs text-slate-600 mt-1">
@@ -177,11 +174,11 @@ Return matched pairs with reasoning.`;
 
             <div className="flex gap-3 pt-4 border-t">
               <Button
-                onClick={() => applyMatchesMutation.mutate()}
-                disabled={applyMatchesMutation.isPending}
+                onClick={handleConfirmMatches}
+                disabled={isBatchUpdating}
                 className="flex-1 bg-green-600 hover:bg-green-700"
               >
-                {applyMatchesMutation.isPending ? (
+                {isBatchUpdating ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
                   <CheckCircle2 className="h-4 w-4 mr-2" />

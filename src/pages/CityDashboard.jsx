@@ -1,5 +1,5 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+
+import { useCityAnalytics } from '@/hooks/useCityAnalytics';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -9,46 +9,37 @@ import {
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useCity, useCityMunicipalities } from '@/hooks/useCityData';
+
+
 
 function CityDashboard() {
   const { t, isRTL } = useLanguage();
   const urlParams = new URLSearchParams(window.location.search);
   const cityId = urlParams.get('id');
 
-  const { data: city, isLoading } = useQuery({
-    queryKey: ['city', cityId],
-    queryFn: () => base44.entities.City.get(cityId),
-    enabled: !!cityId
-  });
+  const {
+    useCityChallenges,
+    useCityPilots,
+    useCitySolutions,
+    isVisibilityLoading
+  } = useCityAnalytics(cityId);
 
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['city-municipalities', cityId],
-    queryFn: () => base44.entities.Municipality.filter({ city_id: cityId }),
-    enabled: !!cityId
-  });
+  const { data: city, isLoading: isCityLoading } = useCity(cityId);
+  const { data: municipalities = [], isLoading: isMuniLoading } = useCityMunicipalities(cityId);
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['city-challenges', cityId],
-    queryFn: () => base44.entities.Challenge.filter({ city_id: cityId }),
-    enabled: !!cityId
-  });
+  const { data: challenges = [], isLoading: isChallengesLoading } = useCityChallenges();
+  const { data: pilots = [], isLoading: isPilotsLoading } = useCityPilots();
+  const { data: solutions = [], isLoading: isSolutionsLoading } = useCitySolutions();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['city-pilots', cityId],
-    queryFn: () => base44.entities.Pilot.filter({ city_id: cityId }),
-    enabled: !!cityId
-  });
-
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['city-solutions', cityId],
-    queryFn: () => base44.entities.Solution.filter({ city_id: cityId }),
-    enabled: !!cityId
-  });
+  const isLoading = isCityLoading || isChallengesLoading || isPilotsLoading || isSolutionsLoading || isVisibilityLoading || isMuniLoading;
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-96">
-      <Activity className="h-8 w-8 animate-spin text-blue-600" />
-    </div>;
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Activity className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    );
   }
 
   if (!city) {
@@ -64,9 +55,10 @@ function CityDashboard() {
     challenges: challenges.length,
     activePilots: pilots.filter(p => p.stage === 'active').length,
     solutions: solutions.length,
-    avgGDP: city.economic_indicators?.gdp_per_capita || 0,
-    unemployment: city.economic_indicators?.unemployment_rate || 0,
-    keyIndustries: city.economic_indicators?.key_industries || []
+    // Removed economic_indicators as they are not in schema
+    avgGDP: 0,
+    unemployment: 0,
+    keyIndustries: []
   };
 
   return (
@@ -75,16 +67,18 @@ function CityDashboard() {
         icon={MapPin}
         title={city.name_en + (city.name_ar ? ` / ${city.name_ar}` : '')}
         subtitle={{ en: 'City Analytics Dashboard', ar: 'لوحة تحليلات المدينة' }}
+        description=""
+        action={
+          <Badge className="text-lg px-4 py-2">
+            {city.municipality_id ? t({ en: 'Has Municipality', ar: 'لها بلدية' }) : t({ en: 'No Municipality', ar: 'بدون بلدية' })}
+          </Badge>
+        }
+        actions={null}
         stats={[
           { icon: Users, value: stats.population.toLocaleString(), label: { en: 'Population', ar: 'السكان' } },
           { icon: Building2, value: stats.municipalities, label: { en: 'Municipalities', ar: 'البلديات' } },
           { icon: AlertCircle, value: stats.challenges, label: { en: 'Challenges', ar: 'التحديات' } },
         ]}
-        action={
-          <Badge className="text-lg px-4 py-2">
-            {city.is_municipality ? t({ en: 'Has Municipality', ar: 'لها بلدية' }) : t({ en: 'No Municipality', ar: 'بدون بلدية' })}
-          </Badge>
-        }
       />
 
       {/* Key Metrics */}
@@ -151,26 +145,7 @@ function CityDashboard() {
         </CardContent>
       </Card>
 
-      {/* Economic Indicators */}
-      {stats.keyIndustries.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-purple-600" />
-              {t({ en: 'Key Industries', ar: 'الصناعات الرئيسية' })}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {stats.keyIndustries.map((industry, idx) => (
-                <Badge key={idx} variant="outline" className="px-3 py-1">
-                  {industry}
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Removed Economic Indicators Card as per instruction */}
 
       {/* Municipalities List */}
       {municipalities.length > 0 && (

@@ -3,10 +3,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '@/components/LanguageContext';
 import { createPageUrl } from '@/utils';
-import { Lightbulb } from 'lucide-react';
+import { Lightbulb, Loader2 } from 'lucide-react';
+import { useSolutionsWithVisibility } from '@/hooks/visibility';
 
-export default function ChallengeSolutionsTab({ solutions = [] }) {
+export default function ChallengeSolutionsTab({ solutions: propSolutions, challenge }) {
   const { t } = useLanguage();
+  const { data: allSolutions = [], isLoading } = useSolutionsWithVisibility();
+
+  // Use prop if provided (fallback), otherwise filter fetched data
+  const solutions = propSolutions || allSolutions.filter(s => s.challenges_discovered?.includes(challenge?.id));
+
+  if (isLoading && !propSolutions) {
+    return <div className="text-center py-8"><Loader2 className="h-8 w-8 animate-spin mx-auto text-yellow-600" /></div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -36,7 +45,7 @@ export default function ChallengeSolutionsTab({ solutions = [] }) {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-green-600">{95 - idx * 3}%</div>
+                      <div className="text-2xl font-bold text-green-600">{Math.max(0, 95 - idx * 3)}%</div>
                       <div className="text-xs text-slate-500">{t({ en: 'AI Match', ar: 'تطابق ذكي' })}</div>
                     </div>
                   </div>

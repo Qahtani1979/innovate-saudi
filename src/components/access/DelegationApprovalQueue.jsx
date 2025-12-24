@@ -1,12 +1,9 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { useLanguage } from '../LanguageContext';
-import { toast } from 'sonner';
+import { useLanguage } from '@/components/LanguageContext';
 import { CheckCircle2, XCircle, Clock, Users, Calendar, Shield } from 'lucide-react';
 import {
   Dialog,
@@ -14,69 +11,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useAuth } from '@/lib/AuthContext';
+import { usePendingDelegations, useDelegationMutations } from '@/hooks/useDelegations';
 
 export default function DelegationApprovalQueue() {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [selectedDelegation, setSelectedDelegation] = useState(null);
   const [comments, setComments] = useState('');
   const [showDialog, setShowDialog] = useState(false);
 
-  const { data: user } = useQuery({
-    queryKey: ['current-user-approval'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      return user;
-    }
-  });
-
   // Fetch pending delegations
-  const { data: pendingDelegations = [] } = useQuery({
-    queryKey: ['pending-delegations', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      
-      const { data, error } = await supabase
-        .from('delegation_rules')
-        .select('*')
-        .or(`delegator_email.eq.${user.email}`)
-        .or('approved_by.is.null');
-      
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
-
-  const approveMutation = useMutation({
-    mutationFn: async ({ delegation_id, action }) => {
-      const updateData = {
-        is_active: action === 'approve',
-        approved_by: user?.email,
-        approval_date: new Date().toISOString()
-      };
-      
-      const { error } = await supabase
-        .from('delegation_rules')
-        .update(updateData)
-        .eq('id', delegation_id);
-      
-      if (error) throw error;
-    },
-    onSuccess: (_, { action }) => {
-      queryClient.invalidateQueries(['pending-delegations']);
-      setShowDialog(false);
-      setSelectedDelegation(null);
-      setComments('');
-      toast.success(action === 'approve' 
-        ? t({ en: 'Delegation approved', ar: 'تم الموافقة على التفويض' })
-        : t({ en: 'Delegation rejected', ar: 'تم رفض التفويض' })
-      );
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    }
-  });
+  const { data: pendingDelegations = [] } = usePendingDelegations(user?.email || '');
+  const { approveDelegation } = useDelegationMutations();
 
   const handleAction = (delegation, action) => {
     setSelectedDelegation({ ...delegation, action });
@@ -85,9 +32,18 @@ export default function DelegationApprovalQueue() {
 
   const confirmAction = () => {
     if (selectedDelegation) {
-      approveMutation.mutate({
+      // @ts-ignore - Type safety for mutation params
+      approveDelegation.mutate({
         delegation_id: selectedDelegation.id,
-        action: selectedDelegation.action
+        action: selectedDelegation.action,
+        approver_email: user?.email || '',
+        comments: comments
+      }, {
+        onSuccess: () => {
+          setShowDialog(false);
+          setSelectedDelegation(null);
+          setComments('');
+        }
       });
     }
   };
@@ -180,23 +136,23 @@ export default function DelegationApprovalQueue() {
       </Card>
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {selectedDelegation?.action === 'approve' ? 
+        <DialogContent className="max-w-md">
+          <DialogHeader className="text-left">
+            <DialogTitle className="text-xl">
+              {selectedDelegation?.action === 'approve' ?
                 t({ en: 'Approve Delegation', ar: 'الموافقة على التفويض' }) :
                 t({ en: 'Reject Delegation', ar: 'رفض التفويض' })}
             </DialogTitle>
           </DialogHeader>
-          
-          <div className="space-y-4">
+
+          <div className="space-y-4 py-4">
             <p className="text-sm text-muted-foreground">
-              {selectedDelegation?.action === 'approve' ? 
+              {selectedDelegation?.action === 'approve' ?
                 t({ en: 'Are you sure you want to approve this delegation?', ar: 'هل أنت متأكد من الموافقة على هذا التفويض؟' }) :
                 t({ en: 'Are you sure you want to reject this delegation?', ar: 'هل أنت متأكد من رفض هذا التفويض؟' })}
             </p>
 
-            <div>
+            <div className="space-y-2">
               <label className="text-sm font-medium">
                 {t({ en: 'Comments (Optional)', ar: 'تعليقات (اختياري)' })}
               </label>
@@ -208,18 +164,18 @@ export default function DelegationApprovalQueue() {
               />
             </div>
 
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={() => setShowDialog(false)}>
                 {t({ en: 'Cancel', ar: 'إلغاء' })}
               </Button>
               <Button
                 onClick={confirmAction}
-                className={selectedDelegation?.action === 'approve' ? 
+                className={selectedDelegation?.action === 'approve' ?
                   'bg-green-600 hover:bg-green-700' : ''}
                 variant={selectedDelegation?.action === 'reject' ? 'destructive' : 'default'}
-                disabled={approveMutation.isPending}
+                disabled={approveDelegation.isPending}
               >
-                {selectedDelegation?.action === 'approve' ? 
+                {selectedDelegation?.action === 'approve' ?
                   t({ en: 'Approve', ar: 'موافقة' }) :
                   t({ en: 'Reject', ar: 'رفض' })}
               </Button>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useQueryClient, useQuery } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { useRegions, useStartupOnboardingMutations } from '../../hooks/useStartupOnboarding';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,8 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '../LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { createPageUrl } from '@/utils';
-import { 
-  Rocket, ArrowRight, ArrowLeft, CheckCircle2, 
+import {
+  Rocket, ArrowRight, ArrowLeft, CheckCircle2,
   Building2, Target, Globe, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -63,10 +63,10 @@ export default function StartupOnboardingWizard({ onComplete, onSkip }) {
   const { user, userProfile, checkAuth } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  
+
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     company_name_en: '',
     company_name_ar: '',
@@ -83,17 +83,10 @@ export default function StartupOnboardingWizard({ onComplete, onSkip }) {
   });
 
   // Fetch regions for geographic coverage
-  const { data: regions = [] } = useQuery({
-    queryKey: ['regions-list'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('regions')
-        .select('id, name_en, name_ar')
-        .order('name_en');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { submitOnboarding } = useStartupOnboardingMutations();
+
+  // Fetch regions for geographic coverage
+  const { data: regions = [] } = useRegions();
 
   // Pre-populate from Stage 1 onboarding data
   useEffect(() => {
@@ -148,72 +141,26 @@ export default function StartupOnboardingWizard({ onComplete, onSkip }) {
     }
 
     setIsSubmitting(true);
-    
-    try {
-      // Update user profile with provider data
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .update({
-          organization_en: formData.company_name_en || null,
-          organization_ar: formData.company_name_ar || null,
-          bio_en: formData.description_en || null,
-          bio_ar: formData.description_ar || null,
-          expertise_areas: formData.sectors,
-          linkedin_url: formData.linkedin_url || null,
-          onboarding_completed: true,
-          persona_onboarding_completed: true,
-          metadata: {
-            company_stage: formData.stage,
-            team_size: formData.team_size,
-            challenge_interests: formData.challenge_interests,
-            geographic_coverage: formData.geographic_coverage
-          },
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
 
-      if (profileError) throw profileError;
+    setIsSubmitting(true);
 
-      // Create or update provider profile
-      const providerData = {
-        user_id: user.id,
-        user_email: user.email,
-        company_name_en: formData.company_name_en,
-        company_name_ar: formData.company_name_ar,
-        description_en: formData.description_en,
-        description_ar: formData.description_ar,
-        company_stage: formData.stage,
-        team_size: formData.team_size,
-        sectors: formData.sectors,
-        challenge_interests: formData.challenge_interests,
-        geographic_coverage: formData.geographic_coverage,
-        website: formData.website,
-        linkedin_url: formData.linkedin_url,
-        is_verified: false,
-        status: 'pending_verification'
-      };
-
-      const { error: providerError } = await supabase
-        .from('providers')
-        .upsert(providerData, { onConflict: 'user_id' });
-
-      if (providerError) {
-        console.error('Provider profile error:', providerError);
-        // Continue anyway - user_profiles is the primary record
+    submitOnboarding.mutate({
+      userId: user.id,
+      userEmail: user.email,
+      formData
+    }, {
+      onSuccess: () => {
+        toast.success(t({ en: 'Startup profile created! Welcome aboard!', ar: 'تم إنشاء ملف الشركة! مرحباً بك!' }));
+        onComplete?.(formData);
+        navigate(createPageUrl('StartupDashboard'));
+        setIsSubmitting(false);
+      },
+      onError: (error) => {
+        console.error('Onboarding error:', error);
+        toast.error(t({ en: 'Failed to complete setup', ar: 'فشل في إكمال الإعداد' }));
+        setIsSubmitting(false);
       }
-
-      await queryClient.invalidateQueries(['user-profile']);
-      if (checkAuth) await checkAuth();
-
-      toast.success(t({ en: 'Startup profile created! Welcome aboard!', ar: 'تم إنشاء ملف الشركة! مرحباً بك!' }));
-      onComplete?.(formData);
-      navigate(createPageUrl('StartupDashboard'));
-    } catch (error) {
-      console.error('Onboarding error:', error);
-      toast.error(t({ en: 'Failed to complete setup', ar: 'فشل في إكمال الإعداد' }));
-    } finally {
-      setIsSubmitting(false);
-    }
+    });
   };
 
   const canProceed = () => {
@@ -228,7 +175,7 @@ export default function StartupOnboardingWizard({ onComplete, onSkip }) {
     <div className="fixed inset-0 bg-gradient-to-br from-blue-900/95 via-slate-900/95 to-indigo-900/95 backdrop-blur-sm z-50 overflow-y-auto" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="min-h-screen py-8 px-4">
         <div className="max-w-2xl mx-auto space-y-6">
-          
+
           {/* Header */}
           <div className="text-center text-white">
             <div className="flex items-center justify-center gap-2 mb-2">
@@ -250,13 +197,12 @@ export default function StartupOnboardingWizard({ onComplete, onSkip }) {
                   const StepIcon = step.icon;
                   const isActive = currentStep === step.id;
                   const isComplete = currentStep > step.id;
-                  
+
                   return (
                     <React.Fragment key={step.id}>
-                      <Badge className={`px-3 py-2 border-0 ${
-                        isActive ? 'bg-blue-600 text-white' : 
+                      <Badge className={`px-3 py-2 border-0 ${isActive ? 'bg-blue-600 text-white' :
                         isComplete ? 'bg-green-600 text-white' : 'bg-white/10 text-white/60'
-                      }`}>
+                        }`}>
                         <StepIcon className="h-4 w-4 mr-1" />
                         {step.title[language]}
                       </Badge>
@@ -372,11 +318,10 @@ export default function StartupOnboardingWizard({ onComplete, onSkip }) {
                       <div
                         key={sector.id}
                         onClick={() => toggleSector(sector.id)}
-                        className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                          formData.sectors.includes(sector.id)
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-border hover:border-blue-300'
-                        }`}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all ${formData.sectors.includes(sector.id)
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-border hover:border-blue-300'
+                          }`}
                       >
                         <div className="flex items-center gap-2">
                           <Checkbox checked={formData.sectors.includes(sector.id)} />
@@ -396,11 +341,10 @@ export default function StartupOnboardingWizard({ onComplete, onSkip }) {
                       <div
                         key={type.id}
                         onClick={() => toggleChallengeInterest(type.id)}
-                        className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                          formData.challenge_interests.includes(type.id)
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-border hover:border-blue-300'
-                        }`}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all ${formData.challenge_interests.includes(type.id)
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-border hover:border-blue-300'
+                          }`}
                       >
                         <div className="flex items-center gap-2">
                           <Checkbox checked={formData.challenge_interests.includes(type.id)} />
@@ -433,11 +377,10 @@ export default function StartupOnboardingWizard({ onComplete, onSkip }) {
                       <div
                         key={region.id}
                         onClick={() => toggleRegion(region.id)}
-                        className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                          formData.geographic_coverage.includes(region.id)
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-border hover:border-blue-300'
-                        }`}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all ${formData.geographic_coverage.includes(region.id)
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-border hover:border-blue-300'
+                          }`}
                       >
                         <div className="flex items-center gap-2">
                           <Checkbox checked={formData.geographic_coverage.includes(region.id)} />
@@ -463,7 +406,7 @@ export default function StartupOnboardingWizard({ onComplete, onSkip }) {
               <CardContent className="space-y-4">
                 <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                   <p className="text-green-800">
-                    {t({ 
+                    {t({
                       en: "You'll get AI-matched to relevant municipal challenges and opportunities. Our platform will help you connect with the right municipalities for your solutions.",
                       ar: 'ستحصل على مطابقة ذكية مع التحديات والفرص البلدية ذات الصلة. ستساعدك منصتنا على التواصل مع البلديات المناسبة لحلولك.'
                     })}

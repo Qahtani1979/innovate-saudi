@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+﻿import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,13 +18,21 @@ function InvoiceManagement() {
 
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ['invoices'],
-    queryFn: () => base44.entities.Invoice.list('-created_date')
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('invoices')
+        .select('*, providers(name_en, name_ar)')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const filteredInvoices = invoices.filter(inv => {
-    const matchesSearch = !search || 
+    const matchesSearch = !search ||
       inv.invoice_number?.toLowerCase().includes(search.toLowerCase()) ||
-      inv.vendor_name?.toLowerCase().includes(search.toLowerCase());
+      inv.providers?.name_en?.toLowerCase().includes(search.toLowerCase()) ||
+      inv.providers?.name_ar?.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === 'all' || inv.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -63,16 +71,16 @@ function InvoiceManagement() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">
-            {t({ en: 'Invoice Management', ar: 'إدارة الفواتير' })}
+            {t({ en: 'Invoice Management', ar: 'Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„ÙÙˆØ§ØªÙŠØ±' })}
           </h1>
           <p className="text-slate-600 mt-1">
-            {t({ en: 'Track and process vendor invoices', ar: 'تتبع ومعالجة فواتير الموردين' })}
+            {t({ en: 'Track and process vendor invoices', ar: 'ØªØªØ¨Ø¹ ÙˆÙ…Ø¹Ø§Ù„Ø¬Ø© ÙÙˆØ§ØªÙŠØ± Ø§Ù„Ù…ÙˆØ±Ø¯ÙŠÙ†' })}
           </p>
         </div>
         <Link to={createPageUrl('InvoiceApproval')}>
           <Button className="bg-blue-600 hover:bg-blue-700">
             <Plus className="h-4 w-4 mr-2" />
-            {t({ en: 'New Invoice', ar: 'فاتورة جديدة' })}
+            {t({ en: 'New Invoice', ar: 'ÙØ§ØªÙˆØ±Ø© Ø¬Ø¯ÙŠØ¯Ø©' })}
           </Button>
         </Link>
       </div>
@@ -83,7 +91,7 @@ function InvoiceManagement() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Total', ar: 'الإجمالي' })}</p>
+                <p className="text-sm text-slate-600">{t({ en: 'Total', ar: 'Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ' })}</p>
                 <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
               </div>
               <FileText className="h-8 w-8 text-slate-400" />
@@ -95,7 +103,7 @@ function InvoiceManagement() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Pending', ar: 'معلق' })}</p>
+                <p className="text-sm text-slate-600">{t({ en: 'Pending', ar: 'Ù…Ø¹Ù„Ù‚' })}</p>
                 <p className="text-2xl font-bold text-amber-600">{stats.pending}</p>
               </div>
               <Clock className="h-8 w-8 text-amber-400" />
@@ -107,7 +115,7 @@ function InvoiceManagement() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Approved', ar: 'معتمد' })}</p>
+                <p className="text-sm text-slate-600">{t({ en: 'Approved', ar: 'Ù…Ø¹ØªÙ…Ø¯' })}</p>
                 <p className="text-2xl font-bold text-green-600">{stats.approved}</p>
               </div>
               <CheckCircle2 className="h-8 w-8 text-green-400" />
@@ -119,7 +127,7 @@ function InvoiceManagement() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-600">{t({ en: 'Paid', ar: 'مدفوع' })}</p>
+                <p className="text-sm text-slate-600">{t({ en: 'Paid', ar: 'Ù…Ø¯ÙÙˆØ¹' })}</p>
                 <p className="text-2xl font-bold text-green-600">{stats.paid}</p>
               </div>
               <DollarSign className="h-8 w-8 text-green-400" />
@@ -130,10 +138,10 @@ function InvoiceManagement() {
         <Card className="bg-gradient-to-br from-blue-50 to-white">
           <CardContent className="pt-6">
             <div>
-              <p className="text-sm text-slate-600 mb-1">{t({ en: 'Total Amount', ar: 'المبلغ الإجمالي' })}</p>
+              <p className="text-sm text-slate-600 mb-1">{t({ en: 'Total Amount', ar: 'Ø§Ù„Ù…Ø¨Ù„Øº Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ' })}</p>
               <p className="text-xl font-bold text-blue-600">{(stats.total_amount / 1000000).toFixed(2)}M</p>
               <p className="text-xs text-slate-500 mt-1">
-                {t({ en: 'Paid:', ar: 'مدفوع:' })} {(stats.paid_amount / 1000000).toFixed(2)}M
+                {t({ en: 'Paid:', ar: 'Ù…Ø¯ÙÙˆØ¹:' })} {(stats.paid_amount / 1000000).toFixed(2)}M
               </p>
             </div>
           </CardContent>
@@ -148,7 +156,7 @@ function InvoiceManagement() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
-                  placeholder={t({ en: 'Search invoices...', ar: 'البحث عن الفواتير...' })}
+                  placeholder={t({ en: 'Search invoices...', ar: 'Ø§Ù„Ø¨Ø­Ø« Ø¹Ù† Ø§Ù„ÙÙˆØ§ØªÙŠØ±...' })}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-10"
@@ -160,10 +168,10 @@ function InvoiceManagement() {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-4 py-2 border rounded-lg"
             >
-              <option value="all">{t({ en: 'All Status', ar: 'كل الحالات' })}</option>
-              <option value="submitted">{t({ en: 'Submitted', ar: 'مقدم' })}</option>
-              <option value="approved">{t({ en: 'Approved', ar: 'معتمد' })}</option>
-              <option value="paid">{t({ en: 'Paid', ar: 'مدفوع' })}</option>
+              <option value="all">{t({ en: 'All Status', ar: 'ÙƒÙ„ Ø§Ù„Ø­Ø§Ù„Ø§Øª' })}</option>
+              <option value="submitted">{t({ en: 'Submitted', ar: 'Ù…Ù‚Ø¯Ù…' })}</option>
+              <option value="approved">{t({ en: 'Approved', ar: 'Ù…Ø¹ØªÙ…Ø¯' })}</option>
+              <option value="paid">{t({ en: 'Paid', ar: 'Ù…Ø¯ÙÙˆØ¹' })}</option>
             </select>
           </div>
         </CardContent>
@@ -177,27 +185,27 @@ function InvoiceManagement() {
               <thead>
                 <tr className="border-b">
                   <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">
-                    {t({ en: 'Invoice #', ar: 'رقم الفاتورة' })}
+                    {t({ en: 'Invoice #', ar: 'Ø±Ù‚Ù… Ø§Ù„ÙØ§ØªÙˆØ±Ø©' })}
                   </th>
                   <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">
-                    {t({ en: 'Vendor', ar: 'المورد' })}
+                    {t({ en: 'Vendor', ar: 'Ø§Ù„Ù…ÙˆØ±Ø¯' })}
                   </th>
                   <th className="text-right py-3 px-4 text-sm font-semibold text-slate-700">
-                    {t({ en: 'Amount', ar: 'المبلغ' })}
+                    {t({ en: 'Amount', ar: 'Ø§Ù„Ù…Ø¨Ù„Øº' })}
                   </th>
                   <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">
-                    {t({ en: 'Due Date', ar: 'تاريخ الاستحقاق' })}
+                    {t({ en: 'Due Date', ar: 'ØªØ§Ø±ÙŠØ® Ø§Ù„Ø§Ø³ØªØ­Ù‚Ø§Ù‚' })}
                   </th>
                   <th className="text-center py-3 px-4 text-sm font-semibold text-slate-700">
-                    {t({ en: 'Status', ar: 'الحالة' })}
+                    {t({ en: 'Status', ar: 'Ø§Ù„Ø­Ø§Ù„Ø©' })}
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {filteredInvoices.map(invoice => {
-                  const isOverdue = invoice.due_date && invoice.status !== 'paid' && 
+                  const isOverdue = invoice.due_date && invoice.status !== 'paid' &&
                     new Date(invoice.due_date) < new Date();
-                  
+
                   return (
                     <tr key={invoice.id} className="border-b hover:bg-slate-50">
                       <td className="py-3 px-4">
@@ -208,7 +216,7 @@ function InvoiceManagement() {
                         </Link>
                       </td>
                       <td className="py-3 px-4 text-sm text-slate-600">
-                        {invoice.vendor_name}
+                        {language === 'ar' ? invoice.providers?.name_ar : invoice.providers?.name_en}
                       </td>
                       <td className="py-3 px-4 text-right font-medium">
                         {invoice.total_amount?.toLocaleString()} SAR
@@ -239,6 +247,6 @@ function InvoiceManagement() {
   );
 }
 
-export default ProtectedPage(InvoiceManagement, { 
-  requiredPermissions: ['invoice_view_all'] 
+export default ProtectedPage(InvoiceManagement, {
+  requiredPermissions: ['invoice_view_all']
 });

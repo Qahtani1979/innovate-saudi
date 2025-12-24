@@ -1,55 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useLanguage } from '../LanguageContext';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { toast } from 'sonner';
+import { useSessions } from '@/hooks/useSessions';
 import { Monitor, Smartphone, Clock, Shield, LogOut, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function SessionsDialog({ open, onOpenChange }) {
   const { t, isRTL } = useLanguage();
-  const { session, user, logout } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [sessions, setSessions] = useState([]);
-  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+  const { session, user } = useAuth();
 
-  // Fetch user sessions from database
-  useEffect(() => {
-    if (open && user?.id) {
-      fetchSessions();
-    }
-  }, [open, user?.id]);
-
-  const fetchSessions = async () => {
-    setIsLoadingSessions(true);
-    try {
-      const { data, error } = await supabase
-        .from('user_sessions')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .order('started_at', { ascending: false })
-        .limit(10);
-
-      if (error) throw error;
-      setSessions(data || []);
-    } catch (error) {
-      console.error('Error fetching sessions:', error);
-      // Fall back to current session only
-      setSessions([]);
-    } finally {
-      setIsLoadingSessions(false);
-    }
-  };
+  // Use the new hook
+  const {
+    sessions,
+    isLoading: isLoadingSessions,
+    terminateSession,
+    signOutAll
+  } = useSessions(user?.id);
 
   // Get device info from user agent
   const getDeviceInfo = (userAgent) => {
     if (!userAgent) return { type: 'desktop', name: 'Unknown Device' };
-    
+
     const ua = userAgent.toLowerCase();
     if (ua.includes('mobile') || ua.includes('android') || ua.includes('iphone')) {
       return { type: 'mobile', name: 'Mobile Device' };
@@ -57,59 +32,29 @@ export default function SessionsDialog({ open, onOpenChange }) {
     if (ua.includes('tablet') || ua.includes('ipad')) {
       return { type: 'tablet', name: 'Tablet' };
     }
-    
+
     // Detect browser
     let browser = 'Browser';
     if (ua.includes('chrome')) browser = 'Chrome';
     else if (ua.includes('firefox')) browser = 'Firefox';
     else if (ua.includes('safari')) browser = 'Safari';
     else if (ua.includes('edge')) browser = 'Edge';
-    
+
     return { type: 'desktop', name: browser };
   };
 
-  const handleSignOutAllDevices = async () => {
-    setIsLoading(true);
-    try {
-      // Mark all sessions as inactive in our database
-      if (user?.id) {
-        await supabase
-          .from('user_sessions')
-          .update({ is_active: false, ended_at: new Date().toISOString() })
-          .eq('user_id', user.id);
+  const handleSignOutAllDevices = () => {
+    signOutAll.mutate(undefined, {
+      onSuccess: () => {
+        onOpenChange(false);
+        // Redirect to Auth page
+        window.location.href = '/Auth';
       }
-
-      // Global signout from Supabase
-      await supabase.auth.signOut({ scope: 'global' });
-      toast.success(t({ en: 'Signed out from all devices', ar: 'تم تسجيل الخروج من جميع الأجهزة' }));
-    } catch (error) {
-      // If session_not_found, that's fine - session was already invalidated
-      if (error?.message?.includes('session_not_found')) {
-        toast.success(t({ en: 'Signed out from all devices', ar: 'تم تسجيل الخروج من جميع الأجهزة' }));
-      } else {
-        console.error('Sign out error:', error);
-        toast.error(t({ en: 'Failed to sign out', ar: 'فشل في تسجيل الخروج' }));
-      }
-    } finally {
-      setIsLoading(false);
-      // Always redirect to auth page
-      window.location.href = '/Auth';
-    }
+    });
   };
 
-  const handleTerminateSession = async (sessionId) => {
-    try {
-      await supabase
-        .from('user_sessions')
-        .update({ is_active: false, ended_at: new Date().toISOString() })
-        .eq('id', sessionId);
-      
-      toast.success(t({ en: 'Session terminated', ar: 'تم إنهاء الجلسة' }));
-      fetchSessions();
-    } catch (error) {
-      console.error('Error terminating session:', error);
-      toast.error(t({ en: 'Failed to terminate session', ar: 'فشل إنهاء الجلسة' }));
-    }
+  const handleTerminateSession = (sessionId) => {
+    terminateSession.mutate(sessionId);
   };
 
   const currentSession = session ? {
@@ -203,9 +148,10 @@ export default function SessionsDialog({ open, onOpenChange }) {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleTerminateSession(sess.id)}
+                          disabled={terminateSession.isPending}
                           className="text-destructive hover:text-destructive"
                         >
-                          {t({ en: 'End', ar: 'إنهاء' })}
+                          {terminateSession.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : t({ en: 'End', ar: 'إنهاء' })}
                         </Button>
                       </div>
                     </CardContent>
@@ -217,19 +163,19 @@ export default function SessionsDialog({ open, onOpenChange }) {
 
           <div className="p-4 bg-muted/50 rounded-lg">
             <p className="text-sm text-muted-foreground mb-3">
-              {t({ 
-                en: 'If you notice any suspicious activity, sign out from all devices and change your password immediately.', 
-                ar: 'إذا لاحظت أي نشاط مشبوه، سجل الخروج من جميع الأجهزة وغيّر كلمة المرور فوراً.' 
+              {t({
+                en: 'If you notice any suspicious activity, sign out from all devices and change your password immediately.',
+                ar: 'إذا لاحظت أي نشاط مشبوه، سجل الخروج من جميع الأجهزة وغيّر كلمة المرور فوراً.'
               })}
             </p>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               className="w-full"
               onClick={handleSignOutAllDevices}
-              disabled={isLoading}
+              disabled={signOutAll.isPending}
             >
               <LogOut className="h-4 w-4 mr-2" />
-              {isLoading 
+              {signOutAll.isPending
                 ? t({ en: 'Signing out...', ar: 'جاري الخروج...' })
                 : t({ en: 'Sign Out From All Devices', ar: 'تسجيل الخروج من جميع الأجهزة' })
               }

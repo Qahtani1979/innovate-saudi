@@ -1,5 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { usePilotKPIDatapoints } from '@/hooks/useKPIs';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
@@ -9,21 +8,11 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 export default function LiveKPIDashboard({ challenge }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: kpiDatapoints = [] } = useQuery({
-    queryKey: ['challenge-kpi-data', challenge.id],
-    queryFn: async () => {
-      // Get linked pilot KPI data
-      if (!challenge.linked_pilot_ids || challenge.linked_pilot_ids.length === 0) {
-        return [];
-      }
-      
-      const { data } = await supabase.from('pilot_kpi_datapoints')
-        .select('*')
-        .in('pilot_id', challenge.linked_pilot_ids);
-      return data || [];
-    },
-    enabled: challenge.status === 'in_treatment' && challenge.linked_pilot_ids?.length > 0
-  });
+  const { data: kpiDatapoints = [] } = usePilotKPIDatapoints(
+    (challenge.status === 'in_treatment' && challenge.linked_pilot_ids?.length > 0)
+      ? challenge.linked_pilot_ids
+      : []
+  );
 
   if (!challenge.kpis || challenge.kpis.length === 0) {
     return (

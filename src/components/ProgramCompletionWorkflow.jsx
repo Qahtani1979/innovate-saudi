@@ -1,7 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,18 +7,14 @@ import { useLanguage } from './LanguageContext';
 import { Award, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useProgramApplications } from '@/hooks/useProgramDetails';
+import { useProgramMutations } from '@/hooks/useProgramMutations';
+
 export default function ProgramCompletionWorkflow({ program, onClose }) {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
 
-  const { data: participants = [] } = useQuery({
-    queryKey: ['program-participants-complete', program?.id],
-    queryFn: async () => {
-      const apps = await base44.entities.ProgramApplication.list();
-      return apps.filter(a => a.program_id === program?.id && a.status === 'accepted');
-    },
-    enabled: !!program?.id
-  });
+  const { data: participants = [] } = useProgramApplications(program?.id);
+  const { completeProgram, isCompleting } = useProgramMutations();
 
   const [completionData, setCompletionData] = useState({
     completion_summary: '',
@@ -43,56 +36,18 @@ export default function ProgramCompletionWorkflow({ program, onClose }) {
     final_report_prepared: false
   });
 
-  const completionMutation = useMutation({
-    mutationFn: async () => {
-      // Update program status
-      await base44.entities.Program.update(program.id, {
-        status: 'completed',
-        completion_date: new Date().toISOString().split('T')[0],
-        completion_data: completionData,
-        completion_checklist: completionChecklist,
-        outcomes: {
-          pilots_generated: completionData.pilot_conversions,
-          partnerships_formed: completionData.partnerships_formed,
-          solutions_deployed: completionData.solutions_deployed
-        }
+  const handleComplete = async () => {
+    try {
+      await completeProgram({
+        programId: program.id,
+        completionData,
+        completionChecklist
       });
-
-      // Send completion emails to participants
-      for (const participant of participants) {
-        if (participant.email) {
-          await supabase.functions.invoke('email-trigger-hub', {
-            body: {
-              trigger: 'program.completed',
-              recipient_email: participant.email,
-              entity_type: 'program',
-              entity_id: program.id,
-              variables: {
-                userName: participant.applicant_name,
-                programName: program.name_en,
-                completionSummary: completionData.completion_summary,
-                postProgramPlan: completionData.post_program_plan
-              }
-            }
-          });
-        }
-      }
-
-      // Create notification
-      await base44.entities.Notification.create({
-        type: 'program_completed',
-        title: `Program Completed: ${program.name_en}`,
-        message: `${program.name_en} has successfully completed with ${participants.length} participants.`,
-        severity: 'success',
-        link: `/ProgramDetail?id=${program.id}`
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['program']);
-      toast.success(t({ en: 'Program marked as completed', ar: 'تم وضع علامة البرنامج كمكتمل' }));
       onClose();
+    } catch (error) {
+      // toast is handled by hook
     }
-  });
+  };
 
   const allRequiredChecked = Object.values(completionChecklist).filter(Boolean).length >= 4;
 
@@ -188,7 +143,7 @@ export default function ProgramCompletionWorkflow({ program, onClose }) {
             <div key={key} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-slate-50">
               <Checkbox
                 checked={completionChecklist[key]}
-                onCheckedChange={(checked) => 
+                onCheckedChange={(checked) =>
                   setCompletionChecklist({ ...completionChecklist, [key]: checked })
                 }
               />
@@ -199,11 +154,11 @@ export default function ProgramCompletionWorkflow({ program, onClose }) {
 
         <div className="flex gap-3 pt-4 border-t">
           <Button
-            onClick={() => completionMutation.mutate()}
-            disabled={!allRequiredChecked || completionMutation.isPending}
+            onClick={handleComplete}
+            disabled={!allRequiredChecked || isCompleting}
             className="flex-1 bg-green-600 hover:bg-green-700"
           >
-            {completionMutation.isPending ? (
+            {isCompleting ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Award className="h-4 w-4 mr-2" />

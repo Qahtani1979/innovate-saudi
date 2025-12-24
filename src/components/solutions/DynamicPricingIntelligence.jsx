@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import { DollarSign, Sparkles, Loader2, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useSolutions } from '@/hooks/useSolutions';
 import {
   DYNAMIC_PRICING_SYSTEM_PROMPT,
   buildDynamicPricingPrompt,
@@ -20,17 +20,10 @@ export default function DynamicPricingIntelligence({ solution }) {
   const [pricing, setPricing] = useState(null);
   const { invokeAI, status, isLoading: analyzing, rateLimitInfo, isAvailable } = useAIWithFallback();
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('solutions').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { solutions = [] } = useSolutions({ publishedOnly: true });
 
   const analyzePricing = async () => {
-    const peers = solutions.filter(s => 
+    const peers = solutions.filter(s =>
       s.sectors?.some(sec => solution.sectors?.includes(sec)) &&
       s.id !== solution.id &&
       s.pricing_details?.setup_cost

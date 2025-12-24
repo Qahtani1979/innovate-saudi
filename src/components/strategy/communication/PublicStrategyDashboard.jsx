@@ -3,10 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useLanguage } from '@/components/LanguageContext';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { 
-  BarChart3, Target, TrendingUp, CheckCircle2, Clock, 
+import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
+import { useStrategyObjectives } from '@/hooks/useStrategyObjectives';
+import { useKPIs } from '@/hooks/useKPIs';
+import { useStrategyMilestones } from '@/hooks/strategy/useStrategyMilestones';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import {
+  BarChart3, Target, TrendingUp, CheckCircle2, Clock,
   AlertTriangle, Activity, Calendar, ArrowUpRight, ArrowDownRight,
   Loader2
 } from 'lucide-react';
@@ -17,85 +20,26 @@ export default function PublicStrategyDashboard({ strategicPlanId: propPlanId })
   const strategicPlanId = propPlanId || paramPlanId;
 
   // Fetch strategic plan
-  const { data: plan, isLoading: planLoading } = useQuery({
-    queryKey: ['strategic-plan-public', strategicPlanId],
-    queryFn: async () => {
-      if (!strategicPlanId) return null;
-      const { data, error } = await supabase
-        .from('strategic_plans')
-        .select('*')
-        .eq('id', strategicPlanId)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!strategicPlanId
+  const { data: strategicPlans = [], isLoading: planLoading } = useStrategiesWithVisibility({
+    id: strategicPlanId,
+    publishedOnly: true
   });
+  const plan = strategicPlans[0];
 
   // Fetch objectives
-  const { data: objectives = [] } = useQuery({
-    queryKey: ['strategic-objectives-public', strategicPlanId],
-    queryFn: async () => {
-      if (!strategicPlanId) return [];
-      const { data, error } = await supabase
-        .from('strategic_objectives')
-        .select('*')
-        .eq('strategic_plan_id', strategicPlanId)
-        .order('created_at', { ascending: true });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!strategicPlanId
-  });
+  const { data: objectives = [] } = useStrategyObjectives({ planId: strategicPlanId });
 
   // Fetch KPIs
-  const { data: kpis = [] } = useQuery({
-    queryKey: ['strategic-kpis-public', strategicPlanId],
-    queryFn: async () => {
-      if (!strategicPlanId) return [];
-      const { data, error } = await supabase
-        .from('strategic_kpis')
-        .select('*')
-        .eq('strategic_plan_id', strategicPlanId)
-        .order('created_at', { ascending: true });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!strategicPlanId
-  });
+  const { data: kpis = [] } = useKPIs({ planId: strategicPlanId });
 
-  // Fetch milestones
-  const { data: milestones = [] } = useQuery({
-    queryKey: ['strategy-milestones-public', strategicPlanId],
-    queryFn: async () => {
-      if (!strategicPlanId) return [];
-      const { data, error } = await supabase
-        .from('strategy_milestones')
-        .select('*')
-        .eq('strategic_plan_id', strategicPlanId)
-        .order('end_date', { ascending: true });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!strategicPlanId
-  });
+  // Fetch milestones - hook returns { milestones, isLoading ... } not { data: milestones }
+  const { milestones = [] } = useStrategyMilestones(strategicPlanId);
 
   // Fetch related entities for activity
-  const { data: recentChallenges = [] } = useQuery({
-    queryKey: ['recent-challenges-public', strategicPlanId],
-    queryFn: async () => {
-      if (!strategicPlanId) return [];
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('id, title_en, title_ar, status, created_at')
-        .eq('is_deleted', false)
-        .contains('strategic_plan_ids', [strategicPlanId])
-        .order('created_at', { ascending: false })
-        .limit(5);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!strategicPlanId
+  const { data: recentChallenges = [] } = useChallengesWithVisibility({
+    strategicPlanId: strategicPlanId,
+    limit: 5,
+    publishedOnly: true
   });
 
   // Calculate overall progress
@@ -117,10 +61,10 @@ export default function PublicStrategyDashboard({ strategicPlanId: propPlanId })
   const displayObjectives = objectives.map(obj => ({
     name: language === 'ar' ? (obj.title_ar || obj.title_en) : obj.title_en,
     progress: obj.progress_percentage || 0,
-    status: obj.status === 'completed' ? 'on_track' 
-      : (obj.progress_percentage || 0) >= 50 ? 'on_track' 
-      : (obj.progress_percentage || 0) >= 25 ? 'at_risk' 
-      : 'off_track'
+    status: obj.status === 'completed' ? 'on_track'
+      : (obj.progress_percentage || 0) >= 50 ? 'on_track'
+        : (obj.progress_percentage || 0) >= 25 ? 'at_risk'
+          : 'off_track'
   }));
 
   // Process milestones for display
@@ -133,7 +77,7 @@ export default function PublicStrategyDashboard({ strategicPlanId: propPlanId })
   // Activity feed from challenges
   const activityFeed = recentChallenges.map(ch => ({
     type: 'challenge',
-    message: language === 'ar' 
+    message: language === 'ar'
       ? `تم إنشاء تحدي: ${ch.title_ar || ch.title_en}`
       : `Challenge created: ${ch.title_en}`,
     date: new Date(ch.created_at).toLocaleDateString()
@@ -184,7 +128,7 @@ export default function PublicStrategyDashboard({ strategicPlanId: propPlanId })
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold mb-2">
-                {plan 
+                {plan
                   ? (language === 'ar' ? (plan.title_ar || plan.title_en) : plan.title_en)
                   : t({ en: 'Strategy Progress Dashboard', ar: 'لوحة متابعة تقدم الاستراتيجية' })
                 }
@@ -267,11 +211,11 @@ export default function PublicStrategyDashboard({ strategicPlanId: propPlanId })
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-medium">{objective.name}</span>
                     <Badge className={getObjectiveStatusColor(objective.status)}>
-                      {objective.status === 'on_track' 
+                      {objective.status === 'on_track'
                         ? t({ en: 'On Track', ar: 'على المسار' })
                         : objective.status === 'at_risk'
-                        ? t({ en: 'At Risk', ar: 'في خطر' })
-                        : t({ en: 'Off Track', ar: 'خارج المسار' })
+                          ? t({ en: 'At Risk', ar: 'في خطر' })
+                          : t({ en: 'Off Track', ar: 'خارج المسار' })
                       }
                     </Badge>
                   </div>
@@ -308,13 +252,13 @@ export default function PublicStrategyDashboard({ strategicPlanId: propPlanId })
                       <p className="text-xs text-muted-foreground">{milestone.date}</p>
                     </div>
                     <Badge variant={milestone.status === 'completed' ? 'secondary' : 'outline'}>
-                      {milestone.status === 'completed' 
+                      {milestone.status === 'completed'
                         ? t({ en: 'Done', ar: 'مكتمل' })
                         : milestone.status === 'in_progress'
-                        ? t({ en: 'Active', ar: 'نشط' })
-                        : milestone.status === 'delayed'
-                        ? t({ en: 'Delayed', ar: 'متأخر' })
-                        : t({ en: 'Upcoming', ar: 'قادم' })
+                          ? t({ en: 'Active', ar: 'نشط' })
+                          : milestone.status === 'delayed'
+                            ? t({ en: 'Delayed', ar: 'متأخر' })
+                            : t({ en: 'Upcoming', ar: 'قادم' })
                       }
                     </Badge>
                   </div>

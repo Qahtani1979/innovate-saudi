@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,57 +7,30 @@ import { useLanguage } from '../components/LanguageContext';
 import { Calendar, Users, MapPin, Clock, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
-import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import { toast } from 'sonner';
+import { useEvent, useEventMutations } from '@/hooks/useEvents';
 
 function EventRegistration() {
   const { t, language } = useLanguage();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { triggerEmail } = useEmailTrigger();
-  const [isRegistering, setIsRegistering] = useState(false);
   const urlParams = new URLSearchParams(window.location.search);
   const eventId = urlParams.get('id');
 
-  const { data: event, isLoading } = useQuery({
-    queryKey: ['event-registration', eventId],
-    queryFn: async () => {
-      const { data } = await supabase.from('events').select('*').eq('id', eventId).eq('is_deleted', false).maybeSingle();
-      return data;
-    },
-    enabled: !!eventId
-  });
+  const { data: event, isLoading } = useEvent(eventId);
+  const { registerForEvent } = useEventMutations();
+  const [isRegistering, setIsRegistering] = useState(false);
 
   const handleRegister = async () => {
     if (!user || !event) return;
-    
+
     setIsRegistering(true);
     try {
-      // Update event registration count
-      const { error } = await supabase
-        .from('events')
-        .update({ registration_count: (event.registration_count || 0) + 1 })
-        .eq('id', eventId);
-      
-      if (error) throw error;
-      
-      // Send confirmation email
-      await triggerEmail('event.registration_confirmed', {
-        entity_type: 'event',
-        entity_id: eventId,
-        recipient_email: user.email,
-        entity_data: {
-          title: language === 'ar' ? event.title_ar : event.title_en,
-          start_date: event.start_date,
-          end_date: event.end_date,
-          location: event.location,
-          mode: event.mode
-        },
-        language
+      await registerForEvent.mutateAsync({
+        eventId,
+        currentRegistrationCount: event.registration_count
       });
-      
-      queryClient.invalidateQueries(['event-registration', eventId]);
-      toast.success(t({ en: 'Registration confirmed!', ar: 'تم تأكيد التسجيل!' }));
+      // Success handled by mutation onSuccess (toast + invalidation)
     } catch (error) {
       console.error('Registration failed:', error);
       toast.error(t({ en: 'Registration failed', ar: 'فشل التسجيل' }));
@@ -162,7 +134,7 @@ function EventRegistration() {
               <p className="text-sm text-slate-600">{user?.email}</p>
             </div>
 
-            <Button 
+            <Button
               className="w-full bg-green-600 hover:bg-green-700"
               onClick={handleRegister}
               disabled={isRegistering}
@@ -181,7 +153,7 @@ function EventRegistration() {
           <CardContent className="pt-6 text-center">
             <XCircle className="h-12 w-12 text-red-600 mx-auto mb-3" />
             <p className="font-semibold text-red-900">
-              {isFull 
+              {isFull
                 ? t({ en: 'Event is full', ar: 'الفعالية ممتلئة' })
                 : t({ en: 'Registration is closed', ar: 'التسجيل مغلق' })
               }

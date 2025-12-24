@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { usePartnershipsWithVisibility } from '@/hooks/usePartnershipsWithVisibility';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,12 +13,9 @@ function PartnershipNetwork() {
   const { t } = useLanguage();
   const [typeFilter, setTypeFilter] = useState('all');
 
-  const { data: partnerships = [], isLoading } = useQuery({
-    queryKey: ['org-partnerships'],
-    queryFn: () => base44.entities.OrganizationPartnership.list('-created_date')
-  });
+  const { data: partnerships = [], isLoading } = usePartnershipsWithVisibility({ includeAll: true });
 
-  const filteredPartnerships = partnerships.filter(p => 
+  const filteredPartnerships = partnerships.filter(p =>
     typeFilter === 'all' || p.partnership_type === typeFilter
   );
 
@@ -206,6 +202,6 @@ function PartnershipNetwork() {
   );
 }
 
-export default ProtectedPage(PartnershipNetwork, { 
-  requiredPermissions: ['partnership_view_all'] 
+export default ProtectedPage(PartnershipNetwork, {
+  requiredPermissions: ['partnership_view_all']
 });

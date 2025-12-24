@@ -1,7 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-// import { base44 } from '@/api/base44Client'; // Removed legacy client
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,61 +7,35 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { CheckCircle2, XCircle, Clock, Sparkles, Loader2, TrendingUp } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from 'sonner';
-import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useAllProgramApplications } from '@/hooks/useProgramDetails';
+import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
+import { useProgramMutations } from '@/hooks/useProgramMutations';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function ProgramApplicationEvaluationHub() {
   const { language, isRTL, t } = useLanguage();
   const [aiScores, setAiScores] = useState({});
-  const [aiInsights, setAiInsights] = useState(null);
   const [scoringApp, setScoringApp] = useState(null);
-  const { invokeAI, status, isLoading, rateLimitInfo, isAvailable } = useAIWithFallback();
-  const queryClient = useQueryClient();
+  const { invokeAI, isLoading: aiLoading, isAvailable } = useAIWithFallback();
 
-  const { data: applications = [] } = useQuery({
-    queryKey: ['program-applications-eval'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('program_applications')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
+  // Fetch all program applications using the standardized hook
+  const { data: applications = [] } = useAllProgramApplications();
+  const { data: programs = [] } = useProgramsWithVisibility();
+  const { updateApplicationBatch } = useProgramMutations();
+
+  const handleDecision = async (appId, decision) => {
+    try {
+      await updateApplicationBatch([
+        { id: appId, data: { status: decision, evaluation_date: new Date().toISOString() } }
+      ]);
+    } catch (error) {
+      // toast is handled by hook
     }
-  });
+  };
 
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs-eval'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('programs')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }) => {
-      const { data: result, error } = await supabase
-        .from('program_applications')
-        .update(data)
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw error;
-      return result;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['program-applications-eval']);
-      toast.success(t({ en: 'Application updated', ar: 'تم تحديث الطلب' }));
-    }
-  });
-
-  const pending = applications.filter(a => a.status === 'submitted' || a.status === 'under_review');
-  const reviewed = applications.filter(a => a.status === 'accepted' || a.status === 'rejected');
+  const pending = applications.filter(a => ['submitted', 'under_review'].includes(a.status));
+  const reviewed = applications.filter(a => ['accepted', 'rejected'].includes(a.status));
 
   const totalApplicants = applications.length;
   const acceptedApplicants = applications.filter(a => a.status === 'accepted').length;
@@ -106,13 +77,6 @@ Also provide overall recommendation (ACCEPT/DEFER/REJECT) with reasoning.`,
     setScoringApp(null);
   };
 
-  const handleDecision = (appId, decision) => {
-    updateMutation.mutate({
-      id: appId,
-      data: { status: decision, evaluation_date: new Date().toISOString() }
-    });
-  };
-
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       <div>
@@ -137,7 +101,7 @@ Also provide overall recommendation (ACCEPT/DEFER/REJECT) with reasoning.`,
         <Card className="bg-gradient-to-br from-green-50 to-white">
           <CardContent className="pt-6 text-center">
             <CheckCircle2 className="h-8 w-8 text-green-600 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-green-600">{applications.filter(a => a.status === 'accepted').length}</p>
+            <p className="text-3xl font-bold text-green-600">{acceptedApplicants}</p>
             <p className="text-sm text-slate-600">{t({ en: 'Accepted', ar: 'مقبول' })}</p>
           </CardContent>
         </Card>
@@ -161,28 +125,6 @@ Also provide overall recommendation (ACCEPT/DEFER/REJECT) with reasoning.`,
         </Card>
       </div>
 
-      {/* AI Portfolio Insights */}
-      {aiInsights && (
-        <Card className="border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-white">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-purple-700">
-              <Sparkles className="h-5 w-5" />
-              {t({ en: 'AI Portfolio Analysis', ar: 'تحليل المحفظة الذكي' })}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 bg-white rounded-lg">
-              <h4 className="font-semibold text-red-700 mb-2">{t({ en: 'Gaps', ar: 'الفجوات' })}</h4>
-              <ul className="space-y-1 text-sm">{aiInsights.gaps?.map((g, i) => <li key={i}>• {g}</li>)}</ul>
-            </div>
-            <div className="p-4 bg-white rounded-lg">
-              <h4 className="font-semibold text-green-700 mb-2">{t({ en: 'Recommendations', ar: 'التوصيات' })}</h4>
-              <ul className="space-y-1 text-sm">{aiInsights.recommendations?.map((r, i) => <li key={i}>• {r}</li>)}</ul>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Applications */}
       <Tabs defaultValue="pending">
         <TabsList className="grid w-full grid-cols-2">
@@ -191,8 +133,9 @@ Also provide overall recommendation (ACCEPT/DEFER/REJECT) with reasoning.`,
         </TabsList>
 
         <TabsContent value="pending" className="space-y-3">
-          {pending.map(app => {
+          {pending.length > 0 ? pending.map(app => {
             const aiScore = aiScores[app.id];
+            const program = programs.find(p => p.id === app.program_id);
             return (
               <Card key={app.id} className="border-2">
                 <CardContent className="pt-6">
@@ -200,10 +143,10 @@ Also provide overall recommendation (ACCEPT/DEFER/REJECT) with reasoning.`,
                     <div className="flex-1">
                       <h3 className="font-semibold text-slate-900">{app.applicant_name}</h3>
                       <p className="text-sm text-slate-600">{app.organization_name}</p>
-                      <Badge className="mt-2">{app.program_id}</Badge>
+                      <Badge className="mt-2" variant="outline">{program?.name_en || 'Program'}</Badge>
                     </div>
-                    <Button size="sm" variant="outline" onClick={() => getAIScore(app)} disabled={(isLoading && scoringApp === app.id) || !isAvailable}>
-                      {isLoading && scoringApp === app.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    <Button size="sm" variant="outline" onClick={() => getAIScore(app)} disabled={(aiLoading && scoringApp === app.id) || !isAvailable}>
+                      {aiLoading && scoringApp === app.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                     </Button>
                   </div>
 
@@ -233,7 +176,12 @@ Also provide overall recommendation (ACCEPT/DEFER/REJECT) with reasoning.`,
                 </CardContent>
               </Card>
             );
-          })}
+          }) : (
+            <Card className="p-12 text-center text-slate-500">
+              <CheckCircle2 className="h-12 w-12 mx-auto mb-4 text-green-500" />
+              <p>{t({ en: 'All applications have been reviewed', ar: 'تمت مراجعة جميع الطلبات' })}</p>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="reviewed" className="space-y-3">

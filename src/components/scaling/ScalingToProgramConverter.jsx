@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../LanguageContext';
@@ -28,19 +28,37 @@ export default function ScalingToProgramConverter({ scalingPlan, onClose, onSucc
 
   const createProgramMutation = useMutation({
     mutationFn: async (data) => {
-      const program = await base44.entities.Program.create(data);
-      
-      await base44.entities.ScalingPlan.update(scalingPlan.id, {
-        institutionalization_program_id: program.id,
-        institutionalization_date: new Date().toISOString()
-      });
+      // Create program
+      const { data: program, error: programError } = await supabase
+        .from('programs')
+        .insert([data])
+        .select()
+        .single();
 
-      await base44.entities.SystemActivity.create({
-        entity_type: 'scaling_plan',
-        entity_id: scalingPlan.id,
-        action: 'institutionalized_as_program',
-        description: `Scaling knowledge institutionalized: ${program.name_en}`
-      });
+      if (programError) throw programError;
+
+      // Update scaling plan with institutionalization info
+      const { error: scalingError } = await supabase
+        .from('scaling_plans')
+        .update({
+          institutionalization_program_id: program.id,
+          institutionalization_date: new Date().toISOString()
+        })
+        .eq('id', scalingPlan.id);
+
+      if (scalingError) throw scalingError;
+
+      // Log system activity
+      const { error: activityError } = await supabase
+        .from('system_activities')
+        .insert([{
+          entity_type: 'scaling_plan',
+          entity_id: scalingPlan.id,
+          action: 'institutionalized_as_program',
+          description: `Scaling knowledge institutionalized: ${program.name_en}`
+        }]);
+
+      if (activityError) throw activityError;
 
       return program;
     },
@@ -98,7 +116,7 @@ export default function ScalingToProgramConverter({ scalingPlan, onClose, onSucc
         </CardHeader>
         <CardContent className="pt-6 space-y-4">
           <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
-          
+
           <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
             <p className="text-sm font-semibold text-orange-900 mb-2">
               {t({ en: 'Scaling Plan:', ar: 'خطة التوسع:' })}

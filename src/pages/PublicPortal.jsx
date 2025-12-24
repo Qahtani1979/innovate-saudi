@@ -1,12 +1,18 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import {
+  usePublicPilots,
+  usePublicChallenges,
+  usePublicSolutions,
+  useTopMunicipalities,
+  usePublicPrograms,
+  usePlatformStats
+} from '@/hooks/usePublicContent';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-  Sparkles, Target, TestTube, Lightbulb, 
+import {
+  Sparkles, Target, TestTube, Lightbulb,
   CheckCircle2, Users, Building2, Rocket,
   MessageSquare, Microscope,
   ChevronRight, Play, Star, Zap
@@ -18,105 +24,13 @@ function PublicPortal() {
   const { language, isRTL, t, toggleLanguage } = useLanguage();
   const navigate = useNavigate();
 
-  // Fetch public data using Supabase
-  const { data: successfulPilots = [] } = useQuery({
-    queryKey: ['public-successful-pilots'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('is_deleted', false)
-        .in('stage', ['completed', 'scaled'])
-        .eq('is_published', true)
-        .eq('recommendation', 'scale')
-        .limit(6);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: publishedChallenges = [] } = useQuery({
-    queryKey: ['public-challenges'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*')
-        .eq('is_deleted', false)
-        .eq('is_published', true)
-        .order('created_at', { ascending: false })
-        .limit(6);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: verifiedSolutions = [] } = useQuery({
-    queryKey: ['public-solutions'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('solutions')
-        .select('*')
-        .eq('is_deleted', false)
-        .eq('is_published', true)
-        .eq('is_verified', true)
-        .in('maturity_level', ['market_ready', 'proven'])
-        .limit(8);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: topMunicipalities = [] } = useQuery({
-    queryKey: ['top-municipalities-public'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('municipalities')
-        .select('*')
-        .eq('is_active', true)
-        .order('mii_score', { ascending: false })
-        .limit(5);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: openPrograms = [] } = useQuery({
-    queryKey: ['public-programs'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('programs')
-        .select('*')
-        .eq('is_deleted', false)
-        .eq('is_published', true)
-        .eq('status', 'applications_open')
-        .limit(3);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: platformStats } = useQuery({
-    queryKey: ['public-platform-stats'],
-    queryFn: async () => {
-      const [
-        { count: challengeCount },
-        { count: pilotCount },
-        { count: solutionCount },
-        { count: municipalityCount }
-      ] = await Promise.all([
-        supabase.from('challenges').select('*', { count: 'exact', head: true }).eq('is_deleted', false).eq('is_published', true),
-        supabase.from('pilots').select('*', { count: 'exact', head: true }).eq('is_deleted', false).eq('is_published', true),
-        supabase.from('solutions').select('*', { count: 'exact', head: true }).eq('is_deleted', false).eq('is_published', true),
-        supabase.from('municipalities').select('*', { count: 'exact', head: true }).eq('is_active', true)
-      ]);
-      return {
-        challenges: challengeCount || 0,
-        pilots: pilotCount || 0,
-        solutions: solutionCount || 0,
-        municipalities: municipalityCount || 0
-      };
-    }
-  });
+  // Fetch public data using hooks
+  const { data: successfulPilots = [] } = usePublicPilots({ successfulOnly: true, limit: 6 });
+  const { data: publishedChallenges = [] } = usePublicChallenges({ limit: 6 });
+  const { data: verifiedSolutions = [] } = usePublicSolutions({ verifiedOnly: true, limit: 8 });
+  const { data: topMunicipalities = [] } = useTopMunicipalities({ limit: 5 });
+  const { data: openPrograms = [] } = usePublicPrograms({ status: 'applications_open', limit: 3 });
+  const { data: platformStats } = usePlatformStats();
 
   const stats = platformStats || { challenges: 0, pilots: 0, solutions: 0, municipalities: 0 };
 
@@ -129,9 +43,9 @@ function PublicPortal() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-teal-500" />
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djZoLTZ2LTZoNnptMC0zNHY2aC02VjBoNnptLTYgMzR2Nmg2djZoLTZ2LTZoLTZ2LTZoNnptLTYgMHYtNmg2djZoLTZ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
-        
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
@@ -143,7 +57,7 @@ function PublicPortal() {
                 {t({ en: 'National Municipal Innovation Platform', ar: 'المنصة الوطنية للابتكار البلدي' })}
               </span>
             </div>
-            
+
             <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-white mb-6 tracking-tight">
               {t({ en: 'Transforming Cities', ar: 'تحويل المدن' })}
               <br />
@@ -151,14 +65,14 @@ function PublicPortal() {
                 {t({ en: 'Through Innovation', ar: 'من خلال الابتكار' })}
               </span>
             </h1>
-            
+
             <p className="text-lg sm:text-xl text-white/90 max-w-3xl mx-auto mb-10">
-              {t({ 
+              {t({
                 en: 'Connect municipalities with innovative solutions, conduct evidence-based pilots, and scale what works across the Kingdom.',
                 ar: 'ربط البلديات بالحلول المبتكرة، وإجراء تجارب قائمة على الأدلة، وتوسيع نطاق ما ينجح في جميع أنحاء المملكة.'
               })}
             </p>
-            
+
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link to="/auth">
                 <Button size="lg" className="bg-white text-blue-600 hover:bg-white/90 shadow-xl px-8">
@@ -179,7 +93,7 @@ function PublicPortal() {
 
       {/* Stats Section */}
       <section className="relative -mt-12 z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
@@ -204,7 +118,7 @@ function PublicPortal() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-20">
-        
+
         {/* How It Works */}
         <section>
           <div className="text-center mb-12">
@@ -215,7 +129,7 @@ function PublicPortal() {
               {t({ en: 'A systematic approach to municipal innovation', ar: 'نهج منظم للابتكار البلدي' })}
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {[
               { step: 1, icon: Target, title: { en: 'Identify Challenges', ar: 'تحديد التحديات' }, desc: { en: 'Municipalities document real operational challenges', ar: 'توثق البلديات التحديات التشغيلية الحقيقية' } },
@@ -254,17 +168,16 @@ function PublicPortal() {
                 </Button>
               </Link>
             </div>
-            
+
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               {topMunicipalities.map((muni, idx) => (
                 <Card key={muni.id} className="text-center hover:shadow-lg transition-all group cursor-pointer">
                   <CardContent className="pt-6 pb-6">
-                    <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 ${
-                      idx === 0 ? 'bg-gradient-to-br from-yellow-400 to-amber-500' :
-                      idx === 1 ? 'bg-gradient-to-br from-slate-300 to-slate-400' :
-                      idx === 2 ? 'bg-gradient-to-br from-amber-600 to-amber-700' :
-                      'bg-gradient-to-br from-blue-500 to-blue-600'
-                    }`}>
+                    <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 ${idx === 0 ? 'bg-gradient-to-br from-yellow-400 to-amber-500' :
+                        idx === 1 ? 'bg-gradient-to-br from-slate-300 to-slate-400' :
+                          idx === 2 ? 'bg-gradient-to-br from-amber-600 to-amber-700' :
+                            'bg-gradient-to-br from-blue-500 to-blue-600'
+                      }`}>
                       <span className="text-xl font-bold text-white">#{idx + 1}</span>
                     </div>
                     <h3 className="font-bold text-slate-900 mb-2 text-sm">
@@ -290,7 +203,7 @@ function PublicPortal() {
                 <p className="text-slate-600">{t({ en: 'Apply now for funding and support', ar: 'قدم الآن للتمويل والدعم' })}</p>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {openPrograms.map((program) => (
                 <Card key={program.id} className="hover:shadow-xl transition-all border-2 hover:border-purple-400 group">
@@ -338,7 +251,7 @@ function PublicPortal() {
                 </Button>
               </Link>
             </div>
-            
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {verifiedSolutions.slice(0, 4).map((solution) => (
                 <Card key={solution.id} className="hover:shadow-lg transition-all group">
@@ -450,7 +363,7 @@ function PublicPortal() {
                     {t({ en: 'Your Ideas Matter', ar: 'أفكارك مهمة' })}
                   </h2>
                   <p className="text-slate-600 mb-6 max-w-xl">
-                    {t({ 
+                    {t({
                       en: 'Share ideas to improve your city. Vote on community proposals. Help shape the future of municipal services.',
                       ar: 'شارك أفكارك لتحسين مدينتك. صوت على مقترحات المجتمع. ساعد في تشكيل مستقبل الخدمات البلدية.'
                     })}
@@ -480,7 +393,7 @@ function PublicPortal() {
             {t({ en: 'Ready to Transform Your City?', ar: 'مستعد لتحويل مدينتك؟' })}
           </h2>
           <p className="text-xl text-white/90 mb-10">
-            {t({ 
+            {t({
               en: 'Join hundreds of municipalities, startups, and researchers building the future of Saudi cities.',
               ar: 'انضم لمئات البلديات والشركات الناشئة والباحثين الذين يبنون مستقبل المدن السعودية.'
             })}
@@ -513,7 +426,7 @@ function PublicPortal() {
                 {t({ en: 'Saudi Innovates', ar: 'الابتكار السعودي' })}
               </span>
             </div>
-            
+
             <div className="flex items-center gap-6 text-sm text-slate-400">
               <Link to="/about" className="hover:text-white transition-colors">
                 {t({ en: 'About', ar: 'عن المنصة' })}
@@ -531,7 +444,7 @@ function PublicPortal() {
                 {t({ en: 'Terms', ar: 'الشروط' })}
               </Link>
             </div>
-            
+
             <p className="text-sm text-slate-500">
               © 2024 {t({ en: 'Ministry of Municipalities and Housing', ar: 'وزارة البلديات والإسكان' })}
             </p>

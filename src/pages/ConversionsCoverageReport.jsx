@@ -1,6 +1,15 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useCitizenIdeas } from '@/hooks/useCitizenIdeas';
+import { useInnovationProposalsWithVisibility } from '@/hooks/useInnovationProposalsWithVisibility';
+import { useRDProjectsWithVisibility } from '@/hooks/useRDProjectsWithVisibility';
+import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
+import { useScaling } from '@/hooks/useScaling';
+import { usePoliciesWithVisibility } from '@/hooks/usePoliciesWithVisibility';
+import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
+import { useRDCallsWithVisibility } from '@/hooks/useRDCallsWithVisibility';
+import { useContractsWithVisibility } from '@/hooks/useContractsWithVisibility';
 import { useLanguage } from '../components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,72 +27,23 @@ function ConversionsCoverageReport() {
   const { language, isRTL, t } = useLanguage();
   const [expandedSections, setExpandedSections] = useState({});
 
-  // Fetch live data from entities
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-for-conversion'],
-    queryFn: () => base44.entities.Challenge.list(),
-    initialData: []
-  });
+  // Fetch live data from entities using visibility hooks
+  const { data: challenges = [] } = useChallengesWithVisibility({ limit: 1000 });
+  const { data: pilots = [] } = usePilotsWithVisibility({ limit: 1000 });
+  // For citizen ideas, we might need a specific municipality if restricted, 
+  // but for the report we'll try to get what's available.
+  const { data: citizenIdeas = [] } = useCitizenIdeas();
+  const { data: innovationProposals = [] } = useInnovationProposalsWithVisibility({ limit: 1000 });
+  const { data: rdProjects = [] } = useRDProjectsWithVisibility({ limit: 1000 });
+  const { data: solutions = [] } = useSolutionsWithVisibility({ limit: 1000 });
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-for-conversion'],
-    queryFn: () => base44.entities.Pilot.list(),
-    initialData: []
-  });
+  const { useScalingPlans } = useScaling();
+  const { data: scalingPlans = [] } = useScalingPlans();
 
-  const { data: citizenIdeas = [] } = useQuery({
-    queryKey: ['ideas-for-conversion'],
-    queryFn: () => base44.entities.CitizenIdea.list(),
-    initialData: []
-  });
-
-  const { data: innovationProposals = [] } = useQuery({
-    queryKey: ['proposals-for-conversion'],
-    queryFn: () => base44.entities.InnovationProposal.list(),
-    initialData: []
-  });
-
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-for-conversion'],
-    queryFn: () => base44.entities.RDProject.list(),
-    initialData: []
-  });
-
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions-for-conversion'],
-    queryFn: () => base44.entities.Solution.list(),
-    initialData: []
-  });
-
-  const { data: scalingPlans = [] } = useQuery({
-    queryKey: ['scaling-for-conversion'],
-    queryFn: () => base44.entities.ScalingPlan.list(),
-    initialData: []
-  });
-
-  const { data: policies = [] } = useQuery({
-    queryKey: ['policies-for-conversion'],
-    queryFn: () => base44.entities.PolicyRecommendation.list(),
-    initialData: []
-  });
-
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs-for-conversion'],
-    queryFn: () => base44.entities.Program.list(),
-    initialData: []
-  });
-
-  const { data: rdCalls = [] } = useQuery({
-    queryKey: ['rd-calls'],
-    queryFn: () => base44.entities.RDCall.list(),
-    initialData: []
-  });
-
-  const { data: contracts = [] } = useQuery({
-    queryKey: ['contracts-for-conversion'],
-    queryFn: () => base44.entities.Contract.list(),
-    initialData: []
-  });
+  const { data: policies = [] } = usePoliciesWithVisibility({ limit: 1000 });
+  const { data: programs = [] } = useProgramsWithVisibility({ limit: 1000 });
+  const { data: rdCalls = [] } = useRDCallsWithVisibility({ limit: 1000 });
+  const { data: contracts = [] } = useContractsWithVisibility({ limit: 1000 });
 
   const conversions = [
     // ========================================
@@ -97,12 +57,12 @@ function ConversionsCoverageReport() {
       color: 'blue',
       status: 'complete',
       completeness: 100,
-      
+
       location: 'ChallengeDetail page → SmartActionButton',
       component: 'SmartActionButton',
       eligibleCount: challenges.filter(c => c.status === 'approved' && !c.is_deleted).length,
       totalConverted: pilots.filter(p => p.challenge_id).length,
-      
+
       autoPopulatedFields: [
         'challenge_id (auto-linked)',
         'title_en/ar (from challenge)',
@@ -115,14 +75,14 @@ function ConversionsCoverageReport() {
         'target_population (from challenge affected population)',
         'stakeholders (from challenge stakeholders)'
       ],
-      
+
       aiFeatures: [
         'AI generates pilot hypothesis from challenge',
         'AI suggests KPIs based on challenge metrics',
         'AI recommends methodology',
         'AI pre-fills pilot design wizard'
       ],
-      
+
       workflow: [
         'User clicks "Convert to Pilot" in ChallengeDetail',
         'System creates draft Pilot with auto-populated fields',
@@ -130,10 +90,10 @@ function ConversionsCoverageReport() {
         'User submits → Pilot enters approval_pending stage',
         'ChallengeRelation auto-created (solved_by)'
       ],
-      
+
       dataValidation: 'All required Pilot fields validated before creation',
       errorHandling: 'Transaction rollback if relation creation fails',
-      
+
       gaps: []
     },
     {
@@ -144,12 +104,12 @@ function ConversionsCoverageReport() {
       color: 'purple',
       status: 'complete',
       completeness: 100,
-      
+
       location: 'ChallengeDetail page → ChallengeToRDWizard',
       component: 'ChallengeToRDWizard',
       eligibleCount: challenges.filter(c => ['approved', 'in_treatment'].includes(c.status) && !c.is_deleted).length,
       totalConverted: rdCalls.filter(r => r.challenge_ids?.length > 0).length,
-      
+
       autoPopulatedFields: [
         'challenge_ids (array with source challenge)',
         'title_en/ar (from challenge title)',
@@ -159,14 +119,14 @@ function ConversionsCoverageReport() {
         'keywords (from challenge tags)',
         'focus_areas (from challenge sector/subsector)'
       ],
-      
+
       aiFeatures: [
         'AI generates research questions from challenge',
         'AI suggests research scope and methodology',
         'AI identifies relevant research themes',
         'AI estimates budget and timeline'
       ],
-      
+
       workflow: [
         'User clicks "Create R&D Call" in ChallengeDetail',
         'ChallengeToRDWizard opens with AI pre-fill',
@@ -174,10 +134,10 @@ function ConversionsCoverageReport() {
         'System creates RDCall entity',
         'ChallengeRelation auto-created (informed_by)'
       ],
-      
+
       dataValidation: 'Bilingual content validation',
       errorHandling: 'Rollback if relation fails',
-      
+
       gaps: []
     },
     {
@@ -188,12 +148,12 @@ function ConversionsCoverageReport() {
       color: 'indigo',
       status: 'complete',
       completeness: 100,
-      
+
       location: 'ChallengeDetail page → PolicyRecommendationManager',
       component: 'PolicyRecommendationManager',
       eligibleCount: challenges.filter(c => ['resolved', 'in_treatment'].includes(c.status) && !c.is_deleted).length,
-      totalConverted: policies.filter(p => p.challenge_id).length,
-      
+      totalConverted: policies.filter(p => p.source_entity_id && p.source_entity_type === 'challenge').length,
+
       autoPopulatedFields: [
         'challenge_id (auto-linked)',
         'title_en/ar (from challenge)',
@@ -204,14 +164,14 @@ function ConversionsCoverageReport() {
         'affected_stakeholders (from challenge stakeholders)',
         'entity_type: "challenge"'
       ],
-      
+
       aiFeatures: [
         'AI generates policy recommendation from challenge',
         'AI creates bilingual policy text',
         'AI assesses regulatory impact',
         'AI identifies affected stakeholders'
       ],
-      
+
       workflow: [
         'User clicks "Generate Policy Recommendation"',
         'AI generates bilingual recommendation',
@@ -219,10 +179,10 @@ function ConversionsCoverageReport() {
         'System creates PolicyRecommendation entity',
         'Enters legal_review workflow stage'
       ],
-      
+
       dataValidation: 'Bilingual validation + stakeholder list required',
       errorHandling: 'Draft saved if workflow entry fails',
-      
+
       gaps: []
     },
     {
@@ -233,12 +193,12 @@ function ConversionsCoverageReport() {
       color: 'pink',
       status: 'complete',
       completeness: 100,
-      
+
       location: 'ChallengeDetail page → Programs tab',
       component: 'ChallengeToProgramWorkflow',
       eligibleCount: challenges.filter(c => c.status === 'approved' && !c.is_deleted).length,
-      totalConverted: programs.filter(p => p.challenge_ids?.length > 0).length,
-      
+      totalConverted: programs.filter(p => p.challenge_clusters_inspiration?.length > 0).length,
+
       autoPopulatedFields: [
         'challenge_ids (array with source challenge)',
         'name_en/ar (AI-generated program name)',
@@ -253,7 +213,7 @@ function ConversionsCoverageReport() {
         'status: "planning"',
         'tags: ["challenge_response", challenge.sector]'
       ],
-      
+
       aiFeatures: [
         'AI program type suggester (accelerator/hackathon/fellowship/training)',
         'AI curriculum generator customized by program type',
@@ -262,7 +222,7 @@ function ConversionsCoverageReport() {
         'AI success metrics aligner with challenge KPIs',
         'Challenge-to-program structure converter'
       ],
-      
+
       workflow: [
         'User in ChallengeDetail → Programs tab',
         'Clicks "Create Program from Challenge"',
@@ -275,10 +235,10 @@ function ConversionsCoverageReport() {
         'Challenge.linked_program_ids updated',
         'SystemActivity logged'
       ],
-      
+
       dataValidation: 'Program type and name required',
       errorHandling: 'Validation on required fields, modal persists on error',
-      
+
       gaps: []
     },
 
@@ -293,12 +253,12 @@ function ConversionsCoverageReport() {
       color: 'purple',
       status: 'complete',
       completeness: 100,
-      
+
       location: 'PilotDetail "Next Steps" tab → PilotToRDWorkflow',
       component: 'PilotToRDWorkflow',
       eligibleCount: pilots.filter(p => ['completed', 'evaluation'].includes(p.stage) && !p.is_deleted).length,
-      totalConverted: rdProjects.filter(r => r.pilot_id).length,
-      
+      totalConverted: rdProjects.filter(r => r.pilot_opportunities?.length > 0).length,
+
       autoPopulatedFields: [
         'pilot_id (array with source pilot)',
         'challenge_ids (from pilot.challenge_id)',
@@ -310,7 +270,7 @@ function ConversionsCoverageReport() {
         'duration_months (default 12)',
         'research_themes (pilot.sector + "pilot_follow_up")'
       ],
-      
+
       aiFeatures: [
         'AI extracts research questions from pilot results',
         'AI generates methodology from pilot learnings',
@@ -318,7 +278,7 @@ function ConversionsCoverageReport() {
         'AI estimates budget based on pilot scope',
         'Bilingual content generation'
       ],
-      
+
       workflow: [
         'User in PilotDetail → "Next Steps" tab',
         'Clicks "Create R&D Follow-up"',
@@ -328,10 +288,10 @@ function ConversionsCoverageReport() {
         'Submit → RDProject created with status: "proposal"',
         'Auto-creates ChallengeRelation if pilot has challenge_id'
       ],
-      
+
       dataValidation: 'Research questions required, budget > 0',
       errorHandling: 'Modal stays open on error, shows validation messages',
-      
+
       gaps: []
     },
     {
@@ -342,12 +302,12 @@ function ConversionsCoverageReport() {
       color: 'blue',
       status: 'complete',
       completeness: 100,
-      
+
       location: 'PilotDetail "Next Steps" tab → PilotToPolicyWorkflow',
       component: 'PilotToPolicyWorkflow',
       eligibleCount: pilots.filter(p => ['completed', 'scaled'].includes(p.stage) && !p.is_deleted).length,
-      totalConverted: policies.filter(p => p.pilot_id).length,
-      
+      totalConverted: policies.filter(p => p.source_entity_id && p.source_entity_type === 'pilot').length,
+
       autoPopulatedFields: [
         'pilot_id (auto-linked)',
         'challenge_id (from pilot.challenge_id)',
@@ -360,7 +320,7 @@ function ConversionsCoverageReport() {
         'entity_type: "pilot"',
         'workflow_stage: "draft"'
       ],
-      
+
       aiFeatures: [
         'AI generates evidence-based policy recommendations',
         'AI extracts rationale from pilot evaluation',
@@ -368,7 +328,7 @@ function ConversionsCoverageReport() {
         'Bilingual policy text generation',
         'Links pilot KPI results to policy justification'
       ],
-      
+
       workflow: [
         'User in PilotDetail → "Next Steps" tab',
         'Clicks "Generate Policy Recommendation"',
@@ -378,10 +338,10 @@ function ConversionsCoverageReport() {
         'Submit → PolicyRecommendation created',
         'Enters legal_review workflow'
       ],
-      
+
       dataValidation: 'Both AR and EN recommendation text required',
       errorHandling: 'Validation errors shown inline, draft auto-saved',
-      
+
       gaps: []
     },
     {
@@ -392,12 +352,12 @@ function ConversionsCoverageReport() {
       color: 'green',
       status: 'complete',
       completeness: 100,
-      
+
       location: 'PilotDetail "Next Steps" tab → PilotToProcurementWorkflow',
       component: 'PilotToProcurementWorkflow',
       eligibleCount: pilots.filter(p => ['completed', 'scaled'].includes(p.stage) && p.solution_id && !p.is_deleted).length,
-      totalConverted: contracts.filter(c => c.entity_type === 'pilot').length,
-      
+      totalConverted: contracts.filter(c => c.pilot_id).length,
+
       autoPopulatedFields: [
         'pilot_id (auto-linked)',
         'solution_id (from pilot.solution_id)',
@@ -414,7 +374,7 @@ function ConversionsCoverageReport() {
         'rfp_document_text (AI-generated full RFP)',
         'status: "draft"'
       ],
-      
+
       aiFeatures: [
         'AI generates complete RFP document',
         'AI extracts technical specs from pilot validation',
@@ -423,7 +383,7 @@ function ConversionsCoverageReport() {
         'AI suggests contract terms based on pilot learnings',
         'Links to validated solution for reference'
       ],
-      
+
       workflow: [
         'User in PilotDetail (completed/scaled pilots only)',
         'Clicks "Initiate Procurement"',
@@ -434,10 +394,10 @@ function ConversionsCoverageReport() {
         'Submit → Contract entity created',
         'Auto-links pilot + solution'
       ],
-      
+
       dataValidation: 'Procurement scope required, estimated_value > 0',
       errorHandling: 'RFP draft saved to localStorage on error',
-      
+
       gaps: []
     },
     {
@@ -448,12 +408,12 @@ function ConversionsCoverageReport() {
       color: 'teal',
       status: 'complete',
       completeness: 100,
-      
+
       location: 'ScalingWorkflow page + PilotDetail',
       component: 'ScalingWorkflow + ScalingReadinessChecker',
       eligibleCount: pilots.filter(p => p.stage === 'completed' && p.recommendation === 'scale' && !p.is_deleted).length,
       totalConverted: scalingPlans.filter(s => s.pilot_id).length,
-      
+
       autoPopulatedFields: [
         'pilot_id (source)',
         'title_en/ar (from pilot)',
@@ -465,14 +425,14 @@ function ConversionsCoverageReport() {
         'risks (from pilot.risks)',
         'budget_per_city (from pilot.budget)'
       ],
-      
+
       aiFeatures: [
         'AI scaling readiness assessment',
         'AI suggests target municipalities',
         'AI estimates scaling costs',
         'AI identifies adaptation requirements per city'
       ],
-      
+
       workflow: [
         'User navigates to ScalingWorkflow',
         'Selects completed pilot',
@@ -481,10 +441,10 @@ function ConversionsCoverageReport() {
         'System creates ScalingPlan entity',
         'Auto-creates pilot instances for each city'
       ],
-      
+
       dataValidation: 'Pilot must be "completed" or "scaled" stage',
       errorHandling: 'Prevents scaling if readiness score < 70%',
-      
+
       gaps: []
     },
     {
@@ -495,16 +455,16 @@ function ConversionsCoverageReport() {
       color: 'orange',
       status: 'complete',
       completeness: 100,
-      
+
       location: 'PilotDetail "Next Steps" tab → SolutionFeedbackLoop',
       component: 'SolutionFeedbackLoop',
       eligibleCount: pilots.filter(p => p.solution_id && ['completed', 'evaluation'].includes(p.stage) && !p.is_deleted).length,
       totalConverted: 0, // Feedback updates, not creates
-      
+
       autoPopulatedFields: [
         'N/A (updates existing Solution, not create)'
       ],
-      
+
       feedbackData: [
         'Pilot KPI results (performance data)',
         'Pilot issues log (problems encountered)',
@@ -512,7 +472,7 @@ function ConversionsCoverageReport() {
         'Pilot evaluation summary',
         'AI-generated improvement recommendations'
       ],
-      
+
       aiFeatures: [
         'AI analyzes pilot results vs expectations',
         'AI generates feature enhancement recommendations',
@@ -521,7 +481,7 @@ function ConversionsCoverageReport() {
         'AI prioritizes improvements by impact',
         'Auto-emails provider with feedback summary'
       ],
-      
+
       workflow: [
         'User in PilotDetail → "Next Steps" tab',
         'SolutionFeedbackLoop component visible if pilot.solution_id exists',
@@ -532,10 +492,10 @@ function ConversionsCoverageReport() {
         'Email sent to solution.contact_email',
         'SystemActivity logged for audit trail'
       ],
-      
+
       dataValidation: 'Feedback text required',
       errorHandling: 'Email failures logged, retry option shown',
-      
+
       gaps: []
     },
 
@@ -551,12 +511,12 @@ function ConversionsCoverageReport() {
       color: 'amber',
       status: 'complete',
       completeness: 100,
-      
+
       location: 'IdeaEvaluationQueue',
       component: 'IdeaToChallengeConverter',
-      eligibleCount: citizenIdeas.filter(i => i.status === 'approved' && !i.is_deleted).length,
+      eligibleCount: citizenIdeas.filter(i => i.status === 'approved' && !i['is_deleted']).length,
       totalConverted: challenges.filter(c => c.citizen_origin_idea_id).length,
-      
+
       autoPopulatedFields: [
         'citizen_origin_idea_id (auto-linked)',
         'title_en/ar (from idea.title)',
@@ -569,7 +529,7 @@ function ConversionsCoverageReport() {
         'priority (from idea votes + AI scoring)',
         'keywords (from idea.tags)'
       ],
-      
+
       aiFeatures: [
         'AI structures unstructured idea into formal challenge',
         'AI generates problem statement',
@@ -577,7 +537,7 @@ function ConversionsCoverageReport() {
         'AI classifies sector/priority',
         'AI generates KPIs from idea description'
       ],
-      
+
       workflow: [
         'Evaluator in IdeaEvaluationQueue',
         'Reviews citizen idea',
@@ -587,10 +547,10 @@ function ConversionsCoverageReport() {
         'Citizen notified of conversion',
         'Idea status → "converted_to_challenge"'
       ],
-      
+
       dataValidation: 'Challenge title and sector required',
       errorHandling: 'Idea remains in queue if conversion fails',
-      
+
       gaps: []
     },
     {
@@ -601,12 +561,12 @@ function ConversionsCoverageReport() {
       color: 'pink',
       status: 'complete',
       completeness: 100,
-      
+
       location: 'IdeaEvaluationQueue',
       component: 'IdeaToSolutionConverter',
       eligibleCount: citizenIdeas.filter(i => i.status === 'approved' && !i.is_deleted).length,
-      totalConverted: solutions.filter(s => s.origin_idea_id).length,
-      
+      totalConverted: solutions.filter(s => s.source_idea_id).length,
+
       autoPopulatedFields: [
         'name_en/ar (from idea.title)',
         'description_en/ar (from idea.description)',
@@ -617,13 +577,13 @@ function ConversionsCoverageReport() {
         'contact_email (from idea.submitter_email)',
         'origin_idea_id (reference)'
       ],
-      
+
       aiFeatures: [
         'AI extracts solution value proposition from idea',
         'AI classifies solution maturity level',
         'AI suggests features from idea description'
       ],
-      
+
       workflow: [
         'Evaluator selects "Convert to Solution"',
         'IdeaToSolutionConverter generates solution profile',
@@ -631,10 +591,10 @@ function ConversionsCoverageReport() {
         'Submit → Solution created with verification_pending status',
         'Citizen notified and invited to complete provider profile'
       ],
-      
+
       dataValidation: 'Solution name and description required',
       errorHandling: 'Draft saved if submission fails',
-      
+
       gaps: []
     },
     {
@@ -645,12 +605,12 @@ function ConversionsCoverageReport() {
       color: 'blue',
       status: 'complete',
       completeness: 100,
-      
+
       location: 'IdeaDetail → Actions menu',
       component: 'IdeaToProposalConverter',
       eligibleCount: citizenIdeas.filter(i => i.status === 'approved' && !i.is_deleted).length,
-      totalConverted: innovationProposals.filter(p => p.origin_idea_id).length,
-      
+      totalConverted: 0, // No direct origin_idea_id in innovation_proposals schema
+
       autoPopulatedFields: [
         'title_en/ar (from idea.title)',
         'description_en/ar (from idea.description)',
@@ -660,7 +620,7 @@ function ConversionsCoverageReport() {
         'innovation_type (from idea.category)',
         'origin_idea_id (reference)'
       ],
-      
+
       aiFeatures: [
         'AI proposal structure generator',
         'AI implementation plan generator (bilingual)',
@@ -668,7 +628,7 @@ function ConversionsCoverageReport() {
         'AI team requirements suggester',
         'AI success metrics generator'
       ],
-      
+
       workflow: [
         'User in IdeaDetail → Actions menu',
         'Clicks "Convert to Structured Proposal"',
@@ -679,10 +639,10 @@ function ConversionsCoverageReport() {
         'Idea status → "converted_to_proposal"',
         'SystemActivity logged'
       ],
-      
+
       dataValidation: 'Title and description required (bilingual)',
       errorHandling: 'Validation errors shown, draft saved on error',
-      
+
       gaps: []
     },
 
@@ -697,12 +657,12 @@ function ConversionsCoverageReport() {
       color: 'indigo',
       status: 'complete',
       completeness: 100,
-      
+
       location: 'InnovationProposalDetail',
       component: 'ProposalToPilotConverter',
       eligibleCount: innovationProposals.filter(p => p.status === 'approved' && !p.is_deleted).length,
-      totalConverted: pilots.filter(p => p.origin_proposal_id).length,
-      
+      totalConverted: 0, // No direct origin_proposal_id in pilots schema
+
       autoPopulatedFields: [
         'title_en/ar (from proposal.title)',
         'challenge_id (from proposal.challenge_alignment_id)',
@@ -715,13 +675,13 @@ function ConversionsCoverageReport() {
         'kpis (from proposal.success_metrics_proposed)',
         'methodology (from proposal.approach)'
       ],
-      
+
       aiFeatures: [
         'AI converts proposal into pilot structure',
         'AI validates all required pilot fields present',
         'AI suggests missing data'
       ],
-      
+
       workflow: [
         'Approved proposal in InnovationProposalDetail',
         'Click "Convert to Pilot"',
@@ -730,10 +690,10 @@ function ConversionsCoverageReport() {
         'If incomplete → shows gap analysis',
         'Proposal status → "converted"'
       ],
-      
+
       dataValidation: 'All critical pilot fields must be present in proposal',
       errorHandling: 'Shows gap report if data insufficient',
-      
+
       gaps: []
     },
     {
@@ -744,12 +704,12 @@ function ConversionsCoverageReport() {
       color: 'purple',
       status: 'complete',
       completeness: 100,
-      
+
       location: 'InnovationProposalDetail → Actions menu',
       component: 'ProposalToRDConverter',
       eligibleCount: innovationProposals.filter(p => p.status === 'approved' && !p.is_deleted).length,
-      totalConverted: rdProjects.filter(r => r.origin_proposal_id).length,
-      
+      totalConverted: 0, // No direct origin_proposal_id in rd_projects schema
+
       autoPopulatedFields: [
         'title_en/ar (from proposal.title)',
         'abstract_en/ar (from proposal.description)',
@@ -761,7 +721,7 @@ function ConversionsCoverageReport() {
         'team_members (from proposal.team_composition)',
         'principal_investigator (from submitter)'
       ],
-      
+
       aiFeatures: [
         'AI research proposal formatter',
         'AI methodology generator (bilingual)',
@@ -769,7 +729,7 @@ function ConversionsCoverageReport() {
         'AI expected outputs suggester',
         'AI research themes classifier'
       ],
-      
+
       workflow: [
         'User in InnovationProposalDetail',
         'Clicks "Convert to R&D Project"',
@@ -780,10 +740,10 @@ function ConversionsCoverageReport() {
         'Proposal.converted_entity_type = "rd_project"',
         'SystemActivity logged'
       ],
-      
+
       dataValidation: 'Research title and methodology required',
       errorHandling: 'Modal stays open on error, shows validation',
-      
+
       gaps: []
     },
 
@@ -798,12 +758,12 @@ function ConversionsCoverageReport() {
       color: 'blue',
       status: 'complete',
       completeness: 100,
-      
+
       location: 'RDProjectDetail → SmartActionButton',
       component: 'SmartActionButton + RDToPilotTransition',
       eligibleCount: rdProjects.filter(r => r.trl_current >= 6 && ['active', 'completed'].includes(r.status) && !r.is_deleted).length,
-      totalConverted: pilots.filter(p => p.linked_rd_project_id).length,
-      
+      totalConverted: pilots.filter(p => p.source_rd_project_id).length,
+
       autoPopulatedFields: [
         'rd_project_id (auto-linked)',
         'title_en/ar (from RD title)',
@@ -816,14 +776,14 @@ function ConversionsCoverageReport() {
         'hypothesis (AI-generated from RD outputs)',
         'team (from RD.team_members)'
       ],
-      
+
       aiFeatures: [
         'AI translates research outputs into pilot design',
         'AI suggests pilot scope from TRL level',
         'AI recommends test municipality',
         'AI generates hypothesis from research findings'
       ],
-      
+
       workflow: [
         'User in RDProjectDetail',
         'Clicks "Transition to Pilot"',
@@ -832,10 +792,10 @@ function ConversionsCoverageReport() {
         'Submit → Pilot created',
         'RD project updated with pilot_opportunities'
       ],
-      
+
       dataValidation: 'TRL must be ≥ 6 for pilot transition',
       errorHandling: 'Blocks if TRL too low, suggests further R&D',
-      
+
       gaps: []
     },
     {
@@ -846,12 +806,12 @@ function ConversionsCoverageReport() {
       color: 'green',
       status: 'complete',
       completeness: 100,
-      
+
       location: 'RDProjectDetail → Commercialization tab',
       component: 'RDToSolutionConverter',
       eligibleCount: rdProjects.filter(r => r.trl_current >= 7 && r.status === 'completed' && !r.is_deleted).length,
-      totalConverted: solutions.filter(s => s.origin_rd_project_id).length,
-      
+      totalConverted: solutions.filter(s => s.source_rd_project_id).length,
+
       autoPopulatedFields: [
         'name_en/ar (from RD.title)',
         'tagline_en/ar (AI-generated)',
@@ -865,7 +825,7 @@ function ConversionsCoverageReport() {
         'trl (from RD.trl_current)',
         'sectors (from RD.research_area)'
       ],
-      
+
       aiFeatures: [
         'AI commercialization profiler',
         'AI value proposition generator (bilingual)',
@@ -875,7 +835,7 @@ function ConversionsCoverageReport() {
         'AI integration requirements mapper',
         'TRL-to-maturity level auto-mapper'
       ],
-      
+
       workflow: [
         'User in RDProjectDetail → Commercialization tab',
         'Clicks "Commercialize as Solution"',
@@ -887,10 +847,10 @@ function ConversionsCoverageReport() {
         'RD.commercialization_notes updated',
         'SystemActivity logged'
       ],
-      
+
       dataValidation: 'TRL ≥ 7 required (soft requirement, shows warning)',
       errorHandling: 'TRL check with warning, validation on required fields',
-      
+
       gaps: []
     },
     {
@@ -901,12 +861,12 @@ function ConversionsCoverageReport() {
       color: 'purple',
       status: 'complete',
       completeness: 100,
-      
+
       location: 'RDProjectDetail → Policy Impact tab',
       component: 'RDToPolicyConverter',
       eligibleCount: rdProjects.filter(r => r.status === 'completed' && !r.is_deleted).length,
-      totalConverted: policies.filter(p => p.rd_project_id).length,
-      
+      totalConverted: policies.filter(p => p.source_entity_id && p.source_entity_type === 'rd_project').length,
+
       autoPopulatedFields: [
         'rd_project_id (auto-linked)',
         'title_en/ar (AI-generated from RD)',
@@ -918,7 +878,7 @@ function ConversionsCoverageReport() {
         'workflow_stage: "draft"',
         'source: "research"'
       ],
-      
+
       aiFeatures: [
         'AI research-to-policy translator',
         'AI evidence synthesizer from publications',
@@ -927,7 +887,7 @@ function ConversionsCoverageReport() {
         'AI affected stakeholders identifier',
         'Publication-based rationale builder'
       ],
-      
+
       workflow: [
         'User in RDProjectDetail → Policy Impact tab',
         'Clicks "Generate Policy Recommendation"',
@@ -939,10 +899,10 @@ function ConversionsCoverageReport() {
         'RD.policy_impact fields updated',
         'SystemActivity logged'
       ],
-      
+
       dataValidation: 'Bilingual recommendation text required',
       errorHandling: 'Validation on bilingual fields, error shown in modal',
-      
+
       gaps: []
     },
 
@@ -957,12 +917,12 @@ function ConversionsCoverageReport() {
       color: 'teal',
       status: 'complete',
       completeness: 100,
-      
+
       location: 'SolutionDetail → Pilot Opportunities tab',
       component: 'SolutionToPilotWorkflow',
       eligibleCount: solutions.filter(s => ['pilot_ready', 'market_ready', 'proven'].includes(s.maturity_level) && s.is_verified && !s.is_deleted).length,
       totalConverted: pilots.filter(p => p.solution_id).length,
-      
+
       autoPopulatedFields: [
         'solution_id (auto-linked)',
         'title_en/ar (AI-generated "Pilot Test: {solution.name}")',
@@ -978,7 +938,7 @@ function ConversionsCoverageReport() {
         'stage: "design"',
         'status: "proposal_pending"'
       ],
-      
+
       aiFeatures: [
         'AI challenge matcher (semantic search for best fit challenges)',
         'AI municipality recommender (based on challenge location + needs)',
@@ -986,7 +946,7 @@ function ConversionsCoverageReport() {
         'AI budget estimator',
         'Challenge-solution alignment scorer'
       ],
-      
+
       workflow: [
         'User in SolutionDetail → Pilot Opportunities tab',
         'Clicks "Propose Pilot Test"',
@@ -998,10 +958,10 @@ function ConversionsCoverageReport() {
         'SystemActivity logged (solution proposed pilot)',
         'Municipality notified of pilot proposal'
       ],
-      
+
       dataValidation: 'Challenge and municipality selection required, hypothesis generated',
       errorHandling: 'Prevents submission without selections, shows error messages',
-      
+
       gaps: []
     },
 
@@ -1017,12 +977,12 @@ function ConversionsCoverageReport() {
       status: 'complete',
       completeness: 100,
       note: 'Creates knowledge transfer PROGRAM from scaling lessons',
-      
+
       location: 'ScalingPlanDetail → Institutionalization tab',
       component: 'ScalingToProgramConverter',
       eligibleCount: scalingPlans.filter(s => s.status === 'completed' && s.deployed_count >= 3 && !s.is_deleted).length,
-      totalConverted: programs.filter(p => p.origin_scaling_plan_id).length,
-      
+      totalConverted: 0, // No direct scaling_plan_id in programs schema
+
       autoPopulatedFields: [
         'name_en/ar (AI-generated "Knowledge Transfer Program")',
         'program_type: "training"',
@@ -1034,7 +994,7 @@ function ConversionsCoverageReport() {
         'status: "planning"',
         'tags: ["knowledge_transfer", "scaling", "best_practices"]'
       ],
-      
+
       aiFeatures: [
         'AI curriculum generator from scaling lessons',
         'AI best practices extractor (across deployed cities)',
@@ -1043,7 +1003,7 @@ function ConversionsCoverageReport() {
         'AI activities suggester per module',
         'Knowledge transfer gap analyzer'
       ],
-      
+
       workflow: [
         'User in ScalingPlanDetail → Institutionalization tab',
         'Clicks "Create Knowledge Transfer Program"',
@@ -1055,10 +1015,10 @@ function ConversionsCoverageReport() {
         'ScalingPlan.institutionalization_program_id updated',
         'SystemActivity logged'
       ],
-      
+
       dataValidation: 'Program name and curriculum required',
       errorHandling: 'Validation errors shown, modal persists',
-      
+
       gaps: []
     },
 
@@ -1074,12 +1034,12 @@ function ConversionsCoverageReport() {
       status: 'complete',
       completeness: 100,
       note: 'Creates implementation PROGRAM from policy',
-      
+
       location: 'PolicyDetail → Implementation tab',
       component: 'PolicyToProgramConverter',
-      eligibleCount: policies.filter(p => p.workflow_stage === 'published' && !p.is_deleted).length,
-      totalConverted: programs.filter(p => p.origin_policy_id).length,
-      
+      eligibleCount: policies.filter(p => p['workflow_stage'] === 'published' && !p['is_deleted']).length,
+      totalConverted: 0, // No direct policy_id in programs schema
+
       autoPopulatedFields: [
         'name_en/ar (AI-generated "Implementation of [Policy]")',
         'tagline_en/ar (AI-generated)',
@@ -1092,7 +1052,7 @@ function ConversionsCoverageReport() {
         'status: "planning"',
         'tags: ["policy_implementation", "stakeholder_training"]'
       ],
-      
+
       aiFeatures: [
         'AI implementation program designer',
         'AI stakeholder training needs analyzer',
@@ -1101,7 +1061,7 @@ function ConversionsCoverageReport() {
         'AI change management activities suggester',
         'Stakeholder group mapper'
       ],
-      
+
       workflow: [
         'User in PolicyDetail → Implementation tab',
         'Clicks "Create Implementation Program"',
@@ -1113,10 +1073,10 @@ function ConversionsCoverageReport() {
         'Policy.implementation_program_id updated',
         'SystemActivity logged'
       ],
-      
+
       dataValidation: 'Program name and objectives required',
       errorHandling: 'Validation errors inline, modal stays open',
-      
+
       gaps: []
     },
 
@@ -1131,12 +1091,12 @@ function ConversionsCoverageReport() {
       color: 'purple',
       status: 'complete',
       completeness: 100,
-      
+
       location: 'SolutionVerificationWizard → Auto-enrollment',
       component: 'autoMatchmakerEnrollment function',
       eligibleCount: solutions.filter(s => s.is_verified && !s.is_deleted).length,
       totalConverted: 0, // Auto-creates matchmaker applications
-      
+
       autoPopulatedFields: [
         'organization_id (from solution.provider_id)',
         'applicant_email (from solution.contact_email)',
@@ -1149,14 +1109,14 @@ function ConversionsCoverageReport() {
         'stage: "screening"',
         'auto_enrolled: true'
       ],
-      
+
       aiFeatures: [
         'AI classification suggestion based on solution maturity',
         'Auto capability extraction from solution features',
         'Smart sector mapping',
         'Provider profile pre-fill'
       ],
-      
+
       workflow: [
         'Solution verification completes (workflow_stage: verified)',
         'SolutionVerificationWizard triggers auto-enrollment',
@@ -1167,10 +1127,10 @@ function ConversionsCoverageReport() {
         'SystemActivity logged',
         'Provider notified of matchmaker enrollment'
       ],
-      
+
       dataValidation: 'Solution must be verified, provider_id required',
       errorHandling: 'Silent failure logged if already enrolled',
-      
+
       gaps: []
     },
 
@@ -1185,12 +1145,12 @@ function ConversionsCoverageReport() {
       color: 'blue',
       status: 'complete',
       completeness: 100,
-      
+
       location: 'ProgramDetail → Outcomes tab',
       component: 'ProgramToSolutionWorkflow',
       eligibleCount: programs.filter(p => p.status === 'completed' && !p.is_deleted).length,
-      totalConverted: solutions.filter(s => s.origin_program_id).length,
-      
+      totalConverted: solutions.filter(s => s.source_program_id).length,
+
       autoPopulatedFields: [
         'name_en/ar (AI-generated from graduate project)',
         'description_en/ar (AI-enhanced)',
@@ -1200,14 +1160,14 @@ function ConversionsCoverageReport() {
         'maturity_level: "pilot_ready"',
         'tags: ["program_graduate:{program.id}"]'
       ],
-      
+
       aiFeatures: [
         'AI solution profile generator from program focus',
         'AI value proposition writer',
         'AI feature suggester',
         'Bilingual marketplace content'
       ],
-      
+
       workflow: [
         'Completed program → Outcomes tab',
         'Click "Launch Solution"',
@@ -1217,10 +1177,10 @@ function ConversionsCoverageReport() {
         'Relation created (derived_from)',
         'SystemActivity logged'
       ],
-      
+
       dataValidation: 'Solution name required, municipality selection',
       errorHandling: 'Validation errors shown, modal persists',
-      
+
       gaps: []
     },
     {
@@ -1231,12 +1191,12 @@ function ConversionsCoverageReport() {
       color: 'purple',
       status: 'complete',
       completeness: 100,
-      
+
       location: 'ProgramDetail → Outcomes tab',
       component: 'ProgramToPilotWorkflow',
       eligibleCount: programs.filter(p => p.status === 'completed' && !p.is_deleted).length,
-      totalConverted: pilots.filter(p => p.origin_program_id).length,
-      
+      totalConverted: pilots.filter(p => p.source_program_id).length,
+
       autoPopulatedFields: [
         'title_en/ar (AI-generated)',
         'description_en/ar (AI from project)',
@@ -1247,14 +1207,14 @@ function ConversionsCoverageReport() {
         'trl_start: 5',
         'trl_target: 7'
       ],
-      
+
       aiFeatures: [
         'AI pilot proposal generator',
         'AI hypothesis writer',
         'AI methodology suggester',
         'Bilingual content generation'
       ],
-      
+
       workflow: [
         'Completed program → Outcomes tab',
         'Click "Launch Pilot"',
@@ -1264,10 +1224,10 @@ function ConversionsCoverageReport() {
         'Relation created',
         'SystemActivity logged'
       ],
-      
+
       dataValidation: 'Municipality required, title required',
       errorHandling: 'Modal validation, draft persists',
-      
+
       gaps: []
     }
   ];
@@ -1290,7 +1250,7 @@ function ConversionsCoverageReport() {
           {t({ en: '🔄 Conversions Coverage Report', ar: '🔄 تقرير تغطية التحويلات' })}
         </h1>
         <p className="text-slate-600 mt-2">
-          {t({ 
+          {t({
             en: 'Comprehensive audit of all entity conversion workflows - completed and missing',
             ar: 'تدقيق شامل لجميع سير عمل تحويل الكيانات - المكتملة والمفقودة'
           })}
@@ -1348,8 +1308,8 @@ function ConversionsCoverageReport() {
         {conversions.map((conversion, idx) => {
           const Icon = conversion.icon;
           const expanded = expandedSections[idx];
-          const statusColor = conversion.status === 'complete' ? 'green' : 
-                            conversion.status === 'partial' ? 'yellow' : 'red';
+          const statusColor = conversion.status === 'complete' ? 'green' :
+            conversion.status === 'partial' ? 'yellow' : 'red';
 
           return (
             <Card key={conversion.id} className={`border-2 border-${statusColor}-200`}>

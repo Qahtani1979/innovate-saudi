@@ -1,11 +1,11 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import useProgramsWithVisibility from '@/hooks/useProgramsWithVisibility';
+import useEventsWithVisibility from '@/hooks/useEventsWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  TrendingUp, Target, BookOpen, Lightbulb, CheckCircle2, 
-  AlertTriangle, ArrowRight, BarChart3, Users 
+import {
+  TrendingUp, Target, BookOpen, Lightbulb, CheckCircle2,
+  AlertTriangle, ArrowRight, BarChart3, Users
 } from 'lucide-react';
 import { useLanguage } from '../components/LanguageContext';
 import ProtectedPage from '../components/permissions/ProtectedPage';
@@ -20,34 +20,13 @@ function StrategyFeedbackDashboardPage() {
   const { strategicPlans, strategicKPIs, getStrategicCoverage, isLoading: kpiLoading } = useStrategicKPI();
   const { activePlanId, activePlan } = useActivePlan();
 
-  const { data: programs = [], isLoading: programsLoading } = useQuery({
-    queryKey: ['programs-feedback'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('programs')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: programs = [], isLoading: programsLoading } = useProgramsWithVisibility();
+  const { data: events = [] } = useEventsWithVisibility();
 
-  const { data: events = [] } = useQuery({
-    queryKey: ['events-feedback'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('events')
-        .select('id, title_en, title_ar, status')
-        .eq('is_deleted', false);
-      if (error) return [];
-      return data || [];
-    }
-  });
-
-  const isLoading = kpiLoading || programsLoading;
+  const isLoading = (typeof kpiLoading === 'boolean' ? kpiLoading : false) || (typeof programsLoading === 'boolean' ? programsLoading : false);
 
   // Calculate metrics
-  const programsWithStrategicLink = programs.filter(p => 
+  const programsWithStrategicLink = programs.filter(p =>
     p.strategic_plan_ids?.length > 0 || p.strategic_objective_ids?.length > 0
   );
   const strategyDerivedPrograms = programs.filter(p => p.is_strategy_derived);
@@ -56,15 +35,13 @@ function StrategyFeedbackDashboardPage() {
 
   const coverage = getStrategicCoverage(programs);
 
-  // Aggregate all lessons
-  const allLessons = programs.flatMap(p => 
+  const allLessons = programs.flatMap(p =>
     (p.lessons_learned || []).map(l => ({ ...l, program: p }))
-  ).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  ).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-  // Aggregate all feedback
-  const allFeedback = strategicPlans.flatMap(plan => 
-    (plan.program_feedback || []).map(f => ({ ...f, plan }))
-  ).sort((a, b) => new Date(b.feedback_date) - new Date(a.feedback_date));
+  const allFeedback = strategicPlans.flatMap(plan =>
+    (plan?.['program_feedback'] || []).map(f => ({ ...f, plan }))
+  ).sort((a, b) => new Date(b.feedback_date).getTime() - new Date(a.feedback_date).getTime());
 
   if (isLoading) {
     return (
@@ -148,7 +125,7 @@ function StrategyFeedbackDashboardPage() {
               <p className="font-semibold">{t({ en: 'Strategy', ar: 'الاستراتيجية' })}</p>
               <p className="text-xs text-muted-foreground">{strategicPlans.length} {t({ en: 'plans', ar: 'خطط' })}</p>
             </div>
-            
+
             <div className="flex flex-col items-center gap-2">
               <div className="flex items-center gap-2 text-green-600">
                 <ArrowRight className="h-5 w-5" />
@@ -159,20 +136,20 @@ function StrategyFeedbackDashboardPage() {
                 <ArrowRight className="h-5 w-5 rotate-180" />
               </div>
             </div>
-            
+
             <div className="text-center p-4 bg-background rounded-lg shadow-sm min-w-[140px]">
               <BookOpen className="h-8 w-8 text-purple-600 mx-auto mb-2" />
               <p className="font-semibold">{t({ en: 'Programs', ar: 'البرامج' })}</p>
               <p className="text-xs text-muted-foreground">{programs.length} {t({ en: 'programs', ar: 'برنامج' })}</p>
             </div>
-            
+
             <div className="flex flex-col items-center gap-2">
               <div className="flex items-center gap-2 text-green-600">
                 <ArrowRight className="h-5 w-5" />
                 <span className="text-xs font-medium">{t({ en: 'Updates', ar: 'يحدث' })}</span>
               </div>
             </div>
-            
+
             <div className="text-center p-4 bg-background rounded-lg shadow-sm min-w-[140px]">
               <BarChart3 className="h-8 w-8 text-teal-600 mx-auto mb-2" />
               <p className="font-semibold">{t({ en: 'KPIs', ar: 'المؤشرات' })}</p>
@@ -192,11 +169,17 @@ function StrategyFeedbackDashboardPage() {
         </TabsList>
 
         <TabsContent value="generate" className="mt-6">
-          <StrategyToProgramGenerator strategicPlanId={activePlanId} />
+          <StrategyToProgramGenerator
+            strategicPlanId={activePlanId}
+            onProgramCreated={() => { }}
+          />
         </TabsContent>
 
         <TabsContent value="gaps" className="mt-6">
-          <StrategicGapProgramRecommender strategicPlanId={activePlanId} />
+          <StrategicGapProgramRecommender
+            strategicPlanId={activePlanId}
+            onProgramCreated={() => { }}
+          />
         </TabsContent>
 
         <TabsContent value="lessons" className="mt-6">

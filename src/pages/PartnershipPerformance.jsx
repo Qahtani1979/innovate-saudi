@@ -1,23 +1,21 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../components/LanguageContext';
 import { Handshake, TrendingUp, Target, CheckCircle2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
+import { useOrganizationPartnerships } from '@/hooks/useOrganizationPartnerships';
+
 function PartnershipPerformance() {
   const { t } = useLanguage();
+  const { partnerships, isLoading } = useOrganizationPartnerships();
 
-  const { data: partnerships = [], isLoading } = useQuery({
-    queryKey: ['org-partnerships'],
-    queryFn: () => base44.entities.OrganizationPartnership.list()
-  });
+  const activePartnerships = partnerships.filter(p => p?.['status'] === 'active');
 
-  const activePartnerships = partnerships.filter(p => p.status === 'active');
-  
   const byType = partnerships.reduce((acc, p) => {
-    const type = p.partnership_type || 'other';
+    const type = p?.['partnership_type'] || 'other';
     acc[type] = (acc[type] || 0) + 1;
     return acc;
   }, {});
@@ -30,8 +28,8 @@ function PartnershipPerformance() {
   const stats = {
     total: partnerships.length,
     active: activePartnerships.length,
-    with_mou: partnerships.filter(p => p.mou_signed).length,
-    high_impact: partnerships.filter(p => p.impact_level === 'high').length
+    with_mou: partnerships.filter(p => p?.['mou_signed']).length,
+    high_impact: partnerships.filter(p => p?.['impact_level'] === 'high').length
   };
 
   if (isLoading) {

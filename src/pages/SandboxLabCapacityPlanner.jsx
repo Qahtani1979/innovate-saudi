@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { useSandboxes } from '@/hooks/useSandboxes';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,25 +18,36 @@ function SandboxLabCapacityPlanner() {
   const [aiRecommendations, setAiRecommendations] = useState(null);
   const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: sandboxes = [] } = useQuery({
-    queryKey: ['sandboxes'],
-    queryFn: () => base44.entities.Sandbox.list()
+  const [selectedSandbox, setSelectedSandbox] = useState(null);
+  const [isAddResourceOpen, setIsAddResourceOpen] = useState(false);
+  const [newResource, setNewResource] = useState({ name: '', type: 'equipment', quantity: 1, available: true, metadata: {} });
+  const [bookingBlock, setBookingBlock] = useState(null);
+
+  const {
+    useAllSandboxes,
+    useResources,
+    useBookings,
+    useCreateResource,
+    useCreateBooking
+  } = useSandboxes();
+
+  const { data: sandboxes = [] } = useAllSandboxes(user);
+
+  const sandboxIds = sandboxes.map(s => s.id);
+  const { data: resources = [] } = useResources(sandboxIds);
+
+  const resourceIds = resources.map(r => r.id);
+  const { data: bookings = [] } = useBookings(resourceIds);
+
+  const createResourceMutation = useCreateResource();
+  const createBookingMutation = useCreateBooking();
+
+  const { data: pilots = [] } = usePilotsWithVisibility({
+    status: 'active',
+    includeDeleted: false
   });
 
-  const { data: livingLabs = [] } = useQuery({
-    queryKey: ['living-labs'],
-    queryFn: () => base44.entities.LivingLab.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: labBookings = [] } = useQuery({
-    queryKey: ['lab-bookings'],
-    queryFn: () => base44.entities.LivingLabBooking.list()
-  });
+  const labBookings = pilots.filter(p => p.living_lab_id);
 
   const analyzeCapacity = async () => {
     const result = await invokeAI({
@@ -43,8 +55,8 @@ function SandboxLabCapacityPlanner() {
 
 Sandboxes: ${sandboxes.length}
 - Active: ${sandboxes.filter(s => s.status === 'active').length}
-- Capacity: ${sandboxes.reduce((sum, s) => sum + (s.max_projects || 5), 0)} total slots
-- Occupied: ${sandboxes.reduce((sum, s) => sum + (s.active_projects || 0), 0)}
+- Capacity: ${sandboxes.reduce((sum, s) => sum + (s.capacity || 5), 0)} total slots
+- Occupied: ${sandboxes.reduce((sum, s) => sum + (s.current_pilots || 0), 0)}
 
 Living Labs: ${livingLabs.length}
 - Total Capacity: ${livingLabs.reduce((sum, l) => sum + (l.capacity_projects || 3), 0)}
@@ -55,53 +67,53 @@ Pilots needing facilities: ${pilots.filter(p => !p.living_lab_id && !p.sandbox_i
 Generate bilingual capacity analysis:
 1. Current utilization by facility
 2. Capacity bottlenecks and constraints
-3. Expansion recommendations (where, when, capacity)
+3. Expansion recommendations(where, when, capacity)
 4. Booking optimization suggestions
 5. AI allocation recommendations for upcoming pilots`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            facility_utilization: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  facility_name: { type: 'string' },
-                  type: { type: 'string' },
-                  capacity: { type: 'number' },
-                  occupied: { type: 'number' },
-                  utilization_percentage: { type: 'number' }
-                }
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          facility_utilization: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                facility_name: { type: 'string' },
+                type: { type: 'string' },
+                capacity: { type: 'number' },
+                occupied: { type: 'number' },
+                utilization_percentage: { type: 'number' }
               }
-            },
-            bottlenecks: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  issue_en: { type: 'string' },
-                  issue_ar: { type: 'string' },
-                  severity: { type: 'string' },
-                  recommendation_en: { type: 'string' },
-                  recommendation_ar: { type: 'string' }
-                }
+            }
+          },
+          bottlenecks: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                issue_en: { type: 'string' },
+                issue_ar: { type: 'string' },
+                severity: { type: 'string' },
+                recommendation_en: { type: 'string' },
+                recommendation_ar: { type: 'string' }
               }
-            },
-            expansion_plan: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  location_en: { type: 'string' },
-                  location_ar: { type: 'string' },
-                  type: { type: 'string' },
-                  capacity: { type: 'number' },
-                  timeline: { type: 'string' },
-                  priority: { type: 'string' }
-                }
+            }
+          },
+          expansion_plan: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                location_en: { type: 'string' },
+                location_ar: { type: 'string' },
+                type: { type: 'string' },
+                capacity: { type: 'number' },
+                timeline: { type: 'string' },
+                priority: { type: 'string' }
               }
             }
           }
+        }
       }
     });
 
@@ -111,20 +123,54 @@ Generate bilingual capacity analysis:
     }
   };
 
+  const handleAddResource = () => {
+    if (!selectedSandbox) return;
+    createResourceMutation.mutate({
+      sandbox_id: selectedSandbox,
+      resource_name: newResource.name,
+      resource_type: newResource.type,
+      capacity: parseInt(newResource.quantity),
+      is_available: newResource.available,
+      metadata: newResource.metadata || {}
+    }, {
+      onSuccess: () => {
+        setIsAddResourceOpen(false);
+        setNewResource({ name: '', type: 'equipment', quantity: 1, available: true, metadata: {} });
+      }
+    });
+  };
+
+  const handleBookingConfirm = (details) => {
+    if (!bookingBlock) return;
+    createBookingMutation.mutate({
+      resource_id: bookingBlock.resourceId,
+      booked_by: user.email,
+      project_id: details.projectId,
+      start_time: bookingBlock.start.toISOString(),
+      end_time: bookingBlock.end.toISOString(),
+      status: 'confirmed',
+      notes: details.notes
+    }, {
+      onSuccess: () => {
+        setBookingBlock(null);
+      }
+    });
+  };
+
   const capacityData = [
     ...sandboxes.map(s => ({
-      name: s.name_en || s.zone_name,
+      name: language === 'ar' ? s.name_ar : s.name_en,
       type: 'Sandbox',
-      capacity: s.max_projects || 5,
-      occupied: s.active_projects || 0,
-      utilization: ((s.active_projects || 0) / (s.max_projects || 5)) * 100
+      capacity: s.capacity || 5,
+      occupied: s.current_pilots || 0,
+      utilization: ((s.current_pilots || 0) / (s.capacity || 5)) * 100
     })),
     ...livingLabs.map(l => ({
-      name: l.name_en,
+      name: language === 'ar' ? l.name_ar : l.name_en,
       type: 'Living Lab',
       capacity: l.capacity_projects || 3,
-      occupied: labBookings.filter(b => b.living_lab_id === l.id && b.status === 'confirmed').length,
-      utilization: (labBookings.filter(b => b.living_lab_id === l.id && b.status === 'confirmed').length / (l.capacity_projects || 3)) * 100
+      occupied: labBookings.filter(b => b.living_lab_id === l.id).length,
+      utilization: (labBookings.filter(b => b.living_lab_id === l.id).length / (l.capacity_projects || 3)) * 100
     }))
   ];
 
@@ -202,9 +248,8 @@ Generate bilingual capacity analysis:
               <CardContent>
                 <div className="space-y-3">
                   {aiRecommendations.bottlenecks.map((bottleneck, idx) => (
-                    <div key={idx} className={`p-4 border-2 rounded-lg ${
-                      bottleneck.severity === 'high' ? 'bg-red-50 border-red-300' : 'bg-yellow-50 border-yellow-300'
-                    }`}>
+                    <div key={idx} className={`p - 4 border - 2 rounded - lg ${bottleneck.severity === 'high' ? 'bg-red-50 border-red-300' : 'bg-yellow-50 border-yellow-300'
+                      } `}>
                       <p className="font-semibold text-slate-900 mb-2" dir={language === 'ar' ? 'rtl' : 'ltr'}>
                         {language === 'ar' ? bottleneck.issue_ar : bottleneck.issue_en}
                       </p>

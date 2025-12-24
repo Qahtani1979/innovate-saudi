@@ -1,6 +1,6 @@
 import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,32 +24,45 @@ export default function ExecutiveApprovals() {
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots-pending-approval'],
     queryFn: async () => {
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => 
-        p.stage === 'approval_pending' || 
-        (p.budget > 1000000 && p.stage === 'design')
-      );
+      const { data, error } = await supabase
+        .from('pilots')
+        .select('*')
+        .or('stage.eq.approval_pending,and(budget.gt.1000000,stage.eq.design)')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
     }
   });
 
   const { data: rdCalls = [] } = useQuery({
     queryKey: ['rd-calls-pending'],
     queryFn: async () => {
-      const all = await base44.entities.RDCall.list();
-      return all.filter(c => c.status === 'draft' && c.budget_total > 5000000);
+      const { data, error } = await supabase
+        .from('rd_calls')
+        .select('*')
+        .eq('status', 'draft')
+        .gt('budget_total', 5000000)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
     }
   });
 
   const { data: sandboxApps = [] } = useQuery({
     queryKey: ['sandbox-apps-pending'],
     queryFn: async () => {
-      const all = await base44.entities.SandboxApplication.list();
-      return all.filter(a => a.status === 'pending_approval');
+      const { data, error } = await supabase
+        .from('sandbox_applications')
+        .select('*')
+        .eq('status', 'pending_approval')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
     }
   });
 
   const generateAIBrief = async (item, type) => {
-    const prompt = type === 'pilot' ? 
+    const prompt = type === 'pilot' ?
       `Generate executive decision brief for this pilot:
 Title: ${item.title_en}
 Budget: ${item.budget} SAR
@@ -92,17 +105,25 @@ Provide strategic analysis and recommendation.`;
   };
 
   const approveMutation = useMutation({
-    mutationFn: ({ id, type, approved, comments }) => {
+    mutationFn: async ({ id, type, approved, comments }) => {
       if (type === 'pilot') {
-        return base44.entities.Pilot.update(id, {
-          stage: approved ? 'approved' : 'design',
-          approval_notes: comments
-        });
+        const { error } = await supabase
+          .from('pilots')
+          .update({
+            stage: approved ? 'approved' : 'design',
+            approval_notes: comments
+          })
+          .eq('id', id);
+        if (error) throw error;
       } else if (type === 'rd_call') {
-        return base44.entities.RDCall.update(id, {
-          status: approved ? 'approved' : 'draft',
-          approval_notes: comments
-        });
+        const { error } = await supabase
+          .from('rd_calls')
+          .update({
+            status: approved ? 'approved' : 'draft',
+            approval_notes: comments
+          })
+          .eq('id', id);
+        if (error) throw error;
       }
     },
     onSuccess: () => {
@@ -165,9 +186,8 @@ Provide strategic analysis and recommendation.`;
                 <div
                   key={item.id}
                   onClick={() => setSelectedItem(item)}
-                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                    selectedItem?.id === item.id ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-blue-300'
-                  }`}
+                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${selectedItem?.id === item.id ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-blue-300'
+                    }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -255,8 +275,8 @@ Provide strategic analysis and recommendation.`;
                           <p className="font-medium text-purple-800">{t({ en: 'Risk Level:', ar: 'مستوى المخاطر:' })}</p>
                           <Badge className={
                             aiBrief.risk_level === 'high' ? 'bg-red-100 text-red-700' :
-                            aiBrief.risk_level === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-green-100 text-green-700'
+                              aiBrief.risk_level === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-green-100 text-green-700'
                           }>{aiBrief.risk_level}</Badge>
                         </div>
                         <div>

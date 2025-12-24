@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,7 +60,9 @@ const SandboxSkeleton = () => (
   </Card>
 );
 
-import { supabase } from "@/integrations/supabase/client";
+import { useSandboxesWithVisibility } from '@/hooks/useSandboxesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useSandboxMutations } from '@/hooks/useSandboxMutations';
 
 function SandboxesPage() {
   const { hasPermission } = usePermissions();
@@ -73,58 +75,17 @@ function SandboxesPage() {
   const [aiInsights, setAiInsights] = useState(null);
   const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const queryClient = useQueryClient();
 
-  const { data: sandboxes = [], isLoading, error: sandboxError } = useQuery({
-    queryKey: ['sandboxes'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('sandboxes')
-        .select('*')
-        .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data;
-    },
-    staleTime: 5 * 60 * 1000 // 5 minutes
-  });
+  const {
+    data: sandboxes = [],
+    isLoading,
+    error: sandboxError
+  } = useSandboxesWithVisibility();
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      const { error } = await supabase
-        .from('sandboxes')
-        .delete()
-        .eq('id', id);
+  const { deleteSandbox } = useSandboxMutations();
 
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['sandboxes']);
-      toast.success(t({ en: 'Sandbox deleted', ar: 'تم حذف المنطقة' }));
-    },
-    onError: (error) => {
-      console.error('Delete error:', error);
-      toast.error(t({ en: 'Failed to delete sandbox', ar: 'فشل حذف المنطقة' }));
-    }
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: async () => {
-      // Assuming 'pilots' table exists, if not we might need to adjust or create it
-      // For now, using standard select
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*');
-
-      if (error) {
-        console.warn('Pilots table access failed, returning empty', error);
-        return [];
-      }
-      return data;
-    },
-    staleTime: 5 * 60 * 1000 // 5 minutes
-  });
+  const { data: pilots = [] } = usePilotsWithVisibility();
 
   const filteredSandboxes = sandboxes.filter(sandbox => {
     const matchesSearch = !searchTerm ||

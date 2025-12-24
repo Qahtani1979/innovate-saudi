@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { usePublicPilot } from '@/hooks/usePublicPilot';
+import { usePilotEnrollments } from '@/hooks/useCitizenParticipation';
+import { useCitizenFeedbackMutation } from '@/hooks/useCitizenFeedback';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,7 +11,8 @@ import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
-import { MapPin, Calendar, Target, MessageSquare, BarChart3, Send, Bell, CheckCircle2
+import {
+  MapPin, Calendar, Target, MessageSquare, BarChart3, Send, Bell, CheckCircle2
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
@@ -25,39 +28,36 @@ function PublicPilotDetail() {
   const [feedback, setFeedback] = useState('');
 
   // Fetch pilot with visibility check (public only)
-  const { data: pilot, isLoading } = useQuery({
-    queryKey: ['pilot-public', pilotId],
-    queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*').eq('id', pilotId).eq('is_deleted', false).eq('is_published', true).eq('is_confidential', false).single();
-      return data;
-    },
-    enabled: !!pilotId
-  });
+  const { data: pilot, isLoading } = usePublicPilot(pilotId);
 
   // Use visibility-aware municipalities hook
   const { data: municipalities = [] } = useMunicipalitiesWithVisibility({ includeNational: true });
   const municipality = municipalities.find(m => m.id === pilot?.municipality_id);
 
-  const { data: enrollment } = useQuery({
-    queryKey: ['enrollment-check', pilotId, user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('citizen_pilot_enrollments').select('*').eq('pilot_id', pilotId).eq('user_email', user?.email).single();
-      return data;
-    },
-    enabled: !!(pilotId && user?.email)
-  });
+  const { data: enrollments } = usePilotEnrollments(user?.email);
+  const enrollment = enrollments?.find(e => e.pilot_id === pilotId && e.user_email === user?.email); // matching logic from original query which used .single() with filters
 
-  const feedbackMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase.from('citizen_feedback').insert(data);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['citizen-feedback']);
-      setFeedback('');
-      toast.success(t({ en: 'Feedback submitted', ar: 'تم إرسال الملاحظات' }));
-    }
-  });
+  // Actually usePilotEnrollments returns list. I need to find the specific one.
+  // Original query: .eq('pilot_id', pilotId).eq('user_email', user?.email).single()
+  // My hook: .eq('citizen_email', userEmail) (all enrollments for user)
+  // So I filter in memory.
+
+  const feedbackMutation = useCitizenFeedbackMutation();
+
+  const handleFeedbackSubmit = () => {
+    feedbackMutation.mutate({
+      entity_type: 'pilot',
+      entity_id: pilotId,
+      feedback_text: feedback,
+      citizen_email: user?.email,
+      submitted_date: new Date().toISOString()
+    }, {
+      onSuccess: () => {
+        setFeedback('');
+        toast.success(t({ en: 'Feedback submitted', ar: 'تم إرسال الملاحظات' }));
+      }
+    });
+  };
 
   if (isLoading || !pilot) {
     return (
@@ -202,7 +202,7 @@ function PublicPilotDetail() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <Textarea
-                  placeholder={t({ 
+                  placeholder={t({
                     en: 'How has this pilot affected you? Share your experience...',
                     ar: 'كيف أثرت هذه التجربة عليك؟ شارك تجربتك...'
                   })}
@@ -211,13 +211,7 @@ function PublicPilotDetail() {
                   rows={4}
                 />
                 <Button
-                  onClick={() => feedbackMutation.mutate({
-                    entity_type: 'pilot',
-                    entity_id: pilotId,
-                    feedback_text: feedback,
-                    citizen_email: user?.email,
-                    submitted_date: new Date().toISOString()
-                  })}
+                  onClick={handleFeedbackSubmit}
                   disabled={!feedback || feedbackMutation.isPending}
                   className="bg-gradient-to-r from-blue-600 to-teal-600"
                 >

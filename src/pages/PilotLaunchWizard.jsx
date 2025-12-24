@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,13 +13,14 @@ import PreFlightRiskSimulator from '../components/pilots/PreFlightRiskSimulator'
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { usePilot } from '@/hooks/usePilot';
+import { usePilotMutations } from '@/hooks/usePilotMutations';
 
 const PilotLaunchWizard = () => {
   const urlParams = new URLSearchParams(window.location.search);
   const pilotId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { invokeAI, status: aiStatus, isLoading: generatingChecklist, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const [checklist, setChecklist] = useState({
@@ -36,21 +35,9 @@ const PilotLaunchWizard = () => {
   });
   const [launchDate, setLaunchDate] = useState('');
 
-  const { data: pilot, isLoading, error } = useQuery({
-    queryKey: ['pilot-launch', pilotId],
-    queryFn: async () => {
-      if (!pilotId) return null;
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('id', pilotId)
-        .single();
+  const { data: pilot, isLoading } = usePilot(pilotId);
 
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!pilotId
-  });
+  const { updatePilot } = usePilotMutations();
 
   if (!pilotId) {
     return (
@@ -67,48 +54,40 @@ const PilotLaunchWizard = () => {
     );
   }
 
-  const launchMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('pilots')
-        .update({
-          stage: 'active',
-          timeline: {
-            ...(pilot.timeline || {}),
-            pilot_start: launchDate || new Date().toISOString().split('T')[0]
-          }
-        })
-        .eq('id', pilotId);
+  const handleLaunch = () => {
+    updatePilot.mutate({
+      id: pilotId,
+      data: {
+        stage: 'active',
+        timeline: {
+          ...((typeof pilot.timeline === 'object' && pilot.timeline) || {}),
+          pilot_start: launchDate || new Date().toISOString().split('T')[0]
+        }
+      }
+    }, {
+      onSuccess: () => {
+        toast.success(t({ en: 'Pilot launched successfully!', ar: 'تم إطلاق التجربة بنجاح!' }));
+        navigate(createPageUrl(`PilotDetail?id=${pilotId}`));
+      }
+    });
+  };
 
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['pilot']);
-      toast.success(t({ en: 'Pilot launched successfully!', ar: 'تم إطلاق التجربة بنجاح!' }));
-      navigate(createPageUrl(`PilotDetail?id=${pilotId}`));
-    }
-  });
-
-  const moveToPreparation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('pilots')
-        .update({
-          stage: 'preparation',
-          timeline: {
-            ...(pilot.timeline || {}),
-            prep_start: new Date().toISOString().split('T')[0]
-          }
-        })
-        .eq('id', pilotId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['pilot']);
-      toast.success(t({ en: 'Moved to preparation phase', ar: 'تم الانتقال لمرحلة الإعداد' }));
-    }
-  });
+  const handleMoveToPreparation = () => {
+    updatePilot.mutate({
+      id: pilotId,
+      data: {
+        stage: 'preparation',
+        timeline: {
+          ...((typeof pilot.timeline === 'object' && pilot.timeline) || {}),
+          prep_start: new Date().toISOString().split('T')[0]
+        }
+      }
+    }, {
+      onSuccess: () => {
+        toast.success(t({ en: 'Moved to preparation phase', ar: 'تم الانتقال لمرحلة الإعداد' }));
+      }
+    });
+  };
 
   const generateAIChecklist = async () => {
     try {
@@ -119,6 +98,7 @@ const PilotLaunchWizard = () => {
 
       const response = await invokeAI({
         prompt: PILOT_LAUNCH_CHECKLIST_PROMPT_TEMPLATE(pilot),
+        system_prompt: 'You are an expert project manager for municipal pilots.',
         response_json_schema: PILOT_LAUNCH_CHECKLIST_RESPONSE_SCHEMA
       });
 
@@ -170,6 +150,10 @@ const PilotLaunchWizard = () => {
         icon={Rocket}
         title={{ en: 'Pilot Launch Wizard', ar: 'معالج إطلاق التجربة' }}
         description={pilot.title_en}
+        subtitle={null}
+        action={null}
+        actions={null}
+        children={null}
       />
 
       {/* Readiness Score */}
@@ -204,7 +188,7 @@ const PilotLaunchWizard = () => {
                 <p className="font-medium text-slate-900">{t({ en: 'Start Preparation Phase', ar: 'بدء مرحلة الإعداد' })}</p>
                 <p className="text-sm text-slate-600">{t({ en: 'Move to preparation to begin setup activities', ar: 'الانتقال للإعداد لبدء أنشطة التحضير' })}</p>
               </div>
-              <Button onClick={() => moveToPreparation.mutate()} disabled={moveToPreparation.isPending}>
+              <Button onClick={() => handleMoveToPreparation()} disabled={updatePilot.isPending}>
                 {t({ en: 'Begin Preparation', ar: 'بدء الإعداد' })}
               </Button>
             </div>
@@ -286,7 +270,7 @@ const PilotLaunchWizard = () => {
               <label className="text-sm font-medium">{t({ en: 'Expected End Date', ar: 'تاريخ الانتهاء المتوقع' })}</label>
               <Input
                 type="date"
-                value={pilot.timeline?.pilot_end || ''}
+                value={(pilot.timeline && pilot.timeline['pilot_end']) || ''}
                 disabled
                 className="bg-slate-50"
               />
@@ -320,11 +304,11 @@ const PilotLaunchWizard = () => {
           {t({ en: 'Cancel', ar: 'إلغاء' })}
         </Button>
         <Button
-          onClick={() => launchMutation.mutate()}
-          disabled={!allChecked || !launchDate || launchMutation.isPending}
+          onClick={() => handleLaunch()}
+          disabled={!allChecked || !launchDate || updatePilot.isPending}
           className="bg-gradient-to-r from-green-600 to-emerald-600"
         >
-          {launchMutation.isPending ? (
+          {updatePilot.isPending ? (
             <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Launching...</>
           ) : (
             <><Rocket className="h-4 w-4 mr-2" /> {t({ en: 'Launch Pilot', ar: 'إطلاق التجربة' })}</>

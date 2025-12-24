@@ -1,51 +1,32 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import {
-  MapPin, Building2, AlertCircle, 
+  MapPin, Building2, AlertCircle,
   TestTube, Activity, Award
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useRegions } from '@/hooks/useRegions';
+import { useLocations } from '@/hooks/useLocations';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
+import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
 
 function RegionalDashboard() {
   const { language, isRTL, t } = useLanguage();
   const [selectedRegion, setSelectedRegion] = useState(null);
 
-  const { data: regions = [] } = useQuery({
-    queryKey: ['regions'],
-    queryFn: () => base44.entities.Region.list()
-  });
-
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities'],
-    queryFn: () => base44.entities.Municipality.list()
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-regional'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-regional'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions-regional'],
-    queryFn: () => base44.entities.Solution.list()
-  });
-
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs-regional'],
-    queryFn: () => base44.entities.Program.list()
-  });
+  const { data: regions = [] } = useRegions();
+  const { data: municipalities = [] } = useLocations();
+  const { data: challenges = [] } = useChallengesWithVisibility();
+  const { data: pilots = [] } = usePilotsWithVisibility();
+  const { data: solutions = [] } = useSolutionsWithVisibility();
+  const { data: programs = [] } = useProgramsWithVisibility();
 
   // Calculate regional metrics
   const regionalMetrics = regions.map(region => {
@@ -54,7 +35,7 @@ function RegionalDashboard() {
 
     const regionChallenges = challenges.filter(c => municipalityIds.includes(c.municipality_id));
     const regionPilots = pilots.filter(p => municipalityIds.includes(p.municipality_id));
-    const regionPrograms = programs.filter(p => 
+    const regionPrograms = programs.filter(p =>
       p.region_targets?.includes(region.id) || p.municipality_targets?.some(m => municipalityIds.includes(m))
     );
 
@@ -64,8 +45,8 @@ function RegionalDashboard() {
 
     const activePilots = regionPilots.filter(p => ['active', 'monitoring'].includes(p.stage)).length;
     const resolvedChallenges = regionChallenges.filter(c => c.status === 'resolved').length;
-    const resolutionRate = regionChallenges.length > 0 
-      ? (resolvedChallenges / regionChallenges.length) * 100 
+    const resolutionRate = regionChallenges.length > 0
+      ? (resolvedChallenges / regionChallenges.length) * 100
       : 0;
 
     return {
@@ -84,7 +65,7 @@ function RegionalDashboard() {
     };
   });
 
-  const currentRegion = selectedRegion 
+  const currentRegion = selectedRegion
     ? regionalMetrics.find(r => r.id === selectedRegion)
     : null;
 
@@ -186,8 +167,8 @@ function RegionalDashboard() {
                 </div>
                 <Badge className={
                   region.avgMII >= 75 ? 'bg-green-600' :
-                  region.avgMII >= 60 ? 'bg-blue-600' :
-                  region.avgMII >= 40 ? 'bg-amber-600' : 'bg-red-600'
+                    region.avgMII >= 60 ? 'bg-blue-600' :
+                      region.avgMII >= 40 ? 'bg-amber-600' : 'bg-red-600'
                 }>
                   MII: {Math.round(region.avgMII)}
                 </Badge>

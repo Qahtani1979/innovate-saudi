@@ -1,6 +1,4 @@
-import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useMutation } from '@tanstack/react-query';
+﻿import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +8,6 @@ import { useLanguage } from '../components/LanguageContext';
 import { BookOpen, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { toast } from 'sonner';
 import FileUploader from '../components/FileUploader';
 import {
   Select,
@@ -19,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useKnowledgeMutations } from '../hooks/useKnowledgeMutations';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
@@ -43,18 +41,7 @@ function KnowledgeDocumentCreate() {
     tags: []
   });
 
-  const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.KnowledgeDocument.create(data),
-    onSuccess: () => {
-      // Auto-generate embedding
-      base44.functions.invoke('generateEmbeddings', {
-        entity_name: 'KnowledgeDocument',
-        mode: 'missing'
-      }).catch(err => console.error('Embedding generation failed:', err));
-      toast.success(t({ en: 'Document created', ar: 'تم إنشاء المستند' }));
-      navigate(createPageUrl('Knowledge'));
-    }
-  });
+  const { createDocument } = useKnowledgeMutations();
 
   return (
     <PageLayout className="max-w-4xl mx-auto">
@@ -62,6 +49,10 @@ function KnowledgeDocumentCreate() {
         icon={BookOpen}
         title={{ en: 'Add Knowledge Document', ar: 'إضافة مستند معرفي' }}
         description={{ en: 'Add a new resource to the knowledge base', ar: 'أضف مورداً جديداً إلى قاعدة المعرفة' }}
+        subtitle={undefined}
+        action={undefined}
+        actions={undefined}
+        children={undefined}
       />
 
       <Card>
@@ -251,11 +242,11 @@ function KnowledgeDocumentCreate() {
               {t({ en: 'Cancel', ar: 'إلغاء' })}
             </Button>
             <Button
-              onClick={() => createMutation.mutate(formData)}
-              disabled={!formData.title_en || createMutation.isPending}
+              onClick={() => createDocument.mutate(formData)}
+              disabled={!formData.title_en || createDocument.isPending}
               className="bg-gradient-to-r from-blue-600 to-teal-600"
             >
-              {createMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {createDocument.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {t({ en: 'Create Document', ar: 'إنشاء المستند' })}
             </Button>
           </div>

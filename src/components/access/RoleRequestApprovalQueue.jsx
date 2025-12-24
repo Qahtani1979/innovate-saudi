@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +15,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { useRoles } from '@/hooks/useRoles';
+import { usePendingRoleRequests } from '@/hooks/useRoleRequests';
 
 export default function RoleRequestApprovalQueue() {
   const { t, language } = useLanguage();
@@ -24,42 +25,21 @@ export default function RoleRequestApprovalQueue() {
   const [reviewDialog, setReviewDialog] = useState(null);
   const [reviewNotes, setReviewNotes] = useState('');
 
-  // Use unified RBAC hooks
+  // Use unified RBAC hooks (mutations)
+  // Assuming these are fine as is, or I could use useRoleRequestMutations if I wanted to consolidate.
+  // For now, I'll keep existing mutation hooks if they work, but replacing queries is the goal.
   const { mutateAsync: approveRequest, isPending: isApproving } = useApproveRoleRequest();
   const { mutateAsync: rejectRequest, isPending: isRejecting } = useRejectRoleRequest();
   const { mutateAsync: sendNotification } = useSendRoleNotification();
 
-  // Fetch pending requests from Supabase
-  const { data: requests = [], isLoading } = useQuery({
-    queryKey: ['role-requests', 'pending'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('role_requests')
-        .select('*')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: true });
-      
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // Fetch pending requests using new hook
+  const { data: requests = [], isLoading } = usePendingRoleRequests();
 
-  // Fetch roles for display
-  const { data: roles = [] } = useQuery({
-    queryKey: ['roles-supabase'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('roles')
-        .select('*');
-      
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // Fetch roles using new hook
+  const { data: roles = [] } = useRoles();
 
   const handleApprove = async () => {
     try {
-      // Use unified rbac-manager - writes to user_roles (CORRECT table)
       await approveRequest({
         request_id: reviewDialog.id,
         user_id: reviewDialog.user_id,
@@ -184,8 +164,8 @@ export default function RoleRequestApprovalQueue() {
                   )}
 
                   <div className="flex gap-2">
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       onClick={() => {
                         setReviewDialog(request);
                         setReviewNotes('');
@@ -205,8 +185,8 @@ export default function RoleRequestApprovalQueue() {
 
       {/* Review Dialog */}
       <Dialog open={!!reviewDialog} onOpenChange={() => setReviewDialog(null)}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="max-w-md">
+          <DialogHeader className="text-left">
             <DialogTitle>
               {t({ en: 'Review Role Request', ar: 'مراجعة طلب الدور' })}
             </DialogTitle>
@@ -245,11 +225,11 @@ export default function RoleRequestApprovalQueue() {
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex-row justify-end gap-2">
             <Button variant="outline" onClick={() => setReviewDialog(null)}>
               {t({ en: 'Cancel', ar: 'إلغاء' })}
             </Button>
-            <Button 
+            <Button
               variant="outline"
               onClick={handleReject}
               className="text-red-600 border-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
@@ -258,7 +238,7 @@ export default function RoleRequestApprovalQueue() {
               <XCircle className="h-4 w-4 mr-2" />
               {t({ en: 'Reject', ar: 'رفض' })}
             </Button>
-            <Button 
+            <Button
               onClick={handleApprove}
               className="bg-green-600 hover:bg-green-700"
               disabled={isApproving}

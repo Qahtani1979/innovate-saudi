@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Button } from "@/components/ui/button";
@@ -16,46 +14,46 @@ import FileUploader from '../components/FileUploader';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useMunicipalityMutations } from '@/hooks/useMunicipalityMutations';
+import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
+import { useLocations } from '@/hooks/useLocations';
 
 function MunicipalityEdit() {
   const urlParams = new URLSearchParams(window.location.search);
   const municipalityId = urlParams.get('id');
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { language, isRTL, t } = useLanguage();
   const { invokeAI, status: aiStatus, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: municipality, isLoading } = useQuery({
-    queryKey: ['municipality', municipalityId],
-    queryFn: async () => {
-      const all = await base44.entities.Municipality.list();
-      return all.find(m => m.id === municipalityId);
-    },
-    enabled: !!municipalityId
+  const { updateMunicipality } = useMunicipalityMutations();
+  const { useRegions } = useLocations();
+
+  // Fetch municipalities and find current one to ensure visibility rules are respected
+  const { data: municipalities = [], isLoading: isLoadingMunicipalities } = useMunicipalitiesWithVisibility({
+    includeAll: true, // Allow admins to edit any, user to edit theirs
+    limit: 1000
   });
 
-  const { data: regions = [] } = useQuery({
-    queryKey: ['regions'],
-    queryFn: () => base44.entities.Region.list()
-  });
+  const municipality = municipalities.find(m => m.id === municipalityId);
+  const isLoading = isLoadingMunicipalities;
+
+  const { data: regions = [] } = useRegions();
 
   const [formData, setFormData] = useState(null);
 
   React.useEffect(() => {
-    if (municipality && !formData) {
+    if (municipality && (!formData || formData.id !== municipality.id)) {
       setFormData(municipality);
     }
   }, [municipality]);
 
-  const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.Municipality.update(municipalityId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['municipalities']);
-      queryClient.invalidateQueries(['municipality', municipalityId]);
-      toast.success(t({ en: 'Municipality updated', ar: 'تم تحديث البلدية' }));
-      navigate(createPageUrl(`MunicipalityProfile?id=${municipalityId}`));
-    }
-  });
+  const handleUpdate = () => {
+    updateMunicipality.mutate({ id: municipalityId, ...formData }, {
+      onSuccess: () => {
+        navigate(createPageUrl(`MunicipalityProfile?id=${municipalityId}`));
+      }
+    });
+  };
 
   const handleAIEnhance = async () => {
     const prompt = `Generate professional municipality description for Saudi municipality:
@@ -139,14 +137,14 @@ Create bilingual content highlighting the municipality's characteristics and inn
               <Label>{t({ en: 'Name (English)', ar: 'الاسم (إنجليزي)' })}</Label>
               <Input
                 value={formData.name_en}
-                onChange={(e) => setFormData({...formData, name_en: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
               />
             </div>
             <div className="space-y-2">
               <Label>{t({ en: 'Name (Arabic)', ar: 'الاسم (عربي)' })}</Label>
               <Input
                 value={formData.name_ar}
-                onChange={(e) => setFormData({...formData, name_ar: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
                 dir="rtl"
               />
             </div>
@@ -155,7 +153,7 @@ Create bilingual content highlighting the municipality's characteristics and inn
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>{t({ en: 'Region', ar: 'المنطقة' })}</Label>
-              <Select value={formData.region} onValueChange={(v) => setFormData({...formData, region: v})}>
+              <Select value={formData.region} onValueChange={(v) => setFormData({ ...formData, region: v })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -170,7 +168,7 @@ Create bilingual content highlighting the municipality's characteristics and inn
             </div>
             <div className="space-y-2">
               <Label>{t({ en: 'City Type', ar: 'نوع المدينة' })}</Label>
-              <Select value={formData.city_type} onValueChange={(v) => setFormData({...formData, city_type: v})}>
+              <Select value={formData.city_type} onValueChange={(v) => setFormData({ ...formData, city_type: v })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -190,7 +188,7 @@ Create bilingual content highlighting the municipality's characteristics and inn
               <Input
                 type="number"
                 value={formData.population}
-                onChange={(e) => setFormData({...formData, population: parseInt(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, population: parseInt(e.target.value) })}
               />
             </div>
             <div className="space-y-2">
@@ -198,7 +196,7 @@ Create bilingual content highlighting the municipality's characteristics and inn
               <Input
                 type="number"
                 value={formData.mii_score}
-                onChange={(e) => setFormData({...formData, mii_score: parseFloat(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, mii_score: parseFloat(e.target.value) })}
               />
             </div>
           </div>
@@ -208,7 +206,7 @@ Create bilingual content highlighting the municipality's characteristics and inn
               <Label>{t({ en: 'Contact Person', ar: 'جهة الاتصال' })}</Label>
               <Input
                 value={formData.contact_person || ''}
-                onChange={(e) => setFormData({...formData, contact_person: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
               />
             </div>
             <div className="space-y-2">
@@ -216,7 +214,7 @@ Create bilingual content highlighting the municipality's characteristics and inn
               <Input
                 type="email"
                 value={formData.contact_email || ''}
-                onChange={(e) => setFormData({...formData, contact_email: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
               />
             </div>
           </div>
@@ -225,7 +223,7 @@ Create bilingual content highlighting the municipality's characteristics and inn
             <Label>{t({ en: 'Description (English)', ar: 'الوصف (إنجليزي)' })}</Label>
             <Textarea
               value={formData.description_en || ''}
-              onChange={(e) => setFormData({...formData, description_en: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
               rows={3}
             />
           </div>
@@ -234,7 +232,7 @@ Create bilingual content highlighting the municipality's characteristics and inn
             <Label>{t({ en: 'Description (Arabic)', ar: 'الوصف (عربي)' })}</Label>
             <Textarea
               value={formData.description_ar || ''}
-              onChange={(e) => setFormData({...formData, description_ar: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
               rows={3}
               dir="rtl"
             />
@@ -242,7 +240,7 @@ Create bilingual content highlighting the municipality's characteristics and inn
 
           <div className="border-t pt-6 space-y-4">
             <h3 className="font-semibold text-slate-900">{t({ en: 'Municipality Branding', ar: 'هوية البلدية' })}</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>{t({ en: 'Municipality Logo', ar: 'شعار البلدية' })}</Label>
@@ -250,7 +248,7 @@ Create bilingual content highlighting the municipality's characteristics and inn
                   type="image"
                   label={t({ en: 'Upload Logo', ar: 'رفع الشعار' })}
                   maxSize={5}
-                  onUploadComplete={(url) => setFormData({...formData, logo_url: url})}
+                  onUploadComplete={(url) => setFormData({ ...formData, logo_url: url })}
                 />
               </div>
 
@@ -260,7 +258,7 @@ Create bilingual content highlighting the municipality's characteristics and inn
                   type="image"
                   label={t({ en: 'Upload Image', ar: 'رفع صورة' })}
                   maxSize={10}
-                  onUploadComplete={(url) => setFormData({...formData, image_url: url})}
+                  onUploadComplete={(url) => setFormData({ ...formData, image_url: url })}
                 />
               </div>
 
@@ -270,7 +268,7 @@ Create bilingual content highlighting the municipality's characteristics and inn
                   type="image"
                   label={t({ en: 'Upload Banner', ar: 'رفع بانر' })}
                   maxSize={10}
-                  onUploadComplete={(url) => setFormData({...formData, banner_url: url})}
+                  onUploadComplete={(url) => setFormData({ ...formData, banner_url: url })}
                 />
               </div>
             </div>
@@ -315,12 +313,12 @@ Create bilingual content highlighting the municipality's characteristics and inn
             </div>
           </div>
 
-          <Button 
-            onClick={() => updateMutation.mutate(formData)}
-            disabled={updateMutation.isPending}
+          <Button
+            onClick={handleUpdate}
+            disabled={updateMunicipality.isPending}
             className="w-full"
           >
-            {updateMutation.isPending ? (
+            {updateMunicipality.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 {t({ en: 'Saving...', ar: 'جاري الحفظ...' })}

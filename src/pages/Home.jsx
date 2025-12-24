@@ -1,8 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +25,13 @@ import PersonaDashboardWidget from '../components/PersonaDashboardWidget';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import RoleRequestStatusBanner from '../components/profile/RoleRequestStatusBanner';
 import { usePersonaRouting } from '@/hooks/usePersonaRouting';
+import { useLocations } from '@/hooks/useLocations';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
+import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
+import { useUserProfiles } from '@/hooks/useUserProfiles';
+import { useExpertAssignments } from '@/hooks/useExpertAssignments';
 
 function Home() {
   const { user, isAuthenticated, isLoadingAuth } = useAuth();
@@ -47,93 +52,25 @@ function Home() {
     }
   }, [isLoadingAuth, isAuthenticated, personaRouting, navigate]);
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('challenges')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10);
-      return data || [];
-    }
-  });
+  const { data: allChallenges = [] } = useChallengesWithVisibility();
+  const challenges = allChallenges.slice(0, 10);
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('is_deleted', false)
-        .eq('is_published', true)
-        .order('created_at', { ascending: false })
-        .limit(10);
-      return data || [];
-    }
-  });
+  const { data: allPilots = [] } = usePilotsWithVisibility();
+  const pilots = allPilots.filter(p => p.is_published).slice(0, 10);
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('solutions')
-        .select('*')
-        .eq('is_deleted', false)
-        .eq('is_published', true)
-        .order('created_at', { ascending: false })
-        .limit(10);
-      return data || [];
-    }
-  });
+  const { data: allSolutions = [] } = useSolutionsWithVisibility();
+  const solutions = allSolutions.filter(s => s.is_published).slice(0, 10);
 
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities'],
-    queryFn: async () => {
-      const { data } = await supabase.from('municipalities').select('*');
-      return data || [];
-    }
-  });
+  const { data: municipalities = [] } = useLocations();
 
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs-home'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('programs')
-        .select('*')
-        .eq('is_published', true)
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false })
-        .limit(10);
-      return data || [];
-    }
-  });
+  const { data: allPrograms = [] } = useProgramsWithVisibility();
+  const programs = allPrograms.filter(p => p.is_published).slice(0, 10);
 
-  const { data: recentActivities = [] } = useQuery({
-    queryKey: ['recent-activities'],
-    queryFn: async () => {
-      const all = await base44.entities.SystemActivity.list('-created_date');
-      return all.slice(0, 10);
-    }
-  });
 
-  const { data: userProfile } = useQuery({
-    queryKey: ['user-profile-onboarding', user?.email],
-    queryFn: async () => {
-      const profiles = await base44.entities.UserProfile.filter({ user_email: user?.email });
-      return profiles[0] || null;
-    },
-    enabled: !!user
-  });
+  const { data: userProfile } = useUserProfiles(user?.email);
 
-  const { data: myExpertAssignments = [] } = useQuery({
-    queryKey: ['expert-assignments-home', user?.email],
-    queryFn: async () => {
-      const assignments = await base44.entities.ExpertAssignment.list();
-      return assignments.filter(a => a.expert_email === user?.email && a.status !== 'completed');
-    },
-    enabled: !!user
-  });
+  const { data: allExpertAssignments = [] } = useExpertAssignments(user?.email);
+  const myExpertAssignments = allExpertAssignments.filter(a => a.status !== 'completed');
 
   // Onboarding wizard is now handled in Layout.jsx
 
@@ -177,7 +114,7 @@ function Home() {
       type: 'challenge',
       title: c.title_en,
       subtitle: c.municipality_id,
-      time: new Date(c.created_date).toLocaleDateString(),
+      time: new Date(c.created_at).toLocaleDateString(),
       icon: AlertCircle,
       color: 'text-red-600'
     })),
@@ -185,7 +122,7 @@ function Home() {
       type: 'pilot',
       title: p.title_en,
       subtitle: p.municipality_id,
-      time: new Date(p.created_date).toLocaleDateString(),
+      time: new Date(p.created_at).toLocaleDateString(),
       icon: TestTube,
       color: 'text-blue-600'
     }))
@@ -195,7 +132,7 @@ function Home() {
     <div className="space-y-8 animate-in fade-in duration-700" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Role Request Status Banner */}
       <RoleRequestStatusBanner />
-      
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -465,7 +402,7 @@ function Home() {
       <MyWorkPrioritizer />
 
       {/* Smart AI Recommendation */}
-      <SmartRecommendation 
+      <SmartRecommendation
         context="portfolio_view"
         entity={{
           challenge_count: challenges.length,
@@ -509,7 +446,7 @@ function Home() {
                   <div className="flex items-center justify-between mb-2">
                     <Badge className={
                       assignment.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-blue-100 text-blue-700'
+                        'bg-blue-100 text-blue-700'
                     }>
                       {assignment.status}
                     </Badge>

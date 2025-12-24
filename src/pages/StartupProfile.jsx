@@ -1,5 +1,5 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useStartupProfiles } from '@/hooks/useStartupProfiles';
+import { useMatchingEntities } from '@/hooks/useMatchingEntities';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,36 +20,13 @@ function StartupProfile() {
   const [aiMatches, setAiMatches] = useState([]);
   const { invokeAI, status: aiStatus, isLoading: loadingMatches, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: startup, isLoading } = useQuery({
-    queryKey: ['startupProfile', startupId],
-    queryFn: async () => {
-      if (startupId) {
-        const { data } = await supabase.from('startup_profiles').select('*').eq('id', startupId);
-        return data || [];
-      }
-      return null;
-    }
-  });
+  const { useStartupProfile } = useStartupProfiles();
+  const { useSolutions, usePilots } = useMatchingEntities();
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['startupSolutions', startupId],
-    queryFn: async () => {
-      const { data } = await supabase.from('solutions').select('*').eq('provider_id', startupId);
-      return data || [];
-    },
-    enabled: !!startupId
-  });
+  const { data: startup, isLoading } = useStartupProfile(startupId);
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['startup-pilots', startupId],
-    queryFn: async () => {
-      const solutionIds = solutions.map(s => s.id);
-      if (solutionIds.length === 0) return [];
-      const { data } = await supabase.from('pilots').select('*').in('solution_id', solutionIds);
-      return data || [];
-    },
-    enabled: solutions.length > 0
-  });
+  const { data: solutions = [] } = useSolutions({ providerId: startupId });
+  const { data: pilots = [] } = usePilots({ solutionIds: solutions.map(s => s.id) });
 
   const findMatchingChallenges = async () => {
     const result = await invokeAI({

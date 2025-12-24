@@ -1,21 +1,17 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { BarChart3, TrendingUp, Clock, CheckCircle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 
 function ChallengeAnalyticsDashboard() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false);
-      return data || [];
-    }
+  const { data: challenges = [] } = useChallengesWithVisibility({
+    includeDeleted: false,
+    limit: 2000
   });
 
   // Funnel data
@@ -52,7 +48,7 @@ function ChallengeAnalyticsDashboard() {
   const resolvedChallenges = challenges.filter(c => c.status === 'resolved' && c.created_date && c.resolution_date);
   const avgResolutionDays = resolvedChallenges.length > 0
     ? Math.round(resolvedChallenges.reduce((sum, c) => {
-      const days = Math.floor((new Date(c.resolution_date) - new Date(c.created_date)) / (1000 * 60 * 60 * 24));
+      const days = Math.floor((new Date(c.resolution_date).getTime() - new Date(c.created_date).getTime()) / (1000 * 60 * 60 * 24));
       return sum + days;
     }, 0) / resolvedChallenges.length)
     : 0;
@@ -80,7 +76,7 @@ function ChallengeAnalyticsDashboard() {
   const avgTimeToTreatment = challenges
     .filter(c => c.submission_date && c.status === 'in_treatment')
     .reduce((sum, c) => {
-      const days = Math.floor((new Date() - new Date(c.submission_date)) / (1000 * 60 * 60 * 24));
+      const days = Math.floor((new Date().getTime() - new Date(c.submission_date).getTime()) / (1000 * 60 * 60 * 24));
       return sum + days;
     }, 0) / Math.max(challenges.filter(c => c.status === 'in_treatment').length, 1);
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,58 +14,77 @@ import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { 
-  buildRDToPilotPrompt, 
+import {
+  buildRDToPilotPrompt,
   rdToPilotSchema,
-  RD_TO_PILOT_SYSTEM_PROMPT 
+  RD_TO_PILOT_SYSTEM_PROMPT
 } from '@/lib/ai/prompts/core';
 
+/**
+ * @typedef {Object} PilotData
+ * @property {string} [id]
+ * @property {string} title_en
+ * @property {string} [title_ar]
+ * @property {string} [tagline_en]
+ * @property {string} [tagline_ar]
+ * @property {string} [objective_en]
+ * @property {string} [objective_ar]
+ * @property {string} [hypothesis]
+ * @property {string} [methodology]
+ * @property {string} [scope]
+ * @property {number} [duration_weeks]
+ * @property {number} [budget]
+ * @property {string} challenge_id
+ * @property {string} municipality_id
+ * @property {string} sector
+ * @property {string} [code]
+ * @property {string} [description_en]
+ * @property {string} [description_ar]
+ * @property {string} [solution_id]
+ * @property {number} [trl_start]
+ * @property {string} [stage]
+ */
+
+/**
+ * @param {Object} props
+ * @param {Object} props.project
+ * @param {string[]} [props.project.challenge_ids]
+ * @param {string} [props.project.title_en]
+ * @param {string} [props.project.research_area]
+ * @param {string} [props.project.trl_current]
+ * @param {string} [props.project.trl_start]
+ * @param {string} [props.project.solution_id]
+ * @param {Object} [props.project.principal_investigator]
+ * @param {string} [props.project.principal_investigator.email]
+ * @param {Function} props.onClose
+ */
 export default function RDToPilotTransition({ project, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
-  const [pilotData, setPilotData] = useState(null);
+  /** @type {any} */
+  const castSetPilotData = useState(null);
+  const [pilotData, setPilotData] = castSetPilotData;
 
   const { data: municipalities = [] } = useQuery({
     queryKey: ['municipalities'],
-    queryFn: () => base44.entities.Municipality.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('municipalities').select('*');
+      if (error) throw error;
+      return data;
+    }
   });
 
   const createPilotMutation = useMutation({
+    /** @param {PilotData} data */
     mutationFn: async (data) => {
-      const pilot = await base44.entities.Pilot.create(data);
-
-      // Send pilot created email notification via email-trigger-hub
-      try {
-        const { supabase } = await import('@/integrations/supabase/client');
-        const recipientEmail = data.pilot_manager_email || project.principal_investigator?.email;
-        if (recipientEmail) {
-          await supabase.functions.invoke('email-trigger-hub', {
-            body: {
-              trigger: 'pilot.created',
-              recipient_email: recipientEmail,
-              entity_type: 'pilot',
-              entity_id: pilot.id,
-              variables: {
-                pilotTitle: data.title_en || data.title_ar,
-                pilotCode: pilot.code || `PLT-RD-${pilot.id?.substring(0, 8)}`,
-                startDate: data.start_date || new Date().toISOString().split('T')[0],
-                dashboardUrl: window.location.origin + '/pilots/' + pilot.id
-              },
-              language: language,
-              triggered_by: 'system'
-            }
-          });
-        }
-      } catch (emailError) {
-        console.error('Failed to send pilot created email:', emailError);
-      }
-
+      const { data: pilot, error } = await supabase.from('pilots').insert(data).select().single();
+      if (error) throw error;
       return pilot;
     },
     onSuccess: (pilot) => {
-      queryClient.invalidateQueries(['pilots']);
+      queryClient.invalidateQueries({ queryKey: ['pilots'] });
       toast.success(t({ en: 'Pilot created from R&D', ar: 'تم إنشاء التجربة من البحث' }));
       navigate(createPageUrl(`PilotDetail?id=${pilot.id}`));
     }
@@ -93,83 +112,6 @@ export default function RDToPilotTransition({ project, onClose }) {
         scope: language === 'ar' ? data.scope_ar : data.scope_en,
         duration_weeks: data.duration_weeks,
         budget: data.budget,
-        kpis: data.kpis?.map(k => ({
-          name: language === 'ar' ? k.name_ar : k.name_en,
-          baseline: k.baseline,
-          target: k.target,
-          unit: k.unit
-        })),
-        success_criteria: data.success_criteria?.map(s => ({
-          criterion: language === 'ar' ? s.criterion_ar : s.criterion_en,
-          threshold: s.threshold
-        })),
-        target_population: {
-          size: data.target_population?.size,
-          demographics: language === 'ar' ? data.target_population?.demographics_ar : data.target_population?.demographics_en,
-          location: language === 'ar' ? data.target_population?.location_ar : data.target_population?.location_en
-        },
-        solution_id: project.solution_id,
-        sector: project.research_area || 'digital_services',
-        trl_start: project.trl_current || project.trl_start,
-        stage: 'design'
-      });
-      toast.success(t({ en: 'Pilot scope generated', ar: 'تم إنشاء نطاق التجربة' }));
-    }
-  };
-
-    const response = await invokeAI({
-      prompt,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          title_en: { type: 'string' },
-          title_ar: { type: 'string' },
-          tagline_en: { type: 'string' },
-          tagline_ar: { type: 'string' },
-          objective_en: { type: 'string' },
-          objective_ar: { type: 'string' },
-          hypothesis: { type: 'string' },
-          methodology: { type: 'string' },
-          scope: { type: 'string' },
-          duration_weeks: { type: 'number' },
-          budget: { type: 'number' },
-          kpis: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                name: { type: 'string' },
-                baseline: { type: 'string' },
-                target: { type: 'string' },
-                unit: { type: 'string' }
-              }
-            }
-          },
-          success_criteria: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                criterion: { type: 'string' },
-                threshold: { type: 'string' }
-              }
-            }
-          },
-          target_population: {
-            type: 'object',
-            properties: {
-              size: { type: 'number' },
-              demographics: { type: 'string' },
-              location: { type: 'string' }
-            }
-          }
-        }
-      }
-    });
-
-    if (response.success && response.data) {
-      setPilotData({
-        ...response.data,
         solution_id: project.solution_id,
         sector: project.research_area || 'digital_services',
         trl_start: project.trl_current || project.trl_start,
@@ -180,16 +122,22 @@ export default function RDToPilotTransition({ project, onClose }) {
   };
 
   const handleCreatePilot = () => {
+    if (!pilotData) return;
     const challengeId = project.challenge_ids?.[0];
-    
-    createPilotMutation.mutate({
+
+    /** @type {PilotData} */
+    const payload = {
       ...pilotData,
+      title_en: pilotData.title_en || '',
+      sector: pilotData.sector || 'digital_services',
       code: `PLT-RD-${new Date().getFullYear()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-      municipality_id: pilotData.municipality_id,
-      challenge_id: challengeId,
-      description_en: `Pilot derived from R&D project: ${project.title_en}. ${pilotData.objective_en}`,
-      description_ar: pilotData.description_ar || pilotData.objective_ar
-    });
+      municipality_id: pilotData.municipality_id || '',
+      challenge_id: challengeId || '',
+      description_en: `Pilot derived from R&D project: ${project.title_en}. ${pilotData.objective_en || ''}`,
+      description_ar: (pilotData.description_ar || pilotData.objective_ar || '')
+    };
+
+    createPilotMutation.mutate(payload);
   };
 
   return (
@@ -199,7 +147,7 @@ export default function RDToPilotTransition({ project, onClose }) {
           <TestTube className="h-5 w-5 text-blue-600" />
           {t({ en: 'Transition R&D to Pilot', ar: 'الانتقال من البحث للتجريب' })}
         </CardTitle>
-        <Button variant="ghost" size="icon" onClick={onClose}>
+        <Button variant="ghost" size="icon" onClick={() => onClose()}>
           <X className="h-4 w-4" />
         </Button>
       </CardHeader>
@@ -218,15 +166,15 @@ export default function RDToPilotTransition({ project, onClose }) {
           </div>
         </div>
 
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+        <AIStatusIndicator status={status} error={null} rateLimitInfo={rateLimitInfo} className="mb-4" />
 
         {!pilotData ? (
           <div className="text-center py-8">
             <Sparkles className="h-12 w-12 text-blue-600 mx-auto mb-4" />
             <p className="text-sm text-slate-600 mb-4">
-              {t({ 
-                en: 'AI will generate a complete pilot scope based on R&D outcomes', 
-                ar: 'سينشئ الذكاء الاصطناعي نطاق تجربة كامل بناءً على نتائج البحث' 
+              {t({
+                en: 'AI will generate a complete pilot scope based on R&D outcomes',
+                ar: 'سينشئ الذكاء الاصطناعي نطاق تجربة كامل بناءً على نتائج البحث'
               })}
             </p>
             <Button onClick={generatePilotScope} disabled={isLoading || !isAvailable} className="bg-blue-600 hover:bg-blue-700">
@@ -252,14 +200,14 @@ export default function RDToPilotTransition({ project, onClose }) {
                   <Label className="text-xs text-blue-900">Title</Label>
                   <Input
                     value={pilotData.title_en}
-                    onChange={(e) => setPilotData({...pilotData, title_en: e.target.value})}
+                    onChange={(e) => setPilotData({ ...pilotData, title_en: e.target.value })}
                   />
                 </div>
                 <div>
                   <Label className="text-xs text-blue-900">Objective</Label>
                   <Textarea
                     value={pilotData.objective_en}
-                    onChange={(e) => setPilotData({...pilotData, objective_en: e.target.value})}
+                    onChange={(e) => setPilotData({ ...pilotData, objective_en: e.target.value })}
                     rows={2}
                   />
                 </div>
@@ -267,7 +215,7 @@ export default function RDToPilotTransition({ project, onClose }) {
                   <Label className="text-xs text-blue-900">Hypothesis</Label>
                   <Input
                     value={pilotData.hypothesis}
-                    onChange={(e) => setPilotData({...pilotData, hypothesis: e.target.value})}
+                    onChange={(e) => setPilotData({ ...pilotData, hypothesis: e.target.value })}
                   />
                 </div>
                 <div className="grid grid-cols-3 gap-3">
@@ -276,7 +224,7 @@ export default function RDToPilotTransition({ project, onClose }) {
                     <Input
                       type="number"
                       value={pilotData.duration_weeks}
-                      onChange={(e) => setPilotData({...pilotData, duration_weeks: parseInt(e.target.value)})}
+                      onChange={(e) => setPilotData({ ...pilotData, duration_weeks: parseInt(e.target.value) })}
                     />
                   </div>
                   <div>
@@ -284,14 +232,14 @@ export default function RDToPilotTransition({ project, onClose }) {
                     <Input
                       type="number"
                       value={pilotData.budget}
-                      onChange={(e) => setPilotData({...pilotData, budget: parseFloat(e.target.value)})}
+                      onChange={(e) => setPilotData({ ...pilotData, budget: parseFloat(e.target.value) })}
                     />
                   </div>
                   <div>
                     <Label className="text-xs text-blue-900">Municipality</Label>
                     <Select
                       value={pilotData.municipality_id}
-                      onValueChange={(v) => setPilotData({...pilotData, municipality_id: v})}
+                      onValueChange={(v) => setPilotData({ ...pilotData, municipality_id: v })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select..." />
@@ -308,7 +256,7 @@ export default function RDToPilotTransition({ project, onClose }) {
             </div>
 
             <div className="flex gap-3 pt-4 border-t">
-              <Button variant="outline" onClick={onClose} className="flex-1">
+              <Button variant="outline" onClick={() => onClose()} className="flex-1">
                 {t({ en: 'Cancel', ar: 'إلغاء' })}
               </Button>
               <Button

@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useRoleDetails, useUsersWithRole } from '@/hooks/useRoles';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
+import { useAccessLogs } from '@/hooks/useRBACStatistics';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -10,68 +11,16 @@ export default function RoleAuditDetail({ roleId }) {
   const { t } = useLanguage();
 
   // Fetch role
-  const { data: role } = useQuery({
-    queryKey: ['role-detail', roleId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('roles')
-        .select('*')
-        .eq('id', roleId)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!roleId
-  });
+  const { data: role } = useRoleDetails(roleId);
 
   // Fetch role permissions
-  const { data: rolePermissions = [] } = useQuery({
-    queryKey: ['role-permissions-detail', roleId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('role_permissions')
-        .select('*, permissions(code, name)')
-        .eq('role_id', roleId);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!roleId
-  });
+  const { data: rolePermissions = [] } = useRolePermissions(roleId);
 
-  // Fetch users with this role (Phase 4: uses user_roles with role_id)
-  const { data: usersWithRole = [] } = useQuery({
-    queryKey: ['role-users-detail', roleId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('*, user_profiles:user_id(full_name, user_email)')
-        .eq('role_id', roleId)
-        .eq('is_active', true);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!roleId
-  });
+  // Fetch users with this role
+  const { data: usersWithRole = [] } = useUsersWithRole(roleId);
 
   // Fetch access logs for permissions in this role
-  const { data: accessLogs = [] } = useQuery({
-    queryKey: ['role-access-logs-detail', roleId],
-    queryFn: async () => {
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      
-      const { data, error } = await supabase
-        .from('access_logs')
-        .select('*')
-        .gte('created_at', sevenDaysAgo.toISOString())
-        .order('created_at', { ascending: false })
-        .limit(500);
-      
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!role
-  });
+  const { data: accessLogs = [] } = useAccessLogs(7);
 
   if (!role) return null;
 

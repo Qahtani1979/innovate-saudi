@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,16 +22,24 @@ function EvaluationPanel() {
   const { data: proposals = [] } = useQuery({
     queryKey: ['pending-proposals'],
     queryFn: async () => {
-      const all = await base44.entities.RDProposal.list();
-      return all.filter(p => p.status === 'submitted' || p.status === 'under_review');
+      const { data, error } = await supabase
+        .from('rd_proposals')
+        .select('*')
+        .in('status', ['submitted', 'under_review']);
+      if (error) throw error;
+      return data || [];
     }
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['evaluation-pilots'],
     queryFn: async () => {
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => p.stage === 'evaluation');
+      const { data, error } = await supabase
+        .from('pilots')
+        .select('*')
+        .eq('stage', 'evaluation');
+      if (error) throw error;
+      return data || [];
     }
   });
 
@@ -42,17 +50,19 @@ function EvaluationPanel() {
 
   const handleEvaluationComplete = async () => {
     setShowEvaluationForm(false);
-    
+
     if (selectedEntity) {
-      await base44.functions.invoke('checkConsensus', {
-        entity_type: selectedEntity.entityType,
-        entity_id: selectedEntity.id
+      await supabase.functions.invoke('checkConsensus', {
+        body: {
+          entity_type: selectedEntity.entityType,
+          entity_id: selectedEntity.id
+        }
       });
     }
-    
+
     setSelectedEntity(null);
-    queryClient.invalidateQueries(['pending-proposals']);
-    queryClient.invalidateQueries(['evaluation-pilots']);
+    queryClient.invalidateQueries({ queryKey: ['pending-proposals'] });
+    queryClient.invalidateQueries({ queryKey: ['evaluation-pilots'] });
   };
 
   return (
@@ -144,9 +154,9 @@ function EvaluationPanel() {
                     </Link>
                   </div>
 
-                  <EvaluationConsensusPanel 
-                    entityType="rd_proposal" 
-                    entityId={proposal.id} 
+                  <EvaluationConsensusPanel
+                    entityType="rd_proposal"
+                    entityId={proposal.id}
                   />
 
                   <div className="flex items-center gap-3">
@@ -193,9 +203,9 @@ function EvaluationPanel() {
                     </Link>
                   </div>
 
-                  <EvaluationConsensusPanel 
-                    entityType="pilot" 
-                    entityId={pilot.id} 
+                  <EvaluationConsensusPanel
+                    entityType="pilot"
+                    entityId={pilot.id}
                   />
 
                   <div className="flex items-center gap-3">

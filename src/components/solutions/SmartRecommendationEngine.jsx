@@ -1,53 +1,24 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
 import { Sparkles, TrendingUp, Eye, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
+import { useSolutions } from '@/hooks/useSolutions';
+import { useUserActivity, useLogActivity } from '@/hooks/useUserActivity';
 
 export default function SmartRecommendationEngine({ challenge, userId, limit = 3 }) {
   const { t } = useLanguage();
   const [recommendations, setRecommendations] = useState([]);
   const [dismissed, setDismissed] = useState([]);
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions-for-recommendations'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('solutions').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: userActivity = [] } = useQuery({
-    queryKey: ['user-activity', userId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('user_activities')
-        .select('*')
-        .eq('user_email', userId);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!userId
-  });
-
-  const trackInteraction = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase.from('user_activities').insert({
-        user_email: userId,
-        activity_type: data.type,
-        entity_type: 'solution',
-        entity_id: data.solutionId,
-        metadata: { recommendation_score: data.score }
-      });
-      if (error) throw error;
-    }
-  });
+  const { solutions = [] } = useSolutions({ publishedOnly: true, limit: 100 });
+  const { activities: userActivity = [] } = useUserActivity(userId, userId);
+  const trackInteraction = useLogActivity();
 
   useEffect(() => {
     if (solutions.length === 0) return;
@@ -109,12 +80,24 @@ export default function SmartRecommendationEngine({ challenge, userId, limit = 3
   }, [solutions, userActivity, challenge, dismissed, limit]);
 
   const handleView = (solutionId, score) => {
-    trackInteraction.mutate({ type: 'view', solutionId, score });
+    trackInteraction.mutate({
+      user_email: userId,
+      activity_type: 'view',
+      entity_type: 'solution',
+      entity_id: solutionId,
+      metadata: { recommendation_score: score }
+    });
   };
 
   const handleDismiss = (solutionId) => {
     setDismissed([...dismissed, solutionId]);
-    trackInteraction.mutate({ type: 'dismiss', solutionId, score: 0 });
+    trackInteraction.mutate({
+      user_email: userId,
+      activity_type: 'dismiss',
+      entity_type: 'solution',
+      entity_id: solutionId,
+      metadata: { recommendation_score: 0 }
+    });
   };
 
   if (recommendations.length === 0) return null;
@@ -180,7 +163,7 @@ export default function SmartRecommendationEngine({ challenge, userId, limit = 3
             </div>
           </div>
         ))}
-        
+
         <p className="text-xs text-slate-500 text-center pt-2">
           {t({ en: 'Recommendations improve as you interact with solutions', ar: 'تتحسن التوصيات مع تفاعلك' })}
         </p>

@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,24 +9,17 @@ import { Users, CheckCircle2, Target } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import UnifiedEvaluationForm from '../components/evaluation/UnifiedEvaluationForm';
 import EvaluationConsensusPanel from '../components/evaluation/EvaluationConsensusPanel';
+import { useMatchmakerApplications } from '@/hooks/useMatchmakerApplications';
+import { useEvaluationCompletion } from '@/hooks/useEvaluationCompletion';
 
 function MatchmakerEvaluationHub() {
   const { language, isRTL, t } = useLanguage();
   const [selectedApp, setSelectedApp] = useState(null);
   const [showEvaluationForm, setShowEvaluationForm] = useState(false);
-  const queryClient = useQueryClient();
 
-  const { data: applications = [] } = useQuery({
-    queryKey: ['matchmaker-apps-eval'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('matchmaker_applications')
-        .select('*');
-
-      if (error) throw error;
-      return data;
-    }
-  });
+  // Use existing hooks
+  const { data: applications = [] } = useMatchmakerApplications();
+  const { completeEvaluation } = useEvaluationCompletion();
 
   const screening = applications.filter(a => a.stage === 'screening');
   const evaluating = applications.filter(a => a.stage === 'evaluating');
@@ -42,16 +33,13 @@ function MatchmakerEvaluationHub() {
     setShowEvaluationForm(false);
 
     if (selectedApp) {
-      await supabase.functions.invoke('checkConsensus', {
-        body: {
-          entity_type: 'matchmaker_application',
-          entity_id: selectedApp.id
-        }
+      completeEvaluation.mutate({
+        entity_type: 'matchmaker_application',
+        entity_id: selectedApp.id
       });
     }
 
     setSelectedApp(null);
-    queryClient.invalidateQueries(['matchmaker-apps-eval']);
   };
 
   return (

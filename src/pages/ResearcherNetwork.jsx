@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useResearcherData } from '@/hooks/useResearcherData';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -16,33 +15,13 @@ function ResearcherNetwork() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedArea, setSelectedArea] = useState('all');
 
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects-network'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_projects')
-        .select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: organizations = [] } = useQuery({
-    queryKey: ['organizations-network'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('organizations')
-        .select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { projects: rdProjects, organizations } = useResearcherData();
 
   const researchAreas = [...new Set(rdProjects.flatMap(p => p.research_area_en || p.research_area || []))].filter(Boolean);
 
   const filteredProjects = rdProjects.filter(p => {
     const areaMatch = selectedArea === 'all' || (p.research_area_en || p.research_area) === selectedArea;
-    const searchMatch = !searchTerm || 
+    const searchMatch = !searchTerm ||
       p.title_en?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.institution_en?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.principal_investigator?.name_en?.toLowerCase().includes(searchTerm.toLowerCase());

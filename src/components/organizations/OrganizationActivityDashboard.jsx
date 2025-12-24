@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { base44 } from '@/api/base44Client';
 import { useLanguage } from '../LanguageContext';
 import { Activity, TrendingUp, Target, TestTube, Microscope } from 'lucide-react';
 import { Link } from 'react-router-dom';

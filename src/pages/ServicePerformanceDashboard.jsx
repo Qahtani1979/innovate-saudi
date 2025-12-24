@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+
+import { useServiceQuality } from '@/hooks/useServiceQuality';
+import { useMatchingEntities } from '@/hooks/useMatchingEntities';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
-import { AlertCircle, CheckCircle2,
+import {
+  AlertCircle, CheckCircle2,
   Target, Activity, Users, FileText
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
@@ -14,29 +16,17 @@ function ServicePerformanceDashboard() {
   const { language, isRTL, t } = useLanguage();
   const [selectedSector, setSelectedSector] = useState('all');
 
-  const { data: services = [] } = useQuery({
-    queryKey: ['services'],
-    queryFn: () => base44.entities.Service.list()
-  });
+  const { useServices, useCitizenFeedback } = useServiceQuality();
+  const { useChallenges, usePilots } = useMatchingEntities();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-by-service'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-by-service'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: citizenFeedback = [] } = useQuery({
-    queryKey: ['citizen-feedback'],
-    queryFn: () => base44.entities.CitizenFeedback.list()
-  });
+  const { data: services = [] } = useServices();
+  const { data: challenges = [] } = useChallenges({ limit: 2000 });
+  const { data: pilots = [] } = usePilots({ limit: 2000 });
+  const { data: citizenFeedback = [] } = useCitizenFeedback();
 
   // Calculate service metrics
   const serviceMetrics = services.map(service => {
-    const serviceChallenges = challenges.filter(c => 
+    const serviceChallenges = challenges.filter(c =>
       c.service_id === service.id || c.affected_services?.includes(service.id)
     );
     const servicePilots = pilots.filter(p => p.service_id === service.id);
@@ -66,8 +56,8 @@ function ServicePerformanceDashboard() {
     };
   });
 
-  const filteredServices = selectedSector === 'all' 
-    ? serviceMetrics 
+  const filteredServices = selectedSector === 'all'
+    ? serviceMetrics
     : serviceMetrics.filter(s => s.sector_id === selectedSector);
 
   const sectors = [...new Set(services.map(s => s.sector_id))];
@@ -151,8 +141,8 @@ function ServicePerformanceDashboard() {
                   </div>
                   <Badge className={
                     service.healthScore >= 80 ? 'bg-green-600' :
-                    service.healthScore >= 60 ? 'bg-blue-600' :
-                    service.healthScore >= 40 ? 'bg-amber-600' : 'bg-red-600'
+                      service.healthScore >= 60 ? 'bg-blue-600' :
+                        service.healthScore >= 40 ? 'bg-amber-600' : 'bg-red-600'
                   }>
                     {service.healthScore}% Health
                   </Badge>

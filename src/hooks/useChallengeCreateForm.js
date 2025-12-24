@@ -95,7 +95,7 @@ export function useChallengeCreateForm(initialData = {}) {
   // Validate current step
   const validateStep = useCallback((step) => {
     const errors = {};
-    
+
     switch (step) {
       case 1: // Basic Info
         if (!formData.title_en?.trim()) errors.title_en = 'Title (English) is required';
@@ -110,7 +110,7 @@ export function useChallengeCreateForm(initialData = {}) {
       default:
         break;
     }
-    
+
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   }, [formData]);
@@ -180,6 +180,7 @@ export function useChallengeCreateForm(initialData = {}) {
     prevStep,
     goToStep,
     resetForm,
+    setHasUserEdited,
     isValid: Object.keys(validationErrors).length === 0
   };
 }

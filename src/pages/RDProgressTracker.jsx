@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useRDProjectsWithVisibility } from '@/hooks/useRDProjectsWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -12,16 +11,7 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 function RDProgressTracker() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects-progress'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_projects')
-        .select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: rdProjects = [] } = useRDProjectsWithVisibility();
 
   const activeProjects = rdProjects.filter(p => p.status === 'active');
   const onTrack = activeProjects.filter(p => {

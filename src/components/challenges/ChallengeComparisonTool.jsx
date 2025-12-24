@@ -1,21 +1,20 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { GitCompare } from 'lucide-react';
+
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 
 export default function ChallengeComparisonTool() {
   const [challenge1Id, setChallenge1Id] = useState('');
   const [challenge2Id, setChallenge2Id] = useState('');
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-for-comparison'],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false);
-      return data || [];
-    }
+  const { data: result = { data: [] } } = useChallengesWithVisibility({
+    pageSize: 100, // Get a good list for selection
+    filters: { is_deleted: false }
   });
+
+  const challenges = result.data || [];
 
   const challenge1 = challenges.find(c => c.id === challenge1Id);
   const challenge2 = challenges.find(c => c.id === challenge2Id);

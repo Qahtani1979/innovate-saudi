@@ -33,7 +33,7 @@ export default function RDProjectModals({
     setShowTRLAssessment,
     showFinalEvaluation,
     setShowFinalEvaluation,
-    queryClient
+    onUpdate
 }) {
     return (
         <>
@@ -99,7 +99,7 @@ export default function RDProjectModals({
             {showTRLAssessment && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="max-w-3xl w-full max-h-[90vh] overflow-auto">
-                        <TRLAssessmentWorkflow rdProject={project} onUpdate={() => queryClient.invalidateQueries(['rd-project'])} />
+                        <TRLAssessmentWorkflow rdProject={project} onUpdate={onUpdate} />
                     </div>
                 </div>
             )}

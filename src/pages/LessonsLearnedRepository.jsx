@@ -1,12 +1,10 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { 
+import {
   Lightbulb, Search, BookOpen, Target, AlertTriangle, CheckCircle, Sparkles, Loader2,
   Eye, Star
 } from 'lucide-react';
@@ -22,28 +20,14 @@ function LessonsLearnedRepository() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [entityTypeFilter, setEntityTypeFilter] = useState('all');
   const { isAdmin } = usePermissions();
-  const queryClient = useQueryClient();
   const { invokeAI, status, isLoading: aiLoading, rateLimitInfo, isAvailable } = useAIWithFallback();
   const [aiInsights, setAiInsights] = useState(null);
 
-  const { data: lessons = [], isLoading } = useQuery({
-    queryKey: ['lessons-learned'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('lessons_learned')
-        .select(`
-          *,
-          sector:sectors(id, name_en, name_ar),
-          municipality:municipalities(id, name_en, name_ar)
-        `)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // Use custom hook for lessons learned
+  const { data: lessons = [], isLoading } = useLessonsLearned();
 
   const filteredLessons = lessons.filter(lesson => {
-    const matchesSearch = 
+    const matchesSearch =
       lesson.title_en?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lesson.title_ar?.includes(searchTerm) ||
       lesson.key_insight_en?.toLowerCase().includes(searchTerm.toLowerCase());

@@ -1,6 +1,4 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { usePermissionTemplates, usePermissionTemplateMutations } from '@/hooks/usePermissionTemplates';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,86 +19,18 @@ import {
 
 export default function PermissionTemplateManager() {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [showDialog, setShowDialog] = useState(false);
 
-  // Fetch permission templates from platform_config
-  const { data: templates = [] } = useQuery({
-    queryKey: ['permission-templates'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('platform_config')
-        .select('*')
-        .like('key', 'permission_template_%');
-      
-      if (error) throw error;
-      return (data || []).map(c => ({ id: c.id, ...c.value }));
-    }
-  });
-
-  const createTemplateMutation = useMutation({
-    mutationFn: async (template) => {
-      const { error } = await supabase
-        .from('platform_config')
-        .insert({
-          key: `permission_template_${Date.now()}`,
-          value: template
-        });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['permission-templates']);
-      setShowDialog(false);
-      setEditingTemplate(null);
-      toast.success(t({ en: 'Template created', ar: 'تم إنشاء القالب' }));
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    }
-  });
-
-  const updateTemplateMutation = useMutation({
-    mutationFn: async ({ id, template }) => {
-      const { error } = await supabase
-        .from('platform_config')
-        .update({ value: template })
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['permission-templates']);
-      setShowDialog(false);
-      setEditingTemplate(null);
-      toast.success(t({ en: 'Template updated', ar: 'تم تحديث القالب' }));
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    }
-  });
-
-  const deleteTemplateMutation = useMutation({
-    mutationFn: async (id) => {
-      const { error } = await supabase
-        .from('platform_config')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['permission-templates']);
-      toast.success(t({ en: 'Template deleted', ar: 'تم حذف القالب' }));
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    }
-  });
+  // Fetch permission templates
+  const { data: templates = [] } = usePermissionTemplates();
+  const { createTemplate: createTemplateMutation, updateTemplate: updateTemplateMutation, deleteTemplate: deleteTemplateMutation } = usePermissionTemplateMutations();
 
   const handleSave = () => {
     if (editingTemplate.id) {
-      updateTemplateMutation.mutate({ 
-        id: editingTemplate.id, 
-        template: editingTemplate 
+      updateTemplateMutation.mutate({
+        id: editingTemplate.id,
+        template: editingTemplate
       });
     } else {
       createTemplateMutation.mutate(editingTemplate);
@@ -125,9 +55,9 @@ export default function PermissionTemplateManager() {
         </h2>
         <Dialog open={showDialog} onOpenChange={setShowDialog}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEditingTemplate({ 
-              name: '', 
-              description: '', 
+            <Button onClick={() => setEditingTemplate({
+              name: '',
+              description: '',
               permissions: [],
               category: 'custom'
             })}>
@@ -138,12 +68,12 @@ export default function PermissionTemplateManager() {
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>
-                {editingTemplate?.id ? 
-                  t({ en: 'Edit Template', ar: 'تعديل القالب' }) : 
+                {editingTemplate?.id ?
+                  t({ en: 'Edit Template', ar: 'تعديل القالب' }) :
                   t({ en: 'New Template', ar: 'قالب جديد' })}
               </DialogTitle>
             </DialogHeader>
-            
+
             {editingTemplate && (
               <div className="space-y-4">
                 <div>
@@ -218,7 +148,7 @@ export default function PermissionTemplateManager() {
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-sm text-muted-foreground">{template.description}</p>
-              
+
               <div className="flex flex-wrap gap-1">
                 {template.permissions?.slice(0, 5).map((perm, i) => (
                   <Badge key={i} variant="secondary" className="text-xs">
@@ -233,16 +163,16 @@ export default function PermissionTemplateManager() {
               </div>
 
               <div className="flex gap-2 pt-2">
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   variant="outline"
                   onClick={() => handleClone(template)}
                 >
                   <Copy className="h-3 w-3 mr-1" />
                   {t({ en: 'Clone', ar: 'نسخ' })}
                 </Button>
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   variant="outline"
                   onClick={() => {
                     setEditingTemplate(template);
@@ -252,8 +182,8 @@ export default function PermissionTemplateManager() {
                   <FileText className="h-3 w-3 mr-1" />
                   {t({ en: 'Edit', ar: 'تعديل' })}
                 </Button>
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   variant="destructive"
                   onClick={() => deleteTemplateMutation.mutate(template.id)}
                 >

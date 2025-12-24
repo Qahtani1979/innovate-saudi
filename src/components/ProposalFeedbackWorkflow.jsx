@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,11 +20,17 @@ export default function ProposalFeedbackWorkflow({ proposal, onClose }) {
 
   const feedbackMutation = useMutation({
     mutationFn: async (data) => {
-      await base44.entities.RDProposal.update(proposal.id, {
-        feedback_provided: true,
-        feedback_text: data.feedback,
-        feedback_date: new Date().toISOString()
-      });
+      const { supabase } = await import('@/integrations/supabase/client');
+
+      const { error } = await supabase
+        .from('rd_proposals')
+        .update({
+          feedback_provided: true,
+          feedback_text: data.feedback,
+          feedback_date: new Date().toISOString()
+        })
+        .eq('id', proposal.id);
+      if (error) throw error;
 
       await createNotification({
         title: 'Proposal Feedback Available',
@@ -47,8 +52,8 @@ export default function ProposalFeedbackWorkflow({ proposal, onClose }) {
 
   const generateAIFeedback = async () => {
     const reviewScores = proposal.reviewer_scores || [];
-    const avgScore = reviewScores.length > 0 
-      ? reviewScores.reduce((sum, r) => sum + r.total, 0) / reviewScores.length 
+    const avgScore = reviewScores.length > 0
+      ? reviewScores.reduce((sum, r) => sum + r.total, 0) / reviewScores.length
       : 0;
 
     const prompt = buildProposalFeedbackPrompt({
@@ -107,16 +112,16 @@ export default function ProposalFeedbackWorkflow({ proposal, onClose }) {
           <Textarea
             value={feedback}
             onChange={(e) => setFeedback(e.target.value)}
-            placeholder={t({ 
-              en: 'Provide constructive feedback to help improve future proposals...', 
-              ar: 'قدم ملاحظات بناءة للمساعدة في تحسين المقترحات المستقبلية...' 
+            placeholder={t({
+              en: 'Provide constructive feedback to help improve future proposals...',
+              ar: 'قدم ملاحظات بناءة للمساعدة في تحسين المقترحات المستقبلية...'
             })}
             rows={8}
           />
           <p className="text-xs text-slate-500">
-            {t({ 
-              en: 'This feedback will be sent to the principal investigator via notification and email.', 
-              ar: 'سيتم إرسال هذه الملاحظات إلى الباحث الرئيسي عبر الإشعار والبريد الإلكتروني.' 
+            {t({
+              en: 'This feedback will be sent to the principal investigator via notification and email.',
+              ar: 'سيتم إرسال هذه الملاحظات إلى الباحث الرئيسي عبر الإشعار والبريد الإلكتروني.'
             })}
           </p>
         </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
+import { useProgramApplications } from '@/hooks/useProgramApplications';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,15 +18,9 @@ function ProgramsControlDashboard() {
   const [aiInsights, setAiInsights] = useState(null);
   const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs-control'],
-    queryFn: () => base44.entities.Program.list()
-  });
+  const { data: programs = [] } = useProgramsWithVisibility({ limit: 1000 });
 
-  const { data: applications = [] } = useQuery({
-    queryKey: ['program-applications-control'],
-    queryFn: () => base44.entities.ProgramApplication.list()
-  });
+  const { data: applications = [] } = useProgramApplications({ limit: 2000 });
 
   const activePrograms = programs.filter(p => p.status === 'active');
   const totalApplicants = applications.length;
@@ -69,7 +63,7 @@ Provide:
         }
       }
     });
-    
+
     if (result.success) {
       setAiInsights(result.data);
     }
@@ -200,7 +194,7 @@ Provide:
                       {language === 'ar' && program.name_ar ? program.name_ar : program.name_en}
                     </h3>
                     <p className="text-sm text-slate-600 mt-1">
-                      {program.application_count || 0} {t({ en: 'applications', ar: 'طلب' })} • 
+                      {program.application_count || 0} {t({ en: 'applications', ar: 'طلب' })} •
                       {program.accepted_count || 0} {t({ en: 'accepted', ar: 'مقبول' })}
                     </p>
                   </div>

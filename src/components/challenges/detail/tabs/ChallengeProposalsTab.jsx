@@ -3,17 +3,36 @@ import { Badge } from "@/components/ui/badge";
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { useLanguage } from '@/components/LanguageContext';
-import { FileText } from 'lucide-react';
+import { FileText, Loader2 } from 'lucide-react';
 import ProposalSubmissionForm from '@/components/challenges/ProposalSubmissionForm';
 import ChallengeRFPGenerator from '@/components/challenges/ChallengeRFPGenerator';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
-export default function ChallengeProposalsTab({ 
-  challenge, 
-  proposals = [], 
+export default function ChallengeProposalsTab({
+  challenge,
   onProposalSuccess,
-  onRFPComplete 
+  onRFPComplete
 }) {
   const { t } = useLanguage();
+  const challengeId = challenge?.id;
+
+  const { data: proposals = [], isLoading } = useQuery({
+    queryKey: ['challenge-proposals', challengeId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('challenge_proposals')
+        .select('*')
+        .eq('challenge_id', challengeId)
+        .eq('is_deleted', false);
+      return data || [];
+    },
+    enabled: !!challengeId
+  });
+
+  if (isLoading) {
+    return <div className="p-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" /></div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -55,7 +74,7 @@ export default function ChallengeProposalsTab({
               <ProposalSubmissionForm
                 challenge={challenge}
                 onSuccess={onProposalSuccess}
-                onCancel={() => {}}
+                onCancel={() => { }}
               />
             </div>
           )}

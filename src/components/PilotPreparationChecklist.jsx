@@ -1,17 +1,16 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from './LanguageContext';
 import { CheckCircle2, Circle, Loader2, Rocket, AlertTriangle } from 'lucide-react';
-import { toast } from 'sonner';
+import { usePilotMutations } from '@/hooks/usePilotMutations';
+import { supabase } from '@/integrations/supabase/client';
 
-function PilotPreparationChecklist({ pilot, onClose }) {
+export default function PilotPreparationChecklist({ pilot, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  const { updatePilot } = usePilotMutations();
 
   const preparationTasks = [
     {
@@ -80,21 +79,18 @@ function PilotPreparationChecklist({ pilot, onClose }) {
     preparationTasks.reduce((acc, task) => ({ ...acc, [task.id]: false }), {})
   );
 
-  const moveToPreparationMutation = useMutation({
-    mutationFn: async () => {
-      await base44.entities.Pilot.update(pilot.id, {
+  const handleMoveToPreparation = () => {
+    updatePilot.mutate({
+      id: pilot.id,
+      data: {
         stage: 'preparation',
         timeline: {
           ...pilot.timeline,
           prep_start: new Date().toISOString()
         }
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['pilot']);
-      toast.success(t({ en: 'Moved to preparation stage', ar: 'تم الانتقال لمرحلة التحضير' }));
-    }
-  });
+      }
+    });
+  };
 
   const completedCount = Object.values(checklist).filter(Boolean).length;
   const totalCount = preparationTasks.length;
@@ -154,9 +150,8 @@ function PilotPreparationChecklist({ pilot, onClose }) {
                 {catTasks.map(task => (
                   <div
                     key={task.id}
-                    className={`p-3 border rounded-lg flex items-center justify-between transition-all ${
-                      checklist[task.id] ? 'bg-green-50 border-green-300' : 'bg-white hover:border-blue-300'
-                    }`}
+                    className={`p-3 border rounded-lg flex items-center justify-between transition-all ${checklist[task.id] ? 'bg-green-50 border-green-300' : 'bg-white hover:border-blue-300'
+                      }`}
                   >
                     <div className="flex items-center gap-3 flex-1">
                       <button
@@ -190,12 +185,12 @@ function PilotPreparationChecklist({ pilot, onClose }) {
         <div className="flex gap-2 pt-4 border-t">
           {pilot.stage === 'approved' && (
             <Button
-              onClick={() => moveToPreparationMutation.mutate()}
-              disabled={moveToPreparationMutation.isPending}
+              onClick={handleMoveToPreparation}
+              disabled={updatePilot.isPending}
               variant="outline"
               className="flex-1"
             >
-              {moveToPreparationMutation.isPending ? (
+              {updatePilot.isPending ? (
                 <Loader2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} animate-spin`} />
               ) : null}
               {t({ en: 'Start Preparation', ar: 'بدء التحضير' })}
@@ -213,5 +208,3 @@ function PilotPreparationChecklist({ pilot, onClose }) {
     </Card>
   );
 }
-
-export default PilotPreparationChecklist;

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,23 +29,33 @@ export default function SandboxApplicationForm({ sandbox, onSuccess }) {
 
   const applicationMutation = useMutation({
     mutationFn: async (data) => {
-      const app = await base44.entities.SandboxApplication.create({
-        ...data,
-        sandbox_id: sandbox.id,
-        status: 'submitted'
-      });
+      const { supabase } = await import('@/integrations/supabase/client');
+
+      const { data: app, error: createError } = await supabase
+        .from('sandbox_applications')
+        .insert([{
+          ...data,
+          sandbox_id: sandbox.id,
+          status: 'submitted'
+        }])
+        .select()
+        .single();
+      if (createError) throw createError;
 
       // Create notification for sandbox admin
-      await base44.entities.Notification.create({
-        title: `New Sandbox Application - ${sandbox.name_en}`,
-        body: `${data.applicant_organization} has submitted an application for ${data.project_title}`,
-        notification_type: 'approval',
-        priority: 'high',
-        link_url: `/SandboxDetail?id=${sandbox.id}`,
-        entity_type: 'SandboxApplication',
-        entity_id: app.id,
-        action_required: true
-      });
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .insert([{
+          title: `New Sandbox Application - ${sandbox.name_en}`,
+          body: `${data.applicant_organization} has submitted an application for ${data.project_title}`,
+          notification_type: 'approval',
+          priority: 'high',
+          link_url: `/SandboxDetail?id=${sandbox.id}`,
+          entity_type: 'SandboxApplication',
+          entity_id: app.id,
+          action_required: true
+        }]);
+      if (notifError) throw notifError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['sandbox-applications']);
@@ -60,7 +69,7 @@ export default function SandboxApplicationForm({ sandbox, onSuccess }) {
     const updated = current.includes(exemption)
       ? current.filter(e => e !== exemption)
       : [...current, exemption];
-    setFormData({...formData, requested_exemptions: updated});
+    setFormData({ ...formData, requested_exemptions: updated });
   };
 
   return (
@@ -83,89 +92,89 @@ export default function SandboxApplicationForm({ sandbox, onSuccess }) {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-        <div>
-          <Label>{t({ en: 'Organization Name', ar: 'اسم المنظمة' })}</Label>
-          <Input
-            value={formData.applicant_organization}
-            onChange={(e) => setFormData({...formData, applicant_organization: e.target.value})}
-            placeholder="Your Company or Organization"
-          />
-        </div>
-
-        <div>
-          <Label>{t({ en: 'Project Title', ar: 'عنوان المشروع' })}</Label>
-          <Input
-            value={formData.project_title}
-            onChange={(e) => setFormData({...formData, project_title: e.target.value})}
-            placeholder="Autonomous Vehicle Testing Program"
-          />
-        </div>
-
-        <div>
-          <Label>{t({ en: 'Project Description', ar: 'وصف المشروع' })}</Label>
-          <Textarea
-            value={formData.project_description}
-            onChange={(e) => setFormData({...formData, project_description: e.target.value})}
-            rows={4}
-            placeholder="Detailed description of what you'll test in the sandbox..."
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label>{t({ en: 'Duration (months)', ar: 'المدة (أشهر)' })}</Label>
+            <Label>{t({ en: 'Organization Name', ar: 'اسم المنظمة' })}</Label>
             <Input
-              type="number"
-              value={formData.duration_months}
-              onChange={(e) => setFormData({...formData, duration_months: parseInt(e.target.value)})}
+              value={formData.applicant_organization}
+              onChange={(e) => setFormData({ ...formData, applicant_organization: e.target.value })}
+              placeholder="Your Company or Organization"
             />
           </div>
+
           <div>
-            <Label>{t({ en: 'Preferred Start Date', ar: 'تاريخ البدء المفضل' })}</Label>
+            <Label>{t({ en: 'Project Title', ar: 'عنوان المشروع' })}</Label>
             <Input
-              type="date"
-              value={formData.start_date}
-              onChange={(e) => setFormData({...formData, start_date: e.target.value})}
+              value={formData.project_title}
+              onChange={(e) => setFormData({ ...formData, project_title: e.target.value })}
+              placeholder="Autonomous Vehicle Testing Program"
             />
           </div>
-        </div>
 
-        {sandbox.available_exemptions && sandbox.available_exemptions.length > 0 && (
           <div>
-            <Label className="mb-3 block">{t({ en: 'Requested Exemptions', ar: 'الإعفاءات المطلوبة' })}</Label>
-            <div className="space-y-2">
-              {sandbox.available_exemptions.map((exemption, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <Checkbox
-                    checked={formData.requested_exemptions.includes(exemption)}
-                    onCheckedChange={() => toggleExemption(exemption)}
-                  />
-                  <span className="text-sm">{exemption}</span>
-                </div>
-              ))}
+            <Label>{t({ en: 'Project Description', ar: 'وصف المشروع' })}</Label>
+            <Textarea
+              value={formData.project_description}
+              onChange={(e) => setFormData({ ...formData, project_description: e.target.value })}
+              rows={4}
+              placeholder="Detailed description of what you'll test in the sandbox..."
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>{t({ en: 'Duration (months)', ar: 'المدة (أشهر)' })}</Label>
+              <Input
+                type="number"
+                value={formData.duration_months}
+                onChange={(e) => setFormData({ ...formData, duration_months: parseInt(e.target.value) })}
+              />
+            </div>
+            <div>
+              <Label>{t({ en: 'Preferred Start Date', ar: 'تاريخ البدء المفضل' })}</Label>
+              <Input
+                type="date"
+                value={formData.start_date}
+                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+              />
             </div>
           </div>
-        )}
 
-        <div>
-          <Label>{t({ en: 'Risk Assessment', ar: 'تقييم المخاطر' })}</Label>
-          <Textarea
-            value={formData.risk_assessment}
-            onChange={(e) => setFormData({...formData, risk_assessment: e.target.value})}
-            rows={3}
-            placeholder="Describe potential risks and mitigation strategies..."
-          />
-        </div>
+          {sandbox.available_exemptions && sandbox.available_exemptions.length > 0 && (
+            <div>
+              <Label className="mb-3 block">{t({ en: 'Requested Exemptions', ar: 'الإعفاءات المطلوبة' })}</Label>
+              <div className="space-y-2">
+                {sandbox.available_exemptions.map((exemption, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <Checkbox
+                      checked={formData.requested_exemptions.includes(exemption)}
+                      onCheckedChange={() => toggleExemption(exemption)}
+                    />
+                    <span className="text-sm">{exemption}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-        <div>
-          <Label>{t({ en: 'Public Safety Plan', ar: 'خطة السلامة العامة' })}</Label>
-          <Textarea
-            value={formData.public_safety_plan}
-            onChange={(e) => setFormData({...formData, public_safety_plan: e.target.value})}
-            rows={3}
-            placeholder="How will you ensure public safety during testing..."
-          />
-        </div>
+          <div>
+            <Label>{t({ en: 'Risk Assessment', ar: 'تقييم المخاطر' })}</Label>
+            <Textarea
+              value={formData.risk_assessment}
+              onChange={(e) => setFormData({ ...formData, risk_assessment: e.target.value })}
+              rows={3}
+              placeholder="Describe potential risks and mitigation strategies..."
+            />
+          </div>
+
+          <div>
+            <Label>{t({ en: 'Public Safety Plan', ar: 'خطة السلامة العامة' })}</Label>
+            <Textarea
+              value={formData.public_safety_plan}
+              onChange={(e) => setFormData({ ...formData, public_safety_plan: e.target.value })}
+              rows={3}
+              placeholder="How will you ensure public safety during testing..."
+            />
+          </div>
 
           <Button
             onClick={() => applicationMutation.mutate(formData)}
@@ -180,19 +189,19 @@ export default function SandboxApplicationForm({ sandbox, onSuccess }) {
 
       {showAIAssistants && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <AIExemptionSuggester 
+          <AIExemptionSuggester
             projectDescription={formData.project_description}
             sandbox={sandbox}
             onSuggestionsApplied={(exemptions) => {
-              setFormData({...formData, requested_exemptions: exemptions});
+              setFormData({ ...formData, requested_exemptions: exemptions });
               toast.success('Exemptions applied to form');
             }}
           />
-          <AISafetyProtocolGenerator 
+          <AISafetyProtocolGenerator
             projectDescription={formData.project_description}
             sandbox={sandbox}
             onProtocolGenerated={(protocol) => {
-              setFormData({...formData, public_safety_plan: protocol});
+              setFormData({ ...formData, public_safety_plan: protocol });
               toast.success('Safety protocol applied to form');
             }}
           />

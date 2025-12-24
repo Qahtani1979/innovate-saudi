@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,15 @@ function IdeasAnalytics() {
 
   const { data: ideas = [], isLoading } = useQuery({
     queryKey: ['ideas-analytics'],
-    queryFn: () => base44.entities.CitizenIdea.list('-created_date', 500)
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('citizen_ideas')
+        .select('*')
+        .order('created_date', { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      return data;
+    }
   });
 
   const categoryData = Object.entries(
@@ -52,7 +60,7 @@ function IdeasAnalytics() {
 
   const stats = {
     total: ideas.length,
-    thisMonth: ideas.filter(i => new Date(i.created_date) > new Date(Date.now() - 30*24*60*60*1000)).length,
+    thisMonth: ideas.filter(i => new Date(i.created_date) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length,
     converted: ideas.filter(i => i.status === 'converted_to_challenge').length,
     conversionRate: ideas.length > 0 ? ((ideas.filter(i => i.status === 'converted_to_challenge').length / ideas.length) * 100).toFixed(1) : 0,
     avgVotes: ideas.length > 0 ? (ideas.reduce((sum, i) => sum + (i.vote_count || 0), 0) / ideas.length).toFixed(1) : 0,

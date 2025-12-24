@@ -1,5 +1,10 @@
-import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+﻿import { useState } from 'react';
+import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
+import { useRDProjectsWithVisibility } from '@/hooks/useRDProjectsWithVisibility';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,30 +25,11 @@ function InitiativePortfolio() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterTheme, setFilterTheme] = useState('all');
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects'],
-    queryFn: () => base44.entities.RDProject.list()
-  });
-
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs'],
-    queryFn: () => base44.entities.Program.list()
-  });
-
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans'],
-    queryFn: () => base44.entities.StrategicPlan.list()
-  });
+  const { data: challenges = [] } = useChallengesWithVisibility();
+  const { data: pilots = [] } = usePilotsWithVisibility();
+  const { data: rdProjects = [] } = useRDProjectsWithVisibility();
+  const { data: programs = [] } = useProgramsWithVisibility();
+  const { data: strategicPlans = [] } = useStrategiesWithVisibility();
 
   const activePlan = strategicPlans.find(p => p.status === 'active') || strategicPlans[0];
 
@@ -110,7 +96,7 @@ function InitiativePortfolio() {
   const themes = activePlan?.strategic_themes || [];
   const groupedByTheme = themes.map(theme => ({
     theme: theme.name_en,
-    initiatives: filteredInitiatives.filter(i => 
+    initiatives: filteredInitiatives.filter(i =>
       i.strategic_theme?.toLowerCase().includes(theme.name_en?.toLowerCase())
     )
   }));
@@ -136,15 +122,15 @@ function InitiativePortfolio() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">
-            {t({ en: 'Initiative Portfolio Master View', ar: 'عرض المحفظة الرئيسية للمبادرات' })}
+            {t({ en: 'Initiative Portfolio Master View', ar: 'Ø¹Ø±Ø¶ Ø§Ù„Ù…Ø­ÙØ¸Ø© Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ© Ù„Ù„Ù…Ø¨Ø§Ø¯Ø±Ø§Øª' })}
           </h1>
           <p className="text-slate-600 mt-1">
-            {t({ en: `${allInitiatives.length} initiatives across all types`, ar: `${allInitiatives.length} مبادرة عبر جميع الأنواع` })}
+            {t({ en: `${allInitiatives.length} initiatives across all types`, ar: `${allInitiatives.length} Ù…Ø¨Ø§Ø¯Ø±Ø© Ø¹Ø¨Ø± Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø£Ù†ÙˆØ§Ø¹` })}
           </p>
         </div>
         <Button variant="outline">
           <Download className="h-4 w-4 mr-2" />
-          {t({ en: 'Export Portfolio', ar: 'تصدير المحفظة' })}
+          {t({ en: 'Export Portfolio', ar: 'ØªØµØ¯ÙŠØ± Ø§Ù„Ù…Ø­ÙØ¸Ø©' })}
         </Button>
       </div>
 
@@ -155,7 +141,7 @@ function InitiativePortfolio() {
             <div className="relative">
               <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400`} />
               <Input
-                placeholder={t({ en: 'Search initiatives...', ar: 'ابحث عن المبادرات...' })}
+                placeholder={t({ en: 'Search initiatives...', ar: 'Ø§Ø¨Ø­Ø« Ø¹Ù† Ø§Ù„Ù…Ø¨Ø§Ø¯Ø±Ø§Øª...' })}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className={isRTL ? 'pr-10' : 'pl-10'}
@@ -163,10 +149,10 @@ function InitiativePortfolio() {
             </div>
             <Select value={filterSector} onValueChange={setFilterSector}>
               <SelectTrigger>
-                <SelectValue placeholder={t({ en: 'All Sectors', ar: 'جميع القطاعات' })} />
+                <SelectValue placeholder={t({ en: 'All Sectors', ar: 'Ø¬Ù…ÙŠØ¹ Ø§Ù„Ù‚Ø·Ø§Ø¹Ø§Øª' })} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t({ en: 'All Sectors', ar: 'جميع القطاعات' })}</SelectItem>
+                <SelectItem value="all">{t({ en: 'All Sectors', ar: 'Ø¬Ù…ÙŠØ¹ Ø§Ù„Ù‚Ø·Ø§Ø¹Ø§Øª' })}</SelectItem>
                 <SelectItem value="transport">Transport</SelectItem>
                 <SelectItem value="environment">Environment</SelectItem>
                 <SelectItem value="urban_design">Urban Design</SelectItem>
@@ -175,30 +161,30 @@ function InitiativePortfolio() {
             </Select>
             <Select value={filterYear} onValueChange={setFilterYear}>
               <SelectTrigger>
-                <SelectValue placeholder={t({ en: 'All Years', ar: 'جميع السنوات' })} />
+                <SelectValue placeholder={t({ en: 'All Years', ar: 'Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø³Ù†ÙˆØ§Øª' })} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t({ en: 'All Years', ar: 'جميع السنوات' })}</SelectItem>
+                <SelectItem value="all">{t({ en: 'All Years', ar: 'Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø³Ù†ÙˆØ§Øª' })}</SelectItem>
                 <SelectItem value="2024">2024</SelectItem>
                 <SelectItem value="2025">2025</SelectItem>
               </SelectContent>
             </Select>
             <Select value={filterStatus} onValueChange={setFilterStatus}>
               <SelectTrigger>
-                <SelectValue placeholder={t({ en: 'All Status', ar: 'جميع الحالات' })} />
+                <SelectValue placeholder={t({ en: 'All Status', ar: 'Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø­Ø§Ù„Ø§Øª' })} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t({ en: 'All Status', ar: 'جميع الحالات' })}</SelectItem>
+                <SelectItem value="all">{t({ en: 'All Status', ar: 'Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø­Ø§Ù„Ø§Øª' })}</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
               </SelectContent>
             </Select>
             <Select value={filterTheme} onValueChange={setFilterTheme}>
               <SelectTrigger>
-                <SelectValue placeholder={t({ en: 'All Themes', ar: 'جميع المحاور' })} />
+                <SelectValue placeholder={t({ en: 'All Themes', ar: 'Ø¬Ù…ÙŠØ¹ Ø§Ù„Ù…Ø­Ø§ÙˆØ±' })} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t({ en: 'All Themes', ar: 'جميع المحاور' })}</SelectItem>
+                <SelectItem value="all">{t({ en: 'All Themes', ar: 'Ø¬Ù…ÙŠØ¹ Ø§Ù„Ù…Ø­Ø§ÙˆØ±' })}</SelectItem>
                 {themes.map((theme, idx) => (
                   <SelectItem key={idx} value={theme.name_en?.toLowerCase()}>{theme.name_en}</SelectItem>
                 ))}
@@ -215,7 +201,7 @@ function InitiativePortfolio() {
             <CardHeader className="bg-slate-50">
               <div className="flex items-center justify-between">
                 <CardTitle>{group.theme}</CardTitle>
-                <Badge variant="outline">{group.initiatives.length} {t({ en: 'initiatives', ar: 'مبادرات' })}</Badge>
+                <Badge variant="outline">{group.initiatives.length} {t({ en: 'initiatives', ar: 'Ù…Ø¨Ø§Ø¯Ø±Ø§Øª' })}</Badge>
               </div>
             </CardHeader>
             <CardContent className="pt-6">
@@ -255,7 +241,7 @@ function InitiativePortfolio() {
           <CardHeader className="bg-amber-50">
             <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-amber-600" />
-              {t({ en: 'Unassigned to Strategic Theme', ar: 'غير معينة لمحور استراتيجي' })}
+              {t({ en: 'Unassigned to Strategic Theme', ar: 'ØºÙŠØ± Ù…Ø¹ÙŠÙ†Ø© Ù„Ù…Ø­ÙˆØ± Ø§Ø³ØªØ±Ø§ØªÙŠØ¬ÙŠ' })}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-6">

@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,21 +18,11 @@ function PilotSuccessPatternsPage() {
   const { invokeAI, status, isLoading: loading, rateLimitInfo, isAvailable } = useAIWithFallback();
 
 
-  const { data: successfulPilots = [] } = useQuery({
-    queryKey: ['successful-pilots'],
-    queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*').in('stage', ['completed', 'scaled']).eq('is_deleted', false);
-      return (data || []).filter(p => (p.success_probability || 0) >= 70);
-    }
-  });
+  const { data: allPilots = [] } = usePilotsWithVisibility();
 
-  const { data: allPilots = [] } = useQuery({
-    queryKey: ['all-pilots-patterns'],
-    queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*').eq('is_deleted', false);
-      return data || [];
-    }
-  });
+  const successfulPilots = allPilots.filter(p =>
+    ['completed', 'scaled'].includes(p.stage) && (p.success_probability || 0) >= 70
+  );
 
   // Safe accessors
   const getTeam = (p) => Array.isArray(p?.team) ? p.team : [];

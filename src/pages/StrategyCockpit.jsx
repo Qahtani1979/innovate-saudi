@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useAnalytics } from '@/hooks/useAnalytics';
+import { useMatchingEntities } from '@/hooks/useMatchingEntities';
+import { usePrograms } from '@/hooks/usePrograms';
+import { useApprovals } from '@/hooks/useApprovals';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,78 +34,24 @@ function StrategyCockpitPage() {
   // Use activePlanId from context, default to 'all' for filtering
   const selectedPlanId = activePlanId || 'all';
 
-  const { data: trendData = [] } = useQuery({
-    queryKey: ['strategy-trends'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('trend_entries').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { useTrendEntries } = useAnalytics();
+  const { useChallenges, usePilots, useSolutions, useRDProjects } = useMatchingEntities();
+  const { programs } = usePrograms({ limit: 1000 });
+  const { usePendingApprovals } = useApprovals();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-cockpit'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('challenges').select('*').eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: trendData = [] } = useTrendEntries({ limit: 1000 });
+  const { data: challenges = [] } = useChallenges({ limit: 1000 });
+  const { data: pilots = [] } = usePilots({ limit: 1000 });
+  const { data: solutions = [] } = useSolutions({ limit: 1000 });
+  const { data: rdProjects = [] } = useRDProjects({ limit: 1000 });
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-cockpit'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('pilots').select('*').eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions-cockpit'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('solutions').select('*').eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects-cockpit'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('rd_projects').select('*').eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs-cockpit'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('programs').select('*').eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // Programs are fetched via usePrograms hook which returns 'programs' property directly
 
   // Use strategicPlans from context - avoid duplicate query
   // Note: Additional local filtering for cockpit-specific needs can be done here
   const cockpitPlans = strategicPlans.filter(p => !p.is_deleted);
 
-  const { data: approvals = [] } = useQuery({
-    queryKey: ['pending-approvals'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('approval_requests')
-        .select('*')
-        .eq('approval_status', 'pending')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false })
-        .limit(5);
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: approvals = [] } = usePendingApprovals(5);
 
   // Filter data by selected strategic plan
   const filteredChallenges = selectedPlanId === 'all'

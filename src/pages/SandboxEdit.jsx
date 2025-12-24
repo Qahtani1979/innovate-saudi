@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,23 +16,19 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import StrategicPlanSelector from '@/components/strategy/StrategicPlanSelector';
 import { SANDBOX_ENHANCEMENT_PROMPT_TEMPLATE, SANDBOX_ENHANCEMENT_RESPONSE_SCHEMA } from '@/lib/ai/prompts/sandbox/enhancement';
+import { useSandbox } from '@/hooks/useSandbox';
+import { useSandboxMutations } from '@/hooks/useSandboxMutations';
 
 function SandboxEdit() {
   const urlParams = new URLSearchParams(window.location.search);
   const sandboxId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+
   const { invokeAI, status: aiStatus, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: sandbox, isLoading } = useQuery({
-    queryKey: ['sandbox', sandboxId],
-    queryFn: async () => {
-      const sandboxes = await base44.entities.Sandbox.list();
-      return sandboxes.find(s => s.id === sandboxId);
-    },
-    enabled: !!sandboxId
-  });
+  const { data: sandbox, isLoading } = useSandbox(sandboxId);
+  const { updateSandbox } = useSandboxMutations();
 
   const [formData, setFormData] = useState(null);
 
@@ -43,14 +38,16 @@ function SandboxEdit() {
     }
   }, [sandbox]);
 
-  const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.Sandbox.update(sandboxId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['sandbox', sandboxId]);
-      toast.success(t({ en: 'Sandbox updated', ar: 'تم تحديث المنطقة' }));
-      navigate(createPageUrl(`SandboxDetail?id=${sandboxId}`));
-    }
-  });
+  const handleSave = () => {
+    updateSandbox.mutate(
+      { id: sandboxId, data: formData },
+      {
+        onSuccess: () => {
+          navigate(createPageUrl(`SandboxDetail?id=${sandboxId}`));
+        }
+      }
+    );
+  };
 
   const handleAIEnhance = async () => {
     try {
@@ -131,14 +128,14 @@ function SandboxEdit() {
               <Label>Name (English)</Label>
               <Input
                 value={formData.name_en}
-                onChange={(e) => setFormData({...formData, name_en: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
               />
             </div>
             <div className="space-y-2">
               <Label>اسم المنطقة (عربي)</Label>
               <Input
                 value={formData.name_ar || ''}
-                onChange={(e) => setFormData({...formData, name_ar: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
                 dir="rtl"
               />
             </div>
@@ -149,14 +146,14 @@ function SandboxEdit() {
               <Label>Tagline (English)</Label>
               <Input
                 value={formData.tagline_en || ''}
-                onChange={(e) => setFormData({...formData, tagline_en: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, tagline_en: e.target.value })}
               />
             </div>
             <div className="space-y-2">
               <Label>الشعار (عربي)</Label>
               <Input
                 value={formData.tagline_ar || ''}
-                onChange={(e) => setFormData({...formData, tagline_ar: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, tagline_ar: e.target.value })}
                 dir="rtl"
               />
             </div>
@@ -166,7 +163,7 @@ function SandboxEdit() {
             <Label>Description (English)</Label>
             <Textarea
               value={formData.description_en || ''}
-              onChange={(e) => setFormData({...formData, description_en: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
               rows={4}
             />
           </div>
@@ -175,7 +172,7 @@ function SandboxEdit() {
             <Label>الوصف (عربي)</Label>
             <Textarea
               value={formData.description_ar || ''}
-              onChange={(e) => setFormData({...formData, description_ar: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
               rows={4}
               dir="rtl"
             />
@@ -186,7 +183,7 @@ function SandboxEdit() {
               <Label>Domain</Label>
               <Select
                 value={formData.domain}
-                onValueChange={(v) => setFormData({...formData, domain: v})}
+                onValueChange={(v) => setFormData({ ...formData, domain: v })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -207,7 +204,7 @@ function SandboxEdit() {
               <Label>Status</Label>
               <Select
                 value={formData.status}
-                onValueChange={(v) => setFormData({...formData, status: v})}
+                onValueChange={(v) => setFormData({ ...formData, status: v })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -230,7 +227,7 @@ function SandboxEdit() {
               <Input
                 type="number"
                 value={formData.capacity || ''}
-                onChange={(e) => setFormData({...formData, capacity: parseInt(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) })}
               />
             </div>
             <div className="space-y-2">
@@ -238,7 +235,7 @@ function SandboxEdit() {
               <Input
                 type="number"
                 value={formData.area_sqm || ''}
-                onChange={(e) => setFormData({...formData, area_sqm: parseFloat(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, area_sqm: parseFloat(e.target.value) })}
               />
             </div>
             <div className="space-y-2">
@@ -246,7 +243,7 @@ function SandboxEdit() {
               <Input
                 type="date"
                 value={formData.launch_date || ''}
-                onChange={(e) => setFormData({...formData, launch_date: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, launch_date: e.target.value })}
               />
             </div>
           </div>
@@ -255,7 +252,7 @@ function SandboxEdit() {
             <Label>Address</Label>
             <Input
               value={formData.address || ''}
-              onChange={(e) => setFormData({...formData, address: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
             />
           </div>
 
@@ -263,7 +260,7 @@ function SandboxEdit() {
             <Label>Regulatory Framework</Label>
             <Textarea
               value={formData.regulatory_framework || ''}
-              onChange={(e) => setFormData({...formData, regulatory_framework: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, regulatory_framework: e.target.value })}
               rows={3}
             />
           </div>
@@ -277,15 +274,15 @@ function SandboxEdit() {
             <StrategicPlanSelector
               selectedPlanIds={formData.strategic_plan_ids || []}
               selectedObjectiveIds={formData.strategic_objective_ids || []}
-              onPlanChange={(ids) => setFormData({...formData, strategic_plan_ids: ids, is_strategy_derived: ids.length > 0})}
-              onObjectiveChange={(ids) => setFormData({...formData, strategic_objective_ids: ids})}
+              onPlanChange={(ids) => setFormData({ ...formData, strategic_plan_ids: ids, is_strategy_derived: ids.length > 0 })}
+              onObjectiveChange={(ids) => setFormData({ ...formData, strategic_objective_ids: ids })}
               showObjectives={true}
             />
           </div>
 
           <div className="border-t pt-6 space-y-4">
             <h3 className="font-semibold text-slate-900">{t({ en: 'Sandbox Media & Resources', ar: 'وسائط المنطقة والموارد' })}</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t({ en: 'Sandbox Image', ar: 'صورة المنطقة' })}</Label>
@@ -293,7 +290,7 @@ function SandboxEdit() {
                   type="image"
                   label={t({ en: 'Upload Image', ar: 'رفع صورة' })}
                   maxSize={10}
-                  onUploadComplete={(url) => setFormData({...formData, image_url: url})}
+                  onUploadComplete={(url) => setFormData({ ...formData, image_url: url })}
                 />
               </div>
 
@@ -304,7 +301,7 @@ function SandboxEdit() {
                   label={t({ en: 'Upload Video', ar: 'رفع فيديو' })}
                   maxSize={200}
                   preview={false}
-                  onUploadComplete={(url) => setFormData({...formData, video_url: url})}
+                  onUploadComplete={(url) => setFormData({ ...formData, video_url: url })}
                 />
               </div>
             </div>
@@ -316,7 +313,7 @@ function SandboxEdit() {
                 label={t({ en: 'Upload PDF', ar: 'رفع PDF' })}
                 maxSize={50}
                 preview={false}
-                onUploadComplete={(url) => setFormData({...formData, brochure_url: url})}
+                onUploadComplete={(url) => setFormData({ ...formData, brochure_url: url })}
               />
             </div>
 
@@ -365,11 +362,11 @@ function SandboxEdit() {
               {t({ en: 'Cancel', ar: 'إلغاء' })}
             </Button>
             <Button
-              onClick={() => updateMutation.mutate(formData)}
-              disabled={updateMutation.isPending}
+              onClick={handleSave}
+              disabled={updateSandbox.isPending}
               className="bg-gradient-to-r from-blue-600 to-teal-600"
             >
-              {updateMutation.isPending ? (
+              {updateSandbox.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {t({ en: 'Saving...', ar: 'جاري الحفظ...' })}

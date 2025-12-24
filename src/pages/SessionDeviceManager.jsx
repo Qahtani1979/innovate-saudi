@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSessionManagement } from '@/hooks/useSessionManagement';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,42 +14,21 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function SessionDeviceManager() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  const {
+    useSessions,
+    useForceLogout,
+    useToggleTrust,
+    useDeleteSession
+  } = useSessionManagement();
+
+  const { data: sessions = [], isLoading } = useSessions();
+  const forceLogoutMutation = useForceLogout();
+  const toggleTrustMutation = useToggleTrust();
+  const deleteMutation = useDeleteSession();
+
   const [searchTerm, setSearchTerm] = useState('');
 
-  const { data: sessions = [], isLoading } = useQuery({
-    queryKey: ['sessions'],
-    queryFn: () => base44.entities.UserSession.list('-last_activity', 200)
-  });
-
-  const forceLogoutMutation = useMutation({
-    mutationFn: (id) => base44.entities.UserSession.update(id, { 
-      is_active: false,
-      logout_time: new Date().toISOString()
-    }),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['sessions']);
-      toast.success(t({ en: 'Session terminated', ar: 'تم إنهاء الجلسة' }));
-    }
-  });
-
-  const toggleTrustMutation = useMutation({
-    mutationFn: ({ id, trusted }) => base44.entities.UserSession.update(id, { is_trusted: trusted }),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['sessions']);
-      toast.success(t({ en: 'Device trust updated', ar: 'تم تحديث ثقة الجهاز' }));
-    }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.UserSession.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['sessions']);
-      toast.success(t({ en: 'Session deleted', ar: 'تم حذف الجلسة' }));
-    }
-  });
-
-  const filteredSessions = sessions.filter(s => 
+  const filteredSessions = sessions.filter(s =>
     s.user_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     s.session_id?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -219,7 +197,7 @@ function SessionDeviceManager() {
 
       {/* Session & Device Configuration */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <SessionTimeoutConfig 
+        <SessionTimeoutConfig
           onSave={(config) => {
             toast.success(t({ en: 'Session config saved', ar: 'تم حفظ الإعدادات' }));
           }}

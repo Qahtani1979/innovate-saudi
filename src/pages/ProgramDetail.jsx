@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +47,8 @@ import { usePrompt } from '@/hooks/usePrompt';
 import { PROGRAM_DETAIL_PROMPT_TEMPLATE } from '@/lib/ai/prompts/programs/programDetail';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
 
+import { useProgram, useProgramApplications, useProgramComments, useProgramExperts } from '@/hooks/useProgramDetails';
+
 export default function ProgramDetail() {
   const { hasPermission, user } = usePermissions();
   const urlParams = new URLSearchParams(window.location.search);
@@ -65,74 +65,23 @@ export default function ProgramDetail() {
   const [showMentorMatch, setShowMentorMatch] = useState(false);
   const [showCompletion, setShowCompletion] = useState(false);
   const [showMidReview, setShowMidReview] = useState(false);
-  const queryClient = useQueryClient();
 
-  const { data: program, isLoading } = useQuery({
-    queryKey: ['program', programId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('programs')
-        .select('*')
-        .eq('id', programId)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!programId
-  });
+  const { data: program, isLoading } = useProgram(programId);
+  const { data: applications = [] } = useProgramApplications(programId);
+  const { comments = [], addComment } = useProgramComments(programId);
+  const { data: expertAssignments = [] } = useProgramExperts(programId);
 
-  const { data: applications = [] } = useQuery({
-    queryKey: ['program-applications', programId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('program_applications')
-        .select('*')
-        .eq('program_id', programId);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!programId
-  });
-
-  const { data: comments = [] } = useQuery({
-    queryKey: ['program-comments', programId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('program_comments')
-        .select('*')
-        .eq('program_id', programId);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!programId
-  });
-
-  const { data: expertAssignments = [] } = useQuery({
-    queryKey: ['program-expert-assignments', programId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('expert_assignments')
-        .select('*')
-        .eq('entity_type', 'program')
-        .eq('entity_id', programId)
-        .eq('assignment_type', 'mentor');
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!programId
-  });
-
-  const commentMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase.from('program_comments').insert(data);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['program-comments']);
-      setComment('');
-      toast.success('Comment added');
-    }
-  });
+  const handleAddComment = () => {
+    if (!comment.trim()) return;
+    addComment({
+      program_id: programId,
+      user_email: user?.email,
+      content: comment,
+      created_at: new Date().toISOString()
+    }, {
+      onSuccess: () => setComment('')
+    });
+  };
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);

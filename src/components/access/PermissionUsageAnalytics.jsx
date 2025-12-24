@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useAccessLogs } from '@/hooks/useRBACStatistics';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -14,23 +13,7 @@ export default function PermissionUsageAnalytics() {
   const [timeRange, setTimeRange] = useState('7d');
 
   // Fetch access logs from Supabase
-  const { data: accessLogs = [] } = useQuery({
-    queryKey: ['access-logs-analytics', timeRange],
-    queryFn: async () => {
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - parseInt(timeRange));
-      
-      const { data, error } = await supabase
-        .from('access_logs')
-        .select('*')
-        .gte('created_at', startDate.toISOString())
-        .order('created_at', { ascending: false })
-        .limit(1000);
-      
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: accessLogs = [] } = useAccessLogs(parseInt(timeRange));
 
   // Calculate analytics
   const analytics = React.useMemo(() => {
@@ -42,7 +25,7 @@ export default function PermissionUsageAnalytics() {
     accessLogs.forEach(log => {
       const permission = log.action || 'unknown';
       const allowed = !log.action?.includes('denied');
-      
+
       // Count permissions
       if (!permissionCounts[permission]) {
         permissionCounts[permission] = { total: 0, denied: 0 };
@@ -72,7 +55,7 @@ export default function PermissionUsageAnalytics() {
 
     const totalRequests = accessLogs.length;
     const deniedCount = deniedAttempts.length;
-    
+
     return {
       permissionCounts,
       userActivity,

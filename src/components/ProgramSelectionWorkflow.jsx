@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,112 +7,32 @@ import { useLanguage } from './LanguageContext';
 import { Award, CheckCircle2, X, Loader2, Mail, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useProgramApplications } from '@/hooks/useProgramDetails';
+import { useProgramMutations } from '@/hooks/useProgramMutations';
+
 export default function ProgramSelectionWorkflow({ program, onClose }) {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
 
-  const { data: applications = [] } = useQuery({
-    queryKey: ['program-applications-review', program?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('program_applications')
-        .select('*')
-        .eq('program_id', program?.id)
-        .in('status', ['under_review', 'submitted']);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!program?.id
-  });
+  const { data: applications = [] } = useProgramApplications(program?.id);
+  const { finalizeSelection, isFinalizing } = useProgramMutations();
 
   const [selected, setSelected] = useState([]);
   const [rejected, setRejected] = useState([]);
   const [rejectionMessage, setRejectionMessage] = useState('');
 
-  const selectionMutation = useMutation({
-    mutationFn: async () => {
-      // Accept selected
-      for (const appId of selected) {
-        await supabase
-          .from('program_applications')
-          .update({
-            status: 'accepted',
-            selection_date: new Date().toISOString().split('T')[0]
-          })
-          .eq('id', appId);
-      }
-
-      // Reject others
-      for (const appId of rejected) {
-        await supabase
-          .from('program_applications')
-          .update({
-            status: 'rejected',
-            rejection_reason: rejectionMessage,
-            rejection_date: new Date().toISOString().split('T')[0]
-          })
-          .eq('id', appId);
-      }
-
-      // Update program counts
-      await supabase
-        .from('programs')
-        .update({
-          accepted_count: selected.length,
-          status: 'active'
-        })
-        .eq('id', program.id);
-
-      // Send acceptance emails
-      for (const appId of selected) {
-        const app = applications.find(a => a.id === appId);
-        if (app?.email) {
-          await supabase.functions.invoke('email-trigger-hub', {
-            body: {
-              trigger: 'program.application_status',
-              recipient_email: app.email,
-              entity_type: 'program',
-              entity_id: program.id,
-              variables: {
-                userName: app.applicant_name,
-                programName: program.name_en,
-                programStartDate: program.timeline?.program_start || 'TBD',
-                durationWeeks: program.duration_weeks,
-                status: 'accepted'
-              }
-            }
-          });
-        }
-      }
-
-      // Send rejection emails
-      for (const appId of rejected) {
-        const app = applications.find(a => a.id === appId);
-        if (app?.email) {
-          await supabase.functions.invoke('email-trigger-hub', {
-            body: {
-              trigger: 'program.application_status',
-              recipient_email: app.email,
-              entity_type: 'program',
-              entity_id: program.id,
-              variables: {
-                userName: app.applicant_name,
-                programName: program.name_en,
-                rejectionReason: rejectionMessage,
-                status: 'rejected'
-              }
-            }
-          });
-        }
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['program-applications']);
-      queryClient.invalidateQueries(['program']);
-      toast.success(t({ en: 'Selection completed and notifications sent', ar: 'الاختيار مكتمل وتم إرسال الإشعارات' }));
+  const handleFinalize = async () => {
+    try {
+      await finalizeSelection({
+        programId: program.id,
+        selectedIds: selected,
+        rejectedIds: rejected,
+        rejectionMessage
+      });
       onClose();
+    } catch (error) {
+      // toast is handled by hook
     }
-  });
+  };
 
   const toggleSelect = (appId) => {
     if (selected.includes(appId)) {
@@ -134,7 +52,7 @@ export default function ProgramSelectionWorkflow({ program, onClose }) {
     }
   };
 
-  const sortedApplications = [...applications].sort((a, b) => 
+  const sortedApplications = [...applications].sort((a, b) =>
     (b.ai_score || 0) - (a.ai_score || 0)
   );
 
@@ -167,11 +85,10 @@ export default function ProgramSelectionWorkflow({ program, onClose }) {
 
         <div className="space-y-3 max-h-96 overflow-y-auto">
           {sortedApplications.map((app) => (
-            <div key={app.id} className={`p-4 border rounded-lg ${
-              selected.includes(app.id) ? 'border-green-400 bg-green-50' :
+            <div key={app.id} className={`p-4 border rounded-lg ${selected.includes(app.id) ? 'border-green-400 bg-green-50' :
               rejected.includes(app.id) ? 'border-red-400 bg-red-50' :
-              'bg-white'
-            }`}>
+                'bg-white'
+              }`}>
               <div className="flex items-start justify-between mb-2">
                 <div className="flex-1">
                   <p className="font-medium text-slate-900">{app.applicant_name}</p>
@@ -181,11 +98,10 @@ export default function ProgramSelectionWorkflow({ program, onClose }) {
                       <Badge className="bg-purple-100 text-purple-700 text-xs">
                         AI Score: {app.ai_score}
                       </Badge>
-                      <Badge className={`text-xs ${
-                        app.ai_recommendation === 'accept' ? 'bg-green-100 text-green-700' :
+                      <Badge className={`text-xs ${app.ai_recommendation === 'accept' ? 'bg-green-100 text-green-700' :
                         app.ai_recommendation === 'waitlist' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-red-100 text-red-700'
-                      }`}>
+                          'bg-red-100 text-red-700'
+                        }`}>
                         {app.ai_recommendation}
                       </Badge>
                     </div>
@@ -235,11 +151,11 @@ export default function ProgramSelectionWorkflow({ program, onClose }) {
 
         <div className="flex gap-3 pt-4 border-t">
           <Button
-            onClick={() => selectionMutation.mutate()}
-            disabled={selected.length === 0 || selectionMutation.isPending}
+            onClick={handleFinalize}
+            disabled={selected.length === 0 || isFinalizing}
             className="flex-1 bg-green-600 hover:bg-green-700"
           >
-            {selectionMutation.isPending ? (
+            {isFinalizing ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Mail className="h-4 w-4 mr-2" />

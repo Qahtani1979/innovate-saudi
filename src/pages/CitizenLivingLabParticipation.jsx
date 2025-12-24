@@ -1,5 +1,4 @@
-import { supabase } from '@/lib/supabase';
-import { useQuery } from '@tanstack/react-query';
+import { useLivingLabsWithVisibility } from '@/hooks/useLivingLabsWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '@/components/LanguageContext';
@@ -8,14 +7,7 @@ import { Loader2, Beaker } from 'lucide-react';
 export default function CitizenLivingLabParticipation() {
     const { t } = useLanguage();
 
-    const { data: labs = [], isLoading } = useQuery({
-        queryKey: ['living-labs'],
-        queryFn: async () => {
-            const { data, error } = await supabase.from('living_labs').select('*');
-            if (error) throw error;
-            return data;
-        }
-    });
+    const { data: labs = [], isLoading } = useLivingLabsWithVisibility();
 
     if (isLoading) return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
 

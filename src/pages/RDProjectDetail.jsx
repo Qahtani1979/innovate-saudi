@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRDProjectInvalidator } from '@/hooks/useRDProjectMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,12 +22,17 @@ import { usePrompt } from '@/hooks/usePrompt';
 import { RD_PROJECT_DETAIL_PROMPT_TEMPLATE } from '@/lib/ai/prompts/rd/rdProjectDetail';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
+import { useRDProject } from '@/hooks/useRDProjectsWithVisibility';
+import { useRDProjectComments, useAddRDProjectComment } from '@/hooks/useRDProjectComments';
+import { useExpertEvaluationsByEntity } from '@/hooks/useExpertData';
 
 // Modular Layout Components
 import RDProjectHero from '../components/rd/RDProjectHero';
 import RDProjectMetrics from '../components/rd/RDProjectMetrics';
 import RDProjectSidebar from '../components/rd/RDProjectSidebar';
 import RDProjectModals from '../components/rd/RDProjectModals';
+import TRLVisualization from '../components/rd/TRLVisualization';
+import TRLAssessmentWorkflow from '../components/rd/TRLAssessmentWorkflow';
 
 // Modular Tab Components
 import OverviewTab from '../components/rd/tabs/OverviewTab';
@@ -67,64 +71,20 @@ export default function RDProjectDetail() {
   const [showPolicyConverter, setShowPolicyConverter] = useState(false);
   const [showTRLAssessment, setShowTRLAssessment] = useState(false);
   const [showFinalEvaluation, setShowFinalEvaluation] = useState(false);
-  const queryClient = useQueryClient();
+  const { invalidateRDProject } = useRDProjectInvalidator();
   const { invoke: invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = usePrompt(null);
 
-  const { data: project, isLoading, error: projectError } = useQuery({
-    queryKey: ['rd-project', projectId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_projects')
-        .select('*')
-        .eq('id', projectId)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!projectId,
-    staleTime: 5 * 60 * 1000
-  });
+  const { data: project, isLoading, error: projectError } = useRDProject(projectId);
+  const { data: comments = [] } = useRDProjectComments(projectId);
+  const { data: expertEvaluations = [] } = useExpertEvaluationsByEntity('rd_project', projectId);
 
-  const { data: comments = [] } = useQuery({
-    queryKey: ['rd-project-comments', projectId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_project_comments')
-        .select('*')
-        .eq('rd_project_id', projectId);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!projectId
-  });
+  const addCommentMutation = useAddRDProjectComment();
 
-  const { data: expertEvaluations = [] } = useQuery({
-    queryKey: ['rd-project-expert-evaluations', projectId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('expert_evaluations')
-        .select('*')
-        .eq('entity_type', 'rd_project')
-        .eq('entity_id', projectId);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!projectId
-  });
-
-  const commentMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase
-        .from('rd_project_comments')
-        .insert(data);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['rd-project-comments']);
-      setComment('');
-      toast.success('Comment added');
-    }
-  });
+  const handlePostComment = () => {
+    addCommentMutation.mutate({ rd_project_id: projectId, comment_text: comment }, {
+      onSuccess: () => setComment('')
+    });
+  };
 
   if (isLoading) {
     return (
@@ -203,7 +163,7 @@ export default function RDProjectDetail() {
         setShowTRLAssessment={setShowTRLAssessment}
         showFinalEvaluation={showFinalEvaluation}
         setShowFinalEvaluation={setShowFinalEvaluation}
-        queryClient={queryClient}
+        onUpdate={() => invalidateRDProject(projectId)}
       />
 
       <RDProjectHero
@@ -237,7 +197,7 @@ export default function RDProjectDetail() {
             </Button>
           </CardHeader>
           <CardContent>
-            <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} className="mb-4" />
+            <AIStatusIndicator status={aiStatus} error={null} rateLimitInfo={rateLimitInfo} className="mb-4" />
             {aiLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
@@ -467,13 +427,13 @@ export default function RDProjectDetail() {
                 comments={comments}
                 comment={comment}
                 setComment={setComment}
-                onPostComment={() => commentMutation.mutate({ rd_project_id: projectId, comment_text: comment })}
+                onPostComment={handlePostComment}
                 t={t}
               />
             </TabsContent>
 
             <TabsContent value="workflow">
-              <UnifiedWorkflowApprovalTab entityType="rd_project" entityId={projectId} />
+              <UnifiedWorkflowApprovalTab entityType="rd_project" entityId={projectId} entityData={project} />
             </TabsContent>
 
             <TabsContent value="activity">
@@ -482,7 +442,7 @@ export default function RDProjectDetail() {
 
             <TabsContent value="trl">
               <TRLVisualization trl_start={project.trl_start} trl_current={project.trl_current || project.trl_start} trl_target={project.trl_target} />
-              <TRLAssessmentWorkflow rdProject={project} onUpdate={() => queryClient.invalidateQueries(['rd-project'])} />
+              <TRLAssessmentWorkflow rdProject={project} onUpdate={() => invalidateRDProject(projectId)} />
             </TabsContent>
 
             <TabsContent value="policy">

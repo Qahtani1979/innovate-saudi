@@ -1,5 +1,5 @@
-import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -13,8 +13,14 @@ function CitizenLeaderboard() {
   const { data: topContributors = [] } = useQuery({
     queryKey: ['citizen-leaderboard'],
     queryFn: async () => {
-      const points = await base44.entities.CitizenPoints.list();
-      return points.filter(p => p.is_active).sort((a, b) => b.total_points - a.total_points).slice(0, 50);
+      const { data, error } = await supabase
+        .from('citizen_points')
+        .select('*')
+        .eq('is_active', true)
+        .order('total_points', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data || [];
     }
   });
 
@@ -49,13 +55,12 @@ function CitizenLeaderboard() {
         {topContributors.slice(0, 3).map((contributor, idx) => {
           const rank = idx + 1;
           const heights = { 1: 'h-48', 2: 'h-40', 3: 'h-32' };
-          
+
           return (
-            <Card key={contributor.id} className={`${heights[rank]} border-2 ${
-              rank === 1 ? 'border-yellow-400 bg-gradient-to-br from-yellow-50 to-amber-50' :
-              rank === 2 ? 'border-gray-400 bg-gradient-to-br from-gray-50 to-slate-50' :
-              'border-amber-600 bg-gradient-to-br from-amber-50 to-orange-50'
-            } ${rank === 2 ? 'order-first md:order-none' : ''}`}>
+            <Card key={contributor.id} className={`${heights[rank]} border - 2 ${rank === 1 ? 'border-yellow-400 bg-gradient-to-br from-yellow-50 to-amber-50' :
+                rank === 2 ? 'border-gray-400 bg-gradient-to-br from-gray-50 to-slate-50' :
+                  'border-amber-600 bg-gradient-to-br from-amber-50 to-orange-50'
+              } ${rank === 2 ? 'order-first md:order-none' : ''} `}>
               <CardContent className="pt-6 text-center flex flex-col items-center justify-between h-full">
                 <div className="flex flex-col items-center">
                   {getRankIcon(rank)}
@@ -91,7 +96,7 @@ function CitizenLeaderboard() {
           <div className="space-y-2">
             {topContributors.slice(3).map((contributor, idx) => {
               const rank = idx + 4;
-              
+
               return (
                 <div key={contributor.id} className="flex items-center gap-4 p-3 border rounded-lg hover:bg-slate-50">
                   <div className="w-12 text-center">

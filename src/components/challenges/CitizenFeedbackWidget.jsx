@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,62 +8,62 @@ import { MessageSquare, ThumbsUp, ThumbsDown, Meh } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { 
-  buildFeedbackSentimentPrompt, 
-  FEEDBACK_SENTIMENT_SYSTEM_PROMPT, 
-  FEEDBACK_SENTIMENT_SCHEMA 
+import {
+  buildFeedbackSentimentPrompt,
+  FEEDBACK_SENTIMENT_SYSTEM_PROMPT,
+  FEEDBACK_SENTIMENT_SCHEMA
 } from '@/lib/ai/prompts/citizen/feedbackSentiment';
+
+import { useCitizenFeedback, useSubmitCitizenFeedback } from '@/hooks/useCitizenFeedback';
 
 export default function CitizenFeedbackWidget({ challengeId, pilotId }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  // queryClient removed
   const [newFeedback, setNewFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState('complaint');
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: feedbacks = [] } = useQuery({
-    queryKey: ['citizen-feedback', challengeId || pilotId],
-    queryFn: async () => {
-      let query = supabase.from('citizen_feedback').select('*').order('created_at', { ascending: false });
-      if (challengeId) query = query.eq('entity_id', challengeId).eq('entity_type', 'challenge');
-      else if (pilotId) query = query.eq('entity_id', pilotId).eq('entity_type', 'pilot');
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
-    }
+  const { data: feedbacks = [] } = useCitizenFeedback({
+    entityId: challengeId || pilotId,
+    entityType: challengeId ? 'challenge' : 'pilot'
   });
 
-  const addFeedbackMutation = useMutation({
-    mutationFn: async (data) => {
-      const sentimentResult = await invokeAI({
-        system_prompt: FEEDBACK_SENTIMENT_SYSTEM_PROMPT,
-        prompt: buildFeedbackSentimentPrompt({ content: data.content }),
-        response_json_schema: FEEDBACK_SENTIMENT_SCHEMA
-      });
+  const addMutation = useSubmitCitizenFeedback();
 
-      const sentiment = sentimentResult.success ? sentimentResult.data : { sentiment: 'neutral', score: 0 };
+  // Custom manual submit handled below with AI sentiment check
+  // But wait, the original code had AI check inside mutationFn.
+  // My generic hook doesn't have AI check.
+  // I should keep the AI check in the component, and pass the result to the generic mutation.
+  // Or upgrade the hook to support AI? No, hook should be dumb.
+  // Component logic:
 
-      const { error } = await supabase.from('citizen_feedback').insert({
-        entity_id: data.challenge_id || data.pilot_id,
-        entity_type: data.challenge_id ? 'challenge' : 'pilot',
-        feedback_text: data.content,
-        feedback_type: data.feedback_type,
-        is_anonymous: data.is_anonymous,
-        status: sentiment.sentiment,
-        rating: sentiment.score
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['citizen-feedback'] });
-      setNewFeedback('');
-    }
-  });
+  const submitFeedback = async (data) => {
+    // AI Sentiment Analysis
+    const sentimentResult = await invokeAI({
+      system_prompt: FEEDBACK_SENTIMENT_SYSTEM_PROMPT,
+      prompt: buildFeedbackSentimentPrompt({ content: data.content }),
+      response_json_schema: FEEDBACK_SENTIMENT_SCHEMA
+    });
+
+    const sentiment = sentimentResult.success ? sentimentResult.data : { sentiment: 'neutral', score: 0 };
+
+    addMutation.mutate({
+      entityId: data.challenge_id || data.pilot_id,
+      entityType: data.challenge_id ? 'challenge' : 'pilot',
+      content: data.content,
+      feedbackType: data.feedback_type,
+      isAnonymous: true,
+      sentiment: sentiment.sentiment,
+      rating: sentiment.score
+    }, {
+      onSuccess: () => setNewFeedback('')
+    });
+  };
 
   const handleSubmit = () => {
     if (!newFeedback.trim()) return;
-    
-    addFeedbackMutation.mutate({
+
+    submitFeedback({
       challenge_id: challengeId,
       pilot_id: pilotId,
       content: newFeedback,
@@ -96,7 +94,7 @@ export default function CitizenFeedbackWidget({ challengeId, pilotId }) {
         </CardHeader>
         <CardContent className="space-y-4">
           <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
-          
+
           <div className="grid grid-cols-3 gap-3">
             <div className="p-3 bg-green-50 rounded-lg text-center border border-green-200">
               <ThumbsUp className="h-6 w-6 text-green-600 mx-auto mb-1" />
@@ -167,8 +165,8 @@ export default function CitizenFeedbackWidget({ challengeId, pilotId }) {
                 <div className="flex items-start justify-between mb-1">
                   <Badge className={
                     feedback.sentiment === 'positive' ? 'bg-green-100 text-green-700' :
-                    feedback.sentiment === 'negative' ? 'bg-red-100 text-red-700' :
-                    'bg-slate-100 text-slate-700'
+                      feedback.sentiment === 'negative' ? 'bg-red-100 text-red-700' :
+                        'bg-slate-100 text-slate-700'
                   }>
                     {feedback.sentiment}
                   </Badge>

@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useAnalyticsData } from '@/hooks/useAnalyticsData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -10,72 +9,40 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function TrendsPage() {
   const { language, isRTL, t } = useLanguage();
+  const { useTrendsData, useInnovationPipelineData } = useAnalyticsData();
 
-  const { data: trends = [] } = useQuery({
-    queryKey: ['trends'],
-    queryFn: async () => {
-      const { data } = await supabase.from('trend_entries').select('*').order('created_at', { ascending: false });
-      return data || [];
-    }
-  });
+  const { data: trendsData = { trends: [], globalTrends: [] } } = useTrendsData();
+  const { data: pipelineData = { challenges: [], pilots: [], solutions: [] } } = useInnovationPipelineData();
 
-  const { data: globalTrends = [] } = useQuery({
-    queryKey: ['global-trends'],
-    queryFn: async () => {
-      const { data } = await supabase.from('global_trends').select('*').order('created_at', { ascending: false });
-      return data || [];
-    }
-  });
+  const { trends, globalTrends } = trendsData;
+  const { challenges, pilots, solutions } = pipelineData;
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-trends'],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('id, created_at, status').eq('is_deleted', false);
-      return data || [];
-    }
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-trends'],
-    queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('id, created_at, stage').eq('is_deleted', false);
-      return data || [];
-    }
-  });
-
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions-trends'],
-    queryFn: async () => {
-      const { data } = await supabase.from('solutions').select('id, created_at, status').eq('is_deleted', false);
-      return data || [];
-    }
-  });
 
   // Calculate real trend data from last 6 months
   const trendData = useMemo(() => {
     const months = [];
     const now = new Date();
-    
+
     for (let i = 5; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
       const monthName = date.toLocaleDateString('en', { month: 'short' });
-      
+
       const challengesInMonth = challenges.filter(c => {
         const created = new Date(c.created_at);
         return created >= date && created <= monthEnd;
       }).length;
-      
+
       const pilotsInMonth = pilots.filter(p => {
         const created = new Date(p.created_at);
         return created >= date && created <= monthEnd;
       }).length;
-      
+
       const solutionsInMonth = solutions.filter(s => {
         const created = new Date(s.created_at);
         return created >= date && created <= monthEnd;
       }).length;
-      
+
       months.push({
         month: monthName,
         challenges: challengesInMonth,
@@ -83,7 +50,7 @@ function TrendsPage() {
         solutions: solutionsInMonth
       });
     }
-    
+
     return months;
   }, [challenges, pilots, solutions]);
 

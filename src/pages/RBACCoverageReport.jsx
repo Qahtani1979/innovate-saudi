@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useAllRoles } from '@/hooks/useUserRoles';
+import { useUsersWithVisibility } from '@/hooks/useUsersWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -19,24 +19,15 @@ function RBACCoverageReport() {
   const [expandedSections, setExpandedSections] = useState({});
   const [activeTab, setActiveTab] = useState('coverage');
 
-  const { data: roles = [] } = useQuery({
-    queryKey: ['roles-rbac'],
-    queryFn: () => base44.entities.Role.list()
-  });
+  const { data: roles = [] } = useAllRoles();
 
-  const { data: users = [] } = useQuery({
-    queryKey: ['users-rbac'],
-    queryFn: () => base44.entities.User.list()
-  });
+  const { data: users = [] } = useUsersWithVisibility({ limit: 1000 });
 
   const toggleSection = (key) => {
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const { data: allRoles = [] } = useQuery({
-    queryKey: ['all-roles'],
-    queryFn: () => base44.entities.Role.list()
-  });
+  // const { data: allRoles = [] } = useAllRoles(); // Redundant, uses roles above
 
   const rbacData = {
     // Comprehensive permission categories from RolePermissionManager
@@ -1056,8 +1047,8 @@ function RBACCoverageReport() {
         expertRoles: allRoles.filter(r => r.is_expert_role).length,
         withParent: allRoles.filter(r => r.parent_role_id).length,
         sampleRoles: [
-          'Platform Admin', 'Municipality Manager', 'Domain Expert', 
-          'Evaluator', 'Program Evaluator', 'Research Evaluator', 
+          'Platform Admin', 'Municipality Manager', 'Domain Expert',
+          'Evaluator', 'Program Evaluator', 'Research Evaluator',
           'Matchmaker Manager', 'R&D Manager', 'Program Director'
         ]
       },
@@ -1194,1015 +1185,1012 @@ function RBACCoverageReport() {
 
         {/* TAB 1: Coverage Report */}
         <TabsContent value="coverage" className="space-y-6">
-      {/* Executive Summary */}
-      <Card className="border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-white">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-blue-900">
-            <Target className="h-6 w-6" />
-            {t({ en: 'Executive Summary', ar: 'الملخص التنفيذي' })}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-            <div className="text-center p-4 bg-white rounded-lg border-2 border-blue-200">
-              <p className="text-4xl font-bold text-blue-600">{overallCoverage}%</p>
-              <p className="text-sm text-slate-600 mt-1">Overall Coverage</p>
-            </div>
-            <div className="text-center p-4 bg-white rounded-lg border-2 border-green-200">
-              <p className="text-4xl font-bold text-green-600">{rbacData.implementation.totalPermissions}+</p>
-              <p className="text-sm text-slate-600 mt-1">Total Permissions</p>
-            </div>
-            <div className="text-center p-4 bg-white rounded-lg border-2 border-purple-200">
-              <p className="text-4xl font-bold text-purple-600">{rbacData.databaseStatus.roles.total}</p>
-              <p className="text-sm text-slate-600 mt-1">Roles in DB</p>
-            </div>
-            <div className="text-center p-4 bg-white rounded-lg border-2 border-indigo-200">
-              <p className="text-4xl font-bold text-indigo-600">{rbacData.pages.length}</p>
-              <p className="text-sm text-slate-600 mt-1">RBAC Pages</p>
-            </div>
-            <div className="text-center p-4 bg-white rounded-lg border-2 border-teal-200">
-              <p className="text-4xl font-bold text-teal-600">{rbacData.expertSystem.coverage}%</p>
-              <p className="text-sm text-slate-600 mt-1">Expert System</p>
-            </div>
-            <div className="text-center p-4 bg-white rounded-lg border-2 border-amber-200">
-              <p className="text-4xl font-bold text-amber-600">{rbacData.databaseStatus.permissions.inUse}</p>
-              <p className="text-sm text-slate-600 mt-1">Permissions Used</p>
-            </div>
-          </div>
-
-          <div className="p-4 bg-green-100 rounded-lg">
-            <p className="text-sm font-semibold text-green-900 mb-2">✅ Strengths</p>
-            <ul className="text-sm text-green-800 space-y-1">
-              <li>• <strong>COMPREHENSIVE PERMISSION MODEL</strong>: 80+ permissions across 11 categories (including policy)</li>
-              <li>• <strong>COMPLETE EXPERT SYSTEM</strong>: 100% integration with 4 entities, 6 pages, AI matching</li>
-              <li>• <strong>STRONG RLS IMPLEMENTATION</strong>: 10/12 entities have row-level security</li>
-              <li>• <strong>FIELD-LEVEL SECURITY</strong>: 8/12 entities protect confidential fields</li>
-              <li>• <strong>STATUS-BASED ACCESS</strong>: 5 entities implement status-based visibility</li>
-              <li>• <strong>MUNICIPALITY SCOPING</strong>: Non-admin users see only own municipality data</li>
-              <li>• <strong>EXPERT INTEGRATION</strong>: 8 detail pages show expert evaluations</li>
-              <li>• <strong>ROLE MANAGEMENT UI</strong>: Complete role creation, editing, permission selection</li>
-              <li>• <strong>DATABASE VALIDATION</strong>: {rbacData.databaseStatus.roles.total} roles in database ({rbacData.databaseStatus.permissions.inUse} unique permissions active)</li>
-              <li>• <strong>ROLE REQUEST WORKFLOW</strong>: Complete permission request and approval flow</li>
-              <li>• <strong>DELEGATION SYSTEM</strong>: Full delegation with approval queue</li>
-              <li>• <strong>POLICY RBAC COMPLETE</strong>: 5 policy roles with 15 permissions, full workflow security</li>
-              <li>• {rbacData.platformRoles.length} platform roles defined with clear access patterns</li>
-            </ul>
-          </div>
-
-          <div className="p-4 bg-blue-100 rounded-lg border border-blue-300">
-            <p className="text-sm font-semibold text-blue-900 mb-2">📊 Database Validation</p>
-            <div className="grid grid-cols-3 gap-3 text-sm">
-              <div>
-                <p className="text-blue-800 font-medium">Roles in Database:</p>
-                <p className="text-2xl font-bold text-blue-700">{rbacData.databaseStatus.roles.total}</p>
-                <p className="text-xs text-blue-600">{rbacData.databaseStatus.roles.systemRoles} system, {rbacData.databaseStatus.roles.customRoles} custom</p>
-              </div>
-              <div>
-                <p className="text-blue-800 font-medium">Permissions Active:</p>
-                <p className="text-2xl font-bold text-blue-700">{rbacData.databaseStatus.permissions.inUse}</p>
-                <p className="text-xs text-blue-600">From {rbacData.databaseStatus.permissions.defined} defined</p>
-              </div>
-              <div>
-                <p className="text-blue-800 font-medium">Expert Roles:</p>
-                <p className="text-2xl font-bold text-blue-700">{rbacData.databaseStatus.roles.expertRoles}</p>
-                <p className="text-xs text-blue-600">is_expert_role = true</p>
-              </div>
-            </div>
-            <div className="mt-3 p-2 bg-white rounded border border-blue-200">
-              <p className="text-xs font-semibold text-blue-900 mb-1">Sample Roles in DB:</p>
-              <div className="flex flex-wrap gap-1">
-                {rbacData.databaseStatus.roles.sampleRoles.map((role, i) => (
-                  <Badge key={i} variant="outline" className="text-xs">{role}</Badge>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="p-4 bg-red-100 rounded-lg">
-            <p className="text-sm font-semibold text-red-900 mb-2">🚨 Critical Gaps</p>
-            <ul className="text-sm text-red-800 space-y-1">
-              <li>• <strong>NO BACKEND ENFORCEMENT DOCUMENTATION</strong> - Frontend RBAC exists but backend API enforcement unclear</li>
-              <li>• <strong>NO PERMISSION REQUEST WORKFLOW</strong> - Users cannot request elevated permissions</li>
-              <li>• <strong>NO TEAM PERMISSIONS</strong> - Cannot delegate within teams</li>
-              <li>• <strong>NO TESTING FRAMEWORK</strong> - Cannot validate permission configurations</li>
-              <li>• <strong>NO FIELD-LEVEL READ/WRITE SEPARATION</strong> - All or nothing per entity</li>
-              <li>• <strong>NO TIME-BASED PERMISSIONS</strong> - Cannot grant temporary access</li>
-              <li>• <strong>NO CONDITIONAL PERMISSIONS</strong> - Cannot grant based on entity state</li>
-            </ul>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Pages Coverage (like Challenges report) */}
-      <Card>
-        <CardHeader>
-          <button
-            onClick={() => toggleSection('pages')}
-            className="w-full flex items-center justify-between"
-          >
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-green-600" />
-              {t({ en: 'Pages & Screens', ar: 'الصفحات والشاشات' })}
-              <Badge className="bg-green-100 text-green-700">{rbacData.pages.filter(p => p.status === 'complete').length}/{rbacData.pages.length} Complete</Badge>
-            </CardTitle>
-            {expandedSections['pages'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-          </button>
-        </CardHeader>
-        {expandedSections['pages'] && (
-          <CardContent>
-            <div className="space-y-4">
-              {rbacData.pages.map((page, idx) => (
-                <div key={idx} className="p-4 border rounded-lg hover:bg-slate-50">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-semibold text-slate-900">{page.name}</h4>
-                        <Badge className={
-                          page.status === 'complete' ? 'bg-green-100 text-green-700' :
-                          page.status === 'exists' ? 'bg-blue-100 text-blue-700' :
-                          'bg-yellow-100 text-yellow-700'
-                        }>
-                          {page.status}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-slate-600">{page.description}</p>
-                      <p className="text-xs text-slate-500 mt-1 font-mono">{page.path}</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-blue-600">{page.coverage}%</div>
-                      <div className="text-xs text-slate-500">Coverage</div>
-                    </div>
-                  </div>
-
-                  {page.features && (
-                    <div className="mb-2">
-                      <p className="text-xs font-semibold text-slate-700 mb-1">Features</p>
-                      <div className="grid grid-cols-2 gap-1">
-                        {page.features.map((f, i) => (
-                          <div key={i} className="text-xs text-slate-600">{f}</div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {page.aiFeatures?.length > 0 && (
-                    <div>
-                      <p className="text-xs font-semibold text-purple-700 mb-1">AI Features</p>
-                      <div className="flex flex-wrap gap-1">
-                        {page.aiFeatures.map((ai, i) => (
-                          <Badge key={i} variant="outline" className="text-xs">
-                            <Sparkles className="h-3 w-3 mr-1" />
-                            {ai}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+          {/* Executive Summary */}
+          <Card className="border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-white">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-blue-900">
+                <Target className="h-6 w-6" />
+                {t({ en: 'Executive Summary', ar: 'الملخص التنفيذي' })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+                <div className="text-center p-4 bg-white rounded-lg border-2 border-blue-200">
+                  <p className="text-4xl font-bold text-blue-600">{overallCoverage}%</p>
+                  <p className="text-sm text-slate-600 mt-1">Overall Coverage</p>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        )}
-      </Card>
-
-      {/* Components Coverage */}
-      <Card>
-        <CardHeader>
-          <button
-            onClick={() => toggleSection('components')}
-            className="w-full flex items-center justify-between"
-          >
-            <CardTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-purple-600" />
-              {t({ en: 'Components', ar: 'المكونات' })}
-              <Badge className="bg-purple-100 text-purple-700">{rbacData.components.length} Built</Badge>
-            </CardTitle>
-            {expandedSections['components'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-          </button>
-        </CardHeader>
-        {expandedSections['components'] && (
-          <CardContent>
-            <div className="grid md:grid-cols-3 gap-3">
-              {rbacData.components.map((comp, idx) => (
-                <div key={idx} className="p-3 border rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium text-sm text-slate-900">{comp.name}</h4>
-                    <Badge className={comp.status === 'complete' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}>
-                      {comp.coverage}%
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-slate-600">{comp.description}</p>
-                  <p className="text-xs text-slate-400 mt-1 font-mono">{comp.path}</p>
+                <div className="text-center p-4 bg-white rounded-lg border-2 border-green-200">
+                  <p className="text-4xl font-bold text-green-600">{rbacData.implementation.totalPermissions}+</p>
+                  <p className="text-sm text-slate-600 mt-1">Total Permissions</p>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        )}
-      </Card>
+                <div className="text-center p-4 bg-white rounded-lg border-2 border-purple-200">
+                  <p className="text-4xl font-bold text-purple-600">{rbacData.databaseStatus.roles.total}</p>
+                  <p className="text-sm text-slate-600 mt-1">Roles in DB</p>
+                </div>
+                <div className="text-center p-4 bg-white rounded-lg border-2 border-indigo-200">
+                  <p className="text-4xl font-bold text-indigo-600">{rbacData.pages.length}</p>
+                  <p className="text-sm text-slate-600 mt-1">RBAC Pages</p>
+                </div>
+                <div className="text-center p-4 bg-white rounded-lg border-2 border-teal-200">
+                  <p className="text-4xl font-bold text-teal-600">{rbacData.expertSystem.coverage}%</p>
+                  <p className="text-sm text-slate-600 mt-1">Expert System</p>
+                </div>
+                <div className="text-center p-4 bg-white rounded-lg border-2 border-amber-200">
+                  <p className="text-4xl font-bold text-amber-600">{rbacData.databaseStatus.permissions.inUse}</p>
+                  <p className="text-sm text-slate-600 mt-1">Permissions Used</p>
+                </div>
+              </div>
 
-      {/* Workflows (like Challenges report) */}
-      <Card>
-        <CardHeader>
-          <button
-            onClick={() => toggleSection('workflows')}
-            className="w-full flex items-center justify-between"
-          >
-            <CardTitle className="flex items-center gap-2">
-              <Workflow className="h-5 w-5 text-orange-600" />
-              {t({ en: 'Workflows & Lifecycles', ar: 'سير العمل ودورات الحياة' })}
-              <Badge className="bg-orange-100 text-orange-700">{rbacData.workflows.length} Workflows</Badge>
-            </CardTitle>
-            {expandedSections['workflows'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-          </button>
-        </CardHeader>
-        {expandedSections['workflows'] && (
-          <CardContent className="space-y-6">
-            {rbacData.workflows.map((workflow, idx) => (
-              <div key={idx} className="p-4 border rounded-lg">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-semibold text-slate-900">{workflow.name}</h4>
-                  <div className="flex items-center gap-2">
-                    <Progress value={workflow.coverage} className="w-32" />
-                    <span className="text-sm font-bold text-orange-600">{workflow.coverage}%</span>
+              <div className="p-4 bg-green-100 rounded-lg">
+                <p className="text-sm font-semibold text-green-900 mb-2">✅ Strengths</p>
+                <ul className="text-sm text-green-800 space-y-1">
+                  <li>• <strong>COMPREHENSIVE PERMISSION MODEL</strong>: 80+ permissions across 11 categories (including policy)</li>
+                  <li>• <strong>COMPLETE EXPERT SYSTEM</strong>: 100% integration with 4 entities, 6 pages, AI matching</li>
+                  <li>• <strong>STRONG RLS IMPLEMENTATION</strong>: 10/12 entities have row-level security</li>
+                  <li>• <strong>FIELD-LEVEL SECURITY</strong>: 8/12 entities protect confidential fields</li>
+                  <li>• <strong>STATUS-BASED ACCESS</strong>: 5 entities implement status-based visibility</li>
+                  <li>• <strong>MUNICIPALITY SCOPING</strong>: Non-admin users see only own municipality data</li>
+                  <li>• <strong>EXPERT INTEGRATION</strong>: 8 detail pages show expert evaluations</li>
+                  <li>• <strong>ROLE MANAGEMENT UI</strong>: Complete role creation, editing, permission selection</li>
+                  <li>• <strong>DATABASE VALIDATION</strong>: {rbacData.databaseStatus.roles.total} roles in database ({rbacData.databaseStatus.permissions.inUse} unique permissions active)</li>
+                  <li>• <strong>ROLE REQUEST WORKFLOW</strong>: Complete permission request and approval flow</li>
+                  <li>• <strong>DELEGATION SYSTEM</strong>: Full delegation with approval queue</li>
+                  <li>• <strong>POLICY RBAC COMPLETE</strong>: 5 policy roles with 15 permissions, full workflow security</li>
+                  <li>• {rbacData.platformRoles.length} platform roles defined with clear access patterns</li>
+                </ul>
+              </div>
+
+              <div className="p-4 bg-blue-100 rounded-lg border border-blue-300">
+                <p className="text-sm font-semibold text-blue-900 mb-2">📊 Database Validation</p>
+                <div className="grid grid-cols-3 gap-3 text-sm">
+                  <div>
+                    <p className="text-blue-800 font-medium">Roles in Database:</p>
+                    <p className="text-2xl font-bold text-blue-700">{rbacData.databaseStatus.roles.total}</p>
+                    <p className="text-xs text-blue-600">{rbacData.databaseStatus.roles.systemRoles} system, {rbacData.databaseStatus.roles.customRoles} custom</p>
+                  </div>
+                  <div>
+                    <p className="text-blue-800 font-medium">Permissions Active:</p>
+                    <p className="text-2xl font-bold text-blue-700">{rbacData.databaseStatus.permissions.inUse}</p>
+                    <p className="text-xs text-blue-600">From {rbacData.databaseStatus.permissions.defined} defined</p>
+                  </div>
+                  <div>
+                    <p className="text-blue-800 font-medium">Expert Roles:</p>
+                    <p className="text-2xl font-bold text-blue-700">{rbacData.databaseStatus.roles.expertRoles}</p>
+                    <p className="text-xs text-blue-600">is_expert_role = true</p>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  {workflow.stages.map((stage, i) => (
-                    <div key={i} className="flex items-center gap-3 p-2 bg-slate-50 rounded">
-                      {stage.status === 'complete' ? (
-                        <CheckCircle2 className="h-4 w-4 text-green-600" />
-                      ) : stage.status === 'partial' ? (
-                        <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-red-600" />
-                      )}
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-slate-900">{stage.name}</p>
-                        {stage.automation && (
-                          <p className="text-xs text-purple-600">🤖 {stage.automation}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {workflow.gaps?.length > 0 && (
-                  <div className="mt-3 p-3 bg-amber-50 rounded border border-amber-200">
-                    <p className="text-xs font-semibold text-amber-900 mb-1">Gaps</p>
-                    {workflow.gaps.map((g, i) => (
-                      <div key={i} className="text-xs text-amber-800">{g}</div>
+                <div className="mt-3 p-2 bg-white rounded border border-blue-200">
+                  <p className="text-xs font-semibold text-blue-900 mb-1">Sample Roles in DB:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {rbacData.databaseStatus.roles.sampleRoles.map((role, i) => (
+                      <Badge key={i} variant="outline" className="text-xs">{role}</Badge>
                     ))}
                   </div>
-                )}
-              </div>
-            ))}
-          </CardContent>
-        )}
-      </Card>
-
-      {/* User Journeys */}
-      <Card>
-        <CardHeader>
-          <button
-            onClick={() => toggleSection('journeys')}
-            className="w-full flex items-center justify-between"
-          >
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-teal-600" />
-              {t({ en: 'User Journeys', ar: 'رحلات المستخدم' })}
-              <Badge className="bg-teal-100 text-teal-700">{rbacData.userJourneys.length} Personas</Badge>
-            </CardTitle>
-            {expandedSections['journeys'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-          </button>
-        </CardHeader>
-        {expandedSections['journeys'] && (
-          <CardContent className="space-y-6">
-            {rbacData.userJourneys.map((journey, idx) => (
-              <div key={idx} className="p-4 border-2 rounded-lg">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-semibold text-slate-900 text-lg">{journey.persona}</h4>
-                  <Badge className={
-                    journey.coverage >= 90 ? 'bg-green-100 text-green-700' :
-                    journey.coverage >= 70 ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-red-100 text-red-700'
-                  }>{journey.coverage}% Complete</Badge>
                 </div>
-                <div className="space-y-2">
-                  {journey.journey.map((step, i) => (
-                    <div key={i} className="flex items-start gap-3">
-                      <div className="flex flex-col items-center">
-                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                          step.status === 'complete' ? 'bg-green-100 text-green-700' :
-                          step.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
-                          {i + 1}
+              </div>
+
+              <div className="p-4 bg-red-100 rounded-lg">
+                <p className="text-sm font-semibold text-red-900 mb-2">🚨 Critical Gaps</p>
+                <ul className="text-sm text-red-800 space-y-1">
+                  <li>• <strong>NO BACKEND ENFORCEMENT DOCUMENTATION</strong> - Frontend RBAC exists but backend API enforcement unclear</li>
+                  <li>• <strong>NO PERMISSION REQUEST WORKFLOW</strong> - Users cannot request elevated permissions</li>
+                  <li>• <strong>NO TEAM PERMISSIONS</strong> - Cannot delegate within teams</li>
+                  <li>• <strong>NO TESTING FRAMEWORK</strong> - Cannot validate permission configurations</li>
+                  <li>• <strong>NO FIELD-LEVEL READ/WRITE SEPARATION</strong> - All or nothing per entity</li>
+                  <li>• <strong>NO TIME-BASED PERMISSIONS</strong> - Cannot grant temporary access</li>
+                  <li>• <strong>NO CONDITIONAL PERMISSIONS</strong> - Cannot grant based on entity state</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Pages Coverage (like Challenges report) */}
+          <Card>
+            <CardHeader>
+              <button
+                onClick={() => toggleSection('pages')}
+                className="w-full flex items-center justify-between"
+              >
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-green-600" />
+                  {t({ en: 'Pages & Screens', ar: 'الصفحات والشاشات' })}
+                  <Badge className="bg-green-100 text-green-700">{rbacData.pages.filter(p => p.status === 'complete').length}/{rbacData.pages.length} Complete</Badge>
+                </CardTitle>
+                {expandedSections['pages'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+              </button>
+            </CardHeader>
+            {expandedSections['pages'] && (
+              <CardContent>
+                <div className="space-y-4">
+                  {rbacData.pages.map((page, idx) => (
+                    <div key={idx} className="p-4 border rounded-lg hover:bg-slate-50">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-semibold text-slate-900">{page.name}</h4>
+                            <Badge className={
+                              page.status === 'complete' ? 'bg-green-100 text-green-700' :
+                                page.status === 'exists' ? 'bg-blue-100 text-blue-700' :
+                                  'bg-yellow-100 text-yellow-700'
+                            }>
+                              {page.status}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-slate-600">{page.description}</p>
+                          <p className="text-xs text-slate-500 mt-1 font-mono">{page.path}</p>
                         </div>
-                        {i < journey.journey.length - 1 && (
-                          <div className={`w-0.5 h-8 ${
-                            step.status === 'complete' ? 'bg-green-300' : 'bg-slate-200'
-                          }`} />
-                        )}
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-blue-600">{page.coverage}%</div>
+                          <div className="text-xs text-slate-500">Coverage</div>
+                        </div>
                       </div>
-                      <div className="flex-1 pt-1">
-                        <p className="text-sm font-medium text-slate-900">{step.step}</p>
-                        <p className="text-xs text-slate-500">{step.page}</p>
-                        {step.gaps?.length > 0 && (
-                          <div className="mt-1 space-y-0.5">
-                            {step.gaps.map((g, gi) => (
-                              <p key={gi} className="text-xs text-amber-700">{g}</p>
+
+                      {page.features && (
+                        <div className="mb-2">
+                          <p className="text-xs font-semibold text-slate-700 mb-1">Features</p>
+                          <div className="grid grid-cols-2 gap-1">
+                            {page.features.map((f, i) => (
+                              <div key={i} className="text-xs text-slate-600">{f}</div>
                             ))}
                           </div>
-                        )}
-                      </div>
-                      {step.status === 'complete' ? (
-                        <CheckCircle2 className="h-4 w-4 text-green-600 mt-1" />
-                      ) : step.status === 'partial' ? (
-                        <AlertTriangle className="h-4 w-4 text-yellow-600 mt-1" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-red-600 mt-1" />
+                        </div>
+                      )}
+
+                      {page.aiFeatures?.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-purple-700 mb-1">AI Features</p>
+                          <div className="flex flex-wrap gap-1">
+                            {page.aiFeatures.map((ai, i) => (
+                              <Badge key={i} variant="outline" className="text-xs">
+                                <Sparkles className="h-3 w-3 mr-1" />
+                                {ai}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
                       )}
                     </div>
                   ))}
                 </div>
-                {journey.gaps?.length > 0 && (
-                  <div className="mt-4 p-3 bg-amber-50 rounded border border-amber-200">
-                    <p className="text-sm font-semibold text-amber-900 mb-2">Journey Gaps:</p>
-                    {journey.gaps.map((g, i) => (
-                      <div key={i} className="text-sm text-amber-800">• {g}</div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </CardContent>
-        )}
-      </Card>
-
-      {/* Conversion Paths */}
-      <Card className="border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 to-white">
-        <CardHeader>
-          <button
-            onClick={() => toggleSection('conversions')}
-            className="w-full flex items-center justify-between"
-          >
-            <CardTitle className="flex items-center gap-2 text-indigo-900">
-              <Network className="h-6 w-6" />
-              {t({ en: 'Integration & Conversion Paths', ar: 'مسارات التكامل والتحويل' })}
-            </CardTitle>
-            {expandedSections['conversions'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-          </button>
-        </CardHeader>
-        {expandedSections['conversions'] && (
-          <CardContent className="space-y-6">
-            <div>
-              <p className="font-semibold text-green-900 mb-3">✅ Implemented</p>
-              <div className="space-y-3">
-                {rbacData.conversionPaths.implemented.map((path, i) => (
-                  <div key={i} className="p-3 border-2 border-green-300 rounded-lg bg-green-50">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="font-bold text-green-900">{path.path}</p>
-                      <Badge className="bg-green-600 text-white">{path.coverage}%</Badge>
-                    </div>
-                    <p className="text-sm text-slate-700 mb-1">{path.description}</p>
-                    <p className="text-xs text-purple-700">🤖 {path.automation}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {rbacData.conversionPaths.missing.length > 0 && (
-              <div>
-                <p className="font-semibold text-red-900 mb-3">❌ Missing</p>
-                <div className="space-y-3">
-                  {rbacData.conversionPaths.missing.map((path, i) => (
-                    <div key={i} className="p-3 border-2 border-red-300 rounded-lg bg-red-50">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="font-bold text-red-900">{path.path}</p>
-                        <Badge className="bg-red-600 text-white">{path.coverage}%</Badge>
-                      </div>
-                      <p className="text-sm text-slate-700 mb-1">{path.description}</p>
-                      <p className="text-sm text-purple-700 italic">💡 {path.rationale}</p>
-                      <div className="mt-2 p-2 bg-white rounded border space-y-1">
-                        {path.gaps.map((g, gi) => (
-                          <p key={gi} className="text-xs text-red-700">{g}</p>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              </CardContent>
             )}
-          </CardContent>
-        )}
-      </Card>
+          </Card>
 
-      {/* Permission Categories */}
-      <Card>
-        <CardHeader>
-          <button
-            onClick={() => toggleSection('permissions')}
-            className="w-full flex items-center justify-between"
-          >
-            <CardTitle className="flex items-center gap-2">
-              <Key className="h-5 w-5 text-blue-600" />
-              {t({ en: 'Permission Categories & Matrix', ar: 'فئات الصلاحيات والمصفوفة' })}
-              <Badge className="bg-blue-100 text-blue-700">{rbacData.implementation.totalPermissions}+ Permissions</Badge>
-            </CardTitle>
-            {expandedSections['permissions'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-          </button>
-        </CardHeader>
-        {expandedSections['permissions'] && (
-          <CardContent className="space-y-6">
-            {Object.entries(rbacData.permissionCategories).map(([catKey, category]) => (
-              <div key={catKey} className="p-4 border rounded-lg">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold text-slate-900">{category.label[language]}</h4>
-                  <Badge variant="outline">{category.permissions.length} permissions</Badge>
-                </div>
-                <div className="grid md:grid-cols-3 gap-2">
-                  {category.permissions.map((perm, i) => (
-                    <div key={i} className="p-3 bg-slate-50 rounded border text-sm">
-                      <div className="flex items-center gap-2 mb-1">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                        <strong className="text-xs font-mono">{perm.key}</strong>
+          {/* Components Coverage */}
+          <Card>
+            <CardHeader>
+              <button
+                onClick={() => toggleSection('components')}
+                className="w-full flex items-center justify-between"
+              >
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-purple-600" />
+                  {t({ en: 'Components', ar: 'المكونات' })}
+                  <Badge className="bg-purple-100 text-purple-700">{rbacData.components.length} Built</Badge>
+                </CardTitle>
+                {expandedSections['components'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+              </button>
+            </CardHeader>
+            {expandedSections['components'] && (
+              <CardContent>
+                <div className="grid md:grid-cols-3 gap-3">
+                  {rbacData.components.map((comp, idx) => (
+                    <div key={idx} className="p-3 border rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-medium text-sm text-slate-900">{comp.name}</h4>
+                        <Badge className={comp.status === 'complete' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}>
+                          {comp.coverage}%
+                        </Badge>
                       </div>
-                      <p className="text-xs text-slate-600">{perm.description}</p>
+                      <p className="text-xs text-slate-600">{comp.description}</p>
+                      <p className="text-xs text-slate-400 mt-1 font-mono">{comp.path}</p>
                     </div>
                   ))}
                 </div>
-              </div>
-            ))}
-          </CardContent>
-        )}
-      </Card>
+              </CardContent>
+            )}
+          </Card>
 
-      {/* Platform Roles */}
-      <Card>
-        <CardHeader>
-          <button
-            onClick={() => toggleSection('roles')}
-            className="w-full flex items-center justify-between"
-          >
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-purple-600" />
-              {t({ en: 'Platform Roles & Access Patterns', ar: 'أدوار المنصة وأنماط الوصول' })}
-              <Badge className="bg-purple-100 text-purple-700">{rbacData.platformRoles.length} Roles (+5 Policy)</Badge>
-            </CardTitle>
-            {expandedSections['roles'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-          </button>
-        </CardHeader>
-        {expandedSections['roles'] && (
-          <CardContent className="space-y-3">
-            {rbacData.platformRoles.map((role, i) => (
-              <div key={i} className={`p-4 bg-white rounded border-2 ${role.borderColor}`}>
-                <div className="flex items-center gap-2 mb-3">
-                  <Badge className={role.badgeColor}>{role.name}</Badge>
-                  <span className="text-sm font-medium">{role.description}</span>
-                  {role.isSystemRole && (
-                    <Badge variant="outline" className="text-xs">System Role</Badge>
-                  )}
-                  {role.isExpertRole && (
-                    <Badge variant="outline" className="text-xs">is_expert_role = true</Badge>
-                  )}
-                  {role.parentRole && (
-                    <Badge variant="outline" className="text-xs">parent_role_id → {role.parentRole}</Badge>
-                  )}
-                </div>
-                <div className="mb-2">
-                  <p className="text-xs font-semibold text-slate-700 mb-1">Permissions:</p>
-                  <div className="text-sm text-slate-700">
-                    {typeof role.permissions === 'string' ? role.permissions : (
-                      <div className="flex flex-wrap gap-1">
-                        {role.permissions.map((p, j) => (
-                          <Badge key={j} variant="outline" className="text-xs">{p}</Badge>
+          {/* Workflows (like Challenges report) */}
+          <Card>
+            <CardHeader>
+              <button
+                onClick={() => toggleSection('workflows')}
+                className="w-full flex items-center justify-between"
+              >
+                <CardTitle className="flex items-center gap-2">
+                  <Workflow className="h-5 w-5 text-orange-600" />
+                  {t({ en: 'Workflows & Lifecycles', ar: 'سير العمل ودورات الحياة' })}
+                  <Badge className="bg-orange-100 text-orange-700">{rbacData.workflows.length} Workflows</Badge>
+                </CardTitle>
+                {expandedSections['workflows'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+              </button>
+            </CardHeader>
+            {expandedSections['workflows'] && (
+              <CardContent className="space-y-6">
+                {rbacData.workflows.map((workflow, idx) => (
+                  <div key={idx} className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-semibold text-slate-900">{workflow.name}</h4>
+                      <div className="flex items-center gap-2">
+                        <Progress value={workflow.coverage} className="w-32" />
+                        <span className="text-sm font-bold text-orange-600">{workflow.coverage}%</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      {workflow.stages.map((stage, i) => (
+                        <div key={i} className="flex items-center gap-3 p-2 bg-slate-50 rounded">
+                          {stage.status === 'complete' ? (
+                            <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          ) : stage.status === 'partial' ? (
+                            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                          ) : (
+                            <XCircle className="h-4 w-4 text-red-600" />
+                          )}
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-slate-900">{stage.name}</p>
+                            {stage.automation && (
+                              <p className="text-xs text-purple-600">🤖 {stage.automation}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {workflow.gaps?.length > 0 && (
+                      <div className="mt-3 p-3 bg-amber-50 rounded border border-amber-200">
+                        <p className="text-xs font-semibold text-amber-900 mb-1">Gaps</p>
+                        {workflow.gaps.map((g, i) => (
+                          <div key={i} className="text-xs text-amber-800">{g}</div>
                         ))}
                       </div>
                     )}
                   </div>
-                </div>
-                {role.rlsRules && (
-                  <div className="text-xs text-blue-700 bg-blue-50 p-2 rounded mb-2">
-                    <strong>RLS:</strong> {role.rlsRules}
-                  </div>
-                )}
-                {role.requiredFields && (
-                  <div className="text-xs text-indigo-700 bg-indigo-50 p-2 rounded mb-2">
-                    <strong>Required Fields:</strong> {role.requiredFields.join(', ')}
-                  </div>
-                )}
-                <div className="flex items-center gap-4 text-xs text-slate-600">
-                  <span className="flex items-center gap-1">
-                    <Users className="h-3 w-3" />
-                    {role.userCount} users
-                  </span>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        )}
-      </Card>
+                ))}
+              </CardContent>
+            )}
+          </Card>
 
-      {/* Entity-Level RBAC */}
-      <Card>
-        <CardHeader>
-          <button
-            onClick={() => toggleSection('entities')}
-            className="w-full flex items-center justify-between"
-          >
-            <CardTitle className="flex items-center gap-2">
-              <Database className="h-5 w-5 text-green-600" />
-              {t({ en: 'Entity-Level RBAC Implementation', ar: 'تنفيذ RBAC على مستوى الكيان' })}
-              <Badge className="bg-green-100 text-green-700">{rbacData.implementation.entitiesWithRBAC}/12 Complete</Badge>
-            </CardTitle>
-            {expandedSections['entities'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-          </button>
-        </CardHeader>
-        {expandedSections['entities'] && (
-          <CardContent>
-            <div className="space-y-3">
-              {rbacData.entityRBAC.map((entity, i) => (
-                <div key={i} className="p-4 border rounded-lg">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-semibold text-slate-900">{entity.entity}</h4>
-                      <Badge className={entity.coverage >= 90 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}>
-                        {entity.coverage}%
+          {/* User Journeys */}
+          <Card>
+            <CardHeader>
+              <button
+                onClick={() => toggleSection('journeys')}
+                className="w-full flex items-center justify-between"
+              >
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-teal-600" />
+                  {t({ en: 'User Journeys', ar: 'رحلات المستخدم' })}
+                  <Badge className="bg-teal-100 text-teal-700">{rbacData.userJourneys.length} Personas</Badge>
+                </CardTitle>
+                {expandedSections['journeys'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+              </button>
+            </CardHeader>
+            {expandedSections['journeys'] && (
+              <CardContent className="space-y-6">
+                {rbacData.userJourneys.map((journey, idx) => (
+                  <div key={idx} className="p-4 border-2 rounded-lg">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-semibold text-slate-900 text-lg">{journey.persona}</h4>
+                      <Badge className={
+                        journey.coverage >= 90 ? 'bg-green-100 text-green-700' :
+                          journey.coverage >= 70 ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-red-100 text-red-700'
+                      }>{journey.coverage}% Complete</Badge>
+                    </div>
+                    <div className="space-y-2">
+                      {journey.journey.map((step, i) => (
+                        <div key={i} className="flex items-start gap-3">
+                          <div className="flex flex-col items-center">
+                            <div className={`h-8 w-8 rounded-full flex items-center justify-center ${step.status === 'complete' ? 'bg-green-100 text-green-700' :
+                              step.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-red-100 text-red-700'
+                              }`}>
+                              {i + 1}
+                            </div>
+                            {i < journey.journey.length - 1 && (
+                              <div className={`w-0.5 h-8 ${step.status === 'complete' ? 'bg-green-300' : 'bg-slate-200'
+                                }`} />
+                            )}
+                          </div>
+                          <div className="flex-1 pt-1">
+                            <p className="text-sm font-medium text-slate-900">{step.step}</p>
+                            <p className="text-xs text-slate-500">{step.page}</p>
+                            {step.gaps?.length > 0 && (
+                              <div className="mt-1 space-y-0.5">
+                                {step.gaps.map((g, gi) => (
+                                  <p key={gi} className="text-xs text-amber-700">{g}</p>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          {step.status === 'complete' ? (
+                            <CheckCircle2 className="h-4 w-4 text-green-600 mt-1" />
+                          ) : step.status === 'partial' ? (
+                            <AlertTriangle className="h-4 w-4 text-yellow-600 mt-1" />
+                          ) : (
+                            <XCircle className="h-4 w-4 text-red-600 mt-1" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    {journey.gaps?.length > 0 && (
+                      <div className="mt-4 p-3 bg-amber-50 rounded border border-amber-200">
+                        <p className="text-sm font-semibold text-amber-900 mb-2">Journey Gaps:</p>
+                        {journey.gaps.map((g, i) => (
+                          <div key={i} className="text-sm text-amber-800">• {g}</div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            )}
+          </Card>
+
+          {/* Conversion Paths */}
+          <Card className="border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 to-white">
+            <CardHeader>
+              <button
+                onClick={() => toggleSection('conversions')}
+                className="w-full flex items-center justify-between"
+              >
+                <CardTitle className="flex items-center gap-2 text-indigo-900">
+                  <Network className="h-6 w-6" />
+                  {t({ en: 'Integration & Conversion Paths', ar: 'مسارات التكامل والتحويل' })}
+                </CardTitle>
+                {expandedSections['conversions'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+              </button>
+            </CardHeader>
+            {expandedSections['conversions'] && (
+              <CardContent className="space-y-6">
+                <div>
+                  <p className="font-semibold text-green-900 mb-3">✅ Implemented</p>
+                  <div className="space-y-3">
+                    {rbacData.conversionPaths.implemented.map((path, i) => (
+                      <div key={i} className="p-3 border-2 border-green-300 rounded-lg bg-green-50">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="font-bold text-green-900">{path.path}</p>
+                          <Badge className="bg-green-600 text-white">{path.coverage}%</Badge>
+                        </div>
+                        <p className="text-sm text-slate-700 mb-1">{path.description}</p>
+                        <p className="text-xs text-purple-700">🤖 {path.automation}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {rbacData.conversionPaths.missing.length > 0 && (
+                  <div>
+                    <p className="font-semibold text-red-900 mb-3">❌ Missing</p>
+                    <div className="space-y-3">
+                      {rbacData.conversionPaths.missing.map((path, i) => (
+                        <div key={i} className="p-3 border-2 border-red-300 rounded-lg bg-red-50">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="font-bold text-red-900">{path.path}</p>
+                            <Badge className="bg-red-600 text-white">{path.coverage}%</Badge>
+                          </div>
+                          <p className="text-sm text-slate-700 mb-1">{path.description}</p>
+                          <p className="text-sm text-purple-700 italic">💡 {path.rationale}</p>
+                          <div className="mt-2 p-2 bg-white rounded border space-y-1">
+                            {path.gaps.map((g, gi) => (
+                              <p key={gi} className="text-xs text-red-700">{g}</p>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            )}
+          </Card>
+
+          {/* Permission Categories */}
+          <Card>
+            <CardHeader>
+              <button
+                onClick={() => toggleSection('permissions')}
+                className="w-full flex items-center justify-between"
+              >
+                <CardTitle className="flex items-center gap-2">
+                  <Key className="h-5 w-5 text-blue-600" />
+                  {t({ en: 'Permission Categories & Matrix', ar: 'فئات الصلاحيات والمصفوفة' })}
+                  <Badge className="bg-blue-100 text-blue-700">{rbacData.implementation.totalPermissions}+ Permissions</Badge>
+                </CardTitle>
+                {expandedSections['permissions'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+              </button>
+            </CardHeader>
+            {expandedSections['permissions'] && (
+              <CardContent className="space-y-6">
+                {Object.entries(rbacData.permissionCategories).map(([catKey, category]) => (
+                  <div key={catKey} className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold text-slate-900">{category.label[language]}</h4>
+                      <Badge variant="outline">{category.permissions.length} permissions</Badge>
+                    </div>
+                    <div className="grid md:grid-cols-3 gap-2">
+                      {category.permissions.map((perm, i) => (
+                        <div key={i} className="p-3 bg-slate-50 rounded border text-sm">
+                          <div className="flex items-center gap-2 mb-1">
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <strong className="text-xs font-mono">{perm.key}</strong>
+                          </div>
+                          <p className="text-xs text-slate-600">{perm.description}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            )}
+          </Card>
+
+          {/* Platform Roles */}
+          <Card>
+            <CardHeader>
+              <button
+                onClick={() => toggleSection('roles')}
+                className="w-full flex items-center justify-between"
+              >
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-purple-600" />
+                  {t({ en: 'Platform Roles & Access Patterns', ar: 'أدوار المنصة وأنماط الوصول' })}
+                  <Badge className="bg-purple-100 text-purple-700">{rbacData.platformRoles.length} Roles (+5 Policy)</Badge>
+                </CardTitle>
+                {expandedSections['roles'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+              </button>
+            </CardHeader>
+            {expandedSections['roles'] && (
+              <CardContent className="space-y-3">
+                {rbacData.platformRoles.map((role, i) => (
+                  <div key={i} className={`p-4 bg-white rounded border-2 ${role.borderColor}`}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Badge className={role.badgeColor}>{role.name}</Badge>
+                      <span className="text-sm font-medium">{role.description}</span>
+                      {role.isSystemRole && (
+                        <Badge variant="outline" className="text-xs">System Role</Badge>
+                      )}
+                      {role.isExpertRole && (
+                        <Badge variant="outline" className="text-xs">is_expert_role = true</Badge>
+                      )}
+                      {role.parentRole && (
+                        <Badge variant="outline" className="text-xs">parent_role_id → {role.parentRole}</Badge>
+                      )}
+                    </div>
+                    <div className="mb-2">
+                      <p className="text-xs font-semibold text-slate-700 mb-1">Permissions:</p>
+                      <div className="text-sm text-slate-700">
+                        {typeof role.permissions === 'string' ? role.permissions : (
+                          <div className="flex flex-wrap gap-1">
+                            {role.permissions.map((p, j) => (
+                              <Badge key={j} variant="outline" className="text-xs">{p}</Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {role.rlsRules && (
+                      <div className="text-xs text-blue-700 bg-blue-50 p-2 rounded mb-2">
+                        <strong>RLS:</strong> {role.rlsRules}
+                      </div>
+                    )}
+                    {role.requiredFields && (
+                      <div className="text-xs text-indigo-700 bg-indigo-50 p-2 rounded mb-2">
+                        <strong>Required Fields:</strong> {role.requiredFields.join(', ')}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-4 text-xs text-slate-600">
+                      <span className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        {role.userCount} users
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            )}
+          </Card>
+
+          {/* Entity-Level RBAC */}
+          <Card>
+            <CardHeader>
+              <button
+                onClick={() => toggleSection('entities')}
+                className="w-full flex items-center justify-between"
+              >
+                <CardTitle className="flex items-center gap-2">
+                  <Database className="h-5 w-5 text-green-600" />
+                  {t({ en: 'Entity-Level RBAC Implementation', ar: 'تنفيذ RBAC على مستوى الكيان' })}
+                  <Badge className="bg-green-100 text-green-700">{rbacData.implementation.entitiesWithRBAC}/12 Complete</Badge>
+                </CardTitle>
+                {expandedSections['entities'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+              </button>
+            </CardHeader>
+            {expandedSections['entities'] && (
+              <CardContent>
+                <div className="space-y-3">
+                  {rbacData.entityRBAC.map((entity, i) => (
+                    <div key={i} className="p-4 border rounded-lg">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-semibold text-slate-900">{entity.entity}</h4>
+                          <Badge className={entity.coverage >= 90 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}>
+                            {entity.coverage}%
+                          </Badge>
+                        </div>
+                        <div className="flex gap-2">
+                          {entity.rlsImplemented && (
+                            <Badge variant="outline" className="text-xs">
+                              <Lock className="h-3 w-3 mr-1" />
+                              RLS
+                            </Badge>
+                          )}
+                          {entity.statusBasedAccess && (
+                            <Badge variant="outline" className="text-xs">
+                              <Activity className="h-3 w-3 mr-1" />
+                              Status-Based
+                            </Badge>
+                          )}
+                          {entity.fieldLevelSecurity && (
+                            <Badge variant="outline" className="text-xs">
+                              <Eye className="h-3 w-3 mr-1" />
+                              Field-Level
+                            </Badge>
+                          )}
+                          {entity.expertIntegration && (
+                            <Badge variant="outline" className="text-xs bg-purple-100 text-purple-700">
+                              <Users className="h-3 w-3 mr-1" />
+                              Expert
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-4 gap-3 mb-3 text-xs">
+                        <div className="p-2 bg-blue-50 rounded">
+                          <p className="text-slate-600">Permissions</p>
+                          <p className="text-xl font-bold text-blue-600">{entity.permissions}</p>
+                        </div>
+                        <div className="p-2 bg-purple-50 rounded">
+                          <p className="text-slate-600">Roles</p>
+                          <p className="text-xl font-bold text-purple-600">{entity.roles}</p>
+                        </div>
+                        <div className="p-2 bg-green-50 rounded">
+                          <p className="text-slate-600">RLS Rules</p>
+                          <p className="text-xl font-bold text-green-600">{entity.rlsImplemented ? '✓' : '—'}</p>
+                        </div>
+                        <div className="p-2 bg-indigo-50 rounded">
+                          <p className="text-slate-600">Expert</p>
+                          <p className="text-xl font-bold text-indigo-600">{entity.expertIntegration ? '✓' : '—'}</p>
+                        </div>
+                      </div>
+                      {entity.rlsRules && (
+                        <div className="p-2 bg-blue-50 rounded border border-blue-200 text-xs mb-2">
+                          <strong>RLS:</strong> {entity.rlsRules}
+                        </div>
+                      )}
+                      {entity.gaps.length > 0 && (
+                        <div className="p-2 bg-amber-50 rounded border border-amber-200">
+                          <p className="text-xs font-semibold text-amber-900 mb-1">Gaps:</p>
+                          {entity.gaps.map((g, j) => (
+                            <div key={j} className="text-xs text-amber-800">{g}</div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            )}
+          </Card>
+
+          {/* Expert System Integration */}
+          <Card className="border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-white">
+            <CardHeader>
+              <button
+                onClick={() => toggleSection('experts')}
+                className="w-full flex items-center justify-between"
+              >
+                <CardTitle className="flex items-center gap-2 text-purple-900">
+                  <Users className="h-6 w-6" />
+                  {t({ en: 'Expert Evaluation System - COMPLETE', ar: 'نظام تقييم الخبراء - مكتمل' })}
+                  <Badge className="bg-green-600 text-white">100% Coverage</Badge>
+                </CardTitle>
+                {expandedSections['experts'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+              </button>
+            </CardHeader>
+            {expandedSections['experts'] && (
+              <CardContent className="space-y-4">
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div className="p-4 bg-white rounded border text-center">
+                    <p className="text-sm text-slate-600 mb-2">Expert Entities</p>
+                    <p className="text-4xl font-bold text-blue-600">{rbacData.expertSystem.entities}</p>
+                    <div className="mt-2 text-xs text-slate-600">
+                      {rbacData.expertSystem.entityNames.join(', ')}
+                    </div>
+                  </div>
+                  <div className="p-4 bg-white rounded border text-center">
+                    <p className="text-sm text-slate-600 mb-2">Expert Pages</p>
+                    <p className="text-4xl font-bold text-purple-600">{rbacData.expertSystem.pages}</p>
+                    <div className="mt-2 text-xs text-slate-600">
+                      Registry, Matching, Queue, Performance, etc.
+                    </div>
+                  </div>
+                  <div className="p-4 bg-white rounded border text-center">
+                    <p className="text-sm text-slate-600 mb-2">Integrations</p>
+                    <p className="text-4xl font-bold text-green-600">{rbacData.expertSystem.integratedIn.length}</p>
+                    <div className="mt-2 text-xs text-slate-600">
+                      Detail pages with Expert tabs
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-green-100 rounded-lg border border-green-300">
+                  <p className="text-sm font-semibold text-green-900 mb-2">✅ Complete Integration</p>
+                  <div className="grid md:grid-cols-2 gap-3 text-sm text-green-800">
+                    <div>
+                      <p className="font-medium mb-1">Entities:</p>
+                      <ul className="space-y-1 text-xs">
+                        {rbacData.expertSystem.entityNames.map((name, i) => (
+                          <li key={i}>• {name}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="font-medium mb-1">Pages:</p>
+                      <ul className="space-y-1 text-xs">
+                        {rbacData.expertSystem.pageNames.map((name, i) => (
+                          <li key={i}>• {name}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <p className="font-medium text-green-900 mb-1">Integrated In:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {rbacData.expertSystem.integratedIn.map((name, i) => (
+                        <Badge key={i} variant="outline" className="text-xs">{name}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            )}
+          </Card>
+
+          {/* Row-Level Security */}
+          <Card>
+            <CardHeader>
+              <button
+                onClick={() => toggleSection('rls')}
+                className="w-full flex items-center justify-between"
+              >
+                <CardTitle className="flex items-center gap-2">
+                  <Lock className="h-5 w-5 text-indigo-600" />
+                  {t({ en: 'Row-Level Security (RLS) Implementation', ar: 'تنفيذ الأمان على مستوى الصف' })}
+                  <Badge className="bg-indigo-100 text-indigo-700">{rbacData.implementation.entitiesWithRLS}/12 Entities</Badge>
+                </CardTitle>
+                {expandedSections['rls'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+              </button>
+            </CardHeader>
+            {expandedSections['rls'] && (
+              <CardContent className="space-y-3">
+                <div className="p-4 bg-indigo-100 rounded-lg border border-indigo-300">
+                  <p className="text-sm font-semibold text-indigo-900 mb-2">📊 RLS Coverage</p>
+                  <p className="text-sm text-indigo-800">
+                    <strong>10 out of 12 major entities</strong> implement row-level security to scope data access.
+                    Primary pattern: <strong>Municipality scoping</strong> for non-admin users.
+                  </p>
+                </div>
+
+                {rbacData.entityRBAC.filter(e => e.rlsImplemented).map((entity, i) => (
+                  <div key={i} className="p-3 border rounded-lg bg-slate-50">
+                    <div className="flex items-center justify-between mb-2">
+                      <strong className="text-slate-900">{entity.entity}</strong>
+                      <Badge className="bg-green-100 text-green-700">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        RLS Active
                       </Badge>
                     </div>
-                    <div className="flex gap-2">
-                      {entity.rlsImplemented && (
-                        <Badge variant="outline" className="text-xs">
-                          <Lock className="h-3 w-3 mr-1" />
-                          RLS
-                        </Badge>
-                      )}
-                      {entity.statusBasedAccess && (
-                        <Badge variant="outline" className="text-xs">
-                          <Activity className="h-3 w-3 mr-1" />
-                          Status-Based
-                        </Badge>
-                      )}
-                      {entity.fieldLevelSecurity && (
-                        <Badge variant="outline" className="text-xs">
-                          <Eye className="h-3 w-3 mr-1" />
-                          Field-Level
-                        </Badge>
-                      )}
-                      {entity.expertIntegration && (
-                        <Badge variant="outline" className="text-xs bg-purple-100 text-purple-700">
-                          <Users className="h-3 w-3 mr-1" />
-                          Expert
-                        </Badge>
-                      )}
+                    <div className="text-xs text-blue-700 bg-blue-50 p-2 rounded">
+                      {entity.rlsRules}
                     </div>
                   </div>
-                  <div className="grid grid-cols-4 gap-3 mb-3 text-xs">
-                    <div className="p-2 bg-blue-50 rounded">
-                      <p className="text-slate-600">Permissions</p>
-                      <p className="text-xl font-bold text-blue-600">{entity.permissions}</p>
-                    </div>
-                    <div className="p-2 bg-purple-50 rounded">
-                      <p className="text-slate-600">Roles</p>
-                      <p className="text-xl font-bold text-purple-600">{entity.roles}</p>
-                    </div>
-                    <div className="p-2 bg-green-50 rounded">
-                      <p className="text-slate-600">RLS Rules</p>
-                      <p className="text-xl font-bold text-green-600">{entity.rlsImplemented ? '✓' : '—'}</p>
-                    </div>
-                    <div className="p-2 bg-indigo-50 rounded">
-                      <p className="text-slate-600">Expert</p>
-                      <p className="text-xl font-bold text-indigo-600">{entity.expertIntegration ? '✓' : '—'}</p>
+                ))}
+              </CardContent>
+            )}
+          </Card>
+
+          {/* Field-Level Security */}
+          <Card>
+            <CardHeader>
+              <button
+                onClick={() => toggleSection('fields')}
+                className="w-full flex items-center justify-between"
+              >
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="h-5 w-5 text-teal-600" />
+                  {t({ en: 'Field-Level Security', ar: 'الأمان على مستوى الحقل' })}
+                  <Badge className="bg-teal-100 text-teal-700">{rbacData.implementation.entitiesWithFieldSecurity}/12 Entities</Badge>
+                </CardTitle>
+                {expandedSections['fields'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+              </button>
+            </CardHeader>
+            {expandedSections['fields'] && (
+              <CardContent className="space-y-3">
+                {rbacData.fieldSecurity.map((item, i) => (
+                  <div key={i} className="p-4 border rounded-lg">
+                    <h4 className="font-semibold text-slate-900 mb-3">{item.entity}</h4>
+                    <div className="grid md:grid-cols-2 gap-3">
+                      <div className="p-3 bg-red-50 rounded border border-red-200">
+                        <p className="text-xs font-semibold text-red-900 mb-2">Confidential (Admin/Owner Only)</p>
+                        <div className="space-y-1">
+                          {item.confidentialFields.map((field, j) => (
+                            <div key={j} className="text-xs text-red-700">• {field}</div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="p-3 bg-green-50 rounded border border-green-200">
+                        <p className="text-xs font-semibold text-green-900 mb-2">Public-Safe Fields</p>
+                        <div className="space-y-1">
+                          {item.publicFields.map((field, j) => (
+                            <div key={j} className="text-xs text-green-700">• {field}</div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  {entity.rlsRules && (
-                    <div className="p-2 bg-blue-50 rounded border border-blue-200 text-xs mb-2">
-                      <strong>RLS:</strong> {entity.rlsRules}
-                    </div>
-                  )}
-                  {entity.gaps.length > 0 && (
-                    <div className="p-2 bg-amber-50 rounded border border-amber-200">
-                      <p className="text-xs font-semibold text-amber-900 mb-1">Gaps:</p>
-                      {entity.gaps.map((g, j) => (
-                        <div key={j} className="text-xs text-amber-800">{g}</div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        )}
-      </Card>
+                ))}
+              </CardContent>
+            )}
+          </Card>
 
-      {/* Expert System Integration */}
-      <Card className="border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-white">
-        <CardHeader>
-          <button
-            onClick={() => toggleSection('experts')}
-            className="w-full flex items-center justify-between"
-          >
-            <CardTitle className="flex items-center gap-2 text-purple-900">
-              <Users className="h-6 w-6" />
-              {t({ en: 'Expert Evaluation System - COMPLETE', ar: 'نظام تقييم الخبراء - مكتمل' })}
-              <Badge className="bg-green-600 text-white">100% Coverage</Badge>
-            </CardTitle>
-            {expandedSections['experts'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-          </button>
-        </CardHeader>
-        {expandedSections['experts'] && (
-          <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-3 gap-4">
-              <div className="p-4 bg-white rounded border text-center">
-                <p className="text-sm text-slate-600 mb-2">Expert Entities</p>
-                <p className="text-4xl font-bold text-blue-600">{rbacData.expertSystem.entities}</p>
-                <div className="mt-2 text-xs text-slate-600">
-                  {rbacData.expertSystem.entityNames.join(', ')}
+          {/* Implementation Metrics */}
+          <Card>
+            <CardHeader>
+              <button
+                onClick={() => toggleSection('metrics')}
+                className="w-full flex items-center justify-between"
+              >
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-orange-600" />
+                  {t({ en: 'Implementation Metrics & Statistics', ar: 'مقاييس التنفيذ والإحصائيات' })}
+                </CardTitle>
+                {expandedSections['metrics'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+              </button>
+            </CardHeader>
+            {expandedSections['metrics'] && (
+              <CardContent>
+                <div className="grid md:grid-cols-4 gap-4">
+                  <div className="p-4 bg-blue-50 rounded-lg border">
+                    <Shield className="h-8 w-8 text-blue-600 mb-2" />
+                    <p className="text-3xl font-bold text-blue-600">{rbacData.implementation.totalPermissions}+</p>
+                    <p className="text-xs text-slate-600">Total Permissions</p>
+                  </div>
+                  <div className="p-4 bg-purple-50 rounded-lg border">
+                    <Users className="h-8 w-8 text-purple-600 mb-2" />
+                    <p className="text-3xl font-bold text-purple-600">{rbacData.implementation.totalRoles}</p>
+                    <p className="text-xs text-slate-600">Total Roles</p>
+                    <div className="mt-2 text-xs text-slate-500">
+                      {rbacData.implementation.systemRoles} system, {rbacData.implementation.customRoles} custom
+                    </div>
+                  </div>
+                  <div className="p-4 bg-green-50 rounded-lg border">
+                    <Database className="h-8 w-8 text-green-600 mb-2" />
+                    <p className="text-3xl font-bold text-green-600">{rbacData.implementation.entitiesWithRBAC}/12</p>
+                    <p className="text-xs text-slate-600">Entities with RBAC</p>
+                  </div>
+                  <div className="p-4 bg-indigo-50 rounded-lg border">
+                    <Lock className="h-8 w-8 text-indigo-600 mb-2" />
+                    <p className="text-3xl font-bold text-indigo-600">{rbacData.implementation.entitiesWithRLS}/12</p>
+                    <p className="text-xs text-slate-600">Entities with RLS</p>
+                  </div>
+                  <div className="p-4 bg-teal-50 rounded-lg border">
+                    <Eye className="h-8 w-8 text-teal-600 mb-2" />
+                    <p className="text-3xl font-bold text-teal-600">{rbacData.implementation.entitiesWithFieldSecurity}/12</p>
+                    <p className="text-xs text-slate-600">Field-Level Security</p>
+                  </div>
+                  <div className="p-4 bg-pink-50 rounded-lg border">
+                    <Users className="h-8 w-8 text-pink-600 mb-2" />
+                    <p className="text-3xl font-bold text-pink-600">{rbacData.implementation.expertRoles}</p>
+                    <p className="text-xs text-slate-600">Expert Roles</p>
+                  </div>
+                  <div className="p-4 bg-amber-50 rounded-lg border">
+                    <Activity className="h-8 w-8 text-amber-600 mb-2" />
+                    <p className="text-3xl font-bold text-amber-600">{rbacData.implementation.entitiesWithExpertIntegration}/12</p>
+                    <p className="text-xs text-slate-600">Expert Integration</p>
+                  </div>
+                  <div className="p-4 bg-slate-50 rounded-lg border">
+                    <Key className="h-8 w-8 text-slate-600 mb-2" />
+                    <p className="text-3xl font-bold text-slate-600">{rbacData.implementation.totalUsers}</p>
+                    <p className="text-xs text-slate-600">Total Users</p>
+                  </div>
                 </div>
-              </div>
-              <div className="p-4 bg-white rounded border text-center">
-                <p className="text-sm text-slate-600 mb-2">Expert Pages</p>
-                <p className="text-4xl font-bold text-purple-600">{rbacData.expertSystem.pages}</p>
-                <div className="mt-2 text-xs text-slate-600">
-                  Registry, Matching, Queue, Performance, etc.
-                </div>
-              </div>
-              <div className="p-4 bg-white rounded border text-center">
-                <p className="text-sm text-slate-600 mb-2">Integrations</p>
-                <p className="text-4xl font-bold text-green-600">{rbacData.expertSystem.integratedIn.length}</p>
-                <div className="mt-2 text-xs text-slate-600">
-                  Detail pages with Expert tabs
-                </div>
-              </div>
-            </div>
+              </CardContent>
+            )}
+          </Card>
 
-            <div className="p-4 bg-green-100 rounded-lg border border-green-300">
-              <p className="text-sm font-semibold text-green-900 mb-2">✅ Complete Integration</p>
-              <div className="grid md:grid-cols-2 gap-3 text-sm text-green-800">
-                <div>
-                  <p className="font-medium mb-1">Entities:</p>
-                  <ul className="space-y-1 text-xs">
-                    {rbacData.expertSystem.entityNames.map((name, i) => (
-                      <li key={i}>• {name}</li>
-                    ))}
-                  </ul>
+          {/* Gaps & Missing Features */}
+          <Card className="border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-white">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-amber-900">
+                <AlertTriangle className="h-6 w-6" />
+                {t({ en: 'Gaps & Missing Features', ar: 'الفجوات والميزات المفقودة' })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <XCircle className="h-5 w-5 text-red-600" />
+                  <p className="font-semibold text-red-900">Critical ({rbacData.gaps.critical.length})</p>
                 </div>
-                <div>
-                  <p className="font-medium mb-1">Pages:</p>
-                  <ul className="space-y-1 text-xs">
-                    {rbacData.expertSystem.pageNames.map((name, i) => (
-                      <li key={i}>• {name}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-              <div className="mt-3">
-                <p className="font-medium text-green-900 mb-1">Integrated In:</p>
-                <div className="flex flex-wrap gap-1">
-                  {rbacData.expertSystem.integratedIn.map((name, i) => (
-                    <Badge key={i} variant="outline" className="text-xs">{name}</Badge>
+                <div className="space-y-1 pl-7">
+                  {rbacData.gaps.critical.map((gap, i) => (
+                    <p key={i} className="text-sm text-red-700">{gap}</p>
                   ))}
                 </div>
               </div>
-            </div>
-          </CardContent>
-        )}
-      </Card>
 
-      {/* Row-Level Security */}
-      <Card>
-        <CardHeader>
-          <button
-            onClick={() => toggleSection('rls')}
-            className="w-full flex items-center justify-between"
-          >
-            <CardTitle className="flex items-center gap-2">
-              <Lock className="h-5 w-5 text-indigo-600" />
-              {t({ en: 'Row-Level Security (RLS) Implementation', ar: 'تنفيذ الأمان على مستوى الصف' })}
-              <Badge className="bg-indigo-100 text-indigo-700">{rbacData.implementation.entitiesWithRLS}/12 Entities</Badge>
-            </CardTitle>
-            {expandedSections['rls'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-          </button>
-        </CardHeader>
-        {expandedSections['rls'] && (
-          <CardContent className="space-y-3">
-            <div className="p-4 bg-indigo-100 rounded-lg border border-indigo-300">
-              <p className="text-sm font-semibold text-indigo-900 mb-2">📊 RLS Coverage</p>
-              <p className="text-sm text-indigo-800">
-                <strong>10 out of 12 major entities</strong> implement row-level security to scope data access.
-                Primary pattern: <strong>Municipality scoping</strong> for non-admin users.
-              </p>
-            </div>
-
-            {rbacData.entityRBAC.filter(e => e.rlsImplemented).map((entity, i) => (
-              <div key={i} className="p-3 border rounded-lg bg-slate-50">
-                <div className="flex items-center justify-between mb-2">
-                  <strong className="text-slate-900">{entity.entity}</strong>
-                  <Badge className="bg-green-100 text-green-700">
-                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                    RLS Active
-                  </Badge>
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertTriangle className="h-5 w-5 text-orange-600" />
+                  <p className="font-semibold text-orange-900">High Priority ({rbacData.gaps.high.length})</p>
                 </div>
-                <div className="text-xs text-blue-700 bg-blue-50 p-2 rounded">
-                  {entity.rlsRules}
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        )}
-      </Card>
-
-      {/* Field-Level Security */}
-      <Card>
-        <CardHeader>
-          <button
-            onClick={() => toggleSection('fields')}
-            className="w-full flex items-center justify-between"
-          >
-            <CardTitle className="flex items-center gap-2">
-              <Eye className="h-5 w-5 text-teal-600" />
-              {t({ en: 'Field-Level Security', ar: 'الأمان على مستوى الحقل' })}
-              <Badge className="bg-teal-100 text-teal-700">{rbacData.implementation.entitiesWithFieldSecurity}/12 Entities</Badge>
-            </CardTitle>
-            {expandedSections['fields'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-          </button>
-        </CardHeader>
-        {expandedSections['fields'] && (
-          <CardContent className="space-y-3">
-            {rbacData.fieldSecurity.map((item, i) => (
-              <div key={i} className="p-4 border rounded-lg">
-                <h4 className="font-semibold text-slate-900 mb-3">{item.entity}</h4>
-                <div className="grid md:grid-cols-2 gap-3">
-                  <div className="p-3 bg-red-50 rounded border border-red-200">
-                    <p className="text-xs font-semibold text-red-900 mb-2">Confidential (Admin/Owner Only)</p>
-                    <div className="space-y-1">
-                      {item.confidentialFields.map((field, j) => (
-                        <div key={j} className="text-xs text-red-700">• {field}</div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="p-3 bg-green-50 rounded border border-green-200">
-                    <p className="text-xs font-semibold text-green-900 mb-2">Public-Safe Fields</p>
-                    <div className="space-y-1">
-                      {item.publicFields.map((field, j) => (
-                        <div key={j} className="text-xs text-green-700">• {field}</div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        )}
-      </Card>
-
-      {/* Implementation Metrics */}
-      <Card>
-        <CardHeader>
-          <button
-            onClick={() => toggleSection('metrics')}
-            className="w-full flex items-center justify-between"
-          >
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-orange-600" />
-              {t({ en: 'Implementation Metrics & Statistics', ar: 'مقاييس التنفيذ والإحصائيات' })}
-            </CardTitle>
-            {expandedSections['metrics'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-          </button>
-        </CardHeader>
-        {expandedSections['metrics'] && (
-          <CardContent>
-            <div className="grid md:grid-cols-4 gap-4">
-              <div className="p-4 bg-blue-50 rounded-lg border">
-                <Shield className="h-8 w-8 text-blue-600 mb-2" />
-                <p className="text-3xl font-bold text-blue-600">{rbacData.implementation.totalPermissions}+</p>
-                <p className="text-xs text-slate-600">Total Permissions</p>
-              </div>
-              <div className="p-4 bg-purple-50 rounded-lg border">
-                <Users className="h-8 w-8 text-purple-600 mb-2" />
-                <p className="text-3xl font-bold text-purple-600">{rbacData.implementation.totalRoles}</p>
-                <p className="text-xs text-slate-600">Total Roles</p>
-                <div className="mt-2 text-xs text-slate-500">
-                  {rbacData.implementation.systemRoles} system, {rbacData.implementation.customRoles} custom
-                </div>
-              </div>
-              <div className="p-4 bg-green-50 rounded-lg border">
-                <Database className="h-8 w-8 text-green-600 mb-2" />
-                <p className="text-3xl font-bold text-green-600">{rbacData.implementation.entitiesWithRBAC}/12</p>
-                <p className="text-xs text-slate-600">Entities with RBAC</p>
-              </div>
-              <div className="p-4 bg-indigo-50 rounded-lg border">
-                <Lock className="h-8 w-8 text-indigo-600 mb-2" />
-                <p className="text-3xl font-bold text-indigo-600">{rbacData.implementation.entitiesWithRLS}/12</p>
-                <p className="text-xs text-slate-600">Entities with RLS</p>
-              </div>
-              <div className="p-4 bg-teal-50 rounded-lg border">
-                <Eye className="h-8 w-8 text-teal-600 mb-2" />
-                <p className="text-3xl font-bold text-teal-600">{rbacData.implementation.entitiesWithFieldSecurity}/12</p>
-                <p className="text-xs text-slate-600">Field-Level Security</p>
-              </div>
-              <div className="p-4 bg-pink-50 rounded-lg border">
-                <Users className="h-8 w-8 text-pink-600 mb-2" />
-                <p className="text-3xl font-bold text-pink-600">{rbacData.implementation.expertRoles}</p>
-                <p className="text-xs text-slate-600">Expert Roles</p>
-              </div>
-              <div className="p-4 bg-amber-50 rounded-lg border">
-                <Activity className="h-8 w-8 text-amber-600 mb-2" />
-                <p className="text-3xl font-bold text-amber-600">{rbacData.implementation.entitiesWithExpertIntegration}/12</p>
-                <p className="text-xs text-slate-600">Expert Integration</p>
-              </div>
-              <div className="p-4 bg-slate-50 rounded-lg border">
-                <Key className="h-8 w-8 text-slate-600 mb-2" />
-                <p className="text-3xl font-bold text-slate-600">{rbacData.implementation.totalUsers}</p>
-                <p className="text-xs text-slate-600">Total Users</p>
-              </div>
-            </div>
-          </CardContent>
-        )}
-      </Card>
-
-      {/* Gaps & Missing Features */}
-      <Card className="border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-white">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-amber-900">
-            <AlertTriangle className="h-6 w-6" />
-            {t({ en: 'Gaps & Missing Features', ar: 'الفجوات والميزات المفقودة' })}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <XCircle className="h-5 w-5 text-red-600" />
-              <p className="font-semibold text-red-900">Critical ({rbacData.gaps.critical.length})</p>
-            </div>
-            <div className="space-y-1 pl-7">
-              {rbacData.gaps.critical.map((gap, i) => (
-                <p key={i} className="text-sm text-red-700">{gap}</p>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle className="h-5 w-5 text-orange-600" />
-              <p className="font-semibold text-orange-900">High Priority ({rbacData.gaps.high.length})</p>
-            </div>
-            <div className="space-y-1 pl-7">
-              {rbacData.gaps.high.map((gap, i) => (
-                <p key={i} className="text-sm text-orange-700">{gap}</p>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle className="h-5 w-5 text-yellow-600" />
-              <p className="font-semibold text-yellow-900">Medium Priority ({rbacData.gaps.medium.length})</p>
-            </div>
-            <div className="space-y-1 pl-7">
-              {rbacData.gaps.medium.map((gap, i) => (
-                <p key={i} className="text-sm text-yellow-700">{gap}</p>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Recommendations */}
-      <Card className="border-2 border-green-300 bg-gradient-to-br from-green-50 to-white">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-green-900">
-            <Target className="h-6 w-6" />
-            {t({ en: 'Prioritized Recommendations', ar: 'التوصيات المرتبة' })}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {rbacData.recommendations.map((rec, idx) => (
-              <div key={idx} className={`p-4 border-2 rounded-lg ${
-                rec.priority === 'P0' ? 'border-red-300 bg-red-50' :
-                rec.priority === 'P1' ? 'border-orange-300 bg-orange-50' :
-                'border-yellow-300 bg-yellow-50'
-              }`}>
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Badge className={
-                      rec.priority === 'P0' ? 'bg-red-600 text-white' :
-                      rec.priority === 'P1' ? 'bg-orange-600 text-white' :
-                      'bg-yellow-600 text-white'
-                    }>
-                      {rec.priority}
-                    </Badge>
-                    <h4 className="font-semibold text-slate-900">{rec.title}</h4>
-                  </div>
-                  <div className="flex gap-2">
-                    <Badge variant="outline" className="text-xs">{rec.effort}</Badge>
-                    <Badge className="bg-green-100 text-green-700 text-xs">{rec.impact}</Badge>
-                  </div>
-                </div>
-                <p className="text-sm text-slate-700 mb-2">{rec.description}</p>
-                {rec.rationale && (
-                  <p className="text-sm text-purple-700 italic mb-2">💡 {rec.rationale}</p>
-                )}
-                <div className="flex flex-wrap gap-1">
-                  {rec.pages.map((page, i) => (
-                    <Badge key={i} variant="outline" className="text-xs font-mono">{page}</Badge>
+                <div className="space-y-1 pl-7">
+                  {rbacData.gaps.high.map((gap, i) => (
+                    <p key={i} className="text-sm text-orange-700">{gap}</p>
                   ))}
                 </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Overall Assessment */}
-      <Card className="border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 to-white">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-indigo-900">
-            <TrendingUp className="h-6 w-6" />
-            {t({ en: 'Overall Assessment', ar: 'التقييم الشامل' })}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-slate-600 mb-2">RBAC Coverage</p>
-              <div className="flex items-center gap-3">
-                <Progress value={overallCoverage} className="flex-1" />
-                <span className="text-2xl font-bold text-blue-600">{overallCoverage}%</span>
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                  <p className="font-semibold text-yellow-900">Medium Priority ({rbacData.gaps.medium.length})</p>
+                </div>
+                <div className="space-y-1 pl-7">
+                  {rbacData.gaps.medium.map((gap, i) => (
+                    <p key={i} className="text-sm text-yellow-700">{gap}</p>
+                  ))}
+                </div>
               </div>
-            </div>
-            <div>
-              <p className="text-sm text-slate-600 mb-2">Expert System</p>
-              <div className="flex items-center gap-3">
-                <Progress value={rbacData.expertSystem.coverage} className="flex-1" />
-                <span className="text-2xl font-bold text-purple-600">{rbacData.expertSystem.coverage}%</span>
+            </CardContent>
+          </Card>
+
+          {/* Recommendations */}
+          <Card className="border-2 border-green-300 bg-gradient-to-br from-green-50 to-white">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-green-900">
+                <Target className="h-6 w-6" />
+                {t({ en: 'Prioritized Recommendations', ar: 'التوصيات المرتبة' })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {rbacData.recommendations.map((rec, idx) => (
+                  <div key={idx} className={`p-4 border-2 rounded-lg ${rec.priority === 'P0' ? 'border-red-300 bg-red-50' :
+                    rec.priority === 'P1' ? 'border-orange-300 bg-orange-50' :
+                      'border-yellow-300 bg-yellow-50'
+                    }`}>
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Badge className={
+                          rec.priority === 'P0' ? 'bg-red-600 text-white' :
+                            rec.priority === 'P1' ? 'bg-orange-600 text-white' :
+                              'bg-yellow-600 text-white'
+                        }>
+                          {rec.priority}
+                        </Badge>
+                        <h4 className="font-semibold text-slate-900">{rec.title}</h4>
+                      </div>
+                      <div className="flex gap-2">
+                        <Badge variant="outline" className="text-xs">{rec.effort}</Badge>
+                        <Badge className="bg-green-100 text-green-700 text-xs">{rec.impact}</Badge>
+                      </div>
+                    </div>
+                    <p className="text-sm text-slate-700 mb-2">{rec.description}</p>
+                    {rec.rationale && (
+                      <p className="text-sm text-purple-700 italic mb-2">💡 {rec.rationale}</p>
+                    )}
+                    <div className="flex flex-wrap gap-1">
+                      {rec.pages.map((page, i) => (
+                        <Badge key={i} variant="outline" className="text-xs font-mono">{page}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          <div className="p-4 bg-green-100 rounded-lg border-2 border-green-400">
-            <p className="text-sm font-semibold text-green-900 mb-2">✅ RBAC System Status: Production-Ready</p>
-            <p className="text-sm text-green-800">
-              The platform has a <strong>comprehensive and well-implemented RBAC system</strong> ({overallCoverage}% coverage):
-              <br/><br/>
-              <strong>Strengths:</strong>
-              <br/>• 65+ permissions across 10 functional categories
-              <br/>• {rbacData.platformRoles.length} platform roles with clear access patterns
-              <br/>• Row-level security on 10/12 major entities
-              <br/>• Field-level security on 8/12 entities
-              <br/>• Complete expert evaluation system (100% integration)
-              <br/>• Municipality scoping prevents cross-municipality data access
-              <br/>• Status-based access rules on critical entities
-              <br/>• Expert role system with required expertise/certification fields
-              <br/><br/>
-              <strong>Remaining work:</strong>
-              <br/>• Backend API enforcement documentation
-              <br/>• Permission request/approval workflow
-              <br/>• Team-level permissions & delegation
-              <br/>• Field-level read/write separation
-              <br/>• Permission testing framework
-            </p>
-          </div>
+          {/* Overall Assessment */}
+          <Card className="border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 to-white">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-indigo-900">
+                <TrendingUp className="h-6 w-6" />
+                {t({ en: 'Overall Assessment', ar: 'التقييم الشامل' })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-slate-600 mb-2">RBAC Coverage</p>
+                  <div className="flex items-center gap-3">
+                    <Progress value={overallCoverage} className="flex-1" />
+                    <span className="text-2xl font-bold text-blue-600">{overallCoverage}%</span>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-600 mb-2">Expert System</p>
+                  <div className="flex items-center gap-3">
+                    <Progress value={rbacData.expertSystem.coverage} className="flex-1" />
+                    <span className="text-2xl font-bold text-purple-600">{rbacData.expertSystem.coverage}%</span>
+                  </div>
+                </div>
+              </div>
 
-          <div className="p-4 bg-blue-100 rounded-lg border border-blue-300">
-            <p className="text-sm font-semibold text-blue-900 mb-2">🎯 Bottom Line</p>
-            <p className="text-sm text-blue-800">
-              <strong>RBAC implementation is STRONG and PRODUCTION-READY for current scale.</strong>
-              <br/><br/>
-              Critical next steps:
-              <br/>1. Document and enforce backend permissions (security hardening)
-              <br/>2. Build permission request workflow (user self-service)
-              <br/>3. Implement team permissions (delegation support)
-              <br/>4. Add permission testing framework (quality assurance)
-              <br/>5. Implement field-level read/write separation (advanced)
-              <br/>6. Add conditional permissions (long-term)
-            </p>
-          </div>
+              <div className="p-4 bg-green-100 rounded-lg border-2 border-green-400">
+                <p className="text-sm font-semibold text-green-900 mb-2">✅ RBAC System Status: Production-Ready</p>
+                <p className="text-sm text-green-800">
+                  The platform has a <strong>comprehensive and well-implemented RBAC system</strong> ({overallCoverage}% coverage):
+                  <br /><br />
+                  <strong>Strengths:</strong>
+                  <br />• 65+ permissions across 10 functional categories
+                  <br />• {rbacData.platformRoles.length} platform roles with clear access patterns
+                  <br />• Row-level security on 10/12 major entities
+                  <br />• Field-level security on 8/12 entities
+                  <br />• Complete expert evaluation system (100% integration)
+                  <br />• Municipality scoping prevents cross-municipality data access
+                  <br />• Status-based access rules on critical entities
+                  <br />• Expert role system with required expertise/certification fields
+                  <br /><br />
+                  <strong>Remaining work:</strong>
+                  <br />• Backend API enforcement documentation
+                  <br />• Permission request/approval workflow
+                  <br />• Team-level permissions & delegation
+                  <br />• Field-level read/write separation
+                  <br />• Permission testing framework
+                </p>
+              </div>
 
-          <div className="grid grid-cols-5 gap-3 text-center">
-            <div className="p-3 bg-white rounded-lg border">
-              <p className="text-2xl font-bold text-blue-600">{overallCoverage}%</p>
-              <p className="text-xs text-slate-600">Overall Coverage</p>
-            </div>
-            <div className="p-3 bg-white rounded-lg border">
-              <p className="text-2xl font-bold text-green-600">{rbacData.implementation.entitiesWithRLS}/12</p>
-              <p className="text-xs text-slate-600">RLS</p>
-            </div>
-            <div className="p-3 bg-white rounded-lg border">
-              <p className="text-2xl font-bold text-teal-600">{rbacData.implementation.entitiesWithFieldSecurity}/12</p>
-              <p className="text-xs text-slate-600">Field Security</p>
-            </div>
-            <div className="p-3 bg-white rounded-lg border">
-              <p className="text-2xl font-bold text-purple-600">100%</p>
-              <p className="text-xs text-slate-600">Expert System</p>
-            </div>
-            <div className="p-3 bg-white rounded-lg border">
-              <p className="text-2xl font-bold text-amber-600">{rbacData.gaps.critical.length}</p>
-              <p className="text-xs text-slate-600">Critical Gaps</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+              <div className="p-4 bg-blue-100 rounded-lg border border-blue-300">
+                <p className="text-sm font-semibold text-blue-900 mb-2">🎯 Bottom Line</p>
+                <p className="text-sm text-blue-800">
+                  <strong>RBAC implementation is STRONG and PRODUCTION-READY for current scale.</strong>
+                  <br /><br />
+                  Critical next steps:
+                  <br />1. Document and enforce backend permissions (security hardening)
+                  <br />2. Build permission request workflow (user self-service)
+                  <br />3. Implement team permissions (delegation support)
+                  <br />4. Add permission testing framework (quality assurance)
+                  <br />5. Implement field-level read/write separation (advanced)
+                  <br />6. Add conditional permissions (long-term)
+                </p>
+              </div>
+
+              <div className="grid grid-cols-5 gap-3 text-center">
+                <div className="p-3 bg-white rounded-lg border">
+                  <p className="text-2xl font-bold text-blue-600">{overallCoverage}%</p>
+                  <p className="text-xs text-slate-600">Overall Coverage</p>
+                </div>
+                <div className="p-3 bg-white rounded-lg border">
+                  <p className="text-2xl font-bold text-green-600">{rbacData.implementation.entitiesWithRLS}/12</p>
+                  <p className="text-xs text-slate-600">RLS</p>
+                </div>
+                <div className="p-3 bg-white rounded-lg border">
+                  <p className="text-2xl font-bold text-teal-600">{rbacData.implementation.entitiesWithFieldSecurity}/12</p>
+                  <p className="text-xs text-slate-600">Field Security</p>
+                </div>
+                <div className="p-3 bg-white rounded-lg border">
+                  <p className="text-2xl font-bold text-purple-600">100%</p>
+                  <p className="text-xs text-slate-600">Expert System</p>
+                </div>
+                <div className="p-3 bg-white rounded-lg border">
+                  <p className="text-2xl font-bold text-amber-600">{rbacData.gaps.critical.length}</p>
+                  <p className="text-xs text-slate-600">Critical Gaps</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* TAB 2: Live Security Audit */}

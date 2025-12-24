@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -95,12 +94,18 @@ export default function SandboxInfrastructureReadinessGate({ sandbox, onClose, o
 
   const approveMutation = useMutation({
     mutationFn: async () => {
-      await base44.entities.Sandbox.update(sandbox.id, {
-        infrastructure_ready: true,
-        infrastructure_readiness_date: new Date().toISOString().split('T')[0],
-        infrastructure_checklist: checklist,
-        infrastructure_notes: inspectorNotes
-      });
+      const { supabase } = await import('@/integrations/supabase/client');
+
+      const { error } = await supabase
+        .from('sandboxes')
+        .update({
+          infrastructure_ready: true,
+          infrastructure_readiness_date: new Date().toISOString().split('T')[0],
+          infrastructure_checklist: checklist,
+          infrastructure_notes: inspectorNotes
+        })
+        .eq('id', sandbox.id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['sandbox']);
@@ -171,7 +176,7 @@ export default function SandboxInfrastructureReadinessGate({ sandbox, onClose, o
                     <div key={item.id} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-slate-50">
                       <Checkbox
                         checked={checklist[item.id]}
-                        onCheckedChange={(checked) => 
+                        onCheckedChange={(checked) =>
                           setChecklist({ ...checklist, [item.id]: checked })
                         }
                         className="mt-0.5"

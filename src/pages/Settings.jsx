@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { useUserMutations } from '@/hooks/useUserMutations';
+import { useSettings } from '@/hooks/useSettings';
+import { useProfileData } from '@/hooks/useProfileData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,39 +25,12 @@ import LoginHistoryDialog from '../components/auth/LoginHistoryDialog';
 function Settings() {
   const { language, isRTL, t } = useLanguage();
   const { user: authUser } = useAuth();
-  const queryClient = useQueryClient();
 
-  // Fetch user profile from Supabase
-  const { data: profile, isLoading: profileLoading } = useQuery({
-    queryKey: ['user-profile-settings', authUser?.id],
-    queryFn: async () => {
-      if (!authUser?.id) return null;
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', authUser.id)
-        .single();
-      if (error && error.code !== 'PGRST116') throw error;
-      return data;
-    },
-    enabled: !!authUser?.id
-  });
 
-  // Fetch user settings from Supabase
-  const { data: userSettings, isLoading: settingsLoading } = useQuery({
-    queryKey: ['user-settings', authUser?.id],
-    queryFn: async () => {
-      if (!authUser?.id) return null;
-      const { data, error } = await supabase
-        .from('user_settings')
-        .select('*')
-        .eq('user_id', authUser.id)
-        .single();
-      if (error && error.code !== 'PGRST116') throw error;
-      return data;
-    },
-    enabled: !!authUser?.id
-  });
+  const { updateUserProfile } = useUserMutations();
+  const { settings: userSettings, updateSettings } = useSettings(authUser?.id);
+
+  const { profile } = useProfileData();
 
   const [localProfile, setLocalProfile] = useState({});
   const [notifications, setNotifications] = useState({
@@ -68,7 +43,7 @@ function Settings() {
     quiet_hours_start: '22:00',
     quiet_hours_end: '08:00'
   });
-  
+
   const [appearance, setAppearance] = useState({
     theme: 'auto',
     font_size: 'medium',
@@ -100,56 +75,12 @@ function Settings() {
     show_tutorials: true
   });
 
-  // Update profile mutation
-  const updateProfileMutation = useMutation({
-    mutationFn: async (data) => {
-      if (!authUser?.id) throw new Error('Not authenticated');
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({
-          ...data,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', authUser.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['user-profile-settings']);
-      toast.success(t({ en: 'Profile updated', ar: 'تم تحديث الملف' }));
-    },
-    onError: (error) => {
-      console.error('Profile update error:', error);
-      toast.error(t({ en: 'Failed to update profile', ar: 'فشل في تحديث الملف' }));
-    }
-  });
 
-  // Update settings mutation (upsert)
-  const updateSettingsMutation = useMutation({
-    mutationFn: async (data) => {
-      if (!authUser?.id) throw new Error('Not authenticated');
-      const { error } = await supabase
-        .from('user_settings')
-        .upsert({
-          user_id: authUser.id,
-          ...data,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'user_id' });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['user-settings']);
-      toast.success(t({ en: 'Settings saved', ar: 'تم حفظ الإعدادات' }));
-    },
-    onError: (error) => {
-      console.error('Settings update error:', error);
-      toast.error(t({ en: 'Failed to save settings', ar: 'فشل في حفظ الإعدادات' }));
-    }
-  });
 
   useEffect(() => {
     if (profile) {
-      setLocalProfile({ 
-        full_name: profile.full_name_en || profile.full_name, 
+      setLocalProfile({
+        full_name: profile.full_name_en || profile.full_name,
         email: profile.user_email || authUser?.email,
         title: profile.title_en || profile.job_title_en,
         bio: profile.bio_en || profile.bio,
@@ -197,7 +128,7 @@ function Settings() {
 
   // Save handlers
   const saveNotifications = () => {
-    updateSettingsMutation.mutate({
+    updateSettings.mutate({
       notifications_email: notifications.email,
       notifications_push: notifications.push,
       notifications_challenges: notifications.challenges,
@@ -210,7 +141,7 @@ function Settings() {
   };
 
   const saveAppearance = () => {
-    updateSettingsMutation.mutate({
+    updateSettings.mutate({
       theme: appearance.theme,
       font_size: appearance.font_size,
       density: appearance.density
@@ -218,7 +149,7 @@ function Settings() {
   };
 
   const savePrivacy = () => {
-    updateSettingsMutation.mutate({
+    updateSettings.mutate({
       profile_visibility: privacy.profile_visibility,
       show_activity: privacy.show_activity,
       allow_messages: privacy.allow_messages
@@ -226,7 +157,7 @@ function Settings() {
   };
 
   const saveAccessibility = () => {
-    updateSettingsMutation.mutate({
+    updateSettings.mutate({
       high_contrast: accessibility.high_contrast,
       reduce_motion: accessibility.reduce_motion,
       screen_reader_optimized: accessibility.screen_reader,
@@ -235,7 +166,7 @@ function Settings() {
   };
 
   const saveWorkPrefs = () => {
-    updateSettingsMutation.mutate({
+    updateSettings.mutate({
       default_view: workPrefs.default_view,
       auto_save: workPrefs.auto_save,
       show_tutorials: workPrefs.show_tutorials
@@ -286,27 +217,27 @@ function Settings() {
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">{t({ en: 'Member Since', ar: 'عضو منذ' })}</label>
-                <Input 
+                <Input
                   value={
-                    profile?.created_at 
+                    profile?.created_at
                       ? new Date(profile.created_at).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-                      : authUser?.created_at 
+                      : authUser?.created_at
                         ? new Date(authUser.created_at).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
                         : t({ en: 'Not available', ar: 'غير متوفر' })
-                  } 
-                  disabled 
-                  className="bg-muted" 
+                  }
+                  disabled
+                  className="bg-muted"
                 />
               </div>
-              
+
               {/* Language Preference Section */}
               <div className="pt-4 border-t">
                 <label className="text-sm font-medium mb-2 block">{t({ en: 'Preferred Language', ar: 'اللغة المفضلة' })}</label>
                 <p className="text-xs text-muted-foreground mb-2">{t({ en: 'Used for UI, notifications, emails and SMS', ar: 'تُستخدم للواجهة والإشعارات والرسائل' })}</p>
-                <Select 
-                  value={profile?.preferred_language || 'en'} 
+                <Select
+                  value={profile?.preferred_language || 'en'}
                   onValueChange={(v) => {
-                    updateProfileMutation.mutate({ preferred_language: v });
+                    updateUserProfile.mutate({ id: authUser.id, data: { preferred_language: v } });
                   }}
                 >
                   <SelectTrigger>
@@ -328,7 +259,7 @@ function Settings() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="pt-4 border-t">
                 <p className="text-sm text-muted-foreground mb-3">{t({ en: 'To edit your profile details (name, bio, avatar, skills), visit the Profile page.', ar: 'لتعديل تفاصيل ملفك الشخصي (الاسم، السيرة، الصورة، المهارات)، قم بزيارة صفحة الملف الشخصي.' })}</p>
                 <Button variant="outline" onClick={() => window.location.href = '/user-profile'}>
@@ -347,9 +278,9 @@ function Settings() {
 
         <TabsContent value="security">
           <div className="space-y-4">
-            <TwoFactorAuth 
+            <TwoFactorAuth
               user={authUser}
-              onUpdate={(data) => updateProfileMutation.mutate(data)}
+              onUpdate={(data) => updateUserProfile.mutate({ id: authUser.id, data })}
             />
 
             <Card>
@@ -358,35 +289,35 @@ function Settings() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                <label className="text-sm font-medium mb-2 block">{t({ en: 'Change Password', ar: 'تغيير كلمة المرور' })}</label>
-                <Button variant="outline" className="w-full" onClick={() => setShowChangePassword(true)}>
-                  {t({ en: 'Update Password', ar: 'تحديث كلمة المرور' })}
-                </Button>
-              </div>
-
-              <div className="p-4 bg-slate-50 rounded-lg border">
-                <p className="text-sm font-medium text-slate-900 mb-2">{t({ en: 'Active Sessions', ar: 'الجلسات النشطة' })}</p>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>{t({ en: 'Current Device', ar: 'الجهاز الحالي' })}</span>
-                    <Badge className="bg-green-600">{t({ en: 'Active', ar: 'نشط' })}</Badge>
-                  </div>
-                  <Button variant="outline" size="sm" className="w-full" onClick={() => setShowSessions(true)}>
-                    {t({ en: 'View All Sessions', ar: 'عرض جميع الجلسات' })}
+                  <label className="text-sm font-medium mb-2 block">{t({ en: 'Change Password', ar: 'تغيير كلمة المرور' })}</label>
+                  <Button variant="outline" className="w-full" onClick={() => setShowChangePassword(true)}>
+                    {t({ en: 'Update Password', ar: 'تحديث كلمة المرور' })}
                   </Button>
                 </div>
-              </div>
 
-              <div className="p-4 bg-slate-50 rounded-lg border">
-                <p className="text-sm font-medium text-slate-900 mb-2">{t({ en: 'Login History', ar: 'سجل الدخول' })}</p>
-                <Button variant="outline" size="sm" className="w-full" onClick={() => setShowLoginHistory(true)}>
-                  {t({ en: 'View Login History', ar: 'عرض سجل الدخول' })}
-                </Button>
-              </div>
+                <div className="p-4 bg-slate-50 rounded-lg border">
+                  <p className="text-sm font-medium text-slate-900 mb-2">{t({ en: 'Active Sessions', ar: 'الجلسات النشطة' })}</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span>{t({ en: 'Current Device', ar: 'الجهاز الحالي' })}</span>
+                      <Badge className="bg-green-600">{t({ en: 'Active', ar: 'نشط' })}</Badge>
+                    </div>
+                    <Button variant="outline" size="sm" className="w-full" onClick={() => setShowSessions(true)}>
+                      {t({ en: 'View All Sessions', ar: 'عرض جميع الجلسات' })}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-slate-50 rounded-lg border">
+                  <p className="text-sm font-medium text-slate-900 mb-2">{t({ en: 'Login History', ar: 'سجل الدخول' })}</p>
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => setShowLoginHistory(true)}>
+                    {t({ en: 'View Login History', ar: 'عرض سجل الدخول' })}
+                  </Button>
+                </div>
               </CardContent>
-              </Card>
-              </div>
-              </TabsContent>
+            </Card>
+          </div>
+        </TabsContent>
 
         {/* Appearance tab removed - not needed */}
 
@@ -398,7 +329,7 @@ function Settings() {
             <CardContent className="space-y-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">{t({ en: 'Profile Visibility', ar: 'ظهور الملف' })}</label>
-                <Select value={privacy.profile_visibility} onValueChange={(v) => setPrivacy({...privacy, profile_visibility: v})}>
+                <Select value={privacy.profile_visibility} onValueChange={(v) => setPrivacy({ ...privacy, profile_visibility: v })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -417,7 +348,7 @@ function Settings() {
                 </div>
                 <Switch
                   checked={privacy.show_activity}
-                  onCheckedChange={(v) => setPrivacy({...privacy, show_activity: v})}
+                  onCheckedChange={(v) => setPrivacy({ ...privacy, show_activity: v })}
                 />
               </div>
 
@@ -428,11 +359,11 @@ function Settings() {
                 </div>
                 <Switch
                   checked={privacy.allow_messages}
-                  onCheckedChange={(v) => setPrivacy({...privacy, allow_messages: v})}
+                  onCheckedChange={(v) => setPrivacy({ ...privacy, allow_messages: v })}
                 />
               </div>
 
-              <Button onClick={savePrivacy} disabled={updateSettingsMutation.isPending} className="w-full bg-green-600 mb-4">
+              <Button onClick={savePrivacy} disabled={updateSettings.isPending} className="w-full bg-green-600 mb-4">
                 <Save className="h-4 w-4 mr-2" />
                 {t({ en: 'Save Privacy Settings', ar: 'حفظ إعدادات الخصوصية' })}
               </Button>
@@ -459,7 +390,7 @@ function Settings() {
             <CardContent className="space-y-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">{t({ en: 'Default View', ar: 'العرض الافتراضي' })}</label>
-                <Select value={workPrefs.default_view} onValueChange={(v) => setWorkPrefs({...workPrefs, default_view: v})}>
+                <Select value={workPrefs.default_view} onValueChange={(v) => setWorkPrefs({ ...workPrefs, default_view: v })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -478,7 +409,7 @@ function Settings() {
                 </div>
                 <Switch
                   checked={workPrefs.auto_save}
-                  onCheckedChange={(v) => setWorkPrefs({...workPrefs, auto_save: v})}
+                  onCheckedChange={(v) => setWorkPrefs({ ...workPrefs, auto_save: v })}
                 />
               </div>
 
@@ -489,11 +420,11 @@ function Settings() {
                 </div>
                 <Switch
                   checked={workPrefs.show_tutorials}
-                  onCheckedChange={(v) => setWorkPrefs({...workPrefs, show_tutorials: v})}
+                  onCheckedChange={(v) => setWorkPrefs({ ...workPrefs, show_tutorials: v })}
                 />
               </div>
 
-              <Button onClick={saveWorkPrefs} disabled={updateSettingsMutation.isPending} className="w-full bg-cyan-600">
+              <Button onClick={saveWorkPrefs} disabled={updateSettings.isPending} className="w-full bg-cyan-600">
                 <Save className="h-4 w-4 mr-2" />
                 {t({ en: 'Save Preferences', ar: 'حفظ التفضيلات' })}
               </Button>

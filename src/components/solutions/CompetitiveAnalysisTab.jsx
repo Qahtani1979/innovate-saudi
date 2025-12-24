@@ -1,5 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useSimilarSolutions } from '@/hooks/useSolutions';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,18 +10,10 @@ import { createPageUrl } from '../../utils';
 export default function CompetitiveAnalysisTab({ solution }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: similarSolutions = [] } = useQuery({
-    queryKey: ['similar-solutions', solution.id],
-    queryFn: async () => {
-      // Get similar solutions by sector
-      const { data } = await supabase.from('solutions').select('*')
-        .neq('id', solution.id)
-        .eq('is_verified', true)
-        .overlaps('sectors', solution.sectors || [])
-        .limit(6);
-      
-      return data || [];
-    }
+  const { data: similarSolutions = [] } = useSimilarSolutions({
+    solutionId: solution.id,
+    sectors: solution.sectors || [],
+    limit: 6
   });
 
   const competitors = similarSolutions.slice(0, 5);
@@ -107,7 +98,7 @@ export default function CompetitiveAnalysisTab({ solution }) {
                       </td>
                     ))}
                   </tr>
-                  
+
                   {comparisonAttributes.map((attr, attrIdx) => (
                     <tr key={attrIdx} className="border-b hover:bg-slate-50">
                       <td className="p-2 font-medium">{attr.label[language]}</td>

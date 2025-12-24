@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useResearcherDashboardData } from '@/hooks/useResearcherDashboardData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,66 +20,7 @@ function ResearcherDashboard() {
   const { language, isRTL, t } = useLanguage();
   const { user, userProfile } = useAuth();
 
-  // Fetch researcher profile
-  const { data: researcherProfile } = useQuery({
-    queryKey: ['researcher-profile', user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('researcher_profiles')
-        .select('*')
-        .eq('user_id', user?.id)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id
-  });
-
-  // Fetch R&D calls
-  const { data: rdCalls = [] } = useQuery({
-    queryKey: ['rd-calls-researcher'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_calls')
-        .select('*')
-        .eq('status', 'published')
-        .order('created_at', { ascending: false })
-        .limit(5);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  // Fetch R&D projects
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects-researcher', user?.email],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_projects')
-        .select('*')
-        .eq('researcher_email', user?.email)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
-
-  // Fetch living labs
-  const { data: livingLabs = [] } = useQuery({
-    queryKey: ['living-labs-researcher'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('living_labs')
-        .select('*')
-        .eq('is_deleted', false)
-        .eq('is_published', true)
-        .order('created_at', { ascending: false })
-        .limit(5);
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { researcherProfile, rdCalls, rdProjects, livingLabs } = useResearcherDashboardData(user);
 
   const statusColors = {
     active: 'bg-green-100 text-green-700',
@@ -167,14 +107,14 @@ function ResearcherDashboard() {
               {(researcherProfile?.orcid_id || researcherProfile?.google_scholar_url) && (
                 <div className="mt-4 flex gap-3">
                   {researcherProfile.orcid_id && (
-                    <a href={`https://orcid.org/${researcherProfile.orcid_id}`} target="_blank" rel="noopener noreferrer" 
-                       className="text-sm text-green-600 hover:underline flex items-center gap-1">
+                    <a href={`https://orcid.org/${researcherProfile.orcid_id}`} target="_blank" rel="noopener noreferrer"
+                      className="text-sm text-green-600 hover:underline flex items-center gap-1">
                       <Link2 className="h-4 w-4" /> ORCID
                     </a>
                   )}
                   {researcherProfile.google_scholar_url && (
-                    <a href={researcherProfile.google_scholar_url} target="_blank" rel="noopener noreferrer" 
-                       className="text-sm text-green-600 hover:underline flex items-center gap-1">
+                    <a href={researcherProfile.google_scholar_url} target="_blank" rel="noopener noreferrer"
+                      className="text-sm text-green-600 hover:underline flex items-center gap-1">
                       <ExternalLink className="h-4 w-4" /> Google Scholar
                     </a>
                   )}

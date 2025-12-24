@@ -3,25 +3,26 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import { useAuditLog } from '@/hooks/useAuditLog';
-import { notifyEventAction } from '@/components/AutoNotification';
+import { useAutoNotification } from '@/hooks/useAutoNotification';
 import { toast } from 'sonner';
 
 /**
  * Hook for event CRUD operations
  */
 export function useEvents(options = {}) {
-  const { 
+  const {
     filters = {},
     programId = null,
     municipalityId = null,
     limit = 50,
-    includeUnpublished = false 
+    includeUnpublished = false
   } = options;
 
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { triggerEmail } = useEmailTrigger();
   const { logEventActivity, logApprovalActivity } = useAuditLog();
+  const { notifyEventAction } = useAutoNotification();
 
   // Fetch events
   const eventsQuery = useQuery({
@@ -68,31 +69,13 @@ export function useEvents(options = {}) {
     }
   });
 
-  // Fetch single event
-  const useEvent = (eventId) => {
-    return useQuery({
-      queryKey: ['event', eventId],
-      queryFn: async () => {
-        const { data, error } = await supabase
-          .from('events')
-          .select('*')
-          .eq('id', eventId)
-          .eq('is_deleted', false)
-          .maybeSingle();
-        
-        if (error) throw error;
-        return data;
-      },
-      enabled: !!eventId
-    });
-  };
-
   // Create event
   const createEventMutation = useMutation({
+    /** @param {any} eventData */
     mutationFn: async (eventData) => {
       // Determine status: if publishing, set to 'pending' for approval workflow
       const status = eventData.is_published ? 'pending' : (eventData.status || 'draft');
-      
+
       const { data, error } = await supabase
         .from('events')
         .insert({
@@ -147,9 +130,9 @@ export function useEvents(options = {}) {
       return data;
     },
     onSuccess: async (data) => {
-      queryClient.invalidateQueries(['events']);
-      queryClient.invalidateQueries(['event-approvals']);
-      
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['event-approvals'] });
+
       // Audit logging
       const action = data.status === 'pending' ? 'submitted' : 'created';
       await logEventActivity(action, data);
@@ -159,7 +142,7 @@ export function useEvents(options = {}) {
           event_type: data.event_type
         });
       }
-      
+
       // Create in-app notification
       try {
         if (data.status === 'pending') {
@@ -170,7 +153,7 @@ export function useEvents(options = {}) {
       } catch (e) {
         console.warn('In-app notification failed:', e);
       }
-      
+
       // Trigger email notification for draft (not pending approval)
       if (data.status === 'draft') {
         try {
@@ -193,6 +176,7 @@ export function useEvents(options = {}) {
 
   // Update event
   const updateEventMutation = useMutation({
+    /** @param {{eventId: string, updates: any}} params */
     mutationFn: async ({ eventId, updates }) => {
       const { data, error } = await supabase
         .from('events')
@@ -208,8 +192,8 @@ export function useEvents(options = {}) {
       return data;
     },
     onSuccess: async (data, variables) => {
-      queryClient.invalidateQueries(['events']);
-      queryClient.invalidateQueries(['event', variables.eventId]);
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['event', variables.eventId] });
 
       // Audit logging
       await logEventActivity('updated', data, {
@@ -217,7 +201,8 @@ export function useEvents(options = {}) {
       });
 
       // Notify registrants if significant changes
-      if (data.registered_count > 0) {
+      // @ts-ignore
+      if (data.registration_count > 0) {
         try {
           await triggerEmail('event.updated', {
             entity_type: 'event',
@@ -237,6 +222,7 @@ export function useEvents(options = {}) {
 
   // Cancel event
   const cancelEventMutation = useMutation({
+    /** @param {{eventId: string, reason: string, notifyRegistrants: boolean}} params */
     mutationFn: async ({ eventId, reason, notifyRegistrants }) => {
       const { data, error } = await supabase
         .from('events')
@@ -275,8 +261,8 @@ export function useEvents(options = {}) {
       return data;
     },
     onSuccess: async (data, variables) => {
-      queryClient.invalidateQueries(['events']);
-      queryClient.invalidateQueries(['event', variables.eventId]);
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['event', variables.eventId] });
 
       // Audit logging
       await logEventActivity('cancelled', data, {
@@ -287,6 +273,7 @@ export function useEvents(options = {}) {
 
   // Delete event (soft delete)
   const deleteEventMutation = useMutation({
+    /** @param {string} eventId */
     mutationFn: async (eventId) => {
       const { error } = await supabase
         .from('events')
@@ -300,7 +287,7 @@ export function useEvents(options = {}) {
       if (error) throw error;
     },
     onSuccess: async (_, eventId) => {
-      queryClient.invalidateQueries(['events']);
+      queryClient.invalidateQueries({ queryKey: ['events'] });
 
       // Audit logging
       await logEventActivity('deleted', { id: eventId });
@@ -314,7 +301,7 @@ export function useEvents(options = {}) {
     error: eventsQuery.error,
     refetch: eventsQuery.refetch,
 
-    // Single event hook
+    // Single event hook - explicit call
     useEvent,
 
     // Mutations
@@ -329,6 +316,25 @@ export function useEvents(options = {}) {
     isCancelling: cancelEventMutation.isPending,
     isDeleting: deleteEventMutation.isPending
   };
+}
+
+// Named export for single event to allow usage without fetching full list
+export function useEvent(eventId) {
+  return useQuery({
+    queryKey: ['event', eventId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('id', eventId)
+        .eq('is_deleted', false)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!eventId
+  });
 }
 
 /**
@@ -349,6 +355,184 @@ export function useProgramEvents(programId, options = {}) {
     ...options,
     programId
   });
+}
+
+/**
+ * Hook for event comments
+ */
+export function useEventComments(eventId) {
+  return useQuery({
+    queryKey: ['event-comments', eventId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('comments')
+        .select(`
+          *,
+          users (
+            email,
+            first_name,
+            last_name,
+            avatar_url
+          )
+        `)
+        .eq('entity_type', 'event')
+        .eq('entity_id', eventId)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!eventId
+  });
+}
+
+/**
+ * Hook for event bookmark status
+ */
+export function useEventBookmarkStatus(eventId, userEmail) {
+  return useQuery({
+    queryKey: ['event-bookmark', eventId, userEmail],
+    queryFn: async () => {
+      if (!userEmail) return false;
+      const { data, error } = await supabase
+        .from('bookmarks')
+        .select('id')
+        .eq('entity_type', 'event')
+        .eq('entity_id', eventId)
+        .eq('user_email', userEmail)
+        .maybeSingle();
+
+      if (error) return false;
+      return !!data;
+    },
+    enabled: !!eventId && !!userEmail
+  });
+}
+
+/**
+ * Hook for Event Mutations (Comments, Bookmarks, Registration)
+ */
+export function useEventMutations() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { triggerEmail } = useEmailTrigger();
+
+  const addComment = useMutation({
+    /** @param {{eventId: string, content: string}} params */
+    mutationFn: async ({ eventId, content }) => {
+      const { data, error } = await supabase
+        .from('comments')
+        .insert({
+          entity_type: 'event',
+          entity_id: eventId,
+          comment_text: content,
+          user_id: user?.id,
+          user_email: user?.email,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['event-comments', variables.eventId] });
+      toast.success("Comment added");
+    }
+  });
+
+  const toggleBookmark = useMutation({
+    /** @param {{eventId: string, isBookmarked: boolean}} params */
+    mutationFn: async ({ eventId, isBookmarked }) => {
+      if (isBookmarked) {
+        // Remove bookmark
+        const { error } = await supabase
+          .from('bookmarks')
+          .delete()
+          .eq('entity_type', 'event')
+          .eq('entity_id', eventId)
+          .eq('user_email', user?.email);
+        if (error) throw error;
+        return false;
+      } else {
+        // Add bookmark
+        const { error } = await supabase
+          .from('bookmarks')
+          .insert({
+            entity_type: 'event',
+            entity_id: eventId,
+            user_email: user?.email,
+            created_at: new Date().toISOString()
+          });
+        if (error) throw error;
+        return true;
+      }
+    },
+    onSuccess: (isBookmarked, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['event-bookmark', variables.eventId, user?.email] });
+      toast.success(isBookmarked ? "Added to bookmarks" : "Removed from bookmarks");
+    }
+  });
+
+  const registerForEvent = useMutation({
+    /** @param {{eventId: string, currentRegistrationCount: number}} params */
+    mutationFn: async ({ eventId, currentRegistrationCount }) => {
+      // Optimistic update of count or fetch fresh?
+      // Ideally we use a stored procedure or increments.
+      // Supabase doesn't have native increment in .update easily without rpc or raw sql, 
+      // but we can just use the passed or fetched count.
+      // Let's use the fetched count from existing event data + 1 for safety, or rpc.
+      // For simple refactor, we stick to logic: update { registration_count: n + 1 }
+
+      const { error } = await supabase
+        .from('events')
+        // @ts-ignore
+        .update({ registration_count: (currentRegistrationCount || 0) + 1 })
+        .eq('id', eventId);
+
+      if (error) throw error;
+
+      // Trigger email
+      // Need event details. 
+      // We can fetch them or assume query invalidation handles UI.
+      // We need strict event details for email though.
+      // Let's fetch event to be sure
+      const { data: event } = await supabase.from('events').select('*').eq('id', eventId).single();
+
+      if (event) {
+        await triggerEmail('event.registration_confirmed', {
+          entity_type: 'event',
+          entity_id: eventId,
+          recipient_email: user?.email,
+          variables: { // Use variables or entity_data depending on handle
+            event_title: event.title_en,
+            event_date: event.start_date,
+            location: event.location
+          },
+          entity_data: { // duplicate for safety depending on template
+            title: event.title_en,
+            start_date: event.start_date,
+            location: event.location
+          }
+        });
+      }
+
+      return event;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['event', variables.eventId] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      toast.success("Registration confirmed!");
+    }
+  });
+
+  return {
+    addComment,
+    toggleBookmark,
+    registerForEvent
+  };
 }
 
 export default useEvents;

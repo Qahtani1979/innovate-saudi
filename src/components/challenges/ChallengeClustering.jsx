@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,35 +6,43 @@ import { useLanguage } from '../LanguageContext';
 import { Network, Sparkles, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
-import { createPageUrl } from '../../utils';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { getSystemPrompt } from '@/lib/saudiContext';
-import { 
-  buildClusteringPrompt, 
-  clusteringSchema, 
-  CLUSTERING_SYSTEM_PROMPT 
+import {
+  buildClusteringPrompt,
+  clusteringSchema,
+  CLUSTERING_SYSTEM_PROMPT
 } from '@/lib/ai/prompts/challenges';
+
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useChallengeMutations } from '@/hooks/useChallengeMutations';
 
 export default function ChallengeClustering() {
   const { language, isRTL, t } = useLanguage();
   const [clusters, setClusters] = useState(null);
+  const { createChallenge } = useChallengeMutations();
 
   const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
     showToasts: true,
     fallbackData: null
   });
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-clustering'],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false);
-      return data || [];
-    }
+  // Use Gold Standard hook for fetching
+  const { data: result = { data: [] } } = useChallengesWithVisibility({
+    pageSize: 200, // Fetch a reasonable large set for clustering
+    filters: { is_deleted: false }
   });
+
+  const challenges = result.data || [];
 
   const analyzeClusters = async () => {
     const activeChallenges = challenges.filter(c => c.status !== 'archived' && c.status !== 'resolved');
+
+    if (activeChallenges.length === 0) {
+      toast.info(t({ en: 'Not enough challenges to analyze', ar: 'لا توجد تحديات كافية للتحليل' }));
+      return;
+    }
 
     const response = await invokeAI({
       systemPrompt: getSystemPrompt(CLUSTERING_SYSTEM_PROMPT),
@@ -49,25 +55,22 @@ export default function ChallengeClustering() {
     }
   };
 
-  const createMegaChallenge = async (cluster) => {
-    try {
-      const megaChallengeData = {
-        title_en: cluster.name,
-        title_ar: cluster.name,
-        description_en: cluster.mega_challenge_description,
-        sector: cluster.theme,
-        keywords: cluster.suggested_tags,
-        challenge_type: 'other',
-        status: 'draft',
-        tags: cluster.suggested_tags
-      };
+  const createMegaChallenge = (cluster) => {
+    const megaChallengeData = {
+      title_en: cluster.name,
+      title_ar: cluster.name,
+      description_en: cluster.mega_challenge_description,
+      sector_id: null,
+      keywords: cluster.suggested_tags,
+      challenge_type: 'other',
+      status: 'draft'
+    };
 
-      const { error } = await supabase.from('challenges').insert(megaChallengeData);
-      if (error) throw error;
-      toast.success(t({ en: 'Mega-challenge created', ar: 'تم إنشاء التحدي الضخم' }));
-    } catch (error) {
-      toast.error(t({ en: 'Creation failed', ar: 'فشل الإنشاء' }));
-    }
+    createChallenge.mutate(megaChallengeData, {
+      onSuccess: () => {
+        toast.success(t({ en: 'Mega-challenge created', ar: 'تم إنشاء التحدي الضخم' }));
+      }
+    });
   };
 
   return (
@@ -91,7 +94,7 @@ export default function ChallengeClustering() {
         </CardHeader>
         <CardContent>
           <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
-          
+
           {!clusters && !isLoading && (
             <div className="text-center py-12">
               <Network className="h-16 w-16 text-purple-300 mx-auto mb-4" />
@@ -105,7 +108,7 @@ export default function ChallengeClustering() {
             <div className="space-y-4">
               {clusters.map((cluster, idx) => {
                 const clusterChallenges = challenges.filter(c => cluster.challenge_ids?.includes(c.id));
-                
+
                 return (
                   <Card key={idx} className="border-2 border-purple-200">
                     <CardHeader>
@@ -125,10 +128,11 @@ export default function ChallengeClustering() {
                           </div>
                         </div>
                         {cluster.mega_challenge_recommended && (
-                          <Button 
+                          <Button
                             onClick={() => createMegaChallenge(cluster)}
                             size="sm"
                             className="bg-gradient-to-r from-purple-600 to-pink-600"
+                            disabled={createChallenge.isPending}
                           >
                             <Sparkles className="h-3 w-3 mr-1" />
                             {t({ en: 'Create Mega', ar: 'إنشاء ضخم' })}
@@ -148,8 +152,8 @@ export default function ChallengeClustering() {
 
                       <div className="space-y-2">
                         {clusterChallenges.slice(0, 5).map((challenge) => (
-                          <Link 
-                            key={challenge.id} 
+                          <Link
+                            key={challenge.id}
                             to={createPageUrl(`ChallengeDetail?id=${challenge.id}`)}
                             className="block p-2 border rounded hover:bg-purple-50 transition-colors"
                           >

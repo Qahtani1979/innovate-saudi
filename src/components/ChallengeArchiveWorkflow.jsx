@@ -4,37 +4,30 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from './LanguageContext';
 import { Archive, Loader2, X } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { useChallengeMutations } from '@/hooks/useChallengeMutations';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function ChallengeArchiveWorkflow({ challenge, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [archiveReason, setArchiveReason] = useState('');
+  const { updateChallenge } = useChallengeMutations();
 
-  const archiveMutation = useMutation({
-    mutationFn: async () => {
-      await base44.entities.Challenge.update(challenge.id, {
+  const handleArchive = () => {
+    updateChallenge.mutate({
+      id: challenge.id,
+      data: {
         status: 'archived',
         is_archived: true,
         archive_date: new Date().toISOString(),
         archive_reason: archiveReason
-      });
-
-      await base44.entities.ChallengeActivity.create({
-        challenge_id: challenge.id,
-        activity_type: 'status_change',
-        description: `Challenge archived`,
-        details: { archive_reason: archiveReason }
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['challenge']);
-      toast.success(t({ en: 'Challenge archived', ar: 'تم أرشفة التحدي' }));
-      onClose();
-    }
-  });
+      },
+      metadata: { archive_reason: archiveReason }
+    }, {
+      onSuccess: () => {
+        onClose();
+      }
+    });
+  };
 
   return (
     <Card className="max-w-2xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -74,7 +67,7 @@ export default function ChallengeArchiveWorkflow({ challenge, onClose }) {
           <Textarea
             value={archiveReason}
             onChange={(e) => setArchiveReason(e.target.value)}
-            placeholder={t({ 
+            placeholder={t({
               en: 'E.g., No longer relevant, Duplicate, Resolved through other means...',
               ar: 'مثلاً، لم يعد ذا صلة، مكرر، تم الحل بوسائل أخرى...'
             })}
@@ -88,11 +81,11 @@ export default function ChallengeArchiveWorkflow({ challenge, onClose }) {
             {t({ en: 'Cancel', ar: 'إلغاء' })}
           </Button>
           <Button
-            onClick={() => archiveMutation.mutate()}
-            disabled={!archiveReason || archiveMutation.isPending}
+            onClick={handleArchive}
+            disabled={!archiveReason || updateChallenge.isPending}
             className="bg-slate-600 hover:bg-slate-700"
           >
-            {archiveMutation.isPending ? (
+            {updateChallenge.isPending ? (
               <Loader2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} animate-spin`} />
             ) : (
               <Archive className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />

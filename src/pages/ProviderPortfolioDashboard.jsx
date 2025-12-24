@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,6 +11,11 @@ import {
   Lightbulb, TrendingUp, Star, TestTube, XCircle, CheckCircle2, BarChart3, Briefcase
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useOrganizationByOwner } from '@/hooks/useOrganizations';
+import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useSolutionsReviews } from '@/hooks/useSolutionReviews';
+import { useSolutionMutations } from '@/hooks/useSolutionMutations';
 import ProviderSolutionCard from '../components/solutions/ProviderSolutionCard';
 import MultiCityOperationsManager from '../components/startup/MultiCityOperationsManager';
 import ProviderCollaborationNetwork from '../components/solutions/ProviderCollaborationNetwork';
@@ -23,52 +28,28 @@ export default function ProviderPortfolioDashboard() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
-  const { data: myOrg } = useQuery({
-    queryKey: ['my-organization', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('organizations').select('*');
-      return data?.find(o => o.created_by === user?.email || o.contact_email === user?.email);
-    },
-    enabled: !!user
+  const { data: myOrg } = useOrganizationByOwner(user?.email);
+
+  const { data: solutions = [], isLoading } = useSolutionsWithVisibility({
+    limit: 1000
   });
 
-  const { data: solutions = [], isLoading } = useQuery({
-    queryKey: ['my-solutions', user?.email, myOrg?.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('solutions')
-        .select('*')
-        .eq('is_deleted', false);
-      return data?.filter(s => 
-        s.created_by === user?.email || 
-        (myOrg && s.provider_id === myOrg.id)
-      ) || [];
-    },
-    enabled: !!user
+  // Filter solutions to show only provider's solutions
+  const mySolutions = solutions.filter(s =>
+    s?.['created_by'] === user?.email ||
+    (myOrg && s?.['provider_id'] === myOrg.id)
+  );
+
+  const { data: pilots = [] } = usePilotsWithVisibility({
+    limit: 1000
   });
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-for-solutions', solutions.map(s => s.id)],
-    queryFn: async () => {
-      const solutionIds = solutions.map(s => s.id);
-      const { data } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('is_deleted', false);
-      return data?.filter(p => solutionIds.includes(p.solution_id)) || [];
-    },
-    enabled: solutions.length > 0
-  });
+  // Filter pilots for these solutions
+  const mySolutionsPilots = pilots.filter(p =>
+    mySolutions.some(s => s.id === p.solution_id)
+  );
 
-  const { data: reviews = [] } = useQuery({
-    queryKey: ['reviews-for-solutions', solutions.map(s => s.id)],
-    queryFn: async () => {
-      const solutionIds = solutions.map(s => s.id);
-      const { data } = await supabase.from('solution_reviews').select('*');
-      return data?.filter(r => solutionIds.includes(r.solution_id)) || [];
-    },
-    enabled: solutions.length > 0
-  });
+  const { data: reviews = [] } = useSolutionsReviews(mySolutions.map(s => s.id));
 
   const toggleSelection = (solutionId) => {
     setSelectedSolutions(prev =>
@@ -78,32 +59,39 @@ export default function ProviderPortfolioDashboard() {
     );
   };
 
+  const { updateSolution } = useSolutionMutations();
+
   const bulkDeprecateMutation = useMutation({
+    /** @param {string[]} solutionIds */
     mutationFn: async (solutionIds) => {
       for (const id of solutionIds) {
-        await supabase.from('solutions').update({
-          workflow_stage: 'deprecated',
-          is_published: false,
-          is_archived: true
-        }).eq('id', id);
+        await updateSolution.mutateAsync({
+          id,
+          data: {
+            workflow_stage: 'deprecated',
+            is_published: false,
+            is_archived: true
+          },
+          changedFields: ['workflow_stage', 'is_published', 'is_archived']
+        });
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['my-solutions']);
+      queryClient.invalidateQueries({ queryKey: ['solutions-with-visibility'] });
       setSelectedSolutions([]);
       toast.success(t({ en: 'Solutions deprecated', ar: 'تم إيقاف الحلول' }));
     }
   });
 
   const portfolioStats = {
-    total: solutions.length,
-    published: solutions.filter(s => s.is_published).length,
-    verified: solutions.filter(s => s.is_verified).length,
-    inPilots: solutions.filter(s => pilots.some(p => p.solution_id === s.id)).length,
-    avgRating: solutions.length > 0
-      ? (solutions.reduce((sum, s) => sum + (s.average_rating || 0), 0) / solutions.length).toFixed(1)
+    total: mySolutions.length,
+    published: mySolutions.filter(s => s.is_published).length,
+    verified: mySolutions.filter(s => s.is_verified).length,
+    inPilots: mySolutions.filter(s => mySolutionsPilots.some(p => p.solution_id === s.id)).length,
+    avgRating: mySolutions.length > 0
+      ? (mySolutions.reduce((sum, s) => sum + (s.average_rating || 0), 0) / mySolutions.length).toFixed(1)
       : 'N/A',
-    totalDeployments: solutions.reduce((sum, s) => sum + (s.deployment_count || 0), 0),
+    totalDeployments: mySolutions.reduce((sum, s) => sum + (s.deployment_count || 0), 0),
     totalReviews: reviews.length
   };
 
@@ -121,12 +109,14 @@ export default function ProviderPortfolioDashboard() {
         icon={Briefcase}
         title={t({ en: 'My Solutions Portfolio', ar: 'محفظة حلولي' })}
         description={t({ en: 'Manage all your solutions and track performance', ar: 'إدارة جميع حلولك وتتبع الأداء' })}
+        subtitle={myOrg ? (language === 'ar' ? myOrg.name_ar : myOrg.name_en) : null}
         stats={[
-          { icon: Lightbulb, value: portfolioStats.total, label: t({ en: 'Total Solutions', ar: 'إجمالي الحلول' }) },
-          { icon: CheckCircle2, value: portfolioStats.verified, label: t({ en: 'Verified', ar: 'معتمدة' }) },
-          { icon: TestTube, value: portfolioStats.inPilots, label: t({ en: 'In Pilots', ar: 'في تجارب' }) },
-          { icon: Star, value: portfolioStats.avgRating, label: t({ en: 'Avg Rating', ar: 'متوسط التقييم' }) },
+          { label: t({ en: 'Total', ar: 'الإجمالي' }), value: portfolioStats.total },
+          { label: t({ en: 'Verified', ar: 'معتمدة' }), value: portfolioStats.verified },
+          { label: t({ en: 'In Pilots', ar: 'في تجارب' }), value: portfolioStats.inPilots },
+          { label: t({ en: 'Avg Rating', ar: 'متوسط التقييم' }), value: portfolioStats.avgRating },
         ]}
+        action={null}
         actions={
           <Link to={createPageUrl('SolutionCreate')}>
             <Button className="bg-blue-600">
@@ -135,7 +125,9 @@ export default function ProviderPortfolioDashboard() {
             </Button>
           </Link>
         }
-      />
+      >
+        {null}
+      </PageHeader>
 
       {/* Portfolio Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
@@ -266,7 +258,7 @@ export default function ProviderPortfolioDashboard() {
           {solutions.map((solution) => {
             const solutionPilots = pilots.filter(p => p.solution_id === solution.id);
             const solutionReviews = reviews.filter(r => r.solution_id === solution.id);
-            
+
             return (
               <ProviderSolutionCard
                 key={solution.id}

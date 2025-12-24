@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+
+
 import { toast } from 'sonner';
 import { ArrowLeft, ArrowRight, Save, Loader2, CheckCircle2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,11 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { usePilotMutations } from '@/hooks/usePilotMutations';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
+import { useLocations } from '@/hooks/useLocations';
+import { useSandboxes } from '@/hooks/useSandboxes';
 
 // Import Step Components
 import Step1Setup from '@/components/pilots/create/Step1Setup';
@@ -25,7 +30,7 @@ export default function PilotCreatePage() {
   const { hasPermission } = usePermissions();
   const [step, setStep] = useState(1);
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+
   const { language, isRTL, t } = useLanguage();
   const { triggerEmail } = useEmailTrigger();
   const { invokeAI, status: aiStatus, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
@@ -79,91 +84,15 @@ export default function PilotCreatePage() {
   });
 
   // --- Data Fetching ---
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('challenges').select('id, title_en, title_ar, sector');
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('proposed_solutions').select('id, title, provider_name, readiness_level');
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('municipalities').select('id, name_en, name_ar, region_id');
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: sandboxes = [] } = useQuery({
-    queryKey: ['sandboxes'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('testing_sandboxes').select('*').eq('status', 'active');
-      if (error) throw error;
-      return data;
-    }
-  });
+  const { data: challenges = [] } = useChallengesWithVisibility({ limit: 1000 });
+  const { data: solutions = [] } = useSolutionsWithVisibility({ limit: 1000 });
+  const { useAllMunicipalities } = useLocations();
+  const { data: municipalities = [] } = useAllMunicipalities();
+  const { data: sandboxes = [] } = useSandboxes();
 
   // --- Mutation ---
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      // 1. Clean Data
-      const cleanData = {
-        ...data,
-        budget: data.budget ? parseFloat(data.budget) : 0,
-        duration_weeks: data.duration_weeks ? parseInt(data.duration_weeks) : 0,
-        target_population_size: data.target_population_size ? parseInt(data.target_population_size) : 0,
-        // Ensure arrays are JSON
-        kpis: data.kpis || [],
-        milestones: data.milestones || [],
-        team_members: data.team_members || [],
-        stakeholders: data.stakeholders || [],
-        technology_stack: data.technology_stack || [],
-        safety_protocols: data.safety_protocols || [],
-        budget_breakdown: data.budget_breakdown || [],
-        funding_sources: data.funding_sources || [],
-        documents: data.documents || [],
-        gallery_urls: data.gallery_urls || [],
-        tags: data.tags || []
-      };
+  const { createPilot } = usePilotMutations();
 
-      const { data: result, error } = await supabase
-        .from('pilots')
-        .insert(cleanData)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return result;
-    },
-    onSuccess: (data) => {
-      toast.success(t({ en: 'Pilot created successfully!', ar: 'تم إنشاء التجربة بنجاح!' }));
-      queryClient.invalidateQueries(['pilots']);
-      navigate(`/pilots/${data.id}`);
-
-      // Trigger Email Notification
-      triggerEmail({
-        to: 'admin@innovate-saudi.com',
-        subject: `New Pilot Created: ${data.title_en}`,
-        body: `A new pilot has been created in sector ${data.sector}.`
-      });
-    },
-    onError: (error) => {
-      console.error("Submission error:", error);
-      toast.error(t({ en: 'Failed to create pilot', ar: 'فشل إنشاء التجربة' }) + ': ' + error.message);
-    }
-  });
 
   // --- Navigation & Actions ---
   const nextStep = () => {
@@ -195,7 +124,19 @@ export default function PilotCreatePage() {
   };
 
   const handleSubmit = () => {
-    createMutation.mutate(formData);
+    // Clean Data before passing to hook
+    const cleanData = {
+      ...formData,
+      budget: formData.budget ? parseFloat(formData.budget) : 0,
+      duration_weeks: formData.duration_weeks ? parseInt(formData.duration_weeks) : 0,
+      target_population_size: formData.target_population_size ? parseInt(formData.target_population_size) : 0,
+    };
+
+    createPilot.mutate(cleanData, {
+      onSuccess: (data) => {
+        navigate(`/pilots/${data.id}`);
+      }
+    });
   };
 
   if (!hasPermission('create_pilot')) {
@@ -369,9 +310,9 @@ export default function PilotCreatePage() {
             <Button
               onClick={handleSubmit}
               className="w-40 bg-green-600 hover:bg-green-700 text-white"
-              disabled={createMutation.isPending}
+              disabled={createPilot.isPending}
             >
-              {createMutation.isPending ? (
+              {createPilot.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : (
                 <Save className="h-4 w-4 mr-2" />

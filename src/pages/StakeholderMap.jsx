@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useStakeholders } from '@/hooks/useStakeholders';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,12 +14,10 @@ function StakeholderMap() {
   const { t } = useLanguage();
   const [entityTypeFilter, setEntityTypeFilter] = useState('all');
 
-  const { data: stakeholders = [], isLoading } = useQuery({
-    queryKey: ['stakeholders'],
-    queryFn: () => base44.entities.Stakeholder.list()
-  });
+  const { useGetAllStakeholders } = useStakeholders();
+  const { data: stakeholders = [], isLoading } = useGetAllStakeholders();
 
-  const filteredStakeholders = stakeholders.filter(s => 
+  const filteredStakeholders = stakeholders.filter(s =>
     entityTypeFilter === 'all' || s.entity_type === entityTypeFilter
   );
 
@@ -35,7 +32,7 @@ function StakeholderMap() {
   const matrixData = filteredStakeholders.map(s => {
     const influenceMap = { very_low: 1, low: 2, medium: 3, high: 4, very_high: 5 };
     const interestMap = { very_low: 1, low: 2, medium: 3, high: 4, very_high: 5 };
-    
+
     return {
       name: s.stakeholder_name_en || s.stakeholder_name_ar,
       influence: influenceMap[s.influence_level] || 3,
@@ -158,17 +155,17 @@ function StakeholderMap() {
           <ResponsiveContainer width="100%" height={400}>
             <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
               <CartesianGrid />
-              <XAxis 
-                type="number" 
-                dataKey="interest" 
-                name={t({ en: 'Interest', ar: 'الاهتمام' })} 
+              <XAxis
+                type="number"
+                dataKey="interest"
+                name={t({ en: 'Interest', ar: 'الاهتمام' })}
                 domain={[0, 6]}
                 label={{ value: t({ en: 'Interest Level →', ar: 'مستوى الاهتمام ←' }), position: 'bottom' }}
               />
-              <YAxis 
-                type="number" 
-                dataKey="influence" 
-                name={t({ en: 'Influence', ar: 'التأثير' })} 
+              <YAxis
+                type="number"
+                dataKey="influence"
+                name={t({ en: 'Influence', ar: 'التأثير' })}
                 domain={[0, 6]}
                 label={{ value: t({ en: '↑ Power/Influence', ar: '↑ القوة/التأثير' }), angle: -90, position: 'left' }}
               />
@@ -183,19 +180,19 @@ function StakeholderMap() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
             <div className="flex items-center gap-2 text-sm">
-              <div className="w-4 h-4 rounded" style={{backgroundColor: quadrantColors.monitor}}></div>
+              <div className="w-4 h-4 rounded" style={{ backgroundColor: quadrantColors.monitor }}></div>
               <span>{t({ en: 'Monitor', ar: 'راقب' })}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <div className="w-4 h-4 rounded" style={{backgroundColor: quadrantColors.keep_informed}}></div>
+              <div className="w-4 h-4 rounded" style={{ backgroundColor: quadrantColors.keep_informed }}></div>
               <span>{t({ en: 'Keep Informed', ar: 'أبقِ على اطلاع' })}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <div className="w-4 h-4 rounded" style={{backgroundColor: quadrantColors.keep_satisfied}}></div>
+              <div className="w-4 h-4 rounded" style={{ backgroundColor: quadrantColors.keep_satisfied }}></div>
               <span>{t({ en: 'Keep Satisfied', ar: 'أبقِ راضياً' })}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <div className="w-4 h-4 rounded" style={{backgroundColor: quadrantColors.manage_closely}}></div>
+              <div className="w-4 h-4 rounded" style={{ backgroundColor: quadrantColors.manage_closely }}></div>
               <span>{t({ en: 'Manage Closely', ar: 'أدِر بحذر' })}</span>
             </div>
           </div>
@@ -224,7 +221,7 @@ function StakeholderMap() {
                         {stakeholder.role}
                       </Badge>
                       {stakeholder.power_interest_quadrant && (
-                        <Badge className="text-xs" style={{backgroundColor: quadrantColors[stakeholder.power_interest_quadrant]}}>
+                        <Badge className="text-xs" style={{ backgroundColor: quadrantColors[stakeholder.power_interest_quadrant] }}>
                           {stakeholder.power_interest_quadrant?.replace(/_/g, ' ')}
                         </Badge>
                       )}
@@ -248,6 +245,6 @@ function StakeholderMap() {
   );
 }
 
-export default ProtectedPage(StakeholderMap, { 
-  requiredPermissions: ['stakeholder_view_all'] 
+export default ProtectedPage(StakeholderMap, {
+  requiredPermissions: ['stakeholder_view_all']
 });

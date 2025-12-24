@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,15 +19,22 @@ function IPManagementDashboard() {
 
   const { data: rdProjects = [] } = useQuery({
     queryKey: ['rd-projects-ip'],
-    queryFn: () => base44.entities.RDProject.list()
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('rd_projects')
+        .select('*');
+
+      if (error) throw error;
+      return (data || []).filter(item => !item.is_deleted);
+    }
   });
 
   // Aggregate IP data
-  const allPatents = rdProjects.flatMap(p => 
+  const allPatents = rdProjects.flatMap(p =>
     (p.patents || []).map(patent => ({ ...patent, project_id: p.id, project_title: p.title_en, institution: p.institution_en }))
   );
 
-  const allLicenses = rdProjects.flatMap(p => 
+  const allLicenses = rdProjects.flatMap(p =>
     (p.ip_licenses || []).map(license => ({ ...license, project_id: p.id, project_title: p.title_en }))
   );
 

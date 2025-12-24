@@ -1,12 +1,10 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { 
+import {
   Calendar, Users, CheckCircle2, Clock, Sparkles,
   FileText, Plus, Bell, TestTube, CalendarDays
 } from 'lucide-react';
@@ -14,91 +12,42 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
 import { format } from 'date-fns';
 
+import { useMyManagedOrganization } from '@/hooks/useOrganizationsWithVisibility';
+import { usePrograms, useMyProgramApplications, useMyProgramEvents, useApplicationsForPrograms } from '@/hooks/usePrograms';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { usePilotsForPrograms, useMatchmakerApplicationsForPrograms } from '@/hooks/useProgramIntegrations';
+
 function ProgramOperatorPortal() {
   const { language, isRTL, t } = useLanguage();
   const { user } = useAuth();
 
   // Find programs I operate
-  const { data: myOrganization } = useQuery({
-    queryKey: ['my-org-operator', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('organizations').select('*');
-      return data?.find(o => o.contact_email === user?.email);
-    },
-    enabled: !!user
-  });
+  const { data: myOrganization } = useMyManagedOrganization();
 
   // RLS: See only programs my organization operates
-  const { data: myPrograms = [] } = useQuery({
-    queryKey: ['my-operated-programs', myOrganization?.id],
-    queryFn: async () => {
-      const { data } = await supabase.from('programs').select('*').eq('is_deleted', false);
-      return (data || []).filter(p => 
-        p.operator_organization_id === myOrganization?.id || 
-        p.created_by === user?.email
-      );
-    },
-    enabled: !!myOrganization || !!user
-  });
+  const { programs } = usePrograms();
+  const myPrograms = (programs || []).filter(p =>
+    p.operator_organization_id === myOrganization?.id ||
+    p.created_by === user?.email
+  ).filter(p => !p.is_deleted);
+
+  const myProgramIds = myPrograms.map(p => p.id);
 
   // Applications to my programs
-  const { data: applications = [] } = useQuery({
-    queryKey: ['my-program-applications', myPrograms.length],
-    queryFn: async () => {
-      const myProgramIds = myPrograms.map(p => p.id);
-      const all = await base44.entities.ProgramApplication.list();
-      return all.filter(a => myProgramIds.includes(a.program_id));
-    },
-    enabled: myPrograms.length > 0
-  });
+  const { data: applications = [] } = useApplicationsForPrograms(myProgramIds);
 
   // Pilots from my programs
-  const { data: pilotConversions = [] } = useQuery({
-    queryKey: ['pilots-from-my-programs', myPrograms.length],
-    queryFn: async () => {
-      const myProgramIds = myPrograms.map(p => p.id);
-      const all = await base44.entities.Pilot.list();
-      // Pilots linked via program applications or program metadata
-      return all.filter(p => 
-        myProgramIds.some(progId => 
-          p.program_ids?.includes(progId) ||
-          p.created_via_program === progId
-        )
-      );
-    },
-    enabled: myPrograms.length > 0
-  });
+  const { data: pilotConversions = [] } = usePilotsForPrograms(myProgramIds);
 
   // Matchmaker applications (if operating matchmaker)
-  const { data: matchmakerApps = [] } = useQuery({
-    queryKey: ['my-matchmaker-apps'],
-    queryFn: async () => {
-      const matchmakerPrograms = myPrograms.filter(p => p.program_type === 'matchmaker');
-      if (matchmakerPrograms.length === 0) return [];
-      const all = await base44.entities.MatchmakerApplication.list();
-      return all; // All matchmaker apps if operating matchmaker
-    },
-    enabled: myPrograms.some(p => p.program_type === 'matchmaker')
-  });
+  // Only fetch if we have matchmaker programs
+  const hasMatchmaker = myPrograms.some(p => p.program_type === 'matchmaker');
+  const { data: matchmakerApps = [] } = useMatchmakerApplicationsForPrograms(
+    hasMatchmaker ? myProgramIds : []
+  );
 
   // Fetch events for operated programs
-  const { data: programEvents = [] } = useQuery({
-    queryKey: ['operator-program-events', myPrograms.length],
-    queryFn: async () => {
-      const myProgramIds = myPrograms.map(p => p.id);
-      if (myProgramIds.length === 0) return [];
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .in('program_id', myProgramIds)
-        .eq('is_deleted', false)
-        .order('start_date', { ascending: true })
-        .limit(10);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: myPrograms.length > 0
-  });
+  const { data: programEvents = [] } = useMyProgramEvents(myProgramIds);
 
   const activePrograms = myPrograms.filter(p => ['active', 'applications_open'].includes(p.status));
   const pendingApplications = applications.filter(a => a.status === 'submitted');
@@ -227,7 +176,7 @@ function ProgramOperatorPortal() {
             const programApps = applications.filter(a => a.program_id === program.id);
             const acceptedCount = programApps.filter(a => a.status === 'accepted').length;
             const conversionRate = programApps.length > 0 ? ((acceptedCount / programApps.length) * 100).toFixed(0) : 0;
-            
+
             return (
               <Link key={program.id} to={createPageUrl(`ProgramDetail?id=${program.id}`)}>
                 <div className="p-4 border-2 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all">
@@ -239,8 +188,8 @@ function ProgramOperatorPortal() {
                         </h3>
                         <Badge className={
                           program.status === 'active' ? 'bg-green-100 text-green-700 text-xs' :
-                          program.status === 'applications_open' ? 'bg-blue-100 text-blue-700 text-xs' :
-                          'bg-slate-100 text-slate-700 text-xs'
+                            program.status === 'applications_open' ? 'bg-blue-100 text-blue-700 text-xs' :
+                              'bg-slate-100 text-slate-700 text-xs'
                         }>{program.status}</Badge>
                         <Badge variant="outline" className="text-xs">{program.program_type}</Badge>
                       </div>
@@ -346,8 +295,8 @@ function ProgramOperatorPortal() {
                       </div>
                       <Badge className={
                         app.classification === 'fast_pass' ? 'bg-purple-600 text-white text-xs' :
-                        app.classification === 'strong_qualified' ? 'bg-green-600 text-white text-xs' :
-                        'bg-blue-100 text-blue-700 text-xs'
+                          app.classification === 'strong_qualified' ? 'bg-green-600 text-white text-xs' :
+                            'bg-blue-100 text-blue-700 text-xs'
                       }>{app.classification?.replace(/_/g, ' ')}</Badge>
                     </div>
                   </div>
@@ -395,8 +344,8 @@ function ProgramOperatorPortal() {
                         </p>
                         <Badge className={
                           event.event_type === 'workshop' ? 'bg-purple-100 text-purple-700 text-xs' :
-                          event.event_type === 'webinar' ? 'bg-blue-100 text-blue-700 text-xs' :
-                          'bg-teal-100 text-teal-700 text-xs'
+                            event.event_type === 'webinar' ? 'bg-blue-100 text-blue-700 text-xs' :
+                              'bg-teal-100 text-teal-700 text-xs'
                         }>{event.event_type}</Badge>
                       </div>
                       <p className="text-xs text-slate-600">
@@ -409,8 +358,8 @@ function ProgramOperatorPortal() {
                       </Badge>
                       <Badge className={
                         event.status === 'published' ? 'bg-green-100 text-green-700 text-xs' :
-                        event.status === 'draft' ? 'bg-slate-100 text-slate-700 text-xs' :
-                        'bg-amber-100 text-amber-700 text-xs'
+                          event.status === 'draft' ? 'bg-slate-100 text-slate-700 text-xs' :
+                            'bg-amber-100 text-amber-700 text-xs'
                       }>{event.status}</Badge>
                     </div>
                   </div>
@@ -486,6 +435,6 @@ function ProgramOperatorPortal() {
   );
 }
 
-export default ProtectedPage(ProgramOperatorPortal, { 
+export default ProtectedPage(ProgramOperatorPortal, {
   requiredPermissions: ['program_manage']
 });

@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useAssessmentStats } from '@/hooks/useAssessmentStats';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -21,31 +20,39 @@ const ACCESS_CATEGORIES = [
     name: { en: 'User Profiles', ar: 'ملفات المستخدمين' },
     icon: Users,
     checks: [
-      { id: 'schema', name: 'Database Schema', items: [
-        { check: 'user_profiles table exists', status: 'complete' },
-        { check: 'Core columns: user_id, user_email, full_name, avatar_url', status: 'complete' },
-        { check: 'Organization/municipality links', status: 'complete' },
-        { check: 'Preference columns: language, theme, notifications', status: 'complete' }
-      ]},
-      { id: 'rls', name: 'Row Level Security', items: [
-        { check: 'RLS enabled on user_profiles', status: 'complete' },
-        { check: 'Users can view/update own profile', status: 'complete' },
-        { check: 'Users can insert own profile', status: 'complete' },
-        { check: 'Public profiles viewable by all', status: 'complete' },
-        { check: 'Admins can manage all profiles', status: 'complete' }
-      ]},
-      { id: 'hooks', name: 'React Hooks', items: [
-        { check: 'usePermissions.jsx - Profile fetching', status: 'complete' },
-        { check: 'useProfileData.js - Extended profile', status: 'complete' },
-        { check: 'useUsersWithVisibility.js - User listing', status: 'complete' }
-      ]},
-      { id: 'pages', name: 'Pages', items: [
-        { check: 'UserProfile.jsx - Profile view', status: 'complete' },
-        { check: 'UserProfileTab.jsx - Tab component', status: 'complete' },
-        { check: 'ProfileEdit.jsx - Edit form', status: 'complete' },
-        { check: 'ProfileSettings.jsx - Settings', status: 'complete' },
-        { check: 'UserDirectory.jsx / UserManagementHub.jsx', status: 'complete' }
-      ]}
+      {
+        id: 'schema', name: 'Database Schema', items: [
+          { check: 'user_profiles table exists', status: 'complete' },
+          { check: 'Core columns: user_id, user_email, full_name, avatar_url', status: 'complete' },
+          { check: 'Organization/municipality links', status: 'complete' },
+          { check: 'Preference columns: language, theme, notifications', status: 'complete' }
+        ]
+      },
+      {
+        id: 'rls', name: 'Row Level Security', items: [
+          { check: 'RLS enabled on user_profiles', status: 'complete' },
+          { check: 'Users can view/update own profile', status: 'complete' },
+          { check: 'Users can insert own profile', status: 'complete' },
+          { check: 'Public profiles viewable by all', status: 'complete' },
+          { check: 'Admins can manage all profiles', status: 'complete' }
+        ]
+      },
+      {
+        id: 'hooks', name: 'React Hooks', items: [
+          { check: 'usePermissions.jsx - Profile fetching', status: 'complete' },
+          { check: 'useProfileData.js - Extended profile', status: 'complete' },
+          { check: 'useUsersWithVisibility.js - User listing', status: 'complete' }
+        ]
+      },
+      {
+        id: 'pages', name: 'Pages', items: [
+          { check: 'UserProfile.jsx - Profile view', status: 'complete' },
+          { check: 'UserProfileTab.jsx - Tab component', status: 'complete' },
+          { check: 'ProfileEdit.jsx - Edit form', status: 'complete' },
+          { check: 'ProfileSettings.jsx - Settings', status: 'complete' },
+          { check: 'UserDirectory.jsx / UserManagementHub.jsx', status: 'complete' }
+        ]
+      }
     ]
   },
   {
@@ -53,38 +60,48 @@ const ACCESS_CATEGORIES = [
     name: { en: 'Roles System', ar: 'نظام الأدوار' },
     icon: UserCog,
     checks: [
-      { id: 'schema', name: 'Database Schema', items: [
-        { check: 'roles table exists', status: 'complete' },
-        { check: 'user_roles table with proper structure', status: 'complete' },
-        { check: 'user_roles columns: user_id, role, role_id, municipality_id, organization_id', status: 'complete' },
-        { check: 'is_active column for soft deactivation', status: 'complete' },
-        { check: 'role_id FK to roles table', status: 'complete' }
-      ]},
-      { id: 'rls', name: 'Row Level Security', items: [
-        { check: 'RLS enabled on roles table', status: 'complete' },
-        { check: 'RLS enabled on user_roles table', status: 'complete' },
-        { check: 'Anyone can view roles', status: 'complete' },
-        { check: 'Admins can manage roles', status: 'complete' },
-        { check: 'Users can view own roles', status: 'complete' },
-        { check: 'Admins can manage all user_roles', status: 'complete' }
-      ]},
-      { id: 'hooks', name: 'React Hooks', items: [
-        { check: 'useUserRoles.js - Role fetching', status: 'complete' },
-        { check: 'useRBACManager.js - RBAC operations', status: 'complete' },
-        { check: 'useAssignRole hook', status: 'complete' },
-        { check: 'useRevokeRole hook', status: 'complete' }
-      ]},
-      { id: 'pages', name: 'Pages', items: [
-        { check: 'RolePermissionManager.jsx', status: 'complete' },
-        { check: 'RBACDashboard.jsx', status: 'complete' },
-        { check: 'RBACAuditReport.jsx', status: 'complete' },
-        { check: 'TeamManagement.jsx', status: 'complete' }
-      ]},
-      { id: 'functions', name: 'Database Functions', items: [
-        { check: 'is_admin(uuid) function', status: 'complete' },
-        { check: 'get_user_permissions(uuid) function', status: 'complete' },
-        { check: 'get_user_functional_roles(uuid) function', status: 'complete' }
-      ]}
+      {
+        id: 'schema', name: 'Database Schema', items: [
+          { check: 'roles table exists', status: 'complete' },
+          { check: 'user_roles table with proper structure', status: 'complete' },
+          { check: 'user_roles columns: user_id, role, role_id, municipality_id, organization_id', status: 'complete' },
+          { check: 'is_active column for soft deactivation', status: 'complete' },
+          { check: 'role_id FK to roles table', status: 'complete' }
+        ]
+      },
+      {
+        id: 'rls', name: 'Row Level Security', items: [
+          { check: 'RLS enabled on roles table', status: 'complete' },
+          { check: 'RLS enabled on user_roles table', status: 'complete' },
+          { check: 'Anyone can view roles', status: 'complete' },
+          { check: 'Admins can manage roles', status: 'complete' },
+          { check: 'Users can view own roles', status: 'complete' },
+          { check: 'Admins can manage all user_roles', status: 'complete' }
+        ]
+      },
+      {
+        id: 'hooks', name: 'React Hooks', items: [
+          { check: 'useUserRoles.js - Role fetching', status: 'complete' },
+          { check: 'useRBACManager.js - RBAC operations', status: 'complete' },
+          { check: 'useAssignRole hook', status: 'complete' },
+          { check: 'useRevokeRole hook', status: 'complete' }
+        ]
+      },
+      {
+        id: 'pages', name: 'Pages', items: [
+          { check: 'RolePermissionManager.jsx', status: 'complete' },
+          { check: 'RBACDashboard.jsx', status: 'complete' },
+          { check: 'RBACAuditReport.jsx', status: 'complete' },
+          { check: 'TeamManagement.jsx', status: 'complete' }
+        ]
+      },
+      {
+        id: 'functions', name: 'Database Functions', items: [
+          { check: 'is_admin(uuid) function', status: 'complete' },
+          { check: 'get_user_permissions(uuid) function', status: 'complete' },
+          { check: 'get_user_functional_roles(uuid) function', status: 'complete' }
+        ]
+      }
     ]
   },
   {
@@ -92,31 +109,39 @@ const ACCESS_CATEGORIES = [
     name: { en: 'Permissions System', ar: 'نظام الصلاحيات' },
     icon: Key,
     checks: [
-      { id: 'schema', name: 'Database Schema', items: [
-        { check: 'permissions table exists', status: 'complete' },
-        { check: 'role_permissions junction table', status: 'complete' },
-        { check: 'Proper FK relationships', status: 'complete' }
-      ]},
-      { id: 'rls', name: 'Row Level Security', items: [
-        { check: 'RLS enabled on permissions', status: 'complete' },
-        { check: 'RLS enabled on role_permissions', status: 'complete' },
-        { check: 'Anyone can view permissions (for UI)', status: 'complete' },
-        { check: 'Admins can manage permissions', status: 'complete' }
-      ]},
-      { id: 'hooks', name: 'React Hooks', items: [
-        { check: 'usePermissions - hasPermission()', status: 'complete' },
-        { check: 'usePermissions - hasAnyPermission()', status: 'complete' },
-        { check: 'usePermissions - hasAllPermissions()', status: 'complete' },
-        { check: 'usePermissions - canAccessEntity()', status: 'complete' }
-      ]},
-      { id: 'components', name: 'Components', items: [
-        { check: 'PermissionGate.jsx - Conditional rendering', status: 'complete' },
-        { check: 'ProtectedPage.jsx - Route protection', status: 'complete' },
-        { check: 'ProtectedAction.jsx - Action protection', status: 'complete' },
-        { check: 'PermissionSelector.jsx - Permission picker', status: 'complete' },
-        { check: 'FieldPermissions.jsx - Field-level control', status: 'complete' },
-        { check: 'withEntityAccess.jsx - HOC wrapper', status: 'complete' }
-      ]}
+      {
+        id: 'schema', name: 'Database Schema', items: [
+          { check: 'permissions table exists', status: 'complete' },
+          { check: 'role_permissions junction table', status: 'complete' },
+          { check: 'Proper FK relationships', status: 'complete' }
+        ]
+      },
+      {
+        id: 'rls', name: 'Row Level Security', items: [
+          { check: 'RLS enabled on permissions', status: 'complete' },
+          { check: 'RLS enabled on role_permissions', status: 'complete' },
+          { check: 'Anyone can view permissions (for UI)', status: 'complete' },
+          { check: 'Admins can manage permissions', status: 'complete' }
+        ]
+      },
+      {
+        id: 'hooks', name: 'React Hooks', items: [
+          { check: 'usePermissions - hasPermission()', status: 'complete' },
+          { check: 'usePermissions - hasAnyPermission()', status: 'complete' },
+          { check: 'usePermissions - hasAllPermissions()', status: 'complete' },
+          { check: 'usePermissions - canAccessEntity()', status: 'complete' }
+        ]
+      },
+      {
+        id: 'components', name: 'Components', items: [
+          { check: 'PermissionGate.jsx - Conditional rendering', status: 'complete' },
+          { check: 'ProtectedPage.jsx - Route protection', status: 'complete' },
+          { check: 'ProtectedAction.jsx - Action protection', status: 'complete' },
+          { check: 'PermissionSelector.jsx - Permission picker', status: 'complete' },
+          { check: 'FieldPermissions.jsx - Field-level control', status: 'complete' },
+          { check: 'withEntityAccess.jsx - HOC wrapper', status: 'complete' }
+        ]
+      }
     ]
   },
   {
@@ -124,31 +149,41 @@ const ACCESS_CATEGORIES = [
     name: { en: 'Role Requests', ar: 'طلبات الأدوار' },
     icon: FileText,
     checks: [
-      { id: 'schema', name: 'Database Schema', items: [
-        { check: 'role_requests table exists', status: 'complete' },
-        { check: 'Status workflow columns', status: 'complete' },
-        { check: 'Requester/approver tracking', status: 'complete' }
-      ]},
-      { id: 'rls', name: 'Row Level Security', items: [
-        { check: 'RLS enabled on role_requests', status: 'complete' },
-        { check: 'Users can submit requests', status: 'complete' },
-        { check: 'Users can view own requests', status: 'complete' },
-        { check: 'Admins can manage all requests', status: 'complete' }
-      ]},
-      { id: 'hooks', name: 'React Hooks', items: [
-        { check: 'useApproveRoleRequest hook', status: 'complete' },
-        { check: 'useRejectRoleRequest hook', status: 'complete' },
-        { check: 'useCheckAutoApproval hook', status: 'complete' }
-      ]},
-      { id: 'pages', name: 'Pages', items: [
-        { check: 'RoleRequestCenter.jsx', status: 'complete' },
-        { check: 'RoleRequestApprovalQueue.jsx', status: 'complete' },
-        { check: 'MyApprovals.jsx - User pending requests', status: 'complete' }
-      ]},
-      { id: 'components', name: 'Components', items: [
-        { check: 'RoleRequestStatusBanner.jsx', status: 'complete' },
-        { check: 'RoleRequestForm.jsx', status: 'complete' }
-      ]}
+      {
+        id: 'schema', name: 'Database Schema', items: [
+          { check: 'role_requests table exists', status: 'complete' },
+          { check: 'Status workflow columns', status: 'complete' },
+          { check: 'Requester/approver tracking', status: 'complete' }
+        ]
+      },
+      {
+        id: 'rls', name: 'Row Level Security', items: [
+          { check: 'RLS enabled on role_requests', status: 'complete' },
+          { check: 'Users can submit requests', status: 'complete' },
+          { check: 'Users can view own requests', status: 'complete' },
+          { check: 'Admins can manage all requests', status: 'complete' }
+        ]
+      },
+      {
+        id: 'hooks', name: 'React Hooks', items: [
+          { check: 'useApproveRoleRequest hook', status: 'complete' },
+          { check: 'useRejectRoleRequest hook', status: 'complete' },
+          { check: 'useCheckAutoApproval hook', status: 'complete' }
+        ]
+      },
+      {
+        id: 'pages', name: 'Pages', items: [
+          { check: 'RoleRequestCenter.jsx', status: 'complete' },
+          { check: 'RoleRequestApprovalQueue.jsx', status: 'complete' },
+          { check: 'MyApprovals.jsx - User pending requests', status: 'complete' }
+        ]
+      },
+      {
+        id: 'components', name: 'Components', items: [
+          { check: 'RoleRequestStatusBanner.jsx', status: 'complete' },
+          { check: 'RoleRequestForm.jsx', status: 'complete' }
+        ]
+      }
     ]
   },
   {
@@ -156,21 +191,27 @@ const ACCESS_CATEGORIES = [
     name: { en: 'Auto-Approval Rules', ar: 'قواعد الموافقة التلقائية' },
     icon: Settings,
     checks: [
-      { id: 'schema', name: 'Database Schema', items: [
-        { check: 'auto_approval_rules table exists', status: 'complete' },
-        { check: 'Rule type/value columns', status: 'complete' },
-        { check: 'Municipality/organization scoping', status: 'complete' },
-        { check: 'Priority ordering', status: 'complete' }
-      ]},
-      { id: 'rls', name: 'Row Level Security', items: [
-        { check: 'RLS enabled on auto_approval_rules', status: 'complete' },
-        { check: 'Viewable by all (for matching)', status: 'complete' },
-        { check: 'Admins can manage rules', status: 'complete' }
-      ]},
-      { id: 'hooks', name: 'React Hooks', items: [
-        { check: 'useAutoRoleAssignment.js', status: 'complete' },
-        { check: 'useCheckAutoApproval hook', status: 'complete' }
-      ]}
+      {
+        id: 'schema', name: 'Database Schema', items: [
+          { check: 'auto_approval_rules table exists', status: 'complete' },
+          { check: 'Rule type/value columns', status: 'complete' },
+          { check: 'Municipality/organization scoping', status: 'complete' },
+          { check: 'Priority ordering', status: 'complete' }
+        ]
+      },
+      {
+        id: 'rls', name: 'Row Level Security', items: [
+          { check: 'RLS enabled on auto_approval_rules', status: 'complete' },
+          { check: 'Viewable by all (for matching)', status: 'complete' },
+          { check: 'Admins can manage rules', status: 'complete' }
+        ]
+      },
+      {
+        id: 'hooks', name: 'React Hooks', items: [
+          { check: 'useAutoRoleAssignment.js', status: 'complete' },
+          { check: 'useCheckAutoApproval hook', status: 'complete' }
+        ]
+      }
     ]
   },
   {
@@ -178,24 +219,32 @@ const ACCESS_CATEGORIES = [
     name: { en: 'Delegation System', ar: 'نظام التفويض' },
     icon: Activity,
     checks: [
-      { id: 'schema', name: 'Database Schema', items: [
-        { check: 'delegation_rules table exists', status: 'complete' },
-        { check: 'Delegator/delegate columns', status: 'complete' },
-        { check: 'Date range columns', status: 'complete' },
-        { check: 'Entity type scoping', status: 'complete' }
-      ]},
-      { id: 'rls', name: 'Row Level Security', items: [
-        { check: 'RLS enabled on delegation_rules', status: 'complete' }
-      ]},
-      { id: 'hooks', name: 'React Hooks', items: [
-        { check: 'useApproveDelegation hook', status: 'complete' },
-        { check: 'useRejectDelegation hook', status: 'complete' },
-        { check: 'useChallengeDelegation.js', status: 'complete' }
-      ]},
-      { id: 'pages', name: 'Pages', items: [
-        { check: 'MyDelegation.jsx', status: 'complete' },
-        { check: 'DelegationManager component', status: 'complete' }
-      ]}
+      {
+        id: 'schema', name: 'Database Schema', items: [
+          { check: 'delegation_rules table exists', status: 'complete' },
+          { check: 'Delegator/delegate columns', status: 'complete' },
+          { check: 'Date range columns', status: 'complete' },
+          { check: 'Entity type scoping', status: 'complete' }
+        ]
+      },
+      {
+        id: 'rls', name: 'Row Level Security', items: [
+          { check: 'RLS enabled on delegation_rules', status: 'complete' }
+        ]
+      },
+      {
+        id: 'hooks', name: 'React Hooks', items: [
+          { check: 'useApproveDelegation hook', status: 'complete' },
+          { check: 'useRejectDelegation hook', status: 'complete' },
+          { check: 'useChallengeDelegation.js', status: 'complete' }
+        ]
+      },
+      {
+        id: 'pages', name: 'Pages', items: [
+          { check: 'MyDelegation.jsx', status: 'complete' },
+          { check: 'DelegationManager component', status: 'complete' }
+        ]
+      }
     ]
   },
   {
@@ -203,22 +252,28 @@ const ACCESS_CATEGORIES = [
     name: { en: 'Security Infrastructure', ar: 'البنية الأمنية' },
     icon: Shield,
     checks: [
-      { id: 'functions', name: 'Security Functions', items: [
-        { check: 'is_admin() - Admin check function (SECURITY DEFINER)', status: 'complete' },
-        { check: 'get_user_permissions() - Permission retrieval', status: 'complete' },
-        { check: 'get_user_functional_roles() - Functional roles', status: 'complete' },
-        { check: 'Roles stored in separate table (not profile)', status: 'complete' },
-        { check: 'No client-side admin checks (localStorage)', status: 'complete' }
-      ]},
-      { id: 'audit', name: 'Audit Trail', items: [
-        { check: 'access_logs table for tracking', status: 'complete' },
-        { check: 'useAuditLogger hook', status: 'complete' },
-        { check: 'useSecurityAudit hook', status: 'complete' }
-      ]},
-      { id: 'components', name: 'Security Components', items: [
-        { check: 'RowLevelSecurity.jsx - RLS documentation', status: 'complete' },
-        { check: 'Session validation on auth state change', status: 'complete' }
-      ]}
+      {
+        id: 'functions', name: 'Security Functions', items: [
+          { check: 'is_admin() - Admin check function (SECURITY DEFINER)', status: 'complete' },
+          { check: 'get_user_permissions() - Permission retrieval', status: 'complete' },
+          { check: 'get_user_functional_roles() - Functional roles', status: 'complete' },
+          { check: 'Roles stored in separate table (not profile)', status: 'complete' },
+          { check: 'No client-side admin checks (localStorage)', status: 'complete' }
+        ]
+      },
+      {
+        id: 'audit', name: 'Audit Trail', items: [
+          { check: 'access_logs table for tracking', status: 'complete' },
+          { check: 'useAuditLogger hook', status: 'complete' },
+          { check: 'useSecurityAudit hook', status: 'complete' }
+        ]
+      },
+      {
+        id: 'components', name: 'Security Components', items: [
+          { check: 'RowLevelSecurity.jsx - RLS documentation', status: 'complete' },
+          { check: 'Session validation on auth state change', status: 'complete' }
+        ]
+      }
     ]
   },
   {
@@ -226,28 +281,34 @@ const ACCESS_CATEGORIES = [
     name: { en: 'Visibility System', ar: 'نظام الرؤية' },
     icon: Lock,
     checks: [
-      { id: 'hooks', name: 'Visibility Hooks', items: [
-        { check: 'useVisibilitySystem.js - Core visibility logic', status: 'complete' },
-        { check: 'useEntityVisibility.js - Entity-level visibility', status: 'complete' },
-        { check: 'useEntityAccessCheck.js - Access validation', status: 'complete' },
-        { check: 'useVisibilityAwareSearch.js - Search filtering', status: 'complete' }
-      ]},
-      { id: 'scopes', name: 'Visibility Scopes', items: [
-        { check: 'Global scope (admin)', status: 'complete' },
-        { check: 'Sectoral scope (deputyship)', status: 'complete' },
-        { check: 'Geographic scope (municipality)', status: 'complete' },
-        { check: 'Public scope (default)', status: 'complete' }
-      ]},
-      { id: 'integration', name: 'Entity Integrations', items: [
-        { check: 'useChallengesWithVisibility.js', status: 'complete' },
-        { check: 'usePilotsWithVisibility.js', status: 'complete' },
-        { check: 'useSolutionsWithVisibility.js', status: 'complete' },
-        { check: 'useProgramsWithVisibility.js', status: 'complete' },
-        { check: 'useEventsWithVisibility.js', status: 'complete' },
-        { check: 'useRDProjectsWithVisibility.js', status: 'complete' },
-        { check: 'useLivingLabsWithVisibility.js', status: 'complete' },
-        { check: 'useSandboxesWithVisibility.js', status: 'complete' }
-      ]}
+      {
+        id: 'hooks', name: 'Visibility Hooks', items: [
+          { check: 'useVisibilitySystem.js - Core visibility logic', status: 'complete' },
+          { check: 'useEntityVisibility.js - Entity-level visibility', status: 'complete' },
+          { check: 'useEntityAccessCheck.js - Access validation', status: 'complete' },
+          { check: 'useVisibilityAwareSearch.js - Search filtering', status: 'complete' }
+        ]
+      },
+      {
+        id: 'scopes', name: 'Visibility Scopes', items: [
+          { check: 'Global scope (admin)', status: 'complete' },
+          { check: 'Sectoral scope (deputyship)', status: 'complete' },
+          { check: 'Geographic scope (municipality)', status: 'complete' },
+          { check: 'Public scope (default)', status: 'complete' }
+        ]
+      },
+      {
+        id: 'integration', name: 'Entity Integrations', items: [
+          { check: 'useChallengesWithVisibility.js', status: 'complete' },
+          { check: 'usePilotsWithVisibility.js', status: 'complete' },
+          { check: 'useSolutionsWithVisibility.js', status: 'complete' },
+          { check: 'useProgramsWithVisibility.js', status: 'complete' },
+          { check: 'useEventsWithVisibility.js', status: 'complete' },
+          { check: 'useRDProjectsWithVisibility.js', status: 'complete' },
+          { check: 'useLivingLabsWithVisibility.js', status: 'complete' },
+          { check: 'useSandboxesWithVisibility.js', status: 'complete' }
+        ]
+      }
     ]
   }
 ];
@@ -256,45 +317,16 @@ function FinalUsersAccessAssessment() {
   const { t, language } = useLanguage();
 
   // Fetch counts
-  const { data: userProfilesCount } = useQuery({
-    queryKey: ['user-profiles-count'],
-    queryFn: async () => {
-      const { count } = await supabase.from('user_profiles').select('*', { count: 'exact', head: true });
-      return count || 0;
-    }
-  });
+  const { useUserAccessStats } = useAssessmentStats();
+  const { data: statsData = {} } = useUserAccessStats();
 
-  const { data: rolesCount } = useQuery({
-    queryKey: ['roles-count'],
-    queryFn: async () => {
-      const { count } = await supabase.from('roles').select('*', { count: 'exact', head: true });
-      return count || 0;
-    }
-  });
-
-  const { data: userRolesCount } = useQuery({
-    queryKey: ['user-roles-count'],
-    queryFn: async () => {
-      const { count } = await supabase.from('user_roles').select('*', { count: 'exact', head: true }).eq('is_active', true);
-      return count || 0;
-    }
-  });
-
-  const { data: permissionsCount } = useQuery({
-    queryKey: ['permissions-count'],
-    queryFn: async () => {
-      const { count } = await supabase.from('permissions').select('*', { count: 'exact', head: true });
-      return count || 0;
-    }
-  });
-
-  const { data: roleRequestsCount } = useQuery({
-    queryKey: ['role-requests-count'],
-    queryFn: async () => {
-      const { count } = await supabase.from('role_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-      return count || 0;
-    }
-  });
+  const {
+    userProfiles: userProfilesCount = 0,
+    roles: rolesCount = 0,
+    userRoles: userRolesCount = 0,
+    permissions: permissionsCount = 0,
+    roleRequests: roleRequestsCount = 0
+  } = statsData;
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -360,9 +392,8 @@ function FinalUsersAccessAssessment() {
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row md:items-center gap-6">
             <div className="flex items-center gap-4 flex-1">
-              <div className={`h-16 w-16 rounded-full flex items-center justify-center ${
-                stats.percentage === 100 ? 'bg-green-600' : stats.percentage >= 80 ? 'bg-amber-500' : 'bg-red-500'
-              }`}>
+              <div className={`h-16 w-16 rounded-full flex items-center justify-center ${stats.percentage === 100 ? 'bg-green-600' : stats.percentage >= 80 ? 'bg-amber-500' : 'bg-red-500'
+                }`}>
                 {stats.percentage === 100 ? (
                   <CheckCircle2 className="h-8 w-8 text-white" />
                 ) : (

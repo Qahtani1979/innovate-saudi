@@ -1,22 +1,22 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { Send, CheckCircle2, AlertCircle, Loader2, FileText, Target } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { toast } from 'sonner';
+import { usePilotMutations } from '@/hooks/usePilotMutations';
+import { supabase } from '@/integrations/supabase/client';
 
-function PilotSubmissionWizard({ pilot, onClose }) {
+export default function PilotSubmissionWizard({ pilot, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const [step, setStep] = useState(1);
   const [submissionNote, setSubmissionNote] = useState('');
   const [submissionBrief, setSubmissionBrief] = useState(null);
-  const queryClient = useQueryClient();
   const { invokeAI, status: aiStatus, isLoading: generatingBrief, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { updatePilot } = usePilotMutations();
 
   const readinessChecks = [
     { id: 'design_complete', label: { en: 'Design completed', ar: 'التصميم مكتمل' }, required: true },
@@ -30,32 +30,27 @@ function PilotSubmissionWizard({ pilot, onClose }) {
     readinessChecks.reduce((acc, check) => ({ ...acc, [check.id]: false }), {})
   );
 
-  const submitMutation = useMutation({
-    mutationFn: async () => {
-      await base44.entities.Pilot.update(pilot.id, {
+  const handleSubmit = () => {
+    updatePilot.mutate({
+      id: pilot.id,
+      data: {
         stage: 'approval_pending',
         timeline: {
           ...pilot.timeline,
           submission_date: new Date().toISOString()
-        }
-      });
-      await base44.entities.SystemActivity.create({
-        activity_type: 'pilot_submitted',
-        entity_type: 'Pilot',
-        entity_id: pilot.id,
-        description: `Pilot "${pilot.title_en}" submitted for approval`,
+        },
         metadata: { submission_note: submissionNote }
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['pilot']);
-      toast.success(t({ en: 'Pilot submitted for approval', ar: 'تم تقديم التجربة للموافقة' }));
-      if (onClose) onClose();
-    }
-  });
+      }
+    }, {
+      onSuccess: () => {
+        if (onClose) onClose();
+      }
+    });
+  };
 
   const generateSubmissionBrief = async () => {
     const result = await invokeAI({
+      system_prompt: "You are an expert innovation evaluator. Assess the pilot project and create a submission brief.",
       prompt: `Generate a concise submission brief for this pilot project to help approvers make a decision:
 
 Title: ${pilot.title_en}
@@ -110,9 +105,8 @@ Provide:
         <div className="flex items-center justify-between mb-6">
           {[1, 2, 3].map((s) => (
             <div key={s} className="flex items-center flex-1">
-              <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                step >= s ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'
-              }`}>
+              <div className={`h-8 w-8 rounded-full flex items-center justify-center ${step >= s ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'
+                }`}>
                 {s}
               </div>
               {s < 3 && <div className={`flex-1 h-1 ${step > s ? 'bg-blue-600' : 'bg-slate-200'}`} />}
@@ -136,9 +130,8 @@ Provide:
               {readinessChecks.map(check => (
                 <div
                   key={check.id}
-                  className={`p-3 border rounded-lg flex items-center justify-between ${
-                    checklistState[check.id] ? 'bg-green-50 border-green-300' : 'bg-white'
-                  }`}
+                  className={`p-3 border rounded-lg flex items-center justify-between ${checklistState[check.id] ? 'bg-green-50 border-green-300' : 'bg-white'
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     {checklistState[check.id] ? (
@@ -272,11 +265,11 @@ Provide:
                 {t({ en: 'Back', ar: 'رجوع' })}
               </Button>
               <Button
-                onClick={() => submitMutation.mutate()}
-                disabled={submitMutation.isPending}
+                onClick={handleSubmit}
+                disabled={updatePilot.isPending}
                 className="flex-1 bg-gradient-to-r from-green-600 to-teal-600"
               >
-                {submitMutation.isPending ? (
+                {updatePilot.isPending ? (
                   <Loader2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} animate-spin`} />
                 ) : (
                   <Send className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
@@ -290,5 +283,3 @@ Provide:
     </Card>
   );
 }
-
-export default PilotSubmissionWizard;

@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,10 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '../LanguageContext';
 import { DollarSign, TrendingDown, TrendingUp, AlertCircle, Plus } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { supabase } from '@/integrations/supabase/client';
+import { useExpenseMutations } from '@/hooks/useExpenseMutations';
 
 export default function CostTracker({ pilotId, budget }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [newExpense, setNewExpense] = useState({
     category: 'operations',
@@ -21,21 +21,35 @@ export default function CostTracker({ pilotId, budget }) {
 
   const { data: expenses = [] } = useQuery({
     queryKey: ['pilot-expenses', pilotId],
-    queryFn: () => base44.entities.PilotExpense.filter({ pilot_id: pilotId }, '-expense_date')
-  });
-
-  const addExpenseMutation = useMutation({
-    mutationFn: (data) => base44.entities.PilotExpense.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pilot-expenses'] });
-      setShowForm(false);
-      setNewExpense({ category: 'operations', amount: 0, description: '' });
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('pilot_expenses')
+        .select('*')
+        .eq('pilot_id', pilotId)
+        .order('expense_date', { ascending: false });
+      if (error) throw error;
+      return data || [];
     }
   });
 
+  const { createExpense, isCreating } = useExpenseMutations(pilotId);
+
+  const handleAddExpense = () => {
+    createExpense.mutate({
+      pilot_id: pilotId,
+      expense_date: new Date().toISOString().split('T')[0],
+      ...newExpense
+    }, {
+      onSuccess: () => {
+        setShowForm(false);
+        setNewExpense({ category: 'operations', amount: 0, description: '' });
+      }
+    });
+  };
+
   const totalSpent = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
   const variance = ((totalSpent - budget) / budget) * 100;
-  const burnRate = expenses.length > 0 
+  const burnRate = expenses.length > 0
     ? totalSpent / Math.max(1, Math.floor((new Date() - new Date(expenses[expenses.length - 1]?.expense_date)) / (1000 * 60 * 60 * 24 * 7)))
     : 0;
   const weeksToExhaustion = burnRate > 0 ? (budget - totalSpent) / burnRate : Infinity;
@@ -111,7 +125,7 @@ export default function CostTracker({ pilotId, budget }) {
             <div className="p-4 bg-slate-50 rounded-lg border space-y-3">
               <h4 className="font-semibold text-sm">{t({ en: 'New Expense', ar: 'نفقة جديدة' })}</h4>
               <div className="grid grid-cols-2 gap-3">
-                <Select value={newExpense.category} onValueChange={(v) => setNewExpense({...newExpense, category: v})}>
+                <Select value={newExpense.category} onValueChange={(v) => setNewExpense({ ...newExpense, category: v })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -127,26 +141,26 @@ export default function CostTracker({ pilotId, budget }) {
                 <Input
                   type="number"
                   value={newExpense.amount}
-                  onChange={(e) => setNewExpense({...newExpense, amount: parseFloat(e.target.value)})}
+                  onChange={(e) => setNewExpense({ ...newExpense, amount: parseFloat(e.target.value) })}
                   placeholder="Amount (SAR)"
                 />
               </div>
               <Input
                 value={newExpense.description}
-                onChange={(e) => setNewExpense({...newExpense, description: e.target.value})}
+                onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
                 placeholder={t({ en: 'Description', ar: 'الوصف' })}
               />
               <div className="flex gap-2">
                 <Button onClick={() => setShowForm(false)} variant="outline" size="sm" className="flex-1">
                   {t({ en: 'Cancel', ar: 'إلغاء' })}
                 </Button>
-                <Button 
-                  onClick={() => addExpenseMutation.mutate({ 
-                    pilot_id: pilotId, 
+                <Button
+                  onClick={() => addExpenseMutation.mutate({
+                    pilot_id: pilotId,
                     expense_date: new Date().toISOString().split('T')[0],
-                    ...newExpense 
-                  })} 
-                  size="sm" 
+                    ...newExpense
+                  })}
+                  size="sm"
                   className="flex-1 bg-green-600"
                 >
                   {t({ en: 'Add', ar: 'إضافة' })}

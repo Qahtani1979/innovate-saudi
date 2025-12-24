@@ -1,5 +1,6 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useCitizenIdeasWithVisibility } from '../hooks/useCitizenIdeasWithVisibility';
+import { useCitizenVotes } from '../hooks/useCitizenVotes';
+import { useCitizenFeedback } from '../hooks/useCitizenFeedback';
 import { useLanguage } from '../components/LanguageContext';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import BaseCoverageReport from '../components/reports/BaseCoverageReport';
@@ -8,20 +9,15 @@ import { getCitizenCoverageData } from './citizenCoverageData';
 function CitizenEngagementCoverageReport() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: ideas = [] } = useQuery({
-    queryKey: ['citizen-ideas-for-coverage'],
-    queryFn: () => base44.entities.CitizenIdea.list()
+  const { data: ideas = [] } = useCitizenIdeasWithVisibility({
+    municipalityId: null, // Global view for coverage report
+    status: 'all',
+    limit: 1000
   });
 
-  const { data: votes = [] } = useQuery({
-    queryKey: ['citizen-votes-for-coverage'],
-    queryFn: () => base44.entities.CitizenVote.list()
-  });
+  const { data: votes = [] } = useCitizenVotes();
 
-  const { data: feedback = [] } = useQuery({
-    queryKey: ['citizen-feedback-for-coverage'],
-    queryFn: () => base44.entities.CitizenFeedback.list()
-  });
+  const { data: feedback = [] } = useCitizenFeedback();
 
   const coverageData = getCitizenCoverageData(ideas, votes, feedback);
 

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,12 +7,26 @@ import { useLanguage } from '../LanguageContext';
 import { Upload, FileText, CheckCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useImportChallenges } from '@/hooks/useChallengeMutations';
+
 export default function BatchChallengeImport() {
   const { language, t } = useLanguage();
-  const queryClient = useQueryClient();
+  // queryClient removed as it's not used directly anymore (hook handles invalidation)
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [processing, setProcessing] = useState(false);
+
+  const importMutation = useImportChallenges();
+
+  // Wrapper to match previous behavior of clearing state on success
+  const handleImport = () => {
+    importMutation.mutate(preview, {
+      onSuccess: () => {
+        setFile(null);
+        setPreview(null);
+      }
+    });
+  };
 
   const handleFileSelect = async (e) => {
     const selectedFile = e.target.files[0];
@@ -23,7 +36,10 @@ export default function BatchChallengeImport() {
     setProcessing(true);
 
     try {
-      // Upload file to storage
+      // Upload file to storage (Keep direct storage call for now, or move to a storage hook? 
+      // Storage calls are often bespoke. We'll leave it but arguably it should be useStorage)
+      // The instruction is to remove supabase.from, which refers to DB. Storage is supabase.storage.
+      // We will leave the storage call for now as it's separate from component layer DB access standardization.
       const fileName = `imports/${Date.now()}-${selectedFile.name}`;
       const { error: uploadError } = await supabase.storage
         .from('uploads')
@@ -38,27 +54,6 @@ export default function BatchChallengeImport() {
       setProcessing(false);
     }
   };
-
-  const importMutation = useMutation({
-    mutationFn: async (challenges) => {
-      const results = await Promise.allSettled(
-        challenges.map(c => 
-          supabase.from('challenges').insert({
-            ...c,
-            status: 'draft',
-            priority: c.priority || 'medium'
-          })
-        )
-      );
-      return results.filter(r => r.status === 'fulfilled').length;
-    },
-    onSuccess: (count) => {
-      queryClient.invalidateQueries(['challenges']);
-      toast.success(t({ en: `${count} challenges imported`, ar: `${count} تحدي مستورد` }));
-      setFile(null);
-      setPreview(null);
-    }
-  });
 
   return (
     <Card className="border-2 border-blue-300">
@@ -131,8 +126,8 @@ export default function BatchChallengeImport() {
               <Button onClick={() => { setFile(null); setPreview(null); }} variant="outline" className="flex-1">
                 {t({ en: 'Cancel', ar: 'إلغاء' })}
               </Button>
-              <Button 
-                onClick={() => importMutation.mutate(preview)} 
+              <Button
+                onClick={() => importMutation.mutate(preview)}
                 disabled={importMutation.isPending}
                 className="flex-1 bg-blue-600"
               >

@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { usePartnerships } from '@/hooks/usePartnerships';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,23 +13,11 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function PartnershipRegistry() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
 
-  const { data: partnerships = [], isLoading } = useQuery({
-    queryKey: ['partnerships'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('partnerships')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data;
-    }
-  });
+  const { data: partnerships = [], isLoading } = usePartnerships();
 
   const filteredPartnerships = partnerships.filter(p => {
     const matchesSearch = !searchQuery ||

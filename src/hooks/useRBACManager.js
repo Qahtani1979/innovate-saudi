@@ -25,11 +25,12 @@ export function useUserRoles(userId, userEmail) {
 }
 
 /**
- * Assign a role to a user
+ * Assign a role to a user.
+ * Expects params: { user_id, role_id, municipality_id?, organization_id? }
  */
 export function useAssignRole() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (params) => rbacService.assignRole(params),
     onSuccess: (_, variables) => {
@@ -44,11 +45,35 @@ export function useAssignRole() {
 }
 
 /**
+ * Assign a role to multiple users.
+ * Expects params: { user_ids: string[], role_id: string, municipality_id?: string, organization_id?: string }
+ */
+export function useBulkAssignRole() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ user_ids, ...rest }) => {
+      const promises = user_ids.map(user_id => rbacService.assignRole({ user_id, ...rest }));
+      return Promise.all(promises);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rbac-roles'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['role-requests'] });
+      toast.success('Roles assigned to all selected users');
+    },
+    onError: (error) => {
+      toast.error(`Failed to assign roles: ${error.message}`);
+    }
+  });
+}
+
+/**
  * Revoke a role from a user
  */
 export function useRevokeRole() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (params) => rbacService.revokeRole(params),
     onSuccess: () => {
@@ -72,12 +97,12 @@ export function useCheckAutoApproval() {
 }
 
 /**
- * Approve a role request
- * CRITICAL: This writes to user_roles table (not user_functional_roles)
+ * Approve a role request.
+ * Expects params: { request_id, user_id, user_email, role, municipality_id?, organization_id?, approver_email }
  */
 export function useApproveRoleRequest() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (params) => rbacService.approveRoleRequest(params),
     onSuccess: () => {
@@ -93,11 +118,12 @@ export function useApproveRoleRequest() {
 }
 
 /**
- * Reject a role request
+ * Reject a role request.
+ * Expects params: { request_id, reason, approver_email }
  */
 export function useRejectRoleRequest() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (params) => rbacService.rejectRoleRequest(params),
     onSuccess: () => {
@@ -124,7 +150,7 @@ export function useValidatePermission() {
  */
 export function useApproveDelegation() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (delegationId) => rbacService.approveDelegation(delegationId),
     onSuccess: () => {
@@ -143,7 +169,7 @@ export function useApproveDelegation() {
  */
 export function useRejectDelegation() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ delegationId, reason }) => rbacService.rejectDelegation(delegationId, reason),
     onSuccess: () => {

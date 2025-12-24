@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,12 +15,9 @@ function PresentationMode() {
   const { language, isRTL, t } = useLanguage();
   const [slides, setSlides] = useState(null);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const { invokeAI, status: aiStatus, isLoading: generating, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invokeAI, status: aiStatus, isLoading: generating, isAvailable, rateLimitInfo, error } = useAIWithFallback();
 
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans'],
-    queryFn: () => base44.entities.StrategicPlan.list()
-  });
+  const { data: strategicPlans = [] } = useStrategiesWithVisibility();
 
   const activePlan = strategicPlans.find(p => p.status === 'active') || strategicPlans[0];
 
@@ -75,7 +72,7 @@ function PresentationMode() {
         </div>
       </div>
 
-      <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} />
+      <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} error={error} />
 
       {slides ? (
         <div className="space-y-4">
@@ -144,9 +141,8 @@ function PresentationMode() {
                   <button
                     key={idx}
                     onClick={() => setCurrentSlide(idx)}
-                    className={`p-3 border-2 rounded-lg text-left hover:border-blue-400 transition-all ${
-                      currentSlide === idx ? 'border-blue-600 bg-blue-50' : 'border-slate-200'
-                    }`}
+                    className={`p-3 border-2 rounded-lg text-left hover:border-blue-400 transition-all ${currentSlide === idx ? 'border-blue-600 bg-blue-50' : 'border-slate-200'
+                      }`}
                   >
                     <div className="text-xs font-medium text-slate-900 mb-1">
                       {idx + 1}. {slide.title.substring(0, 30)}

@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useResearcher } from '@/hooks/useResearchers';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,21 +17,16 @@ function ResearcherProfile() {
   const [collaborators, setCollaborators] = useState([]);
   const { invokeAI, status, isLoading: loadingCollab, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: researcher } = useQuery({
-    queryKey: ['researcherProfile', researcherId],
-    queryFn: async () => {
-      const { data } = await supabase.from('researcher_profiles').select('*').eq('id', researcherId);
-      return data?.[0];
-    }
-  });
+  const { data: researcher } = useResearcher(researcherId);
 
   const findCollaborators = async () => {
     const result = await invokeAI({
+      system_prompt: "You are an AI research collaborator matching assistant for the Saudi municipal innovation ecosystem. Your goal is to identify high-potential research partnerships between individuals and institutions based on specific expertise areas and Vision 2030 alignment.",
       prompt: `Find potential collaborators for this researcher:
-Name: ${researcher?.full_name_en}
-Research Areas: ${researcher?.research_areas?.join(', ')}
-Expertise: ${researcher?.expertise_keywords?.join(', ')}
-Institution: ${researcher?.institution_id}
+Name: ${researcher?.['full_name_en'] || researcher?.['name_en']}
+Research Areas: ${researcher?.['research_areas']?.join(', ')}
+Expertise: ${researcher?.['expertise_keywords']?.join(', ')}
+Institution: ${researcher?.['institution_id']}
 
 Suggest 5 researchers or institutions who would be ideal collaborators based on complementary expertise.`,
       response_json_schema: {
@@ -68,8 +62,8 @@ Suggest 5 researchers or institutions who would be ideal collaborators based on 
         <CardContent className="pt-6">
           <div className={`flex items-start gap-6 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <div className="h-24 w-24 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center flex-shrink-0">
-              {r?.avatar_url ? (
-                <img src={r.avatar_url} className="h-full w-full rounded-2xl object-cover" alt={r?.full_name_en} />
+              {r?.['photo_url'] || r?.['avatar_url'] ? (
+                <img src={r?.['photo_url'] || r?.['avatar_url']} className="h-full w-full rounded-2xl object-cover" alt={r?.['full_name_en'] || r?.['name_en']} />
               ) : (
                 <Microscope className="h-12 w-12 text-white" />
               )}
@@ -77,11 +71,11 @@ Suggest 5 researchers or institutions who would be ideal collaborators based on 
             <div className="flex-1">
               {/* Bilingual Name */}
               <h1 className="text-3xl font-bold text-foreground">
-                {language === 'ar' ? (r?.full_name_ar || r?.full_name_en) : r?.full_name_en}
+                {language === 'ar' ? (r?.['full_name_ar'] || r?.['name_ar'] || r?.['full_name_en'] || r?.['name_en']) : (r?.['full_name_en'] || r?.['name_en'])}
               </h1>
-              {r?.full_name_ar && r?.full_name_en && (
+              {(r?.['full_name_ar'] || r?.['name_ar']) && (r?.['full_name_en'] || r?.['name_en']) && (
                 <p className="text-lg text-muted-foreground" dir={language === 'ar' ? 'ltr' : 'rtl'}>
-                  {language === 'ar' ? r?.full_name_en : r?.full_name_ar}
+                  {language === 'ar' ? (r?.['full_name_en'] || r?.['name_en']) : (r?.['full_name_ar'] || r?.['name_ar'])}
                 </p>
               )}
 
@@ -92,10 +86,10 @@ Suggest 5 researchers or institutions who would be ideal collaborators based on 
 
               {/* Institution & Location */}
               <div className={`flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap ${isRTL ? 'flex-row-reverse' : ''}`}>
-                {r?.institution_name && (
+                {(r?.['institution_name'] || r?.['institution_id']) && (
                   <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     <Building2 className="h-4 w-4" />
-                    <span>{r.institution_name}</span>
+                    <span>{r?.['institution_name'] || r?.['institution_id']}</span>
                   </div>
                 )}
                 {r?.department && (
@@ -127,7 +121,7 @@ Suggest 5 researchers or institutions who would be ideal collaborators based on 
             </CardTitle>
           </CardHeader>
           <CardContent className="text-center">
-            <p className="text-4xl font-bold text-primary">{r?.publications?.length || 0}</p>
+            <p className="text-4xl font-bold text-primary">{Array.isArray(r?.['publications']) ? r?.['publications']?.length : 0}</p>
             <p className="text-xs text-muted-foreground mt-1">{t({ en: 'Published papers', ar: 'أوراق منشورة' })}</p>
           </CardContent>
         </Card>
@@ -140,7 +134,7 @@ Suggest 5 researchers or institutions who would be ideal collaborators based on 
             </CardTitle>
           </CardHeader>
           <CardContent className="text-center">
-            <p className="text-4xl font-bold text-amber-600">{r?.total_citations || 0}</p>
+            <p className="text-4xl font-bold text-amber-600">{r?.['citation_count'] || r?.['total_citations'] || 0}</p>
             <p className="text-xs text-muted-foreground mt-1">{t({ en: 'Total citations', ar: 'إجمالي الاستشهادات' })}</p>
           </CardContent>
         </Card>
@@ -153,7 +147,7 @@ Suggest 5 researchers or institutions who would be ideal collaborators based on 
             </CardTitle>
           </CardHeader>
           <CardContent className="text-center">
-            <p className="text-4xl font-bold text-secondary-foreground">{r?.rd_project_ids?.length || 0}</p>
+            <p className="text-4xl font-bold text-secondary-foreground">{r?.['rd_project_ids']?.length || 0}</p>
             <p className="text-xs text-muted-foreground mt-1">{t({ en: 'Active R&D', ar: 'بحث نشط' })}</p>
           </CardContent>
         </Card>
@@ -165,16 +159,16 @@ Suggest 5 researchers or institutions who would be ideal collaborators based on 
           </CardHeader>
           <CardContent className="space-y-4">
             <BioSection
-              bioEn={r?.bio_en}
-              bioAr={r?.bio_ar}
-              showBoth={!!(r?.bio_en && r?.bio_ar)}
+              bioEn={r?.['bio_en']}
+              bioAr={r?.['bio_ar']}
+              showBoth={!!(r?.['bio_en'] && r?.['bio_ar'])}
             />
 
             {/* Expertise Keywords */}
-            {r?.expertise_keywords?.length > 0 && (
+            {(r?.['expertise_keywords']?.length > 0 || r?.['skills']?.length > 0) && (
               <div className="pt-4 border-t">
                 <SkillsBadges
-                  skills={r.expertise_keywords}
+                  skills={r?.['expertise_keywords'] || r?.['skills']}
                   label={{ en: 'Expertise', ar: 'الخبرات' }}
                   colorClass="bg-primary/10 text-primary"
                 />
@@ -190,9 +184,17 @@ Suggest 5 researchers or institutions who would be ideal collaborators based on 
           </CardHeader>
           <CardContent>
             <ContactSection
-              email={r?.user_email || r?.email}
-              linkedinUrl={r?.linkedin_url}
-              website={r?.google_scholar_url || r?.website}
+              email={r?.['user_email'] || r?.['email']}
+              linkedinUrl={r?.['linkedin_url']}
+              website={r?.['google_scholar_url'] || r?.['website']}
+              phone={null}
+              mobileNumber={null}
+              mobileCountryCode={null}
+              workPhone={null}
+              location={null}
+              locationCity={null}
+              locationRegion={null}
+              socialLinks={null}
             />
 
             {r?.orcid_id && (
@@ -218,6 +220,7 @@ Suggest 5 researchers or institutions who would be ideal collaborators based on 
           <CardContent>
             <SkillsBadges
               skills={r?.research_areas}
+              label={{ en: 'Research Areas', ar: 'مجالات البحث' }}
               colorClass="bg-secondary text-secondary-foreground"
             />
             {!r?.research_areas?.length && (
@@ -233,20 +236,20 @@ Suggest 5 researchers or institutions who would be ideal collaborators based on 
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {r?.publications?.slice(0, 5).map((pub, i) => (
+              {(Array.isArray(r?.['publications']) ? r?.['publications'] : [])?.slice(0, 5).map((pub, i) => (
                 <div key={i} className="p-4 bg-muted/50 rounded-lg">
-                  <p className="font-medium text-foreground">{pub.title}</p>
+                  <p className="font-medium text-foreground">{pub?.['title']}</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {pub.journal} • {pub.year} • {pub.citations} {t({ en: 'citations', ar: 'استشهاد' })}
+                    {pub?.['journal']} • {pub?.['year']} • {pub?.['citations']} {t({ en: 'citations', ar: 'استشهاد' })}
                   </p>
-                  {pub.url && (
-                    <a href={pub.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-2 inline-block">
+                  {pub?.['url'] && (
+                    <a href={pub?.['url']} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-2 inline-block">
                       {t({ en: 'View Publication', ar: 'عرض المنشور' })}
                     </a>
                   )}
                 </div>
               ))}
-              {!r?.publications?.length && (
+              {(!Array.isArray(r?.['publications']) || r?.['publications']?.length === 0) && (
                 <p className="text-sm text-muted-foreground text-center py-4">{t({ en: 'No publications listed', ar: 'لا توجد منشورات' })}</p>
               )}
             </div>
@@ -262,7 +265,7 @@ Suggest 5 researchers or institutions who would be ideal collaborators based on 
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={null} />
             <Button onClick={findCollaborators} disabled={loadingCollab || !isAvailable} className="bg-teal-600">
               {loadingCollab ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
               {t({ en: 'Find Potential Collaborators', ar: 'ابحث عن متعاونين محتملين' })}

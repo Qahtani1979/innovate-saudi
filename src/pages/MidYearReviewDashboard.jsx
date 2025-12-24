@@ -1,24 +1,17 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
-import { useLanguage } from '../components/LanguageContext';
+﻿import { useLanguage } from '../components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertTriangle, TrendingUp } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 
 function MidYearReviewDashboard() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-review'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-review'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
+  const { data: pilots = [] } = usePilotsWithVisibility();
+  const { data: challenges = [] } = useChallengesWithVisibility();
 
   const pilotTarget = 150;
   const pilotActual = pilots.length;
@@ -27,14 +20,14 @@ function MidYearReviewDashboard() {
 
   const goals = [
     {
-      name: { en: 'Pilots Launched', ar: 'تجارب مطلقة' },
+      name: { en: 'Pilots Launched', ar: 'ØªØ¬Ø§Ø±Ø¨ Ù…Ø·Ù„Ù‚Ø©' },
       target: pilotTarget,
       actual: pilotActual,
       progress: Math.round((pilotActual / pilotTarget) * 100),
       status: pilotActual / pilotTarget >= 0.5 ? 'on-track' : 'at-risk'
     },
     {
-      name: { en: 'Challenges Resolved', ar: 'تحديات محلولة' },
+      name: { en: 'Challenges Resolved', ar: 'ØªØ­Ø¯ÙŠØ§Øª Ù…Ø­Ù„ÙˆÙ„Ø©' },
       target: challengeTarget,
       actual: challengeActual,
       progress: Math.round((challengeActual / challengeTarget) * 100),
@@ -49,10 +42,10 @@ function MidYearReviewDashboard() {
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       <div>
         <h1 className="text-4xl font-bold text-slate-900">
-          {t({ en: 'Mid-Year Review Dashboard', ar: 'لوحة المراجعة النصفية' })}
+          {t({ en: 'Mid-Year Review Dashboard', ar: 'Ù„ÙˆØ­Ø© Ø§Ù„Ù…Ø±Ø§Ø¬Ø¹Ø© Ø§Ù„Ù†ØµÙÙŠØ©' })}
         </h1>
         <p className="text-slate-600 mt-2">
-          {t({ en: 'H1 2025 Performance vs Annual Targets', ar: 'أداء النصف الأول 2025 مقابل الأهداف السنوية' })}
+          {t({ en: 'H1 2025 Performance vs Annual Targets', ar: 'Ø£Ø¯Ø§Ø¡ Ø§Ù„Ù†ØµÙ Ø§Ù„Ø£ÙˆÙ„ 2025 Ù…Ù‚Ø§Ø¨Ù„ Ø§Ù„Ø£Ù‡Ø¯Ø§Ù Ø§Ù„Ø³Ù†ÙˆÙŠØ©' })}
         </p>
       </div>
 
@@ -62,7 +55,7 @@ function MidYearReviewDashboard() {
           <CardContent className="pt-6 text-center">
             <CheckCircle2 className="h-8 w-8 text-green-600 mx-auto mb-2" />
             <p className="text-3xl font-bold text-green-600">{onTrack}</p>
-            <p className="text-sm text-slate-600">{t({ en: 'On Track', ar: 'على المسار' })}</p>
+            <p className="text-sm text-slate-600">{t({ en: 'On Track', ar: 'Ø¹Ù„Ù‰ Ø§Ù„Ù…Ø³Ø§Ø±' })}</p>
           </CardContent>
         </Card>
 
@@ -70,7 +63,7 @@ function MidYearReviewDashboard() {
           <CardContent className="pt-6 text-center">
             <AlertTriangle className="h-8 w-8 text-amber-600 mx-auto mb-2" />
             <p className="text-3xl font-bold text-amber-600">{atRisk}</p>
-            <p className="text-sm text-slate-600">{t({ en: 'At Risk', ar: 'في خطر' })}</p>
+            <p className="text-sm text-slate-600">{t({ en: 'At Risk', ar: 'ÙÙŠ Ø®Ø·Ø±' })}</p>
           </CardContent>
         </Card>
 
@@ -80,7 +73,7 @@ function MidYearReviewDashboard() {
             <p className="text-3xl font-bold text-blue-600">
               {Math.round(goals.reduce((sum, g) => sum + g.progress, 0) / goals.length)}%
             </p>
-            <p className="text-sm text-slate-600">{t({ en: 'Avg Achievement', ar: 'متوسط الإنجاز' })}</p>
+            <p className="text-sm text-slate-600">{t({ en: 'Avg Achievement', ar: 'Ù…ØªÙˆØ³Ø· Ø§Ù„Ø¥Ù†Ø¬Ø§Ø²' })}</p>
           </CardContent>
         </Card>
       </div>
@@ -88,7 +81,7 @@ function MidYearReviewDashboard() {
       {/* Goals Progress */}
       <Card>
         <CardHeader>
-          <CardTitle>{t({ en: 'Annual Goals Progress', ar: 'تقدم الأهداف السنوية' })}</CardTitle>
+          <CardTitle>{t({ en: 'Annual Goals Progress', ar: 'ØªÙ‚Ø¯Ù… Ø§Ù„Ø£Ù‡Ø¯Ø§Ù Ø§Ù„Ø³Ù†ÙˆÙŠØ©' })}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {goals.map((goal, idx) => (

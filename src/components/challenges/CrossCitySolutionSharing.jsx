@@ -3,8 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Share2, CheckCircle2, Loader2, Zap } from 'lucide-react';
 import { Checkbox } from "@/components/ui/checkbox";
@@ -16,68 +14,35 @@ import {
   CROSS_CITY_SHARING_SCHEMA
 } from '@/lib/ai/prompts/challenges/crossCitySharing';
 
+import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useShareChallenge } from '@/hooks/useChallengeMutations';
+
 export default function CrossCitySolutionSharing({ challenge }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  // queryClient removed
   const [selectedCities, setSelectedCities] = useState([]);
   const { invokeAI, isLoading: generating, status, error, rateLimitInfo } = useAIWithFallback();
 
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities-for-sharing'],
-    queryFn: async () => {
-      const { data } = await supabase.from('municipalities').select('*');
-      return data || [];
-    }
+  const { data: muniResult = { data: [] } } = useMunicipalitiesWithVisibility();
+  const municipalities = muniResult.data || [];
+
+  const { data: simResult = { data: [] } } = useChallengesWithVisibility({
+    filters: { sector: challenge.sector },
+    pageSize: 20
   });
 
-  const { data: similarChallenges = [] } = useQuery({
-    queryKey: ['similar-challenges', challenge.id],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges')
-        .select('*')
-        .eq('sector', challenge.sector)
-        .neq('id', challenge.id)
-        .in('status', ['under_review', 'approved'])
-        .limit(10);
-      return data || [];
-    }
-  });
+  const similarChallenges = (simResult.data || [])
+    .filter(c => c.id !== challenge.id && (c.status === 'under_review' || c.status === 'approved'))
+    .slice(0, 10);
 
-  const shareMutation = useMutation({
-    mutationFn: async (cities) => {
-      for (const cityId of cities) {
-        await supabase.from('challenge_activities').insert({
-          challenge_id: challenge.id,
-          activity_type: 'cross_city_share',
-          description: `Solution shared with ${cityId}`,
-          metadata: { shared_to_municipality: cityId, shared_date: new Date().toISOString() }
-        });
+  const shareMutation = useShareChallenge();
 
-        // Send email via email-trigger-hub
-        const { supabase } = await import('@/integrations/supabase/client');
-        await supabase.functions.invoke('email-trigger-hub', {
-          body: {
-            trigger: 'challenge.match_found',
-            recipient_email: `innovation@${cityId}.gov.sa`,
-            entity_type: 'challenge',
-            entity_id: challenge.id,
-            variables: {
-              challengeTitle: challenge.title_en,
-              sector: challenge.sector,
-              track: challenge.track,
-              viewUrl: `${window.location.origin}/challenge/${challenge.id}`
-            },
-            triggered_by: 'system'
-          }
-        });
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['challenge-activities']);
-      toast.success(t({ en: 'Solution shared with selected cities', ar: 'تم مشاركة الحل مع المدن المختارة' }));
-      setSelectedCities([]);
-    }
-  });
+  const handleShare = () => {
+    shareMutation.mutate({ challenge, cities: selectedCities }, {
+      onSuccess: () => setSelectedCities([])
+    });
+  };
 
   const autoSuggestCities = async () => {
     const result = await invokeAI({
@@ -88,10 +53,10 @@ export default function CrossCitySolutionSharing({ challenge }) {
 
     if (result.success && result.data?.recommended_cities) {
       const cityNames = result.data.recommended_cities.map(r => r.municipality_name);
-      const cityIds = municipalities.filter(m => 
+      const cityIds = municipalities.filter(m =>
         cityNames.some(name => m.name_en.includes(name) || name.includes(m.name_en))
       ).map(m => m.id);
-      
+
       setSelectedCities(cityIds);
       toast.success(t({ en: 'Cities recommended by AI', ar: 'المدن الموصى بها من الذكاء الاصطناعي' }));
     }
@@ -107,7 +72,7 @@ export default function CrossCitySolutionSharing({ challenge }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
-        
+
         <div className="flex gap-2">
           <Button size="sm" onClick={autoSuggestCities} disabled={generating} variant="outline">
             {generating ? (
@@ -146,7 +111,7 @@ export default function CrossCitySolutionSharing({ challenge }) {
         )}
 
         {selectedCities.length > 0 && (
-          <Button 
+          <Button
             onClick={() => shareMutation.mutate(selectedCities)}
             disabled={shareMutation.isPending}
             className="w-full bg-teal-600"

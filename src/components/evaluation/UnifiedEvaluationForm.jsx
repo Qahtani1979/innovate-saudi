@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSubmitEvaluation } from '@/hooks/useEvaluations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,14 +15,13 @@ import { useAuth } from '@/lib/AuthContext';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import { buildEvaluationAssistPrompt, EVALUATION_ASSIST_SCHEMA } from '@/lib/ai/prompts/evaluation';
 
-export default function UnifiedEvaluationForm({ 
-  entityType, 
-  entityId, 
+export default function UnifiedEvaluationForm({
+  entityType,
+  entityId,
   assignmentId,
-  onComplete 
+  onComplete
 }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const { invokeAI, status, isLoading: aiAssisting, isAvailable, rateLimitInfo } = useAIWithFallback();
   const { user } = useAuth();
   const { triggerEmail } = useEmailTrigger();
@@ -46,46 +44,13 @@ export default function UnifiedEvaluationForm({
   const [improvements, setImprovements] = useState(['', '', '']);
   const [conditions, setConditions] = useState(['']);
 
-  const createEvaluationMutation = useMutation({
-    mutationFn: async (evaluationData) => {
-      const overallScore = Object.values(scores).reduce((a, b) => a + b, 0) / Object.keys(scores).length;
+  const { createEvaluation } = useEvaluationMutations(); // Keep for access checking? No, new hook handles it.
 
-      const { error } = await supabase.from('expert_evaluations').insert({
-        expert_email: user?.email,
-        assignment_id: assignmentId,
-        entity_type: entityType,
-        entity_id: entityId,
-        evaluation_date: new Date().toISOString(),
-        ...scores,
-        overall_score: overallScore,
-        recommendation,
-        feedback_text: feedbackText,
-        strengths: strengths.filter(s => s.trim()),
-        weaknesses: weaknesses.filter(w => w.trim()),
-        improvement_suggestions: improvements.filter(i => i.trim()),
-        conditions: recommendation.includes('conditions') ? conditions.filter(c => c.trim()) : []
-      });
-      if (error) throw error;
-    },
-    onSuccess: async () => {
-      // Trigger evaluation completed email
-      await triggerEmail('evaluation.completed', {
-        entityType: entityType,
-        entityId: entityId,
-        variables: {
-          entity_type: entityType,
-          entity_id: entityId,
-          evaluator_email: user?.email,
-          recommendation: recommendation,
-          overall_score: Object.values(scores).reduce((a, b) => a + b, 0) / Object.keys(scores).length
-        }
-      }).catch(err => console.error('Email trigger failed:', err));
-
-      queryClient.invalidateQueries(['expert-evaluations']);
-      queryClient.invalidateQueries(['expert-assignments']);
-      toast.success(t({ en: 'Evaluation submitted', ar: 'تم إرسال التقييم' }));
-      if (onComplete) onComplete();
-    }
+  const submitEvaluationMutation = useSubmitEvaluation({
+    entityType,
+    entityId,
+    assignmentId,
+    onComplete
   });
 
   const getAIAssistance = async () => {
@@ -274,8 +239,16 @@ export default function UnifiedEvaluationForm({
 
         <div className="flex gap-3 pt-4 border-t">
           <Button
-            onClick={() => createEvaluationMutation.mutate()}
-            disabled={!recommendation || createEvaluationMutation.isPending}
+            onClick={() => submitEvaluationMutation.mutate({
+              scores,
+              recommendation,
+              feedbackText,
+              strengths,
+              weaknesses,
+              improvements,
+              conditions
+            })}
+            disabled={!recommendation || submitEvaluationMutation.isPending}
             className="flex-1 bg-green-600"
           >
             <CheckCircle2 className="h-4 w-4 mr-2" />

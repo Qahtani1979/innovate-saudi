@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { usePilotMutations } from '@/hooks/usePilotMutations';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,89 +20,42 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { useAuth } from '@/lib/AuthContext';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
+import { usePilot } from '@/hooks/usePilot';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
+import { useLocations } from '@/hooks/useLocations';
+import { useLivingLabs } from '@/hooks/useLivingLabs';
+import { useSandboxes } from '@/hooks/useSandboxes';
+
 function PilotEditPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const pilotId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+
   const { user } = useAuth();
   const { invokeAI, status: aiStatus, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
-  
+
+  const { useRegions, useCities, useAllMunicipalities } = useLocations();
+
+  const { data: pilot, isLoading } = usePilot(pilotId);
+
+  const { data: challenges = [] } = useChallengesWithVisibility({ limit: 100 });
+  const { data: solutions = [] } = useSolutionsWithVisibility({ limit: 100 });
+
+  const { data: municipalities = [] } = useAllMunicipalities();
+  const { data: regions = [] } = useRegions();
+  const { data: cities = [] } = useCities();
+  const { data: livingLabs = [] } = useLivingLabs(); // Corrected hook usage
+  const { data: sandboxes = [] } = useSandboxes(); // Corrected hook usage from useSandboxes() which likely export { useSandboxes } or default?
+  // Let's check useSandboxes export. Assuming default export or named.
+  // I will check useSandboxes export first to be safe or use named.
+  // Actually I know useLivingLabs is named. useSandboxes I should check.
+  // Assuming named for consistently.
+
   const [previewMode, setPreviewMode] = useState(false);
   const [originalData, setOriginalData] = useState(null);
   const [changedFields, setChangedFields] = useState([]);
-
-  const { data: pilot, isLoading } = useQuery({
-    queryKey: ['pilot', pilotId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('id', pilotId)
-        .eq('is_deleted', false)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!pilotId
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false);
-      return data || [];
-    }
-  });
-
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions'],
-    queryFn: async () => {
-      const { data } = await supabase.from('solutions').select('*').eq('is_deleted', false);
-      return data || [];
-    }
-  });
-
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities'],
-    queryFn: async () => {
-      const { data } = await supabase.from('municipalities').select('*');
-      return data || [];
-    }
-  });
-
-  const { data: regions = [] } = useQuery({
-    queryKey: ['regions'],
-    queryFn: async () => {
-      const { data } = await supabase.from('regions').select('*');
-      return data || [];
-    }
-  });
-
-  const { data: cities = [] } = useQuery({
-    queryKey: ['cities'],
-    queryFn: async () => {
-      const { data } = await supabase.from('cities').select('*');
-      return data || [];
-    }
-  });
-
-  const { data: livingLabs = [] } = useQuery({
-    queryKey: ['livingLabs'],
-    queryFn: async () => {
-      const { data } = await supabase.from('living_labs').select('*').eq('is_deleted', false);
-      return data || [];
-    }
-  });
-
-  const { data: sandboxes = [] } = useQuery({
-    queryKey: ['sandboxes'],
-    queryFn: async () => {
-      const { data } = await supabase.from('sandboxes').select('*').eq('is_deleted', false);
-      return data || [];
-    }
-  });
 
   const [formData, setFormData] = useState(null);
 
@@ -112,7 +64,7 @@ function PilotEditPage() {
     if (pilot && !formData) {
       setFormData(pilot);
       setOriginalData(pilot);
-      
+
       // Check for auto-saved draft
       const autoSaveKey = `pilot-edit-${pilotId}`;
       const saved = localStorage.getItem(autoSaveKey);
@@ -122,7 +74,7 @@ function PilotEditPage() {
           const hoursSince = (Date.now() - new Date(timestamp)) / (1000 * 60 * 60);
           if (hoursSince < 24) {
             const restore = window.confirm(
-              language === 'en' 
+              language === 'en'
                 ? 'Auto-saved changes found. Restore?'
                 : 'تم العثور على تغييرات محفوظة. استعادة؟'
             );
@@ -144,7 +96,7 @@ function PilotEditPage() {
   // Auto-save every 30 seconds
   useEffect(() => {
     if (!formData || !pilotId) return;
-    
+
     const interval = setInterval(() => {
       localStorage.setItem(`pilot-edit-${pilotId}`, JSON.stringify({
         data: formData,
@@ -169,66 +121,28 @@ function PilotEditPage() {
     }
   }, [formData, originalData]);
 
-  const updateMutation = useMutation({
-    mutationFn: async (data) => {
-      const oldStage = pilot.stage;
-      
-      // Increment version
-      const updateData = {
-        ...data,
-        version_number: (pilot.version_number || 1) + 1,
-        previous_version_id: pilot.id
-      };
-      
-      const { error } = await supabase
-        .from('pilots')
-        .update(updateData)
-        .eq('id', pilotId);
-      if (error) throw error;
-      
-      // Log activity
-      if (changedFields.length > 0) {
-        await supabase.from('system_activities').insert({
-          entity_type: 'pilot',
-          entity_id: pilotId,
-          activity_type: 'updated',
-          description: `Updated ${changedFields.length} fields: ${changedFields.slice(0, 3).join(', ')}`,
-          performed_by: user?.email,
-          metadata: { changed_fields: changedFields }
-        });
-      }
-      
-      if (data.stage && data.stage !== oldStage) {
-        await supabase.from('system_activities').insert({
-          entity_type: 'pilot',
-          entity_id: pilotId,
-          activity_type: 'stage_changed',
-          description: `Stage changed from ${oldStage} to ${data.stage}`,
-          performed_by: user?.email,
-          old_value: oldStage,
-          new_value: data.stage
-        });
-        
-        await createNotification({
-          title: 'Pilot Stage Updated',
-          body: `${pilot.code} moved from ${oldStage} to ${data.stage}`,
-          type: 'alert',
-          priority: 'medium',
-          linkUrl: `PilotDetail?id=${pilotId}`,
-          entityType: 'pilot',
-          entityId: pilotId
-        });
-      }
-      
+  const { updatePilot } = usePilotMutations();
+  const handleUpdate = async () => {
+    // We will delegate to updatePilot.mutateAsync
+    // But we need to construct the payload including versioning logic
+
+    const oldStage = pilot.stage;
+    const versionedData = {
+      ...formData,
+      version_number: (pilot.version_number || 1) + 1,
+      previous_version_id: pilot.id
+    };
+
+    try {
+      await updatePilot.mutateAsync({ id: pilotId, data: versionedData });
+
       // Clear auto-save
       localStorage.removeItem(`pilot-edit-${pilotId}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pilot', pilotId] });
-      toast.success(t({ en: 'Pilot updated', ar: 'تم تحديث التجربة' }));
       navigate(createPageUrl(`PilotDetail?id=${pilotId}`));
+    } catch (error) {
+      console.error("Update failed", error);
     }
-  });
+  };
 
   const handleSectionAIEnhance = async (section) => {
     setIsAIProcessing(true);
@@ -268,7 +182,7 @@ function PilotEditPage() {
         - Security & Compliance
         
         For each: category, technology, version, purpose`;
-        
+
         schema = {
           type: 'object',
           properties: {
@@ -297,7 +211,7 @@ function PilotEditPage() {
         2. Feedback collection goals
         3. Expected satisfaction scores
         4. Anticipated media coverage (5-8 outlets with dates and sentiment)`;
-        
+
         schema = {
           type: 'object',
           properties: {
@@ -335,7 +249,7 @@ function PilotEditPage() {
         Objective AR: ${formData.objective_ar || ''}
         
         Enhance: refined titles, taglines, detailed descriptions (200+ words each), clear objectives, hypothesis, methodology, scope.`;
-        
+
         schema = {
           type: 'object',
           properties: {
@@ -361,7 +275,7 @@ function PilotEditPage() {
         - Ambitious but achievable targets
         - Appropriate units
         - Measurement frequency`;
-        
+
         schema = {
           type: 'object',
           properties: {
@@ -391,7 +305,7 @@ function PilotEditPage() {
         - Bilingual names and descriptions
         - Evenly distributed dates
         - Key deliverables (EN + AR arrays)`;
-        
+
         schema = {
           type: 'object',
           properties: {
@@ -423,7 +337,7 @@ function PilotEditPage() {
         - Detailed mitigation strategies
         - Safety protocols (5-8 items)
         - Regulatory exemptions if needed`;
-        
+
         schema = {
           type: 'object',
           properties: {
@@ -455,7 +369,7 @@ function PilotEditPage() {
         - Success probability (0-100)
         - Risk level assessment
         - Recommendation (scale/iterate/pivot/terminate/pending)`;
-        
+
         schema = {
           type: 'object',
           properties: {
@@ -471,7 +385,8 @@ function PilotEditPage() {
 
       const result = await invokeAI({
         prompt,
-        response_json_schema: schema
+        response_json_schema: schema,
+        system_prompt: "You are an expert innovation consultant helping to refine pilot project details."
       });
 
       if (!result.success) {
@@ -482,10 +397,10 @@ function PilotEditPage() {
       if (section === 'technology') {
         setFormData(prev => ({ ...prev, technology_stack: result.data.technology_stack }));
       } else if (section === 'engagement') {
-        setFormData(prev => ({ 
-          ...prev, 
+        setFormData(prev => ({
+          ...prev,
           public_engagement: result.data.public_engagement,
-          media_coverage: result.data.media_coverage 
+          media_coverage: result.data.media_coverage
         }));
       } else {
         setFormData(prev => ({ ...prev, ...result.data }));
@@ -511,6 +426,11 @@ function PilotEditPage() {
         icon={TestTube}
         title={{ en: 'Edit Pilot', ar: 'تعديل التجربة' }}
         description={formData?.code}
+        subtitle={{ en: 'Update pilot details and status', ar: 'تحديث تفاصيل وحالة التجربة' }}
+        stats={[]}
+        action={null}
+        actions={null}
+        children={null}
       />
       <CollaborativeEditing entityId={pilotId} entityType="Pilot" />
       <div className="flex items-center justify-between">
@@ -533,7 +453,7 @@ function PilotEditPage() {
             💾 {t({ en: 'Auto-saving every 30 seconds', ar: 'الحفظ التلقائي كل 30 ثانية' })}
           </p>
         </div>
-        
+
         <div className="flex gap-2">
           <Button
             variant="outline"
@@ -597,14 +517,14 @@ function PilotEditPage() {
               <Label>Title (English)</Label>
               <Input
                 value={formData.title_en}
-                onChange={(e) => setFormData({...formData, title_en: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, title_en: e.target.value })}
               />
             </div>
             <div className="space-y-2">
               <Label>العنوان (عربي)</Label>
               <Input
                 value={formData.title_ar || ''}
-                onChange={(e) => setFormData({...formData, title_ar: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, title_ar: e.target.value })}
                 dir="rtl"
               />
             </div>
@@ -615,14 +535,14 @@ function PilotEditPage() {
               <Label>Tagline (English)</Label>
               <Input
                 value={formData.tagline_en || ''}
-                onChange={(e) => setFormData({...formData, tagline_en: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, tagline_en: e.target.value })}
               />
             </div>
             <div className="space-y-2">
               <Label>الشعار (عربي)</Label>
               <Input
                 value={formData.tagline_ar || ''}
-                onChange={(e) => setFormData({...formData, tagline_ar: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, tagline_ar: e.target.value })}
                 dir="rtl"
               />
             </div>
@@ -632,7 +552,7 @@ function PilotEditPage() {
             <Label>Description (English)</Label>
             <Textarea
               value={formData.description_en || ''}
-              onChange={(e) => setFormData({...formData, description_en: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
               rows={4}
             />
           </div>
@@ -641,7 +561,7 @@ function PilotEditPage() {
             <Label>الوصف (عربي)</Label>
             <Textarea
               value={formData.description_ar || ''}
-              onChange={(e) => setFormData({...formData, description_ar: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
               rows={4}
               dir="rtl"
             />
@@ -651,7 +571,7 @@ function PilotEditPage() {
             <Label>Objective (English)</Label>
             <Textarea
               value={formData.objective_en || ''}
-              onChange={(e) => setFormData({...formData, objective_en: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, objective_en: e.target.value })}
               rows={2}
             />
           </div>
@@ -661,7 +581,7 @@ function PilotEditPage() {
               <Label>Sector</Label>
               <Select
                 value={formData.sector}
-                onValueChange={(v) => setFormData({...formData, sector: v})}
+                onValueChange={(v) => setFormData({ ...formData, sector: v })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -684,7 +604,7 @@ function PilotEditPage() {
               <Label>Stage</Label>
               <Select
                 value={formData.stage}
-                onValueChange={(v) => setFormData({...formData, stage: v})}
+                onValueChange={(v) => setFormData({ ...formData, stage: v })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -714,7 +634,7 @@ function PilotEditPage() {
                 min="1"
                 max="9"
                 value={formData.trl_start || ''}
-                onChange={(e) => setFormData({...formData, trl_start: parseInt(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, trl_start: parseInt(e.target.value) })}
               />
             </div>
             <div className="space-y-2">
@@ -724,7 +644,7 @@ function PilotEditPage() {
                 min="1"
                 max="9"
                 value={formData.trl_current || ''}
-                onChange={(e) => setFormData({...formData, trl_current: parseInt(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, trl_current: parseInt(e.target.value) })}
               />
             </div>
             <div className="space-y-2">
@@ -734,7 +654,7 @@ function PilotEditPage() {
                 min="1"
                 max="9"
                 value={formData.trl_target || ''}
-                onChange={(e) => setFormData({...formData, trl_target: parseInt(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, trl_target: parseInt(e.target.value) })}
               />
             </div>
           </div>
@@ -744,7 +664,7 @@ function PilotEditPage() {
               <Label>Related Challenge</Label>
               <Select
                 value={formData.challenge_id || ''}
-                onValueChange={(v) => setFormData({...formData, challenge_id: v})}
+                onValueChange={(v) => setFormData({ ...formData, challenge_id: v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select challenge" />
@@ -762,7 +682,7 @@ function PilotEditPage() {
               <Label>Solution</Label>
               <Select
                 value={formData.solution_id || ''}
-                onValueChange={(v) => setFormData({...formData, solution_id: v})}
+                onValueChange={(v) => setFormData({ ...formData, solution_id: v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select solution" />
@@ -783,7 +703,7 @@ function PilotEditPage() {
               <Label>Region | المنطقة</Label>
               <Select
                 value={formData.region_id || ''}
-                onValueChange={(v) => setFormData({...formData, region_id: v})}
+                onValueChange={(v) => setFormData({ ...formData, region_id: v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select region" />
@@ -801,7 +721,7 @@ function PilotEditPage() {
               <Label>City | المدينة</Label>
               <Select
                 value={formData.city_id || ''}
-                onValueChange={(v) => setFormData({...formData, city_id: v})}
+                onValueChange={(v) => setFormData({ ...formData, city_id: v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select city" />
@@ -819,7 +739,7 @@ function PilotEditPage() {
               <Label>Municipality | البلدية</Label>
               <Select
                 value={formData.municipality_id || ''}
-                onValueChange={(v) => setFormData({...formData, municipality_id: v})}
+                onValueChange={(v) => setFormData({ ...formData, municipality_id: v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select municipality" />
@@ -840,7 +760,7 @@ function PilotEditPage() {
               <Label>Living Lab (Optional) | المختبر الحي</Label>
               <Select
                 value={formData.living_lab_id || 'none'}
-                onValueChange={(v) => setFormData({...formData, living_lab_id: v === 'none' ? null : v})}
+                onValueChange={(v) => setFormData({ ...formData, living_lab_id: v === 'none' ? null : v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select living lab" />
@@ -859,7 +779,7 @@ function PilotEditPage() {
               <Label>Sandbox (Optional) | منطقة الاختبار</Label>
               <Select
                 value={formData.sandbox_id || 'none'}
-                onValueChange={(v) => setFormData({...formData, sandbox_id: v === 'none' ? null : v})}
+                onValueChange={(v) => setFormData({ ...formData, sandbox_id: v === 'none' ? null : v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select sandbox" />
@@ -880,7 +800,7 @@ function PilotEditPage() {
             <Label>Sub-Sector | القطاع الفرعي</Label>
             <Input
               value={formData.sub_sector || ''}
-              onChange={(e) => setFormData({...formData, sub_sector: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, sub_sector: e.target.value })}
             />
           </div>
 
@@ -888,7 +808,7 @@ function PilotEditPage() {
             <Label>Hypothesis (What is being tested)</Label>
             <Textarea
               value={formData.hypothesis || ''}
-              onChange={(e) => setFormData({...formData, hypothesis: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, hypothesis: e.target.value })}
               rows={2}
             />
           </div>
@@ -897,7 +817,7 @@ function PilotEditPage() {
             <Label>Methodology</Label>
             <Textarea
               value={formData.methodology || ''}
-              onChange={(e) => setFormData({...formData, methodology: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, methodology: e.target.value })}
               rows={2}
             />
           </div>
@@ -906,7 +826,7 @@ function PilotEditPage() {
             <Label>Scope</Label>
             <Textarea
               value={formData.scope || ''}
-              onChange={(e) => setFormData({...formData, scope: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, scope: e.target.value })}
               rows={2}
             />
           </div>
@@ -964,7 +884,7 @@ function PilotEditPage() {
               <Label>Risk Level</Label>
               <Select
                 value={formData.risk_level || 'medium'}
-                onValueChange={(v) => setFormData({...formData, risk_level: v})}
+                onValueChange={(v) => setFormData({ ...formData, risk_level: v })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -984,14 +904,14 @@ function PilotEditPage() {
                 min="0"
                 max="100"
                 value={formData.success_probability || ''}
-                onChange={(e) => setFormData({...formData, success_probability: parseInt(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, success_probability: parseInt(e.target.value) })}
               />
             </div>
             <div className="space-y-2">
               <Label>Recommendation</Label>
               <Select
                 value={formData.recommendation || 'pending'}
-                onValueChange={(v) => setFormData({...formData, recommendation: v})}
+                onValueChange={(v) => setFormData({ ...formData, recommendation: v })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -1013,7 +933,7 @@ function PilotEditPage() {
               <Input
                 type="number"
                 value={formData.budget || ''}
-                onChange={(e) => setFormData({...formData, budget: parseFloat(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, budget: parseFloat(e.target.value) })}
               />
             </div>
             <div className="space-y-2">
@@ -1021,7 +941,7 @@ function PilotEditPage() {
               <Input
                 type="number"
                 value={formData.duration_weeks || ''}
-                onChange={(e) => setFormData({...formData, duration_weeks: parseInt(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, duration_weeks: parseInt(e.target.value) })}
               />
             </div>
           </div>
@@ -1030,7 +950,7 @@ function PilotEditPage() {
             <Label>Sandbox Zone</Label>
             <Input
               value={formData.sandbox_zone || ''}
-              onChange={(e) => setFormData({...formData, sandbox_zone: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, sandbox_zone: e.target.value })}
               placeholder="e.g., Downtown District A"
             />
           </div>
@@ -1040,7 +960,7 @@ function PilotEditPage() {
             <Input
               value={formData.tags?.join(', ') || ''}
               onChange={(e) => setFormData({
-                ...formData, 
+                ...formData,
                 tags: e.target.value.split(',').map(t => t.trim()).filter(t => t)
               })}
               placeholder="smart city, IoT, sustainability"
@@ -1052,7 +972,7 @@ function PilotEditPage() {
               <input
                 type="checkbox"
                 checked={formData.is_published || false}
-                onChange={(e) => setFormData({...formData, is_published: e.target.checked})}
+                onChange={(e) => setFormData({ ...formData, is_published: e.target.checked })}
                 className="rounded"
               />
               <span className="text-sm">Published</span>
@@ -1061,7 +981,7 @@ function PilotEditPage() {
               <input
                 type="checkbox"
                 checked={formData.is_flagship || false}
-                onChange={(e) => setFormData({...formData, is_flagship: e.target.checked})}
+                onChange={(e) => setFormData({ ...formData, is_flagship: e.target.checked })}
                 className="rounded"
               />
               <span className="text-sm">Flagship</span>
@@ -1070,7 +990,7 @@ function PilotEditPage() {
               <input
                 type="checkbox"
                 checked={formData.is_archived || false}
-                onChange={(e) => setFormData({...formData, is_archived: e.target.checked})}
+                onChange={(e) => setFormData({ ...formData, is_archived: e.target.checked })}
                 className="rounded"
               />
               <span className="text-sm">Archived</span>
@@ -1109,7 +1029,7 @@ function PilotEditPage() {
                 value={formData.timeline?.pilot_start || ''}
                 onChange={(e) => setFormData({
                   ...formData,
-                  timeline: {...(formData.timeline || {}), pilot_start: e.target.value}
+                  timeline: { ...(formData.timeline || {}), pilot_start: e.target.value }
                 })}
               />
             </div>
@@ -1120,7 +1040,7 @@ function PilotEditPage() {
                 value={formData.timeline?.pilot_end || ''}
                 onChange={(e) => setFormData({
                   ...formData,
-                  timeline: {...(formData.timeline || {}), pilot_end: e.target.value}
+                  timeline: { ...(formData.timeline || {}), pilot_end: e.target.value }
                 })}
               />
             </div>
@@ -1161,7 +1081,7 @@ function PilotEditPage() {
                         onChange={(e) => {
                           const updated = [...formData.milestones];
                           updated[idx].name = e.target.value;
-                          setFormData({...formData, milestones: updated});
+                          setFormData({ ...formData, milestones: updated });
                         }}
                       />
                       <Input
@@ -1170,7 +1090,7 @@ function PilotEditPage() {
                         onChange={(e) => {
                           const updated = [...formData.milestones];
                           updated[idx].name_ar = e.target.value;
-                          setFormData({...formData, milestones: updated});
+                          setFormData({ ...formData, milestones: updated });
                         }}
                         dir="rtl"
                       />
@@ -1182,7 +1102,7 @@ function PilotEditPage() {
                         onChange={(e) => {
                           const updated = [...formData.milestones];
                           updated[idx].due_date = e.target.value;
-                          setFormData({...formData, milestones: updated});
+                          setFormData({ ...formData, milestones: updated });
                         }}
                       />
                       <Select
@@ -1190,7 +1110,7 @@ function PilotEditPage() {
                         onValueChange={(v) => {
                           const updated = [...formData.milestones];
                           updated[idx].status = v;
-                          setFormData({...formData, milestones: updated});
+                          setFormData({ ...formData, milestones: updated });
                         }}
                       >
                         <SelectTrigger>
@@ -1273,7 +1193,7 @@ function PilotEditPage() {
                       onChange={(e) => {
                         const updated = [...formData.kpis];
                         updated[idx].name = e.target.value;
-                        setFormData({...formData, kpis: updated});
+                        setFormData({ ...formData, kpis: updated });
                       }}
                     />
                     <Input
@@ -1282,7 +1202,7 @@ function PilotEditPage() {
                       onChange={(e) => {
                         const updated = [...formData.kpis];
                         updated[idx].baseline = e.target.value;
-                        setFormData({...formData, kpis: updated});
+                        setFormData({ ...formData, kpis: updated });
                       }}
                     />
                     <Input
@@ -1291,7 +1211,7 @@ function PilotEditPage() {
                       onChange={(e) => {
                         const updated = [...formData.kpis];
                         updated[idx].target = e.target.value;
-                        setFormData({...formData, kpis: updated});
+                        setFormData({ ...formData, kpis: updated });
                       }}
                     />
                     <Input
@@ -1300,7 +1220,7 @@ function PilotEditPage() {
                       onChange={(e) => {
                         const updated = [...formData.kpis];
                         updated[idx].unit = e.target.value;
-                        setFormData({...formData, kpis: updated});
+                        setFormData({ ...formData, kpis: updated });
                       }}
                     />
                   </div>
@@ -1347,7 +1267,7 @@ function PilotEditPage() {
                       onChange={(e) => {
                         const updated = [...formData.success_criteria];
                         updated[idx].criterion = e.target.value;
-                        setFormData({...formData, success_criteria: updated});
+                        setFormData({ ...formData, success_criteria: updated });
                       }}
                     />
                     <Input
@@ -1356,7 +1276,7 @@ function PilotEditPage() {
                       onChange={(e) => {
                         const updated = [...formData.success_criteria];
                         updated[idx].threshold = e.target.value;
-                        setFormData({...formData, success_criteria: updated});
+                        setFormData({ ...formData, success_criteria: updated });
                       }}
                     />
                     <label className="flex items-center gap-2">
@@ -1366,7 +1286,7 @@ function PilotEditPage() {
                         onChange={(e) => {
                           const updated = [...formData.success_criteria];
                           updated[idx].met = e.target.checked;
-                          setFormData({...formData, success_criteria: updated});
+                          setFormData({ ...formData, success_criteria: updated });
                         }}
                         className="rounded"
                       />
@@ -1438,7 +1358,8 @@ Return JSON with: name (realistic Arabic name), role, organization, email (name@
                               }
                             }
                           }
-                        }
+                        },
+                        system_prompt: "You are an expert HR and project management consultant for innovation pilots."
                       });
                       if (response.success) {
                         setFormData(prev => ({ ...prev, team: response.data?.team }));
@@ -1481,7 +1402,7 @@ Return JSON with: name (realistic Arabic name), role, organization, email (name@
                       onChange={(e) => {
                         const updated = [...formData.team];
                         updated[idx].name = e.target.value;
-                        setFormData({...formData, team: updated});
+                        setFormData({ ...formData, team: updated });
                       }}
                     />
                     <Input
@@ -1490,7 +1411,7 @@ Return JSON with: name (realistic Arabic name), role, organization, email (name@
                       onChange={(e) => {
                         const updated = [...formData.team];
                         updated[idx].role = e.target.value;
-                        setFormData({...formData, team: updated});
+                        setFormData({ ...formData, team: updated });
                       }}
                     />
                     <Input
@@ -1499,7 +1420,7 @@ Return JSON with: name (realistic Arabic name), role, organization, email (name@
                       onChange={(e) => {
                         const updated = [...formData.team];
                         updated[idx].email = e.target.value;
-                        setFormData({...formData, team: updated});
+                        setFormData({ ...formData, team: updated });
                       }}
                     />
                     <Input
@@ -1508,7 +1429,7 @@ Return JSON with: name (realistic Arabic name), role, organization, email (name@
                       onChange={(e) => {
                         const updated = [...formData.team];
                         updated[idx].organization = e.target.value;
-                        setFormData({...formData, team: updated});
+                        setFormData({ ...formData, team: updated });
                       }}
                     />
                     <Input
@@ -1517,7 +1438,7 @@ Return JSON with: name (realistic Arabic name), role, organization, email (name@
                       onChange={(e) => {
                         const updated = [...formData.team];
                         updated[idx].responsibility = e.target.value;
-                        setFormData({...formData, team: updated});
+                        setFormData({ ...formData, team: updated });
                       }}
                     />
                   </div>
@@ -1577,7 +1498,8 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
                               }
                             }
                           }
-                        }
+                        },
+                        system_prompt: "You are an expert in stakeholder mapping and engagement for municipal projects."
                       });
                       if (response.success) {
                         setFormData(prev => ({ ...prev, stakeholders: response.data?.stakeholders }));
@@ -1620,7 +1542,7 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
                       onChange={(e) => {
                         const updated = [...formData.stakeholders];
                         updated[idx].name = e.target.value;
-                        setFormData({...formData, stakeholders: updated});
+                        setFormData({ ...formData, stakeholders: updated });
                       }}
                     />
                     <Input
@@ -1629,7 +1551,7 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
                       onChange={(e) => {
                         const updated = [...formData.stakeholders];
                         updated[idx].type = e.target.value;
-                        setFormData({...formData, stakeholders: updated});
+                        setFormData({ ...formData, stakeholders: updated });
                       }}
                     />
                     <Input
@@ -1638,7 +1560,7 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
                       onChange={(e) => {
                         const updated = [...formData.stakeholders];
                         updated[idx].involvement = e.target.value;
-                        setFormData({...formData, stakeholders: updated});
+                        setFormData({ ...formData, stakeholders: updated });
                       }}
                     />
                   </div>
@@ -1710,7 +1632,7 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
                       onChange={(e) => {
                         const updated = [...formData.risks];
                         updated[idx].risk = e.target.value;
-                        setFormData({...formData, risks: updated});
+                        setFormData({ ...formData, risks: updated });
                       }}
                     />
                     <div className="grid grid-cols-3 gap-3">
@@ -1719,7 +1641,7 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
                         onValueChange={(v) => {
                           const updated = [...formData.risks];
                           updated[idx].probability = v;
-                          setFormData({...formData, risks: updated});
+                          setFormData({ ...formData, risks: updated });
                         }}
                       >
                         <SelectTrigger>
@@ -1736,7 +1658,7 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
                         onValueChange={(v) => {
                           const updated = [...formData.risks];
                           updated[idx].impact = v;
-                          setFormData({...formData, risks: updated});
+                          setFormData({ ...formData, risks: updated });
                         }}
                       >
                         <SelectTrigger>
@@ -1753,7 +1675,7 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
                         onValueChange={(v) => {
                           const updated = [...formData.risks];
                           updated[idx].status = v;
-                          setFormData({...formData, risks: updated});
+                          setFormData({ ...formData, risks: updated });
                         }}
                       >
                         <SelectTrigger>
@@ -1772,7 +1694,7 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
                       onChange={(e) => {
                         const updated = [...formData.risks];
                         updated[idx].mitigation = e.target.value;
-                        setFormData({...formData, risks: updated});
+                        setFormData({ ...formData, risks: updated });
                       }}
                       rows={2}
                     />
@@ -1847,7 +1769,7 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
                       onChange={(e) => {
                         const updated = [...formData.issues];
                         updated[idx].issue = e.target.value;
-                        setFormData({...formData, issues: updated});
+                        setFormData({ ...formData, issues: updated });
                       }}
                     />
                     <div className="grid grid-cols-3 gap-3">
@@ -1857,7 +1779,7 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
                         onChange={(e) => {
                           const updated = [...formData.issues];
                           updated[idx].severity = e.target.value;
-                          setFormData({...formData, issues: updated});
+                          setFormData({ ...formData, issues: updated });
                         }}
                       />
                       <Input
@@ -1866,7 +1788,7 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
                         onChange={(e) => {
                           const updated = [...formData.issues];
                           updated[idx].raised_date = e.target.value;
-                          setFormData({...formData, issues: updated});
+                          setFormData({ ...formData, issues: updated });
                         }}
                       />
                       <Select
@@ -1874,7 +1796,7 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
                         onValueChange={(v) => {
                           const updated = [...formData.issues];
                           updated[idx].status = v;
-                          setFormData({...formData, issues: updated});
+                          setFormData({ ...formData, issues: updated });
                         }}
                       >
                         <SelectTrigger>
@@ -1893,7 +1815,7 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
                       onChange={(e) => {
                         const updated = [...formData.issues];
                         updated[idx].resolution = e.target.value;
-                        setFormData({...formData, issues: updated});
+                        setFormData({ ...formData, issues: updated });
                       }}
                       rows={2}
                     />
@@ -1943,7 +1865,7 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
             <Label>Evaluation Summary (EN)</Label>
             <Textarea
               value={formData.evaluation_summary_en || ''}
-              onChange={(e) => setFormData({...formData, evaluation_summary_en: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, evaluation_summary_en: e.target.value })}
               rows={3}
             />
           </div>
@@ -1952,7 +1874,7 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
             <Label>ملخص التقييم (عربي)</Label>
             <Textarea
               value={formData.evaluation_summary_ar || ''}
-              onChange={(e) => setFormData({...formData, evaluation_summary_ar: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, evaluation_summary_ar: e.target.value })}
               rows={3}
               dir="rtl"
             />
@@ -1962,7 +1884,7 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
             <Label>AI Insights</Label>
             <Textarea
               value={formData.ai_insights || ''}
-              onChange={(e) => setFormData({...formData, ai_insights: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, ai_insights: e.target.value })}
               rows={2}
             />
           </div>
@@ -1972,7 +1894,7 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
               <Label>Risk Level</Label>
               <Select
                 value={formData.risk_level || 'medium'}
-                onValueChange={(v) => setFormData({...formData, risk_level: v})}
+                onValueChange={(v) => setFormData({ ...formData, risk_level: v })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -1992,14 +1914,14 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
                 min="0"
                 max="100"
                 value={formData.success_probability || ''}
-                onChange={(e) => setFormData({...formData, success_probability: parseInt(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, success_probability: parseInt(e.target.value) })}
               />
             </div>
             <div className="space-y-2">
               <Label>Recommendation</Label>
               <Select
                 value={formData.recommendation || 'pending'}
-                onValueChange={(v) => setFormData({...formData, recommendation: v})}
+                onValueChange={(v) => setFormData({ ...formData, recommendation: v })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -2040,7 +1962,7 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
                         onChange={(e) => {
                           const updated = [...formData.lessons_learned];
                           updated[idx].category = e.target.value;
-                          setFormData({...formData, lessons_learned: updated});
+                          setFormData({ ...formData, lessons_learned: updated });
                         }}
                       />
                       <Textarea
@@ -2049,7 +1971,7 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
                         onChange={(e) => {
                           const updated = [...formData.lessons_learned];
                           updated[idx].lesson = e.target.value;
-                          setFormData({...formData, lessons_learned: updated});
+                          setFormData({ ...formData, lessons_learned: updated });
                         }}
                         rows={2}
                       />
@@ -2059,7 +1981,7 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
                         onChange={(e) => {
                           const updated = [...formData.lessons_learned];
                           updated[idx].recommendation = e.target.value;
-                          setFormData({...formData, lessons_learned: updated});
+                          setFormData({ ...formData, lessons_learned: updated });
                         }}
                         rows={2}
                       />
@@ -2171,7 +2093,7 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
                     onChange={(e) => {
                       const updated = [...formData.documents];
                       updated[idx].name = e.target.value;
-                      setFormData({...formData, documents: updated});
+                      setFormData({ ...formData, documents: updated });
                     }}
                     className="flex-1"
                   />
@@ -2206,14 +2128,14 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
               <Input
                 type="number"
                 value={formData.budget || ''}
-                onChange={(e) => setFormData({...formData, budget: parseFloat(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, budget: parseFloat(e.target.value) })}
               />
             </div>
             <div className="space-y-2">
               <Label>Currency</Label>
               <Select
                 value={formData.budget_currency || 'SAR'}
-                onValueChange={(v) => setFormData({...formData, budget_currency: v})}
+                onValueChange={(v) => setFormData({ ...formData, budget_currency: v })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -2229,7 +2151,7 @@ Return JSON with: name, type (government/community/private/regulatory/academic),
               <Input
                 type="number"
                 value={formData.duration_weeks || ''}
-                onChange={(e) => setFormData({...formData, duration_weeks: parseInt(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, duration_weeks: parseInt(e.target.value) })}
               />
             </div>
           </div>
@@ -2291,13 +2213,14 @@ Total must equal ${formData.budget}. Return JSON with: category, amount, descrip
                               }
                             }
                           }
-                        }
+                        },
+                        system_prompt: "You are a financial advisor for innovation projects."
                       });
                       if (response.success) {
-                        setFormData(prev => ({ 
-                          ...prev, 
+                        setFormData(prev => ({
+                          ...prev,
                           budget_breakdown: response.data?.budget_breakdown,
-                          funding_sources: response.data?.funding_sources 
+                          funding_sources: response.data?.funding_sources
                         }));
                         toast.success('✨ AI optimized budget');
                       }
@@ -2338,7 +2261,7 @@ Total must equal ${formData.budget}. Return JSON with: category, amount, descrip
                       onChange={(e) => {
                         const updated = [...formData.budget_breakdown];
                         updated[idx].category = e.target.value;
-                        setFormData({...formData, budget_breakdown: updated});
+                        setFormData({ ...formData, budget_breakdown: updated });
                       }}
                     />
                     <Input
@@ -2348,7 +2271,7 @@ Total must equal ${formData.budget}. Return JSON with: category, amount, descrip
                       onChange={(e) => {
                         const updated = [...formData.budget_breakdown];
                         updated[idx].amount = parseFloat(e.target.value);
-                        setFormData({...formData, budget_breakdown: updated});
+                        setFormData({ ...formData, budget_breakdown: updated });
                       }}
                     />
                     <Input
@@ -2357,7 +2280,7 @@ Total must equal ${formData.budget}. Return JSON with: category, amount, descrip
                       onChange={(e) => {
                         const updated = [...formData.budget_breakdown];
                         updated[idx].description = e.target.value;
-                        setFormData({...formData, budget_breakdown: updated});
+                        setFormData({ ...formData, budget_breakdown: updated });
                       }}
                     />
                   </div>
@@ -2405,7 +2328,7 @@ Total must equal ${formData.budget}. Return JSON with: category, amount, descrip
                       onChange={(e) => {
                         const updated = [...formData.funding_sources];
                         updated[idx].source = e.target.value;
-                        setFormData({...formData, funding_sources: updated});
+                        setFormData({ ...formData, funding_sources: updated });
                       }}
                     />
                     <Input
@@ -2415,7 +2338,7 @@ Total must equal ${formData.budget}. Return JSON with: category, amount, descrip
                       onChange={(e) => {
                         const updated = [...formData.funding_sources];
                         updated[idx].amount = parseFloat(e.target.value);
-                        setFormData({...formData, funding_sources: updated});
+                        setFormData({ ...formData, funding_sources: updated });
                       }}
                     />
                     <label className="flex items-center gap-2">
@@ -2425,7 +2348,7 @@ Total must equal ${formData.budget}. Return JSON with: category, amount, descrip
                         onChange={(e) => {
                           const updated = [...formData.funding_sources];
                           updated[idx].confirmed = e.target.checked;
-                          setFormData({...formData, funding_sources: updated});
+                          setFormData({ ...formData, funding_sources: updated });
                         }}
                         className="rounded"
                       />
@@ -2451,7 +2374,7 @@ Total must equal ${formData.budget}. Return JSON with: category, amount, descrip
 
           <div className="border-t pt-6 space-y-4">
             <h3 className="font-semibold text-slate-900">{t({ en: 'Media Assets', ar: 'الوسائط' })}</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t({ en: 'Main Image', ar: 'الصورة الرئيسية' })}</Label>
@@ -2460,8 +2383,9 @@ Total must equal ${formData.budget}. Return JSON with: category, amount, descrip
                   label={t({ en: 'Upload Pilot Image', ar: 'رفع صورة التجربة' })}
                   maxSize={10}
                   enableImageSearch={true}
-                  searchContext={formData.title_en}
-                  onUploadComplete={(url) => setFormData({...formData, image_url: url})}
+                  searchContext={`Pilot ${formData.title_en} technology documentation`}
+                  description={t({ en: 'Upload technology specs or diagrams', ar: 'تحميل مواصفات التقنية أو المخططات' })}
+                  onUploadComplete={(url) => setFormData({ ...formData, image_url: url })}
                 />
                 {formData.image_url && (
                   <div className="relative mt-2">
@@ -2470,7 +2394,7 @@ Total must equal ${formData.budget}. Return JSON with: category, amount, descrip
                       variant="ghost"
                       size="icon"
                       className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 h-6 w-6"
-                      onClick={() => setFormData({...formData, image_url: ''})}
+                      onClick={() => setFormData({ ...formData, image_url: '' })}
                     >
                       <X className="h-3 w-3 text-white" />
                     </Button>
@@ -2485,7 +2409,8 @@ Total must equal ${formData.budget}. Return JSON with: category, amount, descrip
                   label={t({ en: 'Upload Video', ar: 'رفع فيديو' })}
                   maxSize={200}
                   preview={false}
-                  onUploadComplete={(url) => setFormData({...formData, video_url: url})}
+                  description={t({ en: 'Upload pilot video', ar: 'فيديو التجربة' })}
+                  onUploadComplete={(url) => setFormData({ ...formData, video_url: url })}
                 />
                 {formData.video_url && (
                   <div className="flex items-center gap-2 p-2 bg-slate-50 rounded mt-2">
@@ -2495,7 +2420,7 @@ Total must equal ${formData.budget}. Return JSON with: category, amount, descrip
                       variant="ghost"
                       size="icon"
                       className="h-6 w-6"
-                      onClick={() => setFormData({...formData, video_url: ''})}
+                      onClick={() => setFormData({ ...formData, video_url: '' })}
                     >
                       <X className="h-3 w-3 text-red-600" />
                     </Button>
@@ -2653,7 +2578,7 @@ Total must equal ${formData.budget}. Return JSON with: category, amount, descrip
                       onChange={(e) => {
                         const updated = [...formData.technology_stack];
                         updated[idx].category = e.target.value;
-                        setFormData({...formData, technology_stack: updated});
+                        setFormData({ ...formData, technology_stack: updated });
                       }}
                     />
                     <Input
@@ -2662,7 +2587,7 @@ Total must equal ${formData.budget}. Return JSON with: category, amount, descrip
                       onChange={(e) => {
                         const updated = [...formData.technology_stack];
                         updated[idx].technology = e.target.value;
-                        setFormData({...formData, technology_stack: updated});
+                        setFormData({ ...formData, technology_stack: updated });
                       }}
                     />
                     <Input
@@ -2671,7 +2596,7 @@ Total must equal ${formData.budget}. Return JSON with: category, amount, descrip
                       onChange={(e) => {
                         const updated = [...formData.technology_stack];
                         updated[idx].version = e.target.value;
-                        setFormData({...formData, technology_stack: updated});
+                        setFormData({ ...formData, technology_stack: updated });
                       }}
                     />
                     <Input
@@ -2680,7 +2605,7 @@ Total must equal ${formData.budget}. Return JSON with: category, amount, descrip
                       onChange={(e) => {
                         const updated = [...formData.technology_stack];
                         updated[idx].purpose = e.target.value;
-                        setFormData({...formData, technology_stack: updated});
+                        setFormData({ ...formData, technology_stack: updated });
                       }}
                     />
                   </div>
@@ -2800,7 +2725,7 @@ Total must equal ${formData.budget}. Return JSON with: category, amount, descrip
                         onChange={(e) => {
                           const updated = [...formData.media_coverage];
                           updated[idx].outlet = e.target.value;
-                          setFormData({...formData, media_coverage: updated});
+                          setFormData({ ...formData, media_coverage: updated });
                         }}
                       />
                       <Input
@@ -2809,7 +2734,7 @@ Total must equal ${formData.budget}. Return JSON with: category, amount, descrip
                         onChange={(e) => {
                           const updated = [...formData.media_coverage];
                           updated[idx].date = e.target.value;
-                          setFormData({...formData, media_coverage: updated});
+                          setFormData({ ...formData, media_coverage: updated });
                         }}
                       />
                     </div>
@@ -2820,7 +2745,7 @@ Total must equal ${formData.budget}. Return JSON with: category, amount, descrip
                         onChange={(e) => {
                           const updated = [...formData.media_coverage];
                           updated[idx].url = e.target.value;
-                          setFormData({...formData, media_coverage: updated});
+                          setFormData({ ...formData, media_coverage: updated });
                         }}
                       />
                       <Select
@@ -2828,7 +2753,7 @@ Total must equal ${formData.budget}. Return JSON with: category, amount, descrip
                         onValueChange={(v) => {
                           const updated = [...formData.media_coverage];
                           updated[idx].sentiment = v;
-                          setFormData({...formData, media_coverage: updated});
+                          setFormData({ ...formData, media_coverage: updated });
                         }}
                       >
                         <SelectTrigger>
@@ -2872,11 +2797,11 @@ Total must equal ${formData.budget}. Return JSON with: category, amount, descrip
               {t({ en: 'Cancel', ar: 'إلغاء' })}
             </Button>
             <Button
-              onClick={() => updateMutation.mutate(formData)}
-              disabled={updateMutation.isPending || changedFields.length === 0}
+              onClick={handleUpdate}
+              disabled={updatePilot.isPending || changedFields.length === 0}
               className="bg-gradient-to-r from-blue-600 to-teal-600"
             >
-              {updateMutation.isPending ? (
+              {updatePilot.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {t({ en: 'Saving...', ar: 'جاري الحفظ...' })}

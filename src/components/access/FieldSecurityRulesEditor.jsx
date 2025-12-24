@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useFieldSecurityRules, useUpdateFieldSecurityRules } from '@/hooks/useFieldSecurity';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,63 +19,17 @@ import {
 
 export default function FieldSecurityRulesEditor() {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
   const [selectedEntity, setSelectedEntity] = useState('Challenge');
   const [editingField, setEditingField] = useState(null);
 
   const entities = [
-    'Challenge', 'Pilot', 'Solution', 'RDProject', 'Program', 
+    'Challenge', 'Pilot', 'Solution', 'RDProject', 'Program',
     'Municipality', 'Organization', 'User'
   ];
 
-  // Fetch field security rules from platform_config
-  const { data: securityRules = {} } = useQuery({
-    queryKey: ['field-security', selectedEntity],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('platform_config')
-        .select('*')
-        .eq('key', `field_security_${selectedEntity}`)
-        .single();
-      
-      if (error && error.code !== 'PGRST116') throw error;
-      return data?.value || {};
-    }
-  });
-
-  const updateRulesMutation = useMutation({
-    mutationFn: async (rules) => {
-      const key = `field_security_${selectedEntity}`;
-      
-      // Check if exists
-      const { data: existing } = await supabase
-        .from('platform_config')
-        .select('id')
-        .eq('key', key)
-        .single();
-
-      if (existing) {
-        const { error } = await supabase
-          .from('platform_config')
-          .update({ value: rules })
-          .eq('id', existing.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('platform_config')
-          .insert({ key, value: rules });
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['field-security']);
-      setEditingField(null);
-      toast.success(t({ en: 'Field rules updated', ar: 'تم تحديث قواعد الحقل' }));
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    }
-  });
+  // Fetch field security rules
+  const { data: securityRules = {} } = useFieldSecurityRules(selectedEntity);
+  const updateRulesMutation = useUpdateFieldSecurityRules();
 
   const addFieldRule = () => {
     setEditingField({
@@ -99,13 +52,13 @@ export default function FieldSecurityRulesEditor() {
       }
     };
 
-    updateRulesMutation.mutate(updatedRules);
+    updateRulesMutation.mutate({ entity: selectedEntity, rules: updatedRules });
   };
 
   const deleteFieldRule = (fieldName) => {
     const updatedRules = { ...securityRules };
     delete updatedRules[fieldName];
-    updateRulesMutation.mutate(updatedRules);
+    updateRulesMutation.mutate({ entity: selectedEntity, rules: updatedRules });
   };
 
   return (

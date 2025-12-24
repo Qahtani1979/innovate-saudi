@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/components/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,13 +8,15 @@ import { Target, Calendar, Building2, ArrowRight, ThumbsUp, Bookmark, Send, Load
 import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { 
-  CitizenPageLayout, 
-  CitizenPageHeader, 
-  CitizenSearchFilter, 
-  CitizenCardGrid, 
-  CitizenEmptyState 
+import {
+  CitizenPageLayout,
+  CitizenPageHeader,
+  CitizenSearchFilter,
+  CitizenCardGrid,
+  CitizenEmptyState
 } from '@/components/citizen/CitizenPageLayout';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useUserBookmarks, useUserVotes, useCitizenMutations } from '@/hooks/useCitizenActions';
 
 function CitizenChallengesBrowser() {
   const { language, isRTL, t } = useLanguage();
@@ -27,49 +27,15 @@ function CitizenChallengesBrowser() {
   const [selectedPriority, setSelectedPriority] = useState('all');
   const [viewMode, setViewMode] = useState('grid');
 
-  const { data: challenges = [], isLoading, refetch } = useQuery({
-    queryKey: ['citizen-challenges-browser'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*, municipalities(name_en, name_ar)')
-        .eq('is_published', true)
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
+  const { toggleBookmark, toggleVote } = useCitizenMutations();
+
+  const { data: challenges = [], isLoading } = useChallengesWithVisibility({
+    publishedOnly: true,
+    limit: 100
   });
 
-  const { data: userVotes = [], refetch: refetchVotes } = useQuery({
-    queryKey: ['citizen-challenge-votes', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data, error } = await supabase
-        .from('citizen_votes')
-        .select('entity_id')
-        .eq('user_email', user.email)
-        .eq('entity_type', 'challenge');
-      if (error) throw error;
-      return data?.map(v => v.entity_id) || [];
-    },
-    enabled: !!user?.email
-  });
-
-  const { data: userBookmarks = [], refetch: refetchBookmarks } = useQuery({
-    queryKey: ['citizen-challenge-bookmarks', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data, error } = await supabase
-        .from('bookmarks')
-        .select('entity_id')
-        .eq('user_email', user.email)
-        .eq('entity_type', 'challenge');
-      if (error) throw error;
-      return data?.map(b => b.entity_id) || [];
-    },
-    enabled: !!user?.email
-  });
+  const { data: userVotes = [] } = useUserVotes('challenge');
+  const { data: userBookmarks = [] } = useUserBookmarks('challenge');
 
   const sectors = [...new Set(challenges.map(c => c.sector).filter(Boolean))];
   const priorities = ['critical', 'high', 'medium', 'low'];
@@ -77,7 +43,7 @@ function CitizenChallengesBrowser() {
   const filteredChallenges = challenges.filter(c => {
     const sectorMatch = selectedSector === 'all' || c.sector === selectedSector;
     const priorityMatch = selectedPriority === 'all' || c.priority === selectedPriority;
-    const searchMatch = !searchTerm || 
+    const searchMatch = !searchTerm ||
       c.title_en?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.title_ar?.includes(searchTerm) ||
       c.description_en?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -89,28 +55,8 @@ function CitizenChallengesBrowser() {
       toast({ title: t({ en: 'Please login to vote', ar: 'يرجى تسجيل الدخول للتصويت' }), variant: 'destructive' });
       return;
     }
-    try {
-      const isVoted = userVotes.includes(challengeId);
-      if (isVoted) {
-        await supabase.from('citizen_votes').delete()
-          .eq('user_email', user.email)
-          .eq('entity_id', challengeId)
-          .eq('entity_type', 'challenge');
-        toast({ title: t({ en: 'Vote removed', ar: 'تم إزالة التصويت' }) });
-      } else {
-        await supabase.from('citizen_votes').insert({
-          user_email: user.email,
-          user_id: user.id,
-          entity_id: challengeId,
-          entity_type: 'challenge',
-          vote_type: 'upvote'
-        });
-        toast({ title: t({ en: 'Voted!', ar: 'تم التصويت!' }) });
-      }
-      refetchVotes();
-    } catch (err) {
-      toast({ title: t({ en: 'Error voting', ar: 'خطأ في التصويت' }), variant: 'destructive' });
-    }
+    const isVoted = userVotes.includes(challengeId);
+    toggleVote.mutate({ entityId: challengeId, entityType: 'challenge', isVoted });
   };
 
   const handleBookmark = async (challengeId) => {
@@ -118,26 +64,8 @@ function CitizenChallengesBrowser() {
       toast({ title: t({ en: 'Please login to bookmark', ar: 'يرجى تسجيل الدخول للحفظ' }), variant: 'destructive' });
       return;
     }
-    try {
-      const isBookmarked = userBookmarks.includes(challengeId);
-      if (isBookmarked) {
-        await supabase.from('bookmarks').delete()
-          .eq('user_email', user.email)
-          .eq('entity_id', challengeId)
-          .eq('entity_type', 'challenge');
-        toast({ title: t({ en: 'Bookmark removed', ar: 'تم إزالة الإشارة' }) });
-      } else {
-        await supabase.from('bookmarks').insert({
-          user_email: user.email,
-          entity_id: challengeId,
-          entity_type: 'challenge'
-        });
-        toast({ title: t({ en: 'Bookmarked!', ar: 'تم حفظ الإشارة!' }) });
-      }
-      refetchBookmarks();
-    } catch (err) {
-      toast({ title: t({ en: 'Error', ar: 'خطأ' }), variant: 'destructive' });
-    }
+    const isBookmarked = userBookmarks.includes(challengeId);
+    toggleBookmark.mutate({ entityId: challengeId, entityType: 'challenge', isBookmarked });
   };
 
   const getPriorityColor = (priority) => {
@@ -205,7 +133,7 @@ function CitizenChallengesBrowser() {
         ]}
       />
 
-      <CitizenCardGrid 
+      <CitizenCardGrid
         viewMode={viewMode}
         emptyState={
           <CitizenEmptyState
@@ -216,11 +144,10 @@ function CitizenChallengesBrowser() {
         }
       >
         {filteredChallenges.map(challenge => (
-          <Card 
-            key={challenge.id} 
-            className={`group overflow-hidden border-border/50 hover:border-primary/30 hover:shadow-lg transition-all duration-300 ${
-              viewMode === 'list' ? 'flex flex-row' : ''
-            }`}
+          <Card
+            key={challenge.id}
+            className={`group overflow-hidden border-border/50 hover:border-primary/30 hover:shadow-lg transition-all duration-300 ${viewMode === 'list' ? 'flex flex-row' : ''
+              }`}
           >
             <CardContent className={`p-5 ${viewMode === 'list' ? 'flex items-center gap-6 w-full' : ''}`}>
               <div className={viewMode === 'list' ? 'flex-1' : ''}>

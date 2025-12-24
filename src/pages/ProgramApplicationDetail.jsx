@@ -1,5 +1,4 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useProgram, useProgramApplication } from '@/hooks/useProgramDetails';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,23 +24,8 @@ function ProgramApplicationDetail() {
   const applicationId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
 
-  const { data: application, isLoading } = useQuery({
-    queryKey: ['program-application', applicationId],
-    queryFn: async () => {
-      const applications = await base44.entities.ProgramApplication.list();
-      return applications.find(a => a.id === applicationId);
-    },
-    enabled: !!applicationId
-  });
-
-  const { data: program } = useQuery({
-    queryKey: ['program', application?.program_id],
-    queryFn: async () => {
-      const programs = await base44.entities.Program.list();
-      return programs.find(p => p.id === application?.program_id);
-    },
-    enabled: !!application?.program_id
-  });
+  const { data: application, isLoading } = useProgramApplication(applicationId);
+  const { data: program } = useProgram(application?.program_id);
 
   if (isLoading || !application) {
     return (
@@ -100,7 +84,7 @@ function ProgramApplicationDetail() {
                 </div>
                 <div className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
-                  <span>{application.created_date ? new Date(application.created_date).toLocaleDateString() : 'N/A'}</span>
+                  <span>{application.created_at ? new Date(application.created_at).toLocaleDateString() : 'N/A'}</span>
                 </div>
               </div>
             </div>
@@ -162,7 +146,7 @@ function ProgramApplicationDetail() {
               <div>
                 <p className="text-sm text-slate-600">{t({ en: 'Submitted', ar: 'تاريخ التقديم' })}</p>
                 <p className="text-sm font-bold text-amber-600 mt-1">
-                  {application.created_date ? new Date(application.created_date).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US') : 'N/A'}
+                  {application.created_at ? new Date(application.created_at).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US') : 'N/A'}
                 </p>
               </div>
               <Calendar className="h-8 w-8 text-amber-600" />
@@ -230,7 +214,7 @@ function ProgramApplicationDetail() {
                       {t({ en: 'Motivation', ar: 'الدافع' })}
                     </p>
                     <p className="text-sm text-slate-600 leading-relaxed">
-                      {application.motivation || 'No motivation statement provided'}
+                      {application.evaluation_feedback || 'No evaluation statement provided'}
                     </p>
                   </div>
                   <div>
@@ -324,12 +308,11 @@ function ProgramApplicationDetail() {
                   <CardTitle>{t({ en: 'Application Status', ar: 'حالة الطلب' })}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className={`p-4 rounded-lg border-2 ${
-                    application.status === 'accepted' ? 'bg-green-50 border-green-300' :
+                  <div className={`p-4 rounded-lg border-2 ${application.status === 'accepted' ? 'bg-green-50 border-green-300' :
                     application.status === 'rejected' ? 'bg-red-50 border-red-300' :
-                    application.status === 'shortlisted' ? 'bg-purple-50 border-purple-300' :
-                    'bg-yellow-50 border-yellow-300'
-                  }`}>
+                      application.status === 'shortlisted' ? 'bg-purple-50 border-purple-300' :
+                        'bg-yellow-50 border-yellow-300'
+                    }`}>
                     <div className="flex items-center gap-3">
                       {application.status === 'accepted' ? (
                         <CheckCircle2 className="h-8 w-8 text-green-600" />

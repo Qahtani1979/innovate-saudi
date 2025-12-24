@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,6 +18,13 @@ import OnboardingWizard from '../components/onboarding/OnboardingWizard';
 import OnboardingChecklist from '../components/onboarding/OnboardingChecklist';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { useUserMutations } from '@/hooks/useUserMutations';
+import { useSystemAnalytics } from '@/hooks/useSystemAnalytics';
+import { useTaxonomy } from '@/hooks/useTaxonomy';
+import { useUsersWithVisibility } from '@/hooks/useUsersWithVisibility';
+import { useRoles, useRoleMutations } from '@/hooks/useRoles';
+import { useTeams, useTeamMutations } from '@/hooks/useTeams';
+import { useInvitations } from '@/hooks/useInvitations';
 import {
   Users, Shield, UserPlus, Plus, Pencil, Trash2, Search, Loader2, Mail, Settings,
   Award, Briefcase, Filter, User, Sparkles, RefreshCw, X, Send, Clock, CheckCircle2, AlertCircle, Upload
@@ -38,30 +44,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+// Removed direct supabase import
 
 function UserManagementHub() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+
   const [selectedEntity, setSelectedEntity] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formData, setFormData] = useState({});
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showChecklist, setShowChecklist] = useState(true);
   const { user: currentUser } = useAuth();
-  const { invokeAI, isLoading: aiLoading, isAvailable } = useAIWithFallback();
-  
+  const { invokeAI, isLoading: aiLoading } = useAIWithFallback();
+
+  // Custom hooks
+  // Custom hooks
+  const { inviteUsers, cancelInvitation, resendInvitation, updateUserProfile, updateUserRoles } = useUserMutations();
+  const { createRole, updateRole, deleteRole } = useRoleMutations();
+  const { createTeam, updateTeam, deleteTeam } = useTeamMutations();
+  const { useUserActivities } = useSystemAnalytics();
+  const { data: activities = [] } = useUserActivities(100);
+  const { organizations, municipalities } = useTaxonomy();
+  const { data: users = [] } = useUsersWithVisibility({ limit: 1000 });
+
   // Directory filters
   const [searchTerm, setSearchTerm] = useState('');
   const [skillFilter, setSkillFilter] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
-  
+
   // Bulk invite state
   const [bulkEmails, setBulkEmails] = useState('');
   const [showBulkDialog, setShowBulkDialog] = useState(false);
-  const [showEmailCustomizer, setShowEmailCustomizer] = useState(false);
-  const [emailTemplate, setEmailTemplate] = useState({ subject: '', body: '' });
-  
+
   // Permission matrix state for Role dialog
   const [permissionMatrix, setPermissionMatrix] = useState({
     challenges: { create: false, read: true, update: false, delete: false },
@@ -71,66 +86,22 @@ function UserManagementHub() {
     municipalities: { create: false, read: true, update: false, delete: false },
     organizations: { create: false, read: true, update: false, delete: false }
   });
-  const [inviteForm, setInviteForm] = useState({ 
-    email: '', full_name: '', role: 'user', custom_message: '',
-    organization_id: '', municipality_id: ''
-  });
 
-  const { data: roles = [] } = useQuery({
-    queryKey: ['roles'],
-    queryFn: async () => {
-      const { data } = await supabase.from('roles').select('*');
-      return data || [];
-    }
-  });
+  // Queries (migrated to useTaxonomy or specialized hooks where possible)
+  // Note: Roles and Teams might still need dedicated hooks if not in Taxonomy
+  // For now we can keep them managed here via simpler means or create hooks later
+  // Assuming a basic Roles/Teams fetch is acceptable via a small helper or existing pattern?
 
-  const { data: teams = [] } = useQuery({
-    queryKey: ['teams'],
-    queryFn: async () => {
-      const { data } = await supabase.from('teams').select('*');
-      return data || [];
-    }
-  });
 
-  const { data: invitations = [] } = useQuery({
-    queryKey: ['invitations'],
-    queryFn: async () => {
-      const { data } = await supabase.from('user_invitations').select('*');
-      return data || [];
-    }
-  });
+  // ... (inside component)
 
-  const { data: organizations = [] } = useQuery({
-    queryKey: ['organizations-invite'],
-    queryFn: async () => {
-      const { data } = await supabase.from('organizations').select('id, name_en');
-      return data || [];
-    }
-  });
+  // Use the new simple hooks
+  const { data: roles = [] } = useRoles();
+  const { data: teams = [] } = useTeams();
+  const { data: invitations = [] } = useInvitations();
 
-  const { data: municipalitiesData = [] } = useQuery({
-    queryKey: ['municipalities-invite'],
-    queryFn: async () => {
-      const { data } = await supabase.from('municipalities').select('id, name_en');
-      return data || [];
-    }
-  });
+  // ... existing useEffect ...
 
-  const { data: users = [] } = useQuery({
-    queryKey: ['users'],
-    queryFn: async () => {
-      const { data } = await supabase.from('user_profiles').select('*');
-      return data || [];
-    }
-  });
-
-  const { data: activities = [] } = useQuery({
-    queryKey: ['user-activities'],
-    queryFn: async () => {
-      const { data } = await supabase.from('user_activities').select('*').order('created_at', { ascending: false }).limit(100);
-      return data || [];
-    }
-  });
 
   useEffect(() => {
     if (currentUser && !currentUser.onboarding_completed) {
@@ -138,91 +109,8 @@ function UserManagementHub() {
     }
   }, [currentUser]);
 
-  const createMutation = useMutation({
-    mutationFn: async ({ entity, data }) => {
-      const tableName = entity === 'Role' ? 'roles' : entity === 'Team' ? 'teams' : 'user_invitations';
-      return supabase.from(tableName).insert(data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries();
-      setDialogOpen(false);
-      setFormData({});
-      toast.success(t({ en: 'Created successfully', ar: 'تم الإنشاء بنجاح' }));
-    }
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ entity, id, data }) => {
-      const tableName = entity === 'Role' ? 'roles' : entity === 'Team' ? 'teams' : 'user_profiles';
-      return supabase.from(tableName).update(data).eq('id', id);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries();
-      setDialogOpen(false);
-      setSelectedEntity(null);
-      setFormData({});
-      toast.success(t({ en: 'Updated successfully', ar: 'تم التحديث بنجاح' }));
-    }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async ({ entity, id }) => {
-      const tableName = entity === 'Role' ? 'roles' : entity === 'Team' ? 'teams' : 'user_invitations';
-      return supabase.from(tableName).delete().eq('id', id);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries();
-      toast.success(t({ en: 'Deleted successfully', ar: 'تم الحذف بنجاح' }));
-    }
-  });
-
-  // Bulk invite mutation (migrated from UserInvitationManager)
-  const bulkInviteMutation = useMutation({
-    mutationFn: async ({ emails, role, message }) => {
-      const emailList = emails.split('\n').map(e => e.trim()).filter(e => e);
-      const invites = emailList.map(email => ({
-        email,
-        role,
-        custom_message: message,
-        invited_by: currentUser?.email || 'admin',
-        invitation_token: Math.random().toString(36).substring(7),
-        expires_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-      }));
-      const { error } = await supabase.from('user_invitations').insert(invites);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['invitations']);
-      setBulkEmails('');
-      setShowBulkDialog(false);
-      toast.success(t({ en: 'Bulk invitations sent', ar: 'تم إرسال الدعوات الجماعية' }));
-    }
-  });
-
-  const resendInviteMutation = useMutation({
-    mutationFn: async (id) => {
-      const { error } = await supabase.from('user_invitations').update({ 
-        status: 'pending',
-        expires_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-      }).eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['invitations']);
-      toast.success(t({ en: 'Invitation resent', ar: 'تم إعادة إرسال الدعوة' }));
-    }
-  });
-
-  const cancelInviteMutation = useMutation({
-    mutationFn: async (id) => {
-      const { error } = await supabase.from('user_invitations').update({ status: 'cancelled' }).eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['invitations']);
-      toast.success(t({ en: 'Invitation cancelled', ar: 'تم إلغاء الدعوة' }));
-    }
-  });
+  // Replaced inline mutations with hooks from useUserMutations
+  // Handlers will need to be updated to call inviteUsers.mutate, etc.
 
   // Derived data for directory filters (migrated from UserDirectory)
   const allSkills = [...new Set(users.flatMap(u => u.skills || []))];
@@ -231,7 +119,7 @@ function UserManagementHub() {
 
   // Filter users for directory view - now includes role filter
   const filteredDirectoryUsers = users.filter(user => {
-    const searchMatch = !searchTerm || 
+    const searchMatch = !searchTerm ||
       user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.job_title?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -299,18 +187,30 @@ Return a list of permission codes this role should have.`,
 
   const handleSubmit = () => {
     if (selectedEntity.mode === 'create') {
-      createMutation.mutate({ entity: selectedEntity.entity, data: formData });
+      if (selectedEntity.entity === 'Role') createRole.mutate(formData);
+      else if (selectedEntity.entity === 'Team') createTeam.mutate(formData);
+      else if (selectedEntity.entity === 'UserInvitation') inviteUsers.mutate([formData]);
     } else {
-      updateMutation.mutate({ entity: selectedEntity.entity, id: selectedEntity.id, data: formData });
+      if (selectedEntity.entity === 'Role') updateRole.mutate({ id: selectedEntity.id, data: formData });
+      else if (selectedEntity.entity === 'Team') updateTeam.mutate({ id: selectedEntity.id, data: formData });
+      else if (selectedEntity.entity === 'User') updateUserProfile.mutate({ id: selectedEntity.id, data: formData });
     }
+    setDialogOpen(false);
   };
+
+  const handleDelete = (entity, id) => {
+    if (entity === 'Role') deleteRole.mutate(id);
+    else if (entity === 'Team') deleteTeam.mutate(id);
+    else if (entity === 'UserInvitation') cancelInvitation.mutate(id);
+  };
+
 
   const EntityTable = ({ data, entity, columns, onEdit, onDelete, filters }) => {
     const [localSearch, setLocalSearch] = useState('');
     const [localFilters, setLocalFilters] = useState({});
 
     const filtered = data.filter(item => {
-      const searchMatch = !localSearch || Object.values(item).some(val => 
+      const searchMatch = !localSearch || Object.values(item).some(val =>
         String(val).toLowerCase().includes(localSearch.toLowerCase())
       );
 
@@ -337,12 +237,12 @@ Return a list of permission codes this role should have.`,
               className={isRTL ? 'pr-10' : 'pl-10'}
             />
           </div>
-          
+
           {filters?.map(filter => (
-            <Select 
-              key={filter.key} 
-              value={localFilters[filter.key] || 'all'} 
-              onValueChange={(val) => setLocalFilters({...localFilters, [filter.key]: val === 'all' ? '' : val})}
+            <Select
+              key={filter.key}
+              value={localFilters[filter.key] || 'all'}
+              onValueChange={(val) => setLocalFilters({ ...localFilters, [filter.key]: val === 'all' ? '' : val })}
             >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder={filter.label[language]} />
@@ -422,16 +322,16 @@ Return a list of permission codes this role should have.`,
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       {showOnboarding && currentUser && (
-        <OnboardingWizard 
-          user={currentUser} 
-          onComplete={() => setShowOnboarding(false)} 
+        <OnboardingWizard
+          user={currentUser}
+          onComplete={() => setShowOnboarding(false)}
         />
       )}
 
       {currentUser && currentUser.onboarding_completed && showChecklist && (
-        <OnboardingChecklist 
-          user={currentUser} 
-          onDismiss={() => setShowChecklist(false)} 
+        <OnboardingChecklist
+          user={currentUser}
+          onDismiss={() => setShowChecklist(false)}
         />
       )}
 
@@ -538,20 +438,20 @@ Return a list of permission codes this role should have.`,
                   { key: 'full_name', label: { en: 'Name', ar: 'الاسم' } },
                   { key: 'email', label: { en: 'Email', ar: 'البريد' } },
                   { key: 'job_title', label: { en: 'Job Title', ar: 'المسمى' } },
-                  { 
-                    key: 'role', 
+                  {
+                    key: 'role',
                     label: { en: 'Role', ar: 'الدور' },
                     render: (item) => <Badge>{item.role}</Badge>
                   },
-                  { 
-                    key: 'assigned_teams', 
+                  {
+                    key: 'assigned_teams',
                     label: { en: 'Teams', ar: 'الفرق' },
                     render: (item) => <Badge variant="outline">{item.assigned_teams?.length || 0}</Badge>
                   },
                 ]}
                 filters={[
-                  { 
-                    key: 'role', 
+                  {
+                    key: 'role',
                     label: { en: 'Role', ar: 'الدور' },
                     options: [
                       { value: 'admin', label: 'Admin' },
@@ -560,7 +460,8 @@ Return a list of permission codes this role should have.`,
                   }
                 ]}
                 onEdit={handleEdit}
-                onDelete={(entity, id) => deleteMutation.mutate({ entity, id })}
+                onDelete={(entity, id) => handleDelete(entity, id)}
+
               />
             </CardContent>
           </Card>
@@ -733,11 +634,24 @@ Return a list of permission codes this role should have.`,
                       </p>
                     </div>
                     <Button
-                      onClick={() => bulkInviteMutation.mutate({ emails: bulkEmails, role: 'user', message: '' })}
-                      disabled={!bulkEmails || bulkInviteMutation.isPending}
+                      onClick={() => {
+                        const emails = bulkEmails.split('\n').filter(e => e.trim());
+                        const invites = emails.map(email => ({
+                          email: email.trim(),
+                          role: 'user',
+                          custom_message: ''
+                        }));
+                        inviteUsers.mutate(invites, {
+                          onSuccess: () => {
+                            setBulkEmails('');
+                            setShowBulkDialog(false);
+                          }
+                        });
+                      }}
+                      disabled={!bulkEmails || inviteUsers.isPending}
                       className="w-full bg-purple-600"
                     >
-                      {bulkInviteMutation.isPending ? (
+                      {inviteUsers.isPending ? (
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       ) : (
                         <Send className="h-4 w-4 mr-2" />
@@ -782,7 +696,7 @@ Return a list of permission codes this role should have.`,
                   </CardContent>
                 </Card>
               </div>
-              
+
               {/* Invitations Table with Resend/Cancel Actions */}
               <Table>
                 <TableHeader>
@@ -804,9 +718,9 @@ Return a list of permission codes this role should have.`,
                       <TableCell>
                         <Badge className={
                           inv.status === 'accepted' ? 'bg-green-100 text-green-700' :
-                          inv.status === 'expired' ? 'bg-red-100 text-red-700' :
-                          inv.status === 'cancelled' ? 'bg-slate-100 text-slate-700' :
-                          'bg-blue-100 text-blue-700'
+                            inv.status === 'expired' ? 'bg-red-100 text-red-700' :
+                              inv.status === 'cancelled' ? 'bg-slate-100 text-slate-700' :
+                                'bg-blue-100 text-blue-700'
                         }>
                           {inv.status || 'pending'}
                         </Badge>
@@ -818,18 +732,19 @@ Return a list of permission codes this role should have.`,
                         <div className="flex items-center justify-end gap-2">
                           {inv.status === 'pending' && (
                             <>
-                              <Button size="sm" variant="ghost" onClick={() => resendInviteMutation.mutate(inv.id)} className="hover:bg-blue-50">
+                              <Button size="sm" variant="ghost" onClick={() => resendInvitation.mutate(inv.id)} className="hover:bg-blue-50">
                                 <RefreshCw className="h-4 w-4 text-blue-600" />
                               </Button>
-                              <Button size="sm" variant="ghost" onClick={() => cancelInviteMutation.mutate(inv.id)} className="hover:bg-red-50">
+                              <Button size="sm" variant="ghost" onClick={() => cancelInvitation.mutate(inv.id)} className="hover:bg-red-50">
                                 <X className="h-4 w-4 text-red-600" />
                               </Button>
                             </>
                           )}
-                          <Button size="sm" variant="ghost" onClick={() => deleteMutation.mutate({ entity: 'UserInvitation', id: inv.id })} className="hover:bg-red-50">
+                          <Button size="sm" variant="ghost" onClick={() => cancelInvitation.mutate(inv.id)} className="hover:bg-red-50">
                             <Trash2 className="h-4 w-4 text-red-600" />
                           </Button>
                         </div>
+
                       </TableCell>
                     </TableRow>
                   ))}
@@ -852,8 +767,8 @@ Return a list of permission codes this role should have.`,
                 data={teams}
                 entity="Team"
                 columns={[
-                  { 
-                    key: 'name', 
+                  {
+                    key: 'name',
                     label: { en: 'Team Name', ar: 'اسم الفريق' },
                     render: (item) => (
                       <Link to={createPageUrl(`TeamOverview?id=${item.id}`)} className="text-blue-600 hover:underline font-medium">
@@ -862,15 +777,16 @@ Return a list of permission codes this role should have.`,
                     )
                   },
                   { key: 'description', label: { en: 'Description', ar: 'الوصف' } },
-                  { 
-                    key: 'permissions', 
+                  {
+                    key: 'permissions',
                     label: { en: 'Permissions', ar: 'الصلاحيات' },
                     render: (item) => <Badge>{item.permissions?.length || 0}</Badge>
                   },
                   { key: 'member_count', label: { en: 'Members', ar: 'الأعضاء' } },
                 ]}
                 onEdit={handleEdit}
-                onDelete={(entity, id) => deleteMutation.mutate({ entity, id })}
+                onDelete={(entity, id) => deleteTeam.mutate(id)}
+
               />
             </CardContent>
           </Card>
@@ -891,15 +807,16 @@ Return a list of permission codes this role should have.`,
                 columns={[
                   { key: 'name', label: { en: 'Role Name', ar: 'اسم الدور' } },
                   { key: 'description', label: { en: 'Description', ar: 'الوصف' } },
-                  { 
-                    key: 'permissions', 
+                  {
+                    key: 'permissions',
                     label: { en: 'Permissions', ar: 'الصلاحيات' },
                     render: (item) => <Badge>{item.permissions?.length || 0}</Badge>
                   },
                   { key: 'user_count', label: { en: 'Users', ar: 'المستخدمون' } },
                 ]}
                 onEdit={handleEdit}
-                onDelete={(entity, id) => deleteMutation.mutate({ entity, id })}
+                onDelete={(entity, id) => deleteRole.mutate(id)}
+
               />
             </CardContent>
           </Card>
@@ -935,15 +852,15 @@ Return a list of permission codes this role should have.`,
             </CardContent>
           </Card>
         </TabsContent>
-        </Tabs>
+      </Tabs>
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {selectedEntity?.mode === 'create' ? 
-                t({ en: `Create ${selectedEntity?.entity}`, ar: `إنشاء ${selectedEntity?.entity}` }) : 
+              {selectedEntity?.mode === 'create' ?
+                t({ en: `Create ${selectedEntity?.entity}`, ar: `إنشاء ${selectedEntity?.entity}` }) :
                 t({ en: `Edit ${selectedEntity?.entity}`, ar: `تعديل ${selectedEntity?.entity}` })}
             </DialogTitle>
           </DialogHeader>
@@ -953,17 +870,17 @@ Return a list of permission codes this role should have.`,
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium mb-2 block">Email</label>
-                    <Input type="email" value={formData.email || ''} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                    <Input type="email" value={formData.email || ''} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">Full Name</label>
-                    <Input value={formData.full_name || ''} onChange={(e) => setFormData({...formData, full_name: e.target.value})} />
+                    <Input value={formData.full_name || ''} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} />
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label className="text-sm font-medium mb-2 block">Role</label>
-                    <Select value={formData.role || ''} onValueChange={(val) => setFormData({...formData, role: val})}>
+                    <Select value={formData.role || ''} onValueChange={(val) => setFormData({ ...formData, role: val })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select role" />
                       </SelectTrigger>
@@ -979,7 +896,7 @@ Return a list of permission codes this role should have.`,
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">{t({ en: 'Organization', ar: 'المنظمة' })}</label>
-                    <Select value={formData.organization_id || 'none'} onValueChange={(val) => setFormData({...formData, organization_id: val === 'none' ? '' : val})}>
+                    <Select value={formData.organization_id || 'none'} onValueChange={(val) => setFormData({ ...formData, organization_id: val === 'none' ? '' : val })}>
                       <SelectTrigger>
                         <SelectValue placeholder={t({ en: 'Select organization...', ar: 'اختر منظمة...' })} />
                       </SelectTrigger>
@@ -993,7 +910,7 @@ Return a list of permission codes this role should have.`,
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">{t({ en: 'Municipality', ar: 'البلدية' })}</label>
-                    <Select value={formData.municipality_id || 'none'} onValueChange={(val) => setFormData({...formData, municipality_id: val === 'none' ? '' : val})}>
+                    <Select value={formData.municipality_id || 'none'} onValueChange={(val) => setFormData({ ...formData, municipality_id: val === 'none' ? '' : val })}>
                       <SelectTrigger>
                         <SelectValue placeholder={t({ en: 'Select municipality...', ar: 'اختر بلدية...' })} />
                       </SelectTrigger>
@@ -1008,9 +925,9 @@ Return a list of permission codes this role should have.`,
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-2 block">{t({ en: 'Custom Message (Optional)', ar: 'رسالة مخصصة' })}</label>
-                  <Textarea 
-                    value={formData.custom_message || ''} 
-                    onChange={(e) => setFormData({...formData, custom_message: e.target.value})} 
+                  <Textarea
+                    value={formData.custom_message || ''}
+                    onChange={(e) => setFormData({ ...formData, custom_message: e.target.value })}
                     rows={3}
                     placeholder={t({ en: 'Add a personal message to the invitation email...', ar: 'أضف رسالة شخصية لبريد الدعوة...' })}
                   />
@@ -1022,19 +939,19 @@ Return a list of permission codes this role should have.`,
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium mb-2 block">Job Title</label>
-                    <Input value={formData.job_title || ''} onChange={(e) => setFormData({...formData, job_title: e.target.value})} />
+                    <Input value={formData.job_title || ''} onChange={(e) => setFormData({ ...formData, job_title: e.target.value })} />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">Department</label>
-                    <Input value={formData.department || ''} onChange={(e) => setFormData({...formData, department: e.target.value})} />
+                    <Input value={formData.department || ''} onChange={(e) => setFormData({ ...formData, department: e.target.value })} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium mb-2 block">Assigned Roles</label>
-                    <Select 
-                      value={formData.assigned_roles?.[0] || ''} 
-                      onValueChange={(val) => setFormData({...formData, assigned_roles: val ? [val] : []})}
+                    <Select
+                      value={formData.assigned_roles?.[0] || ''}
+                      onValueChange={(val) => setFormData({ ...formData, assigned_roles: val ? [val] : [] })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select role..." />
@@ -1048,9 +965,9 @@ Return a list of permission codes this role should have.`,
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">Assigned Teams</label>
-                    <Select 
-                      value={formData.assigned_teams?.[0] || ''} 
-                      onValueChange={(val) => setFormData({...formData, assigned_teams: val ? [val] : []})}
+                    <Select
+                      value={formData.assigned_teams?.[0] || ''}
+                      onValueChange={(val) => setFormData({ ...formData, assigned_teams: val ? [val] : [] })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select team..." />
@@ -1070,19 +987,19 @@ Return a list of permission codes this role should have.`,
               <>
                 <div>
                   <label className="text-sm font-medium mb-2 block">Team Name</label>
-                  <Input value={formData.name || ''} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+                  <Input value={formData.name || ''} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-2 block">Description</label>
-                  <Textarea value={formData.description || ''} onChange={(e) => setFormData({...formData, description: e.target.value})} rows={3} />
+                  <Textarea value={formData.description || ''} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={3} />
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-2 block">Team Lead Email</label>
-                  <Input type="email" value={formData.lead_user_email || ''} onChange={(e) => setFormData({...formData, lead_user_email: e.target.value})} />
+                  <Input type="email" value={formData.lead_user_email || ''} onChange={(e) => setFormData({ ...formData, lead_user_email: e.target.value })} />
                 </div>
-                <PermissionSelector 
+                <PermissionSelector
                   selectedPermissions={formData.permissions || []}
-                  onChange={(perms) => setFormData({...formData, permissions: perms})}
+                  onChange={(perms) => setFormData({ ...formData, permissions: perms })}
                 />
               </>
             )}
@@ -1091,13 +1008,13 @@ Return a list of permission codes this role should have.`,
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium mb-2 block">Role Name</label>
-                    <Input value={formData.name || ''} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+                    <Input value={formData.name || ''} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">Role Code</label>
-                    <Input 
-                      value={formData.code || ''} 
-                      onChange={(e) => setFormData({...formData, code: e.target.value.toUpperCase()})} 
+                    <Input
+                      value={formData.code || ''}
+                      onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
                       placeholder="e.g., MUN_REVIEWER"
                       className="font-mono"
                     />
@@ -1105,9 +1022,9 @@ Return a list of permission codes this role should have.`,
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-2 block">Description</label>
-                  <Textarea value={formData.description || ''} onChange={(e) => setFormData({...formData, description: e.target.value})} rows={2} />
+                  <Textarea value={formData.description || ''} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={2} />
                 </div>
-                
+
                 {/* AI Permission Suggester - Migrated from RoleManager */}
                 <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-200">
                   <div>
@@ -1147,9 +1064,9 @@ Return a list of permission codes this role should have.`,
                               </TableCell>
                             ))}
                             <TableCell className="text-center">
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => selectAllInCategory(entity)}
                                 className="text-xs h-6 px-2"
                               >
@@ -1162,10 +1079,10 @@ Return a list of permission codes this role should have.`,
                     </Table>
                   </div>
                 </div>
-                
-                <PermissionSelector 
+
+                <PermissionSelector
                   selectedPermissions={formData.permissions || []}
-                  onChange={(perms) => setFormData({...formData, permissions: perms})}
+                  onChange={(perms) => setFormData({ ...formData, permissions: perms })}
                 />
               </>
             )}
@@ -1174,10 +1091,11 @@ Return a list of permission codes this role should have.`,
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               {t({ en: 'Cancel', ar: 'إلغاء' })}
             </Button>
-            <Button onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}>
-              {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            <Button onClick={handleSubmit} disabled={createRole.isPending || updateRole.isPending || inviteUsers.isPending || createTeam.isPending}>
+              {(createRole.isPending || inviteUsers.isPending || createTeam.isPending) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {t({ en: 'Save', ar: 'حفظ' })}
             </Button>
+
           </DialogFooter>
         </DialogContent>
       </Dialog>

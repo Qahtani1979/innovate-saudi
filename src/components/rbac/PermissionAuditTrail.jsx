@@ -1,5 +1,4 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useAccessLogs } from '@/hooks/useRBACStatistics';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Clock, User } from 'lucide-react';
@@ -8,32 +7,23 @@ import { useLanguage } from '../LanguageContext';
 export default function PermissionAuditTrail({ roleId, userId }) {
   const { t, language } = useLanguage();
 
-  const { data: auditLogs = [] } = useQuery({
-    queryKey: ['permission-audit', roleId, userId],
-    queryFn: async () => {
-      const filters = {};
-      if (roleId) {
-        filters.entity_type = 'Role';
-        filters.entity_id = roleId;
-      }
-      if (userId) {
-        filters.activity_description = { $regex: userId };
-      }
+  const { data: accessLogs = [] } = useAccessLogs(30);
 
-      return await base44.entities.SystemActivity.filter(
-        filters,
-        '-created_date',
-        50
-      );
-    }
+  const permissionChanges = accessLogs.filter(log => {
+    const isRelated =
+      log.action?.toLowerCase().includes('permission') ||
+      log.action?.toLowerCase().includes('role') ||
+      log.details?.toLowerCase().includes('permission') ||
+      log.details?.toLowerCase().includes('role');
+
+    if (!isRelated) return false;
+
+    // If filtered by roleId or userId
+    if (roleId && !log.details?.includes(roleId)) return false;
+    if (userId && log.user_email !== userId) return false;
+
+    return true;
   });
-
-  const permissionChanges = auditLogs.filter(log => 
-    log.activity_type?.includes('permission') || 
-    log.activity_type?.includes('role') ||
-    log.activity_description?.toLowerCase().includes('permission') ||
-    log.activity_description?.toLowerCase().includes('role')
-  );
 
   return (
     <Card>
@@ -54,16 +44,16 @@ export default function PermissionAuditTrail({ roleId, userId }) {
               <div key={idx} className="p-2 bg-slate-50 rounded border text-xs">
                 <div className="flex items-center gap-2 mb-1">
                   <User className="h-3 w-3 text-slate-500" />
-                  <span className="font-medium">{log.created_by}</span>
+                  <span className="font-medium">{log.user_email}</span>
                   <Clock className="h-3 w-3 text-slate-400" />
                   <span className="text-slate-500">
-                    {new Date(log.created_date).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')}
+                    {new Date(log.created_at).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')}
                   </span>
                 </div>
-                <p className="text-slate-700">{log.activity_description}</p>
-                {log.activity_type && (
+                <p className="text-slate-700">{log.details || log.action}</p>
+                {log.entity_type && (
                   <Badge variant="outline" className="mt-1 text-xs">
-                    {log.activity_type}
+                    {log.entity_type}
                   </Badge>
                 )}
               </div>

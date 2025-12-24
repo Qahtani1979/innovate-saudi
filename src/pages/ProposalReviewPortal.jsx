@@ -1,13 +1,12 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useProposalReviewData } from '@/hooks/useProposalReviewData';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { CheckCircle2, Clock } from 'lucide-react';
+import { CheckCircle2, Clock, TrendingUp } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import UnifiedEvaluationForm from '../components/evaluation/UnifiedEvaluationForm';
@@ -17,19 +16,7 @@ function ProposalReviewPortal() {
   const { language, isRTL, t } = useLanguage();
   const [selectedProposal, setSelectedProposal] = useState(null);
   const [showEvaluationForm, setShowEvaluationForm] = useState(false);
-  const queryClient = useQueryClient();
-
-  const { data: proposals = [] } = useQuery({
-    queryKey: ['rd-proposals-review'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_proposals')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { proposals, checkConsensus } = useProposalReviewData();
 
   const pending = proposals.filter(p => p.status === 'submitted' || p.status === 'under_review');
   const reviewed = proposals.filter(p => ['approved', 'rejected'].includes(p.status));
@@ -41,18 +28,10 @@ function ProposalReviewPortal() {
 
   const handleEvaluationComplete = async () => {
     setShowEvaluationForm(false);
-
     if (selectedProposal) {
-      await supabase.functions.invoke('check-consensus', {
-        body: {
-          entity_type: 'rd_proposal',
-          entity_id: selectedProposal.id
-        }
-      });
+      checkConsensus.mutate(selectedProposal.id);
     }
-
     setSelectedProposal(null);
-    queryClient.invalidateQueries(['rd-proposals-review']);
   };
 
   return (

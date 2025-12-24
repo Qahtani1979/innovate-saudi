@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { useLanguage } from '../LanguageContext';
+import { useRDCallsWithVisibility } from '@/hooks/useRDCallsWithVisibility';
+import { useRDProjectMutations } from '@/hooks/useRDProjectMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,33 +44,18 @@ export default function RDProjectCreateWizard() {
     expected_outputs: [],
     research_themes: [],
     keywords: [],
+    budget_breakdown: [],
     status: 'proposal'
   });
 
-  const { data: rdCalls = [] } = useQuery({
-    queryKey: ['rd-calls-for-project'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_calls')
-        .select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: rdCalls = [] } = useRDCallsWithVisibility({ limit: 100 });
 
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: project, error } = await supabase
-        .from('rd_projects')
-        .insert(data)
-        .select()
-        .single();
-      if (error) throw error;
-      return project;
-    },
-    onSuccess: async (project) => {
-      queryClient.invalidateQueries(['rd-projects']);
-      
+  const { createRDProject } = useRDProjectMutations();
+
+  const handleCreate = async () => {
+    try {
+      const project = await /** @type {any} */(createRDProject.mutateAsync(formData));
+
       // Trigger rd.project_created email
       try {
         await triggerEmail('rd.project_created', {
@@ -86,11 +72,17 @@ export default function RDProjectCreateWizard() {
       } catch (error) {
         console.error('Failed to send rd.project_created email:', error);
       }
-      
-      toast.success(t({ en: 'R&D Project created!', ar: 'تم إنشاء المشروع البحثي!' }));
+
+      // Toast and navigation handled in hook/component
+      // Actually hook handles toast. Navigation needed here?
+      // Hook doesn't navigate.
       navigate(createPageUrl(`RDProjectDetail?id=${project.id}`));
+
+    } catch (error) {
+      // Error handled in hook toast
+      console.error(error);
     }
-  });
+  };
 
   const handleAIProposalGenerated = (proposalData) => {
     setFormData(prev => ({
@@ -139,7 +131,11 @@ export default function RDProjectCreateWizard() {
       </div>
 
       {currentStep === 1 && (
-        <AIProposalWriter onGenerated={handleAIProposalGenerated} />
+        <AIProposalWriter
+          onGenerated={handleAIProposalGenerated}
+          rdCallId={null}
+          rdCallContext={null}
+        />
       )}
 
       {currentStep === 2 && (
@@ -151,28 +147,28 @@ export default function RDProjectCreateWizard() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">{t({ en: 'Title (EN) *', ar: 'العنوان (EN) *' })}</label>
-                <Input value={formData.title_en} onChange={(e) => setFormData({...formData, title_en: e.target.value})} />
+                <Input value={formData.title_en} onChange={(e) => setFormData({ ...formData, title_en: e.target.value })} />
               </div>
               <div>
                 <label className="text-sm font-medium">{t({ en: 'Title (AR)', ar: 'العنوان (AR)' })}</label>
-                <Input value={formData.title_ar} onChange={(e) => setFormData({...formData, title_ar: e.target.value})} dir="rtl" />
+                <Input value={formData.title_ar} onChange={(e) => setFormData({ ...formData, title_ar: e.target.value })} dir="rtl" />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">{t({ en: 'Institution (EN) *', ar: 'المؤسسة (EN) *' })}</label>
-                <Input value={formData.institution_en} onChange={(e) => setFormData({...formData, institution_en: e.target.value})} />
+                <Input value={formData.institution_en} onChange={(e) => setFormData({ ...formData, institution_en: e.target.value })} />
               </div>
               <div>
                 <label className="text-sm font-medium">{t({ en: 'Institution (AR)', ar: 'المؤسسة (AR)' })}</label>
-                <Input value={formData.institution_ar} onChange={(e) => setFormData({...formData, institution_ar: e.target.value})} dir="rtl" />
+                <Input value={formData.institution_ar} onChange={(e) => setFormData({ ...formData, institution_ar: e.target.value })} dir="rtl" />
               </div>
             </div>
 
             <div>
               <label className="text-sm font-medium">{t({ en: 'Institution Type', ar: 'نوع المؤسسة' })}</label>
-              <Select value={formData.institution_type} onValueChange={(v) => setFormData({...formData, institution_type: v})}>
+              <Select value={formData.institution_type} onValueChange={(v) => setFormData({ ...formData, institution_type: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="university">{t({ en: 'University', ar: 'جامعة' })}</SelectItem>
@@ -186,11 +182,11 @@ export default function RDProjectCreateWizard() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">{t({ en: 'Research Area (EN) *', ar: 'المجال (EN) *' })}</label>
-                <Input value={formData.research_area_en} onChange={(e) => setFormData({...formData, research_area_en: e.target.value})} />
+                <Input value={formData.research_area_en} onChange={(e) => setFormData({ ...formData, research_area_en: e.target.value })} />
               </div>
               <div>
                 <label className="text-sm font-medium">{t({ en: 'Research Area (AR)', ar: 'المجال (AR)' })}</label>
-                <Input value={formData.research_area_ar} onChange={(e) => setFormData({...formData, research_area_ar: e.target.value})} dir="rtl" />
+                <Input value={formData.research_area_ar} onChange={(e) => setFormData({ ...formData, research_area_ar: e.target.value })} dir="rtl" />
               </div>
             </div>
           </CardContent>
@@ -206,37 +202,37 @@ export default function RDProjectCreateWizard() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">{t({ en: 'Abstract (EN)', ar: 'الملخص (EN)' })}</label>
-                <Textarea value={formData.abstract_en} onChange={(e) => setFormData({...formData, abstract_en: e.target.value})} rows={5} />
+                <Textarea value={formData.abstract_en} onChange={(e) => setFormData({ ...formData, abstract_en: e.target.value })} rows={5} />
               </div>
               <div>
                 <label className="text-sm font-medium">{t({ en: 'Abstract (AR)', ar: 'الملخص (AR)' })}</label>
-                <Textarea value={formData.abstract_ar} onChange={(e) => setFormData({...formData, abstract_ar: e.target.value})} rows={5} dir="rtl" />
+                <Textarea value={formData.abstract_ar} onChange={(e) => setFormData({ ...formData, abstract_ar: e.target.value })} rows={5} dir="rtl" />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">{t({ en: 'Methodology (EN)', ar: 'المنهجية (EN)' })}</label>
-                <Textarea value={formData.methodology_en} onChange={(e) => setFormData({...formData, methodology_en: e.target.value})} rows={4} />
+                <Textarea value={formData.methodology_en} onChange={(e) => setFormData({ ...formData, methodology_en: e.target.value })} rows={4} />
               </div>
               <div>
                 <label className="text-sm font-medium">{t({ en: 'Methodology (AR)', ar: 'المنهجية (AR)' })}</label>
-                <Textarea value={formData.methodology_ar} onChange={(e) => setFormData({...formData, methodology_ar: e.target.value})} rows={4} dir="rtl" />
+                <Textarea value={formData.methodology_ar} onChange={(e) => setFormData({ ...formData, methodology_ar: e.target.value })} rows={4} dir="rtl" />
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <label className="text-sm font-medium">{t({ en: 'TRL Start', ar: 'مستوى البداية' })}</label>
-                <Input type="number" min="1" max="9" value={formData.trl_start} onChange={(e) => setFormData({...formData, trl_start: parseInt(e.target.value)})} />
+                <Input type="number" min="1" max="9" value={formData.trl_start?.toString() || ''} onChange={(e) => setFormData({ ...formData, trl_start: parseInt(e.target.value) })} />
               </div>
               <div>
                 <label className="text-sm font-medium">{t({ en: 'TRL Target', ar: 'مستوى الهدف' })}</label>
-                <Input type="number" min="1" max="9" value={formData.trl_target} onChange={(e) => setFormData({...formData, trl_target: parseInt(e.target.value)})} />
+                <Input type="number" min="1" max="9" value={formData.trl_target?.toString() || ''} onChange={(e) => setFormData({ ...formData, trl_target: parseInt(e.target.value) })} />
               </div>
               <div>
                 <label className="text-sm font-medium">{t({ en: 'Duration (months)', ar: 'المدة (أشهر)' })}</label>
-                <Input type="number" value={formData.duration_months} onChange={(e) => setFormData({...formData, duration_months: parseInt(e.target.value)})} />
+                <Input type="number" value={formData.duration_months?.toString() || ''} onChange={(e) => setFormData({ ...formData, duration_months: parseInt(e.target.value) })} />
               </div>
             </div>
           </CardContent>
@@ -253,8 +249,8 @@ export default function RDProjectCreateWizard() {
               <label className="text-sm font-medium mb-2 block">{t({ en: 'Budget (SAR)', ar: 'الميزانية (ريال)' })}</label>
               <Input
                 type="number"
-                value={formData.budget}
-                onChange={(e) => setFormData({...formData, budget: parseFloat(e.target.value)})}
+                value={formData.budget?.toString() || ''}
+                onChange={(e) => setFormData({ ...formData, budget: parseFloat(e.target.value) })}
                 placeholder="500000"
               />
             </div>
@@ -301,11 +297,11 @@ export default function RDProjectCreateWizard() {
           </Button>
         ) : (
           <Button
-            onClick={() => createMutation.mutate(formData)}
-            disabled={createMutation.isPending || !formData.title_en || !formData.institution_en || !formData.research_area_en}
+            onClick={handleCreate}
+            disabled={createRDProject.isPending || !formData.title_en || !formData.institution_en || !formData.research_area_en}
             className="bg-gradient-to-r from-green-600 to-blue-600"
           >
-            {createMutation.isPending ? (
+            {createRDProject.isPending ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t({ en: 'Creating...', ar: 'جاري الإنشاء...' })}</>
             ) : (
               <><CheckCircle2 className="h-4 w-4 mr-2" />{t({ en: 'Create Project', ar: 'إنشاء المشروع' })}</>

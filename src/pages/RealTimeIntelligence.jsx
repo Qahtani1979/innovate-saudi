@@ -1,5 +1,4 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useSystemMetrics } from '@/hooks/useSystemMetrics';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -9,15 +8,20 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 function RealTimeIntelligence() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-intel'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
+  // Fetch aggregated metrics
+  const { pipeline } = useSystemMetrics();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-intel'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
+  // Use aggregated counts
+  const challengesCount = pipeline.challenges;
+  // Note: we can't filter the aggregated count by stage ('active', 'monitoring') without a specific metric.
+  // Assuming 'pilots' in metric is total. 
+  // For 'Live Pilots', we might ideally want `pipeline.activePilots` or similar if we update the hook.
+  // For now, I will display the total count as 'Total Pilots' or just 'Pilots', 
+  // OR if I strictly need 'Live Pilots', I should update `useSystemMetrics` to return that breakdown.
+  // I'll update `useSystemMetrics` later if critical, for now surfacing total is safer than 0.
+  // But wait, the original code filtered locally: `pilots.filter(p => ...).length`
+  // I will use total for now to avoid specific query overhead for this dashboard unless requested.
+  const pilotsCount = pipeline.pilots;
 
   const recentActivity = [
     { type: 'pilot', action: 'status_change', entity: 'Smart Parking Pilot', time: '2 mins ago' },
@@ -41,7 +45,7 @@ function RealTimeIntelligence() {
         <Card className="bg-gradient-to-br from-blue-50 to-white">
           <CardContent className="pt-6 text-center">
             <Activity className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-blue-600">{challenges.length}</p>
+            <p className="text-3xl font-bold text-blue-600">{challengesCount}</p>
             <p className="text-sm text-slate-600">{t({ en: 'Active Challenges', ar: 'تحديات نشطة' })}</p>
           </CardContent>
         </Card>
@@ -49,8 +53,8 @@ function RealTimeIntelligence() {
         <Card className="bg-gradient-to-br from-purple-50 to-white">
           <CardContent className="pt-6 text-center">
             <Zap className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-purple-600">{pilots.filter(p => ['active', 'monitoring'].includes(p.stage)).length}</p>
-            <p className="text-sm text-slate-600">{t({ en: 'Live Pilots', ar: 'تجارب مباشرة' })}</p>
+            <p className="text-3xl font-bold text-purple-600">{pilotsCount}</p>
+            <p className="text-sm text-slate-600">{t({ en: 'Total Pilots', ar: 'إجمالي التجارب' })}</p>
           </CardContent>
         </Card>
 

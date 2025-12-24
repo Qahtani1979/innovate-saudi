@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,9 +8,11 @@ import { useLanguage } from './LanguageContext';
 import { Target, CheckCircle2, X, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { Progress } from "@/components/ui/progress";
+import { useProgramMutations } from '@/hooks/useProgramMutations';
+
 export default function ProgramMidReviewGate({ program, onClose }) {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
 
   const reviewChecks = [
     { id: 'attendance_good', label: { en: 'Participant attendance satisfactory', ar: 'حضور المشاركين مرضٍ' } },
@@ -29,22 +29,21 @@ export default function ProgramMidReviewGate({ program, onClose }) {
   const [reviewNotes, setReviewNotes] = useState('');
   const [adjustments, setAdjustments] = useState('');
 
-  const reviewMutation = useMutation({
-    mutationFn: async () => {
-      await base44.entities.Program.update(program.id, {
-        mid_review_completed: true,
-        mid_review_date: new Date().toISOString().split('T')[0],
-        mid_review_checklist: checklist,
-        mid_review_notes: reviewNotes,
-        mid_review_adjustments: adjustments
+  const { completeMidReview, isReviewing } = useProgramMutations();
+
+  const handleCompleteReview = async () => {
+    try {
+      await completeMidReview({
+        programId: program.id,
+        checklist,
+        notes: reviewNotes,
+        adjustments
       });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['program']);
-      toast.success(t({ en: 'Mid-program review completed', ar: 'المراجعة النصفية مكتملة' }));
       onClose();
+    } catch (error) {
+      // toast is handled by hook
     }
-  });
+  };
 
   const passedChecks = Object.values(checklist).filter(Boolean).length;
   const progress = (passedChecks / reviewChecks.length) * 100;
@@ -124,11 +123,11 @@ export default function ProgramMidReviewGate({ program, onClose }) {
 
         <div className="flex gap-3 pt-4 border-t">
           <Button
-            onClick={() => reviewMutation.mutate()}
-            disabled={reviewMutation.isPending}
+            onClick={handleCompleteReview}
+            disabled={isReviewing}
             className="flex-1 bg-green-600 hover:bg-green-700"
           >
-            {reviewMutation.isPending ? (
+            {isReviewing ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <CheckCircle2 className="h-4 w-4 mr-2" />

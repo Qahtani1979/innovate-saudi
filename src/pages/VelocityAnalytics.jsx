@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useAnalyticsData } from '@/hooks/useAnalyticsData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../components/LanguageContext';
 import { Zap, TrendingUp, Clock } from 'lucide-react';
@@ -8,22 +7,11 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function VelocityAnalyticsPage() {
   const { language, isRTL, t } = useLanguage();
+  const { useInnovationPipelineData } = useAnalyticsData();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-velocity'],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('id, created_at, status').eq('is_deleted', false);
-      return data || [];
-    }
-  });
+  const { data: pipelineData = { challenges: [], pilots: [] } } = useInnovationPipelineData();
+  const { challenges, pilots } = pipelineData;
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-velocity'],
-    queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('id, created_at, stage').eq('is_deleted', false);
-      return data || [];
-    }
-  });
 
   const avgChallengeTime = 14;
   const avgPilotTime = 8;

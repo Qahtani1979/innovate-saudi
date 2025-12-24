@@ -1,7 +1,5 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { useSystemAnalytics } from '@/hooks/useSystemAnalytics';
+import { useExpertAnalytics } from '@/hooks/useExpertAnalytics';
 import { useLanguage } from '../components/LanguageContext';
 import { Activity, CheckCircle, TrendingUp, Database, Zap, Users } from 'lucide-react';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
@@ -55,63 +53,14 @@ import { VoiceAssistant } from '@/components/voice/VoiceAssistant';
 export default function SystemHealthDashboard() {
   const { language, t } = useLanguage();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-health'],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('id').eq('is_deleted', false);
-      return data || [];
-    }
-  });
+  // Custom Hooks
+  const { useEntityCounts, useRecentSystemActivities } = useSystemAnalytics();
+  const { expertStats } = useExpertAnalytics();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-health'],
-    queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('id').eq('is_deleted', false);
-      return data || [];
-    }
-  });
+  const { data: entityCounts = { challenges: 0, pilots: 0 } } = useEntityCounts();
+  const { data: activities = [] } = useRecentSystemActivities(100);
 
-  const { data: activities = [] } = useQuery({
-    queryKey: ['activities-health'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('system_activities')
-        .select('id, activity_type, description, created_at')
-        .order('created_at', { ascending: false })
-        .limit(100);
-      return data || [];
-    }
-  });
-
-  const { data: expertProfiles = [] } = useQuery({
-    queryKey: ['experts-health'],
-    queryFn: async () => {
-      const { data } = await supabase.from('expert_profiles').select('id, is_active');
-      return data || [];
-    }
-  });
-
-  const { data: expertAssignments = [] } = useQuery({
-    queryKey: ['assignments-health'],
-    queryFn: async () => {
-      const { data } = await supabase.from('expert_assignments').select('id, status, due_date');
-      return data || [];
-    }
-  });
-
-  const { data: expertEvaluations = [] } = useQuery({
-    queryKey: ['evaluations-health'],
-    queryFn: async () => {
-      const { data } = await supabase.from('expert_evaluations').select('id');
-      return data || [];
-    }
-  });
-
-  const activeExperts = expertProfiles.filter(e => e.is_active).length;
-  const pendingAssignments = expertAssignments.filter(a => a.status === 'pending').length;
-  const overdueAssignments = expertAssignments.filter(a => 
-    a.due_date && new Date(a.due_date) < new Date() && a.status !== 'completed'
-  ).length;
+  const { activeExperts, pendingAssignments, overdueAssignments, totalReviews } = expertStats;
   const expertSystemHealth = overdueAssignments > 0 ? 'warning' : pendingAssignments > 10 ? 'warning' : 'success';
 
   const healthMetrics = [
@@ -123,7 +72,7 @@ export default function SystemHealthDashboard() {
     },
     {
       label: { en: 'Database', ar: 'قاعدة البيانات' },
-      value: `${challenges.length + pilots.length} records`,
+      value: `${entityCounts.challenges + entityCounts.pilots} records`,
       status: 'success',
       icon: Database
     },
@@ -140,6 +89,7 @@ export default function SystemHealthDashboard() {
       icon: Zap
     }
   ];
+
 
   return (
     <PageLayout>
@@ -198,10 +148,11 @@ export default function SystemHealthDashboard() {
             </div>
             <div className="text-center p-3 bg-white rounded-lg">
               <p className="text-2xl font-bold text-green-600">
-                {expertEvaluations.length}
+                {totalReviews}
               </p>
               <p className="text-xs text-slate-600">{t({ en: 'Total Reviews', ar: 'إجمالي المراجعات' })}</p>
             </div>
+
           </div>
           <Badge className={`mt-3 w-full justify-center ${expertSystemHealth === 'success' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
             {expertSystemHealth === 'success' ? '✅ Healthy' : '⚠️ Needs Attention'}
@@ -240,8 +191,8 @@ export default function SystemHealthDashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-          <RedisDeploymentPanel />
-          <APMIntegrationPanel />
+        <RedisDeploymentPanel />
+        <APMIntegrationPanel />
       </div>
 
       <div className="mt-6">

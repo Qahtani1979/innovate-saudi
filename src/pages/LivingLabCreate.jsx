@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +16,10 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import StrategicPlanSelector from '@/components/strategy/StrategicPlanSelector';
+import { useLivingLabMutations } from '../hooks/useLivingLabs';
+import { useCities } from '../hooks/useLocations';
+import { useOrganizationsWithVisibility } from '../hooks/useOrganizationsWithVisibility';
+import { useQueryClient } from '@tanstack/react-query';
 
 function LivingLabCreate() {
   const navigate = useNavigate();
@@ -68,15 +70,10 @@ function LivingLabCreate() {
     research_priorities: []
   });
 
-  const { data: cities = [] } = useQuery({
-    queryKey: ['cities'],
-    queryFn: () => base44.entities.City.list()
-  });
+  const { data: cities = [] } = useCities();
 
-  const { data: organizations = [] } = useQuery({
-    queryKey: ['organizations'],
-    queryFn: () => base44.entities.Organization.list()
-  });
+  // Use visibility hook for organizations - admins see all, others see relevant ones
+  const { data: organizations = [] } = useOrganizationsWithVisibility();
 
   const handleAIEnhancement = async () => {
     if (!formData.name_en) {
@@ -84,11 +81,12 @@ function LivingLabCreate() {
       return;
     }
 
-    const { 
-      LIVING_LAB_ENHANCE_PROMPT_TEMPLATE, 
-      LIVING_LAB_ENHANCE_RESPONSE_SCHEMA 
+    const {
+      LIVING_LAB_ENHANCE_PROMPT_TEMPLATE,
+      LIVING_LAB_ENHANCE_RESPONSE_SCHEMA
     } = await import('@/lib/ai/prompts/livinglabs/creation');
-    
+
+    // @ts-ignore
     const result = await invokeAI({
       prompt: LIVING_LAB_ENHANCE_PROMPT_TEMPLATE(formData),
       response_json_schema: LIVING_LAB_ENHANCE_RESPONSE_SCHEMA
@@ -110,17 +108,18 @@ function LivingLabCreate() {
     }
   };
 
-  const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.LivingLab.create(data),
-    onSuccess: (lab) => {
-      queryClient.invalidateQueries(['living-labs']);
-      toast.success(t({ en: 'Living Lab created successfully', ar: 'تم إنشاء المختبر الحي بنجاح' }));
-      navigate(createPageUrl(`LivingLabDetail?id=${lab.id}`));
-    }
-  });
+  const { createLab } = useLivingLabMutations();
+
+  const handleCreate = () => {
+    createLab.mutate(formData, {
+      onSuccess: (lab) => {
+        navigate(createPageUrl(`LivingLabDetail?id=${lab.id}`));
+      }
+    });
+  };
 
   const focusAreaOptions = [
-    'smart_mobility', 'digital_services', 'environment', 'energy', 
+    'smart_mobility', 'digital_services', 'environment', 'energy',
     'health', 'education', 'urban_design', 'iot', 'ai_ml', 'robotics', 'cleantech'
   ];
 
@@ -151,8 +150,7 @@ function LivingLabCreate() {
       <PageHeader
         icon={Beaker}
         title={{ en: 'Create Living Lab', ar: 'إنشاء مختبر حي' }}
-        description={{ en: 'Register a new innovation lab for R&D and experimentation', ar: 'تسجيل مختبر ابتكار جديد للبحث والتجريب' }}
-      />
+        description={{ en: 'Register a new innovation lab for R&D and experimentation', ar: 'تسجيل مختبر ابتكار جديد للبحث والتجريب' }} subtitle={undefined} action={undefined} actions={undefined} children={undefined} />
 
       {/* Progress */}
       <Card>
@@ -165,11 +163,10 @@ function LivingLabCreate() {
               return (
                 <div key={s.id} className="flex items-center">
                   <div className={`flex flex-col items-center ${idx > 0 ? 'ml-4' : ''}`}>
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      isComplete ? 'bg-green-600 text-white' :
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isComplete ? 'bg-green-600 text-white' :
                       isActive ? 'bg-blue-600 text-white' :
-                      'bg-slate-200 text-slate-500'
-                    }`}>
+                        'bg-slate-200 text-slate-500'
+                      }`}>
                       <Icon className="h-5 w-5" />
                     </div>
                     <span className={`text-xs mt-2 ${isActive ? 'font-semibold' : ''}`}>
@@ -199,7 +196,7 @@ function LivingLabCreate() {
                 <Label>{t({ en: 'Lab Code', ar: 'رمز المختبر' })}</Label>
                 <Input
                   value={formData.code}
-                  onChange={(e) => setFormData({...formData, code: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                   placeholder="LL-RUH-001"
                 />
               </div>
@@ -209,7 +206,7 @@ function LivingLabCreate() {
                   <Label>{t({ en: 'Name (English) *', ar: 'الاسم (إنجليزي) *' })}</Label>
                   <Input
                     value={formData.name_en}
-                    onChange={(e) => setFormData({...formData, name_en: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
                     placeholder="Riyadh Smart Mobility Lab"
                   />
                 </div>
@@ -217,7 +214,7 @@ function LivingLabCreate() {
                   <Label>{t({ en: 'Name (Arabic)', ar: 'الاسم (عربي)' })}</Label>
                   <Input
                     value={formData.name_ar}
-                    onChange={(e) => setFormData({...formData, name_ar: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
                     dir="rtl"
                     placeholder="مختبر التنقل الذكي بالرياض"
                   />
@@ -229,7 +226,7 @@ function LivingLabCreate() {
                   <Label>{t({ en: 'Tagline (English)', ar: 'الشعار (إنجليزي)' })}</Label>
                   <Input
                     value={formData.tagline_en}
-                    onChange={(e) => setFormData({...formData, tagline_en: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, tagline_en: e.target.value })}
                     placeholder="Where innovation meets reality"
                   />
                 </div>
@@ -237,7 +234,7 @@ function LivingLabCreate() {
                   <Label>{t({ en: 'Tagline (Arabic)', ar: 'الشعار (عربي)' })}</Label>
                   <Input
                     value={formData.tagline_ar}
-                    onChange={(e) => setFormData({...formData, tagline_ar: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, tagline_ar: e.target.value })}
                     dir="rtl"
                   />
                 </div>
@@ -245,7 +242,7 @@ function LivingLabCreate() {
 
               <div>
                 <Label>{t({ en: 'Lab Type *', ar: 'نوع المختبر *' })}</Label>
-                <Select value={formData.type} onValueChange={(val) => setFormData({...formData, type: val})}>
+                <Select value={formData.type} onValueChange={(val) => setFormData({ ...formData, type: val })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -276,7 +273,7 @@ function LivingLabCreate() {
                 <Label>{t({ en: 'Description (English)', ar: 'الوصف (إنجليزي)' })}</Label>
                 <Textarea
                   value={formData.description_en}
-                  onChange={(e) => setFormData({...formData, description_en: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
                   rows={4}
                   placeholder="A state-of-the-art facility for testing smart mobility solutions..."
                 />
@@ -286,19 +283,19 @@ function LivingLabCreate() {
                 <Label>{t({ en: 'Description (Arabic)', ar: 'الوصف (عربي)' })}</Label>
                 <Textarea
                   value={formData.description_ar}
-                  onChange={(e) => setFormData({...formData, description_ar: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
                   rows={4}
                   dir="rtl"
                 />
               </div>
-              
+
               {/* Strategic Alignment Section */}
               <div className="border-t pt-4 mt-4">
                 <StrategicPlanSelector
                   selectedPlanIds={formData.strategic_plan_ids}
                   selectedObjectiveIds={formData.strategic_objective_ids}
-                  onPlanChange={(ids) => setFormData({...formData, strategic_plan_ids: ids, is_strategy_derived: ids.length > 0})}
-                  onObjectiveChange={(ids) => setFormData({...formData, strategic_objective_ids: ids})}
+                  onPlanChange={(ids) => setFormData({ ...formData, strategic_plan_ids: ids, is_strategy_derived: ids.length > 0 })}
+                  onObjectiveChange={(ids) => setFormData({ ...formData, strategic_objective_ids: ids })}
                   showObjectives={true}
                 />
               </div>
@@ -310,7 +307,7 @@ function LivingLabCreate() {
             <>
               <div>
                 <Label>{t({ en: 'City *', ar: 'المدينة *' })}</Label>
-                <Select value={formData.city_id} onValueChange={(val) => setFormData({...formData, city_id: val})}>
+                <Select value={formData.city_id} onValueChange={(val) => setFormData({ ...formData, city_id: val })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select city" />
                   </SelectTrigger>
@@ -326,7 +323,7 @@ function LivingLabCreate() {
 
               <div>
                 <Label>{t({ en: 'Operating Organization', ar: 'المنظمة المشغلة' })}</Label>
-                <Select value={formData.organization_id} onValueChange={(val) => setFormData({...formData, organization_id: val})}>
+                <Select value={formData.organization_id} onValueChange={(val) => setFormData({ ...formData, organization_id: val })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select organization" />
                   </SelectTrigger>
@@ -342,7 +339,7 @@ function LivingLabCreate() {
                 <Label>{t({ en: 'Address', ar: 'العنوان' })}</Label>
                 <Input
                   value={formData.address}
-                  onChange={(e) => setFormData({...formData, address: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   placeholder="King Abdullah Road, Innovation District"
                 />
               </div>
@@ -353,7 +350,7 @@ function LivingLabCreate() {
                   <Input
                     type="number"
                     value={formData.area_sqm}
-                    onChange={(e) => setFormData({...formData, area_sqm: parseFloat(e.target.value)})}
+                    onChange={(e) => setFormData({ ...formData, area_sqm: parseFloat(e.target.value) })}
                     placeholder="5000"
                   />
                 </div>
@@ -362,7 +359,7 @@ function LivingLabCreate() {
                   <Input
                     type="number"
                     value={formData.capacity}
-                    onChange={(e) => setFormData({...formData, capacity: parseInt(e.target.value)})}
+                    onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) })}
                     placeholder="10"
                   />
                 </div>
@@ -371,7 +368,7 @@ function LivingLabCreate() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>{t({ en: 'Status', ar: 'الحالة' })}</Label>
-                  <Select value={formData.status} onValueChange={(val) => setFormData({...formData, status: val})}>
+                  <Select value={formData.status} onValueChange={(val) => setFormData({ ...formData, status: val })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -389,7 +386,7 @@ function LivingLabCreate() {
                   <Input
                     type="date"
                     value={formData.launch_date}
-                    onChange={(e) => setFormData({...formData, launch_date: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, launch_date: e.target.value })}
                   />
                 </div>
               </div>
@@ -398,14 +395,14 @@ function LivingLabCreate() {
                 <Label>{t({ en: 'Operational Hours', ar: 'ساعات التشغيل' })}</Label>
                 <Input
                   value={formData.operational_hours}
-                  onChange={(e) => setFormData({...formData, operational_hours: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, operational_hours: e.target.value })}
                   placeholder="09:00-18:00"
                 />
               </div>
 
               <div>
                 <Label>{t({ en: 'Access Policy', ar: 'سياسة الدخول' })}</Label>
-                <Select value={formData.access_policy} onValueChange={(val) => setFormData({...formData, access_policy: val})}>
+                <Select value={formData.access_policy} onValueChange={(val) => setFormData({ ...formData, access_policy: val })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -422,7 +419,7 @@ function LivingLabCreate() {
                 <Label>{t({ en: 'Objectives (English)', ar: 'الأهداف (إنجليزي)' })}</Label>
                 <Textarea
                   value={formData.objectives_en}
-                  onChange={(e) => setFormData({...formData, objectives_en: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, objectives_en: e.target.value })}
                   rows={3}
                 />
               </div>
@@ -440,7 +437,7 @@ function LivingLabCreate() {
                       checked={formData.connectivity['5g_available']}
                       onCheckedChange={(checked) => setFormData({
                         ...formData,
-                        connectivity: {...formData.connectivity, '5g_available': checked}
+                        connectivity: { ...formData.connectivity, '5g_available': checked }
                       })}
                     />
                     <span className="text-sm">5G Network Available</span>
@@ -450,7 +447,7 @@ function LivingLabCreate() {
                       checked={formData.connectivity.hpc_access}
                       onCheckedChange={(checked) => setFormData({
                         ...formData,
-                        connectivity: {...formData.connectivity, hpc_access: checked}
+                        connectivity: { ...formData.connectivity, hpc_access: checked }
                       })}
                     />
                     <span className="text-sm">High-Performance Computing Access</span>
@@ -466,7 +463,7 @@ function LivingLabCreate() {
                     value={formData.connectivity.wifi_speed_mbps}
                     onChange={(e) => setFormData({
                       ...formData,
-                      connectivity: {...formData.connectivity, wifi_speed_mbps: parseInt(e.target.value)}
+                      connectivity: { ...formData.connectivity, wifi_speed_mbps: parseInt(e.target.value) }
                     })}
                     placeholder="1000"
                   />
@@ -477,7 +474,7 @@ function LivingLabCreate() {
                     value={formData.connectivity.iot_platform}
                     onChange={(e) => setFormData({
                       ...formData,
-                      connectivity: {...formData.connectivity, iot_platform: e.target.value}
+                      connectivity: { ...formData.connectivity, iot_platform: e.target.value }
                     })}
                     placeholder="AWS IoT Core, Azure IoT Hub, etc."
                   />
@@ -494,7 +491,7 @@ function LivingLabCreate() {
                   <Label>{t({ en: 'Director Name', ar: 'اسم المدير' })}</Label>
                   <Input
                     value={formData.director_name}
-                    onChange={(e) => setFormData({...formData, director_name: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, director_name: e.target.value })}
                   />
                 </div>
                 <div>
@@ -502,14 +499,14 @@ function LivingLabCreate() {
                   <Input
                     type="email"
                     value={formData.director_email}
-                    onChange={(e) => setFormData({...formData, director_email: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, director_email: e.target.value })}
                   />
                 </div>
                 <div>
                   <Label>{t({ en: 'Director Phone', ar: 'هاتف المدير' })}</Label>
                   <Input
                     value={formData.director_phone}
-                    onChange={(e) => setFormData({...formData, director_phone: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, director_phone: e.target.value })}
                   />
                 </div>
               </div>
@@ -520,14 +517,14 @@ function LivingLabCreate() {
                   <Input
                     type="email"
                     value={formData.contact_email}
-                    onChange={(e) => setFormData({...formData, contact_email: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
                   />
                 </div>
                 <div>
                   <Label>{t({ en: 'Contact Phone', ar: 'رقم الهاتف' })}</Label>
                   <Input
                     value={formData.contact_phone}
-                    onChange={(e) => setFormData({...formData, contact_phone: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
                   />
                 </div>
               </div>
@@ -536,14 +533,14 @@ function LivingLabCreate() {
                 <Label>{t({ en: 'Website URL', ar: 'رابط الموقع' })}</Label>
                 <Input
                   value={formData.website_url}
-                  onChange={(e) => setFormData({...formData, website_url: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, website_url: e.target.value })}
                   placeholder="https://lab.example.com"
                 />
               </div>
 
               <div className="border-t pt-6 space-y-4">
                 <h3 className="font-semibold text-slate-900">{t({ en: 'Lab Media', ar: 'وسائط المختبر' })}</h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>{t({ en: 'Lab Image', ar: 'صورة المختبر' })}</Label>
@@ -551,7 +548,7 @@ function LivingLabCreate() {
                       type="image"
                       label={t({ en: 'Upload Image', ar: 'رفع صورة' })}
                       maxSize={10}
-                      onUploadComplete={(url) => setFormData({...formData, image_url: url})}
+                      onUploadComplete={(url) => setFormData({ ...formData, image_url: url })}
                     />
                   </div>
 
@@ -562,7 +559,7 @@ function LivingLabCreate() {
                       label={t({ en: 'Upload Video', ar: 'رفع فيديو' })}
                       maxSize={200}
                       preview={false}
-                      onUploadComplete={(url) => setFormData({...formData, video_url: url})}
+                      onUploadComplete={(url) => setFormData({ ...formData, video_url: url })}
                     />
                   </div>
                 </div>
@@ -574,7 +571,7 @@ function LivingLabCreate() {
                     label={t({ en: 'Upload PDF', ar: 'رفع PDF' })}
                     maxSize={50}
                     preview={false}
-                    onUploadComplete={(url) => setFormData({...formData, brochure_url: url})}
+                    onUploadComplete={(url) => setFormData({ ...formData, brochure_url: url })}
                   />
                 </div>
               </div>
@@ -583,14 +580,14 @@ function LivingLabCreate() {
                 <div className="flex items-center gap-2">
                   <Checkbox
                     checked={formData.is_published}
-                    onCheckedChange={(checked) => setFormData({...formData, is_published: checked})}
+                    onCheckedChange={(checked) => setFormData({ ...formData, is_published: checked })}
                   />
                   <span className="text-sm">{t({ en: 'Publish immediately', ar: 'النشر فورًا' })}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Checkbox
                     checked={formData.is_featured}
-                    onCheckedChange={(checked) => setFormData({...formData, is_featured: checked})}
+                    onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked })}
                   />
                   <span className="text-sm">{t({ en: 'Feature on homepage', ar: 'عرض في الصفحة الرئيسية' })}</span>
                 </div>
@@ -609,8 +606,8 @@ function LivingLabCreate() {
                 {t({ en: step === 1 ? 'Cancel' : 'Back', ar: step === 1 ? 'إلغاء' : 'السابق' })}
               </Button>
               {step === 1 && (
-                <Button 
-                  type="button" 
+                <Button
+                  type="button"
                   onClick={handleAIEnhancement}
                   disabled={aiLoading || !formData.name_en}
                   variant="outline"
@@ -641,8 +638,8 @@ function LivingLabCreate() {
               </Button>
             ) : (
               <Button
-                onClick={() => createMutation.mutate(formData)}
-                disabled={createMutation.isPending || !canProceed()}
+                onClick={handleCreate}
+                disabled={createLab.isPending || !canProceed()}
                 className="bg-gradient-to-r from-green-600 to-teal-600"
               >
                 <Save className="h-4 w-4 mr-2" />

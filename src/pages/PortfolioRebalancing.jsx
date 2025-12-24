@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useSectors } from '@/hooks/useSectors';
+import { useRDProjects } from '@/hooks/useRDProjects';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,25 +23,10 @@ function PortfolioRebalancing() {
   const [rebalanceScenario, setRebalanceScenario] = useState(null);
   const { invokeAI, status, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects'],
-    queryFn: () => base44.entities.RDProject.list()
-  });
-
-  const { data: sectors = [] } = useQuery({
-    queryKey: ['sectors'],
-    queryFn: () => base44.entities.Sector.list()
-  });
+  const { data: challenges = [] } = useChallengesWithVisibility();
+  const { data: pilots = [] } = usePilotsWithVisibility();
+  const { data: rdProjects = [] } = useRDProjects();
+  const { data: sectors = [] } = useSectors();
 
   const runRebalanceAnalysis = async () => {
     const currentPortfolio = sectors.map(s => ({
@@ -51,6 +38,7 @@ function PortfolioRebalancing() {
     }));
 
     const result = await invokeAI({
+      system_prompt: 'You are an expert strategic innovation consultant specializing in portfolio optimization.',
       prompt: PORTFOLIO_REBALANCING_PROMPT_TEMPLATE({
         currentPortfolio,
         totalChallenges: challenges.length,

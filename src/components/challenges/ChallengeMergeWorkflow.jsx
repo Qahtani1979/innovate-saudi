@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,61 +8,27 @@ import { useLanguage } from '../LanguageContext';
 import { GitMerge, Loader2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useMergeChallenges } from '@/hooks/useChallengeMutations';
+
 export default function ChallengeMergeWorkflow({ primaryChallenge, duplicateChallenges, onSuccess, onCancel }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  // queryClient removed
   const [selectedDuplicates, setSelectedDuplicates] = useState([]);
   const [mergeNotes, setMergeNotes] = useState('');
 
-  const mergeMutation = useMutation({
-    mutationFn: async () => {
-      // Merge logic: 
-      // 1. Update primary with combined data
-      // 2. Archive duplicates with reference to primary
-      
-      const combinedKeywords = new Set([
-        ...(primaryChallenge.keywords || []),
-        ...selectedDuplicates.flatMap(d => d.keywords || [])
-      ]);
+  const mergeMutation = useMergeChallenges();
 
-      const combinedStakeholders = [
-        ...(primaryChallenge.stakeholders || []),
-        ...selectedDuplicates.flatMap(d => d.stakeholders || [])
-      ];
-
-      await supabase.from('challenges').update({
-        keywords: Array.from(combinedKeywords),
-        stakeholders: combinedStakeholders,
-        citizen_votes_count: (primaryChallenge.citizen_votes_count || 0) + 
-          selectedDuplicates.reduce((sum, d) => sum + (d.citizen_votes_count || 0), 0)
-      }).eq('id', primaryChallenge.id);
-
-      // Archive duplicates
-      for (const dup of selectedDuplicates) {
-        await supabase.from('challenges').update({
-          status: 'archived',
-          is_archived: true,
-          archive_date: new Date().toISOString()
-        }).eq('id', dup.id);
-
-        // Create activity log
-        await supabase.from('challenge_activities').insert({
-          challenge_id: dup.id,
-          activity_type: 'merged',
-          description: `Merged into ${primaryChallenge.code}`,
-          metadata: { merge_notes: mergeNotes }
-        });
+  const handleMerge = () => {
+    mergeMutation.mutate({
+      primaryChallenge,
+      duplicateChallenges: selectedDuplicates,
+      mergeNotes
+    }, {
+      onSuccess: () => {
+        if (onSuccess) onSuccess();
       }
-
-      return true;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['challenges']);
-      queryClient.invalidateQueries(['challenge']);
-      toast.success(t({ en: 'Challenges merged successfully', ar: 'تم دمج التحديات بنجاح' }));
-      if (onSuccess) onSuccess();
-    }
-  });
+    });
+  };
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -140,7 +104,7 @@ export default function ChallengeMergeWorkflow({ primaryChallenge, duplicateChal
           {t({ en: 'Cancel', ar: 'إلغاء' })}
         </Button>
         <Button
-          onClick={() => mergeMutation.mutate()}
+          onClick={() => handleMerge()}
           disabled={mergeMutation.isPending || selectedDuplicates.length === 0}
           className="bg-gradient-to-r from-amber-600 to-orange-600"
         >

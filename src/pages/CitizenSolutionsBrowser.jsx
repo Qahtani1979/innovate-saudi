@@ -1,21 +1,19 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { Link } from 'react-router-dom';
+import { useCitizenServices } from '@/hooks/useCitizenServices';
 import { useLanguage } from '@/components/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Lightbulb, CheckCircle2, Star, Building2, Bookmark, ArrowRight, Loader2 } from 'lucide-react';
+import { Lightbulb, CheckCircle2, Star, Building2, Bookmark, ArrowRight, Loader2, Link } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { 
-  CitizenPageLayout, 
-  CitizenPageHeader, 
-  CitizenSearchFilter, 
-  CitizenCardGrid, 
-  CitizenEmptyState 
+import {
+  CitizenPageLayout,
+  CitizenPageHeader,
+  CitizenSearchFilter,
+  CitizenCardGrid,
+  CitizenEmptyState
 } from '@/components/citizen/CitizenPageLayout';
 
 function CitizenSolutionsBrowser() {
@@ -27,34 +25,13 @@ function CitizenSolutionsBrowser() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [viewMode, setViewMode] = useState('grid');
 
-  const { data: solutions = [], isLoading } = useQuery({
-    queryKey: ['citizen-solutions-browser'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('solutions')
-        .select('*, providers(name_en, name_ar)')
-        .eq('is_deleted', false)
-        .eq('is_published', true)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: userBookmarks = [], refetch: refetchBookmarks } = useQuery({
-    queryKey: ['citizen-solution-bookmarks', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data, error } = await supabase
-        .from('bookmarks')
-        .select('entity_id')
-        .eq('user_email', user.email)
-        .eq('entity_type', 'solution');
-      if (error) throw error;
-      return data?.map(b => b.entity_id) || [];
-    },
-    enabled: !!user?.email
-  });
+  /* Refactored to use useCitizenServices hook */
+  const {
+    solutions,
+    userBookmarks,
+    toggleBookmarkMutation,
+    isLoading
+  } = useCitizenServices(t);
 
   const maturities = [
     { value: 'concept', label: t({ en: 'Concept', ar: 'فكرة' }) },
@@ -69,7 +46,7 @@ function CitizenSolutionsBrowser() {
   const filteredSolutions = solutions.filter(s => {
     const maturityMatch = selectedMaturity === 'all' || s.maturity_level === selectedMaturity;
     const categoryMatch = selectedCategory === 'all' || s.category === selectedCategory;
-    const searchMatch = !searchTerm || 
+    const searchMatch = !searchTerm ||
       s.name_en?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.name_ar?.includes(searchTerm) ||
       s.description_en?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -81,26 +58,21 @@ function CitizenSolutionsBrowser() {
       toast({ title: t({ en: 'Please login to bookmark', ar: 'يرجى تسجيل الدخول للحفظ' }), variant: 'destructive' });
       return;
     }
-    try {
-      const isBookmarked = userBookmarks.includes(solutionId);
-      if (isBookmarked) {
-        await supabase.from('bookmarks').delete()
-          .eq('user_email', user.email)
-          .eq('entity_id', solutionId)
-          .eq('entity_type', 'solution');
-        toast({ title: t({ en: 'Bookmark removed', ar: 'تم إزالة الإشارة' }) });
-      } else {
-        await supabase.from('bookmarks').insert({
-          user_email: user.email,
-          entity_id: solutionId,
-          entity_type: 'solution'
-        });
-        toast({ title: t({ en: 'Bookmarked!', ar: 'تم حفظ الإشارة!' }) });
+
+    const isBookmarked = userBookmarks.includes(solutionId);
+
+    toggleBookmarkMutation.mutate(
+      { solutionId, isBookmarked },
+      {
+        onSuccess: (action) => {
+          if (action === 'added') {
+            toast({ title: t({ en: 'Bookmarked!', ar: 'تم حفظ الإشارة!' }) });
+          } else {
+            toast({ title: t({ en: 'Bookmark removed', ar: 'تم إزالة الإشارة' }) });
+          }
+        }
       }
-      refetchBookmarks();
-    } catch (err) {
-      toast({ title: t({ en: 'Error', ar: 'خطأ' }), variant: 'destructive' });
-    }
+    );
   };
 
   const getMaturityBadge = (level) => {
@@ -133,8 +105,7 @@ function CitizenSolutionsBrowser() {
           { value: solutions.length, label: t({ en: 'Solutions', ar: 'حلول' }), icon: Lightbulb },
           { value: solutions.filter(s => s.is_verified).length, label: t({ en: 'Verified', ar: 'معتمدة' }), icon: CheckCircle2 },
           { value: solutions.filter(s => s.maturity_level === 'proven').length, label: t({ en: 'Proven', ar: 'مثبتة' }), icon: Star },
-        ]}
-      />
+        ]} subtitle={undefined} action={undefined} actions={undefined} children={undefined} />
 
       <CitizenSearchFilter
         searchTerm={searchTerm}
@@ -159,25 +130,22 @@ function CitizenSolutionsBrowser() {
             onChange: setSelectedCategory,
             options: categories.map(c => ({ value: c, label: c }))
           }] : [])
-        ]}
-      />
+        ]} children={undefined} />
 
-      <CitizenCardGrid 
+      <CitizenCardGrid
         viewMode={viewMode}
         emptyState={
           <CitizenEmptyState
             icon={Lightbulb}
             title={t({ en: 'No solutions found', ar: 'لم يتم العثور على حلول' })}
-            description={t({ en: 'Try adjusting your filters or check back later', ar: 'حاول تعديل الفلاتر أو تحقق لاحقاً' })}
-          />
+            description={t({ en: 'Try adjusting your filters or check back later', ar: 'حاول تعديل الفلاتر أو تحقق لاحقاً' })} action={undefined} />
         }
       >
         {filteredSolutions.map(solution => (
-          <Card 
-            key={solution.id} 
-            className={`group overflow-hidden border-border/50 hover:border-primary/30 hover:shadow-lg transition-all duration-300 ${
-              viewMode === 'list' ? 'flex flex-row' : ''
-            }`}
+          <Card
+            key={solution.id}
+            className={`group overflow-hidden border-border/50 hover:border-primary/30 hover:shadow-lg transition-all duration-300 ${viewMode === 'list' ? 'flex flex-row' : ''
+              }`}
           >
             <CardContent className={`p-5 ${viewMode === 'list' ? 'flex items-center gap-6 w-full' : ''}`}>
               <div className={viewMode === 'list' ? 'flex-1' : ''}>

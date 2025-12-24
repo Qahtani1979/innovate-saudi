@@ -1,7 +1,5 @@
 import { useState } from 'react';
-
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +17,12 @@ import { EventExpertEvaluation } from '@/components/events';
 import EventStrategicAlignment from '@/components/events/EventStrategicAlignment';
 import { AIEventOptimizer } from '@/components/ai/AIEventOptimizer';
 import { AIAttendancePredictor } from '@/components/ai/AIAttendancePredictor';
+import {
+  useEvent,
+  useEventComments,
+  useEventBookmarkStatus,
+  useEventMutations
+} from '@/hooks/useEvents';
 
 function EventDetail() {
   const { t, language } = useLanguage();
@@ -29,7 +33,6 @@ function EventDetail() {
   const eventId = urlParams.get('id');
 
   const [newComment, setNewComment] = useState('');
-  const [isBookmarked, setIsBookmarked] = useState(false);
 
   const canEditEvents = hasAnyPermission(['event_edit', 'event_manage', 'admin']) ||
     roles?.some(r => ['admin', 'super_admin', 'municipality_admin', 'gdibs_internal', 'event_manager'].includes(r));
@@ -37,101 +40,22 @@ function EventDetail() {
   const canEvaluateEvents = hasAnyPermission(['event_evaluate', 'expert_evaluate', 'admin']) ||
     roles?.some(r => ['admin', 'super_admin', 'expert', 'evaluator', 'gdibs_internal'].includes(r));
 
-  import { useEvents } from '@/hooks/useEvents';
-
-  // ... inside component
-  const { useEvent } = useEvents();
+  // Use custom hooks
   const { data: event, isLoading } = useEvent(eventId);
-
-  // Fetch comments for this event
-  const { data: comments = [] } = useQuery({
-    queryKey: ['event-comments', eventId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('comments')
-        .select('*')
-        .eq('entity_type', 'event')
-        .eq('entity_id', eventId)
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
-      return data || [];
-    },
-    enabled: !!eventId
-  });
-
-  // Fetch bookmark status
-  const { data: bookmarkData } = useQuery({
-    queryKey: ['event-bookmark', eventId, userEmail],
-    queryFn: async () => {
-      if (!userEmail) return null;
-      const { data } = await supabase
-        .from('bookmarks')
-        .select('id')
-        .eq('entity_type', 'event')
-        .eq('entity_id', eventId)
-        .eq('user_email', userEmail)
-        .maybeSingle();
-      return data;
-    },
-    enabled: !!eventId && !!userEmail,
-    onSuccess: (data) => setIsBookmarked(!!data)
-  });
-
-  // Add comment mutation
-  const addCommentMutation = useMutation({
-    mutationFn: async (commentText) => {
-      const { error } = await supabase.from('comments').insert({
-        entity_type: 'event',
-        entity_id: eventId,
-        comment_text: commentText,
-        user_email: userEmail,
-        user_name: user?.user_metadata?.full_name || userEmail
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['event-comments', eventId]);
-      setNewComment('');
-      toast.success(t({ en: 'Comment added', ar: 'تمت إضافة التعليق' }));
-    },
-    onError: () => {
-      toast.error(t({ en: 'Failed to add comment', ar: 'فشل في إضافة التعليق' }));
-    }
-  });
-
-  // Toggle bookmark mutation
-  const toggleBookmarkMutation = useMutation({
-    mutationFn: async () => {
-      if (isBookmarked) {
-        const { error } = await supabase
-          .from('bookmarks')
-          .delete()
-          .eq('entity_type', 'event')
-          .eq('entity_id', eventId)
-          .eq('user_email', userEmail);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('bookmarks').insert({
-          entity_type: 'event',
-          entity_id: eventId,
-          user_email: userEmail
-        });
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      setIsBookmarked(!isBookmarked);
-      queryClient.invalidateQueries(['event-bookmark', eventId, userEmail]);
-      toast.success(isBookmarked
-        ? t({ en: 'Removed from bookmarks', ar: 'تمت الإزالة من المحفوظات' })
-        : t({ en: 'Added to bookmarks', ar: 'تمت الإضافة للمحفوظات' })
-      );
-    }
-  });
+  const { data: comments = [] } = useEventComments(eventId);
+  const { data: isBookmarked } = useEventBookmarkStatus(eventId, userEmail);
+  const { addComment, toggleBookmark } = useEventMutations();
 
   const handleAddComment = () => {
     if (!newComment.trim()) return;
-    addCommentMutation.mutate(newComment);
+    addComment.mutate({ eventId, content: newComment }, {
+      onSuccess: () => setNewComment(''),
+      onError: () => toast.error(t({ en: 'Failed to add comment', ar: 'فشل في إضافة التعليق' }))
+    });
+  };
+
+  const handleToggleBookmark = () => {
+    toggleBookmark.mutate({ eventId, isBookmarked });
   };
 
   if (isLoading || !event) {
@@ -174,7 +98,8 @@ function EventDetail() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => toggleBookmarkMutation.mutate()}
+              onClick={handleToggleBookmark}
+              disabled={toggleBookmark.isPending}
               className={isBookmarked ? 'text-yellow-600' : 'text-slate-400'}
             >
               <Bookmark className={`h-5 w-5 ${isBookmarked ? 'fill-current' : ''}`} />
@@ -425,10 +350,10 @@ function EventDetail() {
                   />
                   <Button
                     onClick={handleAddComment}
-                    disabled={!newComment.trim() || addCommentMutation.isPending}
+                    disabled={!newComment.trim() || addComment.isPending}
                     className="self-end"
                   >
-                    {addCommentMutation.isPending ? (
+                    {addComment.isPending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <Send className="h-4 w-4" />
@@ -453,7 +378,7 @@ function EventDetail() {
                           {new Date(comment.created_at).toLocaleDateString()}
                         </span>
                       </div>
-                      <p className="text-sm text-slate-700">{comment.comment_text}</p>
+                      <p className="text-sm text-slate-700">{comment.content || comment.comment_text}</p>
                     </div>
                   ))}
                 </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,14 +24,27 @@ export default function PublicationManager({ rdProjectId }) {
   const { data: project } = useQuery({
     queryKey: ['rd-project', rdProjectId],
     queryFn: async () => {
-      const projects = await base44.entities.RDProject.list();
-      return projects.find(p => p.id === rdProjectId);
+      const { data, error } = await supabase
+        .from('rd_projects')
+        .select('id, publications, patents, datasets')
+        .eq('id', rdProjectId)
+        .single();
+
+      if (error) throw error;
+      return data;
     },
     enabled: !!rdProjectId
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.RDProject.update(rdProjectId, data),
+    mutationFn: async (data) => {
+      const { error } = await supabase
+        .from('rd_projects')
+        .update(data)
+        .eq('id', rdProjectId);
+
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['rd-project', rdProjectId]);
       toast.success(t({ en: 'Publication added', ar: 'تمت الإضافة' }));
@@ -47,7 +60,7 @@ export default function PublicationManager({ rdProjectId }) {
 
   const publications = project?.publications || [];
   const patents = project?.patents || [];
-  const datasets = project?.datasets_generated || [];
+  const datasets = project?.datasets || [];
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -73,31 +86,31 @@ export default function PublicationManager({ rdProjectId }) {
             <Input
               placeholder={t({ en: 'Title', ar: 'العنوان' })}
               value={formData.title}
-              onChange={(e) => setFormData({...formData, title: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             />
             <Input
               placeholder={t({ en: 'Authors (comma-separated)', ar: 'المؤلفون (بفاصلة)' })}
               value={formData.authors.join(', ')}
-              onChange={(e) => setFormData({...formData, authors: e.target.value.split(',').map(a => a.trim())})}
+              onChange={(e) => setFormData({ ...formData, authors: e.target.value.split(',').map(a => a.trim()) })}
             />
             <Input
               placeholder={t({ en: 'Journal/Conference', ar: 'المجلة/المؤتمر' })}
               value={formData.publication}
-              onChange={(e) => setFormData({...formData, publication: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, publication: e.target.value })}
             />
             <div className="flex gap-3">
               <Input
                 type="number"
                 placeholder={t({ en: 'Year', ar: 'السنة' })}
                 value={formData.year}
-                onChange={(e) => setFormData({...formData, year: parseInt(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
                 className="w-32"
               />
               <Input
                 type="url"
                 placeholder={t({ en: 'URL', ar: 'الرابط' })}
                 value={formData.url}
-                onChange={(e) => setFormData({...formData, url: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, url: e.target.value })}
                 className="flex-1"
               />
             </div>

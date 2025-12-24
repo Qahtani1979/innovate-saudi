@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,67 +12,41 @@ import ApprovalStageProgress from '../components/ApprovalStageProgress';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
+import { useSandboxes } from '@/hooks/useSandboxes';
+import { useSandboxMutations } from '@/hooks/useSandboxMutations';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function SandboxApproval() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+
   const [comments, setComments] = useState({});
+  const { user } = useAuth();
 
-  const { data: sandboxes = [] } = useQuery({
-    queryKey: ['sandboxes'],
-    queryFn: async () => {
-      const { data } = await supabase.from('sandboxes').select('*').eq('is_deleted', false);
-      return data || [];
-    }
-  });
+  const { useAllSandboxes, useSandboxApplications } = useSandboxes();
+  const { data: sandboxes = [] } = useAllSandboxes({ email: user?.email, role: 'admin' }); // Assuming admin for approval page
+  const { data: applications = [] } = useSandboxApplications(sandboxes);
 
-  const { data: applications = [] } = useQuery({
-    queryKey: ['sandbox-applications'],
-    queryFn: async () => {
-      const { data } = await supabase.from('sandbox_applications').select('*').eq('is_deleted', false);
-      return data || [];
-    }
-  });
-
-  const pendingSandboxes = sandboxes.filter(s => s.status === 'inactive');
+  const pendingSandboxes = sandboxes.filter(s => s.status === 'pending_approval' || s.status === 'planning');
   const activeSandboxes = sandboxes.filter(s => s.status === 'active');
-  const pendingApplications = applications.filter(a => a.status === 'submitted' || a.status === 'under_review');
+  const pendingApplications = applications.filter(a => a.status === 'pending');
 
-  const approveMutation = useMutation({
-    mutationFn: async ({ id, status }) => {
-      const { error } = await supabase.from('sandboxes').update({ status }).eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['sandboxes']);
-      toast.success(t({ en: 'Sandbox status updated', ar: 'تم تحديث حالة منطقة الاختبار' }));
+  const { approveSandbox, approveSandboxApplication } = useSandboxMutations();
+
+  const handleApproveSandbox = async (id, status) => {
+    try {
+      await approveSandbox({ id, newStatus: status, notes: comments[id] });
+    } catch (e) {
+      console.error(e);
     }
-  });
+  };
 
-  const applicationMutation = useMutation({
-    mutationFn: async ({ id, approved }) => {
-      const app = applications.find(a => a.id === id);
-      const { error } = await supabase.from('sandbox_applications').update({
-        status: approved ? 'approved' : 'rejected',
-        approved_by: 'admin@gdisb.sa',
-        approval_date: new Date().toISOString()
-      }).eq('id', id);
-      if (error) throw error;
-
-      await supabase.from('notifications').insert({
-        title: approved ? 'Sandbox Application Approved' : 'Sandbox Application Rejected',
-        body: `Your application for ${app.project_title} has been ${approved ? 'approved' : 'rejected'}.`,
-        notification_type: 'alert',
-        priority: 'high',
-        entity_type: 'SandboxApplication',
-        entity_id: id
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['sandbox-applications']);
-      toast.success(t({ en: 'Application updated', ar: 'تم تحديث الطلب' }));
+  const handleApproveApplication = async (id, approved, projectTitle) => {
+    try {
+      await approveSandboxApplication({ id, approved, projectTitle });
+    } catch (e) {
+      console.error(e);
     }
-  });
+  };
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -199,18 +172,16 @@ export default function SandboxApproval() {
 
                 <div className="flex gap-3">
                   <Button
-                    onClick={() => approveMutation.mutate({ id: sandbox.id, status: 'active' })}
+                    onClick={() => handleApproveSandbox(sandbox.id, 'active')}
                     className="flex-1 bg-green-600 hover:bg-green-700"
-                    disabled={approveMutation.isPending}
                   >
                     <CheckCircle2 className="h-4 w-4 mr-2" />
                     {t({ en: 'Activate Sandbox', ar: 'تفعيل منطقة الاختبار' })}
                   </Button>
                   <Button
-                    onClick={() => approveMutation.mutate({ id: sandbox.id, status: 'inactive' })}
+                    onClick={() => handleApproveSandbox(sandbox.id, 'inactive')}
                     variant="outline"
                     className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
-                    disabled={approveMutation.isPending}
                   >
                     <XCircle className="h-4 w-4 mr-2" />
                     {t({ en: 'Reject', ar: 'رفض' })}
@@ -239,77 +210,75 @@ export default function SandboxApproval() {
         {pendingApplications.map((app) => {
           const relatedSandbox = sandboxes.find(s => s.id === app.sandbox_id);
           return (
-          <div key={app.id} className="space-y-4">
-            <Card className="border-l-4 border-l-orange-500">
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                        {app.project_title}
-                      </h3>
-                      <p className="text-sm text-slate-600">{app.applicant_organization}</p>
-                      <p className="text-sm text-slate-600 mt-2">{app.project_description}</p>
-                      <div className="flex items-center gap-3 mt-3">
-                        <Badge className="bg-orange-100 text-orange-700">{app.status}</Badge>
-                        <span className="text-xs text-slate-500">Duration: {app.duration_months} months</span>
+            <div key={app.id} className="space-y-4">
+              <Card className="border-l-4 border-l-orange-500">
+                <CardContent className="pt-6">
+                  <div className="space-y-4">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                          {app.project_title}
+                        </h3>
+                        <p className="text-sm text-slate-600">{app.applicant_organization}</p>
+                        <p className="text-sm text-slate-600 mt-2">{app.project_description}</p>
+                        <div className="flex items-center gap-3 mt-3">
+                          <Badge className="bg-orange-100 text-orange-700">{app.status}</Badge>
+                          <span className="text-xs text-slate-500">Duration: {app.duration_months} months</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <ApprovalStageProgress application={app} />
+                    <ApprovalStageProgress application={app} />
 
-                {app.requested_exemptions && app.requested_exemptions.length > 0 && (
-                  <div className="p-3 bg-slate-50 rounded-lg">
-                    <p className="text-xs font-medium text-slate-700 mb-2">
-                      {t({ en: 'Requested Exemptions:', ar: 'الإعفاءات المطلوبة:' })}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {app.requested_exemptions.map((exemption, idx) => (
-                        <Badge key={idx} variant="outline" className="text-xs">
-                          {exemption}
-                        </Badge>
-                      ))}
+                    {app.requested_exemptions && app.requested_exemptions.length > 0 && (
+                      <div className="p-3 bg-slate-50 rounded-lg">
+                        <p className="text-xs font-medium text-slate-700 mb-2">
+                          {t({ en: 'Requested Exemptions:', ar: 'الإعفاءات المطلوبة:' })}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {app.requested_exemptions.map((exemption, idx) => (
+                            <Badge key={idx} variant="outline" className="text-xs">
+                              {exemption}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {app.risk_assessment && (
+                      <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                        <p className="text-xs font-medium text-amber-900 mb-1">Risk Assessment:</p>
+                        <p className="text-sm text-slate-700">{app.risk_assessment}</p>
+                      </div>
+                    )}
+
+                    <div className="flex gap-3">
+                      <Button
+                        onClick={() => handleApproveApplication(app.id, true, app.project_title)}
+                        className="flex-1 bg-green-600 hover:bg-green-700"
+                      >
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        {t({ en: 'Approve Application', ar: 'الموافقة على الطلب' })}
+                      </Button>
+                      <Button
+                        onClick={() => handleApproveApplication(app.id, false, app.project_title)}
+                        variant="outline"
+                        className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+                      >
+                        <XCircle className="h-4 w-4 mr-2" />
+                        {t({ en: 'Reject', ar: 'رفض' })}
+                      </Button>
                     </div>
                   </div>
-                )}
-
-                {app.risk_assessment && (
-                  <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
-                    <p className="text-xs font-medium text-amber-900 mb-1">Risk Assessment:</p>
-                    <p className="text-sm text-slate-700">{app.risk_assessment}</p>
-                  </div>
-                )}
-
-                  <div className="flex gap-3">
-                    <Button
-                      onClick={() => applicationMutation.mutate({ id: app.id, approved: true })}
-                      className="flex-1 bg-green-600 hover:bg-green-700"
-                      disabled={applicationMutation.isPending}
-                    >
-                      <CheckCircle2 className="h-4 w-4 mr-2" />
-                      {t({ en: 'Approve Application', ar: 'الموافقة على الطلب' })}
-                    </Button>
-                    <Button
-                      onClick={() => applicationMutation.mutate({ id: app.id, approved: false })}
-                      variant="outline"
-                      className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
-                      disabled={applicationMutation.isPending}
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      {t({ en: 'Reject', ar: 'رفض' })}
-                    </Button>
-                  </div>
+                </CardContent>
+              </Card>
+              {relatedSandbox && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <SandboxAIRiskAssessment application={app} sandbox={relatedSandbox} />
+                  <AutomatedComplianceChecker application={app} sandbox={relatedSandbox} />
                 </div>
-              </CardContent>
-            </Card>
-            {relatedSandbox && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <SandboxAIRiskAssessment application={app} sandbox={relatedSandbox} />
-                <AutomatedComplianceChecker application={app} sandbox={relatedSandbox} />
-              </div>
-            )}
-          </div>
+              )}
+            </div>
           );
         })}
 

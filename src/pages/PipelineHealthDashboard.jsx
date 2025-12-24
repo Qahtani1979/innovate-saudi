@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
+import { useExpertProfiles, useExpertAssignments } from '@/hooks/useExperts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
@@ -16,45 +18,11 @@ function PipelineHealthDashboardPage() {
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-pipeline'],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*');
-      return data || [];
-    }
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-pipeline'],
-    queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*');
-      return data || [];
-    }
-  });
-
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions-pipeline'],
-    queryFn: async () => {
-      const { data } = await supabase.from('solutions').select('*');
-      return data || [];
-    }
-  });
-
-  const { data: expertAssignments = [] } = useQuery({
-    queryKey: ['expert-assignments-pipeline'],
-    queryFn: async () => {
-      const { data } = await supabase.from('expert_assignments').select('*');
-      return data || [];
-    }
-  });
-
-  const { data: expertProfiles = [] } = useQuery({
-    queryKey: ['experts-pipeline'],
-    queryFn: async () => {
-      const { data } = await supabase.from('expert_profiles').select('*');
-      return data || [];
-    }
-  });
+  const { data: challenges = [] } = useChallengesWithVisibility();
+  const { data: pilots = [] } = usePilotsWithVisibility();
+  const { data: solutions = [] } = useSolutionsWithVisibility();
+  const { data: expertAssignments = [] } = useExpertAssignments();
+  const { data: expertProfiles = [] } = useExpertProfiles();
 
   const stages = {
     discovery: challenges.filter(c => c.status === 'draft' || c.status === 'submitted').length,

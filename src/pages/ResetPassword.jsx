@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { usePasswordReset } from '@/hooks/usePasswordReset';
+import { useAuthMutations } from '@/hooks/useAuthMutations';
 import { useLanguage } from '@/components/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,34 +25,36 @@ export default function ResetPassword() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState('');
 
+  const { checkSession, updatePassword } = usePasswordReset();
+
   // Check for valid session/token on mount
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
+      const session = await checkSession();
+
       // Check URL for recovery token
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const accessToken = hashParams.get('access_token');
       const type = hashParams.get('type');
-      
+
       if (type === 'recovery' && accessToken) {
         // Valid recovery link
         return;
       }
-      
+
       if (!session) {
         toast({
           title: t({ en: 'Invalid or Expired Link', ar: 'رابط غير صالح أو منتهي الصلاحية' }),
-          description: t({ 
-            en: 'Please request a new password reset link.', 
-            ar: 'يرجى طلب رابط إعادة تعيين كلمة مرور جديد.' 
+          description: t({
+            en: 'Please request a new password reset link.',
+            ar: 'يرجى طلب رابط إعادة تعيين كلمة مرور جديد.'
           }),
           variant: 'destructive',
         });
         navigate('/auth');
       }
     };
-    
+
     checkSession();
   }, [navigate, toast, t]);
 
@@ -89,39 +92,29 @@ export default function ResetPassword() {
 
     setIsLoading(true);
 
-    try {
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: password
-      });
+    // Call the mutation
+    updatePassword.mutate(password, {
+      onSuccess: () => {
+        setIsSuccess(true);
+        // toast is handled in the hook, but we can do extra logic here
+      },
+      onError: (err) => {
+        setError(err.message || t({ en: 'Failed to reset password', ar: 'فشل إعادة تعيين كلمة المرور' }));
+      },
+      onSettled: () => {
+        setIsLoading(false);
+      }
+    });
 
-      if (updateError) throw updateError;
-
-      setIsSuccess(true);
-      toast({
-        title: t({ en: 'Password Updated', ar: 'تم تحديث كلمة المرور' }),
-        description: t({ 
-          en: 'Your password has been successfully reset.', 
-          ar: 'تم إعادة تعيين كلمة المرور بنجاح.' 
-        }),
-      });
-
-      // Redirect to auth after 3 seconds
-      setTimeout(() => {
-        navigate('/auth');
-      }, 3000);
-
-    } catch (err) {
-      console.error('Password reset error:', err);
-      setError(err.message || t({ en: 'Failed to reset password', ar: 'فشل إعادة تعيين كلمة المرور' }));
-      toast({
-        title: t({ en: 'Error', ar: 'خطأ' }),
-        description: err.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
+    if (updatePassword.isSuccess) {
+      // This block might not be reachable immediately due to async nature, 
+      // reliant on onSuccess callback above.
+    } else if (updatePassword.isError) {
+      // reliant on onError callback
     }
   };
+
+
 
   if (isSuccess) {
     return (
@@ -144,9 +137,9 @@ export default function ResetPassword() {
                 {t({ en: 'Password Reset Successful!', ar: 'تم إعادة تعيين كلمة المرور بنجاح!' })}
               </h2>
               <p className="text-muted-foreground mb-4">
-                {t({ 
-                  en: 'You will be redirected to the login page shortly.', 
-                  ar: 'سيتم إعادة توجيهك إلى صفحة تسجيل الدخول قريبًا.' 
+                {t({
+                  en: 'You will be redirected to the login page shortly.',
+                  ar: 'سيتم إعادة توجيهك إلى صفحة تسجيل الدخول قريبًا.'
                 })}
               </p>
               <Button onClick={() => navigate('/auth')} className="w-full">
@@ -176,9 +169,9 @@ export default function ResetPassword() {
               {t({ en: 'Reset Your Password', ar: 'إعادة تعيين كلمة المرور' })}
             </CardTitle>
             <CardDescription>
-              {t({ 
-                en: 'Enter your new password below', 
-                ar: 'أدخل كلمة المرور الجديدة أدناه' 
+              {t({
+                en: 'Enter your new password below',
+                ar: 'أدخل كلمة المرور الجديدة أدناه'
               })}
             </CardDescription>
           </CardHeader>
@@ -218,9 +211,9 @@ export default function ResetPassword() {
                   </button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {t({ 
-                    en: 'Must be at least 8 characters with uppercase, lowercase, and number', 
-                    ar: 'يجب أن تكون 8 أحرف على الأقل مع حرف كبير وصغير ورقم' 
+                  {t({
+                    en: 'Must be at least 8 characters with uppercase, lowercase, and number',
+                    ar: 'يجب أن تكون 8 أحرف على الأقل مع حرف كبير وصغير ورقم'
                   })}
                 </p>
               </div>

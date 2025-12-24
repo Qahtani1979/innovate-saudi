@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+
+import { useSandboxes } from '@/hooks/useSandboxes';
+import { useMatchingEntities } from '@/hooks/useMatchingEntities';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,48 +21,23 @@ function SandboxReporting() {
   const [timeRange, setTimeRange] = useState('6m');
   const { user } = useAuth();
 
+  const {
+    useAllSandboxes,
+    useSandboxApplications
+  } = useSandboxes();
+  const { usePilots } = useMatchingEntities();
+
   // RLS: Sandbox operators see only their sandboxes, admins see all
-  const { data: sandboxes = [] } = useQuery({
-    queryKey: ['sandboxes', user?.email, user?.role],
-    queryFn: async () => {
-      let query = supabase.from('sandboxes').select('*').eq('is_deleted', false);
-      if (user?.role !== 'admin') {
-        query = query.or(`manager_email.eq.${user?.email},created_by.eq.${user?.email}`);
-      }
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user
-  });
+  const { data: sandboxes = [] } = useAllSandboxes(user);
 
   // RLS: Applications for accessible sandboxes only
-  const { data: applications = [] } = useQuery({
-    queryKey: ['sandbox-applications', sandboxes.length],
-    queryFn: async () => {
-      const sandboxIds = sandboxes.map(s => s.id);
-      const { data, error } = await supabase
-        .from('sandbox_applications')
-        .select('*')
-        .in('sandbox_id', sandboxIds);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: sandboxes.length > 0
-  });
+  const { data: applications = [] } = useSandboxApplications(sandboxes);
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('pilots').select('*').eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: pilots = [] } = usePilots({ deleted: false });
 
   // Filter data based on selected sandbox
-  const filteredApplications = selectedSandbox === 'all' 
-    ? applications 
+  const filteredApplications = selectedSandbox === 'all'
+    ? applications
     : applications.filter(a => a.sandbox_id === selectedSandbox);
 
   // Calculate utilization trends (mock data - in real scenario would be historical)
@@ -245,17 +221,17 @@ function SandboxReporting() {
               <YAxis />
               <Tooltip />
               <Legend />
-              <Line 
-                type="monotone" 
-                dataKey="utilization" 
-                stroke="#3b82f6" 
+              <Line
+                type="monotone"
+                dataKey="utilization"
+                stroke="#3b82f6"
                 strokeWidth={2}
                 name={t({ en: 'Utilization %', ar: 'الاستخدام %' })}
               />
-              <Line 
-                type="monotone" 
-                dataKey="capacity" 
-                stroke="#94a3b8" 
+              <Line
+                type="monotone"
+                dataKey="capacity"
+                stroke="#94a3b8"
                 strokeDasharray="5 5"
                 name={t({ en: 'Capacity', ar: 'السعة' })}
               />
@@ -263,9 +239,9 @@ function SandboxReporting() {
           </ResponsiveContainer>
           <div className="mt-4 p-3 bg-blue-50 rounded-lg">
             <p className="text-sm text-blue-900">
-              {t({ 
-                en: `Utilization increased by ${utilizationTrends[utilizationTrends.length-1].utilization - utilizationTrends[0].utilization}% over the last 6 months, showing strong demand for sandbox environments.`,
-                ar: `ازداد الاستخدام بنسبة ${utilizationTrends[utilizationTrends.length-1].utilization - utilizationTrends[0].utilization}٪ خلال الأشهر الستة الماضية، مما يدل على طلب قوي على بيئات الاختبار.`
+              {t({
+                en: `Utilization increased by ${utilizationTrends[utilizationTrends.length - 1].utilization - utilizationTrends[0].utilization}% over the last 6 months, showing strong demand for sandbox environments.`,
+                ar: `ازداد الاستخدام بنسبة ${utilizationTrends[utilizationTrends.length - 1].utilization - utilizationTrends[0].utilization}٪ خلال الأشهر الستة الماضية، مما يدل على طلب قوي على بيئات الاختبار.`
               })}
             </p>
           </div>
@@ -337,8 +313,8 @@ function SandboxReporting() {
             <div className="mt-4 grid grid-cols-2 gap-2">
               {statusChartData.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-2">
-                  <div 
-                    className="w-3 h-3 rounded-full" 
+                  <div
+                    className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: COLORS[idx % COLORS.length] }}
                   />
                   <span className="text-sm text-slate-700 capitalize">{item.name}</span>
@@ -451,7 +427,7 @@ function SandboxReporting() {
                       <td className="py-3 px-4 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <div className="w-16 h-2 bg-slate-200 rounded-full overflow-hidden">
-                            <div 
+                            <div
                               className="h-full bg-blue-600 rounded-full"
                               style={{ width: `${util}%` }}
                             />
@@ -462,8 +438,8 @@ function SandboxReporting() {
                       <td className="py-3 px-4">
                         <Badge className={
                           sandbox.status === 'active' ? 'bg-green-100 text-green-700' :
-                          sandbox.status === 'full' ? 'bg-red-100 text-red-700' :
-                          'bg-slate-100 text-slate-700'
+                            sandbox.status === 'full' ? 'bg-red-100 text-red-700' :
+                              'bg-slate-100 text-slate-700'
                         }>
                           {sandbox.status}
                         </Badge>

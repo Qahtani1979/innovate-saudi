@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { useQuery } from '@tanstack/react-query';
+import { usePersonalizedDashboardData } from '@/hooks/usePersonalizedDashboardData';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,67 +11,14 @@ import { Sparkles, CheckCircle, AlertCircle, Calendar, TrendingUp, Loader2, Targ
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
- 
+
 function PersonalizedDashboard() {
   const { t, isRTL } = useLanguage();
   const { user: currentUser } = useAuth();
   const [aiSummary, setAiSummary] = useState(null);
   const { invokeAI, status, isLoading: loading, rateLimitInfo, isAvailable } = useAIWithFallback();
 
-  const { data: myTasks = [] } = useQuery({
-    queryKey: ['my-tasks', currentUser?.email],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('assigned_to', currentUser?.email)
-        .neq('status', 'completed');
-      return data || [];
-    },
-    enabled: !!currentUser?.email
-  });
-
-  const { data: myApprovals = [] } = useQuery({
-    queryKey: ['my-approvals', currentUser?.email],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('pilot_approvals')
-        .select('*')
-        .eq('approver_email', currentUser?.email)
-        .eq('status', 'pending');
-      return data || [];
-    },
-    enabled: !!currentUser?.email
-  });
-
-  const { data: myChallenges = [] } = useQuery({
-    queryKey: ['my-challenges', currentUser?.email],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('challenges')
-        .select('*')
-        .eq('challenge_owner_email', currentUser?.email)
-        .not('status', 'in', '("resolved","archived")');
-      return data || [];
-    },
-    enabled: !!currentUser?.email
-  });
-
-  const { data: myPilots = [] } = useQuery({
-    queryKey: ['my-pilots', currentUser?.email],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('pilots')
-        .select('*')
-        .not('stage', 'in', '("completed","cancelled")');
-      // Filter by team membership on client side since team is JSON
-      return (data || []).filter(p =>
-        p.team?.some(member => member.email === currentUser?.email) &&
-        !['completed', 'terminated', 'archived'].includes(p.stage)
-      );
-    },
-    enabled: !!currentUser
-  });
+  const { myTasks, myApprovals, myChallenges, myPilots } = usePersonalizedDashboardData(currentUser?.email);
 
   const generateAIDailySummary = async () => {
     const { success, data } = await invokeAI({
@@ -185,8 +131,8 @@ Provide:
                     <div key={idx} className="flex gap-2">
                       <Badge className={
                         priority.urgency === 'high' ? 'bg-red-600' :
-                        priority.urgency === 'medium' ? 'bg-orange-600' :
-                        'bg-blue-600'
+                          priority.urgency === 'medium' ? 'bg-orange-600' :
+                            'bg-blue-600'
                       }>
                         {idx + 1}
                       </Badge>

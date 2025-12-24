@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,6 +8,7 @@ import { useAuth } from '@/lib/AuthContext';
 import ReviewerAI from './ReviewerAI';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import { toast } from 'sonner';
+import { useApprovalRequests } from '@/hooks/useApprovalRequests';
 
 /**
  * InlineApprovalWizard - Quick approval interface for ApprovalCenter
@@ -23,68 +22,35 @@ export default function InlineApprovalWizard({
 }) {
   const { t, language, isRTL } = useLanguage();
   const { user: currentUser } = useAuth();
-  const queryClient = useQueryClient();
   const [comments, setComments] = useState('');
   const [showAI, setShowAI] = useState(false);
   const { triggerEmail } = useEmailTrigger();
 
-  const updateApprovalMutation = useMutation({
-    mutationFn: async ({ id, data }) => {
-      const { data: result, error } = await supabase
-        .from('approval_requests')
-        .update(data)
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw error;
-      return result;
-    },
-    onSuccess: async (result, variables) => {
-      const decision = variables.data.approval_status;
-      const triggerKey = decision === 'approved' ? 'approval.approved' :
-        decision === 'rejected' ? 'approval.rejected' : 'approval.conditional';
-
-      // Trigger approval notification email
-      await triggerEmail(triggerKey, {
-        entity_type: approvalRequest.entity_type,
-        entity_id: approvalRequest.entity_id,
-        variables: {
-          entity_type: approvalRequest.entity_type,
-          entity_title: entityData.title_en || entityData.name_en || entityData.code,
-          gate_name: approvalRequest.gate_name,
-          decision: decision,
-          comments: variables.data.rejection_reason || variables.data.metadata?.comments,
-          requester_email: approvalRequest.requester_email
-        }
-      }).catch(err => console.error('Email trigger failed:', err));
-
-      queryClient.invalidateQueries({ queryKey: ['approval-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['my-approvals'] });
-      toast.success(t({
-        en: `Request ${decision}`,
-        ar: decision === 'approved' ? 'تمت الموافقة' : decision === 'rejected' ? 'تم الرفض' : 'موافقة مشروطة'
-      }));
-      if (onComplete) onComplete();
-    }
-  });
+  const { processApproval, isProcessing } = useApprovalRequests();
 
   const handleDecision = async (decision) => {
-    await updateApprovalMutation.mutateAsync({
-      id: approvalRequest.id,
-      data: {
-        approval_status: decision === 'approved' ? 'approved' :
-          decision === 'rejected' ? 'rejected' :
-            decision === 'conditional' ? 'conditional' : 'info_requested',
+    const action = decision === 'approved' ? 'approve' : 'reject';
+    const status = decision === 'approved' ? 'approved' :
+      decision === 'rejected' ? 'rejected' :
+        decision === 'conditional' ? 'conditional' : 'info_requested';
+
+    processApproval({
+      id: approvalRequest.entity_id,
+      entityType: approvalRequest.entity_type,
+      action: action === 'approve' ? 'approve' : 'reject',
+      updates: {
+        status: status, // Update the actual entity status if needed
         approved_at: new Date().toISOString(),
-        approver_email: currentUser?.email || 'admin@innovate.sa',
-        rejection_reason: decision === 'rejected' ? comments : undefined,
-        metadata: {
-          ...approvalRequest.metadata,
-          decision,
-          comments
-        }
+        approver_email: currentUser?.email
+      },
+      reason: comments,
+      logMetadata: {
+        decision,
+        gate_name: approvalRequest.metadata?.gate_name
       }
     });
+
+    if (onComplete) onComplete();
   };
 
   return (
@@ -122,7 +88,7 @@ export default function InlineApprovalWizard({
           <ReviewerAI
             entityType={approvalRequest.entity_type}
             entityData={entityData}
-            gateName={approvalRequest.gate_name}
+            gateName={approvalRequest.metadata?.gate_name}
             gateConfig={gateConfig}
             approvalRequest={approvalRequest}
           />
@@ -155,10 +121,10 @@ export default function InlineApprovalWizard({
         <div className="flex gap-2 flex-wrap">
           <Button
             onClick={() => handleDecision('approved')}
-            disabled={updateApprovalMutation.isPending}
+            disabled={isProcessing}
             className="bg-green-600 hover:bg-green-700"
           >
-            {updateApprovalMutation.isPending ? (
+            {isProcessing ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <CheckCircle2 className="h-4 w-4 mr-2" />
@@ -167,7 +133,7 @@ export default function InlineApprovalWizard({
           </Button>
           <Button
             onClick={() => handleDecision('conditional')}
-            disabled={updateApprovalMutation.isPending}
+            disabled={isProcessing}
             className="bg-yellow-600 hover:bg-yellow-700"
           >
             <AlertTriangle className="h-4 w-4 mr-2" />
@@ -175,7 +141,7 @@ export default function InlineApprovalWizard({
           </Button>
           <Button
             onClick={() => handleDecision('rejected')}
-            disabled={updateApprovalMutation.isPending}
+            disabled={isProcessing}
             variant="destructive"
           >
             <XCircle className="h-4 w-4 mr-2" />

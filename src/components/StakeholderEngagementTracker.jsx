@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -65,9 +64,12 @@ export default function StakeholderEngagementTracker({ pilot }) {
         return s;
       });
 
-      await base44.entities.Pilot.update(pilot.id, {
-        stakeholders: updatedStakeholders
-      });
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { error } = await supabase
+        .from('pilots')
+        .update({ stakeholders: updatedStakeholders })
+        .eq('id', pilot.id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['pilot']);
@@ -107,7 +109,7 @@ export default function StakeholderEngagementTracker({ pilot }) {
         {/* Add Event Form */}
         {showAddEvent && (
           <div className="p-4 bg-purple-50 rounded-lg border-2 border-purple-200 space-y-3">
-            <Select value={newEvent.stakeholder_name} onValueChange={(v) => setNewEvent({...newEvent, stakeholder_name: v})}>
+            <Select value={newEvent.stakeholder_name} onValueChange={(v) => setNewEvent({ ...newEvent, stakeholder_name: v })}>
               <SelectTrigger>
                 <SelectValue placeholder={t({ en: 'Select Stakeholder', ar: 'اختر الطرف' })} />
               </SelectTrigger>
@@ -118,7 +120,7 @@ export default function StakeholderEngagementTracker({ pilot }) {
               </SelectContent>
             </Select>
 
-            <Select value={newEvent.event_type} onValueChange={(v) => setNewEvent({...newEvent, event_type: v})}>
+            <Select value={newEvent.event_type} onValueChange={(v) => setNewEvent({ ...newEvent, event_type: v })}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -133,13 +135,13 @@ export default function StakeholderEngagementTracker({ pilot }) {
             <Input
               type="date"
               value={newEvent.date}
-              onChange={(e) => setNewEvent({...newEvent, date: e.target.value})}
+              onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
             />
 
             <Textarea
               placeholder={t({ en: 'Notes...', ar: 'ملاحظات...' })}
               value={newEvent.notes}
-              onChange={(e) => setNewEvent({...newEvent, notes: e.target.value})}
+              onChange={(e) => setNewEvent({ ...newEvent, notes: e.target.value })}
               rows={2}
             />
 
@@ -165,8 +167,8 @@ export default function StakeholderEngagementTracker({ pilot }) {
                 </div>
                 <Badge className={
                   stakeholder.engagement_score >= 7 ? 'bg-green-600' :
-                  stakeholder.engagement_score >= 4 ? 'bg-yellow-600' :
-                  'bg-red-600'
+                    stakeholder.engagement_score >= 4 ? 'bg-yellow-600' :
+                      'bg-red-600'
                 }>
                   {stakeholder.engagement_score}/10
                 </Badge>

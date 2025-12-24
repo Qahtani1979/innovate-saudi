@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '../LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,9 +11,11 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { buildChallengeToRDPrompt, CHALLENGE_TO_RD_SCHEMA } from '@/lib/ai/prompts/challenges/challengeToRD';
 
+import { useConvertChallengeToRDCall } from '@/hooks/useChallengeConversionMutations';
+
 export default function ChallengeToRDWizard({ challenge, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  // queryClient removed
   const [rdCallData, setRdCallData] = useState({
     title_en: '',
     title_ar: '',
@@ -57,36 +57,16 @@ export default function ChallengeToRDWizard({ challenge, onClose, onSuccess }) {
     }
   };
 
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: rdCall, error: rdError } = await supabase.from('rd_calls').insert(data).select().single();
-      if (rdError) throw rdError;
-      
-      await supabase.from('challenge_relations').insert({
-        challenge_id: challenge.id,
-        related_entity_type: 'rd_call',
-        related_entity_id: rdCall.id,
-        relation_role: 'informed_by'
-      });
+  const createMutation = useConvertChallengeToRDCall();
 
-      await supabase.from('system_activities').insert({
-        activity_type: 'challenge_to_rd_call',
-        entity_type: 'challenge',
-        entity_id: challenge.id,
-        description_en: `Created R&D Call: ${rdCall.title_en}`,
-        metadata: { rd_call_id: rdCall.id }
-      });
-
-      return rdCall;
-    },
-    onSuccess: (rdCall) => {
-      queryClient.invalidateQueries({ queryKey: ['challenges'] });
-      queryClient.invalidateQueries({ queryKey: ['rd-calls'] });
-      toast.success(t({ en: 'R&D Call created!', ar: 'تم إنشاء دعوة البحث!' }));
-      onSuccess?.(rdCall);
-      onClose?.();
-    }
-  });
+  const handleCreate = () => {
+    createMutation.mutate({ challenge, rdCallData }, {
+      onSuccess: (rdCall) => {
+        onSuccess?.(rdCall);
+        onClose?.();
+      }
+    });
+  };
 
   return (
     <Card className="max-w-5xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -226,7 +206,7 @@ export default function ChallengeToRDWizard({ challenge, onClose, onSuccess }) {
             {t({ en: 'Cancel', ar: 'إلغاء' })}
           </Button>
           <Button
-            onClick={() => createMutation.mutate(rdCallData)}
+            onClick={handleCreate}
             disabled={createMutation.isPending || !rdCallData.title_en || !rdCallData.title_ar}
             className="bg-gradient-to-r from-purple-600 to-indigo-600"
           >

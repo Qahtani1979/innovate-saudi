@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
 import { History, Eye, Clock, User } from 'lucide-react';
 import { format } from 'date-fns';
+import { useSolutionVersions } from '@/hooks/useSolutions';
 import {
   Dialog,
   DialogContent,
@@ -21,35 +20,7 @@ export default function SolutionVersionHistory({ solutionId }) {
   const [compareMode, setCompareMode] = useState(false);
   const [compareVersions, setCompareVersions] = useState([]);
 
-  const { data: currentSolution } = useQuery({
-    queryKey: ['solution', solutionId],
-    queryFn: async () => {
-      const { data } = await supabase.from('solutions').select('*').eq('id', solutionId).single();
-      return data;
-    }
-  });
-
-  const { data: versions = [] } = useQuery({
-    queryKey: ['solution-versions', solutionId],
-    queryFn: async () => {
-      const allVersions = [];
-      let current = currentSolution;
-      
-      while (current?.previous_version_id) {
-        const { data: prev } = await supabase.from('solutions').select('*')
-          .eq('id', current.previous_version_id).single();
-        if (prev) {
-          allVersions.push(prev);
-          current = prev;
-        } else {
-          break;
-        }
-      }
-      
-      return [currentSolution, ...allVersions];
-    },
-    enabled: !!currentSolution
-  });
+  const { data: versions = [] } = useSolutionVersions(solutionId);
 
   const handleCompareToggle = (version) => {
     if (compareVersions.includes(version.id)) {
@@ -63,7 +34,7 @@ export default function SolutionVersionHistory({ solutionId }) {
     if (!v1 || !v2) return [];
     const changed = [];
     const fieldsToCheck = ['name_en', 'name_ar', 'description_en', 'description_ar', 'maturity_level', 'trl', 'pricing_model', 'value_proposition'];
-    
+
     fieldsToCheck.forEach(field => {
       if (v1[field] !== v2[field]) {
         changed.push({
@@ -73,7 +44,7 @@ export default function SolutionVersionHistory({ solutionId }) {
         });
       }
     });
-    
+
     return changed;
   };
 
@@ -105,7 +76,7 @@ export default function SolutionVersionHistory({ solutionId }) {
           {versions.map((version, idx) => {
             const isCurrent = idx === 0;
             const changedFields = idx < versions.length - 1 ? getChangedFields(version, versions[idx + 1]) : [];
-            
+
             return (
               <Card key={version.id} className={isCurrent ? 'border-2 border-blue-400 bg-blue-50' : 'border'}>
                 <CardContent className="pt-4">
@@ -115,24 +86,25 @@ export default function SolutionVersionHistory({ solutionId }) {
                         <Badge className={isCurrent ? 'bg-blue-600' : 'bg-slate-600'}>
                           {isCurrent ? t({ en: 'Current', ar: 'الحالي' }) : `v${version.version_number || idx + 1}`}
                         </Badge>
-                        {version.updated_date && (
+                        {version.updated_at && (
                           <div className="flex items-center gap-1 text-xs text-slate-600">
                             <Clock className="h-3 w-3" />
-                            {format(new Date(version.updated_date), 'MMM d, yyyy HH:mm')}
+                            {format(new Date(version.updated_at), 'MMM d, yyyy HH:mm')}
                           </div>
                         )}
-                        {version.updated_by && (
+                        {/* updated_by might not exist on all records or at all, assuming it is metadata or custom field */}
+                        {version.metadata?.updated_by && (
                           <div className="flex items-center gap-1 text-xs text-slate-600">
                             <User className="h-3 w-3" />
-                            {version.updated_by}
+                            {version.metadata.updated_by}
                           </div>
                         )}
                       </div>
-                      
+
                       <p className="text-sm font-medium text-slate-900 mb-1">
                         {version.name_en}
                       </p>
-                      
+
                       {changedFields.length > 0 && (
                         <div className="mt-2 p-2 bg-white rounded border">
                           <p className="text-xs font-semibold text-slate-700 mb-1">
@@ -153,7 +125,7 @@ export default function SolutionVersionHistory({ solutionId }) {
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="flex gap-2">
                       <Dialog>
                         <DialogTrigger asChild>

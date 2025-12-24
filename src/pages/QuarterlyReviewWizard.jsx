@@ -1,19 +1,21 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { ChevronRight, ChevronLeft, Check } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Check, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useStrategyMutations } from '@/hooks/useStrategyMutations';
 
 function QuarterlyReviewWizard() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
   const [reviewData, setReviewData] = useState({
     quarter: '',
@@ -23,17 +25,38 @@ function QuarterlyReviewWizard() {
     priorities: ''
   });
 
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans'],
-    queryFn: () => base44.entities.StrategicPlan.list()
-  });
+  const { data: strategicPlans = [] } = useStrategiesWithVisibility();
+  const { data: challenges = [] } = useChallengesWithVisibility();
+  const { data: pilots = [] } = usePilotsWithVisibility();
 
   const activePlan = strategicPlans.find(p => p.status === 'active') || strategicPlans[0];
 
-  const submitReview = async () => {
-    toast.success(t({ en: 'Quarterly review submitted for approval', ar: 'تم تقديم المراجعة الفصلية للموافقة' }));
-    setStep(1);
-    setReviewData({ quarter: '', year: new Date().getFullYear(), achievements: '', gaps: '', priorities: '' });
+  const { updateStrategy } = useStrategyMutations();
+  const isSubmitting = updateStrategy.isPending;
+
+  const handleReviewSubmission = async () => {
+    if (!activePlan) return;
+
+    try {
+      await updateStrategy.mutateAsync({
+        id: activePlan.id,
+        data: {}, // Mock update if no specific field
+        metadata: {
+          activity_type: 'quarterly_review_submitted',
+          quarter: reviewData.quarter,
+          year: reviewData.year,
+          achievements: reviewData.achievements,
+          gaps: reviewData.gaps,
+          priorities: reviewData.priorities
+        }
+      });
+
+      toast.success(t({ en: 'Quarterly review submitted for approval', ar: 'تم تقديم المراجعة الفصلية للموافقة' }));
+      setStep(1);
+      setReviewData({ quarter: '', year: new Date().getFullYear(), achievements: '', gaps: '', priorities: '' });
+    } catch (error) {
+      toast.error(t({ en: 'Failed to submit review', ar: 'فشل في تقديم المراجعة' }));
+    }
   };
 
   return (
@@ -69,7 +92,7 @@ function QuarterlyReviewWizard() {
                   <label className="text-sm font-medium mb-2 block">
                     {t({ en: 'Quarter', ar: 'الربع' })}
                   </label>
-                  <Select value={reviewData.quarter} onValueChange={(v) => setReviewData({...reviewData, quarter: v})}>
+                  <Select value={reviewData.quarter} onValueChange={(v) => setReviewData({ ...reviewData, quarter: v })}>
                     <SelectTrigger>
                       <SelectValue placeholder={t({ en: 'Select quarter', ar: 'اختر الربع' })} />
                     </SelectTrigger>
@@ -85,7 +108,7 @@ function QuarterlyReviewWizard() {
                   <label className="text-sm font-medium mb-2 block">
                     {t({ en: 'Year', ar: 'السنة' })}
                   </label>
-                  <Select value={reviewData.year.toString()} onValueChange={(v) => setReviewData({...reviewData, year: parseInt(v)})}>
+                  <Select value={reviewData.year.toString()} onValueChange={(v) => setReviewData({ ...reviewData, year: parseInt(v) })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -132,7 +155,7 @@ function QuarterlyReviewWizard() {
                 </label>
                 <Textarea
                   value={reviewData.achievements}
-                  onChange={(e) => setReviewData({...reviewData, achievements: e.target.value})}
+                  onChange={(e) => setReviewData({ ...reviewData, achievements: e.target.value })}
                   rows={6}
                   placeholder={t({ en: 'Describe key achievements...', ar: 'اوصف الإنجازات الرئيسية...' })}
                 />
@@ -151,7 +174,7 @@ function QuarterlyReviewWizard() {
                 </label>
                 <Textarea
                   value={reviewData.gaps}
-                  onChange={(e) => setReviewData({...reviewData, gaps: e.target.value})}
+                  onChange={(e) => setReviewData({ ...reviewData, gaps: e.target.value })}
                   rows={6}
                   placeholder={t({ en: 'Identify gaps and areas needing attention...', ar: 'حدد الفجوات والمجالات التي تحتاج انتباه...' })}
                 />
@@ -170,7 +193,7 @@ function QuarterlyReviewWizard() {
                 </label>
                 <Textarea
                   value={reviewData.priorities}
-                  onChange={(e) => setReviewData({...reviewData, priorities: e.target.value})}
+                  onChange={(e) => setReviewData({ ...reviewData, priorities: e.target.value })}
                   rows={6}
                   placeholder={t({ en: 'Define priorities for next quarter...', ar: 'حدد أولويات الربع القادم...' })}
                 />
@@ -204,8 +227,12 @@ function QuarterlyReviewWizard() {
                 <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             ) : (
-              <Button onClick={submitReview} className="ml-auto bg-green-600">
-                <Check className="h-4 w-4 mr-2" />
+              <Button
+                onClick={handleReviewSubmission}
+                className="ml-auto bg-green-600"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
                 {t({ en: 'Submit for Approval', ar: 'تقديم للموافقة' })}
               </Button>
             )}

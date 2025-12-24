@@ -1,20 +1,18 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
+import { useRoleMutations } from '@/hooks/useRoleMutations';
+import { Trash2, Plus, CheckSquare, Square } from 'lucide-react';
 import { toast } from 'sonner';
-import {
-  Trash2, Plus, CheckSquare, Square
-} from 'lucide-react';
 
 export default function BulkRoleActions({ roles, users }) {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
   const [selectedRoles, setSelectedRoles] = useState([]);
-  const [bulkPermissions, setBulkPermissions] = useState('');
+  const [bulkPermissionsVal, setBulkPermissionsVal] = useState('');
+
+  const { bulkAddPermissions, bulkRemovePermissions, bulkDeleteRoles } = useRoleMutations();
 
   const toggleRole = (roleId) => {
     if (selectedRoles.includes(roleId)) {
@@ -32,117 +30,40 @@ export default function BulkRoleActions({ roles, users }) {
     }
   };
 
-  const bulkAddPermissionsMutation = useMutation({
-    mutationFn: async () => {
-      const permissionCodes = bulkPermissions.split('\n').filter(p => p.trim());
-      
-      // Get permission IDs for the codes
-      const { data: permRecords } = await supabase
-        .from('permissions')
-        .select('id, code')
-        .in('code', permissionCodes);
+  const handleBulkAdd = () => {
+    const permissionCodes = bulkPermissionsVal.split('\n').filter(p => p.trim());
+    if (permissionCodes.length === 0) return;
 
-      if (!permRecords || permRecords.length === 0) {
-        throw new Error('No valid permissions found');
-      }
+    bulkAddPermissions.mutate({ roles: selectedRoles, permissionCodes }, {
+      onSuccess: () => {
+        setBulkPermissionsVal('');
+        setSelectedRoles([]);
+      },
+      onError: (error) => toast.error(error.message)
+    });
+  };
 
-      // For each selected role, add the permissions
-      for (const roleId of selectedRoles) {
-        // Get existing permissions for this role
-        const { data: existing } = await supabase
-          .from('role_permissions')
-          .select('permission_id')
-          .eq('role_id', roleId);
+  const handleBulkRemove = () => {
+    const permissionCodes = bulkPermissionsVal.split('\n').filter(p => p.trim());
+    if (permissionCodes.length === 0) return;
 
-        const existingPermIds = new Set(existing?.map(e => e.permission_id) || []);
+    bulkRemovePermissions.mutate({ roles: selectedRoles, permissionCodes }, {
+      onSuccess: () => {
+        setBulkPermissionsVal('');
+        setSelectedRoles([]);
+      },
+      onError: (error) => toast.error(error.message)
+    });
+  };
 
-        // Add new permissions that don't already exist
-        const newPermissions = permRecords
-          .filter(p => !existingPermIds.has(p.id))
-          .map(p => ({
-            role_id: roleId,
-            permission_id: p.id
-          }));
-
-        if (newPermissions.length > 0) {
-          await supabase.from('role_permissions').insert(newPermissions);
-        }
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['roles']);
-      queryClient.invalidateQueries(['role-permissions']);
-      setBulkPermissions('');
-      setSelectedRoles([]);
-      toast.success(t({ en: 'Permissions added to selected roles', ar: 'تم إضافة الصلاحيات للأدوار المحددة' }));
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    }
-  });
-
-  const bulkRemovePermissionsMutation = useMutation({
-    mutationFn: async () => {
-      const permissionCodes = bulkPermissions.split('\n').filter(p => p.trim());
-      
-      // Get permission IDs for the codes
-      const { data: permRecords } = await supabase
-        .from('permissions')
-        .select('id, code')
-        .in('code', permissionCodes);
-
-      if (!permRecords || permRecords.length === 0) {
-        throw new Error('No valid permissions found');
-      }
-
-      const permIds = permRecords.map(p => p.id);
-
-      // For each selected role, remove the permissions
-      for (const roleId of selectedRoles) {
-        await supabase
-          .from('role_permissions')
-          .delete()
-          .eq('role_id', roleId)
-          .in('permission_id', permIds);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['roles']);
-      queryClient.invalidateQueries(['role-permissions']);
-      setBulkPermissions('');
-      setSelectedRoles([]);
-      toast.success(t({ en: 'Permissions removed from selected roles', ar: 'تم إزالة الصلاحيات من الأدوار المحددة' }));
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    }
-  });
-
-  const bulkDeleteRolesMutation = useMutation({
-    mutationFn: async () => {
-      const deletable = selectedRoles.filter(roleId => {
-        const role = roles.find(r => r.id === roleId);
-        return !role?.is_system_role;
+  const handleBulkDelete = () => {
+    if (confirm(t({ en: 'Delete selected non-system roles?', ar: 'حذف الأدوار غير النظامية المحددة؟' }))) {
+      bulkDeleteRoles.mutate({ roles: selectedRoles, allRoles: roles }, {
+        onSuccess: () => setSelectedRoles([]),
+        onError: (error) => toast.error(error.message)
       });
-
-      for (const roleId of deletable) {
-        // Delete role permissions first
-        await supabase.from('role_permissions').delete().eq('role_id', roleId);
-        // Deactivate user_roles with this role_id (Phase 4: no user_functional_roles)
-        await supabase.from('user_roles').update({ is_active: false }).eq('role_id', roleId);
-        // Delete the role
-        await supabase.from('roles').delete().eq('id', roleId);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['roles']);
-      setSelectedRoles([]);
-      toast.success(t({ en: 'Selected roles deleted', ar: 'تم حذف الأدوار المحددة' }));
-    },
-    onError: (error) => {
-      toast.error(error.message);
     }
-  });
+  };
 
   return (
     <Card className="border-2 border-indigo-300">
@@ -160,7 +81,7 @@ export default function BulkRoleActions({ roles, users }) {
               {t({ en: 'Select Roles:', ar: 'اختر الأدوار:' })}
             </span>
             <Button variant="outline" size="sm" onClick={selectAll}>
-              {selectedRoles.length === roles.length ? 
+              {selectedRoles.length === roles.length ?
                 t({ en: 'Deselect All', ar: 'إلغاء الكل' }) :
                 t({ en: 'Select All', ar: 'تحديد الكل' })}
             </Button>
@@ -170,11 +91,10 @@ export default function BulkRoleActions({ roles, users }) {
               <div
                 key={role.id}
                 onClick={() => !role.is_system_role && toggleRole(role.id)}
-                className={`p-2 rounded border cursor-pointer transition-all ${
-                  selectedRoles.includes(role.id) ? 
-                    'bg-indigo-100 border-indigo-400' : 
+                className={`p-2 rounded border cursor-pointer transition-all ${selectedRoles.includes(role.id) ?
+                    'bg-indigo-100 border-indigo-400' :
                     'bg-background hover:bg-muted'
-                } ${role.is_system_role ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  } ${role.is_system_role ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <div className="flex items-center gap-2">
                   {selectedRoles.includes(role.id) ? (
@@ -200,8 +120,8 @@ export default function BulkRoleActions({ roles, users }) {
                 {t({ en: 'Permissions (one per line):', ar: 'الصلاحيات (واحدة لكل سطر):' })}
               </label>
               <Textarea
-                value={bulkPermissions}
-                onChange={(e) => setBulkPermissions(e.target.value)}
+                value={bulkPermissionsVal}
+                onChange={(e) => setBulkPermissionsVal(e.target.value)}
                 placeholder="challenge_create&#10;pilot_view&#10;solution_edit"
                 rows={6}
               />
@@ -210,29 +130,25 @@ export default function BulkRoleActions({ roles, users }) {
             {/* Actions */}
             <div className="flex flex-wrap gap-2">
               <Button
-                onClick={() => bulkAddPermissionsMutation.mutate()}
-                disabled={!bulkPermissions.trim() || bulkAddPermissionsMutation.isPending}
+                onClick={handleBulkAdd}
+                disabled={!bulkPermissionsVal.trim() || bulkAddPermissions.isPending}
                 className="bg-green-600 hover:bg-green-700"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 {t({ en: 'Add to Selected', ar: 'إضافة للمحدد' })}
               </Button>
               <Button
-                onClick={() => bulkRemovePermissionsMutation.mutate()}
-                disabled={!bulkPermissions.trim() || bulkRemovePermissionsMutation.isPending}
+                onClick={handleBulkRemove}
+                disabled={!bulkPermissionsVal.trim() || bulkRemovePermissions.isPending}
                 variant="outline"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 {t({ en: 'Remove from Selected', ar: 'إزالة من المحدد' })}
               </Button>
               <Button
-                onClick={() => {
-                  if (confirm(t({ en: 'Delete selected non-system roles?', ar: 'حذف الأدوار غير النظامية المحددة؟' }))) {
-                    bulkDeleteRolesMutation.mutate();
-                  }
-                }}
+                onClick={handleBulkDelete}
                 variant="destructive"
-                disabled={bulkDeleteRolesMutation.isPending}
+                disabled={bulkDeleteRoles.isPending}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 {t({ en: 'Delete Selected', ar: 'حذف المحدد' })}

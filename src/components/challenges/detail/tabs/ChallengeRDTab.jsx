@@ -3,10 +3,33 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '@/components/LanguageContext';
 import { createPageUrl } from '@/utils';
-import { Microscope } from 'lucide-react';
+import { Microscope, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
-export default function ChallengeRDTab({ relatedRD = [] }) {
+export default function ChallengeRDTab({ challenge }) {
   const { language, t } = useLanguage();
+
+  const { data: relatedRD = [], isLoading } = useQuery({
+    queryKey: ['challenge-rd', challenge?.id],
+    queryFn: async () => {
+      // Return early if no linked IDs
+      if (!challenge?.linked_rd_ids || challenge.linked_rd_ids.length === 0) return [];
+
+      const { data } = await supabase
+        .from('rd_projects')
+        .select('*')
+        .in('id', challenge.linked_rd_ids)
+        .eq('is_deleted', false);
+
+      return data || [];
+    },
+    enabled: !!challenge?.linked_rd_ids?.length
+  });
+
+  if (isLoading) {
+    return <div className="text-center py-8"><Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" /></div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -39,8 +62,8 @@ export default function ChallengeRDTab({ relatedRD = [] }) {
                     </div>
                     <Badge className={
                       rd.status === 'active' ? 'bg-green-100 text-green-700' :
-                      rd.status === 'completed' ? 'bg-blue-100 text-blue-700' :
-                      'bg-yellow-100 text-yellow-700'
+                        rd.status === 'completed' ? 'bg-blue-100 text-blue-700' :
+                          'bg-yellow-100 text-yellow-700'
                     }>
                       {rd.status}
                     </Badge>

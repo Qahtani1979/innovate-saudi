@@ -1,5 +1,4 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../components/LanguageContext';
 import { Sparkles, TrendingUp, AlertTriangle, Target } from 'lucide-react';
@@ -9,10 +8,9 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 function PredictiveAnalytics() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-analytics'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
+  // We need detailed pilot data for charts here, so we use usePilotsWithVisibility
+  // If performance becomes an issue with many pilots, we can optimize the hook or request specific fields.
+  const { data: pilots = [] } = usePilotsWithVisibility();
 
   const successForecast = [
     { month: 'Dec', projected: 72, actual: 68 },

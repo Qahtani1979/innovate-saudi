@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useResearcherProfiles } from '@/hooks/useResearcherProfiles';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +20,6 @@ function MyResearcherProfileEditor() {
   const { language, t } = useLanguage();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
     full_name_en: '',
@@ -46,19 +44,7 @@ function MyResearcherProfileEditor() {
   const [newKeyword, setNewKeyword] = useState('');
   const [newCollabInterest, setNewCollabInterest] = useState('');
 
-  const { data: profile, isLoading } = useQuery({
-    queryKey: ['my-researcher-profile', user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('researcher_profiles')
-        .select('*')
-        .eq('user_id', user?.id)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id
-  });
+  const { profile, isLoading, updateProfile } = useResearcherProfiles(user?.id);
 
   useEffect(() => {
     if (profile) {
@@ -83,36 +69,13 @@ function MyResearcherProfileEditor() {
     }
   }, [profile]);
 
-  const saveMutation = useMutation({
-    mutationFn: async (data) => {
-      if (profile?.id) {
-        const { error } = await supabase
-          .from('researcher_profiles')
-          .update(data)
-          .eq('id', profile.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('researcher_profiles')
-          .insert({ ...data, user_id: user?.id, user_email: user?.email });
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['my-researcher-profile']);
-      queryClient.invalidateQueries(['researcher-profile']);
-      toast.success(t({ en: 'Profile saved successfully', ar: 'تم حفظ الملف بنجاح' }));
-      navigate(createPageUrl('ResearcherDashboard'));
-    },
-    onError: (error) => {
-      toast.error(t({ en: 'Failed to save profile', ar: 'فشل حفظ الملف' }));
-      console.error('Save error:', error);
-    }
-  });
-
   const handleSubmit = (e) => {
     e.preventDefault();
-    saveMutation.mutate(formData);
+    updateProfile.mutate(formData, {
+      onSuccess: () => {
+        navigate(createPageUrl('ResearcherDashboard'));
+      }
+    });
   };
 
   const addToArray = (field, value, setter) => {
@@ -390,8 +353,8 @@ function MyResearcherProfileEditor() {
             />
 
             {/* Save Button */}
-            <Button type="submit" className="w-full" disabled={saveMutation.isPending}>
-              {saveMutation.isPending ? (
+            <Button type="submit" className="w-full" disabled={updateProfile.isPending}>
+              {updateProfile.isPending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
                 <Save className="h-4 w-4 mr-2" />

@@ -1,12 +1,10 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useEvaluationInvalidator } from '@/hooks/useEvaluations';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from '../components/LanguageContext';
-import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import {
@@ -17,21 +15,22 @@ import UnifiedEvaluationForm from '../components/evaluation/UnifiedEvaluationFor
 import EvaluationConsensusPanel from '../components/evaluation/EvaluationConsensusPanel';
 import BlindReviewToggle from '../components/challenges/BlindReviewToggle';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useChallengeMutations } from '@/hooks/useChallengeMutations';
 
 function ChallengeReviewQueue() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  const { invalidateEvaluations } = useEvaluationInvalidator();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedChallenge, setSelectedChallenge] = useState(null);
   const [showEvaluationForm, setShowEvaluationForm] = useState(false);
   const [blindMode, setBlindMode] = useState(false);
 
-  const { data: challenges = [], isLoading } = useQuery({
-    queryKey: ['challenges-for-review'],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*').in('status', ['submitted', 'under_review']);
-      return data || [];
-    }
+  const { checkConsensus } = useChallengeMutations();
+
+  const { data: challenges = [], isLoading } = useChallengesWithVisibility({
+    status: ['submitted', 'under_review'],
+    limit: 1000
   });
 
   const filteredChallenges = challenges.filter(c =>
@@ -48,16 +47,11 @@ function ChallengeReviewQueue() {
     setShowEvaluationForm(false);
 
     if (selectedChallenge) {
-      await supabase.functions.invoke('checkConsensus', {
-        body: {
-          entity_type: 'challenge',
-          entity_id: selectedChallenge.id
-        }
-      });
+      await checkConsensus.mutateAsync(selectedChallenge.id);
     }
 
     setSelectedChallenge(null);
-    queryClient.invalidateQueries(['challenges-for-review']);
+    invalidateEvaluations();
   };
 
   if (isLoading) {

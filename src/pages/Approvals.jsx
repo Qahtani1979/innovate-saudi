@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,33 +27,51 @@ export default function Approvals() {
   const { data: challenges = [] } = useQuery({
     queryKey: ['pending-challenges'],
     queryFn: async () => {
-      const all = await base44.entities.Challenge.list();
-      return all.filter(c => c.status === 'submitted' || c.status === 'under_review');
+      const { data, error } = await supabase
+        .from('challenges')
+        .select('*')
+        .in('status', ['submitted', 'under_review'])
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
     }
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pending-pilots'],
     queryFn: async () => {
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => p.stage === 'approval_pending');
+      const { data, error } = await supabase
+        .from('pilots')
+        .select('*')
+        .eq('stage', 'approval_pending')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
     }
   });
 
   const approveMutation = useMutation({
     mutationFn: async ({ entity, id, newStatus, action }) => {
       if (entity === 'Challenge') {
-        return base44.entities.Challenge.update(id, { status: newStatus });
+        const { error } = await supabase
+          .from('challenges')
+          .update({ status: newStatus })
+          .eq('id', id);
+        if (error) throw error;
       } else {
-        return base44.entities.Pilot.update(id, { stage: newStatus });
+        const { error } = await supabase
+          .from('pilots')
+          .update({ stage: newStatus })
+          .eq('id', id);
+        if (error) throw error;
       }
     },
     onSuccess: async (result, variables) => {
       const { entity, id, action } = variables;
-      const triggerKey = action === 'approve' 
+      const triggerKey = action === 'approve'
         ? (entity === 'Challenge' ? 'challenge.approved' : 'pilot.approved')
         : (entity === 'Challenge' ? 'challenge.rejected' : 'pilot.rejected');
-      
+
       // Trigger approval/rejection email
       await triggerEmail(triggerKey, {
         entityType: entity.toLowerCase(),
@@ -64,8 +82,8 @@ export default function Approvals() {
         }
       }).catch(err => console.error('Email trigger failed:', err));
 
-      queryClient.invalidateQueries(['pending-challenges']);
-      queryClient.invalidateQueries(['pending-pilots']);
+      queryClient.invalidateQueries({ queryKey: ['pending-challenges'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-pilots'] });
       toast.success(t({ en: 'Action completed', ar: 'تم الإجراء' }));
     }
   });
@@ -83,15 +101,15 @@ export default function Approvals() {
   const generateAIBrief = async (entity, id) => {
     setCurrentBriefId(id);
     const item = entity === 'Challenge' ? challenges.find(c => c.id === id) : pilots.find(p => p.id === id);
-    
+
     // Import centralized prompt modules
-    const { 
-      CHALLENGE_APPROVAL_PROMPT_TEMPLATE, 
-      PILOT_APPROVAL_PROMPT_TEMPLATE, 
-      APPROVAL_RESPONSE_SCHEMA 
+    const {
+      CHALLENGE_APPROVAL_PROMPT_TEMPLATE,
+      PILOT_APPROVAL_PROMPT_TEMPLATE,
+      APPROVAL_RESPONSE_SCHEMA
     } = await import('@/lib/ai/prompts/approvals/decisionBrief');
-    
-    const prompt = entity === 'Challenge' 
+
+    const prompt = entity === 'Challenge'
       ? CHALLENGE_APPROVAL_PROMPT_TEMPLATE(item)
       : PILOT_APPROVAL_PROMPT_TEMPLATE(item);
 
@@ -99,7 +117,7 @@ export default function Approvals() {
       prompt,
       response_json_schema: APPROVAL_RESPONSE_SCHEMA
     });
-    
+
     if (response.success) {
       setAiBriefs({ ...aiBriefs, [id]: response.data });
       toast.success('AI decision brief generated');
@@ -219,7 +237,7 @@ export default function Approvals() {
                       </div>
                       <div>
                         <span className="text-slate-500">{t({ en: 'Submitted:', ar: 'تاريخ التقديم:' })}</span>
-                        <p className="font-medium text-xs">{new Date(challenge.created_date).toLocaleDateString()}</p>
+                        <p className="font-medium text-xs">{new Date(challenge.created_at).toLocaleDateString()}</p>
                       </div>
                     </div>
 
@@ -302,13 +320,12 @@ export default function Approvals() {
                           <><Sparkles className="h-4 w-4 mr-2" /> AI Decision Brief</>
                         )}
                       </Button>
-                      
+
                       {aiBriefs[pilot.id] && (
-                        <div className={`p-3 rounded-lg border-2 mb-3 ${
-                          aiBriefs[pilot.id].recommendation === 'approve' ? 'bg-green-50 border-green-300' :
+                        <div className={`p-3 rounded-lg border-2 mb-3 ${aiBriefs[pilot.id].recommendation === 'approve' ? 'bg-green-50 border-green-300' :
                           aiBriefs[pilot.id].recommendation === 'reject' ? 'bg-red-50 border-red-300' :
-                          'bg-yellow-50 border-yellow-300'
-                        }`}>
+                            'bg-yellow-50 border-yellow-300'
+                          }`}>
                           <p className="text-sm font-semibold mb-2">
                             AI Recommends: {aiBriefs[pilot.id].recommendation.toUpperCase()}
                             {aiBriefs[pilot.id].readiness_score && ` (${aiBriefs[pilot.id].readiness_score}% ready)`}

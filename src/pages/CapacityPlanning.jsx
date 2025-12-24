@@ -1,26 +1,26 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../components/LanguageContext';
-import { Users, TrendingUp, Activity, AlertTriangle } from 'lucide-react';
+import { Users, TrendingUp, Activity, AlertTriangle, Loader2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function CapacityPlanning() {
-  const { language, isRTL, t } = useLanguage();
+  const { isRTL, t } = useLanguage();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-capacity'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
+  const { data: pilots = [], isLoading: isPilotsLoading } = usePilotsWithVisibility();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-capacity'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
+  const { data: challenges = [], isLoading: isChallengesLoading } = useChallengesWithVisibility();
+
+  const isLoading = isPilotsLoading || isChallengesLoading;
 
   const activePilots = pilots.filter(p => ['active', 'monitoring'].includes(p.stage));
-  const totalTeamSize = activePilots.reduce((sum, p) => sum + (p.team?.length || 0), 0);
+  const totalTeamSize = activePilots.reduce((sum, p) => {
+    const team = p?.['team'];
+    return sum + (Array.isArray(team) ? team.length : 0);
+  }, 0);
   const avgTeamSize = activePilots.length > 0 ? Math.round(totalTeamSize / activePilots.length) : 0;
 
   const capacityData = [
@@ -32,50 +32,30 @@ function CapacityPlanning() {
     { month: 'Jun', capacity: 110, utilization: 95 }
   ];
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div>
-        <h1 className="text-4xl font-bold text-slate-900">
-          {t({ en: 'Capacity Planning', ar: 'تخطيط القدرات' })}
-        </h1>
-        <p className="text-slate-600 mt-2">
-          {t({ en: 'Monitor and optimize resource capacity', ar: 'مراقبة وتحسين القدرة الاستيعابية للموارد' })}
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-blue-50 to-white">
-          <CardContent className="pt-6 text-center">
-            <Activity className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-blue-600">{activePilots.length}</p>
-            <p className="text-sm text-slate-600">{t({ en: 'Active Projects', ar: 'مشاريع نشطة' })}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-purple-50 to-white">
-          <CardContent className="pt-6 text-center">
-            <Users className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-purple-600">{totalTeamSize}</p>
-            <p className="text-sm text-slate-600">{t({ en: 'Team Members', ar: 'أعضاء الفريق' })}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-green-50 to-white">
-          <CardContent className="pt-6 text-center">
-            <TrendingUp className="h-8 w-8 text-green-600 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-green-600">86%</p>
-            <p className="text-sm text-slate-600">{t({ en: 'Utilization', ar: 'الاستخدام' })}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-amber-50 to-white">
-          <CardContent className="pt-6 text-center">
-            <AlertTriangle className="h-8 w-8 text-amber-600 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-amber-600">{avgTeamSize}</p>
-            <p className="text-sm text-slate-600">{t({ en: 'Avg Team Size', ar: 'متوسط حجم الفريق' })}</p>
-          </CardContent>
-        </Card>
-      </div>
+    <PageLayout>
+      <PageHeader
+        title={{ en: 'Capacity Planning', ar: 'تخطيط القدرات' }}
+        subtitle={{ en: 'Monitor and optimize resource capacity', ar: 'مراقبة وتحسين القدرة الاستيعابية للموارد' }}
+        icon={<Activity className="h-6 w-6 text-white" />}
+        description=""
+        action={null}
+        actions={null}
+        stats={[
+          { icon: Activity, value: activePilots.length, label: { en: 'Active Projects', ar: 'مشاريع نشطة' } },
+          { icon: Users, value: totalTeamSize, label: { en: 'Team Members', ar: 'أعضاء الفريق' } },
+          { icon: TrendingUp, value: '86%', label: { en: 'Utilization', ar: 'الاستخدام' } },
+          { icon: AlertTriangle, value: avgTeamSize, label: { en: 'Avg Team Size', ar: 'متوسط حجم الفريق' } },
+        ]}
+      />
 
       <Card>
         <CardHeader>
@@ -94,7 +74,7 @@ function CapacityPlanning() {
           </ResponsiveContainer>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
 

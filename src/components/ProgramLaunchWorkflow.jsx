@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,10 +8,10 @@ import { useLanguage } from './LanguageContext';
 import { Rocket, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { useProgramMutations } from '@/hooks/useProgramMutations';
 
 export default function ProgramLaunchWorkflow({ program, onClose }) {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
   const { triggerEmail } = useEmailTrigger();
 
   const launchChecks = [
@@ -31,54 +29,20 @@ export default function ProgramLaunchWorkflow({ program, onClose }) {
   );
   const [announcement, setAnnouncement] = useState('');
 
-  const launchMutation = useMutation({
-    mutationFn: async () => {
-      const { error: programError } = await supabase
-        .from('programs')
-        .update({
-          status: 'applications_open',
-          launch_date: new Date().toISOString().split('T')[0],
-          launch_checklist: checklist,
-          announcement_text: announcement
-        })
-        .eq('id', program.id);
-      if (programError) throw programError;
+  const { openApplications, isOpening } = useProgramMutations();
 
-      // Create notification
-      await supabase
-        .from('notifications')
-        .insert({
-          type: 'program_launched',
-          title: `New Program: ${program.name_en}`,
-          message: announcement || `${program.name_en} is now accepting applications.`,
-          severity: 'info',
-          link: `/ProgramDetail?id=${program.id}`
-        });
-    },
-    onSuccess: async () => {
-      queryClient.invalidateQueries(['program']);
-      queryClient.invalidateQueries(['notifications']);
-      
-      // Trigger program.launched email
-      try {
-        await triggerEmail('program.launched', {
-          entityType: 'program',
-          entityId: program.id,
-          variables: {
-            programName: program.name_en,
-            programType: program.program_type,
-            announcement: announcement,
-            launchDate: new Date().toISOString().split('T')[0]
-          }
-        });
-      } catch (error) {
-        console.error('Failed to send program.launched email:', error);
-      }
-      
-      toast.success(t({ en: 'Program launched successfully', ar: 'تم إطلاق البرنامج بنجاح' }));
+  const handleLaunch = async () => {
+    try {
+      await openApplications({
+        programId: program.id,
+        announcement,
+        checklist
+      });
       onClose();
+    } catch (error) {
+      // toast is handled by hook
     }
-  });
+  };
 
   const allRequiredChecked = launchChecks
     .filter(c => c.required)
@@ -138,11 +102,11 @@ export default function ProgramLaunchWorkflow({ program, onClose }) {
 
         <div className="flex gap-3 pt-4 border-t">
           <Button
-            onClick={() => launchMutation.mutate()}
-            disabled={!allRequiredChecked || launchMutation.isPending}
+            onClick={handleLaunch}
+            disabled={!allRequiredChecked || isOpening}
             className="flex-1 bg-gradient-to-r from-orange-600 to-pink-600 hover:from-orange-700 hover:to-pink-700"
           >
-            {launchMutation.isPending ? (
+            {isOpening ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Rocket className="h-4 w-4 mr-2" />

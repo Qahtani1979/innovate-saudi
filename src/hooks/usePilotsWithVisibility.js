@@ -14,29 +14,30 @@ import { usePermissions } from '@/components/permissions/usePermissions';
  * - Others: Published/public pilots only
  */
 export function usePilotsWithVisibility(options = {}) {
-  const { 
+  const {
     status,
     sectorId,
-    limit = 100,
     includeDeleted = false,
-    providerId = null
+    providerId = null,
+    municipalityId, // New option
+    limit = 50
   } = options;
 
   const { isAdmin, hasRole, userId, profile } = usePermissions();
-  const { 
-    isNational, 
-    sectorIds, 
-    userMunicipalityId, 
+  const {
+    isNational,
+    sectorIds,
+    userMunicipalityId,
     nationalRegionId,
     nationalMunicipalityIds,
     hasFullVisibility,
-    isLoading: visibilityLoading 
+    isLoading: visibilityLoading
   } = useVisibilitySystem();
 
-  const isStaffUser = hasRole('municipality_staff') || 
-                      hasRole('municipality_admin') || 
-                      hasRole('deputyship_staff') || 
-                      hasRole('deputyship_admin');
+  const isStaffUser = hasRole('municipality_staff') ||
+    hasRole('municipality_admin') ||
+    hasRole('deputyship_staff') ||
+    hasRole('deputyship_admin');
 
   const isProvider = hasRole('provider');
 
@@ -51,7 +52,8 @@ export function usePilotsWithVisibility(options = {}) {
       status,
       sectorId,
       limit,
-      providerId
+      providerId,
+      municipalityId
     }],
     queryFn: async () => {
       let baseSelect = `
@@ -76,9 +78,9 @@ export function usePilotsWithVisibility(options = {}) {
           .limit(limit);
 
         if (error) throw error;
-        
+
         // Filter by provider through solution relationship
-        return (data || []).filter(pilot => 
+        return (data || []).filter(pilot =>
           pilot.solution?.provider_id === userProviderId
         );
       }
@@ -102,6 +104,11 @@ export function usePilotsWithVisibility(options = {}) {
       // Apply sector filter if provided
       if (sectorId) {
         query = query.eq('sector_id', sectorId);
+      }
+
+      // Apply municipality filter if provided
+      if (municipalityId) {
+        query = query.eq('municipality_id', municipalityId);
       }
 
       // Admin or full visibility users see everything
@@ -168,6 +175,9 @@ export function usePilotsWithVisibility(options = {}) {
         if (sectorId) {
           filtered = filtered.filter(p => p.sector_id === sectorId);
         }
+        if (municipalityId) {
+          filtered = filtered.filter(p => p.municipality_id === municipalityId);
+        }
 
         return filtered.slice(0, limit);
       }
@@ -180,6 +190,23 @@ export function usePilotsWithVisibility(options = {}) {
     },
     enabled: !visibilityLoading,
     staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+}
+
+export function usePilot(pilotId) {
+  const { fetchWithVisibility, isLoading: isVisibilityLoading } = useVisibilitySystem();
+
+  return useQuery({
+    queryKey: ['pilot', pilotId],
+    queryFn: async () => {
+      return fetchWithVisibility('pilots', `
+        *,
+        municipality:municipalities(id, name_en, name_ar, region_id, region:regions(id, code, name_en)),
+        sector:sectors(id, name_en, name_ar, code),
+        solution:solutions(id, name_en, name_ar, provider_id)
+      `, { id: pilotId, single: true });
+    },
+    enabled: !!pilotId && !isVisibilityLoading
   });
 }
 

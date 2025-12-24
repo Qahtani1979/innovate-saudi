@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTasks } from '@/hooks/useTasks';
+import { useExpertAssignments } from '@/hooks/useExpertAssignments';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,76 +27,38 @@ function TaskManagement() {
   const { triggerEmail } = useEmailTrigger();
 
   // Filter tasks: admin sees all, others see only their own
-  const { data: tasks = [] } = useQuery({
-    queryKey: ['tasks', isAdmin, user?.email],
-    queryFn: async () => {
-      let query = supabase.from('tasks').select('*');
-      
-      // Non-admins only see their own tasks
-      if (!isAdmin && user?.email) {
-        query = query.eq('assigned_to', user.email);
+  const { useUserTasks, useCreateTask, useUpdateTask } = useTasks({ user, isAdmin });
+  const { useAssignments } = useExpertAssignments(user?.email);
+
+  const { data: tasks = [] } = useUserTasks();
+  const { data: expertAssignments = [] } = useAssignments();
+
+  const createMutation = useCreateTask();
+  const updateMutation = useUpdateTask();
+
+  const handleCreateTask = (data) => {
+    createMutation.mutate(data, {
+      onSuccess: (createdTask) => {
+        // Trigger email if task is assigned to someone
+        if (createdTask?.assigned_to) {
+          triggerEmail('task.assigned', {
+            entity_type: 'task',
+            entity_id: createdTask.id,
+            recipient_email: createdTask.assigned_to,
+            variables: {
+              task_title: createdTask.title,
+              due_date: createdTask.due_date,
+              priority: createdTask.priority || 'normal'
+            }
+          }).catch(err => console.error('Email trigger failed:', err));
+        }
+        setShowForm(false);
+        setFormData({});
       }
-      
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user
-  });
+    });
+  };
 
-  const { data: expertAssignments = [] } = useQuery({
-    queryKey: ['expert-assignments-tasks', user?.email],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('expert_assignments')
-        .select('*')
-        .eq('expert_email', user?.email)
-        .neq('status', 'completed');
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
-
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: createdTask, error } = await supabase
-        .from('tasks')
-        .insert({ ...data, assigned_to: data.assigned_to || user?.email })
-        .select()
-        .single();
-      if (error) throw error;
-      return createdTask;
-    },
-    onSuccess: (createdTask) => {
-      queryClient.invalidateQueries(['tasks']);
-      // Trigger email if task is assigned to someone
-      if (createdTask?.assigned_to) {
-        triggerEmail('task.assigned', {
-          entity_type: 'task',
-          entity_id: createdTask.id,
-          recipient_email: createdTask.assigned_to,
-          variables: {
-            task_title: createdTask.title,
-            due_date: createdTask.due_date,
-            priority: createdTask.priority || 'normal'
-          }
-        }).catch(err => console.error('Email trigger failed:', err));
-      }
-      setShowForm(false);
-      setFormData({});
-    }
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }) => {
-      const { error } = await supabase.from('tasks').update(data).eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => queryClient.invalidateQueries(['tasks'])
-  });
-
-  const filteredTasks = tasks.filter(t => 
+  const filteredTasks = tasks.filter(t =>
     filter === 'all' || t.status === filter
   );
 
@@ -170,8 +132,8 @@ function TaskManagement() {
                       <div className="flex items-center gap-2 mb-2">
                         <Badge className={
                           assignment.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                          assignment.status === 'accepted' ? 'bg-blue-100 text-blue-700' :
-                          'bg-purple-100 text-purple-700'
+                            assignment.status === 'accepted' ? 'bg-blue-100 text-blue-700' :
+                              'bg-purple-100 text-purple-700'
                         }>
                           {assignment.status}
                         </Badge>
@@ -247,7 +209,7 @@ function TaskManagement() {
             </div>
             <Button
               className="w-full bg-blue-600"
-              onClick={() => createMutation.mutate(formData)}
+              onClick={() => handleCreateTask(formData)}
               disabled={!formData.title}
             >
               {t({ en: 'Create Task', ar: 'إنشاء مهمة' })}
@@ -285,8 +247,8 @@ function TaskManagement() {
                     <div className="flex items-center gap-3 mt-2">
                       <Badge className={
                         task.priority === 'high' ? 'bg-red-100 text-red-700' :
-                        task.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-blue-100 text-blue-700'
+                          task.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-blue-100 text-blue-700'
                       }>
                         {task.priority}
                       </Badge>

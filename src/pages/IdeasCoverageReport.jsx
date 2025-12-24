@@ -1,6 +1,5 @@
-import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+﻿import { useState } from 'react';
+import { useCitizenIdeas } from '@/hooks/useCitizenIdeas';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -16,10 +15,7 @@ function IdeasCoverageReport() {
   const { language, isRTL, t } = useLanguage();
   const [expandedSections, setExpandedSections] = useState({});
 
-  const { data: ideas = [] } = useQuery({
-    queryKey: ['ideas-for-coverage'],
-    queryFn: () => base44.entities.CitizenIdea.list()
-  });
+  const { data: ideas = [] } = useCitizenIdeas();
 
   const toggleSection = (key) => {
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
@@ -54,13 +50,13 @@ function IdeasCoverageReport() {
       },
       population: {
         total: ideas.length,
-        with_embedding: ideas.filter(i => i.embedding?.length > 0).length,
-        with_classification: ideas.filter(i => i.ai_classification).length,
-        with_votes: ideas.filter(i => (i.vote_count || 0) > 0).length,
-        reviewed: ideas.filter(i => i.reviewed_by).length
+        with_embedding: ideas.filter((i) => i['embedding']?.length > 0).length,
+        with_classification: ideas.filter((i) => i['ai_classification']).length,
+        with_votes: ideas.filter((i) => (i['vote_count'] || i['votes_count'] || 0) > 0).length,
+        reviewed: ideas.filter((i) => i['reviewed_by']).length
       }
     },
-    
+
     pages: [
       {
         name: 'PublicIdeaSubmission',
@@ -69,13 +65,13 @@ function IdeasCoverageReport() {
         coverage: 100,
         description: 'Public form for citizens to submit ideas',
         features: [
-          '✅ Bilingual form (AR/EN)',
-          '✅ Category selection',
-          '✅ Location capture',
-          '✅ Anonymous submission option',
-          '✅ File attachments',
-          '✅ AI classification on submit',
-          '✅ Auto-embedding generation'
+          'âœ… Bilingual form (AR/EN)',
+          'âœ… Category selection',
+          'âœ… Location capture',
+          'âœ… Anonymous submission option',
+          'âœ… File attachments',
+          'âœ… AI classification on submit',
+          'âœ… Auto-embedding generation'
         ],
         gaps: [],
         aiFeatures: ['AI classification', 'Embedding generation', 'Sentiment analysis']
@@ -87,12 +83,12 @@ function IdeasCoverageReport() {
         coverage: 100,
         description: 'Public board to view and vote on ideas',
         features: [
-          '✅ Ideas grid display',
-          '✅ Search and filters',
-          '✅ Voting system',
-          '✅ Sort by popular/recent/trending',
-          '✅ Category statistics',
-          '✅ Link to idea details'
+          'âœ… Ideas grid display',
+          'âœ… Search and filters',
+          'âœ… Voting system',
+          'âœ… Sort by popular/recent/trending',
+          'âœ… Category statistics',
+          'âœ… Link to idea details'
         ],
         gaps: [],
         aiFeatures: ['Smart sorting', 'Trending detection']
@@ -104,15 +100,15 @@ function IdeasCoverageReport() {
         coverage: 100,
         description: 'Detailed view of single idea',
         features: [
-          '✅ Full idea display',
-          '✅ Voting interface',
-          '✅ AI classification display',
-          '✅ Similar ideas detection',
-          '✅ Attachment gallery',
-          '✅ Submitter info',
-          '✅ Status tracking',
-          '✅ Comments section (NEW)',
-          '✅ Social sharing (NEW)'
+          'âœ… Full idea display',
+          'âœ… Voting interface',
+          'âœ… AI classification display',
+          'âœ… Similar ideas detection',
+          'âœ… Attachment gallery',
+          'âœ… Submitter info',
+          'âœ… Status tracking',
+          'âœ… Comments section (NEW)',
+          'âœ… Social sharing (NEW)'
         ],
         gaps: [],
         aiFeatures: ['AI classification display', 'Semantic similarity', 'Comment sentiment']
@@ -124,17 +120,17 @@ function IdeasCoverageReport() {
         coverage: 100,
         description: 'Admin panel for reviewing ideas',
         features: [
-          '✅ Ideas table with filters',
-          '✅ Status overview statistics',
-          '✅ Review workflow',
-          '✅ Approve/Reject actions',
-          '✅ Convert to Challenge',
-          '✅ Convert to Solution (NEW)',
-          '✅ Convert to Pilot (NEW)',
-          '✅ Convert to R&D (NEW)',
-          '✅ Duplicate detection',
-          '✅ Review notes',
-          '✅ Response templates (NEW)'
+          'âœ… Ideas table with filters',
+          'âœ… Status overview statistics',
+          'âœ… Review workflow',
+          'âœ… Approve/Reject actions',
+          'âœ… Convert to Challenge',
+          'âœ… Convert to Solution (NEW)',
+          'âœ… Convert to Pilot (NEW)',
+          'âœ… Convert to R&D (NEW)',
+          'âœ… Duplicate detection',
+          'âœ… Review notes',
+          'âœ… Response templates (NEW)'
         ],
         gaps: [],
         aiFeatures: ['Duplicate detection via embeddings', 'Auto-classification', 'Multi-path conversion', 'AI-enhanced conversions']
@@ -146,12 +142,12 @@ function IdeasCoverageReport() {
         coverage: 100,
         description: 'Analytics dashboard for ideas',
         features: [
-          '✅ Category breakdown (pie chart)',
-          '✅ Status distribution (bar chart)',
-          '✅ Monthly submission trends (line chart)',
-          '✅ Conversion rate metrics',
-          '✅ Voting statistics',
-          '✅ AI strategic insights'
+          'âœ… Category breakdown (pie chart)',
+          'âœ… Status distribution (bar chart)',
+          'âœ… Monthly submission trends (line chart)',
+          'âœ… Conversion rate metrics',
+          'âœ… Voting statistics',
+          'âœ… AI strategic insights'
         ],
         gaps: [],
         aiFeatures: ['Strategic insights generation', 'Trend analysis', 'Theme detection']
@@ -163,12 +159,12 @@ function IdeasCoverageReport() {
         coverage: 100,
         description: 'Citizen personal dashboard (NEW)',
         features: [
-          '✅ Track my submitted ideas',
-          '✅ View my votes',
-          '✅ Points and level display',
-          '✅ Badges earned',
-          '✅ Notifications feed',
-          '✅ National ranking'
+          'âœ… Track my submitted ideas',
+          'âœ… View my votes',
+          'âœ… Points and level display',
+          'âœ… Badges earned',
+          'âœ… Notifications feed',
+          'âœ… National ranking'
         ],
         gaps: [],
         aiFeatures: ['Personalized recommendations']
@@ -180,10 +176,10 @@ function IdeasCoverageReport() {
         coverage: 100,
         description: 'Top contributors ranking (NEW)',
         features: [
-          '✅ Top 3 podium display',
-          '✅ Full leaderboard',
-          '✅ Level badges',
-          '✅ Points display'
+          'âœ… Top 3 podium display',
+          'âœ… Full leaderboard',
+          'âœ… Level badges',
+          'âœ… Points display'
         ],
         gaps: [],
         aiFeatures: []
@@ -195,10 +191,10 @@ function IdeasCoverageReport() {
         coverage: 100,
         description: 'Expert evaluation workflow (NEW)',
         features: [
-          '✅ Evaluation scorecard',
-          '✅ Multi-criteria scoring',
-          '✅ Conversion recommendations',
-          '✅ Structured feedback'
+          'âœ… Evaluation scorecard',
+          'âœ… Multi-criteria scoring',
+          'âœ… Conversion recommendations',
+          'âœ… Structured feedback'
         ],
         gaps: [],
         aiFeatures: ['AI evaluation assistance']
@@ -210,10 +206,10 @@ function IdeasCoverageReport() {
         coverage: 100,
         description: 'Public pilot feedback form (NEW)',
         features: [
-          '✅ Star rating',
-          '✅ Detailed feedback',
-          '✅ Anonymous option',
-          '✅ Concerns tracking'
+          'âœ… Star rating',
+          'âœ… Detailed feedback',
+          'âœ… Anonymous option',
+          'âœ… Concerns tracking'
         ],
         gaps: [],
         aiFeatures: ['Sentiment analysis']
@@ -225,10 +221,10 @@ function IdeasCoverageReport() {
         coverage: 100,
         description: 'Track implementation progress (NEW)',
         features: [
-          '✅ Phase tracking',
-          '✅ Progress visualization',
-          '✅ Remaining items',
-          '✅ Priority indicators'
+          'âœ… Phase tracking',
+          'âœ… Progress visualization',
+          'âœ… Remaining items',
+          'âœ… Priority indicators'
         ],
         gaps: [],
         aiFeatures: []
@@ -379,10 +375,10 @@ function IdeasCoverageReport() {
         name: 'Multi-Path Conversion',
         stages: [
           { name: 'Admin selects conversion path', status: 'complete', automation: 'Challenge/Solution/Pilot/R&D options' },
-          { name: 'Idea → Challenge conversion', status: 'complete', automation: 'IdeaToChallengeConverter with auto-population' },
-          { name: 'Idea → Solution conversion', status: 'complete', automation: 'IdeaToSolutionConverter with AI enhancement' },
-          { name: 'Idea → Pilot conversion', status: 'complete', automation: 'IdeaToPilotConverter with AI enhancement' },
-          { name: 'Idea → R&D conversion', status: 'complete', automation: 'IdeaToRDConverter with AI enhancement' },
+          { name: 'Idea â†’ Challenge conversion', status: 'complete', automation: 'IdeaToChallengeConverter with auto-population' },
+          { name: 'Idea â†’ Solution conversion', status: 'complete', automation: 'IdeaToSolutionConverter with AI enhancement' },
+          { name: 'Idea â†’ Pilot conversion', status: 'complete', automation: 'IdeaToPilotConverter with AI enhancement' },
+          { name: 'Idea â†’ R&D conversion', status: 'complete', automation: 'IdeaToRDConverter with AI enhancement' },
           { name: 'Embedding generated for new entity', status: 'complete', automation: 'Auto-triggered' },
           { name: 'Idea status updated', status: 'complete', automation: 'Status reflects conversion' },
           { name: 'Link back to original idea', status: 'complete', automation: 'Bidirectional linking' }
@@ -404,9 +400,9 @@ function IdeasCoverageReport() {
       {
         name: 'Lifecycle Tracking',
         stages: [
-          { name: 'Submitted → Under Review', status: 'complete', automation: 'Manual admin action' },
-          { name: 'Under Review → Approved/Rejected', status: 'complete', automation: 'Review workflow' },
-          { name: 'Approved → Converted', status: 'complete', automation: 'Multi-path conversion (Challenge/Solution/Pilot/R&D)' },
+          { name: 'Submitted â†’ Under Review', status: 'complete', automation: 'Manual admin action' },
+          { name: 'Under Review â†’ Approved/Rejected', status: 'complete', automation: 'Review workflow' },
+          { name: 'Approved â†’ Converted', status: 'complete', automation: 'Multi-path conversion (Challenge/Solution/Pilot/R&D)' },
           { name: 'Duplicate detection & merging', status: 'complete', automation: 'MergeDuplicatesDialog component' },
           { name: 'SLA tracking', status: 'complete', automation: 'SLATracker component monitors review deadlines' }
         ],
@@ -567,7 +563,7 @@ function IdeasCoverageReport() {
         status: 'complete',
         description: 'Vote tracking with fraud detection',
         implementation: 'CitizenVote entity with fingerprinting',
-        gaps: ['⚠️ IP-based rate limiting', '⚠️ Verified voter badges']
+        gaps: ['âš ï¸ IP-based rate limiting', 'âš ï¸ Verified voter badges']
       },
       {
         name: 'Notifications',
@@ -614,9 +610,9 @@ function IdeasCoverageReport() {
           { step: 'Browse other ideas', page: 'PublicIdeasBoard', status: 'complete' },
           { step: 'Vote on ideas', page: 'PublicIdeasBoard', status: 'complete' },
           { step: 'View idea details', page: 'IdeaDetail', status: 'complete' },
-          { step: 'Comment on ideas', page: 'IdeaDetail', status: 'missing', gaps: ['❌ Comments UI'] },
-          { step: 'Track idea status', page: 'IdeaDetail', status: 'partial', gaps: ['❌ No email notifications'] },
-          { step: 'Receive update on my idea', page: 'N/A', status: 'missing', gaps: ['❌ No notification system'] },
+          { step: 'Comment on ideas', page: 'IdeaDetail', status: 'missing', gaps: ['âŒ Comments UI'] },
+          { step: 'Track idea status', page: 'IdeaDetail', status: 'partial', gaps: ['âŒ No email notifications'] },
+          { step: 'Receive update on my idea', page: 'N/A', status: 'missing', gaps: ['âŒ No notification system'] },
           { step: 'See my idea converted to challenge', page: 'Link from IdeaDetail', status: 'complete' },
           { step: 'Track challenge progress', page: 'ChallengeDetail', status: 'complete' }
         ],
@@ -642,11 +638,11 @@ function IdeasCoverageReport() {
       {
         persona: 'Dedicated Evaluator/Reviewer',
         journey: [
-          { step: 'Assigned ideas queue', page: 'N/A', status: 'missing', gaps: ['❌ No evaluator assignment system'] },
-          { step: 'Evaluation rubric/scorecard', page: 'N/A', status: 'missing', gaps: ['❌ No structured evaluation'] },
-          { step: 'Collaborative review with peers', page: 'N/A', status: 'missing', gaps: ['❌ No multi-reviewer consensus'] },
-          { step: 'Recommendation (Challenge/Solution/R&D/Reject)', page: 'N/A', status: 'missing', gaps: ['❌ Only Challenge conversion exists'] },
-          { step: 'Track review performance', page: 'N/A', status: 'missing', gaps: ['❌ No reviewer analytics'] }
+          { step: 'Assigned ideas queue', page: 'N/A', status: 'missing', gaps: ['âŒ No evaluator assignment system'] },
+          { step: 'Evaluation rubric/scorecard', page: 'N/A', status: 'missing', gaps: ['âŒ No structured evaluation'] },
+          { step: 'Collaborative review with peers', page: 'N/A', status: 'missing', gaps: ['âŒ No multi-reviewer consensus'] },
+          { step: 'Recommendation (Challenge/Solution/R&D/Reject)', page: 'N/A', status: 'missing', gaps: ['âŒ Only Challenge conversion exists'] },
+          { step: 'Track review performance', page: 'N/A', status: 'missing', gaps: ['âŒ No reviewer analytics'] }
         ],
         coverage: 20,
         gaps: ['Entire evaluator persona workflow missing', 'No structured evaluation criteria', 'No assignment system', 'No performance tracking']
@@ -654,47 +650,47 @@ function IdeasCoverageReport() {
       {
         persona: 'Municipality User',
         journey: [
-          { step: 'View ideas for my city', page: 'IdeasManagement (filtered)', status: 'partial', gaps: ['❌ Municipality-specific view'] },
+          { step: 'View ideas for my city', page: 'IdeasManagement (filtered)', status: 'partial', gaps: ['âŒ Municipality-specific view'] },
           { step: 'Promote idea to Challenge', page: 'Convert workflow', status: 'complete' },
-          { step: 'Respond to submitter', page: 'N/A', status: 'missing', gaps: ['❌ Direct messaging to citizen'] },
-          { step: 'Implement idea directly as pilot', page: 'N/A', status: 'missing', gaps: ['❌ Idea→Pilot conversion missing'] },
-          { step: 'Request provider to develop solution', page: 'N/A', status: 'missing', gaps: ['❌ Idea→Solution request workflow'] }
+          { step: 'Respond to submitter', page: 'N/A', status: 'missing', gaps: ['âŒ Direct messaging to citizen'] },
+          { step: 'Implement idea directly as pilot', page: 'N/A', status: 'missing', gaps: ['âŒ Ideaâ†’Pilot conversion missing'] },
+          { step: 'Request provider to develop solution', page: 'N/A', status: 'missing', gaps: ['âŒ Ideaâ†’Solution request workflow'] }
         ],
         coverage: 50,
-        gaps: ['Municipality-filtered Ideas page', 'Citizen communication channel', 'Direct Idea→Pilot path', 'Idea→Solution development request']
+        gaps: ['Municipality-filtered Ideas page', 'Citizen communication channel', 'Direct Ideaâ†’Pilot path', 'Ideaâ†’Solution development request']
       },
       {
         persona: 'Solution Provider / Startup',
         journey: [
-          { step: 'Submit idea for own product/service', page: 'PublicIdeaSubmission', status: 'partial', gaps: ['⚠️ No provider-specific form'] },
-          { step: 'Idea classified as "Solution Proposal"', page: 'N/A', status: 'missing', gaps: ['❌ No Idea→Solution direct path'] },
-          { step: 'Refine idea into Solution entry', page: 'N/A', status: 'missing', gaps: ['❌ Missing conversion workflow'] },
-          { step: 'Match to challenges automatically', page: 'N/A', status: 'missing', gaps: ['❌ No auto-matching from ideas'] }
+          { step: 'Submit idea for own product/service', page: 'PublicIdeaSubmission', status: 'partial', gaps: ['âš ï¸ No provider-specific form'] },
+          { step: 'Idea classified as "Solution Proposal"', page: 'N/A', status: 'missing', gaps: ['âŒ No Ideaâ†’Solution direct path'] },
+          { step: 'Refine idea into Solution entry', page: 'N/A', status: 'missing', gaps: ['âŒ Missing conversion workflow'] },
+          { step: 'Match to challenges automatically', page: 'N/A', status: 'missing', gaps: ['âŒ No auto-matching from ideas'] }
         ],
         coverage: 30,
-        gaps: ['Provider-submitted ideas not differentiated', 'No Idea→Solution direct conversion', 'No provider idea submission flow']
+        gaps: ['Provider-submitted ideas not differentiated', 'No Ideaâ†’Solution direct conversion', 'No provider idea submission flow']
       },
       {
         persona: 'Program Operator',
         journey: [
-          { step: 'Use ideas as program inspiration', page: 'IdeasAnalytics', status: 'partial', gaps: ['⚠️ No Idea→Program link'] },
-          { step: 'Cluster similar ideas into cohort', page: 'N/A', status: 'missing', gaps: ['❌ No clustering workflow'] },
-          { step: 'Invite idea submitters to program', page: 'N/A', status: 'missing', gaps: ['❌ No invitation system'] },
-          { step: 'Track program outcomes from ideas', page: 'N/A', status: 'missing', gaps: ['❌ No Idea→Program→Outcome tracking'] }
+          { step: 'Use ideas as program inspiration', page: 'IdeasAnalytics', status: 'partial', gaps: ['âš ï¸ No Ideaâ†’Program link'] },
+          { step: 'Cluster similar ideas into cohort', page: 'N/A', status: 'missing', gaps: ['âŒ No clustering workflow'] },
+          { step: 'Invite idea submitters to program', page: 'N/A', status: 'missing', gaps: ['âŒ No invitation system'] },
+          { step: 'Track program outcomes from ideas', page: 'N/A', status: 'missing', gaps: ['âŒ No Ideaâ†’Programâ†’Outcome tracking'] }
         ],
         coverage: 20,
-        gaps: ['Idea→Program conversion missing', 'No clustering for program design', 'No submitter engagement in programs']
+        gaps: ['Ideaâ†’Program conversion missing', 'No clustering for program design', 'No submitter engagement in programs']
       },
       {
         persona: 'R&D Researcher',
         journey: [
           { step: 'Browse ideas for research topics', page: 'PublicIdeasBoard', status: 'complete' },
-          { step: 'Identify research-worthy ideas', page: 'IdeasManagement', status: 'partial', gaps: ['⚠️ No R&D classification'] },
-          { step: 'Convert idea to R&D proposal', page: 'N/A', status: 'missing', gaps: ['❌ No Idea→R&D conversion'] },
-          { step: 'Link R&D outputs back to idea', page: 'N/A', status: 'missing', gaps: ['❌ No backwards link'] }
+          { step: 'Identify research-worthy ideas', page: 'IdeasManagement', status: 'partial', gaps: ['âš ï¸ No R&D classification'] },
+          { step: 'Convert idea to R&D proposal', page: 'N/A', status: 'missing', gaps: ['âŒ No Ideaâ†’R&D conversion'] },
+          { step: 'Link R&D outputs back to idea', page: 'N/A', status: 'missing', gaps: ['âŒ No backwards link'] }
         ],
         coverage: 40,
-        gaps: ['No Idea→R&D conversion path', 'No research potential scoring', 'No researcher engagement with ideas']
+        gaps: ['No Ideaâ†’R&D conversion path', 'No research potential scoring', 'No researcher engagement with ideas']
       }
     ],
 
@@ -786,21 +782,21 @@ function IdeasCoverageReport() {
         status: 'pending',
         details: 'RLS rules defined (view/edit by role + status), requires page implementation',
         compliance: 'Backend filtering + frontend permission checks',
-        gaps: ['⚠️ Needs implementation in IdeasManagement, PublicIdeasBoard, IdeaDetail pages']
+        gaps: ['âš ï¸ Needs implementation in IdeasManagement, PublicIdeasBoard, IdeaDetail pages']
       },
       {
         area: 'Field-Level Security - Citizen PII',
         status: 'pending',
         details: 'submitter_email, submitter_phone, ip_address, review_notes should be hidden from public',
         compliance: 'Conditional rendering based on permissions',
-        gaps: ['⚠️ Needs hasPermission() checks in IdeaDetail and PublicIdeasBoard components']
+        gaps: ['âš ï¸ Needs hasPermission() checks in IdeaDetail and PublicIdeasBoard components']
       },
       {
         area: 'Status-Based Access Control',
         status: 'pending',
         details: 'Draft ideas visible to submitter+admin only, rejected ideas hidden from public, etc.',
         compliance: 'Query filtering based on status + user role',
-        gaps: ['⚠️ Needs status-based filtering in PublicIdeasBoard and API queries']
+        gaps: ['âš ï¸ Needs status-based filtering in PublicIdeasBoard and API queries']
       },
       {
         area: 'Audit Trail',
@@ -814,14 +810,14 @@ function IdeasCoverageReport() {
         status: 'partial',
         details: 'Vote fraud detection implemented, submission rate limiting pending',
         compliance: 'Prevents vote manipulation',
-        gaps: ['⚠️ Submission rate limiting (e.g., max 3 ideas per day)', '⚠️ CAPTCHA for anonymous submissions']
+        gaps: ['âš ï¸ Submission rate limiting (e.g., max 3 ideas per day)', 'âš ï¸ CAPTCHA for anonymous submissions']
       }
     ],
 
     conversionPaths: {
       current: [
         {
-          path: 'Idea → Challenge',
+          path: 'Idea â†’ Challenge',
           status: 'implemented',
           coverage: 100,
           useCase: 'Citizen identifies a problem/need',
@@ -830,7 +826,7 @@ function IdeasCoverageReport() {
           gaps: []
         },
         {
-          path: 'Idea → Solution',
+          path: 'Idea â†’ Solution',
           status: 'implemented',
           coverage: 100,
           useCase: 'Citizen/Provider proposes a specific solution',
@@ -840,7 +836,7 @@ function IdeasCoverageReport() {
           gaps: []
         },
         {
-          path: 'Idea → Pilot',
+          path: 'Idea â†’ Pilot',
           status: 'implemented',
           coverage: 100,
           useCase: 'Municipality wants to pilot citizen idea directly',
@@ -850,7 +846,7 @@ function IdeasCoverageReport() {
           gaps: []
         },
         {
-          path: 'Idea → R&D Project',
+          path: 'Idea â†’ R&D Project',
           status: 'implemented',
           coverage: 100,
           useCase: 'Idea requires research before piloting',
@@ -860,7 +856,7 @@ function IdeasCoverageReport() {
           gaps: []
         },
         {
-          path: 'Idea → Merge/Cluster',
+          path: 'Idea â†’ Merge/Cluster',
           status: 'implemented',
           coverage: 100,
           useCase: 'Combine similar ideas into one stronger proposal',
@@ -870,7 +866,7 @@ function IdeasCoverageReport() {
           gaps: []
         },
         {
-          path: 'Idea → InnovationProposal (Program)',
+          path: 'Idea â†’ InnovationProposal (Program)',
           status: 'implemented',
           coverage: 100,
           useCase: 'Structured program/challenge submission',
@@ -887,16 +883,16 @@ function IdeasCoverageReport() {
           { aspect: 'Maturity', solutions: 'TRL 4+, proven', ideas: 'Raw concept, unvalidated' },
           { aspect: 'Submission', solutions: 'Structured form with docs', ideas: 'Simple text + photos OR structured InnovationProposal' },
           { aspect: 'Review', solutions: 'Technical verification', ideas: 'AI pre-screening + Expert evaluation' },
-          { aspect: 'AI Classification', solutions: '✅ Sector/TRL/Maturity', ideas: '✅ Category/Priority/Type/Clarity/Toxicity' },
-          { aspect: 'Embeddings', solutions: '✅ For matching', ideas: '✅ For duplicates + matching' },
-          { aspect: 'Conversion to Challenge', solutions: '❌ Solutions address challenges', ideas: '✅ IdeaToChallengeConverter' },
-          { aspect: 'Conversion to Solution', solutions: 'N/A (already Solution)', ideas: '✅ IdeaToSolutionConverter' },
-          { aspect: 'Voting', solutions: '❌ No public voting', ideas: '✅ Public voting' },
-          { aspect: 'Comments', solutions: '✅ Provider discussions', ideas: '✅ CommentThread component' },
-          { aspect: 'Marketplace', solutions: '✅ Public marketplace', ideas: '✅ Public board + InnovationProposals' },
-          { aspect: 'Direct to Pilot', solutions: '✅ Via Challenge matching', ideas: '✅ IdeaToPilotConverter' },
-          { aspect: 'Direct to R&D', solutions: '❌ No direct path', ideas: '✅ IdeaToRDConverter' },
-          { aspect: 'Merge Duplicates', solutions: '❌ No merge workflow', ideas: '✅ MergeDuplicatesDialog' }
+          { aspect: 'AI Classification', solutions: 'âœ… Sector/TRL/Maturity', ideas: 'âœ… Category/Priority/Type/Clarity/Toxicity' },
+          { aspect: 'Embeddings', solutions: 'âœ… For matching', ideas: 'âœ… For duplicates + matching' },
+          { aspect: 'Conversion to Challenge', solutions: 'âŒ Solutions address challenges', ideas: 'âœ… IdeaToChallengeConverter' },
+          { aspect: 'Conversion to Solution', solutions: 'N/A (already Solution)', ideas: 'âœ… IdeaToSolutionConverter' },
+          { aspect: 'Voting', solutions: 'âŒ No public voting', ideas: 'âœ… Public voting' },
+          { aspect: 'Comments', solutions: 'âœ… Provider discussions', ideas: 'âœ… CommentThread component' },
+          { aspect: 'Marketplace', solutions: 'âœ… Public marketplace', ideas: 'âœ… Public board + InnovationProposals' },
+          { aspect: 'Direct to Pilot', solutions: 'âœ… Via Challenge matching', ideas: 'âœ… IdeaToPilotConverter' },
+          { aspect: 'Direct to R&D', solutions: 'âŒ No direct path', ideas: 'âœ… IdeaToRDConverter' },
+          { aspect: 'Merge Duplicates', solutions: 'âŒ No merge workflow', ideas: 'âœ… MergeDuplicatesDialog' }
         ],
         keyInsight: 'IDEAS and SOLUTIONS now have PARALLEL conversion capabilities. Ideas support 6 conversion paths (Challenge/Solution/Pilot/R&D/Program/Merge) vs Solutions which are already endpoints. Both feed innovation pipeline through different routes.'
       }
@@ -1031,7 +1027,7 @@ function IdeasCoverageReport() {
           { step: 'See trending citizen concerns', page: 'IdeasAnalytics + AdvancedIdeasAnalytics with AI insights', status: 'complete' },
           { step: 'Review high-impact proposals', page: 'InnovationProposalsManagement filtered by score', status: 'complete' },
           { step: 'Monitor conversion pipeline', page: 'GapsImplementationTracker + metrics', status: 'complete' },
-          { step: 'Track idea→impact outcomes', page: 'MyChallengeTracker + resolution reports', status: 'complete' }
+          { step: 'Track ideaâ†’impact outcomes', page: 'MyChallengeTracker + resolution reports', status: 'complete' }
         ],
         coverage: 100,
         gaps: []
@@ -1040,53 +1036,53 @@ function IdeasCoverageReport() {
 
     gaps: {
       completed: [
-        '✅ FIXED: InnovationProposal entity created (Dec 2025)',
-        '✅ FIXED: IdeaEvaluation entity created (Dec 2025)',
-        '✅ FIXED: Evaluator workflow (IdeaEvaluationQueue - Dec 2025)',
-        '✅ FIXED: Program submission (ProgramIdeaSubmission - Dec 2025)',
-        '✅ FIXED: Challenge response (ChallengeIdeaResponse - Dec 2025)',
-        '✅ FIXED: Proposal management (InnovationProposalsManagement - Dec 2025)',
-        '✅ FIXED: Proposal detail (InnovationProposalDetail - Dec 2025)',
-        '✅ FIXED: Evaluation rubric builder (EvaluationRubricBuilder - Dec 2025)',
-        '✅ FIXED: Multi-evaluator consensus (MultiEvaluatorConsensus - Dec 2025)',
-        '✅ FIXED: Email templates (EmailTemplateManager - Dec 2025)',
-        '✅ FIXED: Advanced analytics (AdvancedIdeasAnalytics - Dec 2025)',
-        '✅ FIXED: AI sorting (AIPrioritySorter - Dec 2025)',
-        '✅ FIXED: MII integration (miiCitizenIntegration - Dec 2025)',
-        '✅ FIXED: Content moderation (ContentModerationAI - Dec 2025)',
-        '✅ FIXED: Advanced filters (AdvancedFilters - Dec 2025)',
-        '✅ FIXED: Real-time updates (polling - Dec 2025)',
-        '✅ FIXED: Merge duplicates UI (MergeDuplicatesDialog - Dec 2025)',
-        '✅ FIXED: Weekly reports (weeklyIdeasReport - Dec 2025)',
-        '✅ FIXED: Review SLA tracking (SLATracker component - Dec 2025)',
-        '✅ FIXED: Public leaderboard (CitizenLeaderboard page - Dec 2025)',
-        '✅ FIXED: Evaluator workflow (IdeaEvaluationQueue - Dec 2025)'
+        'âœ… FIXED: InnovationProposal entity created (Dec 2025)',
+        'âœ… FIXED: IdeaEvaluation entity created (Dec 2025)',
+        'âœ… FIXED: Evaluator workflow (IdeaEvaluationQueue - Dec 2025)',
+        'âœ… FIXED: Program submission (ProgramIdeaSubmission - Dec 2025)',
+        'âœ… FIXED: Challenge response (ChallengeIdeaResponse - Dec 2025)',
+        'âœ… FIXED: Proposal management (InnovationProposalsManagement - Dec 2025)',
+        'âœ… FIXED: Proposal detail (InnovationProposalDetail - Dec 2025)',
+        'âœ… FIXED: Evaluation rubric builder (EvaluationRubricBuilder - Dec 2025)',
+        'âœ… FIXED: Multi-evaluator consensus (MultiEvaluatorConsensus - Dec 2025)',
+        'âœ… FIXED: Email templates (EmailTemplateManager - Dec 2025)',
+        'âœ… FIXED: Advanced analytics (AdvancedIdeasAnalytics - Dec 2025)',
+        'âœ… FIXED: AI sorting (AIPrioritySorter - Dec 2025)',
+        'âœ… FIXED: MII integration (miiCitizenIntegration - Dec 2025)',
+        'âœ… FIXED: Content moderation (ContentModerationAI - Dec 2025)',
+        'âœ… FIXED: Advanced filters (AdvancedFilters - Dec 2025)',
+        'âœ… FIXED: Real-time updates (polling - Dec 2025)',
+        'âœ… FIXED: Merge duplicates UI (MergeDuplicatesDialog - Dec 2025)',
+        'âœ… FIXED: Weekly reports (weeklyIdeasReport - Dec 2025)',
+        'âœ… FIXED: Review SLA tracking (SLATracker component - Dec 2025)',
+        'âœ… FIXED: Public leaderboard (CitizenLeaderboard page - Dec 2025)',
+        'âœ… FIXED: Evaluator workflow (IdeaEvaluationQueue - Dec 2025)'
       ],
       critical: [],
       high: [
-        '⚠️ Bulk reviewer assignment (P3 - optional)',
-        '⚠️ Fast-track workflow (P3 - optional)'
+        'âš ï¸ Bulk reviewer assignment (P3 - optional)',
+        'âš ï¸ Fast-track workflow (P3 - optional)'
       ],
       medium: [
-        '⚠️ Automated weekly insights report',
-        '⚠️ Duplicate auto-flagging on submit',
-        '⚠️ Export ideas data',
-        '⚠️ Idea clustering for program design',
-        '⚠️ Provider-specific idea submission form',
-        '⚠️ Evaluator performance dashboard',
-        '⚠️ Idea maturity/readiness scoring (TRL-like)',
-        '⚠️ Attribution system for citizen IP',
-        '⚠️ Ideas in Executive Dashboard',
-        '⚠️ Idea→Program conversion workflow'
+        'âš ï¸ Automated weekly insights report',
+        'âš ï¸ Duplicate auto-flagging on submit',
+        'âš ï¸ Export ideas data',
+        'âš ï¸ Idea clustering for program design',
+        'âš ï¸ Provider-specific idea submission form',
+        'âš ï¸ Evaluator performance dashboard',
+        'âš ï¸ Idea maturity/readiness scoring (TRL-like)',
+        'âš ï¸ Attribution system for citizen IP',
+        'âš ï¸ Ideas in Executive Dashboard',
+        'âš ï¸ Ideaâ†’Program conversion workflow'
       ],
       low: [
-        '⚠️ Gamification badges for submitters',
-        '⚠️ Idea evolution tracking (edits/versions)',
-        '⚠️ Public voting leaderboard',
-        '⚠️ WhatsApp integration for idea submission',
-        '⚠️ SMS notifications',
-        '⚠️ Idea competitions/campaigns',
-        '⚠️ Photo contests linked to ideas'
+        'âš ï¸ Gamification badges for submitters',
+        'âš ï¸ Idea evolution tracking (edits/versions)',
+        'âš ï¸ Public voting leaderboard',
+        'âš ï¸ WhatsApp integration for idea submission',
+        'âš ï¸ SMS notifications',
+        'âš ï¸ Idea competitions/campaigns',
+        'âš ï¸ Photo contests linked to ideas'
       ]
     },
 
@@ -1158,16 +1154,16 @@ function IdeasCoverageReport() {
 
     evaluatorGaps: {
       missing: [
-        '❌ No dedicated Evaluator role in RBAC',
-        '❌ No evaluation queue/workload page',
-        '❌ No structured evaluation scorecard',
-        '❌ No evaluation criteria configuration',
-        '❌ No multi-evaluator consensus mechanism',
-        '❌ No evaluator assignment rules (by sector/expertise)',
-        '❌ No evaluator performance tracking',
-        '❌ No evaluation entity to store structured scores',
-        '❌ No evaluation reports/summaries',
-        '❌ No escalation workflow for disagreements'
+        'âŒ No dedicated Evaluator role in RBAC',
+        'âŒ No evaluation queue/workload page',
+        'âŒ No structured evaluation scorecard',
+        'âŒ No evaluation criteria configuration',
+        'âŒ No multi-evaluator consensus mechanism',
+        'âŒ No evaluator assignment rules (by sector/expertise)',
+        'âŒ No evaluator performance tracking',
+        'âŒ No evaluation entity to store structured scores',
+        'âŒ No evaluation reports/summaries',
+        'âŒ No escalation workflow for disagreements'
       ],
       recommended: [
         'Create IdeaEvaluation entity (evaluator_email, idea_id, scores, recommendation, rationale)',
@@ -1191,16 +1187,16 @@ function IdeasCoverageReport() {
       },
       {
         priority: 'P0',
-        title: 'Program → Idea Submission Integration',
+        title: 'Program â†’ Idea Submission Integration',
         description: 'Innovation campaigns should collect structured ideas linked to program_id with campaign-specific criteria',
         effort: 'Large',
         impact: 'Critical',
-        pages: ['ProgramDetail: Idea submission tab', 'Campaign-specific submission form', 'Idea→Program tracking', 'Program ideas leaderboard'],
+        pages: ['ProgramDetail: Idea submission tab', 'Campaign-specific submission form', 'Ideaâ†’Program tracking', 'Program ideas leaderboard'],
         rationale: 'Innovation campaigns (e.g., "Smart Mobility Challenge") should collect ideas specific to campaign theme with structured evaluation'
       },
       {
         priority: 'P0',
-        title: 'Challenge → Idea Response Workflow',
+        title: 'Challenge â†’ Idea Response Workflow',
         description: 'Challenges should accept structured idea responses/proposals with challenge_id linkage',
         effort: 'Medium',
         impact: 'Critical',
@@ -1209,7 +1205,7 @@ function IdeasCoverageReport() {
       },
       {
         priority: 'P0',
-        title: 'Program Campaign → Structured Idea Collection',
+        title: 'Program Campaign â†’ Structured Idea Collection',
         description: 'Innovation campaigns (program_type=campaign) should have dedicated idea submission linked to program with campaign criteria',
         effort: 'Large',
         impact: 'Critical',
@@ -1318,95 +1314,95 @@ function IdeasCoverageReport() {
     ],
 
     comparisonToSolutions: {
-    philosophicalDifference: 'STRUCTURED IDEAS (InnovationProposal) are innovation campaign submissions linked to Programs/Challenges with taxonomy and strategy. GENERIC IDEAS (CitizenIdea) are informal public engagement. SOLUTIONS are validated marketplace offerings from providers. Three distinct concepts serving different purposes.',
-      
+      philosophicalDifference: 'STRUCTURED IDEAS (InnovationProposal) are innovation campaign submissions linked to Programs/Challenges with taxonomy and strategy. GENERIC IDEAS (CitizenIdea) are informal public engagement. SOLUTIONS are validated marketplace offerings from providers. Three distinct concepts serving different purposes.',
+
       table: [
-        { 
-          aspect: 'Source', 
-          ideas: 'Citizens, general public, communities', 
+        {
+          aspect: 'Source',
+          ideas: 'Citizens, general public, communities',
           solutions: 'Providers, startups, vendors, academia',
           gap: 'Ideas from providers treated same as citizen ideas - should differentiate'
         },
-        { 
-          aspect: 'Maturity', 
-          ideas: 'Raw concept, unvalidated, varying detail', 
+        {
+          aspect: 'Maturity',
+          ideas: 'Raw concept, unvalidated, varying detail',
           solutions: 'Proven tech, TRL 4+, deployment-ready',
           gap: 'No maturity scoring for ideas - all treated equally'
         },
-        { 
-          aspect: 'Content Type', 
-          ideas: 'Can be: Problem, Solution, Research question, Feature request', 
+        {
+          aspect: 'Content Type',
+          ideas: 'Can be: Problem, Solution, Research question, Feature request',
           solutions: 'Always a Solution/Product',
           gap: 'Ideas not typed - AI should classify and route differently'
         },
-        { 
-          aspect: 'Submission Form', 
-          ideas: 'Simple: title, description, category, location', 
+        {
+          aspect: 'Submission Form',
+          ideas: 'Simple: title, description, category, location',
           solutions: 'Detailed: tech specs, pricing, case studies, compliance',
           gap: 'Provider ideas need richer form'
         },
-        { 
-          aspect: 'Review Process', 
-          ideas: 'Admin approval → manual conversion', 
-          solutions: 'Verification → marketplace listing',
+        {
+          aspect: 'Review Process',
+          ideas: 'Admin approval â†’ manual conversion',
+          solutions: 'Verification â†’ marketplace listing',
           gap: 'Ideas need structured evaluation, not just yes/no'
         },
-        { 
-          aspect: 'AI Classification', 
-          ideas: '✅ Category, priority, sentiment', 
-          solutions: '✅ Sector, TRL, maturity, challenges matched',
+        {
+          aspect: 'AI Classification',
+          ideas: 'âœ… Category, priority, sentiment',
+          solutions: 'âœ… Sector, TRL, maturity, challenges matched',
           gap: 'Ideas need: Type (problem/solution), Readiness, Conversion path recommendation'
         },
-        { 
-          aspect: 'Embeddings', 
-          ideas: '✅ For duplicate detection', 
-          solutions: '✅ For challenge matching',
+        {
+          aspect: 'Embeddings',
+          ideas: 'âœ… For duplicate detection',
+          solutions: 'âœ… For challenge matching',
           gap: 'Ideas should also match to Challenges/Solutions/R&D - not just duplicates'
         },
-        { 
-          aspect: 'Conversion Destination', 
-          ideas: 'ONLY → Challenge', 
+        {
+          aspect: 'Conversion Destination',
+          ideas: 'ONLY â†’ Challenge',
           solutions: 'N/A (already endpoint)',
-          gap: 'Ideas should → Challenge OR Solution OR R&D OR Pilot OR Program'
+          gap: 'Ideas should â†’ Challenge OR Solution OR R&D OR Pilot OR Program'
         },
-        { 
-          aspect: 'Public Engagement', 
-          ideas: '✅ Voting, comments (partial)', 
-          solutions: '❌ No public voting',
+        {
+          aspect: 'Public Engagement',
+          ideas: 'âœ… Voting, comments (partial)',
+          solutions: 'âŒ No public voting',
           gap: 'Comments UI missing for ideas'
         },
-        { 
-          aspect: 'Marketplace', 
-          ideas: '✅ Public board', 
-          solutions: '✅ Solutions marketplace',
+        {
+          aspect: 'Marketplace',
+          ideas: 'âœ… Public board',
+          solutions: 'âœ… Solutions marketplace',
           gap: 'Ideas board less sophisticated than Solutions marketplace'
         },
-        { 
-          aspect: 'Link to Challenges', 
-          ideas: '✅ Becomes Challenge', 
-          solutions: '✅ Matches to Challenges',
+        {
+          aspect: 'Link to Challenges',
+          ideas: 'âœ… Becomes Challenge',
+          solutions: 'âœ… Matches to Challenges',
           gap: 'Ideas should ALSO match to existing challenges without conversion'
         },
-        { 
-          aspect: 'Link to Pilots', 
-          ideas: '❌ No direct path', 
-          solutions: '✅ Via pilot design',
+        {
+          aspect: 'Link to Pilots',
+          ideas: 'âŒ No direct path',
+          solutions: 'âœ… Via pilot design',
           gap: 'Mature ideas should skip Challenge and go to Pilot'
         },
-        { 
-          aspect: 'Attribution/IP', 
-          ideas: '❌ No IP tracking', 
-          solutions: '✅ Provider portfolio, case studies',
+        {
+          aspect: 'Attribution/IP',
+          ideas: 'âŒ No IP tracking',
+          solutions: 'âœ… Provider portfolio, case studies',
           gap: 'Citizen ideas that become solutions/pilots should credit submitter'
         },
-        { 
-          aspect: 'Quality Control', 
-          ideas: '❌ No quality scoring', 
-          solutions: '✅ Verification, compliance checks',
+        {
+          aspect: 'Quality Control',
+          ideas: 'âŒ No quality scoring',
+          solutions: 'âœ… Verification, compliance checks',
           gap: 'Ideas need quality/feasibility scoring'
         }
       ],
-      
+
       conclusion: 'IDEAS are currently under-leveraged. They are treated as "problem submissions only" when they could be solutions, research questions, or pilot-ready proposals. Need intelligent routing based on IDEA TYPE.'
     },
   };
@@ -1426,14 +1422,14 @@ function IdeasCoverageReport() {
       {/* Header */}
       <div>
         <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-900 to-pink-700 bg-clip-text text-transparent">
-          {t({ en: '💡 Innovation Coverage Report', ar: '💡 تقرير تغطية الابتكار' })}
+          {t({ en: 'ðŸ’¡ Innovation Coverage Report', ar: 'ðŸ’¡ ØªÙ‚Ø±ÙŠØ± ØªØºØ·ÙŠØ© Ø§Ù„Ø§Ø¨ØªÙƒØ§Ø±' })}
         </h1>
         <p className="text-slate-600 mt-2">
-          {t({ en: 'Structured innovation submissions linked to Programs and Challenges - NOT generic citizen engagement', ar: 'المقترحات المنظمة المرتبطة بالبرامج والتحديات - وليست المشاركة العامة للمواطنين' })}
+          {t({ en: 'Structured innovation submissions linked to Programs and Challenges - NOT generic citizen engagement', ar: 'Ø§Ù„Ù…Ù‚ØªØ±Ø­Ø§Øª Ø§Ù„Ù…Ù†Ø¸Ù…Ø© Ø§Ù„Ù…Ø±ØªØ¨Ø·Ø© Ø¨Ø§Ù„Ø¨Ø±Ø§Ù…Ø¬ ÙˆØ§Ù„ØªØ­Ø¯ÙŠØ§Øª - ÙˆÙ„ÙŠØ³Øª Ø§Ù„Ù…Ø´Ø§Ø±ÙƒØ© Ø§Ù„Ø¹Ø§Ù…Ø© Ù„Ù„Ù…ÙˆØ§Ø·Ù†ÙŠÙ†' })}
         </p>
         <div className="mt-3 p-3 bg-amber-100 rounded-lg border border-amber-300">
           <p className="text-sm text-amber-900">
-            <strong>⚠️ Note:</strong> This report covers STRUCTURED IDEAS for innovation programs/challenges. 
+            <strong>âš ï¸ Note:</strong> This report covers STRUCTURED IDEAS for innovation programs/challenges.
             For GENERIC CITIZEN ENGAGEMENT (informal public ideas), see "Citizen Engagement Coverage Report".
           </p>
         </div>
@@ -1444,7 +1440,7 @@ function IdeasCoverageReport() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-purple-900">
             <Target className="h-6 w-6" />
-            {t({ en: 'Executive Summary', ar: 'الملخص التنفيذي' })}
+            {t({ en: 'Executive Summary', ar: 'Ø§Ù„Ù…Ù„Ø®Øµ Ø§Ù„ØªÙ†ÙÙŠØ°ÙŠ' })}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -1469,75 +1465,75 @@ function IdeasCoverageReport() {
           </div>
 
           <div className="p-4 bg-green-100 rounded-lg border-2 border-green-400 mb-4">
-            <p className="font-bold text-green-900 mb-2">✅ ENTITY CREATED</p>
+            <p className="font-bold text-green-900 mb-2">âœ… ENTITY CREATED</p>
             <p className="text-sm text-green-800">
               <strong>InnovationProposal</strong> entity NOW CREATED for structured program/challenge submissions!
-              <br/><br/>
+              <br /><br />
               <strong>Entity fields include:</strong>
-              <br/>• Linked to: program_id, challenge_alignment_id, sector_id, subsector_id, service_id, strategic_pillar_id
-              <br/>• Contains: implementation_plan, budget_estimate, timeline_proposal, team_composition, success_metrics_proposed
-              <br/>• Proposal type: problem/solution/research_question/implementation_plan
-              <br/>• Submitter type: citizen/startup/researcher/municipality/organization
-              <br/><br/>
+              <br />â€¢ Linked to: program_id, challenge_alignment_id, sector_id, subsector_id, service_id, strategic_pillar_id
+              <br />â€¢ Contains: implementation_plan, budget_estimate, timeline_proposal, team_composition, success_metrics_proposed
+              <br />â€¢ Proposal type: problem/solution/research_question/implementation_plan
+              <br />â€¢ Submitter type: citizen/startup/researcher/municipality/organization
+              <br /><br />
               <strong>Next Step:</strong> Build frontend pages for InnovationProposal submission (program campaigns, challenge responses).
             </p>
           </div>
 
           <div className="p-4 bg-purple-100 rounded-lg">
-            <p className="text-sm font-semibold text-purple-900 mb-2">✅ If Using CitizenIdea (Strengths)</p>
+            <p className="text-sm font-semibold text-purple-900 mb-2">âœ… If Using CitizenIdea (Strengths)</p>
             <ul className="text-sm text-purple-800 space-y-1">
-              <li>• Basic submission-to-conversion workflow exists</li>
-              <li>• AI classification and duplicate detection for generic ideas</li>
-              <li>• Vector embeddings for semantic search</li>
-              <li>• Analytics dashboard for engagement trends</li>
-              <li>• Public voting mechanism</li>
+              <li>â€¢ Basic submission-to-conversion workflow exists</li>
+              <li>â€¢ AI classification and duplicate detection for generic ideas</li>
+              <li>â€¢ Vector embeddings for semantic search</li>
+              <li>â€¢ Analytics dashboard for engagement trends</li>
+              <li>â€¢ Public voting mechanism</li>
             </ul>
           </div>
 
           <div className="p-4 bg-green-100 rounded-lg">
-            <p className="text-sm font-semibold text-green-900 mb-2">✅ Phase 1 Complete - Citizen Engagement Fixed</p>
+            <p className="text-sm font-semibold text-green-900 mb-2">âœ… Phase 1 Complete - Citizen Engagement Fixed</p>
             <ul className="text-sm text-green-800 space-y-1">
-              <li>• <strong>✅ InnovationProposal entity CREATED</strong> - All taxonomy fields, strategic alignment, structured fields included</li>
-              <li>• <strong>✅ Citizen feedback loop BUILT</strong> - Dashboard, notifications, tracking complete</li>
-              <li>• <strong>✅ Comments & Social ADDED</strong> - Discussion and sharing features live</li>
-              <li>• <strong>✅ Gamification BUILT</strong> - Points, badges, leaderboard complete</li>
-              <li>• <strong>✅ Multi-path conversion READY</strong> - Idea→Challenge/Solution/Pilot/R&D converters built</li>
-              <li>• <strong>✅ Evaluation workflow BUILT</strong> - IdeaEvaluation entity + Queue page + Scorecard</li>
-              <li>• <strong>✅ SLA tracking IMPLEMENTED</strong> - Response time monitoring active</li>
+              <li>â€¢ <strong>âœ… InnovationProposal entity CREATED</strong> - All taxonomy fields, strategic alignment, structured fields included</li>
+              <li>â€¢ <strong>âœ… Citizen feedback loop BUILT</strong> - Dashboard, notifications, tracking complete</li>
+              <li>â€¢ <strong>âœ… Comments & Social ADDED</strong> - Discussion and sharing features live</li>
+              <li>â€¢ <strong>âœ… Gamification BUILT</strong> - Points, badges, leaderboard complete</li>
+              <li>â€¢ <strong>âœ… Multi-path conversion READY</strong> - Ideaâ†’Challenge/Solution/Pilot/R&D converters built</li>
+              <li>â€¢ <strong>âœ… Evaluation workflow BUILT</strong> - IdeaEvaluation entity + Queue page + Scorecard</li>
+              <li>â€¢ <strong>âœ… SLA tracking IMPLEMENTED</strong> - Response time monitoring active</li>
             </ul>
           </div>
 
           <div className="p-4 bg-green-100 rounded-lg">
-            <p className="text-sm font-semibold text-green-900 mb-2">✅ Phase 2 Complete (InnovationProposal)</p>
+            <p className="text-sm font-semibold text-green-900 mb-2">âœ… Phase 2 Complete (InnovationProposal)</p>
             <ul className="text-sm text-green-800 space-y-1">
-              <li>• <strong>✅ ProgramIdeaSubmission</strong> - Submit to innovation programs</li>
-              <li>• <strong>✅ ChallengeIdeaResponse</strong> - Respond to challenges with proposals</li>
-              <li>• <strong>✅ InnovationProposalsManagement</strong> - Admin review queue</li>
-              <li>• <strong>✅ InnovationProposalDetail</strong> - View proposal details</li>
-              <li>• <strong>✅ AI enhancement</strong> - Integrated in both submission forms</li>
+              <li>â€¢ <strong>âœ… ProgramIdeaSubmission</strong> - Submit to innovation programs</li>
+              <li>â€¢ <strong>âœ… ChallengeIdeaResponse</strong> - Respond to challenges with proposals</li>
+              <li>â€¢ <strong>âœ… InnovationProposalsManagement</strong> - Admin review queue</li>
+              <li>â€¢ <strong>âœ… InnovationProposalDetail</strong> - View proposal details</li>
+              <li>â€¢ <strong>âœ… AI enhancement</strong> - Integrated in both submission forms</li>
             </ul>
           </div>
 
           <div className="p-4 bg-green-100 rounded-lg">
-            <p className="text-sm font-semibold text-green-900 mb-2">✅ Phase 3 Complete (100%)</p>
+            <p className="text-sm font-semibold text-green-900 mb-2">âœ… Phase 3 Complete (100%)</p>
             <ul className="text-sm text-green-800 space-y-1">
-              <li>• <strong>✅ EmailTemplateManager</strong> - Manage citizen communication templates with AI enhancement</li>
-              <li>• <strong>✅ EvaluationRubricBuilder</strong> - Configure evaluation criteria with weighted scoring</li>
-              <li>• <strong>✅ MultiEvaluatorConsensus</strong> - Track consensus across evaluators</li>
-              <li>• <strong>✅ AdvancedIdeasAnalytics</strong> - AI insights, trends, predictions</li>
-              <li>• <strong>✅ AIPrioritySorter</strong> - Intelligent priority-based sorting</li>
+              <li>â€¢ <strong>âœ… EmailTemplateManager</strong> - Manage citizen communication templates with AI enhancement</li>
+              <li>â€¢ <strong>âœ… EvaluationRubricBuilder</strong> - Configure evaluation criteria with weighted scoring</li>
+              <li>â€¢ <strong>âœ… MultiEvaluatorConsensus</strong> - Track consensus across evaluators</li>
+              <li>â€¢ <strong>âœ… AdvancedIdeasAnalytics</strong> - AI insights, trends, predictions</li>
+              <li>â€¢ <strong>âœ… AIPrioritySorter</strong> - Intelligent priority-based sorting</li>
             </ul>
           </div>
 
           <div className="p-4 bg-green-100 rounded-lg">
-            <p className="text-sm font-semibold text-green-900 mb-2">✅ Phase 4 Complete (100%) - All P2 Gaps Fixed</p>
+            <p className="text-sm font-semibold text-green-900 mb-2">âœ… Phase 4 Complete (100%) - All P2 Gaps Fixed</p>
             <ul className="text-sm text-green-800 space-y-1">
-              <li>• <strong>✅ ContentModerationAI</strong> - AI toxicity and spam detection in submission</li>
-              <li>• <strong>✅ AdvancedFilters</strong> - Date/vote/sentiment/priority range filters</li>
-              <li>• <strong>✅ Real-time updates</strong> - Auto-refresh every 30 seconds</li>
-              <li>• <strong>✅ MergeDuplicatesDialog</strong> - Multi-idea merge with attribution</li>
-              <li>• <strong>✅ weeklyIdeasReport</strong> - Automated weekly insights emails</li>
-              <li>• <strong>✅ IdeaVersionHistory</strong> - Version tracking component</li>
+              <li>â€¢ <strong>âœ… ContentModerationAI</strong> - AI toxicity and spam detection in submission</li>
+              <li>â€¢ <strong>âœ… AdvancedFilters</strong> - Date/vote/sentiment/priority range filters</li>
+              <li>â€¢ <strong>âœ… Real-time updates</strong> - Auto-refresh every 30 seconds</li>
+              <li>â€¢ <strong>âœ… MergeDuplicatesDialog</strong> - Multi-idea merge with attribution</li>
+              <li>â€¢ <strong>âœ… weeklyIdeasReport</strong> - Automated weekly insights emails</li>
+              <li>â€¢ <strong>âœ… IdeaVersionHistory</strong> - Version tracking component</li>
             </ul>
           </div>
         </CardContent>
@@ -1552,7 +1548,7 @@ function IdeasCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2">
               <Database className="h-5 w-5 text-blue-600" />
-              {t({ en: 'Data Model & Entity Schema', ar: 'نموذج البيانات ومخطط الكيان' })}
+              {t({ en: 'Data Model & Entity Schema', ar: 'Ù†Ù…ÙˆØ°Ø¬ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª ÙˆÙ…Ø®Ø·Ø· Ø§Ù„ÙƒÙŠØ§Ù†' })}
             </CardTitle>
             {expandedSections['entity'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
           </button>
@@ -1627,7 +1623,7 @@ function IdeasCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-green-600" />
-              {t({ en: 'Pages & Screens', ar: 'الصفحات والشاشات' })}
+              {t({ en: 'Pages & Screens', ar: 'Ø§Ù„ØµÙØ­Ø§Øª ÙˆØ§Ù„Ø´Ø§Ø´Ø§Øª' })}
               <Badge className="bg-green-100 text-green-700">{coverageData.pages.filter(p => p.status === 'complete').length}/{coverageData.pages.length} Complete</Badge>
             </CardTitle>
             {expandedSections['pages'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
@@ -1644,8 +1640,8 @@ function IdeasCoverageReport() {
                         <h4 className="font-semibold text-slate-900">{page.name}</h4>
                         <Badge className={
                           page.status === 'complete' ? 'bg-green-100 text-green-700' :
-                          page.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
+                            page.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-red-100 text-red-700'
                         }>
                           {page.status}
                         </Badge>
@@ -1708,7 +1704,7 @@ function IdeasCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2">
               <Workflow className="h-5 w-5 text-purple-600" />
-              {t({ en: 'Workflows & User Journeys', ar: 'سير العمل ورحلات المستخدم' })}
+              {t({ en: 'Workflows & User Journeys', ar: 'Ø³ÙŠØ± Ø§Ù„Ø¹Ù…Ù„ ÙˆØ±Ø­Ù„Ø§Øª Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…' })}
             </CardTitle>
             {expandedSections['workflows'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
           </button>
@@ -1737,7 +1733,7 @@ function IdeasCoverageReport() {
                       <div className="flex-1">
                         <p className="text-sm font-medium text-slate-900">{stage.name}</p>
                         {stage.automation && (
-                          <p className="text-xs text-purple-600">🤖 {stage.automation}</p>
+                          <p className="text-xs text-purple-600">ðŸ¤– {stage.automation}</p>
                         )}
                       </div>
                     </div>
@@ -1766,7 +1762,7 @@ function IdeasCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2 text-purple-900">
               <Brain className="h-5 w-5" />
-              {t({ en: 'AI & Machine Learning Features', ar: 'ميزات الذكاء الاصطناعي والتعلم الآلي' })}
+              {t({ en: 'AI & Machine Learning Features', ar: 'Ù…ÙŠØ²Ø§Øª Ø§Ù„Ø°ÙƒØ§Ø¡ Ø§Ù„Ø§ØµØ·Ù†Ø§Ø¹ÙŠ ÙˆØ§Ù„ØªØ¹Ù„Ù… Ø§Ù„Ø¢Ù„ÙŠ' })}
               <Badge className="bg-purple-100 text-purple-700">
                 {coverageData.aiFeatures.filter(a => a.status === 'implemented').length}/{coverageData.aiFeatures.length} Implemented
               </Badge>
@@ -1786,8 +1782,8 @@ function IdeasCoverageReport() {
                     </div>
                     <Badge className={
                       ai.status === 'implemented' ? 'bg-green-100 text-green-700' :
-                      ai.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-red-100 text-red-700'
+                        ai.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
                     }>
                       {ai.coverage}%
                     </Badge>
@@ -1831,7 +1827,7 @@ function IdeasCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5 text-teal-600" />
-              {t({ en: 'User Journeys', ar: 'رحلات المستخدم' })}
+              {t({ en: 'User Journeys', ar: 'Ø±Ø­Ù„Ø§Øª Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…' })}
             </CardTitle>
             {expandedSections['journeys'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
           </button>
@@ -1848,17 +1844,15 @@ function IdeasCoverageReport() {
                   {journey.journey.map((step, i) => (
                     <div key={i} className="flex items-start gap-3">
                       <div className="flex flex-col items-center">
-                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                          step.status === 'complete' ? 'bg-green-100 text-green-700' :
+                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${step.status === 'complete' ? 'bg-green-100 text-green-700' :
                           step.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
+                            'bg-red-100 text-red-700'
+                          }`}>
                           {i + 1}
                         </div>
                         {i < journey.journey.length - 1 && (
-                          <div className={`w-0.5 h-8 ${
-                            step.status === 'complete' ? 'bg-green-300' : 'bg-slate-200'
-                          }`} />
+                          <div className={`w-0.5 h-8 ${step.status === 'complete' ? 'bg-green-300' : 'bg-slate-200'
+                            }`} />
                         )}
                       </div>
                       <div className="flex-1 pt-1">
@@ -1886,7 +1880,7 @@ function IdeasCoverageReport() {
                   <div className="mt-4 p-3 bg-amber-50 rounded border border-amber-200">
                     <p className="text-sm font-semibold text-amber-900 mb-2">Journey Gaps:</p>
                     {journey.gaps.map((g, i) => (
-                      <div key={i} className="text-sm text-amber-800">• {g}</div>
+                      <div key={i} className="text-sm text-amber-800">â€¢ {g}</div>
                     ))}
                   </div>
                 )}
@@ -1905,7 +1899,7 @@ function IdeasCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2 text-green-900">
               <Shield className="h-6 w-6" />
-              {t({ en: 'RBAC & Access Control - Innovation Ideas', ar: 'التحكم بالوصول - الأفكار الابتكارية' })}
+              {t({ en: 'RBAC & Access Control - Innovation Ideas', ar: 'Ø§Ù„ØªØ­ÙƒÙ… Ø¨Ø§Ù„ÙˆØµÙˆÙ„ - Ø§Ù„Ø£ÙÙƒØ§Ø± Ø§Ù„Ø§Ø¨ØªÙƒØ§Ø±ÙŠØ©' })}
               <Badge className="bg-green-600 text-white">100% Foundation Complete</Badge>
             </CardTitle>
             {expandedSections['rbac'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
@@ -1915,7 +1909,7 @@ function IdeasCoverageReport() {
           <CardContent className="space-y-6">
             {/* Permissions */}
             <div>
-              <p className="font-semibold text-green-900 mb-3">✅ Idea-Specific Permissions (IMPLEMENTED in RolePermissionManager)</p>
+              <p className="font-semibold text-green-900 mb-3">âœ… Idea-Specific Permissions (IMPLEMENTED in RolePermissionManager)</p>
               <div className="grid md:grid-cols-3 gap-2">
                 {coverageData.rbac.permissions.map((perm, idx) => (
                   <div key={idx} className="p-3 bg-white rounded border border-green-300 text-sm">
@@ -1929,23 +1923,23 @@ function IdeasCoverageReport() {
               </div>
               <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-300">
                 <p className="text-xs text-green-900">
-                  <strong>✅ Implementation:</strong> 13 citizen engagement permissions added to PERMISSION_CATEGORIES.citizen in RolePermissionManager. Available for role assignment and frontend enforcement via ProtectedAction component.
+                  <strong>âœ… Implementation:</strong> 13 citizen engagement permissions added to PERMISSION_CATEGORIES.citizen in RolePermissionManager. Available for role assignment and frontend enforcement via ProtectedAction component.
                 </p>
               </div>
             </div>
 
             {/* Role Definitions */}
             <div>
-              <p className="font-semibold text-green-900 mb-3">✅ Citizen Engagement Roles (CREATED IN DATABASE)</p>
+              <p className="font-semibold text-green-900 mb-3">âœ… Citizen Engagement Roles (CREATED IN DATABASE)</p>
               <p className="text-sm text-green-600 mb-3">4 roles created with permissions assigned - ready for user assignment:</p>
-              
+
               <div className="space-y-3">
                 {coverageData.rbac.roles.map((role, idx) => (
                   <div key={idx} className="p-4 bg-white rounded border-2 border-green-300">
                     <div className="flex items-center gap-2 mb-3">
                       <Badge className="bg-green-600 text-white">{role.name}</Badge>
                       <span className="text-sm font-medium">{role.description}</span>
-                      <Badge className="bg-green-100 text-green-700 text-xs">✅ Created</Badge>
+                      <Badge className="bg-green-100 text-green-700 text-xs">âœ… Created</Badge>
                     </div>
                     <div className="mb-2">
                       <p className="text-xs font-semibold text-slate-700 mb-1">Required Permissions:</p>
@@ -1962,13 +1956,13 @@ function IdeasCoverageReport() {
 
             {/* Entity RLS Rules */}
             <div>
-              <p className="font-semibold text-amber-900 mb-3">⚠️ Row-Level Security (RLS) Rules - Application-Level Enforcement</p>
+              <p className="font-semibold text-amber-900 mb-3">âš ï¸ Row-Level Security (RLS) Rules - Application-Level Enforcement</p>
               <div className="p-3 bg-blue-50 rounded-lg border border-blue-300 mb-3">
                 <p className="text-xs text-blue-900">
                   <strong>Note:</strong> Base44 platform uses application-level security (not database-level RLS). Access control enforced via frontend permission checks (ProtectedAction, ProtectedPage) and API filtering based on user roles/permissions.
                 </p>
               </div>
-              
+
               <div className="space-y-3">
                 {Object.entries(coverageData.rbac.entityRLS).map(([entityName, rules]) => (
                   <div key={entityName} className="p-3 bg-white rounded border">
@@ -2002,7 +1996,7 @@ function IdeasCoverageReport() {
 
             {/* Field-Level Security */}
             <div>
-              <p className="font-semibold text-amber-900 mb-3">⚠️ Field-Level Security - Requires Page Implementation</p>
+              <p className="font-semibold text-amber-900 mb-3">âš ï¸ Field-Level Security - Requires Page Implementation</p>
               <div className="p-4 bg-amber-50 rounded-lg border border-amber-300">
                 <p className="text-sm text-amber-800 mb-3">
                   <strong>Implementation Pattern:</strong> Use conditional rendering in components to hide/show fields based on user permissions via hasPermission() hook.
@@ -2030,7 +2024,7 @@ function IdeasCoverageReport() {
                       <div>{')}'}</div>
                     </div>
                     <p className="text-xs text-blue-600 mt-2">
-                      ✅ Tools available: hasPermission(), isAdmin from usePermissions hook
+                      âœ… Tools available: hasPermission(), isAdmin from usePermissions hook
                     </p>
                   </div>
                 </div>
@@ -2039,7 +2033,7 @@ function IdeasCoverageReport() {
 
             {/* Status-Based Access */}
             <div>
-              <p className="font-semibold text-amber-900 mb-3">⚠️ Status-Based Access Rules - Requires Page Implementation</p>
+              <p className="font-semibold text-amber-900 mb-3">âš ï¸ Status-Based Access Rules - Requires Page Implementation</p>
               <div className="p-3 bg-blue-50 rounded-lg border border-blue-300 mb-3">
                 <p className="text-xs text-blue-900">
                   <strong>Implementation Pattern:</strong> Filter data queries based on status and user permissions. Example: <code className="bg-white px-1 py-0.5 rounded">base44.entities.CitizenIdea.filter({'{'}status: {'{'}$in: ['submitted', 'approved']{'}'}{'}'})</code> for public users.
@@ -2050,7 +2044,7 @@ function IdeasCoverageReport() {
                   <div key={status} className="p-3 bg-white rounded border flex items-center gap-3">
                     <Badge variant="outline" className="text-xs capitalize">{status.replace(/_/g, ' ')}</Badge>
                     <div className="flex-1 text-sm text-slate-700">
-                      <span className="font-medium">View:</span> {rules.whoCanView} | 
+                      <span className="font-medium">View:</span> {rules.whoCanView} |
                       <span className="font-medium ml-2">Edit:</span> {rules.whoCanEdit}
                     </div>
                     <Badge className="bg-amber-100 text-amber-700 text-xs">Page-level check</Badge>
@@ -2061,7 +2055,7 @@ function IdeasCoverageReport() {
 
             {/* Implementation Summary */}
             <div className="p-4 bg-green-100 rounded-lg border-2 border-green-400">
-              <p className="font-semibold text-green-900 mb-3">✅ RBAC Implementation Status - Permissions Layer Complete</p>
+              <p className="font-semibold text-green-900 mb-3">âœ… RBAC Implementation Status - Permissions Layer Complete</p>
               <div className="grid md:grid-cols-3 gap-4 text-sm mb-4">
                 <div className="text-center p-3 bg-white rounded border">
                   <p className="text-3xl font-bold text-green-600">100%</p>
@@ -2079,18 +2073,18 @@ function IdeasCoverageReport() {
                   <p className="text-xs text-amber-700">0/{Object.keys(coverageData.rbac.entityRLS).length} entities</p>
                 </div>
               </div>
-              
+
               <div className="text-sm text-green-800 space-y-2">
-                <p><strong>✅ Permissions Implemented:</strong> 13 citizen engagement permissions added to RolePermissionManager.PERMISSION_CATEGORIES.citizen</p>
-                <p><strong>✅ Roles Created:</strong> 4 citizen engagement roles created in database with permissions assigned</p>
-                <p><strong>✅ Frontend Enforcement Ready:</strong> usePermissions hook + ProtectedAction component available</p>
-                <p className="mt-2 text-blue-800"><strong>ℹ️ Application-Level Security (Base44 Pattern):</strong></p>
+                <p><strong>âœ… Permissions Implemented:</strong> 13 citizen engagement permissions added to RolePermissionManager.PERMISSION_CATEGORIES.citizen</p>
+                <p><strong>âœ… Roles Created:</strong> 4 citizen engagement roles created in database with permissions assigned</p>
+                <p><strong>âœ… Frontend Enforcement Ready:</strong> usePermissions hook + ProtectedAction component available</p>
+                <p className="mt-2 text-blue-800"><strong>â„¹ï¸ Application-Level Security (Base44 Pattern):</strong></p>
                 <ul className="list-disc list-inside space-y-1 ml-3 text-blue-800">
                   <li>RLS rules enforced at application level via permission checks in pages/components</li>
                   <li>Field-level security via conditional rendering based on user permissions</li>
                   <li>Status-based access via permission validation before actions</li>
                 </ul>
-                <p className="mt-2 text-amber-800"><strong>⚠️ Implementation Needed in Pages:</strong></p>
+                <p className="mt-2 text-amber-800"><strong>âš ï¸ Implementation Needed in Pages:</strong></p>
                 <ul className="list-disc list-inside space-y-1 ml-3 text-amber-800">
                   <li>Add permission checks to IdeasManagement, PublicIdeasBoard, IdeaDetail</li>
                   <li>Filter data based on user role (e.g., hide PII from non-admins)</li>
@@ -2112,7 +2106,7 @@ function IdeasCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2">
               <Network className="h-5 w-5 text-orange-600" />
-              {t({ en: 'Integration Points', ar: 'نقاط التكامل' })}
+              {t({ en: 'Integration Points', ar: 'Ù†Ù‚Ø§Ø· Ø§Ù„ØªÙƒØ§Ù…Ù„' })}
             </CardTitle>
             {expandedSections['integrations'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
           </button>
@@ -2128,7 +2122,7 @@ function IdeasCoverageReport() {
                       <Badge variant="outline" className="text-xs">{int.type}</Badge>
                     </div>
                     <p className="text-sm text-slate-600">{int.description}</p>
-                    <p className="text-xs text-purple-600 mt-1">📍 {int.implementation}</p>
+                    <p className="text-xs text-purple-600 mt-1">ðŸ“ {int.implementation}</p>
                   </div>
                   {int.status === 'complete' ? (
                     <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -2153,7 +2147,7 @@ function IdeasCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-red-600" />
-              {t({ en: 'Security & Compliance', ar: 'الأمان والامتثال' })}
+              {t({ en: 'Security & Compliance', ar: 'Ø§Ù„Ø£Ù…Ø§Ù† ÙˆØ§Ù„Ø§Ù…ØªØ«Ø§Ù„' })}
             </CardTitle>
             {expandedSections['security'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
           </button>
@@ -2167,14 +2161,14 @@ function IdeasCoverageReport() {
                     <p className="font-semibold text-slate-900">{sec.area}</p>
                     <Badge className={
                       sec.status === 'implemented' ? 'bg-green-100 text-green-700' :
-                      sec.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-red-100 text-red-700'
+                        sec.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
                     }>
                       {sec.status}
                     </Badge>
                   </div>
                   <p className="text-sm text-slate-600 mb-1">{sec.details}</p>
-                  <p className="text-xs text-blue-600">✓ {sec.compliance}</p>
+                  <p className="text-xs text-blue-600">âœ“ {sec.compliance}</p>
                   {sec.gaps?.length > 0 && (
                     <div className="mt-2 p-2 bg-red-50 rounded border border-red-200">
                       {sec.gaps.map((g, i) => (
@@ -2194,7 +2188,7 @@ function IdeasCoverageReport() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-amber-900">
             <AlertTriangle className="h-6 w-6" />
-            {t({ en: 'Gaps & Missing Features', ar: 'الفجوات والميزات المفقودة' })}
+            {t({ en: 'Gaps & Missing Features', ar: 'Ø§Ù„ÙØ¬ÙˆØ§Øª ÙˆØ§Ù„Ù…ÙŠØ²Ø§Øª Ø§Ù„Ù…ÙÙ‚ÙˆØ¯Ø©' })}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -2253,25 +2247,24 @@ function IdeasCoverageReport() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-green-900">
             <Target className="h-6 w-6" />
-            {t({ en: 'Recommended Next Steps', ar: 'الخطوات التالية الموصى بها' })}
+            {t({ en: 'Recommended Next Steps', ar: 'Ø§Ù„Ø®Ø·ÙˆØ§Øª Ø§Ù„ØªØ§Ù„ÙŠØ© Ø§Ù„Ù…ÙˆØµÙ‰ Ø¨Ù‡Ø§' })}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {coverageData.recommendations.map((rec, idx) => (
-              <div key={idx} className={`p-4 border-2 rounded-lg ${
-                rec.priority === 'P0' ? 'border-red-300 bg-red-50' :
+              <div key={idx} className={`p-4 border-2 rounded-lg ${rec.priority === 'P0' ? 'border-red-300 bg-red-50' :
                 rec.priority === 'P1' ? 'border-orange-300 bg-orange-50' :
-                rec.priority === 'P2' ? 'border-yellow-300 bg-yellow-50' :
-                'border-blue-300 bg-blue-50'
-              }`}>
+                  rec.priority === 'P2' ? 'border-yellow-300 bg-yellow-50' :
+                    'border-blue-300 bg-blue-50'
+                }`}>
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Badge className={
                       rec.priority === 'P0' ? 'bg-red-600 text-white' :
-                      rec.priority === 'P1' ? 'bg-orange-600 text-white' :
-                      rec.priority === 'P2' ? 'bg-yellow-600 text-white' :
-                      'bg-blue-600 text-white'
+                        rec.priority === 'P1' ? 'bg-orange-600 text-white' :
+                          rec.priority === 'P2' ? 'bg-yellow-600 text-white' :
+                            'bg-blue-600 text-white'
                     }>
                       {rec.priority}
                     </Badge>
@@ -2303,7 +2296,7 @@ function IdeasCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2">
               <Zap className="h-5 w-5 text-indigo-600" />
-              {t({ en: 'Feature Capability Matrix', ar: 'مصفوفة قدرات الميزات' })}
+              {t({ en: 'Feature Capability Matrix', ar: 'Ù…ØµÙÙˆÙØ© Ù‚Ø¯Ø±Ø§Øª Ø§Ù„Ù…ÙŠØ²Ø§Øª' })}
             </CardTitle>
             {expandedSections['matrix'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
           </button>
@@ -2324,26 +2317,26 @@ function IdeasCoverageReport() {
                 </thead>
                 <tbody>
                   {[
-                    { name: 'Create/Submit', cells: ['✅', '—', '—', '—', '—'] },
-                    { name: 'View List', cells: ['—', '✅', '—', '✅', '✅'] },
-                    { name: 'View Detail', cells: ['—', '✅', '✅', '✅', '✅'] },
-                    { name: 'Vote', cells: ['—', '✅', '✅', '—', '—'] },
-                    { name: 'Comment', cells: ['—', '—', '❌', '—', '—'] },
-                    { name: 'AI Classification', cells: ['✅', '✅', '✅', '✅', '—'] },
-                    { name: 'Duplicate Detection', cells: ['⚠️', '—', '✅', '✅', '—'] },
-                    { name: 'Review/Approve', cells: ['—', '—', '—', '✅', '—'] },
-                    { name: 'Convert to Challenge', cells: ['—', '—', '—', '✅', '—'] },
-                    { name: 'Analytics/Charts', cells: ['—', '✅', '—', '—', '✅'] },
-                    { name: 'Embeddings', cells: ['✅', '—', '—', '✅', '—'] }
+                    { name: 'Create/Submit', cells: ['âœ…', 'â€”', 'â€”', 'â€”', 'â€”'] },
+                    { name: 'View List', cells: ['â€”', 'âœ…', 'â€”', 'âœ…', 'âœ…'] },
+                    { name: 'View Detail', cells: ['â€”', 'âœ…', 'âœ…', 'âœ…', 'âœ…'] },
+                    { name: 'Vote', cells: ['â€”', 'âœ…', 'âœ…', 'â€”', 'â€”'] },
+                    { name: 'Comment', cells: ['â€”', 'â€”', 'âŒ', 'â€”', 'â€”'] },
+                    { name: 'AI Classification', cells: ['âœ…', 'âœ…', 'âœ…', 'âœ…', 'â€”'] },
+                    { name: 'Duplicate Detection', cells: ['âš ï¸', 'â€”', 'âœ…', 'âœ…', 'â€”'] },
+                    { name: 'Review/Approve', cells: ['â€”', 'â€”', 'â€”', 'âœ…', 'â€”'] },
+                    { name: 'Convert to Challenge', cells: ['â€”', 'â€”', 'â€”', 'âœ…', 'â€”'] },
+                    { name: 'Analytics/Charts', cells: ['â€”', 'âœ…', 'â€”', 'â€”', 'âœ…'] },
+                    { name: 'Embeddings', cells: ['âœ…', 'â€”', 'â€”', 'âœ…', 'â€”'] }
                   ].map((row, i) => (
                     <tr key={i} className="border-b hover:bg-slate-50">
                       <td className="py-2 px-3 font-medium">{row.name}</td>
                       {row.cells.map((cell, j) => (
                         <td key={j} className="py-2 px-3 text-center">
-                          {cell === '✅' ? <CheckCircle2 className="h-4 w-4 text-green-600 mx-auto" /> :
-                           cell === '❌' ? <XCircle className="h-4 w-4 text-red-600 mx-auto" /> :
-                           cell === '⚠️' ? <AlertTriangle className="h-4 w-4 text-yellow-600 mx-auto" /> :
-                           <span className="text-slate-300">—</span>}
+                          {cell === 'âœ…' ? <CheckCircle2 className="h-4 w-4 text-green-600 mx-auto" /> :
+                            cell === 'âŒ' ? <XCircle className="h-4 w-4 text-red-600 mx-auto" /> :
+                              cell === 'âš ï¸' ? <AlertTriangle className="h-4 w-4 text-yellow-600 mx-auto" /> :
+                                <span className="text-slate-300">â€”</span>}
                         </td>
                       ))}
                     </tr>
@@ -2364,7 +2357,7 @@ function IdeasCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2 text-indigo-900">
               <Network className="h-6 w-6" />
-              {t({ en: 'Conversion Paths & Routing', ar: 'مسارات التحويل والتوجيه' })}
+              {t({ en: 'Conversion Paths & Routing', ar: 'Ù…Ø³Ø§Ø±Ø§Øª Ø§Ù„ØªØ­ÙˆÙŠÙ„ ÙˆØ§Ù„ØªÙˆØ¬ÙŠÙ‡' })}
               <Badge className="bg-red-100 text-red-700">CRITICAL GAP</Badge>
             </CardTitle>
             {expandedSections['conversions'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
@@ -2373,20 +2366,20 @@ function IdeasCoverageReport() {
         {expandedSections['conversions'] && (
           <CardContent className="space-y-6">
             <div className="p-4 bg-green-50 border-2 border-green-300 rounded-lg">
-              <p className="font-bold text-green-900 mb-2">✅ MULTI-PATH ROUTING IMPLEMENTED</p>
+              <p className="font-bold text-green-900 mb-2">âœ… MULTI-PATH ROUTING IMPLEMENTED</p>
               <p className="text-sm text-green-800">
                 System now supports intelligent routing based on idea type:
-                <br/>• Problems → <strong>Challenge</strong> (IdeaToChallengeConverter)
-                <br/>• Solutions → <strong>Solution</strong> marketplace (IdeaToSolutionConverter)
-                <br/>• Research questions → <strong>R&D Project</strong> (IdeaToRDConverter)
-                <br/>• Implementation-ready → <strong>Pilot</strong> (IdeaToPilotConverter)
-                <br/>• Duplicates → <strong>Merge</strong> (MergeDuplicatesDialog)
-                <br/>• Structured proposals → <strong>InnovationProposal</strong> (ProgramIdeaSubmission, ChallengeIdeaResponse)
+                <br />â€¢ Problems â†’ <strong>Challenge</strong> (IdeaToChallengeConverter)
+                <br />â€¢ Solutions â†’ <strong>Solution</strong> marketplace (IdeaToSolutionConverter)
+                <br />â€¢ Research questions â†’ <strong>R&D Project</strong> (IdeaToRDConverter)
+                <br />â€¢ Implementation-ready â†’ <strong>Pilot</strong> (IdeaToPilotConverter)
+                <br />â€¢ Duplicates â†’ <strong>Merge</strong> (MergeDuplicatesDialog)
+                <br />â€¢ Structured proposals â†’ <strong>InnovationProposal</strong> (ProgramIdeaSubmission, ChallengeIdeaResponse)
               </p>
             </div>
 
             <div>
-              <p className="font-semibold text-green-900 mb-3">✅ All Conversion Paths Implemented (100%)</p>
+              <p className="font-semibold text-green-900 mb-3">âœ… All Conversion Paths Implemented (100%)</p>
               <div className="grid md:grid-cols-2 gap-3">
                 {coverageData.conversionPaths.current.map((path, i) => (
                   <div key={i} className="p-3 border-2 border-green-300 rounded-lg bg-green-50">
@@ -2414,7 +2407,7 @@ function IdeasCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2 text-blue-900">
               <Target className="h-6 w-6" />
-              {t({ en: 'Ideas vs Solutions - Comparison Matrix', ar: 'الأفكار مقابل الحلول - مصفوفة المقارنة' })}
+              {t({ en: 'Ideas vs Solutions - Comparison Matrix', ar: 'Ø§Ù„Ø£ÙÙƒØ§Ø± Ù…Ù‚Ø§Ø¨Ù„ Ø§Ù„Ø­Ù„ÙˆÙ„ - Ù…ØµÙÙˆÙØ© Ø§Ù„Ù…Ù‚Ø§Ø±Ù†Ø©' })}
             </CardTitle>
             {expandedSections['comparison'] ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
           </button>
@@ -2422,7 +2415,7 @@ function IdeasCoverageReport() {
         {expandedSections['comparison'] && (
           <CardContent className="space-y-4">
             <div className="p-4 bg-blue-100 rounded-lg border border-blue-300">
-              <p className="font-bold text-blue-900 mb-2">📘 Key Insight</p>
+              <p className="font-bold text-blue-900 mb-2">ðŸ“˜ Key Insight</p>
               <p className="text-sm text-blue-800">{coverageData.conversionPaths.comparison.keyInsight}</p>
             </div>
 
@@ -2437,12 +2430,12 @@ function IdeasCoverageReport() {
                   </tr>
                 </thead>
                 <tbody>
-                  {coverageData.conversionPaths.comparison.solutionsVsIdeas.map((row, i) => (
+                  {Array.isArray(coverageData.conversionPaths.comparison.solutionsVsIdeas) && coverageData.conversionPaths.comparison.solutionsVsIdeas.map((row, i) => (
                     <tr key={i} className="border-b hover:bg-slate-50">
-                      <td className="py-3 px-3 font-semibold text-slate-900">{row.aspect}</td>
-                      <td className="py-3 px-3 text-slate-700">{row.ideas}</td>
-                      <td className="py-3 px-3 text-slate-700">{row.solutions}</td>
-                      <td className="py-3 px-3 text-red-700 text-xs">{row.gap}</td>
+                      <td className="py-2 px-3 font-semibold">{row['aspect']}</td>
+                      <td className="py-2 px-3 text-slate-700">{row['ideas']}</td>
+                      <td className="py-2 px-3 text-slate-700">{row['solutions']}</td>
+                      <td className="py-2 px-3 text-red-700 text-xs">{row['gap']}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -2450,7 +2443,7 @@ function IdeasCoverageReport() {
             </div>
 
             <div className="p-4 bg-purple-100 rounded-lg border border-purple-300">
-              <p className="font-bold text-purple-900 mb-2">💡 Philosophical Difference</p>
+              <p className="font-bold text-purple-900 mb-2">ðŸ’¡ Philosophical Difference</p>
               <p className="text-sm text-purple-800">{coverageData.conversionPaths.comparison.philosophicalDifference}</p>
             </div>
           </CardContent>
@@ -2462,7 +2455,7 @@ function IdeasCoverageReport() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-blue-900">
             <TrendingUp className="h-6 w-6" />
-            {t({ en: 'Overall Assessment', ar: 'التقييم الشامل' })}
+            {t({ en: 'Overall Assessment', ar: 'Ø§Ù„ØªÙ‚ÙŠÙŠÙ… Ø§Ù„Ø´Ø§Ù…Ù„' })}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -2486,18 +2479,18 @@ function IdeasCoverageReport() {
           </div>
 
           <div className="p-4 bg-green-100 rounded-lg border-2 border-green-400">
-            <p className="text-sm font-semibold text-green-900 mb-2">✅ System Architecture Complete</p>
+            <p className="text-sm font-semibold text-green-900 mb-2">âœ… System Architecture Complete</p>
             <p className="text-sm text-green-800">
               Dual-track innovation intake system fully implemented:
             </p>
             <ul className="text-sm text-green-800 mt-2 space-y-1 list-disc list-inside">
-              <li><strong>CitizenIdea (GENERIC)</strong> - Informal public ideas with AI screening, voting, comments, gamification, and 5 conversion paths ✅</li>
-              <li><strong>InnovationProposal (STRUCTURED)</strong> - Formal program/challenge submissions with taxonomy, strategic alignment, budget, team, metrics ✅</li>
-              <li><strong>Multi-path conversions</strong> - Ideas convert to Challenge/Solution/Pilot/R&D based on type and expert evaluation ✅</li>
-              <li><strong>Expert evaluation workflow</strong> - IdeaEvaluationQueue with UnifiedEvaluationForm and MultiEvaluatorConsensus ✅</li>
-              <li><strong>Program campaigns</strong> - ProgramIdeaSubmission for structured innovation program submissions ✅</li>
-              <li><strong>Challenge responses</strong> - ChallengeIdeaResponse for responding to open challenges ✅</li>
-              <li><strong>AI enhancement</strong> - 11 AI features covering screening, moderation, classification, conversion, analytics ✅</li>
+              <li><strong>CitizenIdea (GENERIC)</strong> - Informal public ideas with AI screening, voting, comments, gamification, and 5 conversion paths âœ…</li>
+              <li><strong>InnovationProposal (STRUCTURED)</strong> - Formal program/challenge submissions with taxonomy, strategic alignment, budget, team, metrics âœ…</li>
+              <li><strong>Multi-path conversions</strong> - Ideas convert to Challenge/Solution/Pilot/R&D based on type and expert evaluation âœ…</li>
+              <li><strong>Expert evaluation workflow</strong> - IdeaEvaluationQueue with UnifiedEvaluationForm and MultiEvaluatorConsensus âœ…</li>
+              <li><strong>Program campaigns</strong> - ProgramIdeaSubmission for structured innovation program submissions âœ…</li>
+              <li><strong>Challenge responses</strong> - ChallengeIdeaResponse for responding to open challenges âœ…</li>
+              <li><strong>AI enhancement</strong> - 11 AI features covering screening, moderation, classification, conversion, analytics âœ…</li>
             </ul>
           </div>
 
@@ -2521,22 +2514,22 @@ function IdeasCoverageReport() {
           </div>
 
           <div className="p-4 bg-green-100 rounded-lg border-2 border-green-400">
-            <p className="text-sm font-semibold text-green-900 mb-2">✅ Bottom Line - Conversion System Complete</p>
+            <p className="text-sm font-semibold text-green-900 mb-2">âœ… Bottom Line - Conversion System Complete</p>
             <p className="text-sm text-green-800">
               <strong>DUAL-TRACK SYSTEM IMPLEMENTED:</strong>
-              <br/><br/>
+              <br /><br />
               <strong>Track 1: CitizenIdea (GENERIC)</strong> = Informal public ideas with 5 conversion paths:
-              <br/>• Idea → Challenge (IdeaToChallengeConverter)
-              <br/>• Idea → Solution (IdeaToSolutionConverter)
-              <br/>• Idea → Pilot (IdeaToPilotConverter)
-              <br/>• Idea → R&D (IdeaToRDConverter)
-              <br/>• Idea → Merge (MergeDuplicatesDialog)
-              <br/><br/>
+              <br />â€¢ Idea â†’ Challenge (IdeaToChallengeConverter)
+              <br />â€¢ Idea â†’ Solution (IdeaToSolutionConverter)
+              <br />â€¢ Idea â†’ Pilot (IdeaToPilotConverter)
+              <br />â€¢ Idea â†’ R&D (IdeaToRDConverter)
+              <br />â€¢ Idea â†’ Merge (MergeDuplicatesDialog)
+              <br /><br />
               <strong>Track 2: InnovationProposal (STRUCTURED)</strong> = Formal program/challenge submissions:
-              <br/>• Program campaigns (ProgramIdeaSubmission)
-              <br/>• Challenge responses (ChallengeIdeaResponse)
-              <br/>• With taxonomy, budget, team, strategic alignment
-              <br/><br/>
+              <br />â€¢ Program campaigns (ProgramIdeaSubmission)
+              <br />â€¢ Challenge responses (ChallengeIdeaResponse)
+              <br />â€¢ With taxonomy, budget, team, strategic alignment
+              <br /><br />
               <strong>Status:</strong> Both tracks complete with AI enhancement and expert evaluation workflows.
             </p>
           </div>

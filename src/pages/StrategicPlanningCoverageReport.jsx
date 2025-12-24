@@ -1,47 +1,18 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '../components/LanguageContext';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import BaseCoverageReport from '../components/reports/BaseCoverageReport';
 import { getStrategicCoverageData } from './strategicCoverageData';
+import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useBudgetsWithVisibility } from '@/hooks/useBudgetsWithVisibility';
 
 function StrategicPlanningCoverageReport() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans-coverage'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('strategic_plans')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data;
-    }
-  });
+  const { data: strategicPlans = [] } = useStrategiesWithVisibility();
+  const { data: challenges = [] } = useChallengesWithVisibility();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-strategy'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: budgets = [] } = useQuery({
-    queryKey: ['budgets-strategy'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('budgets')
-        .select('*');
-      if (error) throw error;
-      return data;
-    }
-  });
+  const { data: budgets = [] } = useBudgetsWithVisibility();
 
   const coverageData = getStrategicCoverageData(strategicPlans, challenges, budgets);
 

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useAnalytics } from '@/hooks/useAnalytics';
+import { useMatchingEntities } from '@/hooks/useMatchingEntities';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -17,84 +17,31 @@ import {
 export default function UsageAnalytics() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: userProfiles = [] } = useQuery({
-    queryKey: ['user-profiles-analytics'],
-    queryFn: async () => {
-      const { data } = await supabase.from('user_profiles').select('id, user_id, persona_type, created_at, last_login');
-      return data || [];
-    }
-  });
+  const { useUserProfiles, useUserRoles, useSystemActivities, useAccessLogs } = useAnalytics();
+  const { usePilots, useChallenges, useSolutions } = useMatchingEntities();
 
-  const { data: userRoles = [] } = useQuery({
-    queryKey: ['user-roles-analytics'],
-    queryFn: async () => {
-      const { data } = await supabase.from('user_roles').select('user_id, role');
-      return data || [];
-    }
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-analytics'],
-    queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('id').eq('is_deleted', false);
-      return data || [];
-    }
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-analytics'],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('id').eq('is_deleted', false);
-      return data || [];
-    }
-  });
-
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions-analytics'],
-    queryFn: async () => {
-      const { data } = await supabase.from('solutions').select('id').eq('is_deleted', false);
-      return data || [];
-    }
-  });
-
-  const { data: activities = [] } = useQuery({
-    queryKey: ['system-activities-analytics'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('system_activities')
-        .select('id, activity_type, created_at, user_email')
-        .order('created_at', { ascending: false })
-        .limit(500);
-      return data || [];
-    }
-  });
-
-  const { data: accessLogs = [] } = useQuery({
-    queryKey: ['access-logs-analytics'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('access_logs')
-        .select('id, action, created_at, user_id')
-        .order('created_at', { ascending: false })
-        .limit(500);
-      return data || [];
-    }
-  });
+  const { data: userProfiles = [] } = useUserProfiles();
+  const { data: userRoles = [] } = useUserRoles();
+  const { data: pilots = [] } = usePilots({ limit: 5000 });
+  const { data: challenges = [] } = useChallenges({ limit: 5000 });
+  const { data: solutions = [] } = useSolutions({ limit: 5000 });
+  const { data: activities = [] } = useSystemActivities(500);
+  const { data: accessLogs = [] } = useAccessLogs(500);
 
   // Calculate weekly activity from real data
   const weeklyActivity = useMemo(() => {
     const weeks = [];
     const now = new Date();
-    
+
     for (let i = 3; i >= 0; i--) {
       const weekStart = new Date(now.getTime() - (i + 1) * 7 * 24 * 60 * 60 * 1000);
       const weekEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
-      
+
       const actionsInWeek = activities.filter(a => {
         const created = new Date(a.created_at);
         return created >= weekStart && created < weekEnd;
       }).length;
-      
+
       const uniqueUsers = new Set(
         activities
           .filter(a => {
@@ -104,14 +51,14 @@ export default function UsageAnalytics() {
           .map(a => a.user_email)
           .filter(Boolean)
       ).size;
-      
+
       weeks.push({
         week: `W${4 - i}`,
         users: uniqueUsers || Math.floor(userProfiles.length * (0.4 + Math.random() * 0.3)),
         actions: actionsInWeek || Math.floor(50 + Math.random() * 100)
       });
     }
-    
+
     return weeks;
   }, [activities, userProfiles]);
 

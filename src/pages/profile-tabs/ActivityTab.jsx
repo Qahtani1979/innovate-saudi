@@ -1,74 +1,21 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
-import { 
-  Activity, TrendingUp, Clock, Eye, FileText, MessageSquare, 
+import {
+  Activity, TrendingUp, Clock, Eye, FileText, MessageSquare,
   ThumbsUp, Lightbulb, Target
 } from 'lucide-react';
 import { ProfileStatCard, ProfileStatGrid } from '@/components/profile/ProfileStatCard';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { useUserActivity } from '@/hooks/useUserActivity';
 
 export default function ActivityTab() {
   const { t, isRTL, language } = useLanguage();
   const { user } = useAuth();
 
-  const { data: activities = [] } = useQuery({
-    queryKey: ['my-activities', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data } = await supabase
-        .from('user_activities')
-        .select('*')
-        .eq('user_email', user.email)
-        .order('created_at', { ascending: false })
-        .limit(100);
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
-
-  const { data: votes = [] } = useQuery({
-    queryKey: ['my-votes', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data } = await supabase
-        .from('citizen_votes')
-        .select('*')
-        .eq('user_email', user.email);
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
-
-  const { data: comments = [] } = useQuery({
-    queryKey: ['my-comments', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data } = await supabase
-        .from('comments')
-        .select('*')
-        .eq('user_email', user.email)
-        .eq('is_deleted', false);
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
-
-  const { data: ideas = [] } = useQuery({
-    queryKey: ['my-ideas', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      const { data } = await supabase
-        .from('citizen_ideas')
-        .select('*')
-        .eq('user_id', user.id);
-      return data || [];
-    },
-    enabled: !!user?.id
-  });
+  // Use custom hook for all user activity data
+  const { activities, votes, comments, ideas } = useUserActivity(user?.email, user?.id);
 
   // Activity timeline data
   const last30Days = Array.from({ length: 30 }, (_, i) => {
@@ -78,7 +25,7 @@ export default function ActivityTab() {
   });
 
   const activityByDay = last30Days.map(date => {
-    const count = activities.filter(a => 
+    const count = activities.filter(a =>
       a.created_at?.split('T')[0] === date
     ).length;
     return { date: date.slice(5), count };
@@ -156,10 +103,10 @@ export default function ActivityTab() {
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} className="text-muted-foreground" />
                 <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip />
-                <Line 
-                  type="monotone" 
-                  dataKey="count" 
-                  stroke="hsl(var(--primary))" 
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke="hsl(var(--primary))"
                   strokeWidth={2}
                   dot={false}
                 />

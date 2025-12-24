@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,20 +24,26 @@ export default function RDTRLAdvancement({ project, onClose }) {
 
   const advanceMutation = useMutation({
     mutationFn: async (data) => {
-      await base44.entities.RDProject.update(project.id, {
-        trl_current: data.newTRL,
-        trl_advancement_history: [
-          ...(project.trl_advancement_history || []),
-          {
-            from: project.trl_current || project.trl_start,
-            to: data.newTRL,
-            date: new Date().toISOString(),
-            justification: data.justification,
-            evidence_urls: data.evidence,
-            ai_validation: data.aiValidation
-          }
-        ]
-      });
+      const { supabase } = await import('@/integrations/supabase/client');
+
+      const { error } = await supabase
+        .from('rd_projects')
+        .update({
+          trl_current: data.newTRL,
+          trl_advancement_history: [
+            ...(project.trl_advancement_history || []),
+            {
+              from: project.trl_current || project.trl_start,
+              to: data.newTRL,
+              date: new Date().toISOString(),
+              justification: data.justification,
+              evidence_urls: data.evidence,
+              ai_validation: data.aiValidation
+            }
+          ]
+        })
+        .eq('id', project.id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['rd-project']);
@@ -218,7 +223,7 @@ Return structured validation.`;
           <div className="space-y-3">
             <div className={`p-4 rounded-lg border-2 ${aiValidation.advancement_justified ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'}`}>
               <p className="text-sm font-semibold mb-2">
-                {aiValidation.advancement_justified 
+                {aiValidation.advancement_justified
                   ? t({ en: '✓ AI Validation: APPROVED', ar: '✓ التحقق الذكي: موافق' })
                   : t({ en: '✗ AI Validation: CONCERNS', ar: '✗ التحقق الذكي: مخاوف' })}
               </p>

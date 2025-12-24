@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,9 +13,11 @@ import {
   PROGRAM_CONVERSION_SCHEMA
 } from '@/lib/ai/prompts/challenges/programConversion';
 
+import { useConvertChallengeToProgram } from '@/hooks/useChallengeConversionMutations';
+
 export default function ChallengeToProgramWorkflow({ challenge, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  // queryClient removed
   const [programType, setProgramType] = useState('');
   const [programData, setProgramData] = useState({
     name_en: '',
@@ -33,40 +33,7 @@ export default function ChallengeToProgramWorkflow({ challenge, onClose, onSucce
     fallbackData: null
   });
 
-  const createProgramMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: program, error: programError } = await supabase.from('programs').insert(data).select().single();
-      if (programError) throw programError;
-      
-      await supabase.from('challenges').update({
-        linked_program_ids: [...(challenge.linked_program_ids || []), program.id]
-      }).eq('id', challenge.id);
-
-      await supabase.from('challenge_relations').insert({
-        challenge_id: challenge.id,
-        related_entity_type: 'program',
-        related_entity_id: program.id,
-        relation_role: 'informed_by',
-        created_via: 'manual'
-      });
-
-      await supabase.from('system_activities').insert({
-        entity_type: 'challenge',
-        entity_id: challenge.id,
-        activity_type: 'program_created',
-        description_en: `Program created from challenge: ${program.name_en}`
-      });
-
-      return program;
-    },
-    onSuccess: (program) => {
-      queryClient.invalidateQueries({ queryKey: ['challenges'] });
-      queryClient.invalidateQueries({ queryKey: ['programs'] });
-      toast.success(t({ en: 'Program created', ar: 'تم إنشاء البرنامج' }));
-      onSuccess?.(program);
-      onClose?.();
-    }
-  });
+  const createProgramMutation = useConvertChallengeToProgram();
 
   const generateWithAI = async () => {
     if (!programType) {
@@ -93,11 +60,19 @@ export default function ChallengeToProgramWorkflow({ challenge, onClose, onSucce
     }
 
     createProgramMutation.mutate({
-      ...programData,
-      program_type: programType,
-      focus_areas: [challenge.sector],
-      status: 'planning',
-      tags: ['challenge_response', challenge.sector]
+      challenge,
+      programData: {
+        ...programData,
+        program_type: programType,
+        focus_areas: [challenge.sector],
+        status: 'planning',
+        tags: ['challenge_response', challenge.sector]
+      }
+    }, {
+      onSuccess: (program) => {
+        onSuccess?.(program);
+        onClose?.();
+      }
     });
   };
 
@@ -112,7 +87,7 @@ export default function ChallengeToProgramWorkflow({ challenge, onClose, onSucce
         </CardHeader>
         <CardContent className="pt-6 space-y-4">
           <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
-          
+
           <div className="p-4 bg-pink-50 rounded-lg border border-pink-200">
             <p className="text-sm font-semibold text-pink-900 mb-1">
               {t({ en: 'Challenge:', ar: 'التحدي:' })}

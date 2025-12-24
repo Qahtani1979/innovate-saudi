@@ -1,53 +1,43 @@
 import React from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../components/LanguageContext';
-import { FileText, CheckCircle2, XCircle, DollarSign } from 'lucide-react';
+import { FileText, CheckCircle2, XCircle, DollarSign, Loader2 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
+import { usePendingInvoices, useInvoiceMutations } from '../hooks/useInvoices';
 
 function InvoiceApproval() {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
   const [selectedInvoice, setSelectedInvoice] = React.useState(null);
   const [approvalNotes, setApprovalNotes] = React.useState('');
 
-  const { data: invoices = [], isLoading } = useQuery({
-    queryKey: ['invoices-pending'],
-    queryFn: async () => {
-      const { data } = await supabase.from('invoices').select('*').eq('status', 'submitted');
-      return data || [];
-    }
-  });
+  const { data: invoices = [], isLoading } = usePendingInvoices();
+  const { approveInvoice } = useInvoiceMutations();
 
-  const approveMutation = useMutation({
-    mutationFn: async ({ invoiceId, approved }) => {
-      const { error } = await supabase.from('invoices').update({
-        status: approved ? 'approved' : 'draft',
-        approved_by: approved ? user?.email : null,
-        approval_date: approved ? new Date().toISOString() : null,
-        approval_notes: approvalNotes
-      }).eq('id', invoiceId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['invoices-pending'] });
-      setSelectedInvoice(null);
-      setApprovalNotes('');
-    }
-  });
+  const handleApproval = (approved) => {
+    approveInvoice.mutate({
+      invoiceId: selectedInvoice,
+      approved,
+      notes: approvalNotes,
+      approvedBy: user?.email
+    }, {
+      onSuccess: () => {
+        setSelectedInvoice(null);
+        setApprovalNotes('');
+      }
+    });
+  };
 
   const totalValue = invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -125,15 +115,17 @@ function InvoiceApproval() {
                   />
                   <div className="flex gap-2">
                     <Button
-                      onClick={() => approveMutation.mutate({ invoiceId: invoice.id, approved: true })}
+                      onClick={() => handleApproval(true)}
                       className="bg-green-600 hover:bg-green-700"
+                      disabled={approveInvoice.isPending}
                     >
                       <CheckCircle2 className="h-4 w-4 mr-2" />
                       {t({ en: 'Approve', ar: 'موافقة' })}
                     </Button>
                     <Button
-                      onClick={() => approveMutation.mutate({ invoiceId: invoice.id, approved: false })}
+                      onClick={() => handleApproval(false)}
                       variant="destructive"
+                      disabled={approveInvoice.isPending}
                     >
                       <XCircle className="h-4 w-4 mr-2" />
                       {t({ en: 'Reject', ar: 'رفض' })}
@@ -154,6 +146,12 @@ function InvoiceApproval() {
             </CardContent>
           </Card>
         ))}
+        {invoices.length === 0 && (
+          <div className="text-center py-12">
+            <CheckCircle2 className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+            <p className="text-slate-500">{t({ en: 'No pending invoices', ar: 'لا توجد فواتير معلقة' })}</p>
+          </div>
+        )}
       </div>
     </div>
   );

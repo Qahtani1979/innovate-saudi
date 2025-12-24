@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Button } from "@/components/ui/button";
@@ -40,6 +39,7 @@ import { usePrompt } from '@/hooks/usePrompt';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
+import { useSolutionMutations } from '@/hooks/useSolutionMutations';
 import SolutionErrorBoundary from '../components/solutions/SolutionErrorBoundary';
 import SolutionDeleteDialog from '../components/solutions/SolutionDeleteDialog';
 
@@ -62,7 +62,7 @@ function SolutionsPage() {
   const { invoke: invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = usePrompt(null);
   const { language, isRTL, t } = useLanguage();
 
-  const queryClient = useQueryClient();
+
 
   // Use visibility-aware hook for solutions
   const { data: solutions = [], isLoading } = useSolutionsWithVisibility({
@@ -71,37 +71,8 @@ function SolutionsPage() {
     limit: 100
   });
 
-  // mh-2: Optimistic updates for delete
-  const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      const { error } = await supabase
-        .from('solutions')
-        .update({ is_deleted: true, deleted_date: new Date().toISOString() })
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onMutate: async (deletedId) => {
-      await queryClient.cancelQueries(['solutions-with-visibility']);
-      const previousSolutions = queryClient.getQueryData(['solutions-with-visibility']);
-      queryClient.setQueryData(['solutions-with-visibility'], (old) =>
-        old?.filter(s => s.id !== deletedId) || []
-      );
-      return { previousSolutions };
-    },
-    onError: (err, deletedId, context) => {
-      queryClient.setQueryData(['solutions-with-visibility'], context.previousSolutions);
-      toast.error(t({ en: 'Failed to delete solution', ar: 'فشل حذف الحل' }));
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries(['solutions']);
-      queryClient.invalidateQueries(['solutions-with-visibility']);
-      setDeleteDialogOpen(false);
-      setSolutionToDelete(null);
-    },
-    onSuccess: () => {
-      toast.success(t({ en: 'Solution deleted successfully', ar: 'تم حذف الحل بنجاح' }));
-    }
-  });
+  // mh-2: Optimistic updates handled in hook
+  const { deleteSolution, bulkArchiveSolutions, togglePublishSolution } = useSolutionMutations();
 
   const handleDeleteClick = (solution, e) => {
     e.preventDefault();
@@ -112,38 +83,14 @@ function SolutionsPage() {
 
   const confirmDelete = () => {
     if (solutionToDelete) {
-      deleteMutation.mutate(solutionToDelete.id);
+      deleteSolution.mutate(solutionToDelete.id, {
+        onSuccess: () => { // Callback handled in hook but can add local state cleanup
+          setDeleteDialogOpen(false);
+          setSolutionToDelete(null);
+        }
+      });
     }
   };
-
-  const bulkArchiveMutation = useMutation({
-    mutationFn: async (ids) => {
-      const { error } = await supabase
-        .from('solutions')
-        .update({ is_archived: true })
-        .in('id', ids);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['solutions']);
-      setSelectedSolutions([]);
-      toast.success('Solutions archived');
-    }
-  });
-
-  const togglePublishMutation = useMutation({
-    mutationFn: async ({ id, published }) => {
-      const { error } = await supabase
-        .from('solutions')
-        .update({ is_published: published })
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['solutions']);
-      toast.success('Solution visibility updated');
-    }
-  });
 
   // lc-3: Filter and sort solutions
   const filteredSolutions = solutions.filter(solution => {
@@ -217,23 +164,20 @@ function SolutionsPage() {
         title={{ en: 'Solutions Marketplace', ar: 'سوق الحلول' }}
         subtitle={{ en: 'Discover validated solutions from providers across the ecosystem', ar: 'اكتشف الحلول المعتمدة من مقدمي الخدمات عبر النظام البيئي' }}
         icon={<Lightbulb className="h-6 w-6 text-white" />}
-        actions={
-          <div className="flex items-center gap-3">
-            <Button variant="outline" className="gap-2 bg-white/50" onClick={handleAIInsights} disabled={aiLoading || !isAvailable}>
-              {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
-            </Button>
-            {hasPermission('solution_create') && (
-              <Link to={createPageUrl('SolutionCreate')}>
-                <Button variant="secondary">
-                  <Plus className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                  {t({ en: 'Add Solution', ar: 'إضافة حل' })}
-                </Button>
-              </Link>
-            )}
-          </div>
-        }
-      />
+        actions={<div className="flex items-center gap-3">
+          <Button variant="outline" className="gap-2 bg-white/50" onClick={handleAIInsights} disabled={aiLoading || !isAvailable}>
+            {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
+          </Button>
+          {hasPermission('solution_create') && (
+            <Link to={createPageUrl('SolutionCreate')}>
+              <Button variant="secondary">
+                <Plus className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                {t({ en: 'Add Solution', ar: 'إضافة حل' })}
+              </Button>
+            </Link>
+          )}
+        </div>} description={undefined} action={undefined} children={undefined} />
 
       {/* AI Insights Modal */}
       {showAIInsights && (
@@ -248,7 +192,7 @@ function SolutionsPage() {
             </Button>
           </CardHeader>
           <CardContent>
-            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" error={undefined} />
             {aiLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-yellow-600" />
@@ -607,7 +551,7 @@ function SolutionsPage() {
         onOpenChange={setDeleteDialogOpen}
         solution={solutionToDelete}
         onConfirm={confirmDelete}
-        isDeleting={deleteMutation.isPending}
+        isDeleting={deleteSolution.isPending}
       />
     </PageLayout>
   );

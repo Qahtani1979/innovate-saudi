@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +11,8 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useAuth } from '@/lib/AuthContext';
+import { useUserAnalytics } from '@/hooks/useUserAnalytics';
+import { useKnowledgeDocuments } from '@/hooks/useKnowledgeDocuments';
 
 function MyLearning() {
   const { language, isRTL, t } = useLanguage();
@@ -20,57 +20,33 @@ function MyLearning() {
   const { invokeAI, status: aiStatus, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
   const { user } = useAuth();
 
-  const { data: knowledgeDocs = [] } = useQuery({
-    queryKey: ['knowledge-docs'],
-    queryFn: async () => {
-      const { data } = await supabase.from('knowledge_documents').select('*');
-      return data || [];
-    }
-  });
+  const { metrics, isLoading: analyticsLoading } = useUserAnalytics();
+  const { useAllDocuments } = useKnowledgeDocuments();
 
-  const { data: myChallenges = [] } = useQuery({
-    queryKey: ['my-challenges-learning', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false).eq('created_by', user?.email);
-      return data || [];
-    },
-    enabled: !!user
-  });
-
-  const { data: myPilots = [] } = useQuery({
-    queryKey: ['my-pilots-learning', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*').eq('is_deleted', false).eq('created_by', user?.email);
-      return data || [];
-    },
-    enabled: !!user
-  });
+  const { data: knowledgeDocs = [] } = useAllDocuments();
 
   const generateRecommendations = async () => {
-    const { 
-      LEARNING_RECOMMENDATIONS_PROMPT_TEMPLATE, 
-      LEARNING_RECOMMENDATIONS_RESPONSE_SCHEMA 
+    const {
+      LEARNING_RECOMMENDATIONS_PROMPT_TEMPLATE,
+      LEARNING_RECOMMENDATIONS_RESPONSE_SCHEMA
     } = await import('@/lib/ai/prompts/learning/recommendations');
-
-    const conversionRate = myChallenges.length > 0 
-      ? Math.round((myChallenges.filter(c => c.linked_pilot_ids?.length > 0).length / myChallenges.length) * 100) 
-      : 0;
 
     const result = await invokeAI({
       prompt: LEARNING_RECOMMENDATIONS_PROMPT_TEMPLATE({
         role: user?.role,
-        challengesCount: myChallenges.length,
-        pilotsCount: myPilots.length,
-        conversionRate
+        challengesCount: metrics.challengesCount,
+        pilotsCount: metrics.pilotsCount,
+        conversionRate: metrics.challengeConversionRate
       }),
-      response_json_schema: LEARNING_RECOMMENDATIONS_RESPONSE_SCHEMA
+      response_json_schema: LEARNING_RECOMMENDATIONS_RESPONSE_SCHEMA,
+      system_prompt: 'You are an expert learning consultant.'
     });
     if (result.success) {
       setRecommendations(result.data.recommendations || []);
     }
   };
 
-  const trainingDocs = knowledgeDocs.filter(doc => doc.doc_type === 'guide' || doc.doc_type === 'tutorial');
+  const trainingDocs = knowledgeDocs.filter(doc => doc.document_type === 'guide' || doc.document_type === 'tutorial');
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -89,7 +65,7 @@ function MyLearning() {
         </Button>
       </div>
 
-      <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} />
+      <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} error={null} />
 
       {/* AI Recommendations */}
       {recommendations && (
@@ -138,7 +114,7 @@ function MyLearning() {
                     <h3 className="font-medium text-slate-900 text-sm">
                       {language === 'ar' && doc.title_ar ? doc.title_ar : doc.title_en}
                     </h3>
-                    <p className="text-xs text-slate-600 mt-1">{doc.doc_type}</p>
+                    <p className="text-xs text-slate-600 mt-1">{doc.document_type}</p>
                   </div>
                   <Badge variant="outline">{doc.category}</Badge>
                 </div>

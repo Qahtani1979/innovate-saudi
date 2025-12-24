@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +8,7 @@ import { Building2, Search, Plus, Star, CheckCircle2, Package } from 'lucide-rea
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useVendors } from '@/hooks/useVendors';
 
 function VendorRegistry() {
   const { t } = useLanguage();
@@ -17,13 +16,10 @@ function VendorRegistry() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
 
-  const { data: vendors = [], isLoading } = useQuery({
-    queryKey: ['vendors'],
-    queryFn: () => base44.entities.Vendor.list('-created_date')
-  });
+  const { data: vendors = [], isLoading } = useVendors();
 
   const filteredVendors = vendors.filter(v => {
-    const matchesSearch = !search || 
+    const matchesSearch = !search ||
       v.name_en?.toLowerCase().includes(search.toLowerCase()) ||
       v.name_ar?.toLowerCase().includes(search.toLowerCase()) ||
       v.vendor_code?.toLowerCase().includes(search.toLowerCase());
@@ -224,6 +220,6 @@ function VendorRegistry() {
   );
 }
 
-export default ProtectedPage(VendorRegistry, { 
-  requiredPermissions: ['vendor_view_all'] 
+export default ProtectedPage(VendorRegistry, {
+  requiredPermissions: ['vendor_view_all']
 });

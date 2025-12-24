@@ -3,6 +3,8 @@
  * 
  * Fetches users that the current user can see/interact with
  * based on their visibility level (municipality, sector, etc.)
+ * 
+ * Refactored to support Pagination and Standard Response Shape { data, count }.
  */
 
 import { useQuery } from '@tanstack/react-query';
@@ -11,7 +13,9 @@ import { useVisibilitySystem } from './visibility/useVisibilitySystem';
 import { usePermissions } from '@/components/permissions/usePermissions';
 
 export function useUsersWithVisibility(options = {}) {
-  const { limit = 100, includeInactive = false } = options;
+  const { page = 1, pageSize = 20, filters = {} } = options;
+  const start = (page - 1) * pageSize;
+  const end = start + pageSize - 1;
 
   const {
     hasFullVisibility,
@@ -30,99 +34,120 @@ export function useUsersWithVisibility(options = {}) {
       isNational,
       sectorIds,
       userMunicipalityId,
-      limit
+      page,
+      pageSize,
+      filters
     }],
     queryFn: async () => {
-      // Admin or full visibility - all users
+      // 1. Admin or full visibility - All users
       if (isAdmin || hasFullVisibility) {
-        const { data, error } = await supabase
+        let query = supabase
           .from('user_profiles')
-          .select('*')
+          .select('*', { count: 'exact' })
           .order('created_at', { ascending: false })
-          .limit(limit);
-        
+          .range(start, end);
+
+        if (filters.search) {
+          query = query.or(`full_name_en.ilike.%${filters.search}%,email.ilike.%${filters.search}%`);
+        }
+
+        const { data, count, error } = await query;
         if (error) throw error;
-        return data || [];
+        return { data: data || [], count: count || 0 };
       }
 
-      // National deputyship - users in their sectors (via user_roles)
+      // 2. National deputyship - Users in Sectors
       if (isNational && sectorIds?.length > 0) {
-        // Get users in municipalities that have entities in the user's sectors
+        // Fetch User IDs first (Permission Layer)
         const { data: userRoles, error: rolesError } = await supabase
           .from('user_roles')
           .select('user_id, municipality_id');
-        
+
         if (rolesError) throw rolesError;
 
-        // Get municipality IDs that are national or in user's sectors
         const relevantMunicipalityIds = new Set(nationalMunicipalityIds || []);
-        
-        // For sectoral visibility, we show users from all municipalities
-        // since deputyship oversees across municipalities
+
         const relevantUserIds = userRoles
-          .filter(ur => ur.municipality_id && (relevantMunicipalityIds.has(ur.municipality_id) || true))
+          .filter(ur => ur.municipality_id && (relevantMunicipalityIds.has(ur.municipality_id) || true)) // Strategy: Deputyship sees all?
           .map(ur => ur.user_id);
 
-        const { data, error } = await supabase
+        if (relevantUserIds.length === 0) return { data: [], count: 0 };
+
+        // Fetch Profiles
+        let query = supabase
           .from('user_profiles')
-          .select('*')
-          .limit(limit);
-        
+          .select('*', { count: 'exact' })
+          .in('id', relevantUserIds)
+          .range(start, end);
+
+        if (filters.search) {
+          query = query.or(`full_name_en.ilike.%${filters.search}%,email.ilike.%${filters.search}%`);
+        }
+
+        const { data, count, error } = await query;
         if (error) throw error;
-        return data || [];
+        return { data: data || [], count: count || 0 };
       }
 
-      // Municipality staff - users in same municipality
+      // 3. Municipality staff
       if (userMunicipalityId) {
         const { data: userRoles, error: rolesError } = await supabase
           .from('user_roles')
           .select('user_id')
           .eq('municipality_id', userMunicipalityId);
-        
-        if (rolesError) throw rolesError;
 
+        if (rolesError) throw rolesError;
         const userIds = userRoles.map(ur => ur.user_id);
 
-        if (userIds.length === 0) return [];
+        if (userIds.length === 0) return { data: [], count: 0 };
 
-        const { data, error } = await supabase
+        let query = supabase
           .from('user_profiles')
-          .select('*')
+          .select('*', { count: 'exact' })
           .in('id', userIds)
-          .limit(limit);
-        
+          .range(start, end);
+
+        if (filters.search) {
+          query = query.or(`full_name_en.ilike.%${filters.search}%,email.ilike.%${filters.search}%`);
+        }
+
+        const { data, count, error } = await query;
         if (error) throw error;
-        return data || [];
+        return { data: data || [], count: count || 0 };
       }
 
-      // Organization member - users in same organization
+      // 4. Organization member
       if (organizationId) {
         const { data: orgMembers, error: membersError } = await supabase
           .from('organization_members')
           .select('user_email')
           .eq('organization_id', organizationId);
-        
-        if (membersError) throw membersError;
 
+        if (membersError) throw membersError;
         const emails = orgMembers.map(m => m.user_email);
 
-        if (emails.length === 0) return [];
+        if (emails.length === 0) return { data: [], count: 0 };
 
-        const { data, error } = await supabase
+        let query = supabase
           .from('user_profiles')
-          .select('*')
+          .select('*', { count: 'exact' })
           .in('email', emails)
-          .limit(limit);
-        
+          .range(start, end);
+
+        if (filters.search) {
+          query = query.or(`full_name_en.ilike.%${filters.search}%,email.ilike.%${filters.search}%`);
+        }
+
+        const { data, count, error } = await query;
         if (error) throw error;
-        return data || [];
+        return { data: data || [], count: count || 0 };
       }
 
-      // No visibility - return empty
-      return [];
+      return { data: [], count: 0 };
     },
     enabled: !visibilityLoading,
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    staleTime: 1000 * 60 * 2,
+    keepPreviousData: true,
   });
 }
 

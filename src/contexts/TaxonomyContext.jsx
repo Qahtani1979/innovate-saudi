@@ -8,10 +8,10 @@ const TaxonomyContext = createContext(null);
 // Plus all lookup reference data
 async function fetchTaxonomyData() {
   const [
-    domainsResult, 
-    deputyshipsResult, 
-    sectorsResult, 
-    subsectorsResult, 
+    domainsResult,
+    deputyshipsResult,
+    sectorsResult,
+    subsectorsResult,
     servicesResult,
     regionsResult,
     strategicThemesResult,
@@ -19,8 +19,12 @@ async function fetchTaxonomyData() {
     visionProgramsResult,
     stakeholderTypesResult,
     riskCategoriesResult,
-    governanceRolesResult
+    stakeholderTypesResult,
+    riskCategoriesResult,
+    governanceRolesResult,
+    tagsResult
   ] = await Promise.all([
+
     // Core taxonomy
     supabase
       .from('domains')
@@ -82,8 +86,13 @@ async function fetchTaxonomyData() {
       .from('lookup_governance_roles')
       .select('id, code, name_en, name_ar, description_en, description_ar, icon, display_order')
       .eq('is_active', true)
-      .order('display_order')
+      .order('display_order'),
+    supabase
+      .from('tags')
+      .select('*')
+      .order('name_en')
   ]);
+
 
   // Core taxonomy errors
   if (domainsResult.error) throw domainsResult.error;
@@ -99,14 +108,17 @@ async function fetchTaxonomyData() {
   if (visionProgramsResult.error) console.warn('Failed to load vision programs:', visionProgramsResult.error);
   if (stakeholderTypesResult.error) console.warn('Failed to load stakeholder types:', stakeholderTypesResult.error);
   if (riskCategoriesResult.error) console.warn('Failed to load risk categories:', riskCategoriesResult.error);
+  if (riskCategoriesResult.error) console.warn('Failed to load risk categories:', riskCategoriesResult.error);
   if (governanceRolesResult.error) console.warn('Failed to load governance roles:', governanceRolesResult.error);
+  if (tagsResult.error) console.warn('Failed to load tags:', tagsResult.error);
+
 
   const domains = domainsResult.data || [];
   const deputyships = deputyshipsResult.data || [];
   const sectors = sectorsResult.data || [];
   const subsectors = subsectorsResult.data || [];
   const services = servicesResult.data || [];
-  
+
   // Reference data
   const regions = regionsResult.data || [];
   const strategicThemes = strategicThemesResult.data || [];
@@ -114,7 +126,10 @@ async function fetchTaxonomyData() {
   const visionPrograms = visionProgramsResult.data || [];
   const stakeholderTypes = stakeholderTypesResult.data || [];
   const riskCategories = riskCategoriesResult.data || [];
+  const riskCategories = riskCategoriesResult.data || [];
   const governanceRoles = governanceRolesResult.data || [];
+  const tags = tagsResult.data || [];
+
 
   // Build nested hierarchies
   const subsectorsWithServices = subsectors.map(sub => ({
@@ -144,7 +159,7 @@ async function fetchTaxonomyData() {
     sectors,
     subsectors,
     services,
-    
+
     // Flat arrays - Reference data
     regions,
     strategicThemes,
@@ -153,13 +168,15 @@ async function fetchTaxonomyData() {
     stakeholderTypes,
     riskCategories,
     governanceRoles,
-    
+    tags,
+
+
     // Nested hierarchies
     domainsWithDeputyships,
     deputyshipsWithSectors,
     sectorsWithSubsectors,
     subsectorsWithServices,
-    
+
     // Lookup maps for O(1) access - Core taxonomy
     domainsByCode: Object.fromEntries(domains.map(d => [d.code, d])),
     domainsById: Object.fromEntries(domains.map(d => [d.id, d])),
@@ -171,7 +188,7 @@ async function fetchTaxonomyData() {
     subsectorsById: Object.fromEntries(subsectors.map(s => [s.id, s])),
     servicesByCode: Object.fromEntries(services.map(s => [s.code, s])),
     servicesById: Object.fromEntries(services.map(s => [s.id, s])),
-    
+
     // Lookup maps - Reference data
     regionsByCode: Object.fromEntries(regions.map(r => [r.code, r])),
     regionsById: Object.fromEntries(regions.map(r => [r.id, r])),
@@ -201,7 +218,7 @@ export function TaxonomyProvider({ children }) {
     sectors: data?.sectors || [],
     subsectors: data?.subsectors || [],
     services: data?.services || [],
-    
+
     // Flat data arrays - Reference data
     regions: data?.regions || [],
     strategicThemes: data?.strategicThemes || [],
@@ -209,14 +226,18 @@ export function TaxonomyProvider({ children }) {
     visionPrograms: data?.visionPrograms || [],
     stakeholderTypes: data?.stakeholderTypes || [],
     riskCategories: data?.riskCategories || [],
+    stakeholderTypes: data?.stakeholderTypes || [],
+    riskCategories: data?.riskCategories || [],
     governanceRoles: data?.governanceRoles || [],
-    
+    tags: data?.tags || [],
+
+
     // Nested hierarchies
     domainsWithDeputyships: data?.domainsWithDeputyships || [],
     deputyshipsWithSectors: data?.deputyshipsWithSectors || [],
     sectorsWithSubsectors: data?.sectorsWithSubsectors || [],
     subsectorsWithServices: data?.subsectorsWithServices || [],
-    
+
     // Lookup maps - Core taxonomy
     domainsByCode: data?.domainsByCode || {},
     domainsById: data?.domainsById || {},
@@ -228,7 +249,7 @@ export function TaxonomyProvider({ children }) {
     subsectorsById: data?.subsectorsById || {},
     servicesByCode: data?.servicesByCode || {},
     servicesById: data?.servicesById || {},
-    
+
     // Lookup maps - Reference data
     regionsByCode: data?.regionsByCode || {},
     regionsById: data?.regionsById || {},
@@ -238,7 +259,7 @@ export function TaxonomyProvider({ children }) {
     stakeholderTypesByCode: data?.stakeholderTypesByCode || {},
     riskCategoriesByCode: data?.riskCategoriesByCode || {},
     governanceRolesByCode: data?.governanceRolesByCode || {},
-    
+
     // State
     isLoading,
     error,
@@ -255,7 +276,7 @@ export function TaxonomyProvider({ children }) {
     getSubsectorById: (id) => data?.subsectorsById?.[id] || null,
     getServiceByCode: (code) => data?.servicesByCode?.[code] || null,
     getServiceById: (id) => data?.servicesById?.[id] || null,
-    
+
     // Helper functions - Get by code (Reference data)
     getRegionByCode: (code) => data?.regionsByCode?.[code] || null,
     getStrategicThemeByCode: (code) => data?.strategicThemesByCode?.[code] || null,
@@ -264,7 +285,7 @@ export function TaxonomyProvider({ children }) {
     getStakeholderTypeByCode: (code) => data?.stakeholderTypesByCode?.[code] || null,
     getRiskCategoryByCode: (code) => data?.riskCategoriesByCode?.[code] || null,
     getGovernanceRoleByCode: (code) => data?.governanceRolesByCode?.[code] || null,
-    
+
     // Helper functions - Get names with language support
     getDomainName: (code, language = 'en') => {
       const domain = data?.domainsByCode?.[code];
@@ -360,14 +381,15 @@ export function TaxonomyProvider({ children }) {
 const defaultContext = {
   domains: [], deputyships: [], sectors: [], subsectors: [], services: [],
   regions: [], strategicThemes: [], technologies: [], visionPrograms: [],
-  stakeholderTypes: [], riskCategories: [], governanceRoles: [],
+  stakeholderTypes: [], riskCategories: [], governanceRoles: [], tags: [],
+
   domainsWithDeputyships: [], deputyshipsWithSectors: [], sectorsWithSubsectors: [], subsectorsWithServices: [],
   domainsByCode: {}, domainsById: {}, deputyshipsByCode: {}, deputyshipsById: {},
   sectorsByCode: {}, sectorsById: {}, subsectorsByCode: {}, subsectorsById: {},
   servicesByCode: {}, servicesById: {}, regionsByCode: {}, regionsById: {},
   strategicThemesByCode: {}, technologiesByCode: {}, visionProgramsByCode: {},
   stakeholderTypesByCode: {}, riskCategoriesByCode: {}, governanceRolesByCode: {},
-  isLoading: false, error: null, refetch: () => {},
+  isLoading: false, error: null, refetch: () => { },
   getDomainByCode: () => null, getDomainById: () => null,
   getDeputyshipByCode: () => null, getDeputyshipById: () => null,
   getSectorByCode: () => null, getSectorById: () => null,

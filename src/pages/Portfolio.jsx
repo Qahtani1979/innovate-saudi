@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useSectors } from '@/hooks/useSectors';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -25,7 +26,7 @@ function PortfolioPage() {
   const [selectedItems, setSelectedItems] = useState([]);
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
-  
+
   const stages = [
     { id: 'discover', label: { en: 'Discover', ar: 'اكتشاف' }, color: 'bg-slate-100' },
     { id: 'validate', label: { en: 'Validate', ar: 'تحقق' }, color: 'bg-blue-100' },
@@ -35,20 +36,9 @@ function PortfolioPage() {
     { id: 'institutionalize', label: { en: 'Institutionalize', ar: 'مأسسة' }, color: 'bg-teal-100' }
   ];
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: sectors = [] } = useQuery({
-    queryKey: ['sectors'],
-    queryFn: () => base44.entities.Sector.list()
-  });
+  const { data: challenges = [] } = useChallengesWithVisibility();
+  const { data: pilots = [] } = usePilotsWithVisibility();
+  const { data: sectors = [] } = useSectors();
 
   const [items, setItems] = useState({
     discover: challenges.filter(c => c.status === 'submitted').slice(0, 5),
@@ -61,7 +51,7 @@ function PortfolioPage() {
 
   const onDragEnd = (result) => {
     if (!result.destination) return;
-    
+
     const { source, destination } = result;
     if (source.droppableId === destination.droppableId) return;
 
@@ -86,6 +76,7 @@ function PortfolioPage() {
       }));
 
       const result = await invokeAI({
+        system_prompt: 'You are an expert strategic innovation consultant. Analyze the portfolio data and provide actionable recommendations.',
         prompt: `Analyze this innovation portfolio pipeline for Saudi municipalities and provide strategic insights in BOTH English AND Arabic:
 
 Pipeline Distribution: ${JSON.stringify(stageCounts)}
@@ -277,64 +268,62 @@ Provide bilingual insights (each item should have both English and Arabic versio
       {viewMode === 'kanban' ? (
         <DragDropContext onDragEnd={onDragEnd}>
           <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-          {stages.map((stage) => (
-            <Card key={stage.id} className={stage.color}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">
-                  {stage.label[language]}
-                  <Badge variant="outline" className="ml-2">
-                    {items[stage.id]?.length || 0}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Droppable droppableId={stage.id}>
-                  {(provided, snapshot) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className={`min-h-[400px] space-y-2 ${
-                        snapshot.isDraggingOver ? 'bg-white/50 rounded-lg' : ''
-                      }`}
-                    >
-                      {items[stage.id]?.map((item, index) => (
-                        <Draggable key={item.id} draggableId={item.id} index={index}>
-                          {(provided, snapshot) => (
-                            <Card
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              className={`cursor-move ${
-                                snapshot.isDragging ? 'shadow-lg rotate-2' : ''
-                              }`}
-                            >
-                              <CardContent className="p-3">
-                                <div className="flex items-start gap-2">
-                                  <div {...provided.dragHandleProps}>
-                                    <GripVertical className="h-4 w-4 text-slate-400 mt-1" />
+            {stages.map((stage) => (
+              <Card key={stage.id} className={stage.color}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium">
+                    {stage.label[language]}
+                    <Badge variant="outline" className="ml-2">
+                      {items[stage.id]?.length || 0}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Droppable droppableId={stage.id}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className={`min-h-[400px] space-y-2 ${snapshot.isDraggingOver ? 'bg-white/50 rounded-lg' : ''
+                          }`}
+                      >
+                        {items[stage.id]?.map((item, index) => (
+                          <Draggable key={item.id} draggableId={item.id} index={index}>
+                            {(provided, snapshot) => (
+                              <Card
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className={`cursor-move ${snapshot.isDragging ? 'shadow-lg rotate-2' : ''
+                                  }`}
+                              >
+                                <CardContent className="p-3">
+                                  <div className="flex items-start gap-2">
+                                    <div {...provided.dragHandleProps}>
+                                      <GripVertical className="h-4 w-4 text-slate-400 mt-1" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs font-medium text-slate-900 line-clamp-2">
+                                        {item.title_en}
+                                      </p>
+                                      <p className="text-xs text-slate-500 mt-1">
+                                        {item.code}
+                                      </p>
+                                    </div>
                                   </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-medium text-slate-900 line-clamp-2">
-                                      {item.title_en}
-                                    </p>
-                                    <p className="text-xs text-slate-500 mt-1">
-                                      {item.code}
-                                    </p>
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </DragDropContext>
+                                </CardContent>
+                              </Card>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </DragDropContext>
       ) : (
         <Card>
           <CardContent className="pt-6">
@@ -359,12 +348,11 @@ Provide bilingual insights (each item should have both English and Arabic versio
                       </td>
                       {stages.map(stage => (
                         <td key={stage.id} className="p-4 text-center">
-                          <div className={`w-8 h-8 rounded-full mx-auto ${
-                            challenge.track === 'pilot' && stage.id === 'pilot' ? 'bg-green-500' :
+                          <div className={`w-8 h-8 rounded-full mx-auto ${challenge.track === 'pilot' && stage.id === 'pilot' ? 'bg-green-500' :
                             challenge.status === 'submitted' && stage.id === 'discover' ? 'bg-blue-500' :
-                            challenge.status === 'under_review' && stage.id === 'validate' ? 'bg-purple-500' :
-                            'bg-slate-200'
-                          }`} />
+                              challenge.status === 'under_review' && stage.id === 'validate' ? 'bg-purple-500' :
+                                'bg-slate-200'
+                            }`} />
                         </td>
                       ))}
                     </tr>

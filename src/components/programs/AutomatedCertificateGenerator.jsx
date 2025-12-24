@@ -17,8 +17,8 @@ export default function AutomatedCertificateGenerator({ programId, graduates }) 
     try {
       const certs = graduates.map(g => ({
         participant: g.startup_name,
-        achievement: g.program_completion_score >= 90 ? 'Excellence' : 
-                     g.program_completion_score >= 75 ? 'Honor' : 'Completion',
+        achievement: g.program_completion_score >= 90 ? 'Excellence' :
+          g.program_completion_score >= 75 ? 'Honor' : 'Completion',
         date: new Date().toLocaleDateString(),
         credential_id: `CERT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
       }));
@@ -34,15 +34,14 @@ export default function AutomatedCertificateGenerator({ programId, graduates }) 
 
   const sendCertificate = async (cert) => {
     await supabase.functions.invoke('email-trigger-hub', {
-    await supabase.functions.invoke('email-trigger-hub', {
       body: {
         trigger: 'program.completed',
         recipient_email: cert.email,
         entity_type: 'program',
-        entity_id: program.id,
+        entity_id: programId,
         variables: {
           recipientName: cert.name,
-          programName: program.name_en,
+          programName: 'Program',
           credentialId: cert.credential_id
         },
         triggered_by: 'system'
@@ -84,8 +83,8 @@ export default function AutomatedCertificateGenerator({ programId, graduates }) 
                     <h4 className="font-semibold text-slate-900">{cert.participant}</h4>
                     <Badge className={
                       cert.achievement === 'Excellence' ? 'bg-amber-100 text-amber-700 mt-2' :
-                      cert.achievement === 'Honor' ? 'bg-blue-100 text-blue-700 mt-2' :
-                      'bg-slate-100 text-slate-700 mt-2'
+                        cert.achievement === 'Honor' ? 'bg-blue-100 text-blue-700 mt-2' :
+                          'bg-slate-100 text-slate-700 mt-2'
                     }>
                       {cert.achievement}
                     </Badge>

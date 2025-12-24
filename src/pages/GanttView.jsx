@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,10 +13,17 @@ function GanttView() {
 
   const { data: milestones = [], isLoading } = useQuery({
     queryKey: ['milestones'],
-    queryFn: () => base44.entities.Milestone.list('-due_date')
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('milestones')
+        .select('*')
+        .order('due_date', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }
   });
 
-  const filteredMilestones = milestones.filter(m => 
+  const filteredMilestones = milestones.filter(m =>
     entityFilter === 'all' || m.entity_type === entityFilter
   );
 
@@ -85,7 +92,7 @@ function GanttView() {
                   {entity.milestones.map(milestone => {
                     const isOverdue = milestone.due_date && milestone.status !== 'completed' &&
                       new Date(milestone.due_date) < today;
-                    
+
                     return (
                       <div key={milestone.id} className="flex items-center gap-3 p-2 bg-slate-50 rounded">
                         <Target className={`h-4 w-4 ${milestone.status === 'completed' ? 'text-green-600' : 'text-blue-600'}`} />

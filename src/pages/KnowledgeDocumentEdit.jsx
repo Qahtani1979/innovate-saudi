@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +8,6 @@ import { useLanguage } from '../components/LanguageContext';
 import { BookOpen, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { toast } from 'sonner';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import {
   Select,
@@ -19,6 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useKnowledgeMutations } from '../hooks/useKnowledgeMutations';
+import { useKnowledgeDocuments } from '../hooks/useKnowledgeDocuments';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function KnowledgeDocumentEdit() {
@@ -28,51 +27,16 @@ function KnowledgeDocumentEdit() {
   const navigate = useNavigate();
   const { triggerEmail } = useEmailTrigger();
 
-  const { data: doc, isLoading } = useQuery({
-    queryKey: ['knowledge-doc', docId],
-    queryFn: async () => {
-      const { data } = await supabase.from('knowledge_documents').select('*');
-      const docs = data || [];
-      return docs.find(d => d.id === docId);
-    },
-    enabled: !!docId
-  });
+  const { useDocument } = useKnowledgeDocuments();
+  const { data: doc, isLoading } = useDocument(docId);
 
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState(/** @type {any} */({}));
 
   React.useEffect(() => {
     if (doc) setFormData(doc);
   }, [doc]);
 
-  const updateMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase.from('knowledge_documents').update(data).eq('id', docId);
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (_, data) => {
-      // Auto-generate embedding if content changed
-      supabase.functions.invoke('generate-embeddings', {
-        entity_name: 'KnowledgeDocument',
-        mode: 'missing'
-      }).catch(err => console.error('Embedding generation failed:', err));
-
-      // Trigger email if document is being published
-      if (data.is_published && !doc?.is_published) {
-        triggerEmail('knowledge.published', {
-          entity_type: 'knowledge_document',
-          entity_id: docId,
-          variables: {
-            document_title: data.title_en || data.title_ar,
-            document_type: data.doc_type || 'document'
-          }
-        }).catch(err => console.error('Email trigger failed:', err));
-      }
-
-      toast.success(t({ en: 'Document updated', ar: 'تم تحديث المستند' }));
-      navigate(createPageUrl('Knowledge'));
-    }
-  });
+  const { updateDocument } = useKnowledgeMutations();
 
   if (isLoading) {
     return (
@@ -150,11 +114,11 @@ function KnowledgeDocumentEdit() {
               {t({ en: 'Cancel', ar: 'إلغاء' })}
             </Button>
             <Button
-              onClick={() => updateMutation.mutate(formData)}
-              disabled={updateMutation.isPending}
+              onClick={() => updateDocument.mutate({ id: docId, updates: formData })}
+              disabled={updateDocument.isPending}
               className="bg-gradient-to-r from-blue-600 to-teal-600"
             >
-              {updateMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {updateDocument.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {t({ en: 'Save Changes', ar: 'حفظ التغييرات' })}
             </Button>
           </div>

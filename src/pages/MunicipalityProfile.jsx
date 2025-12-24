@@ -1,6 +1,5 @@
 import React from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useMunicipalityProfileData } from '@/hooks/useMunicipalityProfileData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,76 +41,21 @@ function MunicipalityProfile() {
   const { language, isRTL, t } = useLanguage();
   const [showAIInsights, setShowAIInsights] = React.useState(false);
   const [aiInsights, setAiInsights] = React.useState(null);
-  
+
   const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  // Get user's municipality from auth context if no ID provided
-  const { data: userProfile } = useQuery({
-    queryKey: ['current-user-profile-for-municipality'],
-    queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.id) return null;
-      const { data } = await supabase
-        .from('user_profiles')
-        .select('municipality_id')
-        .eq('user_id', session.user.id)
-        .maybeSingle();
-      return data;
-    },
-    enabled: !urlMunicipalityId
-  });
-
-  // Use URL param if provided, otherwise fallback to user's municipality
-  const municipalityId = urlMunicipalityId || userProfile?.municipality_id;
-
-  const { data: municipality, isLoading, error: municipalityError } = useQuery({
-    queryKey: ['municipality', municipalityId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('municipalities')
-        .select('*')
-        .eq('id', municipalityId)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!municipalityId,
-    staleTime: 5 * 60 * 1000
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['municipality-challenges', municipalityId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*')
-        .eq('municipality_id', municipalityId)
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!municipalityId,
-    staleTime: 5 * 60 * 1000
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['municipality-pilots', municipalityId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('municipality_id', municipalityId)
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!municipalityId,
-    staleTime: 5 * 60 * 1000
-  });
+  const {
+    municipalityId,
+    municipality,
+    challenges,
+    pilots,
+    isLoading,
+    error: municipalityError
+  } = useMunicipalityProfileData(urlMunicipalityId);
 
   // Use centralized useMIIData hook for all MII data
-  const { 
-    radarData: miiRadarData, 
+  const {
+    radarData: miiRadarData,
     trendData: miiTrendData,
     yoyGrowth,
     rankChange,
@@ -158,20 +102,20 @@ function MunicipalityProfile() {
   // Use real MII data from hook with fallback
   const radarData = miiRadarData.length > 0 ? miiRadarData : [];
   const trendData = miiTrendData.length > 0 ? miiTrendData : [];
-  
+
   // Trend icon
   const TrendIcon = trend === 'up' ? ArrowUp : trend === 'down' ? ArrowDown : Minus;
   const trendColor = trend === 'up' ? 'text-green-600' : trend === 'down' ? 'text-red-600' : 'text-amber-600';
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
-    
+
     // Import centralized prompt module
-    const { 
-      MUNICIPALITY_INSIGHTS_PROMPT_TEMPLATE, 
-      MUNICIPALITY_INSIGHTS_RESPONSE_SCHEMA 
+    const {
+      MUNICIPALITY_INSIGHTS_PROMPT_TEMPLATE,
+      MUNICIPALITY_INSIGHTS_RESPONSE_SCHEMA
     } = await import('@/lib/ai/prompts/municipalities/profileAnalysis');
-    
+
     const result = await invokeAI({
       prompt: MUNICIPALITY_INSIGHTS_PROMPT_TEMPLATE({
         municipality,
@@ -181,7 +125,7 @@ function MunicipalityProfile() {
       }),
       response_json_schema: MUNICIPALITY_INSIGHTS_RESPONSE_SCHEMA
     });
-    
+
     if (result.success && result.data) {
       setAiInsights(result.data);
     }
@@ -433,7 +377,7 @@ function MunicipalityProfile() {
             <TabsContent value="mii" className="mt-6 space-y-6">
               <MIIImprovementAI municipality={municipality} />
               <PeerBenchmarkingTool municipality={municipality} />
-              
+
               {hasMIIData ? (
                 <>
                   {/* Radar Chart */}
@@ -494,12 +438,12 @@ function MunicipalityProfile() {
                             <YAxis domain={[0, 100]} />
                             <Tooltip />
                             <Legend />
-                            <Line 
-                              type="monotone" 
-                              dataKey="score" 
-                              stroke="#10b981" 
-                              strokeWidth={3} 
-                              name={language === 'ar' ? 'درجة المؤشر' : 'MII Score'} 
+                            <Line
+                              type="monotone"
+                              dataKey="score"
+                              stroke="#10b981"
+                              strokeWidth={3}
+                              name={language === 'ar' ? 'درجة المؤشر' : 'MII Score'}
                             />
                           </LineChart>
                         </ResponsiveContainer>

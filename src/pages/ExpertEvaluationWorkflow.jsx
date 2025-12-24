@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useExpertAssignment } from '@/hooks/useExpertData';
+import { useExpertAssignmentMutations } from '@/hooks/useExpertAssignmentMutations';
+import { useEntity } from '@/hooks/useEntityData';
+import { useQueryClient } from '@tanstack/react-query';
+import { useNavigate, Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,9 +12,9 @@ import { useLanguage } from '../components/LanguageContext';
 import { X, Eye, AlertCircle, ClipboardCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import UnifiedEvaluationForm from '../components/evaluation/UnifiedEvaluationForm';
-import { Link } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useQuery } from '@tanstack/react-query';
 
 export default function ExpertEvaluationWorkflow() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -23,53 +25,10 @@ export default function ExpertEvaluationWorkflow() {
   const { user } = useAuth();
   const [savingDraft, setSavingDraft] = useState(false);
 
-  const { data: assignment, isLoading: assignmentLoading } = useQuery({
-    queryKey: ['assignment', assignmentId],
-    queryFn: async () => {
-      const { data } = await supabase.from('expert_assignments').select('*').eq('id', assignmentId).single();
-      return data;
-    },
-    enabled: !!assignmentId
-  });
+  const { data: assignment, isLoading: assignmentLoading } = useExpertAssignment(assignmentId);
+  const { updateAssignmentStatus } = useExpertAssignmentMutations();
 
-  const { data: entity, isLoading: entityLoading } = useQuery({
-    queryKey: ['evaluation-entity', assignment?.entity_type, assignment?.entity_id],
-    queryFn: async () => {
-      if (!assignment) return null;
-      
-      const tableMap = {
-        challenge: 'challenges',
-        pilot: 'pilots',
-        solution: 'solutions',
-        rd_proposal: 'rd_proposals',
-        rd_project: 'rd_projects',
-        program_application: 'program_applications',
-        matchmaker_application: 'matchmaker_applications',
-        scaling_plan: 'scaling_plans',
-        citizen_idea: 'citizen_ideas'
-      };
-
-      const table = tableMap[assignment.entity_type];
-      if (!table) return null;
-
-      const { data } = await supabase.from(table).select('*').eq('id', assignment.entity_id).single();
-      return data;
-    },
-    enabled: !!assignment
-  });
-
-  const updateAssignmentMutation = useMutation({
-    mutationFn: async (status) => {
-      const { error } = await supabase.from('expert_assignments').update({
-        status,
-        completed_date: status === 'completed' ? new Date().toISOString() : undefined
-      }).eq('id', assignmentId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['expert-assignments']);
-    }
-  });
+  const { data: entity, isLoading: entityLoading } = useEntity(assignment?.entity_type, assignment?.entity_id);
 
   const handleSaveDraft = async (evaluationData) => {
     setSavingDraft(true);
@@ -84,7 +43,7 @@ export default function ExpertEvaluationWorkflow() {
   };
 
   const handleEvaluationSubmit = async (evaluationData) => {
-    await updateAssignmentMutation.mutateAsync('completed');
+    await updateAssignmentStatus.mutateAsync({ id: assignmentId, status: 'completed' });
     localStorage.removeItem(`expert_eval_draft_${assignmentId}`);
     navigate(createPageUrl('ExpertAssignmentQueue'));
   };
@@ -136,16 +95,16 @@ export default function ExpertEvaluationWorkflow() {
                 <Eye className="h-5 w-5 text-blue-600" />
                 {t({ en: 'Entity Being Evaluated', ar: 'الكيان قيد التقييم' })}
               </CardTitle>
-              <Link 
+              <Link
                 to={createPageUrl(`${assignment.entity_type === 'challenge' ? 'ChallengeDetail' :
                   assignment.entity_type === 'pilot' ? 'PilotDetail' :
-                  assignment.entity_type === 'solution' ? 'SolutionDetail' :
-                  assignment.entity_type === 'rd_proposal' ? 'RDProposalDetail' :
-                  assignment.entity_type === 'rd_project' ? 'RDProjectDetail' :
-                  assignment.entity_type === 'program_application' ? 'ProgramApplicationDetail' :
-                  assignment.entity_type === 'matchmaker_application' ? 'MatchmakerApplicationDetail' :
-                  assignment.entity_type === 'scaling_plan' ? 'ScalingPlanDetail' :
-                  'IdeaDetail'}?id=${entity.id}`)}
+                    assignment.entity_type === 'solution' ? 'SolutionDetail' :
+                      assignment.entity_type === 'rd_proposal' ? 'RDProposalDetail' :
+                        assignment.entity_type === 'rd_project' ? 'RDProjectDetail' :
+                          assignment.entity_type === 'program_application' ? 'ProgramApplicationDetail' :
+                            assignment.entity_type === 'matchmaker_application' ? 'MatchmakerApplicationDetail' :
+                              assignment.entity_type === 'scaling_plan' ? 'ScalingPlanDetail' :
+                                'IdeaDetail'}?id=${entity.id}`)}
                 target="_blank"
               >
                 <Button variant="outline" size="sm">

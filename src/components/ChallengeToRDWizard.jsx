@@ -5,90 +5,79 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from './LanguageContext';
 import { Microscope, Sparkles, Loader2, X } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { createPageUrl } from '../utils';
-import { useEmailTrigger } from '@/hooks/useEmailTrigger';
-import { 
+import { useChallengeMutations } from '@/hooks/useChallengeMutations';
+import { useRDProjectMutations } from '@/hooks/useRDProjectMutations';
+import { supabase } from '@/integrations/supabase/client';
+import {
   CHALLENGE_TO_RD_PROMPTS,
   buildRDScopePrompt,
-  RD_SCOPE_SCHEMA 
+  RD_SCOPE_SCHEMA
 } from '@/lib/ai/prompts/challenges';
 
 export default function ChallengeToRDWizard({ challenge, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const { triggerEmail } = useEmailTrigger();
 
   const [rdTitle, setRdTitle] = useState('');
   const [researchQuestions, setResearchQuestions] = useState('');
   const [expectedOutputs, setExpectedOutputs] = useState('');
   const [aiScope, setAiScope] = useState(null);
-  
+
   const { invokeAI, status, isLoading: generatingScope, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { updateChallenge } = useChallengeMutations();
+  const { createRDProject } = useRDProjectMutations();
 
   const { data: rdCalls = [] } = useQuery({
     queryKey: ['rd-calls'],
-    queryFn: () => base44.entities.RDCall.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('rd_calls').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const [selectedCall, setSelectedCall] = useState('');
 
-  const createRDMutation = useMutation({
-    mutationFn: async () => {
-      const rdProject = await base44.entities.RDProject.create({
-        title_en: rdTitle,
-        abstract_en: challenge.description_en,
-        challenge_ids: [challenge.id],
-        rd_call_id: selectedCall || null,
-        research_area: challenge.sector,
-        status: 'proposal',
-        trl_start: 1,
-        trl_target: 4
-      });
-
-      await base44.entities.Challenge.update(challenge.id, {
-        linked_rd_ids: [...(challenge.linked_rd_ids || []), rdProject.id],
-        track: 'r_and_d'
-      });
-
-      return rdProject.id;
-    },
-    onSuccess: async (rdId) => {
-      queryClient.invalidateQueries(['challenge']);
-      
-      // Trigger rd.project_created email
-      try {
-        await triggerEmail('rd.project_created', {
-          entityType: 'rd_project',
-          entityId: rdId,
-          variables: {
-            projectTitle: rdTitle,
-            challengeTitle: challenge.title_en,
-            researchArea: challenge.sector
+  const handleCreateRD = () => {
+    createRDProject.mutate({
+      title_en: rdTitle,
+      abstract_en: challenge.description_en,
+      challenge_ids: [challenge.id],
+      rd_call_id: selectedCall || null,
+      research_area: challenge.sector,
+      status: 'proposal',
+      trl_start: 1,
+      trl_target: 4
+    }, {
+      onSuccess: async (rdProject) => {
+        // Update challenge
+        await updateChallenge.mutateAsync({
+          id: challenge.id,
+          data: {
+            linked_rd_ids: [...(challenge.linked_rd_ids || []), rdProject.id],
+            track: 'r_and_d'
           }
         });
-      } catch (error) {
-        console.error('Failed to send rd.project_created email:', error);
+
+        toast.success(t({ en: 'R&D project created', ar: 'تم إنشاء مشروع البحث' }));
+        navigate(createPageUrl(`RDProjectDetail?id=${rdProject.id}`));
       }
-      
-      toast.success(t({ en: 'R&D project created', ar: 'تم إنشاء مشروع البحث' }));
-      navigate(createPageUrl(`RDProjectDetail?id=${rdId}`));
-    }
-  });
+    });
+  };
 
   const generateScope = async () => {
     const result = await invokeAI({
-      systemPrompt: CHALLENGE_TO_RD_PROMPTS.systemPrompt,
+      system_prompt: CHALLENGE_TO_RD_PROMPTS.buildScope,
       prompt: buildRDScopePrompt(challenge),
       response_json_schema: RD_SCOPE_SCHEMA
     });
-    
+
     if (result.success && result.data) {
       setAiScope(result.data);
       setRdTitle(result.data.project_title);
@@ -119,8 +108,8 @@ export default function ChallengeToRDWizard({ challenge, onClose }) {
         </div>
 
         {/* AI Status */}
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
-        
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={null} />
+
         {/* AI Scope Generator */}
         <div className="text-center">
           <Button
@@ -213,11 +202,11 @@ export default function ChallengeToRDWizard({ challenge, onClose }) {
             {t({ en: 'Cancel', ar: 'إلغاء' })}
           </Button>
           <Button
-            onClick={() => createRDMutation.mutate()}
-            disabled={!rdTitle || !researchQuestions || createRDMutation.isPending}
+            onClick={handleCreateRD}
+            disabled={!rdTitle || !researchQuestions || createRDProject.isPending}
             className="bg-gradient-to-r from-blue-600 to-purple-600"
           >
-            {createRDMutation.isPending ? (
+            {createRDProject.isPending ? (
               <Loader2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} animate-spin`} />
             ) : (
               <Microscope className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />

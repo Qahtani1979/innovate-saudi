@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useRDCallsWithVisibility } from '@/hooks/useRDCallsWithVisibility';
+import { useRDProposalsWithVisibility } from '@/hooks/useRDProposalsWithVisibility';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,41 +48,16 @@ function RDCallsPage() {
   const [aiInsights, setAiInsights] = useState(null);
   const { invokeAI, status: aiStatus, isLoading: aiLoading, rateLimitInfo, isAvailable } = useAIWithFallback();
 
-  const { data: calls = [], isLoading: callsLoading, error: callsError } = useQuery({
-    queryKey: ['rd-calls'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_calls')
-        .select('*, rd_proposals(count)')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      // Map proposals count back to the call object for easier access
-      return data?.map(call => ({
-        ...call,
-        proposals_count: call.rd_proposals?.[0]?.count || 0
-      })) || [];
-    },
-    staleTime: 5 * 60 * 1000
+  const { data: calls = [], isLoading: callsLoading, error: callsError } = useRDCallsWithVisibility({
+    includeDeleted: false
   });
 
-  const { data: proposals = [], isLoading: proposalsLoading, error: proposalsError } = useQuery({
-    queryKey: ['rd-proposals'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_proposals')
-        .select('*')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    staleTime: 5 * 60 * 1000
+  const { data: proposals = [], isLoading: proposalsLoading, error: proposalsError } = useRDProposalsWithVisibility({
+    // Fetching all proposals visible to user
+    limit: 1000
   });
 
-  const filteredCalls = calls.filter(call => {
+  const filteredCalls = /** @type {any[]} */(calls).filter(call => {
     const matchesSearch = !searchTerm ||
       call.title_en?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       call.title_ar?.includes(searchTerm);
@@ -92,9 +67,9 @@ function RDCallsPage() {
 
   const stats = {
     totalCalls: calls.length,
-    openCalls: calls.filter(c => c.status === 'open').length,
+    openCalls: /** @type {any[]} */(calls).filter(c => c.status === 'open').length,
     totalProposals: proposals.length,
-    approvedProposals: proposals.filter(p => p.status === 'approved').length
+    approvedProposals: /** @type {any[]} */(proposals).filter(p => p.status === 'approved').length
   };
 
   const statusColors = {
@@ -166,7 +141,10 @@ function RDCallsPage() {
       <PageHeader
         icon={Megaphone}
         title={t({ en: 'R&D Calls & Proposals', ar: 'دعوات البحث والمقترحات' })}
+        subtitle={{ en: '', ar: '' }}
         description={t({ en: 'Research funding opportunities and submissions', ar: 'فرص التمويل البحثي والمقترحات' })}
+        action={<></>}
+        children={<></>}
         actions={
           <div className="flex items-center gap-3">
             <Button variant="outline" className="gap-2" onClick={handleAIInsights} disabled={!isAvailable || aiLoading}>
@@ -379,8 +357,8 @@ function RDCallsPage() {
           {/* Calls Display */}
           {viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {filteredCalls.map((call) => {
-                const daysLeft = call.close_date ? Math.ceil((new Date(call.close_date) - new Date()) / (1000 * 60 * 60 * 24)) : null;
+              {filteredCalls.map((/** @type {any} */ call) => {
+                const daysLeft = call.close_date ? Math.ceil((new Date(call.close_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null;
 
                 return (
                   <Card key={call.id} className="hover:shadow-lg transition-shadow overflow-hidden">
@@ -469,7 +447,7 @@ function RDCallsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredCalls.map((call) => (
+                      {filteredCalls.map((/** @type {any} */ call) => (
                         <tr key={call.id} className="border-b hover:bg-slate-50">
                           <td className="p-4">
                             <div className="flex items-center gap-3">
@@ -522,7 +500,7 @@ function RDCallsPage() {
             <CardContent>
               {proposals.length > 0 ? (
                 <div className="space-y-3">
-                  {proposals.map((proposal) => (
+                  {/** @type {any[]} */(proposals).map((proposal) => (
                     <div key={proposal.id} className="p-4 border rounded-lg hover:border-blue-300 transition-colors">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useLocations } from '@/hooks/useLocations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,26 +12,17 @@ import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PREDICTIVE_ANALYTICS_SYSTEM_PROMPT } from '@/lib/ai/prompts/analytics/predictive';
 
 function PatternRecognition() {
   const { language, isRTL, t } = useLanguage();
   const [patterns, setPatterns] = useState(null);
   const { invokeAI, status, isLoading: analyzing, rateLimitInfo, isAvailable } = useAIWithFallback();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
-
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities'],
-    queryFn: () => base44.entities.Municipality.list()
-  });
+  const { data: pilots = [] } = usePilotsWithVisibility({ limit: 1000 });
+  const { data: challenges = [] } = useChallengesWithVisibility({ limit: 1000 });
+  const { useAllMunicipalities } = useLocations();
+  const { data: municipalities = [] } = useAllMunicipalities();
 
   const analyzePatterns = async () => {
     // Successful pilots data
@@ -55,6 +47,7 @@ Identify:
 3. Optimal portfolio mix (% allocation across tracks)
 4. Sector-specific recommendations
 5. Municipality type patterns (which cities succeed with what approaches)`,
+      system_prompt: PREDICTIVE_ANALYTICS_SYSTEM_PROMPT,
       response_json_schema: {
         type: "object",
         properties: {

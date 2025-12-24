@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { usePublicPilot, usePublicFeedbackMutation } from '@/hooks/usePublicData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,29 +26,15 @@ function PublicPilotFeedbackForm() {
     concerns: ''
   });
 
-  const { data: pilot } = useQuery({
-    queryKey: ['pilot-for-feedback', pilotId],
-    queryFn: async () => {
-      const pilots = await base44.entities.Pilot.list();
-      return pilots.find(p => p.id === pilotId);
-    },
-    enabled: !!pilotId
-  });
+  const { data: pilot } = usePublicPilot(pilotId);
 
-  const submitFeedbackMutation = useMutation({
-    mutationFn: (data) => base44.entities.CitizenFeedback.create({
-      pilot_id: pilotId,
-      ...data
-    }),
-    onSuccess: () => {
-      setSubmitted(true);
-      toast.success(t({ en: 'Thank you for your feedback!', ar: 'شكراً لملاحظاتك!' }));
-    }
+  const submitFeedbackMutation = usePublicFeedbackMutation({
+    onSuccess: () => setSubmitted(true)
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    submitFeedbackMutation.mutate(formData);
+    submitFeedbackMutation.mutate({ pilotId, ...formData });
   };
 
   if (submitted) {

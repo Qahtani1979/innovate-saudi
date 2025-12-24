@@ -22,12 +22,16 @@ const badgeVariants = cva(
   }
 )
 
+/**
+ * @param {React.HTMLAttributes<HTMLDivElement> & import("class-variance-authority").VariantProps<typeof badgeVariants>} props
+ */
 function Badge({
   className,
-  variant,
+  variant = "default",
+  children,
   ...props
 }) {
-  return (<div className={cn(badgeVariants({ variant }), className)} {...props} />);
+  return (<div className={cn(badgeVariants({ variant }), className)} {...props}>{children}</div>);
 }
 
 export { Badge, badgeVariants }

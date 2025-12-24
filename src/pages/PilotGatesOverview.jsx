@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,13 +24,8 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 function PilotGatesOverview() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['all-pilots'],
-    queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*').eq('is_deleted', false);
-      return data || [];
-    }
-  });
+  // Refactored to use usePilotsWithVisibility for consistent RBAC
+  const { data: pilots = [] } = usePilotsWithVisibility({ limit: 1000 });
 
   const gates = [
     {

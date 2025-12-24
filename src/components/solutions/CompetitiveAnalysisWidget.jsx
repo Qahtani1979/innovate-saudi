@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,10 +8,11 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { getSystemPrompt } from '@/lib/saudiContext';
-import { 
-  buildCompetitiveAnalysisWidgetPrompt, 
+import { useSimilarSolutions } from '@/hooks/useSolutions';
+import {
+  buildCompetitiveAnalysisWidgetPrompt,
   competitiveAnalysisWidgetSchema,
-  COMPETITIVE_ANALYSIS_WIDGET_SYSTEM_PROMPT 
+  COMPETITIVE_ANALYSIS_WIDGET_SYSTEM_PROMPT
 } from '@/lib/ai/prompts/solution';
 
 export default function CompetitiveAnalysisWidget({ solution, onAnalysisComplete }) {
@@ -25,35 +25,37 @@ export default function CompetitiveAnalysisWidget({ solution, onAnalysisComplete
     fallbackData: null
   });
 
+  const { data: similarSolutions = [] } = useSimilarSolutions({
+    solutionId: solution?.id,
+    sectors: solution?.sectors || [],
+    limit: 5
+  });
+
   const handleAnalyze = async () => {
     try {
-      // Get similar solutions by sector
-      const { data: similarSolutions = [] } = await supabase.from('solutions').select('*')
-        .neq('id', solution?.id)
-        .overlaps('sectors', solution?.sectors || [])
-        .limit(5);
-
-      setCompetitors(similarSolutions.map(s => ({ ...s, score: 0.7 + Math.random() * 0.3 })));
+      const mappedCompetitors = similarSolutions.map(s => ({ ...s, score: 0.7 + Math.random() * 0.3 }));
+      setCompetitors(mappedCompetitors);
 
       const { success, data } = await invokeAI({
         system_prompt: getSystemPrompt(COMPETITIVE_ANALYSIS_WIDGET_SYSTEM_PROMPT),
-        prompt: buildCompetitiveAnalysisWidgetPrompt(solution, matches.data?.results),
+        prompt: buildCompetitiveAnalysisWidgetPrompt(solution, mappedCompetitors),
         response_json_schema: competitiveAnalysisWidgetSchema
       });
 
       if (success && data) {
         setAnalysis(data);
-        
+
         if (onAnalysisComplete) {
-          onAnalysisComplete({ competitors: matches.data?.results, analysis: data });
+          onAnalysisComplete({ competitors: mappedCompetitors, analysis: data });
         }
-        
+
         toast.success(t({ en: '✅ Competitive analysis complete', ar: '✅ اكتمل التحليل التنافسي' }));
       }
     } catch (error) {
       toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
     }
   };
+
 
   return (
     <Card className="border-2 border-blue-200">
@@ -65,7 +67,7 @@ export default function CompetitiveAnalysisWidget({ solution, onAnalysisComplete
       </CardHeader>
       <CardContent className="space-y-4">
         <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
-        
+
         {!competitors.length && !analysis ? (
           <Button onClick={handleAnalyze} disabled={isLoading || !isAvailable} className="w-full">
             {isLoading ? (
@@ -124,7 +126,7 @@ export default function CompetitiveAnalysisWidget({ solution, onAnalysisComplete
                       {t({ en: '🎯 Positioning Strategy', ar: '🎯 استراتيجية التموضع' })}
                     </p>
                     <p className="text-sm text-slate-700">
-                      {typeof analysis.positioning === 'object' 
+                      {typeof analysis.positioning === 'object'
                         ? (language === 'ar' ? analysis.positioning.ar : analysis.positioning.en)
                         : analysis.positioning}
                     </p>

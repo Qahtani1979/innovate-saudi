@@ -1,5 +1,5 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { usePolicyMutations } from '@/hooks/usePolicyMutations';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,10 +7,10 @@ import { useLanguage } from '../LanguageContext';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
-import { 
-  Shield, 
-  Plus, 
-  Edit, 
+import {
+  Shield,
+  Plus,
+  Edit,
   Trash2,
   Clock,
   ExternalLink
@@ -20,16 +20,7 @@ export default function PolicyRecommendationManager({ challengeId, policies = []
   const { language, t } = useLanguage();
   const queryClient = useQueryClient();
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      const { error } = await supabase.from('policy_recommendations').delete().eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['challenge-policies']);
-      toast.success(t({ en: 'Policy deleted', ar: 'تم حذف السياسة' }));
-    }
-  });
+  const { deletePolicy } = usePolicyMutations();
 
   return (
     <div className="space-y-4">
@@ -49,13 +40,13 @@ export default function PolicyRecommendationManager({ challengeId, policies = []
               <CardContent className="pt-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
-                   <Link 
-                     to={createPageUrl(`PolicyDetail?id=${policy.id}`)}
-                     className="font-semibold text-slate-900 hover:text-blue-600 hover:underline"
-                     dir={language === 'ar' ? 'rtl' : 'ltr'}
-                   >
-                     {language === 'ar' && policy.title_ar ? policy.title_ar : policy.title_en}
-                   </Link>
+                    <Link
+                      to={createPageUrl(`PolicyDetail?id=${policy.id}`)}
+                      className="font-semibold text-slate-900 hover:text-blue-600 hover:underline"
+                      dir={language === 'ar' ? 'rtl' : 'ltr'}
+                    >
+                      {language === 'ar' && policy.title_ar ? policy.title_ar : policy.title_en}
+                    </Link>
                     <p className="text-xs text-slate-500 mt-1">
                       {policy.submitted_by} • {new Date(policy.submission_date || policy.created_date).toLocaleDateString()}
                     </p>
@@ -63,9 +54,9 @@ export default function PolicyRecommendationManager({ challengeId, policies = []
                   <div className="flex gap-2">
                     <Badge className={
                       policy.status === 'implemented' ? 'bg-green-100 text-green-700' :
-                      policy.status === 'approved' ? 'bg-blue-100 text-blue-700' :
-                      policy.status === 'under_review' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-slate-100 text-slate-700'
+                        policy.status === 'approved' ? 'bg-blue-100 text-blue-700' :
+                          policy.status === 'under_review' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-slate-100 text-slate-700'
                     }>
                       {policy.status?.replace(/_/g, ' ')}
                     </Badge>
@@ -73,8 +64,8 @@ export default function PolicyRecommendationManager({ challengeId, policies = []
                 </div>
 
                 <p className="text-sm text-slate-700 mb-3" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                  {language === 'ar' && policy.recommendation_text_ar 
-                    ? policy.recommendation_text_ar 
+                  {language === 'ar' && policy.recommendation_text_ar
+                    ? policy.recommendation_text_ar
                     : policy.recommendation_text_en || policy.recommendation_text}
                 </p>
 
@@ -114,12 +105,12 @@ export default function PolicyRecommendationManager({ challengeId, policies = []
                       {t({ en: 'Edit', ar: 'تعديل' })}
                     </Button>
                   </Link>
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
+                  <Button
+                    size="sm"
+                    variant="ghost"
                     onClick={() => {
                       if (confirm(t({ en: 'Delete this policy?', ar: 'حذف هذه السياسة؟' }))) {
-                        deleteMutation.mutate(policy.id);
+                        deletePolicy.mutate(policy.id);
                       }
                     }}
                     className="text-red-600 hover:bg-red-50"

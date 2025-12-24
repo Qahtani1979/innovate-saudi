@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +10,10 @@ import { Lightbulb, Loader2, Sparkles, ArrowRight, CheckCircle2 } from 'lucide-r
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+
+import { usePrograms, useSubmitInnovationProposal } from '@/hooks/usePrograms';
+import { useSectors } from '@/hooks/useSectors';
+// ... other imports
 
 function ProgramIdeaSubmission() {
   const { language, isRTL, t } = useLanguage();
@@ -39,18 +41,16 @@ function ProgramIdeaSubmission() {
     success_metrics_proposed: []
   });
 
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs-active'],
-    queryFn: async () => {
-      const all = await base44.entities.Program.list();
-      return all.filter(p => p.status === 'applications_open');
-    }
-  });
+  const { programs } = usePrograms();
+  const { data: sectors = [] } = useSectors();
 
-  const { data: sectors = [] } = useQuery({
-    queryKey: ['sectors'],
-    queryFn: () => base44.entities.Sector.list()
-  });
+  // Filter for open applications
+  // Note: usePrograms returns all active programs.
+  // const openPrograms = programs.filter(p => p.status === 'applications_open');
+  // I will use 'programs' variable but filter in render or just renaming?
+  // Existing code: const { data: programs = [] } = ... filter(p.status === 'applications_open')
+  // I should filter it here to maintain behavior.
+  const openPrograms = (programs || []).filter(p => p.status === 'applications_open');
 
   const enhanceWithAI = async () => {
     try {
@@ -79,13 +79,15 @@ Generate:
             implementation_plan: { type: 'string' },
             success_metrics_proposed: { type: 'array', items: { type: 'string' } },
             timeline_proposal: { type: 'string' },
-            team_composition: { type: 'array', items: { 
-              type: 'object',
-              properties: {
-                role: { type: 'string' },
-                expertise: { type: 'string' }
+            team_composition: {
+              type: 'array', items: {
+                type: 'object',
+                properties: {
+                  role: { type: 'string' },
+                  expertise: { type: 'string' }
+                }
               }
-            }}
+            }
           }
         }
       });
@@ -101,21 +103,8 @@ Generate:
     }
   };
 
-  const submitMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await supabase
-        .from('innovation_proposals')
-        .insert({
-          ...data,
-          code: `PROP-${Date.now().toString().slice(-8)}`,
-          status: 'submitted',
-          created_by: user?.email || data.submitter_email
-        });
-      if (error) throw error;
-    },
+  const { mutate: submitProposal, isPending: isSubmitting } = useSubmitInnovationProposal({
     onSuccess: () => {
-      toast.success(t({ en: 'Proposal submitted!', ar: 'تم التقديم!' }));
       setStep(4);
     }
   });
@@ -137,9 +126,8 @@ Generate:
       <div className="flex items-center justify-between">
         {[1, 2, 3, 4].map((s) => (
           <div key={s} className="flex items-center flex-1">
-            <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-              step >= s ? 'bg-purple-600 text-white' : 'bg-slate-200 text-slate-600'
-            }`}>
+            <div className={`h-10 w-10 rounded-full flex items-center justify-center ${step >= s ? 'bg-purple-600 text-white' : 'bg-slate-200 text-slate-600'
+              }`}>
               {step > s ? <CheckCircle2 className="h-6 w-6" /> : s}
             </div>
             {s < 4 && <div className={`flex-1 h-1 ${step > s ? 'bg-purple-600' : 'bg-slate-200'}`} />}
@@ -320,12 +308,12 @@ Generate:
 
               <div className="flex gap-3">
                 <Button onClick={() => setStep(2)} variant="outline">{t({ en: 'Back', ar: 'رجوع' })}</Button>
-                <Button 
-                  onClick={() => submitMutation.mutate(formData)} 
-                  disabled={submitMutation.isPending}
+                <Button
+                  onClick={() => submitProposal(formData)}
+                  disabled={isSubmitting}
                   className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600"
                 >
-                  {submitMutation.isPending ? (
+                  {isSubmitting ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   ) : (
                     <Lightbulb className="h-4 w-4 mr-2" />

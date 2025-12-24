@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
@@ -8,10 +7,13 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { getSystemPrompt } from '@/lib/saudiContext';
-import { 
-  buildAutomatedMatchingPrompt, 
+import { useSolutions } from '@/hooks/useSolutions';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useSaveMatches } from '@/hooks/useSolutionWorkflows';
+import {
+  buildAutomatedMatchingPrompt,
   automatedMatchingSchema,
-  AUTOMATED_MATCHING_SYSTEM_PROMPT 
+  AUTOMATED_MATCHING_SYSTEM_PROMPT
 } from '@/lib/ai/prompts/solution';
 
 export default function AutomatedMatchingPipeline() {
@@ -23,15 +25,12 @@ export default function AutomatedMatchingPipeline() {
     fallbackData: null
   });
 
+  const { solutions = [] } = useSolutions({ publishedOnly: true });
+  const { challenges = [] } = useChallengesWithVisibility({ status: 'approved' });
+  const saveMatchesMutation = useSaveMatches();
+
   const runWeeklyMatching = async () => {
     try {
-      const [challengesRes, solutionsRes] = await Promise.all([
-        supabase.from('challenges').select('*').eq('status', 'approved'),
-        supabase.from('solutions').select('*').eq('is_published', true)
-      ]);
-      const challenges = challengesRes.data || [];
-      const solutions = solutionsRes.data || [];
-
       const response = await invokeAI({
         system_prompt: getSystemPrompt(AUTOMATED_MATCHING_SYSTEM_PROMPT),
         prompt: buildAutomatedMatchingPrompt(challenges, solutions),
@@ -39,7 +38,7 @@ export default function AutomatedMatchingPipeline() {
       });
 
       if (response.success) {
-        const matchesToCreate = challenges.slice(0, 5).flatMap(c => 
+        const matchesToCreate = challenges.slice(0, 5).flatMap(c =>
           solutions.slice(0, 2).map(s => ({
             challenge_id: c.id,
             solution_id: s.id,
@@ -49,9 +48,12 @@ export default function AutomatedMatchingPipeline() {
           }))
         );
 
-        await supabase.from('challenge_solution_matches').insert(matchesToCreate);
-        setResults(response.data);
-        toast.success(t({ en: 'Weekly matching complete', ar: 'اكتملت المطابقة الأسبوعية' }));
+        saveMatchesMutation.mutate(matchesToCreate, {
+          onSuccess: () => {
+            setResults(response.data);
+            toast.success(t({ en: 'Weekly matching complete', ar: 'اكتملت المطابقة الأسبوعية' }));
+          }
+        });
       }
     } catch (error) {
       toast.error(t({ en: 'Matching failed', ar: 'فشلت المطابقة' }));
@@ -78,7 +80,7 @@ export default function AutomatedMatchingPipeline() {
       </CardHeader>
       <CardContent className="pt-6">
         <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
-        
+
         {!results && !isLoading && (
           <div className="text-center py-8">
             <Zap className="h-12 w-12 text-blue-300 mx-auto mb-3" />

@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,11 +10,11 @@ import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, Sparkles } from '
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useChallengeMutations } from '@/hooks/useChallengeMutations';
 
 export default function ChallengeImport() {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [file, setFile] = useState(null);
   const [parsedData, setParsedData] = useState([]);
   const [importing, setImporting] = useState(false);
@@ -25,6 +23,7 @@ export default function ChallengeImport() {
   const [translating, setTranslating] = useState(false);
   const [enriching, setEnriching] = useState(false);
   const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { createChallenge } = useChallengeMutations();
 
   const parseCSV = (text) => {
     const lines = text.split('\n').filter(line => line.trim());
@@ -250,8 +249,7 @@ Generate:
 
     for (let i = 0; i < parsedData.length; i++) {
       try {
-        const { error } = await supabase.from('challenges').insert([parsedData[i]]);
-        if (error) throw error;
+        await createChallenge.mutateAsync(parsedData[i]);
         imported.push(parsedData[i].code);
         setProgress(((i + 1) / parsedData.length) * 100);
       } catch (error) {
@@ -261,7 +259,6 @@ Generate:
 
     setImporting(false);
     setResults({ imported, failed });
-    queryClient.invalidateQueries(['challenges']);
 
     if (failed.length === 0) {
       toast.success(`Successfully imported ${imported.length} challenges`);

@@ -1,49 +1,24 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../LanguageContext';
 import { Star, ThumbsUp } from 'lucide-react';
-import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useAuth } from '@/lib/AuthContext';
+import { useSolutionReviews, useUserPilotsForReview, useCreateReview } from '@/hooks/useSolutionReviews';
 
 export default function SolutionReviewsTab({ solution }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
   const [showReviewForm, setShowReviewForm] = useState(false);
 
-  const { data: reviews = [] } = useQuery({
-    queryKey: ['solution-reviews', solution.id],
-    queryFn: async () => {
-      const { data } = await supabase.from('solution_reviews').select('*')
-        .eq('solution_id', solution.id)
-        .eq('is_public', true)
-        .order('created_date', { ascending: false })
-        .limit(100);
-      return data || [];
-    }
-  });
-
-  const { data: userPilots = [] } = useQuery({
-    queryKey: ['user-solution-pilots', solution.id],
-    queryFn: async () => {
-      if (!user) return [];
-      const { data } = await supabase.from('pilots').select('*')
-        .eq('is_deleted', false)
-        .eq('solution_id', solution.id)
-        .eq('created_by', user.email)
-        .in('stage', ['completed', 'scaled']);
-      return data || [];
-    },
-    enabled: !!user
-  });
+  const { data: reviews = [] } = useSolutionReviews(solution.id);
+  const { data: userPilots = [] } = useUserPilotsForReview(solution.id, user?.email);
 
   const [reviewData, setReviewData] = useState({
     pilot_id: '',
@@ -65,48 +40,22 @@ export default function SolutionReviewsTab({ solution }) {
     would_recommend: true
   });
 
-  const createReviewMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: review, error } = await supabase.from('solution_reviews').insert(data).select().single();
-      if (error) throw error;
-      
-      // Update solution aggregate ratings
-      const allReviews = [...reviews, review];
-      const avgRating = allReviews.reduce((sum, r) => sum + r.overall_rating, 0) / allReviews.length;
-      await supabase.from('solutions').update({
-        average_rating: avgRating,
-        total_reviews: allReviews.length,
-        ratings: {
-          average: avgRating,
-          count: allReviews.length,
-          breakdown: {
-            5: allReviews.filter(r => r.overall_rating === 5).length,
-            4: allReviews.filter(r => r.overall_rating === 4).length,
-            3: allReviews.filter(r => r.overall_rating === 3).length,
-            2: allReviews.filter(r => r.overall_rating === 2).length,
-            1: allReviews.filter(r => r.overall_rating === 1).length
-          }
-        }
-      }).eq('id', solution.id);
+  const createReviewMutation = useCreateReview();
 
-      // Log activity
-      await supabase.from('system_activities').insert({
-        entity_type: 'Solution',
-        entity_id: solution.id,
-        activity_type: 'review_submitted',
-        description: `Review submitted: ${data.overall_rating}/5 stars by ${data.reviewer_name}`,
-        metadata: { rating: data.overall_rating, pilot_id: data.pilot_id }
-      });
-
-      return review;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['solution-reviews']);
-      queryClient.invalidateQueries(['solution', solution.id]);
-      toast.success(t({ en: 'Review submitted successfully!', ar: 'تم تقديم المراجعة بنجاح!' }));
-      setShowReviewForm(false);
-    }
-  });
+  const handleCreateReview = () => {
+    createReviewMutation.mutate({
+      solutionId: solution.id,
+      municipalityId: user?.municipality_id,
+      reviewerEmail: user?.email,
+      reviewerName: user?.full_name,
+      reviewerRole: user?.role,
+      ...reviewData
+    }, {
+      onSuccess: () => {
+        setShowReviewForm(false);
+      }
+    });
+  };
 
   const renderStars = (rating) => {
     return (
@@ -205,11 +154,10 @@ export default function SolutionReviewsTab({ solution }) {
                     onClick={() => setReviewData({ ...reviewData, overall_rating: stars })}
                   >
                     <Star
-                      className={`h-8 w-8 transition-colors ${
-                        stars <= reviewData.overall_rating 
-                          ? 'fill-yellow-400 text-yellow-400' 
-                          : 'text-slate-300 hover:text-yellow-200'
-                      }`}
+                      className={`h-8 w-8 transition-colors ${stars <= reviewData.overall_rating
+                        ? 'fill-yellow-400 text-yellow-400'
+                        : 'text-slate-300 hover:text-yellow-200'
+                        }`}
                     />
                   </button>
                 ))}
@@ -234,11 +182,10 @@ export default function SolutionReviewsTab({ solution }) {
                         })}
                       >
                         <Star
-                          className={`h-4 w-4 ${
-                            stars <= reviewData.ratings[category]
-                              ? 'fill-yellow-400 text-yellow-400'
-                              : 'text-slate-300'
-                          }`}
+                          className={`h-4 w-4 ${stars <= reviewData.ratings[category]
+                            ? 'fill-yellow-400 text-yellow-400'
+                            : 'text-slate-300'
+                            }`}
                         />
                       </button>
                     ))}
@@ -281,9 +228,9 @@ export default function SolutionReviewsTab({ solution }) {
             </div>
 
             <div className="flex gap-2">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => setShowReviewForm(false)}
                 className="flex-1"
               >
@@ -296,14 +243,7 @@ export default function SolutionReviewsTab({ solution }) {
                     toast.error(t({ en: 'Please select a pilot', ar: 'يرجى اختيار تجربة' }));
                     return;
                   }
-                  createReviewMutation.mutate({
-                    solution_id: solution.id,
-                    municipality_id: user.municipality_id,
-                    reviewer_email: user.email,
-                    reviewer_name: user.full_name,
-                    reviewer_role: user.role,
-                    ...reviewData
-                  });
+                  handleCreateReview();
                 }}
                 disabled={createReviewMutation.isPending}
                 className="flex-1 bg-yellow-600"
@@ -320,7 +260,7 @@ export default function SolutionReviewsTab({ solution }) {
         <h3 className="font-semibold text-slate-900">
           {t({ en: 'User Reviews', ar: 'مراجعات المستخدمين' })} ({reviews.length})
         </h3>
-        
+
         {reviews.length === 0 ? (
           <Card>
             <CardContent className="pt-6 text-center py-12">

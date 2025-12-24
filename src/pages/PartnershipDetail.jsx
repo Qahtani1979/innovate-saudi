@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { usePartnershipDetail } from '@/hooks/usePartnershipDetail';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,8 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
 import { useSearchParams, Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { 
-  Handshake, Users, FileText, TrendingUp, 
+import {
+  Handshake, Users, FileText, TrendingUp,
   Target, CheckCircle2, Clock, ArrowLeft, Edit, Sparkles
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
@@ -21,34 +20,22 @@ function PartnershipDetail() {
   const [searchParams] = useSearchParams();
   const partnershipId = searchParams.get('id');
 
-  const { data: partnership, isLoading } = useQuery({
-    queryKey: ['partnership', partnershipId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('partnerships')
-        .select('*')
-        .eq('id', partnershipId)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!partnershipId
-  });
+  const { partnership, isLoading } = usePartnershipDetail(partnershipId);
 
   const calculateHealthScore = (p) => {
     if (!p) return 0;
     let score = 100;
-    
+
     const completedDeliverables = p.deliverables?.filter(d => d.status === 'completed').length || 0;
     const totalDeliverables = p.deliverables?.length || 1;
     const deliverableScore = (completedDeliverables / totalDeliverables) * 40;
-    
+
     const lastMeeting = p.meeting_history?.[0]?.date;
     const daysSinceContact = lastMeeting ? differenceInDays(new Date(), new Date(lastMeeting)) : 90;
     const communicationScore = Math.max(0, 30 - (daysSinceContact / 3));
-    
+
     const kpiScore = Math.min(30, (p.kpis?.filter(k => k.status === 'achieved').length || 0) * 10);
-    
+
     return Math.round(deliverableScore + communicationScore + kpiScore);
   };
 
@@ -331,7 +318,7 @@ function PartnershipDetail() {
               {t({ en: 'Generate agreements, analyze performance, and get strategic recommendations', ar: 'توليد الاتفاقيات وتحليل الأداء والحصول على توصيات استراتيجية' })}
             </p>
           </div>
-          
+
           <AIAgreementGenerator partnership={partnership} />
         </TabsContent>
       </Tabs>

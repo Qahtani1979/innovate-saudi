@@ -1,5 +1,3 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -9,32 +7,16 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { CheckCircle2, Clock, Heart, Lightbulb } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { useAuth } from '@/lib/AuthContext';
+import { useIdeaTracker } from '@/hooks/useIdeaTracker';
 
 function MyChallengeTracker() {
   const { language, isRTL, t } = useLanguage();
-  const { user } = useAuth();
 
-  // Get challenges created from user's ideas
-  const { data: myIdeas = [] } = useQuery({
-    queryKey: ['my-ideas', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('citizen_ideas').select('*').eq('created_by', user?.email);
-      return data || [];
-    },
-    enabled: !!user
-  });
+  const { useMyIdeas, useChallengesFromMyIdeas } = useIdeaTracker();
+  const { data: myIdeas = [] } = useMyIdeas();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-from-my-ideas', myIdeas],
-    queryFn: async () => {
-      const myIdeaIds = myIdeas.map(i => i.id);
-      if (myIdeaIds.length === 0) return [];
-      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false).in('citizen_origin_idea_id', myIdeaIds);
-      return data || [];
-    },
-    enabled: myIdeas.length > 0
-  });
+  const myIdeaIds = myIdeas.map(i => i.id);
+  const { data: challenges = [] } = useChallengesFromMyIdeas(myIdeaIds);
 
   const statusBreakdown = {
     draft: challenges.filter(c => c.status === 'draft').length,
@@ -116,9 +98,9 @@ function MyChallengeTracker() {
                         <Badge variant="outline" className="font-mono">{challenge.code}</Badge>
                         <Badge className={
                           challenge.status === 'resolved' ? 'bg-green-100 text-green-700' :
-                          challenge.status === 'in_treatment' ? 'bg-purple-100 text-purple-700' :
-                          challenge.status === 'approved' ? 'bg-blue-100 text-blue-700' :
-                          'bg-yellow-100 text-yellow-700'
+                            challenge.status === 'in_treatment' ? 'bg-purple-100 text-purple-700' :
+                              challenge.status === 'approved' ? 'bg-blue-100 text-blue-700' :
+                                'bg-yellow-100 text-yellow-700'
                         }>
                           {challenge.status?.replace(/_/g, ' ')}
                         </Badge>

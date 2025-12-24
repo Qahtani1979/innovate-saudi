@@ -62,11 +62,11 @@ import { usePermissions } from '@/components/permissions/usePermissions';
 export function useVisibilitySystem() {
   // Get permissions data first - this hook handles auth state gracefully
   const permissionsData = usePermissions();
-  
-  const { 
-    userId = null, 
-    isAdmin = false, 
-    hasRole = () => false, 
+
+  const {
+    userId = null,
+    isAdmin = false,
+    hasRole = () => false,
     hasPermission = () => false,
     isDeputyship = false,
     isMunicipality = false,
@@ -78,7 +78,7 @@ export function useVisibilitySystem() {
   const hasFullMunicipalityVisibility = hasPermission('visibility_all_municipalities');
   const hasFullSectorVisibility = hasPermission('visibility_all_sectors');
   const hasNationalVisibility = hasPermission('visibility_national');
-  
+
   // Full visibility if admin or has full visibility permissions
   const hasFullVisibility = isAdmin || hasFullMunicipalityVisibility || hasFullSectorVisibility;
 
@@ -229,9 +229,9 @@ export function useVisibilitySystem() {
   const isNational = visibilityScope?.is_national || false;
   const sectorIds = visibilityScope?.sector_ids || [];
   const userMunicipalityId = visibilityScope?.municipality_id || userMunicipality?.id;
-  const scopeType = hasFullVisibility ? 'global' : 
-                    isNational ? 'sectoral' : 
-                    userMunicipalityId ? 'geographic' : 'public';
+  const scopeType = hasFullVisibility ? 'global' :
+    isNational ? 'sectoral' :
+      userMunicipalityId ? 'geographic' : 'public';
 
   const isLoading = scopeLoading || regionLoading || nationalMunicipalitiesLoading;
 
@@ -251,7 +251,7 @@ export function useVisibilitySystem() {
    */
   const getVisibilityParams = () => {
     const level = getVisibilityLevel();
-    
+
     return {
       level,
       hasFullVisibility,
@@ -313,17 +313,31 @@ export function useVisibilitySystem() {
       limit = 100,
       orderBy = 'created_at',
       orderAscending = false,
-      additionalFilters = {}
+      additionalFilters = {},
+      // Pagination Options
+      range = null, // { start: 0, end: 9 }
+      count = null  // 'exact', 'planned', or 'estimated'
     } = options;
 
     const params = getVisibilityParams();
 
+    // Prepare Count Option
+    const countOption = count ? { count } : {};
+
     // Build base query
     let query = supabase
       .from(tableName)
-      .select(selectClause)
-      .order(orderBy, { ascending: orderAscending })
-      .limit(limit);
+      .select(selectClause, countOption);
+
+    // Apply Range (Pagination) OR Limit
+    if (range && typeof range.start === 'number' && typeof range.end === 'number') {
+      query = query.range(range.start, range.end);
+    } else {
+      query = query.limit(limit);
+    }
+
+    // Always apply Order
+    query = query.order(orderBy, { ascending: orderAscending });
 
     // Apply deleted filter
     if (!includeDeleted && deletedColumn) {
@@ -333,6 +347,8 @@ export function useVisibilitySystem() {
     // Apply additional filters
     Object.entries(additionalFilters).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== 'all') {
+        // Handle array range filters (e.g. for dates or numbers) if needed, 
+        // but standard strict equality is default
         if (Array.isArray(value)) {
           query = query.in(key, value);
         } else {
@@ -341,81 +357,54 @@ export function useVisibilitySystem() {
       }
     });
 
-    // GLOBAL visibility - return all
+    // GLOBAL visibility - return all (filtered)
     if (params.hasFullVisibility) {
-      const { data, error } = await query;
+      const { data, error, count: totalCount } = await query;
       if (error) throw error;
-      return data || [];
+      return count ? { data: data || [], count: totalCount } : (data || []);
     }
 
     // SECTORAL visibility (National Deputyship)
     if (params.level === 'sectoral' && params.sectorIds?.length > 0) {
       query = query.in(sectorColumn, params.sectorIds);
-      const { data, error } = await query;
+      const { data, error, count: totalCount } = await query;
       if (error) throw error;
-      return data || [];
+      return count ? { data: data || [], count: totalCount } : (data || []);
     }
 
     // GEOGRAPHIC visibility (Municipality Staff)
     if (params.level === 'geographic' && params.userMunicipalityId) {
-      // Get own municipality entities
-      const ownQuery = supabase
-        .from(tableName)
-        .select(selectClause)
-        .eq(municipalityColumn, params.userMunicipalityId)
-        .order(orderBy, { ascending: orderAscending });
-      
-      if (!includeDeleted && deletedColumn) {
-        ownQuery.eq(deletedColumn, false);
-      }
+      // NOTE: Complex OR queries (Own OR National) are hard to paginate deeply 
+      // perfectly on the server without a View or RPC. 
+      // For now, we apply the OR logic using Supabase's 'or' filter syntax if possible,
+      // OR we fallback to client-side logic (which breaks deep pagination).
 
-      const { data: ownData, error: ownError } = await ownQuery;
-      if (ownError) throw ownError;
+      // STRATEGY: Use Supabase OR syntax to keep it server-side for pagination 
+      // scope = (municipality_id = X) OR (municipality_id IN [Nationals])
 
-      // Get national entities
-      let nationalData = [];
+      let orConditions = `${municipalityColumn}.eq.${params.userMunicipalityId}`;
+
       if (params.nationalMunicipalityIds?.length > 0) {
-        const nationalQuery = supabase
-          .from(tableName)
-          .select(selectClause)
-          .in(municipalityColumn, params.nationalMunicipalityIds)
-          .order(orderBy, { ascending: orderAscending });
-        
-        if (!includeDeleted && deletedColumn) {
-          nationalQuery.eq(deletedColumn, false);
-        }
-
-        const { data: natData, error: natError } = await nationalQuery;
-        if (!natError) {
-          nationalData = natData || [];
-        }
+        const nationalIdsString = `(${params.nationalMunicipalityIds.join(',')})`;
+        orConditions += `,${municipalityColumn}.in.${nationalIdsString}`;
       }
 
-      // Combine and deduplicate
-      const allData = [...(ownData || []), ...nationalData];
-      const uniqueData = allData.filter((item, index, self) =>
-        index === self.findIndex(i => i.id === item.id)
-      );
+      query = query.or(orConditions);
 
-      // Apply additional filters client-side
-      let filtered = uniqueData;
-      Object.entries(additionalFilters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== 'all') {
-          filtered = filtered.filter(item => item[key] === value);
-        }
-      });
-
-      return filtered.slice(0, limit);
+      const { data, error, count: totalCount } = await query;
+      if (error) throw error;
+      return count ? { data: data || [], count: totalCount } : (data || []);
     }
 
-    // PUBLIC visibility - only published
+    // PUBLIC visibility
     if (publishedColumn) {
       query = query.eq(publishedColumn, true);
     }
-    
-    const { data, error } = await query;
+
+    const { data, error, count: totalCount } = await query;
     if (error) throw error;
-    return data || [];
+
+    return count ? { data: data || [], count: totalCount } : (data || []);
   };
 
   /**
@@ -458,7 +447,7 @@ export function useVisibilitySystem() {
   return {
     // Loading state
     isLoading,
-    
+
     // Visibility context
     visibilityLevel: getVisibilityLevel(),
     scopeType,
@@ -466,19 +455,19 @@ export function useVisibilitySystem() {
     isNational,
     isDeputyship,
     isMunicipality,
-    
+
     // Scope data
     sectorIds,
     userMunicipalityId,
     nationalMunicipalityIds,
     nationalRegionId: nationalRegion?.id,
-    
+
     // Functions
     getVisibilityLevel,
     getVisibilityParams,
     buildVisibilityQuery,
     fetchWithVisibility,
-    
+
     // Strategic filtering helpers
     filterByStrategicPlan,
     filterByStrategicObjective,

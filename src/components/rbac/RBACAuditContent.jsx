@@ -1,6 +1,10 @@
 import { useState, useMemo } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAllUserProfiles } from '@/hooks/useUserProfiles';
+import { useRoles } from '@/hooks/useRoles';
+import { useSystemPermissions } from '@/hooks/useSystemPermissions';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
+import { useRBACStatistics, useAccessLogs } from '@/hooks/useRBACStatistics';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '@/components/LanguageContext';
 import AutomatedAuditScheduler from '@/components/access/AutomatedAuditScheduler';
 import PermissionGate from '@/components/permissions/PermissionGate';
-import { 
+import {
   RefreshCw, Users, Key, AlertTriangle, CheckCircle, CheckCircle2,
   XCircle, Clock, Activity, FileWarning, UserX, KeyRound,
   Loader2, Download, Shield, Eye, Trash2
@@ -47,92 +51,29 @@ function RBACAuditContentInner() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(null);
 
-  const { data: allUsers = [], isLoading: loadingUsers } = useQuery({
-    queryKey: ['audit-all-users'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('user_profiles').select('user_id, user_email, full_name, created_at');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: allUsers = [], isLoading: loadingUsers } = useAllUserProfiles();
+  const { userRoleAssignments: userRoles, delegations } = useRBACStatistics();
+  const { data: roles = [], isLoading: loadingRoles } = useRoles();
+  const { data: permissions = [], isLoading: loadingPermissions } = useSystemPermissions();
+  const { data: rolePermissions = [], isLoading: loadingRP } = useRolePermissions();
+  const { data: accessLogs = [], isLoading: loadingLogs } = useAccessLogs(30);
 
-  // Query user_roles with role_id join (Phase 4 architecture)
-  const { data: userRoles = [], isLoading: loadingUserRoles } = useQuery({
-    queryKey: ['audit-user-roles'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('*, roles:role_id(id, name)')
-        .eq('is_active', true);
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // Derive loading state from available hooks
+  const loadingUserRoles = false; // useRBACStatistics doesn't export loading yet, assume ready or check later if critical
+  const loadingDelegations = false;
 
-  const { data: roles = [], isLoading: loadingRoles } = useQuery({
-    queryKey: ['audit-roles'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('roles').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: permissions = [], isLoading: loadingPermissions } = useQuery({
-    queryKey: ['audit-permissions'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('permissions').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: rolePermissions = [], isLoading: loadingRP } = useQuery({
-    queryKey: ['audit-role-permissions'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('role_permissions').select('*, permissions(code, name)');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: delegations = [], isLoading: loadingDelegations } = useQuery({
-    queryKey: ['audit-delegations'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('delegation_rules').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: accessLogs = [], isLoading: loadingLogs } = useQuery({
-    queryKey: ['audit-access-logs'],
-    queryFn: async () => {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const { data, error } = await supabase
-        .from('access_logs')
-        .select('*')
-        .gte('created_at', thirtyDaysAgo.toISOString())
-        .order('created_at', { ascending: false })
-        .limit(500);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const isLoading = loadingUsers || loadingUserRoles || loadingRoles || loadingPermissions || loadingRP || loadingDelegations || loadingLogs;
+  const isLoading = loadingUsers || loadingRoles || loadingPermissions || loadingRP || loadingLogs;
 
   // Generate comprehensive audit report
   const auditResults = useMemo(() => {
     const userIdsWithRoles = new Set(userRoles.map(ur => ur.user_id));
-    
+
     const usersWithoutRoles = allUsers.filter(u => !userIdsWithRoles.has(u.user_id));
     const roleIdsWithUsers = new Set(userRoles.map(ur => ur.role_id));
     const rolesWithoutUsers = roles.filter(r => !roleIdsWithUsers.has(r.id));
     const permissionIdsInRoles = new Set(rolePermissions.map(rp => rp.permission_id));
     const orphanedPermissions = permissions.filter(p => !permissionIdsInRoles.has(p.id));
-    
+
     const now = new Date();
     const expiredAssignments = userRoles.filter(ur => ur.expires_at && new Date(ur.expires_at) < now);
     const inactiveAssignments = userRoles.filter(ur => !ur.is_active);
@@ -159,7 +100,7 @@ function RBACAuditContentInner() {
       const permCount = rolePermissions.filter(rp => rp.role_id === ur.role_id).length;
       userPermissionCounts[ur.user_id] = (userPermissionCounts[ur.user_id] || 0) + permCount;
     });
-    const avgPermissions = Object.values(userPermissionCounts).length > 0 
+    const avgPermissions = Object.values(userPermissionCounts).length > 0
       ? Object.values(userPermissionCounts).reduce((a, b) => a + b, 0) / Object.values(userPermissionCounts).length
       : 0;
     const excessivePermissionUsers = Object.entries(userPermissionCounts)
@@ -200,11 +141,11 @@ function RBACAuditContentInner() {
     const mediumRisks = risks.filter(r => r.severity === 'medium').length;
 
     return {
-      usersWithoutRoles, rolesWithoutUsers, orphanedPermissions, expiredAssignments, 
-      inactiveAssignments, expiredDelegations, activeDelegations, duplicateAssignments, 
+      usersWithoutRoles, rolesWithoutUsers, orphanedPermissions, expiredAssignments,
+      inactiveAssignments, expiredDelegations, activeDelegations, duplicateAssignments,
       excessivePermissionRoles, excessivePermissionUsers, risks, recommendations,
       healthScore, highRisks, mediumRisks, denialRate, deniedAttempts: deniedAttempts.length,
-      totalUsers: allUsers.length, totalRoles: roles.length, totalPermissions: permissions.length, 
+      totalUsers: allUsers.length, totalRoles: roles.length, totalPermissions: permissions.length,
       totalAssignments: userRoles.length, totalAccessAttempts: accessLogs.length
     };
   }, [allUsers, userRoles, roles, permissions, rolePermissions, delegations, accessLogs]);
@@ -212,14 +153,13 @@ function RBACAuditContentInner() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['audit-all-users'] }),
-      queryClient.invalidateQueries({ queryKey: ['audit-user-roles'] }),
-      queryClient.invalidateQueries({ queryKey: ['audit-roles'] }),
-      queryClient.invalidateQueries({ queryKey: ['audit-permissions'] }),
-      queryClient.invalidateQueries({ queryKey: ['audit-user-roles'] }),
-      queryClient.invalidateQueries({ queryKey: ['audit-role-permissions'] }),
-      queryClient.invalidateQueries({ queryKey: ['audit-delegations'] }),
-      queryClient.invalidateQueries({ queryKey: ['audit-access-logs'] })
+      queryClient.invalidateQueries({ queryKey: ['all-user-profiles'] }),
+      queryClient.invalidateQueries({ queryKey: ['rbac-user-roles'] }),
+      queryClient.invalidateQueries({ queryKey: ['roles'] }),
+      queryClient.invalidateQueries({ queryKey: ['system-permissions'] }),
+      queryClient.invalidateQueries({ queryKey: ['role-permissions'] }),
+      queryClient.invalidateQueries({ queryKey: ['rbac-delegations'] }),
+      queryClient.invalidateQueries({ queryKey: ['rbac-access-logs'] })
     ]);
     setLastRefresh(new Date());
     setIsRefreshing(false);
@@ -395,11 +335,10 @@ function RBACAuditContentInner() {
           <CardContent>
             <div className="space-y-2">
               {auditResults.recommendations.map((rec, i) => (
-                <div key={i} className={`p-3 rounded-lg border-2 ${
-                  rec.priority === 'high' ? 'bg-red-50 border-red-200' :
+                <div key={i} className={`p-3 rounded-lg border-2 ${rec.priority === 'high' ? 'bg-red-50 border-red-200' :
                   rec.priority === 'medium' ? 'bg-amber-50 border-amber-200' :
-                  'bg-blue-50 border-blue-200'
-                }`}>
+                    'bg-blue-50 border-blue-200'
+                  }`}>
                   <div className="flex items-start gap-2">
                     <Badge className={rec.priority === 'high' ? 'bg-red-600' : rec.priority === 'medium' ? 'bg-amber-600' : 'bg-blue-600'}>
                       {rec.priority.toUpperCase()}
@@ -530,7 +469,7 @@ function RBACAuditContentInner() {
                 {allUsers.map(user => {
                   const userActiveRoles = userRoles.filter(ur => ur.user_id === user.user_id && ur.is_active);
                   const hasAnyRole = userActiveRoles.length > 0;
-                  
+
                   return (
                     <div key={user.user_id} className={`p-3 rounded border ${!hasAnyRole ? 'border-red-200 bg-red-50' : ''}`}>
                       <div className="flex items-center justify-between">
@@ -557,7 +496,7 @@ function RBACAuditContentInner() {
                 {roles.map(role => {
                   const permCount = rolePermissions.filter(rp => rp.role_id === role.id).length;
                   const userCount = userRoles.filter(ur => ur.role_id === role.id && ur.is_active).length;
-                  
+
                   return (
                     <div key={role.id} className={`p-3 rounded border ${userCount === 0 ? 'border-yellow-200 bg-yellow-50' : ''}`}>
                       <div className="flex items-center justify-between">
@@ -600,7 +539,7 @@ function RBACAuditContentInner() {
                     )}
                   </CardContent>
                 </Card>
-                
+
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2">

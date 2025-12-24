@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,29 +8,29 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { getSystemPrompt } from '@/lib/saudiContext';
-import { 
-  buildCrossCityLearningPrompt, 
-  crossCityLearningSchema, 
-  CROSS_CITY_LEARNING_SYSTEM_PROMPT 
+import {
+  buildCrossCityLearningPrompt,
+  crossCityLearningSchema,
+  CROSS_CITY_LEARNING_SYSTEM_PROMPT
 } from '@/lib/ai/prompts/challenges';
+
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 
 export default function CrossCityLearning({ challenge }) {
   const { language, isRTL, t } = useLanguage();
   const [similarCases, setSimilarCases] = useState(null);
   const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: allChallenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('challenges').select('*');
-      if (error) throw error;
-      return data || [];
-    }
+  const { data: challengesResult = { data: [] } } = useChallengesWithVisibility({
+    pageSize: 1000 // Need all to find similar
+    // Ideally backend vector search, but filtering locally as per original code for now
   });
 
+  const allChallenges = challengesResult.data || [];
+
   const findSimilarSolutions = async () => {
-    const resolvedChallenges = allChallenges.filter(c => 
-      c.status === 'resolved' && 
+    const resolvedChallenges = allChallenges.filter(c =>
+      c.status === 'resolved' &&
       c.id !== challenge.id &&
       c.sector === challenge.sector
     );

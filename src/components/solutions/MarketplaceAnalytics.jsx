@@ -1,83 +1,35 @@
-import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { TrendingUp, Users } from 'lucide-react';
+import { TrendingUp, Users, CheckCircle, Loader2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { useMarketplaceAnalytics } from '@/hooks/useSolutionAnalytics';
 
 export default function MarketplaceAnalytics() {
   const { language, t } = useLanguage();
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('solutions').select('*');
-      if (error) throw error;
-      return data || [];
-    },
-    initialData: []
-  });
+  const { data: analytics, isLoading } = useMarketplaceAnalytics();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('pilots').select('*');
-      if (error) throw error;
-      return data || [];
-    },
-    initialData: []
-  });
+  if (isLoading) {
+    return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
 
-  // Trending sectors
-  const sectorCounts = solutions.reduce((acc, s) => {
-    s.sectors?.forEach(sector => {
-      acc[sector] = (acc[sector] || 0) + 1;
-    });
-    return acc;
-  }, {});
-
-  const trendingData = Object.entries(sectorCounts)
-    .map(([sector, count]) => ({ sector, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 6);
-
-  // Top solutions by deployments
-  const topSolutions = solutions
-    .map(s => ({
-      name: s.name_en,
-      deployments: s.deployments?.length || 0,
-      rating: s.ratings?.average || 0
-    }))
-    .sort((a, b) => b.deployments - a.deployments)
-    .slice(0, 5);
-
-  // Provider leaderboard
-  const providerStats = solutions.reduce((acc, s) => {
-    const provider = s.provider_id || 'Unknown';
-    if (!acc[provider]) {
-      acc[provider] = { deployments: 0, solutions: 0, avgRating: 0, ratings: [] };
-    }
-    acc[provider].solutions += 1;
-    acc[provider].deployments += s.deployments?.length || 0;
-    if (s.ratings?.average) acc[provider].ratings.push(s.ratings.average);
-    return acc;
-  }, {});
-
-  const leaderboard = Object.entries(providerStats)
-    .map(([provider, stats]) => ({
-      provider,
-      deployments: stats.deployments,
-      solutions: stats.solutions,
-      avgRating: stats.ratings.length > 0 
-        ? (stats.ratings.reduce((a, b) => a + b, 0) / stats.ratings.length).toFixed(1)
-        : 0
-    }))
-    .sort((a, b) => b.deployments - a.deployments)
-    .slice(0, 10);
-
-  const totalSolutions = solutions.length;
-  const totalDeployments = solutions.reduce((sum, s) => sum + (s.deployments?.length || 0), 0);
+  const {
+    totalSolutions,
+    totalDeployments,
+    trendingData,
+    topSolutions,
+    leaderboard,
+    providerCount
+  } = analytics || {
+    totalSolutions: 0,
+    totalDeployments: 0,
+    trendingData: [],
+    topSolutions: [],
+    leaderboard: [],
+    providerCount: 0
+  };
 
   return (
     <Card className="border-2 border-blue-300">
@@ -102,7 +54,7 @@ export default function MarketplaceAnalytics() {
           </div>
           <div className="p-4 bg-purple-50 rounded-lg border-2 border-purple-200 text-center">
             <Users className="h-6 w-6 text-purple-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-purple-600">{leaderboard.length}</p>
+            <p className="text-2xl font-bold text-purple-600">{providerCount}</p>
             <p className="text-xs text-slate-600">{t({ en: 'Providers', ar: 'مقدمون' })}</p>
           </div>
           <div className="p-4 bg-amber-50 rounded-lg border-2 border-amber-200 text-center">

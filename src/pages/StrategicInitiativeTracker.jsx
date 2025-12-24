@@ -1,17 +1,18 @@
 import { useMemo } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { useLanguage } from '@/components/LanguageContext';
 import { useActivePlan } from '@/contexts/StrategicPlanContext';
 import { Link } from 'react-router-dom';
-import { 
-  Target, 
-  CheckCircle2, 
-  AlertTriangle, 
-  Loader2, 
+import { useMilestones } from '@/hooks/useMilestones';
+import { useKPIReferences } from '@/hooks/useKPIReferences';
+import { useStrategyObjectives } from '@/hooks/useStrategyObjectives';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Target,
+  CheckCircle2,
+  AlertTriangle,
+  Loader2,
   ArrowLeft,
   ArrowRight,
   Workflow,
@@ -29,52 +30,18 @@ function StrategicInitiativeTracker() {
   const { activePlan, activePlanId, strategicPlans: contextPlans, isLoading: contextLoading } = useActivePlan();
 
   // Fetch milestones for the active plan or all plans
-  const { data: milestones = [], isLoading: milestonesLoading, refetch: refetchMilestones } = useQuery({
-    queryKey: ['milestones-initiatives', activePlanId],
-    queryFn: async () => {
-      let query = supabase
-        .from('milestones')
-        .select('id, title_en, title_ar, status, entity_id, entity_type, due_date, priority');
-      
-      if (activePlanId) {
-        query = query.eq('entity_id', activePlanId);
-      }
-      
-      const { data } = await query;
-      return data || [];
-    }
+  const { data: milestones = [], isLoading: milestonesLoading, refetch: refetchMilestones } = useMilestones({
+    entityId: activePlanId
   });
 
   // Fetch KPI references for the active plan or all plans
-  const { data: kpiRefs = [], isLoading: kpisLoading, refetch: refetchKpis } = useQuery({
-    queryKey: ['kpi-refs-initiatives', activePlanId],
-    queryFn: async () => {
-      let query = supabase
-        .from('kpi_references')
-        .select('id, name_en, name_ar, current_value, target_value, entity_id, unit, status');
-      
-      if (activePlanId) {
-        query = query.eq('entity_id', activePlanId);
-      }
-      
-      const { data } = await query;
-      return data || [];
-    }
+  const { data: kpiRefs = [], isLoading: kpisLoading, refetch: refetchKpis } = useKPIReferences({
+    entityId: activePlanId
   });
 
   // Fetch strategic objectives for the active plan
-  const { data: objectives = [] } = useQuery({
-    queryKey: ['objectives-initiatives', activePlanId],
-    queryFn: async () => {
-      if (!activePlanId) return [];
-      const { data } = await supabase
-        .from('strategic_objectives')
-        .select('id, title_en, title_ar, status, progress_percentage')
-        .eq('strategic_plan_id', activePlanId)
-        .or('is_deleted.is.null,is_deleted.eq.false');
-      return data || [];
-    },
-    enabled: !!activePlanId
+  const { data: objectives = [] } = useStrategyObjectives({
+    planId: activePlanId
   });
 
   const handleRefresh = () => {
@@ -85,32 +52,32 @@ function StrategicInitiativeTracker() {
   // Calculate initiative data based on active plan or all plans
   const initiativeData = useMemo(() => {
     const plans = activePlanId && activePlan ? [activePlan] : (contextPlans || []);
-    
+
     return plans.map(plan => {
       const planMilestones = milestones.filter(m => m.entity_id === plan.id);
       const planKpis = kpiRefs.filter(k => k.entity_id === plan.id);
       const completedMilestones = planMilestones.filter(m => m.status === 'completed').length;
-      const overdueMilestones = planMilestones.filter(m => 
+      const overdueMilestones = planMilestones.filter(m =>
         m.status !== 'completed' && m.due_date && new Date(m.due_date) < new Date()
       ).length;
-      const kpisOnTrack = planKpis.filter(k => 
+      const kpisOnTrack = planKpis.filter(k =>
         k.current_value && k.target_value && (k.current_value / k.target_value) >= 0.7
       ).length;
-      
-      const milestoneProgress = planMilestones.length > 0 
-        ? (completedMilestones / planMilestones.length) * 100 
+
+      const milestoneProgress = planMilestones.length > 0
+        ? (completedMilestones / planMilestones.length) * 100
         : 50;
-      const kpiProgress = planKpis.length > 0 
-        ? (kpisOnTrack / planKpis.length) * 100 
+      const kpiProgress = planKpis.length > 0
+        ? (kpisOnTrack / planKpis.length) * 100
         : 50;
       const healthScore = Math.round((milestoneProgress + kpiProgress) / 2);
-      
+
       return {
         id: plan.id,
         code: plan.code || `SP-${plan.id?.slice(0, 8)}`,
-        title: { 
-          en: plan.title_en || plan.name_en || 'Untitled Initiative', 
-          ar: plan.title_ar || plan.name_ar || 'مبادرة بدون عنوان' 
+        title: {
+          en: plan.title_en || plan.name_en || 'Untitled Initiative',
+          ar: plan.title_ar || plan.name_ar || 'مبادرة بدون عنوان'
         },
         owner: plan.owner || plan.created_by || 'Not assigned',
         status: plan.status || 'active',
@@ -131,24 +98,24 @@ function StrategicInitiativeTracker() {
   const stats = useMemo(() => {
     const totalMilestones = milestones.length;
     const completedMilestones = milestones.filter(m => m.status === 'completed').length;
-    const overdueMilestones = milestones.filter(m => 
+    const overdueMilestones = milestones.filter(m =>
       m.status !== 'completed' && m.due_date && new Date(m.due_date) < new Date()
     ).length;
     const totalKpis = kpiRefs.length;
-    const kpisOnTrack = kpiRefs.filter(k => 
+    const kpisOnTrack = kpiRefs.filter(k =>
       k.current_value && k.target_value && (k.current_value / k.target_value) >= 0.7
     ).length;
-    const avgProgress = initiativeData.length > 0 
+    const avgProgress = initiativeData.length > 0
       ? Math.round(initiativeData.reduce((sum, i) => sum + i.progress, 0) / initiativeData.length)
       : 0;
     const atRisk = initiativeData.filter(i => i.health_score < 60).length;
-    
-    return { 
-      totalMilestones, 
-      completedMilestones, 
+
+    return {
+      totalMilestones,
+      completedMilestones,
       overdueMilestones,
-      totalKpis, 
-      kpisOnTrack, 
+      totalKpis,
+      kpisOnTrack,
       avgProgress,
       atRisk,
       initiatives: initiativeData.length
@@ -328,7 +295,7 @@ function StrategicInitiativeTracker() {
           <CardDescription>
             {stats.overdueMilestones > 0 && (
               <span className="text-amber-600">
-                {stats.overdueMilestones} {t({ en: 'overdue', ar: 'متأخرة' })} • 
+                {stats.overdueMilestones} {t({ en: 'overdue', ar: 'متأخرة' })} •
               </span>
             )}
             {stats.completedMilestones} {t({ en: 'of', ar: 'من' })} {stats.totalMilestones} {t({ en: 'completed', ar: 'مكتملة' })}
@@ -351,10 +318,9 @@ function StrategicInitiativeTracker() {
                 return (
                   <div key={milestone.id} className={`p-3 border rounded-lg flex items-center justify-between ${isOverdue ? 'border-amber-300 bg-amber-50 dark:bg-amber-950/20' : ''}`}>
                     <div className="flex items-center gap-3">
-                      <div className={`w-3 h-3 rounded-full ${
-                        milestone.status === 'completed' ? 'bg-green-500' :
+                      <div className={`w-3 h-3 rounded-full ${milestone.status === 'completed' ? 'bg-green-500' :
                         isOverdue ? 'bg-amber-500' : 'bg-blue-500'
-                      }`} />
+                        }`} />
                       <div>
                         <p className="font-medium text-sm">
                           {language === 'ar' ? milestone.title_ar || milestone.title_en : milestone.title_en}
@@ -368,8 +334,8 @@ function StrategicInitiativeTracker() {
                       </div>
                     </div>
                     <Badge variant={milestone.status === 'completed' ? 'default' : 'secondary'}>
-                      {milestone.status === 'completed' ? t({ en: 'Done', ar: 'مكتمل' }) : 
-                       isOverdue ? t({ en: 'Overdue', ar: 'متأخر' }) : t({ en: 'In Progress', ar: 'قيد التنفيذ' })}
+                      {milestone.status === 'completed' ? t({ en: 'Done', ar: 'مكتمل' }) :
+                        isOverdue ? t({ en: 'Overdue', ar: 'متأخر' }) : t({ en: 'In Progress', ar: 'قيد التنفيذ' })}
                     </Badge>
                   </div>
                 );

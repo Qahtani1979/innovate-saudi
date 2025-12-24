@@ -1,7 +1,10 @@
-import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
-import { supabase } from '@/integrations/supabase/client';
+﻿import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query'; // Keep useQueryClient if used elsewhere, or remove if unused. It IS used in MIIDrillDown for manual invalidation but now hook handles it.
+// Actually `queryClient` is used in line 23. But I removed manual invalidation.
+// Let's check line 23 usage. `const queryClient = useQueryClient();`.
+// If I remove manual invalidation, I might not need it unless used elsewhere.
+// But I'll leave the import for now to avoid breaking if used elsewhere (it's not used elsewhere in my view).
+// I will remove `supabase` import.
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -13,7 +16,10 @@ import { Award, TrendingUp, AlertCircle, TestTube, Target, Users, ShieldAlert, A
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
 import { usePermissions } from '@/components/permissions/usePermissions';
-import { useMIIData } from '@/hooks/useMIIData';
+import { useMIIData, useMIIMutation } from '@/hooks/useMIIData';
+import { useLocations } from '@/hooks/useLocations';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import MIIImprovementAI from '@/components/municipalities/MIIImprovementAI';
 import PeerBenchmarkingTool from '@/components/municipalities/PeerBenchmarkingTool';
 import DimensionTrendChart from '@/components/charts/DimensionTrendChart';
@@ -25,82 +31,67 @@ export default function MIIDrillDown() {
   const [isRecalculating, setIsRecalculating] = useState(false);
   const urlParams = new URLSearchParams(window.location.search);
   const urlMunicipalityId = urlParams.get('id');
-  
-  const { 
-    isAdmin, 
-    isDeputyship, 
-    hasPermission, 
+
+  const {
+    isAdmin,
+    isDeputyship,
+    hasPermission,
     profile,
-    isLoading: permissionsLoading 
+    isLoading: permissionsLoading
   } = usePermissions();
 
   // Determine if user has oversight role (can view any municipality)
   const hasOversightAccess = isAdmin || isDeputyship || hasPermission('analytics_view_all');
-  
+
   // Get user's municipality ID
   const userMunicipalityId = profile?.municipality_id;
 
   // Determine which municipality to show
   // - If URL has id param and user has oversight access, use URL param
   // - Otherwise, use user's own municipality
-  const municipalityId = (urlMunicipalityId && hasOversightAccess) 
-    ? urlMunicipalityId 
+  const municipalityId = (urlMunicipalityId && hasOversightAccess)
+    ? urlMunicipalityId
     : (urlMunicipalityId === userMunicipalityId ? urlMunicipalityId : userMunicipalityId);
 
   // Check if user is trying to access another municipality without permission
-  const isUnauthorizedAccess = urlMunicipalityId && 
-    urlMunicipalityId !== userMunicipalityId && 
+  const isUnauthorizedAccess = urlMunicipalityId &&
+    urlMunicipalityId !== userMunicipalityId &&
     !hasOversightAccess;
 
-  const { data: municipality } = useQuery({
-    queryKey: ['municipality', municipalityId],
-    queryFn: async () => {
-      const muns = await base44.entities.Municipality.list();
-      return muns.find(m => m.id === municipalityId);
-    },
-    enabled: !!municipalityId && !isUnauthorizedAccess
+  const { useMunicipality, useAllMunicipalities } = useLocations();
+
+  const { data: municipality } = useMunicipality(municipalityId);
+
+  const { data: challenges = [] } = useChallengesWithVisibility({
+    municipalityId,
+    limit: 100
   });
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['mun-challenges', municipalityId],
-    queryFn: async () => {
-      const all = await base44.entities.Challenge.list();
-      return all.filter(c => c.municipality_id === municipalityId);
-    },
-    enabled: !!municipalityId && !isUnauthorizedAccess
+  const { data: pilots = [] } = usePilotsWithVisibility({
+    municipalityId,
+    limit: 100
   });
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['mun-pilots', municipalityId],
-    queryFn: async () => {
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => p.municipality_id === municipalityId);
-    },
-    enabled: !!municipalityId && !isUnauthorizedAccess
-  });
+  const { data: allMunicipalities = [] } = useAllMunicipalities();
 
-  const { data: allMunicipalities = [] } = useQuery({
-    queryKey: ['all-municipalities'],
-    queryFn: () => base44.entities.Municipality.list(),
-    enabled: hasOversightAccess
-  });
+  const miiMutation = useMIIMutation();
 
   // Use centralized MII data hook for real data
-  const { 
-    radarData: miiRadarData, 
-    trendData: miiTrendData, 
-    yoyGrowth, 
-    rankChange, 
+  const {
+    radarData: miiRadarData,
+    trendData: miiTrendData,
+    yoyGrowth,
+    rankChange,
     trend,
     strengths,
     improvementAreas,
     nationalStats,
-    hasData: hasMIIData 
+    hasData: hasMIIData
   } = useMIIData(municipalityId);
 
   // Check permissions
   if (permissionsLoading) {
-    return <div className="text-center py-12">{t({ en: 'Loading...', ar: 'جاري التحميل...' })}</div>;
+    return <div className="text-center py-12">{t({ en: 'Loading...', ar: 'Ø¬Ø§Ø±ÙŠ Ø§Ù„ØªØ­Ù…ÙŠÙ„...' })}</div>;
   }
 
   // Check if user has analytics_view permission
@@ -111,10 +102,10 @@ export default function MIIDrillDown() {
           <CardContent className="pt-6 text-center">
             <ShieldAlert className="h-12 w-12 text-destructive mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-destructive mb-2">
-              {t({ en: 'Access Denied', ar: 'تم رفض الوصول' })}
+              {t({ en: 'Access Denied', ar: 'ØªÙ… Ø±ÙØ¶ Ø§Ù„ÙˆØµÙˆÙ„' })}
             </h2>
             <p className="text-muted-foreground">
-              {t({ en: 'You do not have permission to view MII analytics.', ar: 'ليس لديك إذن لعرض تحليلات المؤشر.' })}
+              {t({ en: 'You do not have permission to view MII analytics.', ar: 'Ù„ÙŠØ³ Ù„Ø¯ÙŠÙƒ Ø¥Ø°Ù† Ù„Ø¹Ø±Ø¶ ØªØ­Ù„ÙŠÙ„Ø§Øª Ø§Ù„Ù…Ø¤Ø´Ø±.' })}
             </p>
           </CardContent>
         </Card>
@@ -128,7 +119,7 @@ export default function MIIDrillDown() {
   }
 
   if (!municipality) {
-    return <div className="text-center py-12">{t({ en: 'Loading...', ar: 'جاري التحميل...' })}</div>;
+    return <div className="text-center py-12">{t({ en: 'Loading...', ar: 'Ø¬Ø§Ø±ÙŠ Ø§Ù„ØªØ­Ù…ÙŠÙ„...' })}</div>;
   }
 
   // Use real data from useMIIData hook, fallback to calculated values if no data
@@ -149,7 +140,7 @@ export default function MIIDrillDown() {
   ];
 
   const avgScore = nationalStats?.averageScore || (allMunicipalities.reduce((sum, m) => sum + (m.mii_score || 0), 0) / (allMunicipalities.length || 1));
-  
+
   // Calculate display YoY growth
   const displayYoYGrowth = yoyGrowth !== null ? yoyGrowth : (trendData.length >= 2 ? trendData[trendData.length - 1].score - trendData[trendData.length - 2].score : 0);
 
@@ -161,24 +152,17 @@ export default function MIIDrillDown() {
   const handleRecalculateMII = async () => {
     setIsRecalculating(true);
     try {
-      const { data, error } = await supabase.functions.invoke('calculate-mii', {
-        body: { municipality_id: municipalityId }
-      });
-      
-      if (error) throw error;
-      
-      toast.success(t({ 
-        en: `MII recalculated: ${data.results?.[0]?.overall_score || 'N/A'} points`, 
-        ar: `تم إعادة حساب المؤشر: ${data.results?.[0]?.overall_score || 'N/A'} نقطة` 
+      const data = await miiMutation.mutateAsync(municipalityId);
+
+      toast.success(t({
+        en: `MII recalculated: ${data.results?.[0]?.overall_score || 'N/A'} points`,
+        ar: `ØªÙ… Ø¥Ø¹Ø§Ø¯Ø© Ø­Ø³Ø§Ø¨ Ø§Ù„Ù…Ø¤Ø´Ø±: ${data.results?.[0]?.overall_score || 'N/A'} Ù†Ù‚Ø·Ø©`
       }));
-      
-      // Refresh data
-      queryClient.invalidateQueries(['municipality', municipalityId]);
-      queryClient.invalidateQueries(['mii-latest-result', municipalityId]);
-      queryClient.invalidateQueries(['mii-history', municipalityId]);
+
+      // Invalidation is handled by the hook
     } catch (error) {
       console.error('Recalculation failed:', error);
-      toast.error(t({ en: 'Recalculation failed', ar: 'فشلت إعادة الحساب' }));
+      toast.error(t({ en: 'Recalculation failed', ar: 'Ù Ø´Ù„Øª Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„Ø­Ø³Ø§Ø¨' }));
     } finally {
       setIsRecalculating(false);
     }
@@ -190,7 +174,7 @@ export default function MIIDrillDown() {
       <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-blue-600 to-teal-600 p-8 text-white">
         <div>
           <Badge variant="outline" className="bg-white/20 text-white border-white/40 mb-3">
-            {municipality.region} • {municipality.city_type?.replace(/_/g, ' ')}
+            {municipality.region} â€¢ {municipality.city_type?.replace(/_/g, ' ')}
           </Badge>
           <h1 className="text-5xl font-bold mb-2">
             {language === 'ar' && municipality.name_ar ? municipality.name_ar : municipality.name_en}
@@ -198,18 +182,18 @@ export default function MIIDrillDown() {
           <div className="flex items-center gap-8 mt-6">
             <div>
               <div className="text-6xl font-bold">{municipality.mii_score || 0}</div>
-              <div className="text-sm opacity-90">{t({ en: 'MII Score', ar: 'درجة المؤشر' })}</div>
+              <div className="text-sm opacity-90">{t({ en: 'MII Score', ar: 'Ø¯Ø±Ø¬Ø© Ø§Ù„Ù…Ø¤Ø´Ø±' })}</div>
             </div>
             <div>
               <div className="text-4xl font-bold">#{municipality.mii_rank || '-'}</div>
-              <div className="text-sm opacity-90">{t({ en: 'National Rank', ar: 'الترتيب الوطني' })}</div>
+              <div className="text-sm opacity-90">{t({ en: 'National Rank', ar: 'Ø§Ù„ØªØ±ØªÙŠØ¨ Ø§Ù„ÙˆØ·Ù†ÙŠ' })}</div>
             </div>
             <div className="flex-1">
               <Progress value={(municipality.mii_score || 0)} className="h-4 bg-white/20" />
               <p className="text-xs mt-2 opacity-80">
-                {municipality.mii_score > avgScore ? 
-                  t({ en: 'Above national average', ar: 'أعلى من المتوسط الوطني' }) : 
-                  t({ en: 'Below national average', ar: 'أقل من المتوسط الوطني' })}
+                {municipality.mii_score > avgScore ?
+                  t({ en: 'Above national average', ar: 'Ø£Ø¹Ù„Ù‰ Ù…Ù† Ø§Ù„Ù…ØªÙˆØ³Ø· Ø§Ù„ÙˆØ·Ù†ÙŠ' }) :
+                  t({ en: 'Below national average', ar: 'Ø£Ù‚Ù„ Ù…Ù† Ø§Ù„Ù…ØªÙˆØ³Ø· Ø§Ù„ÙˆØ·Ù†ÙŠ' })}
               </p>
             </div>
           </div>
@@ -222,28 +206,28 @@ export default function MIIDrillDown() {
           <CardContent className="pt-6 text-center">
             <AlertCircle className="h-8 w-8 text-red-600 mx-auto mb-2" />
             <div className="text-3xl font-bold text-red-600">{challenges.length}</div>
-            <div className="text-sm text-slate-600">{t({ en: 'Challenges', ar: 'تحديات' })}</div>
+            <div className="text-sm text-slate-600">{t({ en: 'Challenges', ar: 'ØªØ­Ø¯ÙŠØ§Øª' })}</div>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-blue-50 to-white">
           <CardContent className="pt-6 text-center">
             <TestTube className="h-8 w-8 text-blue-600 mx-auto mb-2" />
             <div className="text-3xl font-bold text-blue-600">{municipality.active_pilots || 0}</div>
-            <div className="text-sm text-slate-600">{t({ en: 'Active Pilots', ar: 'تجارب نشطة' })}</div>
+            <div className="text-sm text-slate-600">{t({ en: 'Active Pilots', ar: 'ØªØ¬Ø§Ø±Ø¨ Ù†Ø´Ø·Ø©' })}</div>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-green-50 to-white">
           <CardContent className="pt-6 text-center">
             <Award className="h-8 w-8 text-green-600 mx-auto mb-2" />
             <div className="text-3xl font-bold text-green-600">{municipality.completed_pilots || 0}</div>
-            <div className="text-sm text-slate-600">{t({ en: 'Completed', ar: 'مكتمل' })}</div>
+            <div className="text-sm text-slate-600">{t({ en: 'Completed', ar: 'Ù…ÙƒØªÙ…Ù„' })}</div>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-purple-50 to-white">
           <CardContent className="pt-6 text-center">
             <Users className="h-8 w-8 text-purple-600 mx-auto mb-2" />
             <div className="text-3xl font-bold text-purple-600">{municipality.population ? (municipality.population / 1000).toFixed(0) + 'K' : '-'}</div>
-            <div className="text-sm text-slate-600">{t({ en: 'Population', ar: 'السكان' })}</div>
+            <div className="text-sm text-slate-600">{t({ en: 'Population', ar: 'Ø§Ù„Ø³ÙƒØ§Ù†' })}</div>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-amber-50 to-white">
@@ -252,7 +236,7 @@ export default function MIIDrillDown() {
             <div className={`text-3xl font-bold ${trendColor}`}>
               {displayYoYGrowth > 0 ? '+' : ''}{displayYoYGrowth.toFixed(0)}
             </div>
-            <div className="text-sm text-slate-600">{t({ en: 'YoY Growth', ar: 'النمو السنوي' })}</div>
+            <div className="text-sm text-slate-600">{t({ en: 'YoY Growth', ar: 'Ø§Ù„Ù†Ù…Ùˆ Ø§Ù„Ø³Ù†ÙˆÙŠ' })}</div>
           </CardContent>
         </Card>
       </div>
@@ -261,7 +245,7 @@ export default function MIIDrillDown() {
         {/* MII Radar Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>{t({ en: 'MII Dimensions Breakdown', ar: 'تفصيل أبعاد المؤشر' })}</CardTitle>
+            <CardTitle>{t({ en: 'MII Dimensions Breakdown', ar: 'ØªÙØµÙŠÙ„ Ø£Ø¨Ø¹Ø§Ø¯ Ø§Ù„Ù…Ø¤Ø´Ø±' })}</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -279,7 +263,7 @@ export default function MIIDrillDown() {
         {/* Historical Trend */}
         <Card>
           <CardHeader>
-            <CardTitle>{t({ en: 'MII Score Evolution', ar: 'تطور الدرجة' })}</CardTitle>
+            <CardTitle>{t({ en: 'MII Score Evolution', ar: 'ØªØ·ÙˆØ± Ø§Ù„Ø¯Ø±Ø¬Ø©' })}</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -299,7 +283,7 @@ export default function MIIDrillDown() {
       {/* Innovation Initiatives */}
       <Card>
         <CardHeader>
-          <CardTitle>{t({ en: 'Active Innovation Initiatives', ar: 'مبادرات الابتكار النشطة' })}</CardTitle>
+          <CardTitle>{t({ en: 'Active Innovation Initiatives', ar: 'Ù…Ø¨Ø§Ø¯Ø±Ø§Øª Ø§Ù„Ø§Ø¨ØªÙƒØ§Ø± Ø§Ù„Ù†Ø´Ø·Ø©' })}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -319,8 +303,8 @@ export default function MIIDrillDown() {
                   </div>
                   <Badge className={
                     challenge.status === 'approved' ? 'bg-green-100 text-green-700' :
-                    challenge.status === 'in_treatment' ? 'bg-purple-100 text-purple-700' :
-                    'bg-slate-100 text-slate-700'
+                      challenge.status === 'in_treatment' ? 'bg-purple-100 text-purple-700' :
+                        'bg-slate-100 text-slate-700'
                   }>{challenge.status}</Badge>
                 </div>
               </Link>
@@ -332,7 +316,7 @@ export default function MIIDrillDown() {
       {/* Active Pilots */}
       <Card>
         <CardHeader>
-          <CardTitle>{t({ en: 'Active Pilots', ar: 'التجارب النشطة' })}</CardTitle>
+          <CardTitle>{t({ en: 'Active Pilots', ar: 'Ø§Ù„ØªØ¬Ø§Ø±Ø¨ Ø§Ù„Ù†Ø´Ø·Ø©' })}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
@@ -351,7 +335,7 @@ export default function MIIDrillDown() {
                   </div>
                   <div className="text-right">
                     <div className="text-2xl font-bold text-green-600">{pilot.success_probability || 0}%</div>
-                    <div className="text-xs text-slate-500">{t({ en: 'Success', ar: 'نجاح' })}</div>
+                    <div className="text-xs text-slate-500">{t({ en: 'Success', ar: 'Ù†Ø¬Ø§Ø­' })}</div>
                   </div>
                 </div>
               </Link>
@@ -368,7 +352,7 @@ export default function MIIDrillDown() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-green-700">
                   <CheckCircle2 className="h-5 w-5" />
-                  {t({ en: 'Strengths', ar: 'نقاط القوة' })}
+                  {t({ en: 'Strengths', ar: 'Ù†Ù‚Ø§Ø· Ø§Ù„Ù‚ÙˆØ©' })}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -383,13 +367,13 @@ export default function MIIDrillDown() {
               </CardContent>
             </Card>
           )}
-          
+
           {improvementAreas.length > 0 && (
             <Card className="border-amber-200 bg-gradient-to-br from-amber-50 to-white">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-amber-700">
                   <TrendingUp className="h-5 w-5" />
-                  {t({ en: 'Areas for Improvement', ar: 'مجالات التحسين' })}
+                  {t({ en: 'Areas for Improvement', ar: 'Ù…Ø¬Ø§Ù„Ø§Øª Ø§Ù„ØªØ­Ø³ÙŠÙ†' })}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -423,17 +407,17 @@ export default function MIIDrillDown() {
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-semibold text-slate-900">
-                  {t({ en: 'MII Calculation', ar: 'حساب المؤشر' })}
+                  {t({ en: 'MII Calculation', ar: 'Ø­Ø³Ø§Ø¨ Ø§Ù„Ù…Ø¤Ø´Ø±' })}
                 </h4>
                 <p className="text-sm text-slate-600">
-                  {t({ 
-                    en: 'Recalculate MII score based on current data (challenges, pilots, partnerships)', 
-                    ar: 'إعادة حساب درجة المؤشر بناءً على البيانات الحالية' 
+                  {t({
+                    en: 'Recalculate MII score based on current data (challenges, pilots, partnerships)',
+                    ar: 'Ø¥Ø¹Ø§Ø¯Ø© Ø­Ø³Ø§Ø¨ Ø¯Ø±Ø¬Ø© Ø§Ù„Ù…Ø¤Ø´Ø± Ø¨Ù†Ø§Ø¡Ù‹ Ø¹Ù„Ù‰ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø­Ø§Ù„ÙŠØ©'
                   })}
                 </p>
               </div>
-              <Button 
-                onClick={handleRecalculateMII} 
+              <Button
+                onClick={handleRecalculateMII}
                 disabled={isRecalculating}
                 variant="outline"
                 className="gap-2"
@@ -441,12 +425,12 @@ export default function MIIDrillDown() {
                 {isRecalculating ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    {t({ en: 'Calculating...', ar: 'جاري الحساب...' })}
+                    {t({ en: 'Calculating...', ar: 'Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø­Ø³Ø§Ø¨...' })}
                   </>
                 ) : (
                   <>
                     <RefreshCw className="h-4 w-4" />
-                    {t({ en: 'Recalculate MII', ar: 'إعادة حساب المؤشر' })}
+                    {t({ en: 'Recalculate MII', ar: 'Ø¥Ø¹Ø§Ø¯Ø© Ø­Ø³Ø§Ø¨ Ø§Ù„Ù…Ø¤Ø´Ø±' })}
                   </>
                 )}
               </Button>

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,7 +18,7 @@ export default function SandboxApplicationWizard({ sandbox, onSuccess }) {
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
   const [showAI, setShowAI] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     applicant_organization: '',
     applicant_contact_name: '',
@@ -46,22 +45,32 @@ export default function SandboxApplicationWizard({ sandbox, onSuccess }) {
 
   const applicationMutation = useMutation({
     mutationFn: async (data) => {
-      const app = await base44.entities.SandboxApplication.create({
-        ...data,
-        sandbox_id: sandbox.id,
-        status: 'submitted'
-      });
+      const { supabase } = await import('@/integrations/supabase/client');
 
-      await base44.entities.Notification.create({
-        title: `New Sandbox Application - ${sandbox.name_en}`,
-        body: `${data.applicant_organization} has submitted an application for ${data.project_title}`,
-        notification_type: 'approval',
-        priority: 'high',
-        link_url: `/SandboxApplicationDetail?id=${app.id}`,
-        entity_type: 'SandboxApplication',
-        entity_id: app.id,
-        action_required: true
-      });
+      const { data: app, error: createError } = await supabase
+        .from('sandbox_applications')
+        .insert([{
+          ...data,
+          sandbox_id: sandbox.id,
+          status: 'submitted'
+        }])
+        .select()
+        .single();
+      if (createError) throw createError;
+
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .insert([{
+          title: `New Sandbox Application - ${sandbox.name_en}`,
+          body: `${data.applicant_organization} has submitted an application for ${data.project_title}`,
+          notification_type: 'approval',
+          priority: 'high',
+          link_url: `/SandboxApplicationDetail?id=${app.id}`,
+          entity_type: 'SandboxApplication',
+          entity_id: app.id,
+          action_required: true
+        }]);
+      if (notifError) throw notifError;
 
       return app;
     },
@@ -135,11 +144,10 @@ export default function SandboxApplicationWizard({ sandbox, onSuccess }) {
               return (
                 <div key={s.id} className="flex items-center">
                   <div className={`flex flex-col items-center ${idx > 0 ? 'ml-4' : ''}`}>
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      isComplete ? 'bg-green-600 text-white' :
-                      isActive ? 'bg-blue-600 text-white' :
-                      'bg-slate-200 text-slate-500'
-                    }`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isComplete ? 'bg-green-600 text-white' :
+                        isActive ? 'bg-blue-600 text-white' :
+                          'bg-slate-200 text-slate-500'
+                      }`}>
                       <Icon className="h-5 w-5" />
                     </div>
                     <span className={`text-xs mt-2 ${isActive ? 'font-semibold' : ''}`}>

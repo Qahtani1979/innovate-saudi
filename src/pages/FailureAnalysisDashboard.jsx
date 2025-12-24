@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useRDProjects } from '@/hooks/useRDProjects';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,20 +19,9 @@ function FailureAnalysisDashboard() {
   const [aiInsights, setAiInsights] = useState(null);
   const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-failure'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-failure'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-failure'],
-    queryFn: () => base44.entities.RDProject.list()
-  });
+  const { data: challenges = [] } = useChallengesWithVisibility();
+  const { data: pilots = [] } = usePilotsWithVisibility();
+  const { data: rdProjects = [] } = useRDProjects();
 
   const terminatedPilots = pilots.filter(p => p.stage === 'terminated');
   const archivedChallenges = challenges.filter(c => c.is_archived && c.archive_reason);
@@ -69,6 +59,7 @@ Provide:
 2. Preventive measures for future initiatives
 3. Lessons learned that should be documented
 4. Process improvements to reduce failure rates`,
+      system_prompt: "You are a senior innovation consultant specializing in failure analysis and organizational learning. Your goal is to provide deep, actionable insights based on real data to help minimize future risks.",
       response_json_schema: {
         type: 'object',
         properties: {
@@ -79,7 +70,7 @@ Provide:
         }
       }
     });
-    
+
     if (result.success) {
       setAiInsights(result.data);
     }
@@ -103,8 +94,8 @@ Provide:
           {t({ en: 'AI Insights', ar: 'رؤى ذكية' })}
         </Button>
       </div>
-      
-      <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+
+      <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={undefined} />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

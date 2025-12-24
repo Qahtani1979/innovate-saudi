@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEvaluations } from '@/hooks/useEvaluations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,40 +10,23 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function EvaluationTemplateManager() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
 
-  const { data: templates = [] } = useQuery({
-    queryKey: ['evaluation-templates'],
-    queryFn: () => base44.entities.EvaluationTemplate.list()
-  });
+  const { useEvaluationTemplates, useTemplateMutations } = useEvaluations();
+  const { data: templates = [] } = useEvaluationTemplates();
+  const { createTemplate, updateTemplate, deleteTemplate } = useTemplateMutations();
 
-  const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.EvaluationTemplate.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['evaluation-templates']);
-      setShowCreate(false);
-      toast.success(t({ en: 'Template created', ar: 'تم إنشاء القالب' }));
-    }
-  });
+  // Wrapper functions to match original implementation contract
+  const createMutation = {
+    mutate: (data) => createTemplate.mutate(data, { onSuccess: () => setShowCreate(false) })
+  };
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.EvaluationTemplate.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['evaluation-templates']);
-      setEditingTemplate(null);
-      toast.success(t({ en: 'Template updated', ar: 'تم تحديث القالب' }));
-    }
-  });
+  const updateMutation = {
+    mutate: ({ id, data }) => updateTemplate.mutate({ id, data }, { onSuccess: () => setEditingTemplate(null) })
+  };
 
-  const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.EvaluationTemplate.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['evaluation-templates']);
-      toast.success(t({ en: 'Template deleted', ar: 'تم حذف القالب' }));
-    }
-  });
+  const deleteMutation = deleteTemplate;
 
   const entityStages = {
     challenge: ['intake', 'review', 'decision', 'approval'],
@@ -146,7 +128,7 @@ function EvaluationTemplateManager() {
                             {language === 'ar' && template.template_name_ar ? template.template_name_ar : template.template_name_en}
                           </h3>
                           <p className="text-sm text-slate-600 mt-1">
-                            {template.criteria_definitions?.length || 0} criteria • 
+                            {template.criteria_definitions?.length || 0} criteria •
                             Pass threshold: {template.pass_threshold || 70}%
                           </p>
                         </div>
@@ -200,7 +182,7 @@ function EvaluationTemplateManager() {
         <CardContent>
           <div className="grid grid-cols-3 gap-4">
             {Object.keys(entityStages).map(entityType => {
-              const covered = entityStages[entityType].filter(stage => 
+              const covered = entityStages[entityType].filter(stage =>
                 templates.some(t => t.entity_type === entityType && t.evaluation_stage === stage)
               ).length;
               const total = entityStages[entityType].length;

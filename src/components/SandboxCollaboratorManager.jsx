@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,22 +25,38 @@ export default function SandboxCollaboratorManager({ sandbox }) {
   const { data: collaborators = [] } = useQuery({
     queryKey: ['sandbox-collaborators', sandbox?.id],
     queryFn: async () => {
-      const all = await base44.entities.SandboxCollaborator.list();
-      return all.filter(c => c.sandbox_id === sandbox?.id);
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data, error } = await supabase
+        .from('sandbox_collaborators')
+        .select('*')
+        .eq('sandbox_id', sandbox?.id);
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!sandbox
   });
 
   const { data: organizations = [] } = useQuery({
     queryKey: ['organizations'],
-    queryFn: () => base44.entities.Organization.list()
+    queryFn: async () => {
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data, error } = await supabase.from('organizations').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.SandboxCollaborator.create({
-      ...data,
-      sandbox_id: sandbox.id
-    }),
+    mutationFn: async (data) => {
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { error } = await supabase
+        .from('sandbox_collaborators')
+        .insert([{
+          ...data,
+          sandbox_id: sandbox.id
+        }]);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['sandbox-collaborators']);
       setDialogOpen(false);
@@ -51,7 +66,14 @@ export default function SandboxCollaboratorManager({ sandbox }) {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.SandboxCollaborator.delete(id),
+    mutationFn: async (id) => {
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { error } = await supabase
+        .from('sandbox_collaborators')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['sandbox-collaborators']);
       toast.success('Collaborator removed');
@@ -96,7 +118,7 @@ export default function SandboxCollaboratorManager({ sandbox }) {
               <div className="space-y-4 py-4">
                 <div>
                   <Label>{t({ en: 'Organization', ar: 'المنظمة' })}</Label>
-                  <Select value={formData.organization_id} onValueChange={(v) => setFormData({...formData, organization_id: v})}>
+                  <Select value={formData.organization_id} onValueChange={(v) => setFormData({ ...formData, organization_id: v })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select organization..." />
                     </SelectTrigger>
@@ -114,13 +136,13 @@ export default function SandboxCollaboratorManager({ sandbox }) {
                   <Input
                     type="email"
                     value={formData.user_email}
-                    onChange={(e) => setFormData({...formData, user_email: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, user_email: e.target.value })}
                     placeholder="user@example.com"
                   />
                 </div>
                 <div>
                   <Label>{t({ en: 'Role', ar: 'الدور' })}</Label>
-                  <Select value={formData.role} onValueChange={(v) => setFormData({...formData, role: v})}>
+                  <Select value={formData.role} onValueChange={(v) => setFormData({ ...formData, role: v })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>

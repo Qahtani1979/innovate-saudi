@@ -1,5 +1,5 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+
+import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Target, TrendingUp, CheckCircle2, AlertCircle } from 'lucide-react';
@@ -10,28 +10,17 @@ import { createPageUrl } from '../../utils';
 export default function StrategicAlignmentWidget({ program }) {
   const { language, t } = useLanguage();
 
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans-alignment'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('strategic_plans')
-        .select('*')
-        .or('is_template.is.null,is_template.eq.false')
-        .or('is_deleted.is.null,is_deleted.eq.false');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: strategicPlans = [] } = useStrategiesWithVisibility();
 
-  const linkedPlans = strategicPlans.filter(p => 
+  const linkedPlans = strategicPlans.filter(p =>
     program.strategic_plan_ids?.includes(p.id)
   );
 
-  const linkedObjectives = strategicPlans.filter(p => 
+  const linkedObjectives = strategicPlans.filter(p =>
     program.strategic_objective_ids?.includes(p.id)
   );
 
-  const alignmentScore = program.strategic_objective_ids?.length 
+  const alignmentScore = program.strategic_objective_ids?.length
     ? Math.min(100, (program.strategic_objective_ids.length * 20))
     : 0;
 

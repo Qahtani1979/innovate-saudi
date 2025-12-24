@@ -1,25 +1,23 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from './LanguageContext';
 import { RotateCcw, Loader2, AlertTriangle, Lightbulb } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { PILOT_PIVOT_SYSTEM_PROMPT, buildPilotPivotPrompt, PILOT_PIVOT_SCHEMA } from '@/lib/ai/prompts/pilots';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { usePilotMutations } from '@/hooks/usePilotMutations';
 
-function PilotPivotWorkflow({ pilot, onClose }) {
+export default function PilotPivotWorkflow({ pilot, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const [pivotType, setPivotType] = useState('');
   const [rationale, setRationale] = useState('');
   const [proposedChanges, setProposedChanges] = useState('');
   const [impactAssessment, setImpactAssessment] = useState('');
   const [aiAnalysis, setAiAnalysis] = useState(null);
-  const queryClient = useQueryClient();
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { updatePilot } = usePilotMutations();
 
   const pivotTypes = [
     { value: 'scope_change', label: { en: 'Scope Change', ar: 'تغيير النطاق' } },
@@ -30,9 +28,10 @@ function PilotPivotWorkflow({ pilot, onClose }) {
     { value: 'budget_revision', label: { en: 'Budget Revision', ar: 'مراجعة الميزانية' } }
   ];
 
-  const pivotMutation = useMutation({
-    mutationFn: async () => {
-      await base44.entities.Pilot.update(pilot.id, {
+  const handlePivot = () => {
+    updatePilot.mutate({
+      id: pilot.id,
+      data: {
         pivot_history: [
           ...(pilot.pivot_history || []),
           {
@@ -43,22 +42,17 @@ function PilotPivotWorkflow({ pilot, onClose }) {
             impact_assessment: impactAssessment,
             ai_analysis: aiAnalysis
           }
-        ]
-      });
-      await base44.entities.SystemActivity.create({
+        ],
         activity_type: 'pilot_pivot',
-        entity_type: 'Pilot',
-        entity_id: pilot.id,
-        description: `Pilot "${pilot.title_en}" pivot initiated: ${pivotType}`,
-        metadata: { pivot_type: pivotType, rationale, ai_analysis: aiAnalysis }
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['pilot']);
-      toast.success(t({ en: 'Pivot request submitted', ar: 'تم تقديم طلب التغيير' }));
-      if (onClose) onClose();
-    }
-  });
+        activity_description: `Pilot "${pilot.title_en}" pivot initiated: ${pivotType}`,
+        activity_metadata: { pivot_type: pivotType, rationale, ai_analysis: aiAnalysis }
+      }
+    }, {
+      onSuccess: () => {
+        if (onClose) onClose();
+      }
+    });
+  };
 
   const generateImpactAnalysis = async () => {
     const result = await invokeAI({
@@ -82,8 +76,8 @@ function PilotPivotWorkflow({ pilot, onClose }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
-        
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={null} showDetails />
+
         <div className="p-4 bg-white rounded-lg border border-amber-200">
           <div className="flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
@@ -205,11 +199,11 @@ function PilotPivotWorkflow({ pilot, onClose }) {
             {t({ en: 'Cancel', ar: 'إلغاء' })}
           </Button>
           <Button
-            onClick={() => pivotMutation.mutate()}
-            disabled={!pivotType || !rationale || !proposedChanges || pivotMutation.isPending}
+            onClick={handlePivot}
+            disabled={!pivotType || !rationale || !proposedChanges || updatePilot.isPending}
             className="flex-1 bg-gradient-to-r from-amber-600 to-orange-600"
           >
-            {pivotMutation.isPending ? (
+            {updatePilot.isPending ? (
               <Loader2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} animate-spin`} />
             ) : (
               <RotateCcw className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
@@ -221,5 +215,3 @@ function PilotPivotWorkflow({ pilot, onClose }) {
     </Card>
   );
 }
-
-export default PilotPivotWorkflow;

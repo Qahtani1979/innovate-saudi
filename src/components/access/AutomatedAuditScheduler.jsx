@@ -1,5 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuditSchedule } from '@/hooks/useAuditSchedule';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { useLanguage } from '../LanguageContext';
@@ -17,61 +16,7 @@ import {
 
 export default function AutomatedAuditScheduler() {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
-
-  // Fetch audit configuration from platform_config
-  const { data: config } = useQuery({
-    queryKey: ['audit-config'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('platform_config')
-        .select('*')
-        .eq('key', 'rbac_audit_schedule')
-        .single();
-      
-      if (error && error.code !== 'PGRST116') throw error;
-      
-      return data?.value || {
-        enabled: false,
-        frequency: 'weekly',
-        notify_admins: true,
-        auto_cleanup_stale: false
-      };
-    }
-  });
-
-  const updateConfigMutation = useMutation({
-    mutationFn: async (newConfig) => {
-      const key = 'rbac_audit_schedule';
-      
-      // Check if exists
-      const { data: existing } = await supabase
-        .from('platform_config')
-        .select('id')
-        .eq('key', key)
-        .single();
-
-      if (existing) {
-        const { error } = await supabase
-          .from('platform_config')
-          .update({ value: newConfig })
-          .eq('id', existing.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('platform_config')
-          .insert({ key, value: newConfig });
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['audit-config']);
-      toast.success(t({ en: 'Settings updated', ar: 'تم تحديث الإعدادات' }));
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    }
-  });
+  const { config, updateConfig, isUpdating } = useAuditSchedule();
 
   if (!config) return null;
 
@@ -93,8 +38,8 @@ export default function AutomatedAuditScheduler() {
           </div>
           <Switch
             checked={config.enabled}
-            onCheckedChange={(checked) => 
-              updateConfigMutation.mutate({ ...config, enabled: checked })
+            onCheckedChange={(checked) =>
+              updateConfig({ ...config, enabled: checked })
             }
           />
         </div>
@@ -107,8 +52,8 @@ export default function AutomatedAuditScheduler() {
               </label>
               <Select
                 value={config.frequency}
-                onValueChange={(value) => 
-                  updateConfigMutation.mutate({ ...config, frequency: value })
+                onValueChange={(value) =>
+                  updateConfig({ ...config, frequency: value })
                 }
               >
                 <SelectTrigger>
@@ -140,8 +85,8 @@ export default function AutomatedAuditScheduler() {
               </div>
               <Switch
                 checked={config.notify_admins}
-                onCheckedChange={(checked) => 
-                  updateConfigMutation.mutate({ ...config, notify_admins: checked })
+                onCheckedChange={(checked) =>
+                  updateConfig({ ...config, notify_admins: checked })
                 }
               />
             </div>
@@ -155,8 +100,8 @@ export default function AutomatedAuditScheduler() {
               </div>
               <Switch
                 checked={config.auto_cleanup_stale}
-                onCheckedChange={(checked) => 
-                  updateConfigMutation.mutate({ ...config, auto_cleanup_stale: checked })
+                onCheckedChange={(checked) =>
+                  updateConfig({ ...config, auto_cleanup_stale: checked })
                 }
               />
             </div>
@@ -169,7 +114,7 @@ export default function AutomatedAuditScheduler() {
                     {t({ en: 'Scheduler Active', ar: 'المجدول نشط' })}
                   </p>
                   <p className="text-green-700">
-                    {t({ en: 'Next audit:', ar: 'التدقيق التالي:' })} {config.frequency} 
+                    {t({ en: 'Next audit:', ar: 'التدقيق التالي:' })} {config.frequency}
                     {config.notify_admins && ` • ${t({ en: 'Admins will be notified', ar: 'سيتم إشعار المسؤولين' })}`}
                   </p>
                 </div>

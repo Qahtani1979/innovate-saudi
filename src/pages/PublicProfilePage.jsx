@@ -1,13 +1,12 @@
 import { useParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { usePublicProfile } from '@/hooks/usePublicData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from '../components/LanguageContext';
-import { 
-  User, MapPin, Linkedin, 
+import {
+  User, MapPin, Linkedin,
   Award, Star, Trophy, CheckCircle, ArrowLeft, Lock,
   Calendar, Building2, GraduationCap, Languages
 } from 'lucide-react';
@@ -17,79 +16,7 @@ export default function PublicProfilePage() {
   const { userId } = useParams();
   const { t, language, isRTL } = useLanguage();
 
-  const { data: profile, isLoading, error } = useQuery({
-    queryKey: ['public-profile', userId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select(`
-          id,
-          user_id,
-          full_name,
-          full_name_en,
-          full_name_ar,
-          avatar_url,
-          cover_image_url,
-          bio_en,
-          bio_ar,
-          title_en,
-          title_ar,
-          job_title,
-          job_title_en,
-          job_title_ar,
-          department,
-          department_en,
-          department_ar,
-          organization_en,
-          organization_ar,
-          skills,
-          expertise_areas,
-          linkedin_url,
-          location_city,
-          location_region,
-          languages,
-          verified,
-          is_public,
-          contribution_count,
-          profile_completion_percentage,
-          created_at,
-          user_email
-        `)
-        .eq('user_id', userId)
-        .maybeSingle();
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!userId
-  });
-
-  const { data: achievements = [] } = useQuery({
-    queryKey: ['public-profile-achievements', profile?.user_email],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('user_achievements')
-        .select(`
-          *,
-          achievement:achievements(*)
-        `)
-        .eq('user_email', profile.user_email);
-      return data || [];
-    },
-    enabled: !!profile?.user_email
-  });
-
-  const { data: citizenBadges = [] } = useQuery({
-    queryKey: ['public-profile-badges', profile?.user_email],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('citizen_badges')
-        .select('*')
-        .eq('user_email', profile.user_email);
-      return data || [];
-    },
-    enabled: !!profile?.user_email
-  });
+  const { profile, achievements, citizenBadges, isLoading, error } = usePublicProfile(userId);
 
   if (isLoading) {
     return (
@@ -103,7 +30,7 @@ export default function PublicProfilePage() {
           </div>
         </div>
         <div className="grid grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
         </div>
       </div>
     );
@@ -157,7 +84,7 @@ export default function PublicProfilePage() {
     );
   }
 
-  const displayName = language === 'ar' 
+  const displayName = language === 'ar'
     ? (profile.full_name_ar || profile.full_name_en || profile.full_name)
     : (profile.full_name_en || profile.full_name);
 
@@ -187,10 +114,10 @@ export default function PublicProfilePage() {
       <Card className="overflow-hidden">
         <div className="h-48 bg-gradient-to-br from-primary/80 to-primary relative overflow-hidden">
           {profile.cover_image_url && (
-            <img 
-              src={profile.cover_image_url} 
-              alt="Cover" 
-              className="w-full h-full object-cover absolute inset-0" 
+            <img
+              src={profile.cover_image_url}
+              alt="Cover"
+              className="w-full h-full object-cover absolute inset-0"
             />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
@@ -200,10 +127,10 @@ export default function PublicProfilePage() {
             <div className="relative">
               <div className="h-32 w-32 rounded-2xl bg-background border-4 border-background shadow-xl flex items-center justify-center overflow-hidden">
                 {profile.avatar_url ? (
-                  <img 
-                    src={profile.avatar_url} 
-                    alt={displayName} 
-                    className="h-full w-full object-cover" 
+                  <img
+                    src={profile.avatar_url}
+                    alt={displayName}
+                    className="h-full w-full object-cover"
                   />
                 ) : (
                   <User className="h-16 w-16 text-muted-foreground" />
@@ -242,9 +169,9 @@ export default function PublicProfilePage() {
               )}
             </div>
             {profile.linkedin_url && (
-              <a 
-                href={profile.linkedin_url} 
-                target="_blank" 
+              <a
+                href={profile.linkedin_url}
+                target="_blank"
                 rel="noopener noreferrer"
                 className="pb-4"
               >

@@ -4,12 +4,36 @@ import { Badge } from "@/components/ui/badge";
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { useLanguage } from '@/components/LanguageContext';
-import { Network, Sparkles } from 'lucide-react';
+import { Network, Sparkles, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
-export default function ChallengeRelatedTab({ relations = [], allChallenges = [] }) {
+export default function ChallengeRelatedTab({ challengeId, challenge }) {
   const { language, t } = useLanguage();
 
+  const { data: relations = [], isLoading: isLoadingRelations } = useQuery({
+    queryKey: ['challenge-relations', challengeId],
+    queryFn: async () => {
+      const { data } = await supabase.from('challenge_interests').select('*').eq('challenge_id', challengeId);
+      return data || [];
+    },
+    enabled: !!challengeId
+  });
+
+  const { data: allChallenges = [], isLoading: isLoadingChallenges } = useQuery({
+    queryKey: ['all-challenges'],
+    queryFn: async () => {
+      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false);
+      return data || [];
+    }
+  });
+
+  const isLoading = isLoadingRelations || isLoadingChallenges;
   const similarRelations = relations.filter(r => r.relation_role === 'similar_to');
+
+  if (isLoading) {
+    return <div className="text-center py-8"><Loader2 className="h-8 w-8 animate-spin mx-auto text-teal-600" /></div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -34,7 +58,7 @@ export default function ChallengeRelatedTab({ relations = [], allChallenges = []
               {similarRelations.map((rel) => {
                 const similar = allChallenges.find(c => c.id === rel.related_entity_id);
                 if (!similar) return null;
-                
+
                 return (
                   <Link
                     key={rel.id}
@@ -86,6 +110,29 @@ export default function ChallengeRelatedTab({ relations = [], allChallenges = []
           )}
         </CardContent>
       </Card>
+
+      {challenge?.related_initiatives && challenge.related_initiatives.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t({ en: 'Related Initiatives', ar: 'المبادرات ذات الصلة' })}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {challenge.related_initiatives.map((init, i) => (
+                <div key={i} className="p-3 border rounded-lg">
+                  <p className="font-medium text-sm text-slate-900">{init.name}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge variant="outline" className="text-xs">{init.status}</Badge>
+                    {init.outcome && (
+                      <span className="text-xs text-muted-foreground">{init.outcome}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

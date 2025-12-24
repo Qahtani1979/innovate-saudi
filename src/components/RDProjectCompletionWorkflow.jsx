@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,20 +20,26 @@ export default function RDProjectCompletionWorkflow({ project, onClose }) {
 
   const completeMutation = useMutation({
     mutationFn: async (data) => {
-      await base44.entities.RDProject.update(project.id, {
-        status: 'completed',
-        trl_current: data.trlAchieved,
-        impact_assessment: {
-          ...project.impact_assessment,
-          summary: data.impactSummary
-        },
-        completion_data: {
-          completion_date: new Date().toISOString(),
-          lessons_learned: data.lessonsLearned,
-          commercialization_potential: data.commercializationPotential,
-          final_trl: data.trlAchieved
-        }
-      });
+      const { supabase } = await import('@/integrations/supabase/client');
+
+      const { error } = await supabase
+        .from('rd_projects')
+        .update({
+          status: 'completed',
+          trl_current: data.trlAchieved,
+          impact_assessment: {
+            ...project.impact_assessment,
+            summary: data.impactSummary
+          },
+          completion_data: {
+            completion_date: new Date().toISOString(),
+            lessons_learned: data.lessonsLearned,
+            commercialization_potential: data.commercializationPotential,
+            final_trl: data.trlAchieved
+          }
+        })
+        .eq('id', project.id);
+      if (error) throw error;
 
       await createNotification({
         title: 'R&D Project Completed',
@@ -105,9 +110,9 @@ export default function RDProjectCompletionWorkflow({ project, onClose }) {
           <Textarea
             value={impactSummary}
             onChange={(e) => setImpactSummary(e.target.value)}
-            placeholder={t({ 
-              en: 'Summarize the academic, practical, and policy impact achieved...', 
-              ar: 'لخص التأثير الأكاديمي والعملي والسياسي المحقق...' 
+            placeholder={t({
+              en: 'Summarize the academic, practical, and policy impact achieved...',
+              ar: 'لخص التأثير الأكاديمي والعملي والسياسي المحقق...'
             })}
             rows={4}
           />
@@ -133,9 +138,9 @@ export default function RDProjectCompletionWorkflow({ project, onClose }) {
           <Textarea
             value={lessonsLearned}
             onChange={(e) => setLessonsLearned(e.target.value)}
-            placeholder={t({ 
-              en: 'What went well? What could be improved? Key insights for future projects...', 
-              ar: 'ما الذي نجح؟ ما الذي يمكن تحسينه؟ رؤى رئيسية للمشاريع المستقبلية...' 
+            placeholder={t({
+              en: 'What went well? What could be improved? Key insights for future projects...',
+              ar: 'ما الذي نجح؟ ما الذي يمكن تحسينه؟ رؤى رئيسية للمشاريع المستقبلية...'
             })}
             rows={4}
           />

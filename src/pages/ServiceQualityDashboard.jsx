@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { useServiceQuality } from '@/hooks/useServiceQuality';
+import { useMatchingEntities } from '@/hooks/useMatchingEntities';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from '../components/LanguageContext';
-import { 
-  Target, TrendingUp, TrendingDown, AlertCircle, Star, Users, FileText 
+import {
+  Target, TrendingUp, TrendingDown, AlertCircle, Star, Users, FileText
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -21,48 +22,34 @@ function ServiceQualityDashboard() {
   const [selectedService, setSelectedService] = useState(null);
   const [ratingData, setRatingData] = useState({ rating: 5, comment: '' });
 
-  const { data: services = [] } = useQuery({
-    queryKey: ['services-quality'],
-    queryFn: () => base44.entities.Service.list()
-  });
+  const { useServices, useServicePerformance, useCitizenFeedback, useSubmitRating } = useServiceQuality();
+  const { useChallenges } = useMatchingEntities();
 
-  const { data: servicePerformance = [] } = useQuery({
-    queryKey: ['service-performance'],
-    queryFn: () => base44.entities.ServicePerformance.list()
-  });
+  const { data: services = [] } = useServices();
+  const { data: servicePerformance = [] } = useServicePerformance();
+  const { data: challenges = [] } = useChallenges({ limit: 2000 });
+  const { data: citizenFeedback = [] } = useCitizenFeedback();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-services'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
+  const submitRatingMutation = useSubmitRating();
 
-  const { data: citizenFeedback = [] } = useQuery({
-    queryKey: ['citizen-feedback-services'],
-    queryFn: () => base44.entities.CitizenFeedback.list()
-  });
-
-  const submitRatingMutation = useMutation({
-    mutationFn: async (data) => {
-      return await base44.entities.CitizenFeedback.create({
-        service_id: selectedService.id,
-        feedback_type: 'service_rating',
-        satisfaction_score: data.rating,
-        comment: data.comment,
-        municipality_id: selectedService.municipality_id || null
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['citizen-feedback-services'] });
-      toast.success(t({ en: 'Rating submitted', ar: 'تم تقديم التقييم' }));
-      setSelectedService(null);
-      setRatingData({ rating: 5, comment: '' });
-    }
-  });
+  const handleSubmitRating = (data) => {
+    submitRatingMutation.mutate({
+      serviceId: selectedService.id,
+      rating: data.rating,
+      comment: data.comment,
+      municipalityId: selectedService.municipality_id
+    }, {
+      onSuccess: () => {
+        setSelectedService(null);
+        setRatingData({ rating: 5, comment: '' });
+      }
+    });
+  };
 
   // Calculate service metrics
   const serviceMetrics = services.map(service => {
     const performance = servicePerformance.filter(p => p.service_id === service.id);
-    const serviceChallenges = challenges.filter(c => 
+    const serviceChallenges = challenges.filter(c =>
       c.service_id === service.id || c.affected_services?.includes(service.id)
     );
     const feedback = citizenFeedback.filter(f => f.service_id === service.id);
@@ -71,7 +58,7 @@ function ServiceQualityDashboard() {
       ? feedback.reduce((sum, f) => sum + (f.satisfaction_score || 0), 0) / feedback.length
       : service.satisfaction_score || 0;
 
-    const latestPerformance = performance.sort((a, b) => 
+    const latestPerformance = performance.sort((a, b) =>
       new Date(b.period_end) - new Date(a.period_end)
     )[0];
 
@@ -85,12 +72,12 @@ function ServiceQualityDashboard() {
       openChallenges,
       resolvedChallenges,
       totalChallenges: serviceChallenges.length,
-      resolutionRate: serviceChallenges.length > 0 
-        ? Math.round((resolvedChallenges / serviceChallenges.length) * 100) 
+      resolutionRate: serviceChallenges.length > 0
+        ? Math.round((resolvedChallenges / serviceChallenges.length) * 100)
         : 0,
       slaCompliance: latestPerformance?.sla_compliance_rate || 0,
-      qualityScore: latestPerformance?.quality_score || 
-        Math.round((avgSatisfaction/5 * 100 * 0.6) + ((latestPerformance?.sla_compliance_rate || 50) * 0.4)),
+      qualityScore: latestPerformance?.quality_score ||
+        Math.round((avgSatisfaction / 5 * 100 * 0.6) + ((latestPerformance?.sla_compliance_rate || 50) * 0.4)),
       trend: latestPerformance?.trend || 'stable'
     };
   });
@@ -176,8 +163,8 @@ function ServiceQualityDashboard() {
                       <h3 className="font-bold text-slate-900">{language === 'ar' && service.name_ar ? service.name_ar : service.name_en}</h3>
                       <Badge className={
                         service.qualityScore >= 80 ? 'bg-green-600' :
-                        service.qualityScore >= 60 ? 'bg-blue-600' :
-                        service.qualityScore >= 40 ? 'bg-amber-600' : 'bg-red-600'
+                          service.qualityScore >= 60 ? 'bg-blue-600' :
+                            service.qualityScore >= 40 ? 'bg-amber-600' : 'bg-red-600'
                       }>
                         {service.qualityScore}% Quality
                       </Badge>
@@ -186,8 +173,8 @@ function ServiceQualityDashboard() {
                     </div>
                     <p className="text-sm text-slate-600">{service.description_en || service.description_ar}</p>
                   </div>
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     variant="outline"
                     onClick={() => setSelectedService(service)}
                   >
@@ -272,11 +259,10 @@ function ServiceQualityDashboard() {
                     <button
                       key={rating}
                       onClick={() => setRatingData(prev => ({ ...prev, rating }))}
-                      className={`flex-1 p-3 rounded-lg border-2 transition-all ${
-                        ratingData.rating >= rating
-                          ? 'border-amber-500 bg-amber-50'
-                          : 'border-slate-200 hover:border-amber-300'
-                      }`}
+                      className={`flex-1 p-3 rounded-lg border-2 transition-all ${ratingData.rating >= rating
+                        ? 'border-amber-500 bg-amber-50'
+                        : 'border-slate-200 hover:border-amber-300'
+                        }`}
                     >
                       <Star className={`h-6 w-6 mx-auto ${ratingData.rating >= rating ? 'text-amber-500 fill-amber-500' : 'text-slate-300'}`} />
                       <p className="text-xs text-slate-600 mt-1">{rating}</p>
@@ -296,7 +282,7 @@ function ServiceQualityDashboard() {
 
               <div className="flex gap-2">
                 <Button
-                  onClick={() => submitRatingMutation.mutate(ratingData)}
+                  onClick={() => handleSubmitRating(ratingData)}
                   disabled={submitRatingMutation.isPending}
                   className="flex-1 bg-blue-600"
                 >

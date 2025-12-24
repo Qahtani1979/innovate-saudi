@@ -1,88 +1,52 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+﻿import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
+import { useStrategicLinks } from '@/hooks/useStrategicLinks';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { Target, Network, CheckCircle2, TrendingUp } from 'lucide-react';
+import { Target, Network, CheckCircle2, TrendingUp, Loader2 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function InitiativeMap() {
   const { t } = useLanguage();
 
-  const { data: links = [], isLoading } = useQuery({
-    queryKey: ['strategic-plan-challenge-links'],
-    queryFn: () => base44.entities.StrategicPlanChallengeLink.list()
-  });
+  const { links, isLoading: isLinksLoading } = useStrategicLinks();
+  const { data: plans = [], isLoading: isPlansLoading } = useStrategiesWithVisibility();
+  const { data: challenges = [], isLoading: isChallengesLoading } = useChallengesWithVisibility();
 
-  const { data: plans = [] } = useQuery({
-    queryKey: ['strategic-plans'],
-    queryFn: () => base44.entities.StrategicPlan.list()
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
+  const isLoading = isLinksLoading || isPlansLoading || isChallengesLoading;
 
   const stats = {
     total_initiatives: plans.length,
     linked_challenges: links.length,
-    aligned: links.filter(l => l.alignment_status === 'aligned').length,
-    contributing: links.filter(l => l.contribution_level === 'high').length
+    aligned: (links || []).filter(l => l?.['alignment_status'] === 'aligned').length,
+    contributing: (links || []).filter(l => l?.['contribution_level'] === 'high').length
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">
-          {t({ en: 'Initiative Map', ar: 'خريطة المبادرات' })}
-        </h1>
-        <p className="text-slate-600 mt-1">
-          {t({ en: 'Visual map of strategic initiatives and linked challenges', ar: 'خريطة مرئية للمبادرات الاستراتيجية والتحديات المرتبطة' })}
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <Target className="h-10 w-10 text-blue-600 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-blue-600">{stats.total_initiatives}</p>
-            <p className="text-xs text-slate-600">{t({ en: 'Initiatives', ar: 'المبادرات' })}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-2 border-purple-200">
-          <CardContent className="pt-6 text-center">
-            <Network className="h-10 w-10 text-purple-600 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-purple-600">{stats.linked_challenges}</p>
-            <p className="text-xs text-slate-600">{t({ en: 'Linked Challenges', ar: 'التحديات المرتبطة' })}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-2 border-green-200 bg-green-50">
-          <CardContent className="pt-6 text-center">
-            <CheckCircle2 className="h-10 w-10 text-green-600 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-green-600">{stats.aligned}</p>
-            <p className="text-xs text-slate-600">{t({ en: 'Aligned', ar: 'متوافق' })}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-amber-50 to-white">
-          <CardContent className="pt-6 text-center">
-            <TrendingUp className="h-10 w-10 text-amber-600 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-amber-600">{stats.contributing}</p>
-            <p className="text-xs text-slate-600">{t({ en: 'High Impact', ar: 'تأثير عالي' })}</p>
-          </CardContent>
-        </Card>
-      </div>
+    <PageLayout>
+      <PageHeader
+        title={{ en: 'Initiative Map', ar: 'خريطة المبادرات' }}
+        subtitle={{ en: 'Visual map of strategic initiatives and linked challenges', ar: 'خريطة مرئية للمبادرات الاستراتيجية والتحديات المرتبطة' }}
+        icon={<TrendingUp className="h-6 w-6 text-white" />}
+        description=""
+        action={null}
+        actions={null}
+        stats={[
+          { icon: Target, value: stats.total_initiatives, label: { en: 'Initiatives', ar: 'المبادرات' } },
+          { icon: Network, value: stats.linked_challenges, label: { en: 'Linked Challenges', ar: 'التحديات المرتبطة' } },
+          { icon: CheckCircle2, value: stats.aligned, label: { en: 'Aligned', ar: 'متوافق' } },
+        ]}
+      />
 
       <Card>
         <CardHeader>
@@ -91,14 +55,14 @@ function InitiativeMap() {
         <CardContent>
           <div className="space-y-4">
             {plans.map(plan => {
-              const planLinks = links.filter(l => l.strategic_plan_id === plan.id);
-              const aligned = planLinks.filter(l => l.alignment_status === 'aligned').length;
+              const planLinks = (links || []).filter(l => l?.['strategic_plan_id'] === plan?.['id']);
+              const aligned = planLinks.filter(l => l?.['alignment_status'] === 'aligned').length;
 
               return (
                 <div key={plan.id} className="p-4 border rounded-lg">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <h3 className="font-semibold text-slate-900">{plan.name_en || plan.title_en || plan.name_ar || plan.title_ar}</h3>
+                      <h3 className="font-semibold text-slate-900">{plan?.['name_en'] || plan?.['title_en'] || plan?.['name_ar'] || plan?.['title_ar']}</h3>
                       <Badge variant="outline" className="mt-1">{plan.status}</Badge>
                     </div>
                     <Badge className="bg-blue-600">
@@ -118,7 +82,7 @@ function InitiativeMap() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }
 

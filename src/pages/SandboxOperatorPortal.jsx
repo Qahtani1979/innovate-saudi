@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,69 +6,60 @@ import { useLanguage } from '../components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { 
+import {
   Shield, Activity, CheckCircle2, Clock, AlertTriangle, Plus, FileText,
   TrendingUp, BarChart3, Zap, Bell
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useSandboxesWithVisibility } from '@/hooks/useSandboxesWithVisibility';
+import { useSandboxApplications } from '@/hooks/useSandboxApplications';
+import { useSandboxIncidents } from '@/hooks/useSandboxIncidents';
+import { useRegulatoryExemptions } from '@/hooks/useRegulatoryExemptions';
 
 function SandboxOperatorPortal() {
   const { language, isRTL, t } = useLanguage();
   const { user } = useAuth();
 
   // Find sandboxes I operate
-  const { data: mySandboxes = [] } = useQuery({
-    queryKey: ['my-sandboxes', user?.email],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('sandboxes')
-        .select('*')
-        .eq('is_deleted', false)
-        .or(`manager_email.eq.${user?.email},created_by.eq.${user?.email}`);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user
+  // We fetch all visible sandboxes and filter client-side for "mine" (manager or creator)
+  // This avoids adding specific "mine" filters to the general visibility hook.
+  const { data: allSandboxes = [] } = useSandboxesWithVisibility({ limit: 1000 });
+
+  const mySandboxes = React.useMemo(() => {
+    if (!user) return [];
+    return allSandboxes.filter(s =>
+      (s.manager_email && s.manager_email === user.email) ||
+      (s.created_by && s.created_by === user.id)
+    );
+  }, [allSandboxes, user]);
+
+  const mySandboxIds = React.useMemo(() => mySandboxes.map(s => s.id), [mySandboxes]);
+
+  // Use a dummy ID effectively disabling results if no sandboxes found, 
+  // to prevent fetching all records (which happens if list is empty in our hook logic).
+  const effectiveSandboxIds = mySandboxIds.length > 0 ? mySandboxIds : ['00000000-0000-0000-0000-000000000000'];
+
+  // Fetch related data for my sandboxes
+  const { data: applications = [] } = useSandboxApplications({
+    sandboxIds: effectiveSandboxIds,
+    limit: 1000
   });
 
-  // RLS: Applications to my sandboxes only
-  const { data: applications = [] } = useQuery({
-    queryKey: ['my-sandbox-applications', mySandboxes.length],
-    queryFn: async () => {
-      const mySandboxIds = mySandboxes.map(s => s.id);
-      const all = await base44.entities.SandboxApplication.list();
-      return all.filter(a => mySandboxIds.includes(a.sandbox_id));
-    },
-    enabled: mySandboxes.length > 0
+  const { data: incidents = [] } = useSandboxIncidents({
+    sandboxIds: effectiveSandboxIds,
+    limit: 100
   });
 
-  // Incidents in my sandboxes
-  const { data: incidents = [] } = useQuery({
-    queryKey: ['my-sandbox-incidents', mySandboxes.length],
-    queryFn: async () => {
-      const mySandboxIds = mySandboxes.map(s => s.id);
-      const all = await base44.entities.SandboxIncident.list();
-      return all.filter(i => mySandboxIds.includes(i.sandbox_id));
-    },
-    enabled: mySandboxes.length > 0
-  });
-
-  // Exemptions in my sandboxes
-  const { data: exemptions = [] } = useQuery({
-    queryKey: ['my-sandbox-exemptions', mySandboxes.length],
-    queryFn: async () => {
-      const mySandboxIds = mySandboxes.map(s => s.id);
-      const all = await base44.entities.RegulatoryExemption.list();
-      return all.filter(e => mySandboxIds.includes(e.sandbox_id));
-    },
-    enabled: mySandboxes.length > 0
+  const { data: exemptions = [] } = useRegulatoryExemptions({
+    sandboxIds: effectiveSandboxIds,
+    limit: 100
   });
 
   const pendingApplications = applications.filter(a => ['submitted', 'under_review'].includes(a.status));
   const activeProjects = applications.filter(a => a.status === 'active');
   const criticalIncidents = incidents.filter(i => i.severity === 'high' || i.severity === 'critical');
   const totalCapacity = mySandboxes.reduce((sum, s) => sum + (s.capacity || 0), 0);
-  const totalUsed = mySandboxes.reduce((sum, s) => sum + (s.current_pilots || 0), 0);
+  const totalUsed = mySandboxes.reduce((sum, s) => sum + (s.current_projects || s.current_pilots || 0), 0);
   const utilization = totalCapacity > 0 ? Math.round((totalUsed / totalCapacity) * 100) : 0;
 
   return (
@@ -214,8 +204,8 @@ function SandboxOperatorPortal() {
             {mySandboxes.map((sandbox) => {
               const sandboxApps = applications.filter(a => a.sandbox_id === sandbox.id);
               const activeCount = sandboxApps.filter(a => a.status === 'active').length;
-              const util = sandbox.capacity > 0 ? Math.round((sandbox.current_pilots / sandbox.capacity) * 100) : 0;
-              
+              const util = sandbox.capacity > 0 ? Math.round((sandbox.current_projects || sandbox.current_pilots || 0 / sandbox.capacity) * 100) : 0;
+
               return (
                 <Link key={sandbox.id} to={createPageUrl(`SandboxDetail?id=${sandbox.id}`)}>
                   <Card className="hover:shadow-lg transition-all border-2 hover:border-purple-400">
@@ -226,8 +216,8 @@ function SandboxOperatorPortal() {
                             <Badge variant="outline" className="font-mono text-xs">{sandbox.code}</Badge>
                             <Badge className={
                               sandbox.status === 'active' ? 'bg-green-100 text-green-700 text-xs' :
-                              sandbox.status === 'full' ? 'bg-red-100 text-red-700 text-xs' :
-                              'bg-slate-100 text-slate-700 text-xs'
+                                sandbox.status === 'full' ? 'bg-red-100 text-red-700 text-xs' :
+                                  'bg-slate-100 text-slate-700 text-xs'
                             }>{sandbox.status}</Badge>
                           </div>
                           <h3 className="font-semibold text-slate-900 mb-1">
@@ -319,8 +309,8 @@ function SandboxOperatorPortal() {
                           <p className="font-medium text-sm text-slate-900">{app.project_title}</p>
                           <Badge className={
                             app.status === 'active' ? 'bg-green-100 text-green-700 text-xs' :
-                            app.status === 'approved' ? 'bg-blue-100 text-blue-700 text-xs' :
-                            'bg-yellow-100 text-yellow-700 text-xs'
+                              app.status === 'approved' ? 'bg-blue-100 text-blue-700 text-xs' :
+                                'bg-yellow-100 text-yellow-700 text-xs'
                           }>{app.status}</Badge>
                         </div>
                         <p className="text-xs text-slate-600">{sandbox?.name_en} • {app.applicant_organization}</p>
@@ -345,6 +335,6 @@ function SandboxOperatorPortal() {
   );
 }
 
-export default ProtectedPage(SandboxOperatorPortal, { 
-  requiredPermissions: ['sandbox_manage'] 
+export default ProtectedPage(SandboxOperatorPortal, {
+  requiredPermissions: ['sandbox_manage']
 });

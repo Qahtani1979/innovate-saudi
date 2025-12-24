@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,15 +20,21 @@ export default function RDOutputValidation({ project, onClose }) {
 
   const validateMutation = useMutation({
     mutationFn: async (data) => {
-      await base44.entities.RDProject.update(project.id, {
-        output_validation: {
-          validated: true,
-          validation_date: new Date().toISOString(),
-          validator_notes: data.notes,
-          validation_results: data.results,
-          quality_score: data.quality_score
-        }
-      });
+      const { supabase } = await import('@/integrations/supabase/client');
+
+      const { error } = await supabase
+        .from('rd_projects')
+        .update({
+          output_validation: {
+            validated: true,
+            validation_date: new Date().toISOString(),
+            validator_notes: data.notes,
+            validation_results: data.results,
+            quality_score: data.quality_score
+          }
+        })
+        .eq('id', project.id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['rd-project']);

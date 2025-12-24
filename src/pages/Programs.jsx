@@ -1,6 +1,3 @@
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,8 +34,12 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePermissions } from '../components/permissions/usePermissions';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
+import { useProgramMutations } from '@/hooks/useProgramMutations';
+import { useSectors } from '@/hooks/useSectors';
+import { useRegions } from '@/hooks/useRegions';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { PROGRAMS_INSIGHTS_PROMPT_TEMPLATE, PROGRAMS_INSIGHTS_RESPONSE_SCHEMA } from '@/lib/ai/prompts/programs/insights';
+import { useState } from 'react';
 
 function ProgramsPage({ embedded = false }) {
   const { hasPermission, isAdmin, isDeputyship, isMunicipality, isStaffUser } = usePermissions();
@@ -51,7 +52,6 @@ function ProgramsPage({ embedded = false }) {
   const [viewMode, setViewMode] = useState('grid');
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
-  const queryClient = useQueryClient();
 
   const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
@@ -62,43 +62,11 @@ function ProgramsPage({ embedded = false }) {
     sectorId: filterSector !== 'all' ? filterSector : undefined
   });
 
-  const { data: sectors = [] } = useQuery({
-    queryKey: ['sectors'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('sectors')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: sectors = [] } = useSectors();
+  const { data: regions = [] } = useRegions();
 
-  const { data: regions = [] } = useQuery({
-    queryKey: ['regions'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('regions')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      const { error } = await supabase
-        .from('programs')
-        .update({ is_deleted: true, deleted_date: new Date().toISOString() })
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['programs']);
-      toast.success('Program deleted');
-    }
-  });
+  // Replace with hook
+  const { deleteProgram } = useProgramMutations();
 
   const filteredPrograms = programs.filter(program => {
     const matchesSearch = !searchTerm ||

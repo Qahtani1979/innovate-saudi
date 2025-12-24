@@ -1,114 +1,45 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { 
-  Microscope, BookOpen, Calendar, Target, FileText, Plus, 
+import {
+  Microscope, BookOpen, Calendar, Target, FileText, Plus,
   Beaker, Clock, Bell
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useAcademiaData } from '@/hooks/useAcademiaData';
+import { Loader2 } from 'lucide-react';
 
 function AcademiaDashboard() {
   const { language, isRTL, t } = useLanguage();
   const { user } = useAuth();
 
-  // Find researcher's profile
-  const { data: myResearcherProfile } = useQuery({
-    queryKey: ['my-researcher-profile', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('researcher_profiles').select('*').eq('email', user?.email).single();
-      return data;
-    },
-    enabled: !!user
-  });
+  const {
+    profile: myResearcherProfile,
+    openRDCalls = [],
+    myRDProjects = [],
+    myProposals = [],
+    researchChallenges = [],
+    livingLabs = [],
+    myLabBookings = [],
+    researchPrograms = [],
+    isLoading
+  } = useAcademiaData();
 
-  // RLS: Researcher sees published R&D calls
-  const { data: openRDCalls = [] } = useQuery({
-    queryKey: ['open-rd-calls-researcher'],
-    queryFn: async () => {
-      const { data } = await supabase.from('rd_calls').select('*')
-        .eq('status', 'open')
-        .eq('is_published', true)
-        .gt('close_date', new Date().toISOString());
-      return data || [];
-    }
-  });
-
-  // My R&D projects
-  const { data: myRDProjects = [] } = useQuery({
-    queryKey: ['my-rd-projects-researcher', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('rd_projects').select('*').eq('is_deleted', false).eq('created_by', user?.email);
-      return data || [];
-    },
-    enabled: !!user
-  });
-
-  // My proposals
-  const { data: myProposals = [] } = useQuery({
-    queryKey: ['my-rd-proposals', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('rd_proposals').select('*')
-        .or(`created_by.eq.${user?.email},principal_investigator_email.eq.${user?.email}`);
-      return data || [];
-    },
-    enabled: !!user
-  });
-
-  // Research-track challenges (public)
-  const { data: researchChallenges = [] } = useQuery({
-    queryKey: ['research-challenges-public'],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*')
-        .eq('is_deleted', false)
-        .eq('is_published', true)
-        .in('status', ['approved', 'in_treatment']);
-      return data || [];
-    }
-  });
-
-  // Living labs available
-  const { data: livingLabs = [] } = useQuery({
-    queryKey: ['living-labs-public'],
-    queryFn: async () => {
-      const { data } = await supabase.from('living_labs').select('*')
-        .eq('is_deleted', false)
-        .eq('is_active', true)
-        .eq('is_public', true);
-      return data || [];
-    }
-  });
-
-  // My lab bookings
-  const { data: myLabBookings = [] } = useQuery({
-    queryKey: ['my-lab-bookings', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('living_lab_bookings').select('*').eq('booked_by', user?.email);
-      return data || [];
-    },
-    enabled: !!user
-  });
-
-  // Research programs (fellowship, training)
-  const { data: researchPrograms = [] } = useQuery({
-    queryKey: ['research-programs'],
-    queryFn: async () => {
-      const { data } = await supabase.from('programs').select('*')
-        .eq('is_deleted', false)
-        .eq('is_published', true)
-        .in('program_type', ['fellowship', 'training', 'challenge'])
-        .in('status', ['applications_open', 'active']);
-      return data || [];
-    }
-  });
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
 
   const totalFunding = openRDCalls.reduce((acc, c) => acc + (c.budget_total || 0), 0);
+  const programCount = researchPrograms.length; // Derived from useAcademiaData
 
   return (
     <PageLayout>
@@ -116,39 +47,43 @@ function AcademiaDashboard() {
         title={{ en: 'Academia & Research Portal', ar: 'بوابة الأكاديميين والباحثين' }}
         subtitle={{ en: 'Advance municipal innovation through applied research', ar: 'تطوير الابتكار البلدي من خلال البحث التطبيقي' }}
         icon={<Microscope className="h-6 w-6 text-white" />}
+        description=""
+        action={null}
+        actions={null}
+        stats={[]}
       />
 
       {/* Urgent Deadlines */}
       {openRDCalls.filter(c => {
-        const daysLeft = Math.ceil((new Date(c.close_date) - new Date()) / (1000 * 60 * 60 * 24));
+        const daysLeft = Math.ceil((new Date(c.application_deadline || '') - new Date()) / (1000 * 60 * 60 * 24));
         return daysLeft <= 14 && daysLeft > 0;
       }).length > 0 && (
-        <Card className="border-2 border-red-400 bg-gradient-to-r from-red-50 to-orange-50">
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-red-600 flex items-center justify-center">
-                <Bell className="h-5 w-5 text-white animate-pulse" />
+          <Card className="border-2 border-red-400 bg-gradient-to-r from-red-50 to-orange-50">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-red-600 flex items-center justify-center">
+                  <Bell className="h-5 w-5 text-white animate-pulse" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-red-900">
+                    {openRDCalls.filter(c => {
+                      const daysLeft = Math.ceil((new Date(c.application_deadline || '') - new Date()) / (1000 * 60 * 60 * 24));
+                      return daysLeft <= 14;
+                    }).length} {t({ en: 'R&D Call(s) Closing Soon', ar: 'دعوات بحث تغلق قريباً' })}
+                  </p>
+                  <p className="text-sm text-red-700">
+                    {t({ en: 'Deadlines within 2 weeks', ar: 'مواعيد نهائية خلال أسبوعين' })}
+                  </p>
+                </div>
+                <Link to={createPageUrl('RDCalls')}>
+                  <Button className="bg-red-600 hover:bg-red-700">
+                    {t({ en: 'View Calls', ar: 'عرض الدعوات' })}
+                  </Button>
+                </Link>
               </div>
-              <div className="flex-1">
-                <p className="font-bold text-red-900">
-                  {openRDCalls.filter(c => {
-                    const daysLeft = Math.ceil((new Date(c.close_date) - new Date()) / (1000 * 60 * 60 * 24));
-                    return daysLeft <= 14;
-                  }).length} {t({ en: 'R&D Call(s) Closing Soon', ar: 'دعوات بحث تغلق قريباً' })}
-                </p>
-                <p className="text-sm text-red-700">
-                  {t({ en: 'Deadlines within 2 weeks', ar: 'مواعيد نهائية خلال أسبوعين' })}
-                </p>
-              </div>
-              <Link to={createPageUrl('RDCalls')}>
-                <Button className="bg-red-600 hover:bg-red-700">
-                  {t({ en: 'View Calls', ar: 'عرض الدعوات' })}
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -172,7 +107,7 @@ function AcademiaDashboard() {
               <p className="text-3xl font-bold text-purple-600">{myRDProjects.length}</p>
               <p className="text-sm text-slate-600">{t({ en: 'My Projects', ar: 'مشاريعي' })}</p>
               <p className="text-xs text-slate-500 mt-1">
-                {myRDProjects.filter(p => p.status === 'active').length} {t({ en: 'active', ar: 'نشطة' })}
+                {myRDProjects.filter(p => p.workflow_stage === 'active').length} {t({ en: 'active', ar: 'نشطة' })}
               </p>
             </div>
           </CardContent>
@@ -234,7 +169,7 @@ function AcademiaDashboard() {
           <CardContent>
             <div className="space-y-3">
               {openRDCalls.slice(0, 5).map((call) => {
-                const daysLeft = Math.ceil((new Date(call.close_date) - new Date()) / (1000 * 60 * 60 * 24));
+                const daysLeft = Math.ceil((new Date(call.application_deadline || '') - new Date()) / (1000 * 60 * 60 * 24));
                 return (
                   <Link
                     key={call.id}
@@ -245,7 +180,7 @@ function AcademiaDashboard() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <Badge variant="outline" className="text-xs font-mono">{call.code}</Badge>
-                          {daysLeft <= 7 && (
+                          {daysLeft <= 7 && daysLeft > 0 && (
                             <Badge className="bg-red-600 text-white text-xs animate-pulse">
                               <Clock className="h-3 w-3 mr-1" />
                               {daysLeft} {t({ en: 'days left', ar: 'يوم متبقي' })}
@@ -255,13 +190,13 @@ function AcademiaDashboard() {
                         <h3 className="font-semibold text-slate-900 mb-1">
                           {language === 'ar' && call.title_ar ? call.title_ar : call.title_en}
                         </h3>
-                        <p className="text-sm text-slate-600 mb-2">{call.theme_en}</p>
+                        <p className="text-sm text-slate-600 mb-2">{call.description_en?.substring(0, 100)}...</p>
                         <div className="flex items-center gap-4 text-sm">
                           <span className="text-green-600 font-semibold">
                             {call.budget_total ? `${(call.budget_total / 1000000).toFixed(1)}M SAR` : 'TBD'}
                           </span>
                           <span className="text-slate-500 text-xs">
-                            {t({ en: 'Closes:', ar: 'يغلق:' })} {new Date(call.close_date).toLocaleDateString()}
+                            {t({ en: 'Closes:', ar: 'يغلق:' })} {call.application_deadline ? new Date(call.application_deadline).toLocaleDateString() : 'TBD'}
                           </span>
                         </div>
                       </div>
@@ -269,10 +204,10 @@ function AcademiaDashboard() {
                         {t({ en: 'Submit', ar: 'تقديم' })}
                       </Button>
                     </div>
-                    {call.linked_challenge_ids?.length > 0 && (
+                    {(call.challenge_ids?.length || 0) > 0 && (
                       <Badge variant="outline" className="text-xs">
                         <Target className="h-3 w-3 mr-1" />
-                        {call.linked_challenge_ids.length} {t({ en: 'linked challenges', ar: 'تحديات مرتبطة' })}
+                        {call.challenge_ids.length} {t({ en: 'linked challenges', ar: 'تحديات مرتبطة' })}
                       </Badge>
                     )}
                   </Link>
@@ -339,28 +274,31 @@ function AcademiaDashboard() {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            {myRDProjects.filter(p => p.status === 'active').slice(0, 4).map((project) => (
-              <Link key={project.id} to={createPageUrl(`RDProjectDetail?id=${project.id}`)}>
-                <div className="p-3 border-2 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all">
-                  <div className="flex items-center justify-between mb-2">
-                    <Badge variant="outline" className="text-xs font-mono">{project.code}</Badge>
-                    <Badge className="bg-green-100 text-green-700 text-xs">
-                      {t({ en: 'Active', ar: 'نشط' })}
-                    </Badge>
+            {myRDProjects.filter(p => p.workflow_stage === 'active').slice(0, 4).map((project) => {
+              const timeline = project.timeline && typeof project.timeline === 'object' ? project.timeline : {};
+              return (
+                <Link key={project.id} to={createPageUrl(`RDProjectDetail?id=${project.id}`)}>
+                  <div className="p-3 border-2 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all">
+                    <div className="flex items-center justify-between mb-2">
+                      <Badge variant="outline" className="text-xs font-mono">{project.code}</Badge>
+                      <Badge className="bg-green-100 text-green-700 text-xs">
+                        {t({ en: 'Active', ar: 'نشط' })}
+                      </Badge>
+                    </div>
+                    <h3 className="font-medium text-sm text-slate-900 mb-1 truncate">
+                      {language === 'ar' && project.title_ar ? project.title_ar : project.title_en}
+                    </h3>
+                    <div className="flex items-center gap-3 text-xs text-slate-600">
+                      <span>TRL: {project.trl_current || project.trl_start || 0}→{project.trl_target || 9}</span>
+                      {timeline.end_date && (
+                        <span>• {t({ en: 'Ends:', ar: 'ينتهي:' })} {new Date(timeline.end_date).toLocaleDateString()}</span>
+                      )}
+                    </div>
                   </div>
-                  <h3 className="font-medium text-sm text-slate-900 mb-1 truncate">
-                    {language === 'ar' && project.title_ar ? project.title_ar : project.title_en}
-                  </h3>
-                  <div className="flex items-center gap-3 text-xs text-slate-600">
-                    <span>TRL: {project.trl_current || project.trl_start || 0}→{project.trl_target || 9}</span>
-                    {project.timeline?.end_date && (
-                      <span>• {t({ en: 'Ends:', ar: 'ينتهي:' })} {new Date(project.timeline.end_date).toLocaleDateString()}</span>
-                    )}
-                  </div>
-                </div>
-              </Link>
-            ))}
-            {myRDProjects.filter(p => p.status === 'active').length === 0 && (
+                </Link>
+              );
+            })}
+            {myRDProjects.filter(p => p.workflow_stage === 'active').length === 0 && (
               <div className="text-center py-8">
                 <Microscope className="h-12 w-12 text-slate-300 mx-auto mb-3" />
                 <p className="text-slate-500 text-sm">{t({ en: 'No active projects', ar: 'لا توجد مشاريع نشطة' })}</p>
@@ -380,26 +318,28 @@ function AcademiaDashboard() {
           </CardHeader>
           <CardContent className="space-y-3">
             {myProposals.slice(0, 4).map((proposal) => {
-              const call = openRDCalls.find(c => c.id === proposal.rd_call_id);
+              const call = proposal.rd_calls;
+              const titleEn = call?.title_en || 'Proposal';
+              const titleAr = call?.title_ar || 'مقترح';
               return (
                 <Link key={proposal.id} to={createPageUrl(`RDProposalDetail?id=${proposal.id}`)}>
                   <div className="p-3 border rounded-lg hover:bg-teal-50 transition-all">
                     <div className="flex items-center justify-between mb-2">
                       <Badge className={
                         proposal.status === 'approved' ? 'bg-green-100 text-green-700 text-xs' :
-                        proposal.status === 'under_review' ? 'bg-yellow-100 text-yellow-700 text-xs' :
-                        proposal.status === 'shortlisted' ? 'bg-purple-100 text-purple-700 text-xs' :
-                        'bg-blue-100 text-blue-700 text-xs'
+                          proposal.status === 'under_review' ? 'bg-yellow-100 text-yellow-700 text-xs' :
+                            proposal.status === 'shortlisted' ? 'bg-purple-100 text-purple-700 text-xs' :
+                              'bg-blue-100 text-blue-700 text-xs'
                       }>{proposal.status?.replace(/_/g, ' ')}</Badge>
                       <span className="text-xs text-slate-500">
-                        {new Date(proposal.created_date).toLocaleDateString()}
+                        {new Date(proposal.created_at || '').toLocaleDateString()}
                       </span>
                     </div>
                     <h4 className="font-medium text-sm text-slate-900 truncate">
-                      {language === 'ar' && proposal.title_ar ? proposal.title_ar : proposal.title_en}
+                      {language === 'ar' ? titleAr : titleEn}
                     </h4>
                     <p className="text-xs text-slate-600 mt-1">
-                      {t({ en: 'For:', ar: 'لـ:' })} {call?.title_en || proposal.rd_call_id}
+                      {t({ en: 'For:', ar: 'لـ:' })} {call?.title_en || 'R&D Call'}
                     </p>
                   </div>
                 </Link>
@@ -433,34 +373,37 @@ function AcademiaDashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {researchPrograms.slice(0, 6).map((program) => (
-                <Link key={program.id} to={createPageUrl(`ProgramDetail?id=${program.id}`)}>
-                  <Card className="hover:shadow-lg transition-all border-2 hover:border-purple-400">
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Badge className="bg-purple-100 text-purple-700 text-xs">{program.program_type?.replace(/_/g, ' ')}</Badge>
-                        {program.funding_available && (
-                          <Badge className="bg-green-100 text-green-700 text-xs">
-                            {t({ en: 'Funded', ar: 'ممول' })}
-                          </Badge>
-                        )}
-                      </div>
-                      <h3 className="font-semibold text-sm mb-2 line-clamp-2">
-                        {language === 'ar' && program.name_ar ? program.name_ar : program.name_en}
-                      </h3>
-                      {program.timeline?.application_close && (
-                        <div className="flex items-center gap-1 text-xs text-red-600 mb-2">
-                          <Clock className="h-3 w-3" />
-                          {new Date(program.timeline.application_close).toLocaleDateString()}
+              {researchPrograms.slice(0, 6).map((program) => {
+                const timeline = program.timeline && typeof program.timeline === 'object' ? program.timeline : {};
+                return (
+                  <Link key={program.id} to={createPageUrl(`ProgramDetail?id=${program.id}`)}>
+                    <Card className="hover:shadow-lg transition-all border-2 hover:border-purple-400">
+                      <CardContent className="pt-6">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Badge className="bg-purple-100 text-purple-700 text-xs">{program.program_type?.replace(/_/g, ' ')}</Badge>
+                          {program.budget && program.budget > 0 && (
+                            <Badge className="bg-green-100 text-green-700 text-xs">
+                              {t({ en: 'Funded', ar: 'ممول' })}
+                            </Badge>
+                          )}
                         </div>
-                      )}
-                      <Button size="sm" className="w-full bg-purple-600 mt-2">
-                        {t({ en: 'Apply', ar: 'تقديم' })}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
+                        <h3 className="font-semibold text-sm mb-2 line-clamp-2">
+                          {language === 'ar' && program.name_ar ? program.name_ar : program.name_en}
+                        </h3>
+                        {timeline.application_close && (
+                          <div className="flex items-center gap-1 text-xs text-red-600 mb-2">
+                            <Clock className="h-3 w-3" />
+                            {new Date(String(timeline.application_close)).toLocaleDateString()}
+                          </div>
+                        )}
+                        <Button size="sm" className="w-full bg-purple-600 mt-2">
+                          {t({ en: 'Apply', ar: 'تقديم' })}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
@@ -508,10 +451,10 @@ function AcademiaDashboard() {
                       {language === 'ar' && lab.name_ar ? lab.name_ar : lab.name_en}
                     </h4>
                     <Badge variant="outline" className="text-xs">
-                      {lab.capacity_utilization || 0}% {t({ en: 'used', ar: 'مستخدم' })}
+                      {lab.status === 'active' ? '100%' : '0%'} {t({ en: 'active', ar: 'نشط' })}
                     </Badge>
                   </div>
-                  <p className="text-xs text-slate-600">{lab.research_themes?.slice(0, 2).join(', ')}</p>
+                  <p className="text-xs text-slate-600">{lab.research_priorities?.slice(0, 2).join(', ')}</p>
                 </div>
               </Link>
             ))}

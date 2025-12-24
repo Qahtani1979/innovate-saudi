@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,10 +8,10 @@ import { useAuth } from '@/lib/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
-import { 
-  Shield, 
-  Edit, 
-  Trash2, 
+import {
+  Shield,
+  Edit,
+  Trash2,
   ArrowLeft,
   FileText,
   Clock,
@@ -39,65 +37,51 @@ import PolicyAdoptionMap from '../components/policy/PolicyAdoptionMap';
 import PolicyImpactMetrics from '../components/policy/PolicyImpactMetrics';
 import PolicyExecutiveSummaryGenerator from '../components/policy/PolicyExecutiveSummaryGenerator';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { usePolicies } from '@/hooks/usePolicies';
+import { useMatchingEntities } from '@/hooks/useMatchingEntities';
+import { usePolicyMutations } from '@/hooks/usePolicyMutations';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
 
 export default function PolicyDetail() {
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const [showAmendmentWizard, setShowAmendmentWizard] = useState(false);
   const { user } = useAuth();
-  
+
   const { invokeAI, status: aiStatus, isLoading: isAnalyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
   const urlParams = new URLSearchParams(window.location.search);
   const policyId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
-  const { data: policy, isLoading } = useQuery({
-    queryKey: ['policy', policyId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('policy_recommendations')
-        .select('*')
-        .eq('id', policyId)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!policyId
-  });
+  const { usePolicy } = usePolicies();
+  const { data: policy, isLoading } = usePolicy(policyId);
 
-  const { data: challenge } = useQuery({
-    queryKey: ['challenge', policy?.challenge_id],
-    queryFn: async () => {
-      if (!policy?.challenge_id) return null;
-      const challenges = await base44.entities.Challenge.list();
-      return challenges.find(c => c.id === policy.challenge_id);
-    },
-    enabled: !!policy?.challenge_id
-  });
+  const { useChallenges, usePilots } = useMatchingEntities();
+  const { data: challenges = [] } = useChallenges();
+  const { data: pilots = [] } = usePilots();
 
-  const { data: pilot } = useQuery({
-    queryKey: ['pilot', policy?.pilot_id],
-    queryFn: async () => {
-      if (!policy?.pilot_id) return null;
-      const pilots = await base44.entities.Pilot.list();
-      return pilots.find(p => p.id === policy.pilot_id);
-    },
-    enabled: !!policy?.pilot_id
-  });
+  // Derived data finding instead of new queries
+  const challenge = policy?.challenge_id ? challenges.find(c => c.id === policy.challenge_id) : null;
+  const pilot = policy?.pilot_id ? pilots.find(p => p.id === policy.pilot_id) : null;
 
-  const deleteMutation = useMutation({
-    mutationFn: () => base44.entities.PolicyRecommendation.delete(policyId),
-    onSuccess: () => {
-      toast.success(t({ en: 'Policy deleted', ar: 'تم حذف السياسة' }));
-      navigate(createPageUrl('PolicyHub'));
+  const { deletePolicy } = usePolicyMutations();
+
+  const handleDelete = async () => {
+    if (confirm(t({ en: 'Delete this policy?', ar: 'حذف هذه السياسة؟' }))) {
+      try {
+        await deletePolicy.mutateAsync(policyId);
+        toast.success(t({ en: 'Policy deleted successfully', ar: 'تم حذف السياسة بنجاح' }));
+        navigate(createPageUrl('PolicyHub'));
+      } catch (error) {
+        console.error('Failed to delete policy:', error);
+        toast.error(t({ en: 'Failed to delete policy', ar: 'فشل حذف السياسة' }));
+      }
     }
-  });
+  };
 
   const generateAIAnalysis = async () => {
     if (!policy) return;
-    
+
     const { POLICY_ANALYSIS_DETAIL_PROMPT_TEMPLATE } = await import('@/lib/ai/prompts/policy/analysis');
     const promptConfig = POLICY_ANALYSIS_DETAIL_PROMPT_TEMPLATE(policy);
 
@@ -106,7 +90,7 @@ export default function PolicyDetail() {
       system_prompt: promptConfig.system,
       response_json_schema: promptConfig.schema
     });
-    
+
     if (result.success && result.data) {
       setAiAnalysis(result.data);
       toast.success(t({ en: 'Analysis complete', ar: 'اكتمل التحليل' }));
@@ -167,11 +151,7 @@ export default function PolicyDetail() {
           </Link>
           <Button
             variant="outline"
-            onClick={() => {
-              if (confirm(t({ en: 'Delete this policy?', ar: 'حذف هذه السياسة؟' }))) {
-                deleteMutation.mutate();
-              }
-            }}
+            onClick={handleDelete}
             className="text-red-600 hover:bg-red-50"
           >
             <Trash2 className="h-4 w-4" />
@@ -248,36 +228,36 @@ export default function PolicyDetail() {
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-            <Tabs defaultValue="recommendation">
-              <TabsList className="grid w-full grid-cols-6">
-                <TabsTrigger value="recommendation">
-                  <FileText className="h-4 w-4 mr-2" />
-                  {t({ en: 'Details', ar: 'التفاصيل' })}
-                </TabsTrigger>
-                <TabsTrigger value="workflow">
-                  <Shield className="h-4 w-4 mr-2" />
-                  {t({ en: 'Workflow & Approvals', ar: 'سير العمل والموافقات' })}
-                </TabsTrigger>
-                <TabsTrigger value="implementation">
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  {t({ en: 'Implementation', ar: 'التنفيذ' })}
-                </TabsTrigger>
-                <TabsTrigger value="amendments">
-                  <GitBranch className="h-4 w-4 mr-2" />
-                  {t({ en: 'Amendments', ar: 'التعديلات' })}
-                </TabsTrigger>
-                <TabsTrigger value="analysis">
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  {t({ en: 'Analysis', ar: 'تحليل' })}
-                </TabsTrigger>
-                <TabsTrigger value="activity">
-                  <Activity className="h-4 w-4 mr-2" />
-                  {t({ en: 'Activity', ar: 'النشاط' })}
-                </TabsTrigger>
-              </TabsList>
+          <Tabs defaultValue="recommendation">
+            <TabsList className="grid w-full grid-cols-6">
+              <TabsTrigger value="recommendation">
+                <FileText className="h-4 w-4 mr-2" />
+                {t({ en: 'Details', ar: 'التفاصيل' })}
+              </TabsTrigger>
+              <TabsTrigger value="workflow">
+                <Shield className="h-4 w-4 mr-2" />
+                {t({ en: 'Workflow & Approvals', ar: 'سير العمل والموافقات' })}
+              </TabsTrigger>
+              <TabsTrigger value="implementation">
+                <CheckCircle className="h-4 w-4 mr-2" />
+                {t({ en: 'Implementation', ar: 'التنفيذ' })}
+              </TabsTrigger>
+              <TabsTrigger value="amendments">
+                <GitBranch className="h-4 w-4 mr-2" />
+                {t({ en: 'Amendments', ar: 'التعديلات' })}
+              </TabsTrigger>
+              <TabsTrigger value="analysis">
+                <Sparkles className="h-4 w-4 mr-2" />
+                {t({ en: 'Analysis', ar: 'تحليل' })}
+              </TabsTrigger>
+              <TabsTrigger value="activity">
+                <Activity className="h-4 w-4 mr-2" />
+                {t({ en: 'Activity', ar: 'النشاط' })}
+              </TabsTrigger>
+            </TabsList>
 
             <TabsContent value="workflow" className="space-y-4">
-              <UnifiedWorkflowApprovalTab 
+              <UnifiedWorkflowApprovalTab
                 entityType="policy_recommendation"
                 entityId={policyId}
                 entityData={policy}
@@ -374,7 +354,7 @@ export default function PolicyDetail() {
                             <Users className="h-3 w-3" />
                             <span>{amendment.amended_by}</span>
                             {amendment.previous_policy_id && (
-                              <Link 
+                              <Link
                                 to={createPageUrl(`PolicyDetail?id=${amendment.previous_policy_id}`)}
                                 className="ml-auto text-blue-600 hover:underline flex items-center gap-1"
                               >
@@ -424,8 +404,8 @@ export default function PolicyDetail() {
                       </Badge>
                     </div>
                     <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
-                      {language === 'ar' && policy.recommendation_text_ar 
-                        ? policy.recommendation_text_ar 
+                      {language === 'ar' && policy.recommendation_text_ar
+                        ? policy.recommendation_text_ar
                         : policy.recommendation_text_en || policy.recommendation_text}
                     </p>
                   </div>
@@ -475,8 +455,8 @@ export default function PolicyDetail() {
                           <p className="text-xs text-slate-600 mb-1">{t({ en: 'Complexity', ar: 'التعقيد' })}</p>
                           <Badge className={
                             aiAnalysis.complexity === 'high' ? 'bg-red-100 text-red-700' :
-                            aiAnalysis.complexity === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-green-100 text-green-700'
+                              aiAnalysis.complexity === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-green-100 text-green-700'
                           }>
                             {aiAnalysis.complexity}
                           </Badge>
@@ -488,8 +468,8 @@ export default function PolicyDetail() {
                       </div>
                       <div className="p-3 bg-slate-50 rounded-lg">
                         <p className="text-sm text-slate-700">
-                          {typeof aiAnalysis.complexity_reason === 'object' 
-                            ? t(aiAnalysis.complexity_reason) 
+                          {typeof aiAnalysis.complexity_reason === 'object'
+                            ? t(aiAnalysis.complexity_reason)
                             : aiAnalysis.complexity_reason}
                         </p>
                       </div>

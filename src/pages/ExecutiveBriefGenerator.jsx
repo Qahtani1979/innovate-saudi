@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
+import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -16,34 +18,19 @@ function ExecutiveBriefGenerator() {
   const { language, isRTL, t } = useLanguage();
   const [brief, setBrief] = useState(null);
   const [customTitle, setCustomTitle] = useState('');
-  const { invokeAI, status, isLoading: generating, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invokeAI, status, isLoading: generating, isAvailable, rateLimitInfo, error } = useAIWithFallback();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
-
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities'],
-    queryFn: () => base44.entities.Municipality.list()
-  });
-
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans'],
-    queryFn: () => base44.entities.StrategicPlan.list()
-  });
+  const { data: pilots = [] } = usePilotsWithVisibility();
+  const { data: challenges = [] } = useChallengesWithVisibility();
+  const { data: municipalities = [] } = useMunicipalitiesWithVisibility();
+  const { data: strategicPlans = [] } = useStrategiesWithVisibility();
 
   const generateBrief = async () => {
     const activePlan = strategicPlans.find(p => p.status === 'active') || strategicPlans[0];
-    
+
     // Import centralized prompt module
     const { EXECUTIVE_BRIEF_PROMPT_TEMPLATE, EXECUTIVE_BRIEF_RESPONSE_SCHEMA } = await import('@/lib/ai/prompts/executive/briefGenerator');
-    
+
     const promptData = {
       activeChallenges: challenges.filter(c => c.status !== 'archived').length,
       activePilots: pilots.filter(p => p.stage === 'active' || p.stage === 'in_progress').length,
@@ -75,27 +62,24 @@ function ExecutiveBriefGenerator() {
         icon={FileText}
         title={{ en: 'Executive Brief Generator', ar: 'مولد الموجز التنفيذي' }}
         description={{ en: 'One-click generation of strategic summary with bilingual PDF export', ar: 'توليد بنقرة واحدة للملخص الاستراتيجي مع تصدير PDF ثنائي اللغة' }}
-        action={
-          <div className="flex gap-2">
-            <PersonaButton onClick={generateBrief} disabled={generating || !isAvailable}>
-              {generating ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Sparkles className="h-4 w-4 mr-2" />
-              )}
-              {t({ en: 'Generate Brief', ar: 'إنشاء موجز' })}
-            </PersonaButton>
-            {brief && (
-              <PersonaButton onClick={exportPDF} variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                {t({ en: 'Export PDF', ar: 'تصدير PDF' })}
-              </PersonaButton>
+        action={<div className="flex gap-2">
+          <PersonaButton onClick={generateBrief} disabled={generating || !isAvailable}>
+            {generating ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4 mr-2" />
             )}
-          </div>
-        }
-      />
+            {t({ en: 'Generate Brief', ar: 'إنشاء موجز' })}
+          </PersonaButton>
+          {brief && (
+            <PersonaButton onClick={exportPDF} variant="outline">
+              <Download className="h-4 w-4 mr-2" />
+              {t({ en: 'Export PDF', ar: 'تصدير PDF' })}
+            </PersonaButton>
+          )}
+        </div>} subtitle={undefined} actions={undefined} children={undefined} />
 
-      <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+      <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={error} />
 
       {/* Configuration */}
       <Card>
@@ -176,8 +160,8 @@ function ExecutiveBriefGenerator() {
                     <h4 className="font-semibold text-red-900">{alert.risk}</h4>
                     <Badge className={
                       alert.severity === 'critical' ? 'bg-red-600 text-white' :
-                      alert.severity === 'high' ? 'bg-orange-100 text-orange-700' :
-                      'bg-yellow-100 text-yellow-700'
+                        alert.severity === 'high' ? 'bg-orange-100 text-orange-700' :
+                          'bg-yellow-100 text-yellow-700'
                     }>
                       {alert.severity}
                     </Badge>

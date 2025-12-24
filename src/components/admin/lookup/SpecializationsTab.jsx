@@ -1,9 +1,6 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '@/components/LanguageContext';
-import { toast } from 'sonner';
 import {
   LookupTableCard,
   SearchInput,
@@ -16,59 +13,32 @@ import {
 } from './shared/LookupTableStyles';
 import LookupItemDialog from './shared/LookupItemDialog';
 
+import { useLookupData, useLookupMutations } from '@/hooks/useLookupManagement';
+
 export default function SpecializationsTab() {
   const { isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  // queryClient removed
   const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
 
-  const { data: specializations = [], isLoading } = useQuery({
+  const { data: specializations = [], isLoading } = useLookupData({
+    tableName: 'lookup_specializations',
     queryKey: ['lookup-specializations-admin'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('lookup_specializations')
-        .select('*')
-        .order('display_order');
-      if (error) throw error;
-      return data || [];
-    }
+    sortColumn: 'display_order'
   });
 
-  const saveMutation = useMutation({
-    mutationFn: async (data) => {
-      if (data.id) {
-        const { error } = await supabase
-          .from('lookup_specializations')
-          .update(data)
-          .eq('id', data.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('lookup_specializations')
-          .insert(data);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['lookup-specializations-admin']);
-      toast.success(t({ en: 'Specialization saved', ar: 'تم حفظ التخصص' }));
-      setDialogOpen(false);
-    },
-    onError: () => toast.error(t({ en: 'Failed to save', ar: 'فشل في الحفظ' }))
+  const { saveMutation, deleteMutation } = useLookupMutations({
+    tableName: 'lookup_specializations',
+    queryKey: ['lookup-specializations-admin'],
+    entityName: { en: 'Specialization', ar: 'التخصص' }
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      const { error } = await supabase.from('lookup_specializations').delete().eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['lookup-specializations-admin']);
-      toast.success(t({ en: 'Specialization deleted', ar: 'تم حذف التخصص' }));
-    },
-    onError: () => toast.error(t({ en: 'Failed to delete', ar: 'فشل في الحذف' }))
-  });
+  const handleSaveWrapper = (formData) => {
+    saveMutation.mutate(formData, {
+      onSuccess: () => setDialogOpen(false)
+    });
+  };
 
   const handleCreate = () => {
     setEditingItem(null);
@@ -81,7 +51,7 @@ export default function SpecializationsTab() {
   };
 
   const handleSave = (formData) => {
-    saveMutation.mutate(formData);
+    handleSaveWrapper(formData);
   };
 
   const filteredItems = filterBySearchTerm(specializations, searchTerm);
@@ -107,7 +77,7 @@ export default function SpecializationsTab() {
           onChange={setSearchTerm}
           placeholder={t({ en: 'Search specializations...', ar: 'بحث في التخصصات...' })}
         />
-        
+
         <LookupTable headers={headers}>
           {filteredItems.map((spec) => (
             <LookupTableRow key={spec.id}>

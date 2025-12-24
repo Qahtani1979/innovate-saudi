@@ -1,6 +1,5 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
+import { useParticipantDashboardData } from '@/hooks/useParticipantDashboardData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,122 +17,7 @@ export default function ParticipantDashboard() {
   const { language, isRTL, t } = useLanguage();
   const { user } = useAuth();
 
-  // Fetch user's program applications
-  const { data: myApplications = [] } = useQuery({
-    queryKey: ['my-program-applications', user?.email],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('program_applications')
-        .select('*')
-        .eq('applicant_email', user.email);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
-
-  // Fetch programs
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('programs')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  // Fetch participant progress data
-  const activeProgram = myApplications.find(app => app.status === 'accepted');
-  const program = activeProgram ? programs.find(p => p.id === activeProgram.program_id) : null;
-
-  // Fetch actual progress data from program_sessions and submissions
-  const { data: progressData } = useQuery({
-    queryKey: ['participant-progress', activeProgram?.id, program?.id],
-    queryFn: async () => {
-      if (!program?.id) return null;
-
-      // Get total sessions count
-      const { count: totalSessions } = await supabase
-        .from('program_sessions')
-        .select('*', { count: 'exact', head: true })
-        .eq('program_id', program.id);
-
-      // Get completed sessions (sessions with attendance record)
-      const { count: sessionsCompleted } = await supabase
-        .from('session_attendance')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_email', user.email)
-        .eq('attended', true);
-
-      // Get total assignments
-      const { count: totalAssignments } = await supabase
-        .from('program_assignments')
-        .select('*', { count: 'exact', head: true })
-        .eq('program_id', program.id);
-
-      // Get submitted assignments
-      const { count: assignmentsSubmitted } = await supabase
-        .from('assignment_submissions')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_email', user.email);
-
-      // Get mentor meetings
-      const { count: mentorMeetings } = await supabase
-        .from('mentor_sessions')
-        .select('*', { count: 'exact', head: true })
-        .eq('participant_email', user.email)
-        .eq('status', 'completed');
-
-      // Get peer collaborations
-      const { count: peerCollaborations } = await supabase
-        .from('peer_collaborations')
-        .select('*', { count: 'exact', head: true })
-        .or(`participant_email.eq.${user.email},partner_email.eq.${user.email}`);
-
-      const sessionsTotal = totalSessions || 12;
-      const sessionsCompletedCount = sessionsCompleted || 0;
-      const assignmentsTotal = totalAssignments || 8;
-      const assignmentsSubmittedCount = assignmentsSubmitted || 0;
-
-      // Calculate overall progress
-      const sessionProgress = sessionsTotal > 0 ? (sessionsCompletedCount / sessionsTotal) * 50 : 0;
-      const assignmentProgress = assignmentsTotal > 0 ? (assignmentsSubmittedCount / assignmentsTotal) * 50 : 0;
-      const overallProgress = Math.round(sessionProgress + assignmentProgress);
-
-      return {
-        sessionsCompleted: sessionsCompletedCount,
-        totalSessions: sessionsTotal,
-        assignmentsSubmitted: assignmentsSubmittedCount,
-        totalAssignments: assignmentsTotal,
-        mentorMeetings: mentorMeetings || 0,
-        peerCollaborations: peerCollaborations || 0,
-        overallProgress
-      };
-    },
-    enabled: !!program?.id && !!user?.email
-  });
-
-  // Fetch program events
-  const { data: programEvents = [] } = useQuery({
-    queryKey: ['participant-program-events', program?.id],
-    queryFn: async () => {
-      if (!program?.id) return [];
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .eq('program_id', program.id)
-        .eq('is_deleted', false)
-        .gte('start_date', new Date().toISOString())
-        .order('start_date', { ascending: true })
-        .limit(5);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!program?.id
-  });
+  const { myApplications, programs, activeProgram, program, progressData, programEvents } = useParticipantDashboardData(user?.email);
 
   // Fallback data if queries return nothing
   const displayData = progressData || {
@@ -217,9 +101,9 @@ export default function ParticipantDashboard() {
                 <FileText className="h-8 w-8 text-blue-600 mb-3" />
                 <h3 className="font-semibold mb-1">{t({ en: 'Submit Assignment', ar: 'تقديم مهمة' })}</h3>
                 <p className="text-xs text-slate-600">
-                  {t({ 
-                    en: `${displayData.totalAssignments - displayData.assignmentsSubmitted} assignments pending`, 
-                    ar: `${displayData.totalAssignments - displayData.assignmentsSubmitted} مهام معلقة` 
+                  {t({
+                    en: `${displayData.totalAssignments - displayData.assignmentsSubmitted} assignments pending`,
+                    ar: `${displayData.totalAssignments - displayData.assignmentsSubmitted} مهام معلقة`
                   })}
                 </p>
               </CardContent>
@@ -271,8 +155,8 @@ export default function ParticipantDashboard() {
                         </div>
                         <Badge className={
                           event.event_type === 'workshop' ? 'bg-purple-100 text-purple-700' :
-                          event.event_type === 'webinar' ? 'bg-blue-100 text-blue-700' :
-                          'bg-teal-100 text-teal-700'
+                            event.event_type === 'webinar' ? 'bg-blue-100 text-blue-700' :
+                              'bg-teal-100 text-teal-700'
                         }>{event.event_type}</Badge>
                       </div>
                     </div>

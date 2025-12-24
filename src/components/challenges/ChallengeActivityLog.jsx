@@ -1,8 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useChallengeActivities } from '@/hooks/useChallengeActivities';
+import { useLanguage } from '../LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useLanguage } from '../LanguageContext';
 import {
   Activity, FileText, TrendingUp, MessageSquare, Lightbulb,
   TestTube, CheckCircle2, Archive, Users, Target, Clock
@@ -11,16 +10,9 @@ import {
 export default function ChallengeActivityLog({ challengeId }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: activities = [] } = useQuery({
-    queryKey: ['challenge-activities', challengeId],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenge_activities')
-        .select('*')
-        .eq('challenge_id', challengeId)
-        .order('created_at', { ascending: false });
-      return data || [];
-    },
-    enabled: !!challengeId
+  const { data: activities = [] } = useChallengeActivities({
+    challengeId,
+    limit: 50
   });
 
   const activityIcons = {

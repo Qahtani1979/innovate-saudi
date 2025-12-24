@@ -1,6 +1,4 @@
 import React from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,20 +6,23 @@ import { useLanguage } from '../LanguageContext';
 import { Clock, AlertTriangle, CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
-import { useEmailTrigger } from '@/hooks/useEmailTrigger';
-import { toast } from 'sonner';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useEscalateChallenge } from '@/hooks/useChallengeMutations';
+
 export default function SLAMonitor() {
-  const { language, isRTL, t } = useLanguage();
-  const { triggerEmail } = useEmailTrigger();
-  const queryClient = useQueryClient();
+  const { language, t } = useLanguage();
   const [escalatingId, setEscalatingId] = React.useState(null);
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-sla'],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false);
-      return data || [];
-    }
+
+  // Use standardized hook with high limit to mimic original behavior (no pagination)
+  const { data: result = [], isLoading } = useChallengesWithVisibility({
+    limit: 1000,
+    includeDeleted: false
   });
+
+  // Handle potential union return type (though limit implies array)
+  const challenges = Array.isArray(result) ? result : result.data || [];
+
+  const escalateMutation = useEscalateChallenge();
 
   const calculateSLA = (challenge) => {
     const slaThresholds = {
@@ -32,7 +33,8 @@ export default function SLAMonitor() {
       in_treatment: 90
     };
 
-    const daysInStage = Math.floor((new Date() - new Date(challenge.updated_date)) / (1000 * 60 * 60 * 24));
+    const updatedTime = new Date(challenge.updated_date).getTime();
+    const daysInStage = Math.floor((new Date().getTime() - updatedTime) / (1000 * 60 * 60 * 24));
     const threshold = slaThresholds[challenge.status] || 30;
     const breached = daysInStage > threshold;
     const daysOverdue = breached ? daysInStage - threshold : 0;
@@ -50,35 +52,15 @@ export default function SLAMonitor() {
   const handleEscalate = async (challenge) => {
     setEscalatingId(challenge.id);
     try {
-      // Update challenge escalation level
-      const { error } = await supabase.from('challenges').update({
-        escalation_level: (challenge.escalation_level || 0) + 1,
-        escalation_date: new Date().toISOString()
-      }).eq('id', challenge.id);
-      if (error) throw error;
-
-      // Trigger escalation email
-      await triggerEmail('challenge.escalated', {
-        entityType: 'challenge',
-        entityId: challenge.id,
-        variables: {
-          challenge_title: challenge.title_en || challenge.title_ar,
-          challenge_code: challenge.code,
-          days_overdue: challenge.sla.daysOverdue,
-          current_status: challenge.status,
-          escalation_level: (challenge.escalation_level || 0) + 1
-        }
-      });
-
-      queryClient.invalidateQueries({ queryKey: ['challenges'] });
-      toast.success(t({ en: 'Challenge escalated', ar: 'تم تصعيد التحدي' }));
+      await escalateMutation.mutateAsync(challenge);
     } catch (error) {
       console.error('Escalation failed:', error);
-      toast.error(t({ en: 'Escalation failed', ar: 'فشل التصعيد' }));
     } finally {
       setEscalatingId(null);
     }
   };
+
+  if (isLoading) return <div className="p-6 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>;
 
   return (
     <Card className="border-2 border-orange-300">
@@ -130,11 +112,11 @@ export default function SLAMonitor() {
                         </span>
                       </div>
                     </div>
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       variant="destructive"
                       onClick={() => handleEscalate(challenge)}
-                      disabled={escalatingId === challenge.id}
+                      disabled={escalatingId === challenge.id || escalateMutation.isPending}
                     >
                       {escalatingId === challenge.id ? (
                         <Loader2 className="h-3 w-3 mr-1 animate-spin" />

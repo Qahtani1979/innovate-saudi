@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useExpertProfile, useExpertAssignments, useExpertEvaluations, useExpertDeadlines } from '@/hooks/useExpertData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,89 +21,26 @@ function ExpertDashboard() {
   const { language, isRTL, t } = useLanguage();
   const { user, userProfile } = useAuth();
 
-  // Fetch expert profile
-  const { data: expertProfile } = useQuery({
-    queryKey: ['expert-profile', user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('expert_profiles')
-        .select('*')
-        .eq('user_id', user?.id)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+  // Fetch expert data using hooks
+  const { data: expertProfile } = useExpertProfile(user?.id);
+  const { data: myAssignments = [] } = useExpertAssignments(user?.email);
+  const { data: myEvaluations = [] } = useExpertEvaluations(user?.email);
+  const { data: upcomingDeadlines = [] } = useExpertDeadlines(user?.email);
 
-  // Fetch my assignments
-  const { data: myAssignments = [] } = useQuery({
-    queryKey: ['expert-assignments', user?.email],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('expert_assignments')
-        .select(`
-          *,
-          expert_panel:expert_panels(name_en, name_ar)
-        `)
-        .eq('expert_email', user?.email)
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.email,
-    staleTime: 2 * 60 * 1000, // 2 minutes
-  });
-
-  // Fetch my evaluations
-  const { data: myEvaluations = [] } = useQuery({
-    queryKey: ['expert-evaluations', user?.email],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('expert_evaluations')
-        .select('*')
-        .eq('evaluator_email', user?.email)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.email,
-    staleTime: 2 * 60 * 1000, // 2 minutes
-  });
-
-  // Fetch upcoming deadlines
-  const { data: upcomingDeadlines = [] } = useQuery({
-    queryKey: ['expert-deadlines', user?.email],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('expert_assignments')
-        .select('*')
-        .eq('expert_email', user?.email)
-        .eq('status', 'assigned')
-        .not('due_date', 'is', null)
-        .order('due_date', { ascending: true })
-        .limit(5);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
 
   // Calculate stats
   const pendingAssignments = myAssignments.filter(a => a.status === 'assigned' || a.status === 'in_progress');
   const completedAssignments = myAssignments.filter(a => a.status === 'completed');
   const completedEvaluations = myEvaluations.filter(e => e.status === 'completed');
-  
+
   // Calculate average score from completed evaluations
-  const avgScore = completedEvaluations.length > 0 
+  const avgScore = completedEvaluations.length > 0
     ? (completedEvaluations.reduce((sum, e) => sum + (e.overall_score || 0), 0) / completedEvaluations.length).toFixed(1)
     : 0;
 
   // Completion rate
   const totalAssignments = myAssignments.length;
-  const completionRate = totalAssignments > 0 
+  const completionRate = totalAssignments > 0
     ? Math.round((completedAssignments.length / totalAssignments) * 100)
     : 0;
 
@@ -250,9 +186,9 @@ function ExpertDashboard() {
                             </span>
                           </div>
                           <h4 className="font-medium">
-                            {t({ 
-                              en: assignment.expert_panel?.name_en || 'Assignment', 
-                              ar: assignment.expert_panel?.name_ar || 'مهمة' 
+                            {t({
+                              en: assignment.expert_panel?.name_en || 'Assignment',
+                              ar: assignment.expert_panel?.name_ar || 'مهمة'
                             })}
                           </h4>
                           {assignment.due_date && (
@@ -295,9 +231,9 @@ function ExpertDashboard() {
                             {t(statusLabels[assignment.status])}
                           </Badge>
                           <h4 className="font-medium mt-1">
-                            {t({ 
-                              en: assignment.expert_panel?.name_en || 'Assignment', 
-                              ar: assignment.expert_panel?.name_ar || 'مهمة' 
+                            {t({
+                              en: assignment.expert_panel?.name_en || 'Assignment',
+                              ar: assignment.expert_panel?.name_ar || 'مهمة'
                             })}
                           </h4>
                           <p className="text-sm text-muted-foreground">
@@ -331,9 +267,9 @@ function ExpertDashboard() {
                             {t(statusLabels[assignment.status] || { en: assignment.status, ar: assignment.status })}
                           </Badge>
                           <h4 className="font-medium mt-1">
-                            {t({ 
-                              en: assignment.expert_panel?.name_en || 'Assignment', 
-                              ar: assignment.expert_panel?.name_ar || 'مهمة' 
+                            {t({
+                              en: assignment.expert_panel?.name_en || 'Assignment',
+                              ar: assignment.expert_panel?.name_ar || 'مهمة'
                             })}
                           </h4>
                         </div>

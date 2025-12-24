@@ -1,6 +1,5 @@
-import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+﻿import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,20 +12,16 @@ import { Link } from 'react-router-dom';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useIterationPilots } from '../hooks/usePilots';
+import { usePilotMutations } from '../hooks/usePilotMutations';
 
 function IterationWorkflow() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { invokeAI, status, isLoading: generatingPlan, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: iterationPilots = [] } = useQuery({
-    queryKey: ['iteration-pilots'],
-    queryFn: async () => {
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => p.recommendation === 'iterate');
-    }
-  });
+  const { data: iterationPilots = [] } = useIterationPilots();
+  const { startIteration } = usePilotMutations();
 
   const [selectedPilot, setSelectedPilot] = useState(null);
   const [iterationPlan, setIterationPlan] = useState('');
@@ -72,19 +67,13 @@ Return as structured JSON.`,
     }
   };
 
-  const startIterationMutation = useMutation({
-    mutationFn: async (pilotId) => {
-      await base44.entities.Pilot.update(pilotId, {
-        stage: 'design',
-        recommendation: 'pending'
-      });
-    },
-    onSuccess: (_, pilotId) => {
-      queryClient.invalidateQueries(['iteration-pilots']);
-      toast.success(t({ en: 'Pilot moved to redesign', ar: 'تم نقل التجربة لإعادة التصميم' }));
-      navigate(createPageUrl(`PilotEdit?id=${pilotId}`));
-    }
-  });
+  const handleStartIteration = (pilotId) => {
+    startIteration.mutate(pilotId, {
+      onSuccess: () => {
+        navigate(createPageUrl(`PilotEdit?id=${pilotId}`));
+      }
+    });
+  };
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -138,7 +127,7 @@ Return as structured JSON.`,
                   </div>
                   <div>
                     <span className="text-slate-500">{t({ en: 'Budget:', ar: 'الميزانية:' })}</span>
-                    <p className="font-medium">{pilot.budget ? `${(pilot.budget/1000).toFixed(0)}K` : 'N/A'}</p>
+                    <p className="font-medium">{pilot.budget ? `${(pilot.budget / 1000).toFixed(0)}K` : 'N/A'}</p>
                   </div>
                   <div>
                     <span className="text-slate-500">{t({ en: 'Success:', ar: 'النجاح:' })}</span>
@@ -155,7 +144,7 @@ Return as structured JSON.`,
                     <p className="text-sm font-semibold text-amber-900 mb-3">
                       {t({ en: 'AI Iteration Plan', ar: 'خطة التحسين الذكية' })}
                     </p>
-                    
+
                     <div className="space-y-3 text-sm">
                       <div>
                         <p className="font-medium text-slate-900 mb-1">{t({ en: 'Key Issues:', ar: 'القضايا الرئيسية:' })}</p>
@@ -203,8 +192,8 @@ Return as structured JSON.`,
                     )}
                   </Button>
                   <Button
-                    onClick={() => startIterationMutation.mutate(pilot.id)}
-                    disabled={startIterationMutation.isPending}
+                    onClick={() => handleStartIteration(pilot.id)}
+                    disabled={startIteration.isPending}
                     className="bg-gradient-to-r from-amber-600 to-orange-600 flex-1"
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />

@@ -1,24 +1,21 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useProgramPilotLinks } from '@/hooks/useProgramPilotLinks';
 import { Card, CardContent } from "@/components/ui/card";
 import { useLanguage } from '../components/LanguageContext';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, TrendingUp, Loader2 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function ConversionFunnel() {
   const { t } = useLanguage();
 
-  const { data: programLinks = [], isLoading } = useQuery({
-    queryKey: ['program-pilot-links'],
-    queryFn: () => base44.entities.ProgramPilotLink.list()
-  });
+  const { data: programLinks = [], isLoading } = useProgramPilotLinks();
 
   const funnelStages = [
     { stage: 'enrolled', count: programLinks.length, label: t({ en: 'Enrolled', ar: 'مسجل' }), color: 'bg-blue-600' },
-    { stage: 'active', count: programLinks.filter(pl => pl.participation_status === 'active').length, label: t({ en: 'Active', ar: 'نشط' }), color: 'bg-purple-600' },
-    { stage: 'completed', count: programLinks.filter(pl => pl.participation_status === 'completed').length, label: t({ en: 'Completed', ar: 'مكتمل' }), color: 'bg-amber-600' },
-    { stage: 'in_progress', count: programLinks.filter(pl => pl.conversion_status === 'in_progress').length, label: t({ en: 'Pilot In Progress', ar: 'تجربة قيد التنفيذ' }), color: 'bg-green-600' },
-    { stage: 'converted', count: programLinks.filter(pl => pl.conversion_status === 'converted').length, label: t({ en: 'Converted to Pilot', ar: 'تحول لتجربة' }), color: 'bg-green-700' }
+    { stage: 'active', count: programLinks.filter(pl => pl?.['participation_status'] === 'active').length, label: t({ en: 'Active', ar: 'نشط' }), color: 'bg-purple-600' },
+    { stage: 'completed', count: programLinks.filter(pl => pl?.['participation_status'] === 'completed').length, label: t({ en: 'Completed', ar: 'مكتمل' }), color: 'bg-amber-600' },
+    { stage: 'in_progress', count: programLinks.filter(pl => pl?.['conversion_status'] === 'in_progress').length, label: t({ en: 'Pilot In Progress', ar: 'تجربة قيد التنفيذ' }), color: 'bg-green-600' },
+    { stage: 'converted', count: programLinks.filter(pl => pl?.['conversion_status'] === 'converted').length, label: t({ en: 'Converted to Pilot', ar: 'تحول لتجربة' }), color: 'bg-green-700' }
   ];
 
   const overallConversion = programLinks.length > 0
@@ -27,32 +24,27 @@ function ConversionFunnel() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">
-          {t({ en: 'Conversion Funnel', ar: 'مسار التحويل' })}
-        </h1>
-        <p className="text-slate-600 mt-1">
-          {t({ en: 'Program participant → Pilot conversion journey', ar: 'رحلة تحويل المشارك في البرنامج إلى تجربة' })}
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        title={{ en: 'Conversion Funnel', ar: 'مسار التحويل' }}
+        subtitle={{ en: 'Program participant → Pilot conversion journey', ar: 'رحلة تحويل المشارك في البرنامج إلى تجربة' }}
+        icon={<TrendingUp className="h-6 w-6 text-white" />}
+        description=""
+        action={null}
+        actions={null}
+        stats={[
+          { icon: CheckCircle2, value: `${overallConversion.toFixed(1)}%`, label: { en: 'Conversion Rate', ar: 'معدل التحويل' } }
+        ]}
+      />
 
-      <Card className="bg-gradient-to-br from-green-50 to-white border-2 border-green-300">
-        <CardContent className="pt-6 text-center">
-          <CheckCircle2 className="h-12 w-12 text-green-600 mx-auto mb-2" />
-          <p className="text-5xl font-bold text-green-600">{overallConversion.toFixed(1)}%</p>
-          <p className="text-sm text-slate-600 mt-2">{t({ en: 'Overall Conversion Rate', ar: 'معدل التحويل الإجمالي' })}</p>
-        </CardContent>
-      </Card>
-
-      <div className="space-y-2">
+      <div className="space-y-4">
         {funnelStages.map((stage, idx) => {
           const percentage = programLinks.length > 0 ? (stage.count / programLinks.length) * 100 : 0;
           const dropoff = idx > 0 ? funnelStages[idx - 1].count - stage.count : 0;
@@ -87,7 +79,7 @@ function ConversionFunnel() {
           );
         })}
       </div>
-    </div>
+    </PageLayout>
   );
 }
 

@@ -1,65 +1,45 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMyBookmarks } from '@/hooks/useMyBookmarks';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Bookmark, Trash2, ExternalLink, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
-import { useLanguage } from '../components/LanguageContext';
-import { toast } from 'sonner';
+import { createPageUrl } from '@/utils';
+import { useLanguage } from '@/components/LanguageContext';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { useAuth } from '@/lib/AuthContext';
+import { StandardPagination } from '@/components/ui/StandardPagination';
+import { EntityListSkeleton } from '@/components/ui/skeletons/EntityListSkeleton';
 
 export default function MyBookmarks() {
-  const { t, isRTL } = useLanguage();
+  const { t } = useLanguage();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
 
-  const { data: bookmarks = [], isLoading } = useQuery({
-    queryKey: ['user-bookmarks', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data, error } = await supabase
-        .from('bookmarks')
-        .select('*')
-        .eq('user_email', user.email)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
+  return <MyBookmarksContent user={user} />;
+}
 
-  const removeMutation = useMutation({
-    mutationFn: async (bookmarkId) => {
-      const { error } = await supabase
-        .from('bookmarks')
-        .delete()
-        .eq('id', bookmarkId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['user-bookmarks']);
-      toast.success(t({ en: 'Bookmark removed', ar: 'تمت الإزالة' }));
-    }
-  });
+// Inner component to handle state properly if we want to separate concerns
+// OR simply implement state in the main component. 
+// Let's implement directly for simplicity but note the state requirement.
 
-  const clearAllMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('bookmarks')
-        .delete()
-        .eq('user_email', user.email);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['user-bookmarks']);
-      toast.success(t({ en: 'All bookmarks cleared', ar: 'تم مسح جميع الإشارات' }));
-    }
-  });
+import { useState } from 'react';
+
+function MyBookmarksContent({ user }) {
+  const { t } = useLanguage();
+  const [page, setPage] = useState(1);
+
+  // Pass page to hook (we need to update useMyBookmarks to accept options)
+  const {
+    bookmarks,
+    isLoading,
+    isEmpty,
+    totalPages,
+    removeMutation,
+    clearAllMutation
+  } = useMyBookmarks(user?.id, page);
 
   const getEntityPage = (entityType) => {
+    // Mapping... (kept same)
     const pageMap = {
       Challenge: 'ChallengeDetail',
       challenge: 'ChallengeDetail',
@@ -90,6 +70,8 @@ export default function MyBookmarks() {
           title={{ en: 'My Bookmarks', ar: 'إشاراتي المرجعية' }}
           subtitle={{ en: 'Please login to view your bookmarks', ar: 'يرجى تسجيل الدخول لعرض الإشارات المرجعية' }}
           icon={<Bookmark className="h-6 w-6 text-white" />}
+          description=""
+          action={null}
         />
         <Card>
           <CardContent className="py-12 text-center">
@@ -109,11 +91,12 @@ export default function MyBookmarks() {
         title={{ en: 'My Bookmarks', ar: 'إشاراتي المرجعية' }}
         subtitle={{ en: 'Quick access to your saved items', ar: 'وصول سريع للعناصر المحفوظة' }}
         icon={<Bookmark className="h-6 w-6 text-white" />}
-        actions={
+        description=""
+        action={
           bookmarks.length > 0 && (
-            <Button 
-              variant="outline" 
-              onClick={() => clearAllMutation.mutate()} 
+            <Button
+              variant="outline"
+              onClick={() => clearAllMutation.mutate()}
               className="bg-white/50"
               disabled={clearAllMutation.isPending}
             >
@@ -129,15 +112,8 @@ export default function MyBookmarks() {
       />
 
       {isLoading ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Loader2 className="h-8 w-8 text-primary mx-auto mb-4 animate-spin" />
-            <p className="text-slate-600">
-              {t({ en: 'Loading bookmarks...', ar: 'جاري تحميل الإشارات المرجعية...' })}
-            </p>
-          </CardContent>
-        </Card>
-      ) : bookmarks.length === 0 ? (
+        <EntityListSkeleton mode="grid" rowCount={6} />
+      ) : isEmpty ? (
         <Card>
           <CardContent className="py-12 text-center">
             <Bookmark className="h-16 w-16 text-slate-300 mx-auto mb-4" />
@@ -147,47 +123,55 @@ export default function MyBookmarks() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {bookmarks.map((bookmark) => (
-            <Card key={bookmark.id} className="hover:shadow-lg transition-shadow">
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge variant="outline">{bookmark.entity_type}</Badge>
-                      <Badge className="text-xs bg-slate-600">
-                        {new Date(bookmark.created_at).toLocaleDateString()}
-                      </Badge>
-                    </div>
-                    <h3 className="font-semibold text-slate-900 mb-3">
-                      {bookmark.notes || `${bookmark.entity_type} item`}
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      <Link to={createPageUrl(getEntityPage(bookmark.entity_type)) + `?id=${bookmark.entity_id}`}>
-                        <Button size="sm">
-                          <ExternalLink className="h-3 w-3 mr-2" />
-                          {t({ en: 'View', ar: 'عرض' })}
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {bookmarks.map((bookmark) => (
+              <Card key={bookmark.id} className="hover:shadow-lg transition-shadow">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="outline">{bookmark.entity_type}</Badge>
+                        <Badge className="text-xs bg-slate-600">
+                          {new Date(bookmark.created_at).toLocaleDateString()}
+                        </Badge>
+                      </div>
+                      <h3 className="font-semibold text-slate-900 mb-3">
+                        {bookmark.notes || `${bookmark.entity_type} item`}
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        <Link to={createPageUrl(getEntityPage(bookmark.entity_type)) + `?id=${bookmark.entity_id}`}>
+                          <Button size="sm">
+                            <ExternalLink className="h-3 w-3 mr-2" />
+                            {t({ en: 'View', ar: 'عرض' })}
+                          </Button>
+                        </Link>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => removeMutation.mutate(bookmark.id)}
+                          disabled={removeMutation.isPending}
+                        >
+                          {removeMutation.isPending ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3 w-3 text-red-600" />
+                          )}
                         </Button>
-                      </Link>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => removeMutation.mutate(bookmark.id)}
-                        disabled={removeMutation.isPending}
-                      >
-                        {removeMutation.isPending ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-3 w-3 text-red-600" />
-                        )}
-                      </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <StandardPagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
+        </>
       )}
     </PageLayout>
   );

@@ -20,6 +20,11 @@ import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
+import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
+import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
+import { useRDProjectsWithVisibility } from '@/hooks/useRDProjectsWithVisibility';
+import { usePlatformInsights } from '@/hooks/usePlatformInsights';
+import { useRDCalls } from '@/hooks/useRDCalls';
 
 function ExecutiveDashboard() {
   const { language, isRTL, t } = useLanguage();
@@ -31,73 +36,32 @@ function ExecutiveDashboard() {
   const { data: pilots = [] } = usePilotsWithVisibility({ limit: 100 });
   const { data: programs = [] } = useProgramsWithVisibility({ limit: 100 });
 
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities-executive'],
-    queryFn: async () => {
-      const { data } = await supabase.from('municipalities').select('*');
-      return data || [];
-    }
+  const { data: municipalities = [] } = useMunicipalitiesWithVisibility({ limit: 100 });
+
+  const { data: insights = [] } = usePlatformInsights({
+    visibility: 'executive',
+    activeOnly: true
   });
 
-  const { data: insights = [] } = useQuery({
-    queryKey: ['executive-insights'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('platform_insights')
-        .select('*')
-        .eq('visibility', 'executive')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
-      return data || [];
-    }
-  });
+  const { data: strategicPlans = [] } = useStrategiesWithVisibility();
 
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans-exec'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('strategic_plans')
-        .select('*')
-        .or('is_template.is.null,is_template.eq.false')
-        .or('is_deleted.is.null,is_deleted.eq.false');
-      return data || [];
-    }
-  });
+  const { data: rdProjects = [] } = useRDProjectsWithVisibility({ limit: 100 });
 
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects-executive'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('rd_projects')
-        .select('*')
-        .eq('is_deleted', false)
-        .order('trl_current', { ascending: false })
-        .limit(100);
-      return data || [];
-    }
-  });
-
-  const { data: rdCalls = [] } = useQuery({
-    queryKey: ['rd-calls-executive'],
-    queryFn: async () => {
-      const { data } = await supabase.from('rd_calls').select('*').eq('is_deleted', false);
-      return data || [];
-    }
-  });
+  const { data: rdCalls = [] } = useRDCalls();
 
   // Strategic filters - Tier 1 & 2 priorities
-  const strategicChallenges = challenges.filter(c => 
-    c.priority === 'tier_1' || c.priority === 'tier_2' || 
-    c.is_featured || c.overall_score >= 80 || 
+  const strategicChallenges = challenges.filter(c =>
+    c.priority === 'tier_1' || c.priority === 'tier_2' ||
+    c.is_featured || c.overall_score >= 80 ||
     c.strategic_plan_ids?.length > 0
   );
 
-  const criticalChallenges = challenges.filter(c => 
+  const criticalChallenges = challenges.filter(c =>
     c.escalation_level === 2 || (c.priority === 'tier_1' && c.status === 'submitted')
   );
 
-  const flagshipPilots = pilots.filter(p => 
-    p.is_flagship || p.success_probability >= 80 || 
+  const flagshipPilots = pilots.filter(p =>
+    p.is_flagship || p.success_probability >= 80 ||
     ['active', 'monitoring'].includes(p.stage)
   ).slice(0, 6);
 
@@ -115,8 +79,8 @@ function ExecutiveDashboard() {
     .sort((a, b) => (b.mii_score || 0) - (a.mii_score || 0))
     .slice(0, 5);
 
-  const avgMIIScore = municipalities.length > 0 
-    ? municipalities.reduce((sum, m) => sum + (m.mii_score || 0), 0) / municipalities.length 
+  const avgMIIScore = municipalities.length > 0
+    ? municipalities.reduce((sum, m) => sum + (m.mii_score || 0), 0) / municipalities.length
     : 0;
 
   return (
@@ -257,7 +221,7 @@ function ExecutiveDashboard() {
           </CardHeader>
           <CardContent>
             {showMap ? (
-              <NationalMap 
+              <NationalMap
                 municipalities={municipalities}
                 onClick={(muni) => window.location.href = createPageUrl(`MunicipalityProfile?id=${muni.id}`)}
               />
@@ -287,9 +251,8 @@ function ExecutiveDashboard() {
               {topMunicipalities.map((muni, idx) => (
                 <Link key={muni.id} to={createPageUrl(`MunicipalityProfile?id=${muni.id}`)} className="flex items-center justify-between p-3 border rounded-lg hover:bg-blue-50 transition-all">
                   <div className="flex items-center gap-3">
-                    <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold text-white ${
-                      idx === 0 ? 'bg-yellow-500' : idx === 1 ? 'bg-slate-400' : idx === 2 ? 'bg-amber-700' : 'bg-blue-600'
-                    }`}>
+                    <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold text-white ${idx === 0 ? 'bg-yellow-500' : idx === 1 ? 'bg-slate-400' : idx === 2 ? 'bg-amber-700' : 'bg-blue-600'
+                      }`}>
                       #{idx + 1}
                     </div>
                     <div>
@@ -326,7 +289,7 @@ function ExecutiveDashboard() {
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          {strategicChallenges.filter(c => 
+          {strategicChallenges.filter(c =>
             ['submitted', 'under_review', 'approved'].includes(c.status) && !c.track
           ).slice(0, 5).map((challenge) => (
             <Link key={challenge.id} to={createPageUrl(`ChallengeDetail?id=${challenge.id}`)}>
@@ -337,8 +300,8 @@ function ExecutiveDashboard() {
                       <Badge variant="outline" className="font-mono text-xs">{challenge.code}</Badge>
                       <Badge className={
                         challenge.priority === 'tier_1' ? 'bg-red-600' :
-                        challenge.priority === 'tier_2' ? 'bg-orange-600' :
-                        'bg-blue-600'
+                          challenge.priority === 'tier_2' ? 'bg-orange-600' :
+                            'bg-blue-600'
                       }>{challenge.priority}</Badge>
                       {challenge.is_featured && (
                         <Badge className="bg-purple-600">
@@ -420,13 +383,12 @@ function ExecutiveDashboard() {
                         <span className="font-bold text-green-600">{pilot.success_probability || 0}%</span>
                       </div>
                       <div className="flex-1 bg-slate-200 rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full ${
-                            (pilot.success_probability || 0) >= 80 ? 'bg-green-600' :
+                        <div
+                          className={`h-2 rounded-full ${(pilot.success_probability || 0) >= 80 ? 'bg-green-600' :
                             (pilot.success_probability || 0) >= 60 ? 'bg-blue-600' :
-                            'bg-amber-600'
-                          }`}
-                          style={{ width: `${pilot.success_probability || 0}%` }} 
+                              'bg-amber-600'
+                            }`}
+                          style={{ width: `${pilot.success_probability || 0}%` }}
                         />
                       </div>
                     </div>
@@ -510,15 +472,15 @@ function ExecutiveDashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {programs.filter(p => 
-              p.is_featured || 
+            {programs.filter(p =>
+              p.is_featured ||
               p.status === 'active' ||
               p.strategic_objective_ids?.length > 0
             ).slice(0, 6).map((program) => {
               const appCount = program.application_count || 0;
               const acceptedCount = program.accepted_count || 0;
               const outcomeScore = (program.outcomes?.pilots_generated || 0) + (program.outcomes?.solutions_deployed || 0);
-              
+
               return (
                 <Link key={program.id} to={createPageUrl(`ProgramDetail?id=${program.id}`)}>
                   <Card className="hover:shadow-lg transition-all border-2 hover:border-pink-400">
@@ -526,8 +488,8 @@ function ExecutiveDashboard() {
                       <div className="flex items-center gap-2 mb-3">
                         <Badge className={
                           program.status === 'active' ? 'bg-green-100 text-green-700 text-xs' :
-                          program.status === 'applications_open' ? 'bg-blue-100 text-blue-700 text-xs' :
-                          'bg-slate-100 text-slate-700 text-xs'
+                            program.status === 'applications_open' ? 'bg-blue-100 text-blue-700 text-xs' :
+                              'bg-slate-100 text-slate-700 text-xs'
                         }>{program.status?.replace(/_/g, ' ')}</Badge>
                         {program.is_featured && (
                           <Badge className="bg-pink-600 text-white text-xs">
@@ -630,7 +592,7 @@ function ExecutiveDashboard() {
   );
 }
 
-export default ProtectedPage(ExecutiveDashboard, { 
+export default ProtectedPage(ExecutiveDashboard, {
   requiredPermissions: ['executive_view'],
-  requireAdmin: true 
+  requireAdmin: true
 });

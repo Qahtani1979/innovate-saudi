@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useVisibilitySystem } from './visibility/useVisibilitySystem';
 import { usePermissions } from '@/components/permissions/usePermissions';
@@ -13,31 +13,40 @@ import { usePermissions } from '@/components/permissions/usePermissions';
  * - Others: Published challenges only
  */
 export function useChallengesWithVisibility(options = {}) {
-  const { 
+  const {
     status,
     sectorId,
+    sectorsOverlap,
     limit = 100,
     includeDeleted = false,
-    publishedOnly = false
+    publishedOnly = false,
+    strategicPlanId,
+    municipalityId,
+    // Pagination Options
+    page,
+    pageSize,
+    paginate = false
   } = options;
 
   const permissionsData = usePermissions();
   const { isAdmin = false, hasRole = () => false, userId = null } = permissionsData || {};
-  
+
   const visibilityData = useVisibilitySystem();
-  const { 
-    isNational = false, 
-    sectorIds = [], 
-    userMunicipalityId = null, 
+  const {
+    isNational = false,
+    sectorIds = [],
+    userMunicipalityId = null,
     nationalMunicipalityIds = [],
     hasFullVisibility = false,
-    isLoading: visibilityLoading = true 
+    isLoading: visibilityLoading = true,
+    scopeType // global, sectoral, geographic, public
   } = visibilityData || {};
 
-  const isStaffUser = hasRole('municipality_staff') || 
-                      hasRole('municipality_admin') || 
-                      hasRole('deputyship_staff') || 
-                      hasRole('deputyship_admin');
+  // Staff Check
+  const isStaffUser = hasRole('municipality_staff') ||
+    hasRole('municipality_admin') ||
+    hasRole('deputyship_staff') ||
+    hasRole('deputyship_admin');
 
   return useQuery({
     queryKey: ['challenges-with-visibility', {
@@ -49,140 +58,112 @@ export function useChallengesWithVisibility(options = {}) {
       userMunicipalityId,
       status,
       sectorId,
+      sectorsOverlap,
       limit,
-      publishedOnly
+      publishedOnly,
+      strategicPlanId,
+      municipalityId,
+      page,
+      pageSize,
+      paginate
     }],
     queryFn: async () => {
-      // Base select with related entities
+      // 1. Base Select
       const selectQuery = `
         *,
         municipality:municipalities(id, name_en, name_ar, region_id, region:regions(id, code, name_en)),
         sector:sectors(id, name_en, name_ar, code)
       `;
 
-      // Non-staff users only see published
-      if (publishedOnly || !isStaffUser) {
-        let query = supabase
-          .from('challenges')
-          .select(selectQuery)
-          .eq('is_published', true)
-          .eq('is_deleted', false)
-          .order('created_at', { ascending: false })
-          .limit(limit);
+      const countOption = paginate ? { count: 'exact' } : {};
 
-        if (status) query = query.eq('status', status);
-        if (sectorId) query = query.eq('sector_id', sectorId);
+      let query = supabase.from('challenges').select(selectQuery, countOption);
 
-        const { data, error } = await query;
-        if (error) throw error;
-        return data || [];
+      // 2. Common Filters (Status, Sector, Overlaps, Plans)
+      if (status) {
+        if (Array.isArray(status)) query = query.in('status', status);
+        else query = query.eq('status', status);
       }
-
-      // Admin or full visibility users see everything
-      if (hasFullVisibility) {
-        let query = supabase
-          .from('challenges')
-          .select(selectQuery)
-          .order('created_at', { ascending: false })
-          .limit(limit);
-
-        if (!includeDeleted) query = query.eq('is_deleted', false);
-        if (status) query = query.eq('status', status);
-        if (sectorId) query = query.eq('sector_id', sectorId);
-
-        const { data, error } = await query;
-        if (error) throw error;
-        return data || [];
-      }
-
-      // National deputyship: Filter by sector
-      if (isNational && sectorIds?.length > 0) {
-        let query = supabase
-          .from('challenges')
-          .select(selectQuery)
-          .in('sector_id', sectorIds)
-          .eq('is_deleted', false)
-          .order('created_at', { ascending: false })
-          .limit(limit);
-
-        if (status) query = query.eq('status', status);
-        if (sectorId) query = query.eq('sector_id', sectorId);
-
-        const { data, error } = await query;
-        if (error) throw error;
-        return data || [];
-      }
-
-      // Geographic municipality: Own + national challenges
-      if (userMunicipalityId) {
-        // Use Promise.all for parallel fetching
-        const [ownResult, nationalResult] = await Promise.all([
-          // Own municipality challenges
-          supabase
-            .from('challenges')
-            .select(selectQuery)
-            .eq('municipality_id', userMunicipalityId)
-            .eq('is_deleted', false)
-            .order('created_at', { ascending: false }),
-          
-          // National challenges (if national municipality IDs exist)
-          nationalMunicipalityIds?.length > 0
-            ? supabase
-                .from('challenges')
-                .select(selectQuery)
-                .in('municipality_id', nationalMunicipalityIds)
-                .eq('is_deleted', false)
-                .order('created_at', { ascending: false })
-            : Promise.resolve({ data: [], error: null })
-        ]);
-
-        if (ownResult.error) throw ownResult.error;
-
-        const ownChallenges = ownResult.data || [];
-        const nationalChallenges = nationalResult.error ? [] : (nationalResult.data || []);
-
-        // Combine and deduplicate using Map for O(n) performance
-        const challengeMap = new Map();
-        [...ownChallenges, ...nationalChallenges].forEach(challenge => {
-          if (!challengeMap.has(challenge.id)) {
-            challengeMap.set(challenge.id, challenge);
-          }
-        });
-
-        let filtered = Array.from(challengeMap.values());
-
-        // Apply additional filters
-        if (status) {
-          filtered = filtered.filter(c => c.status === status);
-        }
-        if (sectorId) {
-          filtered = filtered.filter(c => c.sector_id === sectorId);
-        }
-
-        // Sort by created_at descending and apply limit
-        filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        return filtered.slice(0, limit);
-      }
-
-      // Fallback: published only
-      let query = supabase
-        .from('challenges')
-        .select(selectQuery)
-        .eq('is_published', true)
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-      if (status) query = query.eq('status', status);
       if (sectorId) query = query.eq('sector_id', sectorId);
+      if (sectorsOverlap?.length > 0) query = query.overlaps('sectors', sectorsOverlap);
+      if (strategicPlanId) query = query.contains('strategic_plan_ids', [strategicPlanId]);
+      if (municipalityId) query = query.eq('municipality_id', municipalityId);
 
-      const { data, error } = await query;
+      // 3. Visibility Logic (Unified)
+
+      // A. Public / Non-Staff (Strict)
+      if (publishedOnly || !isStaffUser) {
+        query = query.eq('is_published', true).eq('is_deleted', false);
+      }
+      // B. Global / Admin (Full Access)
+      else if (hasFullVisibility) {
+        if (!includeDeleted) query = query.eq('is_deleted', false);
+      }
+      // C. Sectoral (National Deputyship)
+      else if (isNational && sectorIds?.length > 0) {
+        query = query.in('sector_id', sectorIds).eq('is_deleted', false);
+      }
+      // D. Geographic (Municipality Staff - Own OR National)
+      else if (userMunicipalityId) {
+        let orCondition = `municipality_id.eq.${userMunicipalityId}`;
+        if (nationalMunicipalityIds?.length > 0) {
+          orCondition += `,municipality_id.in.(${nationalMunicipalityIds.join(',')})`;
+        }
+        query = query.or(orCondition).eq('is_deleted', false);
+      }
+      // Fallback: Public only if no specific rights
+      else {
+        query = query.eq('is_published', true).eq('is_deleted', false);
+      }
+
+      // 4. Sorting & Pagination
+      query = query.order('created_at', { ascending: false });
+
+      if (paginate && page && pageSize) {
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize - 1;
+        query = query.range(from, to);
+      } else {
+        query = query.limit(limit);
+      }
+
+      // 5. Execution
+      const { data, error, count } = await query;
       if (error) throw error;
+
+      if (paginate) {
+        return {
+          data: data || [],
+          totalCount: count || 0,
+          totalPages: count ? Math.ceil(count / (pageSize || 10)) : 0
+        };
+      }
+
       return data || [];
     },
     enabled: !visibilityLoading,
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    staleTime: 1000 * 60 * 5, // 5 minutes (Gold Standard)
+    placeholderData: paginate ? keepPreviousData : undefined
   });
 }
 
-export default useChallengesWithVisibility;
+/**
+ * Hook to fetch a single challenge with visibility check.
+ */
+export function useChallenge(challengeId) {
+  const { fetchWithVisibility, isLoading: isVisibilityLoading } = useVisibilitySystem();
+
+  return useQuery({
+    queryKey: ['challenge', challengeId],
+    queryFn: async () => {
+      if (!challengeId) return null;
+      return fetchWithVisibility('challenges', `
+        *,
+        municipality:municipalities(id, name_en, name_ar, region_id, region:regions(id, code, name_en)),
+        sector:sectors(id, name_en, name_ar, code)
+      `, { id: challengeId, single: true });
+    },
+    enabled: !!challengeId && !isVisibilityLoading,
+    staleTime: 1000 * 60 * 5
+  });
+}

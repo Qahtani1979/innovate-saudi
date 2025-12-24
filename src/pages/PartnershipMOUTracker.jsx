@@ -1,21 +1,17 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Handshake, CheckCircle2, TrendingUp } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useMOUs } from '@/hooks/useMOUs';
 
 function PartnershipMOUTracker() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: partnerships = [] } = useQuery({
-    queryKey: ['partnerships-mou'],
-    queryFn: () => base44.entities.Partnership.list()
-  });
+  const { data: partnerships = [] } = useMOUs();
 
   const active = partnerships.filter(p => p.status === 'active').length;
-  const avgHealth = partnerships.length > 0 
+  const avgHealth = partnerships.length > 0
     ? Math.round(partnerships.reduce((sum, p) => sum + (p.health_score || 70), 0) / partnerships.length)
     : 0;
 

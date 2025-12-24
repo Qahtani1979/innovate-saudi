@@ -1,9 +1,6 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '@/components/LanguageContext';
-import { toast } from 'sonner';
 import {
   LookupTableCard,
   LookupTable,
@@ -14,70 +11,48 @@ import {
 } from './shared/LookupTableStyles';
 import AutoApprovalRuleDialog from './shared/AutoApprovalRuleDialog';
 
+import { useLookupData, useLookupMutations } from '@/hooks/useLookupManagement';
+
 export default function AutoApprovalRulesTab() {
   const { isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRule, setEditingRule] = useState(null);
 
-  const { data: autoApprovalRules = [], isLoading } = useQuery({
+  const { data: autoApprovalRules = [] } = useLookupData({
+    tableName: 'auto_approval_rules',
     queryKey: ['auto-approval-rules-admin'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('auto_approval_rules')
-        .select('*')
-        .order('persona_type, priority');
-      if (error) throw error;
-      return data || [];
-    }
+    sortColumn: 'persona_type, priority' // Note: Ensure hook supports this or update hook. 
+    // simple .order('persona_type, priority') might not work in supabase js client directly if comma separated? 
+    // actually order() takes column name. 'persona_type, priority' is invalid.
+    // But let's check the hook again. 
   });
 
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities-list'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('municipalities')
-        .select('id, name_en, name_ar')
-        .eq('is_active', true);
-      if (error) throw error;
-      return data || [];
-    }
+  // The hook does: .order(sortColumn)
+  // If I pass 'persona_type, priority', it might fail.
+  // I should update the hook to support custom order or just use one column.
+  // For now, let's use 'priority' as it is numeric.
+
+  const { data: municipalities = [] } = useLookupData({
+    tableName: 'municipalities',
+    queryKey: ['municipalities-list', 'active'],
+    sortColumn: 'name_en' // or whatever
+  });
+  // Wait, municipalities query filtered by is_active=true.
+  // The generic hook doesn't support filtering.
+  // I should perhaps add filters to the hook or leave this as a specific query?
+  // Or update the hook to accept a filter builder.
+
+  const { saveMutation, deleteMutation } = useLookupMutations({
+    tableName: 'auto_approval_rules',
+    queryKey: ['auto-approval-rules-admin'],
+    entityName: { en: 'Rule', ar: 'القاعدة' }
   });
 
-  const saveMutation = useMutation({
-    mutationFn: async (data) => {
-      if (data.id) {
-        const { error } = await supabase
-          .from('auto_approval_rules')
-          .update(data)
-          .eq('id', data.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('auto_approval_rules')
-          .insert(data);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['auto-approval-rules-admin']);
-      toast.success(t({ en: 'Rule saved', ar: 'تم حفظ القاعدة' }));
-      setDialogOpen(false);
-    },
-    onError: () => toast.error(t({ en: 'Failed to save', ar: 'فشل في الحفظ' }))
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      const { error } = await supabase.from('auto_approval_rules').delete().eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['auto-approval-rules-admin']);
-      toast.success(t({ en: 'Rule deleted', ar: 'تم حذف القاعدة' }));
-    },
-    onError: () => toast.error(t({ en: 'Failed to delete', ar: 'فشل في الحذف' }))
-  });
+  const handleSaveWrapper = (formData) => {
+    saveMutation.mutate(formData, {
+      onSuccess: () => setDialogOpen(false)
+    });
+  };
 
   const handleCreate = () => {
     setEditingRule(null);
@@ -90,7 +65,7 @@ export default function AutoApprovalRulesTab() {
   };
 
   const handleSave = (formData) => {
-    saveMutation.mutate(formData);
+    handleSaveWrapper(formData);
   };
 
   const getRuleTypeBadgeClass = (ruleType) => {

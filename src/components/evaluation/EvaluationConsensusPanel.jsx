@@ -1,5 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { useEvaluationsByEntity } from '@/hooks/useEvaluations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -9,14 +8,7 @@ import { Users, CheckCircle2, AlertTriangle, TrendingUp } from 'lucide-react';
 export default function EvaluationConsensusPanel({ entityType, entityId }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: evaluations = [], isLoading } = useQuery({
-    queryKey: ['expert-evaluations', entityType, entityId],
-    queryFn: async () => {
-      const all = await base44.entities.ExpertEvaluation.list();
-      return all.filter(e => e.entity_type === entityType && e.entity_id === entityId && !e.is_deleted);
-    },
-    enabled: !!entityType && !!entityId
-  });
+  const { data: evaluations = [], isLoading } = useEvaluationsByEntity(entityType, entityId);
 
   if (isLoading) {
     return (

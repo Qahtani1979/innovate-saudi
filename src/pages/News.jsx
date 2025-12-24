@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { usePublishedNews, useFeaturedNews } from '@/hooks/useNewsArticles';
+import { useNewsData } from '@/hooks/useNewsData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -8,10 +8,10 @@ import { useLanguage } from '../components/LanguageContext';
 import { Megaphone, Calendar, Award, Rocket, TrendingUp, Loader2, Search, Star } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useSearchParams } from 'react-router-dom';
-import { 
-  CitizenPageLayout, 
-  CitizenPageHeader, 
-  CitizenEmptyState 
+import {
+  CitizenPageLayout,
+  CitizenPageHeader,
+  CitizenEmptyState
 } from '@/components/citizen/CitizenPageLayout';
 import { usePublishedNews, useFeaturedNews } from '@/hooks/useNewsArticles';
 import NewsArticleCard from '@/components/news/NewsArticleCard';
@@ -23,46 +23,17 @@ function News() {
   const { language, isRTL, t } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   const selectedArticleId = searchParams.get('article');
 
   // Fetch published news articles from database
   const { data: newsArticles = [], isLoading: newsLoading } = usePublishedNews(50);
   const { data: featuredArticles = [] } = useFeaturedNews(3);
 
-  // Fetch recent pilots for dynamic updates
-  const { data: pilots = [], isLoading: pilotsLoading } = useQuery({
-    queryKey: ['pilots-news'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('is_deleted', false)
-        .eq('is_published', true)
-        .in('stage', ['scaled', 'completed'])
-        .order('updated_at', { ascending: false })
-        .limit(5);
-      return data || [];
-    }
-  });
+  // Fetch dynamic updates
+  const { pilots, programs, isLoading: dynamicLoading } = useNewsData();
 
-  // Fetch recent programs
-  const { data: programs = [], isLoading: programsLoading } = useQuery({
-    queryKey: ['programs-news'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('programs')
-        .select('*')
-        .eq('is_deleted', false)
-        .eq('is_published', true)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(5);
-      return data || [];
-    }
-  });
-
-  const isLoading = newsLoading || pilotsLoading || programsLoading;
+  const isLoading = newsLoading || dynamicLoading;
 
   // Filter articles by search
   const filteredArticles = newsArticles.filter(article => {
@@ -81,13 +52,13 @@ function News() {
     ...pilots.slice(0, 3).map(p => ({
       type: 'pilot_success',
       icon: Award,
-      title: { 
-        en: `Pilot Success: ${p.title_en}`, 
-        ar: `نجاح تجربة: ${p.title_ar || p.title_en}` 
+      title: {
+        en: `Pilot Success: ${p.title_en}`,
+        ar: `نجاح تجربة: ${p.title_ar || p.title_en}`
       },
-      desc: { 
-        en: `Successfully completed pilot phase`, 
-        ar: `اكتملت مرحلة التجريب بنجاح` 
+      desc: {
+        en: `Successfully completed pilot phase`,
+        ar: `اكتملت مرحلة التجريب بنجاح`
       },
       date: p.scaled_date || p.updated_at || p.created_at,
       color: 'green'
@@ -95,13 +66,13 @@ function News() {
     ...programs.slice(0, 2).map(p => ({
       type: 'program',
       icon: Rocket,
-      title: { 
-        en: `Program Launch: ${p.name_en}`, 
-        ar: `إطلاق برنامج: ${p.name_ar || p.name_en}` 
+      title: {
+        en: `Program Launch: ${p.name_en}`,
+        ar: `إطلاق برنامج: ${p.name_ar || p.name_en}`
       },
-      desc: { 
-        en: `Now accepting applications`, 
-        ar: 'يقبل الطلبات الآن' 
+      desc: {
+        en: `Now accepting applications`,
+        ar: 'يقبل الطلبات الآن'
       },
       date: p.created_at,
       color: 'blue'
@@ -126,9 +97,9 @@ function News() {
   if (selectedArticleId) {
     return (
       <CitizenPageLayout>
-        <NewsArticleDetail 
-          articleId={selectedArticleId} 
-          onBack={() => setSearchParams({})} 
+        <NewsArticleDetail
+          articleId={selectedArticleId}
+          onBack={() => setSearchParams({})}
         />
       </CitizenPageLayout>
     );

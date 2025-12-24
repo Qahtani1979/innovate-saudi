@@ -2,7 +2,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,34 +12,11 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../LanguageContext';
 import { toast } from 'sonner';
-import { useApprovalRequest } from '@/hooks/useApprovalRequest';
 import { useAutoSaveDraft } from '@/hooks/strategy/useAutoSaveDraft';
-// NOTE: templates are applied via a lightweight helper in this file to avoid hook dispatcher crashes
 import { useWizardValidation } from '@/hooks/strategy/useWizardValidation';
-import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import { getEdgeFunctionForStep, usesSpecializedEdgeFunction } from '@/hooks/strategy/useWizardAI';
+// NOTE: templates are applied via a lightweight helper in this file to avoid hook dispatcher crashes
 import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { WIZARD_STEPS, initialWizardData } from './StrategyWizardSteps';
-// AI Prompts - extracted to separate files
-import {
-  // Single item prompts for "AI Add One" functionality
-  generateSingleStakeholderPrompt,
-  SINGLE_STAKEHOLDER_SCHEMA,
-  SINGLE_STAKEHOLDER_SYSTEM_PROMPT,
-  generateSingleRiskPrompt,
-  SINGLE_RISK_SCHEMA,
-  SINGLE_RISK_SYSTEM_PROMPT,
-  generateSingleObjectivePrompt,
-  SINGLE_OBJECTIVE_SCHEMA,
-  SINGLE_OBJECTIVE_SYSTEM_PROMPT,
-  generateSingleKpiPrompt,
-  SINGLE_KPI_SCHEMA,
-  SINGLE_KPI_SYSTEM_PROMPT,
-  generateSingleActionPrompt,
-  SINGLE_ACTION_SCHEMA,
-  SINGLE_ACTION_SYSTEM_PROMPT
-} from './prompts';
-import { getStepPrompt, getStepSchema, processAIResponse } from './StrategyWizardAIHelpers';
 import WizardStepIndicator from './WizardStepIndicator';
 import { CompactStepIndicator } from './shared';
 import PlanSelectionDialog from './PlanSelectionDialog';
@@ -64,6 +40,8 @@ import Step16Communication from './steps/Step16Communication';
 import Step17Change from './steps/Step17Change';
 import Step18Review from './steps/Step18Review';
 import AIStrategicPlanAnalyzer from './AIStrategicPlanAnalyzer';
+import { useStrategyAI } from '@/hooks/strategy/useStrategyAI'; // New Import
+import { useStrategyMutations } from '@/hooks/useStrategyMutations'; // Corrected path
 
 /**
  * StrategyWizardWrapper
@@ -89,18 +67,12 @@ export default function StrategyWizardWrapper() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const { createApprovalRequest } = useApprovalRequest();
+  const { fetchTemplate, createStrategy, updateStrategy, submitStrategy } = useStrategyMutations();
 
   // Apply template without react-query hooks (prevents "dispatcher is null" hook crashes)
   const applyTemplate = useCallback(async (templateId) => {
-    const { data: template, error } = await supabase
-      .from('strategic_plans')
-      .select('*')
-      .eq('id', templateId)
-      .eq('is_template', true)
-      .single();
+    const template = await fetchTemplate(templateId);
 
-    if (error) throw error;
     if (!template) throw new Error('Template not found');
 
     return {
@@ -162,19 +134,12 @@ export default function StrategyWizardWrapper() {
   const [planId, setPlanId] = useState(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [wizardData, setWizardData] = useState(initialWizardData);
-  const [generatingStep, setGeneratingStep] = useState(null);
   const [completedSteps, setCompletedSteps] = useState([]);
   const [showDraftRecovery, setShowDraftRecovery] = useState(false);
   const [appliedTemplateName, setAppliedTemplateName] = useState(null);
 
   // Validation hook - pass t function to avoid nested context issues
   const { validateStep, hasStepData, calculateProgress } = useWizardValidation(wizardData, t);
-
-  // AI generation hook
-  const { invokeAI, isLoading: aiLoading, isAvailable: aiAvailable } = useAIWithFallback({
-    showToasts: true,
-    fallbackData: null
-  });
 
   // Auto-save hook with planId sync
   const {
@@ -195,6 +160,32 @@ export default function StrategyWizardWrapper() {
       console.log('[Wizard] Plan ID updated:', newId);
       setPlanId(newId);
     }
+  });
+
+  // Update data with auto-save
+  const updateData = useCallback((updates) => {
+    setWizardData(prev => {
+      const newData = { ...prev, ...updates };
+      scheduleAutoSave(newData, currentStep);
+      return newData;
+    });
+  }, [scheduleAutoSave, currentStep]);
+
+  // AI Hook - Replaces local logic
+  const {
+    generatingStep,
+    generateForStep,
+    generateSingleObjective,
+    generateSingleStakeholder,
+    generateSingleRisk,
+    generateSingleKpi,
+    generateSingleAction,
+    aiAvailable
+  } = useStrategyAI({
+    wizardData,
+    updateData,
+    sectors,
+    planId
   });
 
   // Initialize from URL params or detect draft
@@ -238,20 +229,10 @@ export default function StrategyWizardWrapper() {
     }
   }, [searchParams, hasDraft, loadPlan, applyTemplate]);
 
-  // Update data with auto-save
-  const updateData = useCallback((updates) => {
-    setWizardData(prev => {
-      const newData = { ...prev, ...updates };
-      scheduleAutoSave(newData, currentStep);
-      return newData;
-    });
-  }, [scheduleAutoSave, currentStep]);
-
   // Save mutation
   const saveMutation = useMutation({
     mutationFn: async (data) => {
-      const { data: { user } } = await supabase.auth.getUser();
-
+      // Prepare payload (same as before)
       const saveData = {
         name_en: data.name_en,
         name_ar: data.name_ar,
@@ -292,692 +273,62 @@ export default function StrategyWizardWrapper() {
         last_saved_step: 18,
         draft_data: data,
         status: 'draft',
-        owner_email: user?.email,
         updated_at: new Date().toISOString()
       };
 
       if (planId) {
         // Update existing
         if (mode === 'edit') {
-          // Increment version on edit
           saveData.version_number = (data.version_number || 1) + 1;
           saveData.version_notes = `Edited on ${new Date().toLocaleString()}`;
         }
 
-        const { data: result, error } = await supabase
-          .from('strategic_plans')
-          .update(saveData)
-          .eq('id', planId)
-          .select()
-          .single();
-        if (error) throw error;
+        const { result } = await updateStrategy.mutateAsync({
+          id: planId,
+          data: saveData,
+          metadata: { activity_type: 'update_draft' }
+        });
         return result;
       } else {
         // Create new
-        const { data: result, error } = await supabase
-          .from('strategic_plans')
-          .insert(saveData)
-          .select()
-          .single();
-        if (error) throw error;
+        const { result } = await createStrategy.mutateAsync({
+          data: saveData,
+          metadata: { activity_type: 'create_draft' }
+        });
         return result;
       }
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries(['strategic-plans']);
+      // queryClient invalidation is handled by useStrategyMutations
       clearLocalDraft();
-      toast.success(t({ en: 'Strategic plan saved!', ar: 'تم حفظ الخطة!' }));
+      // toast is handled by useStrategyMutations
       setPlanId(result.id);
     },
     onError: (err) => {
-      toast.error(t({ en: 'Failed to save', ar: 'فشل في الحفظ' }));
+      // toast is handled by useStrategyMutations
       console.error(err);
     }
   });
 
-  // Submit for approval mutation
+  // Submit mutation
   const submitMutation = useMutation({
     mutationFn: async (data) => {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      // First save the plan
+      // First save the plan using our wrapper saveMutation
       const saveResult = await saveMutation.mutateAsync(data);
 
-      // Update status to pending approval
-      const { error: updateError } = await supabase
-        .from('strategic_plans')
-        .update({
-          approval_status: 'pending',
-          submitted_at: new Date().toISOString(),
-          submitted_by: user?.email
-        })
-        .eq('id', saveResult.id);
-
-      if (updateError) throw updateError;
-
-      // Create approval request
-      await createApprovalRequest({
-        entityType: 'strategic_plan',
-        entityId: saveResult.id,
-        entityTitle: data.name_en,
-        requesterEmail: user?.email,
-        metadata: {
-          version_number: saveResult.version_number,
-          start_year: data.start_year,
-          end_year: data.end_year,
-          objectives_count: data.objectives?.length || 0
-        },
-        slaDays: 14,
-        gateName: 'plan_approval'
+      await submitStrategy.mutateAsync({
+        id: saveResult.id,
+        data: data,
+        userEmail: data.owner_email || 'system' // Fallback
       });
-
-      // Create demand_queue items from action_plans with should_create_entity=true
-      const cascadableActions = data.action_plans?.filter(
-        ap => ap.should_create_entity && ap.type
-      ) || [];
-
-      if (cascadableActions.length > 0) {
-        const generatorMapping = {
-          challenge: 'StrategyChallengeGenerator',
-          pilot: 'StrategyToPilotGenerator',
-          program: 'StrategyToProgramGenerator',
-          campaign: 'StrategyToCampaignGenerator',
-          event: 'StrategyToEventGenerator',
-          policy: 'StrategyToPolicyGenerator',
-          rd_call: 'StrategyToRDCallGenerator',
-          partnership: 'StrategyToPartnershipGenerator',
-          living_lab: 'StrategyToLivingLabGenerator'
-        };
-
-        const priorityScores = { high: 100, medium: 60, low: 30 };
-
-        const queueItems = cascadableActions.map((ap, index) => ({
-          strategic_plan_id: saveResult.id,
-          objective_id: data.objectives?.[ap.objective_index]?.id || null,
-          entity_type: ap.type,
-          generator_component: generatorMapping[ap.type] || 'StrategyChallengeGenerator',
-          priority_score: priorityScores[ap.priority] || 60,
-          prefilled_spec: {
-            title_en: ap.name_en,
-            title_ar: ap.name_ar,
-            description_en: ap.description_en,
-            description_ar: ap.description_ar,
-            budget_estimate: ap.budget_estimate,
-            start_date: ap.start_date,
-            end_date: ap.end_date,
-            owner: ap.owner,
-            deliverables: ap.deliverables,
-            source: 'wizard_step12',
-            source_index: index
-          },
-          status: 'pending',
-          created_by: user?.email
-        }));
-
-        const { error: queueError } = await supabase.from('demand_queue').insert(queueItems);
-        if (queueError) {
-          console.error('Failed to create demand queue items:', queueError);
-          // Don't throw - plan is saved, queue items are optional
-        }
-      }
 
       return saveResult;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['strategic-plans']);
-      queryClient.invalidateQueries(['approval-requests']);
       clearLocalDraft();
-      toast.success(t({ en: 'Plan submitted for approval!', ar: 'تم إرسال الخطة للموافقة!' }));
       navigate('/strategic-plans-page');
-    },
-    onError: (err) => {
-      toast.error(t({ en: 'Failed to submit', ar: 'فشل في الإرسال' }));
-      console.error(err);
     }
   });
-
-  // AI generation for each step - uses specialized edge functions when available
-  const generateForStep = async (step) => {
-    if (!aiAvailable) {
-      toast.error(t({ en: 'AI not available', ar: 'الذكاء الاصطناعي غير متاح' }));
-      return;
-    }
-
-    setGeneratingStep(step);
-
-    const stepConfig = WIZARD_STEPS.find(s => s.num === step);
-    const edgeFunctionName = getEdgeFunctionForStep(step);
-    const useSpecializedFunction = usesSpecializedEdgeFunction(step);
-    const stepKey = stepConfig?.key || '';
-
-    // Build comprehensive context from existing data
-    const context = {
-      planName: wizardData.name_en || wizardData.name_ar || 'Strategic Plan',
-      planNameAr: wizardData.name_ar || '',
-      vision: wizardData.vision_en || wizardData.vision_ar || '',
-      visionAr: wizardData.vision_ar || '',
-      mission: wizardData.mission_en || wizardData.mission_ar || '',
-      missionAr: wizardData.mission_ar || '',
-      description: wizardData.description_en || wizardData.description_ar || '',
-      descriptionAr: wizardData.description_ar || '',
-      sectors: wizardData.target_sectors || [],
-      themes: wizardData.strategic_themes || [],
-      technologies: wizardData.focus_technologies || [],
-      vision2030Programs: wizardData.vision_2030_programs || [],
-      regions: wizardData.target_regions || [],
-      startYear: wizardData.start_year || new Date().getFullYear(),
-      endYear: wizardData.end_year || new Date().getFullYear() + 5,
-      budgetRange: wizardData.budget_range || '',
-      stakeholders: wizardData.quick_stakeholders || [],
-      keyChallenges: wizardData.key_challenges_en || wizardData.key_challenges_ar || '',
-      keyChallengesAr: wizardData.key_challenges_ar || '',
-      availableResources: wizardData.available_resources_en || wizardData.available_resources_ar || '',
-      availableResourcesAr: wizardData.available_resources_ar || '',
-      initialConstraints: wizardData.initial_constraints_en || wizardData.initial_constraints_ar || '',
-      initialConstraintsAr: wizardData.initial_constraints_ar || '',
-      objectives: wizardData.objectives || []
-    };
-
-    // Build prompts dynamically using imported prompt generators
-    // Build prompts and schemas using helper
-    const prompt = getStepPrompt(step, context, wizardData) || `Generate content for step "${stepConfig?.title?.en || stepKey}" of this Saudi municipal strategic plan: ${context.planName}`;
-    const schema = getStepSchema(step);
-
-    try {
-      let success = false;
-      let data = null;
-
-      if (useSpecializedFunction) {
-        // Use specialized edge function for this step
-        console.log(`[Wizard AI] Using specialized edge function: ${edgeFunctionName} for step ${step}`);
-
-        // Build request body - include taxonomy data for Step 1 (Context)
-        const requestBody = {
-          strategic_plan_id: planId,
-          context: {
-            ...context,
-            wizardData,
-            prompt,
-            schema
-          },
-          language: language
-        };
-
-        // Steps 1-9 need taxonomy data for context-aware generation
-        if (step >= 1 && step <= 9) {
-          requestBody.taxonomyData = {
-            sectors: sectors || [],
-            regions: regions || [],
-            strategicThemes: strategicThemes || [],
-            technologies: technologies || [],
-            visionPrograms: visionPrograms || [],
-            stakeholderTypes: stakeholderTypes || [],
-            riskCategories: riskCategories || []
-          };
-          // Also include as taxonomy for backward compatibility
-          requestBody.taxonomy = requestBody.taxonomyData;
-          requestBody.taxonomy_data = requestBody.taxonomyData;
-        }
-
-        const { data: fnData, error: fnError } = await supabase.functions.invoke(edgeFunctionName, {
-          body: requestBody
-        });
-
-        if (fnError) {
-          console.error(`[Wizard AI] Edge function error:`, fnError);
-          throw fnError;
-        }
-
-        success = fnData?.success !== false;
-        data = fnData?.data || fnData;
-      } else {
-        // Use generic invoke-llm for this step
-        console.log(`[Wizard AI] Using generic invoke-llm for step ${step}`);
-
-        // Import system prompt from centralized module
-        const { STRATEGY_WIZARD_SYSTEM_PROMPT } = await import('@/lib/ai/prompts/strategy/wizard');
-
-        const result = await invokeAI({
-          prompt,
-          response_json_schema: schema,
-          system_prompt: STRATEGY_WIZARD_SYSTEM_PROMPT
-        });
-
-        success = result.success;
-        data = result.data;
-      }
-
-      if (success && data) {
-        // Merge AI response into wizard data based on step
-        // Merge AI response into wizard data based on step using helper
-        const updates = processAIResponse(step, data, wizardData);
-
-        if (Object.keys(updates).length > 0) {
-          // Use updateData so AI-generated content is persisted immediately to local storage
-          // and queued for database save (prevents losing work on refresh)
-          updateData(updates);
-          toast.success(t({ en: 'AI generation complete', ar: 'تم الإنشاء بالذكاء الاصطناعي' }));
-        }
-      }
-    } catch (error) {
-      console.error('AI generation error:', error);
-      toast.error(t({ en: 'AI generation failed', ar: 'فشل الإنشاء بالذكاء الاصطناعي' }));
-    } finally {
-      setGeneratingStep(null);
-    }
-  };
-
-  // Generate a single new objective that's different from existing ones
-  const generateSingleObjective = async (existingObjectives, targetSector = null) => {
-    if (!aiAvailable) {
-      toast.error(t({ en: 'AI not available', ar: 'الذكاء الاصطناعي غير متاح' }));
-      return null;
-    }
-
-    // Build sector codes from taxonomy for consistent usage
-    const taxonomySectorCodes = sectors.map(s => s.code);
-    const taxonomySectorList = sectors.map(s => `${s.code} (${s.name_en})`).join(', ');
-
-    const context = {
-      planName: wizardData.name_en || wizardData.name_ar || 'Strategic Plan',
-      vision: wizardData.vision_en || wizardData.vision_ar || '',
-      mission: wizardData.mission_en || wizardData.mission_ar || '',
-      sectors: taxonomySectorCodes, // Use taxonomy sectors
-      themes: wizardData.strategic_themes || [],
-      technologies: wizardData.focus_technologies || [],
-      startYear: wizardData.start_year || new Date().getFullYear(),
-      endYear: wizardData.end_year || new Date().getFullYear() + 5,
-      budgetRange: wizardData.budget_range || ''
-    };
-
-    // Build detailed existing objectives summary with full context
-    const existingObjectivesSummary = existingObjectives.map((o, i) =>
-      `${i + 1}. [${o.sector_code || 'General'}] "${o.name_en || o.name_ar}"
-   - EN Description: ${o.description_en || 'N/A'}
-   - AR Description: ${o.description_ar || 'N/A'}
-   - Priority: ${o.priority || 'medium'}
-   - Key themes: ${extractKeyThemes(o.name_en, o.description_en)}`
-    ).join('\n\n');
-
-    // Helper to extract key themes from text
-    function extractKeyThemes(name, description) {
-      const text = `${name || ''} ${description || ''}`.toLowerCase();
-      const themes = [];
-      if (text.includes('digital') || text.includes('smart') || text.includes('technology')) themes.push('Digital/Tech');
-      if (text.includes('citizen') || text.includes('service') || text.includes('satisfaction')) themes.push('Citizen Services');
-      if (text.includes('housing') || text.includes('residential')) themes.push('Housing');
-      if (text.includes('infrastructure') || text.includes('urban')) themes.push('Infrastructure');
-      if (text.includes('environment') || text.includes('sustainable') || text.includes('green')) themes.push('Environment');
-      if (text.includes('innovation') || text.includes('research') || text.includes('development')) themes.push('Innovation');
-      if (text.includes('governance') || text.includes('policy') || text.includes('regulation')) themes.push('Governance');
-      if (text.includes('capacity') || text.includes('training') || text.includes('talent')) themes.push('Capacity Building');
-      return themes.length > 0 ? themes.join(', ') : 'General';
-    }
-
-    // Calculate sector coverage for the prompt using dynamic sectors
-    const sectorCoverage = sectors.map(s => ({
-      code: s.code,
-      name: s.name_en,
-      count: existingObjectives.filter(o => o.sector_code === s.code).length
-    }));
-
-    const sectorCoverageSummary = sectorCoverage
-      .map(s => `${s.code}: ${s.count} objectives`)
-      .join(', ');
-
-    const availableSectorsList = sectors.map(s => `${s.code} (${s.name_en})`).join(', ');
-
-    // Build sector targeting instruction
-    const sectorTargetInstruction = targetSector
-      ? `
-## MANDATORY SECTOR TARGET:
-**YOU MUST generate an objective for sector: ${targetSector}**
-- The sector_code in your response MUST be: "${targetSector}"
-- The objective title, description, and all content MUST be specific to ${targetSector}
-- DO NOT generate an objective for any other sector
-- This is a strict requirement from the user
-`
-      : `
-## SECTOR SELECTION GUIDANCE:
-Based on current coverage: ${sectorCoverageSummary}
-- PRIORITIZE sectors with 0 or 1 objectives for better coverage
-- Avoid sectors that already have 2+ objectives unless specifically relevant
-`;
-
-    // Use imported prompt generator with all context parameters
-    const singleObjectivePrompt = generateSingleObjectivePrompt({
-      context,
-      wizardData,
-      existingObjectives,
-      existingObjectivesSummary,
-      sectorCoverageSummary,
-      sectorTargetInstruction,
-      targetSector,
-      taxonomySectorList,
-      taxonomySectorCodes
-    });
-
-    // Use imported schema
-    const singleObjectiveSchema = SINGLE_OBJECTIVE_SCHEMA;
-
-    try {
-      const { success, data } = await invokeAI({
-        prompt: singleObjectivePrompt,
-        response_json_schema: singleObjectiveSchema,
-        system_prompt: SINGLE_OBJECTIVE_SYSTEM_PROMPT
-      });
-
-      if (success && data?.objective) {
-        const newObjective = {
-          ...data.objective,
-          priority: data.objective.priority || 'medium'
-        };
-
-        // Calculate REAL uniqueness score using algorithmic similarity
-        let realUniquenessScore = 75; // Default fallback
-        let scoreDetails = null;
-
-        try {
-          console.log('[Objective] Calculating real uniqueness score...');
-          const { data: similarityData, error: similarityError } = await supabase.functions.invoke('strategy-objective-similarity', {
-            body: {
-              newObjective,
-              existingObjectives
-            }
-          });
-
-          if (!similarityError && similarityData?.uniqueness_score) {
-            realUniquenessScore = similarityData.uniqueness_score;
-            scoreDetails = {
-              max_similarity: similarityData.max_similarity,
-              most_similar_to: similarityData.most_similar_to,
-              sector_coverage_bonus: similarityData.sector_coverage_bonus,
-              strategic_level_score: similarityData.strategic_level_score
-            };
-            console.log('[Objective] Real uniqueness score:', realUniquenessScore, scoreDetails);
-          } else {
-            console.warn('[Objective] Similarity calculation failed, using AI score:', similarityError);
-            realUniquenessScore = data.differentiation_score || 75;
-          }
-        } catch (simError) {
-          console.warn('[Objective] Similarity service error:', simError);
-          realUniquenessScore = data.differentiation_score || 75;
-        }
-
-        return {
-          objective: newObjective,
-          differentiation_score: realUniquenessScore,
-          score_details: scoreDetails
-        };
-      }
-      return null;
-    } catch (error) {
-      console.error('Single objective generation error:', error);
-      toast.error(t({ en: 'Failed to generate objective', ar: 'فشل في إنشاء الهدف' }));
-      return null;
-    }
-  };
-
-  // Generate a single new stakeholder that's different from existing ones
-  const generateSingleStakeholder = async (existingStakeholders, targetType = null) => {
-    if (!aiAvailable) {
-      toast.error(t({ en: 'AI not available', ar: 'الذكاء الاصطناعي غير متاح' }));
-      return null;
-    }
-
-    const context = {
-      planName: wizardData.name_en || wizardData.name_ar || 'Strategic Plan',
-      vision: wizardData.vision_en || wizardData.vision_ar || '',
-      mission: wizardData.mission_en || wizardData.mission_ar || '',
-      sectors: wizardData.sectors || [],
-      themes: wizardData.strategic_themes || [],
-      technologies: wizardData.focus_technologies || [],
-      startYear: wizardData.start_year || new Date().getFullYear(),
-      endYear: wizardData.end_year || new Date().getFullYear() + 5
-    };
-
-    // Build existing stakeholders summary
-    const existingStakeholdersSummary = existingStakeholders.map((s, i) =>
-      `${i + 1}. [${s.type || 'Unknown'}] "${s.name_en || s.name_ar}" - Power: ${s.power}, Interest: ${s.interest}`
-    ).join('\n');
-
-    // Calculate type coverage
-    const typeCounts = {};
-    existingStakeholders.forEach(s => {
-      typeCounts[s.type] = (typeCounts[s.type] || 0) + 1;
-    });
-    const typeCoverageSummary = Object.entries(typeCounts)
-      .map(([type, count]) => `${type}: ${count}`)
-      .join(', ') || 'No stakeholders yet';
-
-    const typeTargetInstruction = targetType
-      ? `MANDATORY: Generate a stakeholder of type "${targetType}"`
-      : 'Target underrepresented types for better coverage';
-
-    const prompt = generateSingleStakeholderPrompt({
-      context,
-      wizardData,
-      existingStakeholders,
-      existingStakeholdersSummary,
-      typeCoverageSummary,
-      typeTargetInstruction,
-      targetType
-    });
-
-    try {
-      const { success, data } = await invokeAI({
-        prompt,
-        response_json_schema: SINGLE_STAKEHOLDER_SCHEMA,
-        system_prompt: SINGLE_STAKEHOLDER_SYSTEM_PROMPT
-      });
-
-      if (success && data?.stakeholder) {
-        return {
-          stakeholder: data.stakeholder,
-          differentiation_score: data.differentiation_score || 75
-        };
-      }
-      return null;
-    } catch (error) {
-      console.error('Single stakeholder generation error:', error);
-      toast.error(t({ en: 'Failed to generate stakeholder', ar: 'فشل في إنشاء الجهة' }));
-      return null;
-    }
-  };
-
-  // Generate a single new risk that's different from existing ones
-  const generateSingleRisk = async (existingRisks, targetCategory = null) => {
-    if (!aiAvailable) {
-      toast.error(t({ en: 'AI not available', ar: 'الذكاء الاصطناعي غير متاح' }));
-      return null;
-    }
-
-    const context = {
-      planName: wizardData.name_en || wizardData.name_ar || 'Strategic Plan',
-      vision: wizardData.vision_en || wizardData.vision_ar || '',
-      sectors: wizardData.sectors || [],
-      startYear: wizardData.start_year || new Date().getFullYear(),
-      endYear: wizardData.end_year || new Date().getFullYear() + 5
-    };
-
-    // Build existing risks summary
-    const existingRisksSummary = existingRisks.map((r, i) =>
-      `${i + 1}. [${r.category || 'Unknown'}] "${r.title_en || r.title_ar}" - Likelihood: ${r.likelihood}, Impact: ${r.impact}`
-    ).join('\n');
-
-    // Calculate category coverage
-    const categoryCounts = {};
-    existingRisks.forEach(r => {
-      categoryCounts[r.category] = (categoryCounts[r.category] || 0) + 1;
-    });
-    const categoryCoverageSummary = Object.entries(categoryCounts)
-      .map(([cat, count]) => `${cat}: ${count}`)
-      .join(', ') || 'No risks yet';
-
-    const categoryTargetInstruction = targetCategory
-      ? `MANDATORY: Generate a risk of category "${targetCategory}"`
-      : 'Target underrepresented categories for better coverage';
-
-    const prompt = generateSingleRiskPrompt({
-      context,
-      wizardData,
-      existingRisks,
-      existingRisksSummary,
-      categoryCoverageSummary,
-      categoryTargetInstruction,
-      targetCategory
-    });
-
-    try {
-      const { success, data } = await invokeAI({
-        prompt,
-        response_json_schema: SINGLE_RISK_SCHEMA,
-        system_prompt: SINGLE_RISK_SYSTEM_PROMPT
-      });
-
-      if (success && data?.risk) {
-        return {
-          risk: data.risk,
-          differentiation_score: data.differentiation_score || 75
-        };
-      }
-      return null;
-    } catch (error) {
-      console.error('Single risk generation error:', error);
-      toast.error(t({ en: 'Failed to generate risk', ar: 'فشل في إنشاء المخاطرة' }));
-      return null;
-    }
-  };
-
-  // Generate a single new KPI that's different from existing ones
-  const generateSingleKpi = async (existingKpis, targetCategory = null, targetObjectiveIndex = null) => {
-    if (!aiAvailable) {
-      toast.error(t({ en: 'AI not available', ar: 'الذكاء الاصطناعي غير متاح' }));
-      return null;
-    }
-
-    const context = {
-      planName: wizardData.name_en || wizardData.name_ar || 'Strategic Plan',
-      vision: wizardData.vision_en || wizardData.vision_ar || '',
-      objectives: wizardData.objectives || [],
-      startYear: wizardData.start_year || new Date().getFullYear(),
-      endYear: wizardData.end_year || new Date().getFullYear() + 5
-    };
-
-    // Build existing KPIs summary
-    const existingKpisSummary = existingKpis.map((k, i) =>
-      `${i + 1}. [${k.category || 'Unknown'}] "${k.name_en || k.name_ar}" - Objective ${k.objective_index}, Unit: ${k.unit}`
-    ).join('\n');
-
-    // Calculate category coverage
-    const categoryCounts = {};
-    existingKpis.forEach(k => {
-      categoryCounts[k.category] = (categoryCounts[k.category] || 0) + 1;
-    });
-    const categoryCoverageSummary = Object.entries(categoryCounts)
-      .map(([cat, count]) => `${cat}: ${count}`)
-      .join(', ') || 'No KPIs yet';
-
-    const categoryTargetInstruction = targetCategory
-      ? `MANDATORY: Generate a KPI of category "${targetCategory}"`
-      : 'Balance categories for comprehensive coverage';
-
-    const prompt = generateSingleKpiPrompt({
-      context,
-      wizardData,
-      existingKpis,
-      existingKpisSummary,
-      categoryCoverageSummary,
-      categoryTargetInstruction,
-      targetCategory,
-      targetObjectiveIndex
-    });
-
-    try {
-      const { success, data } = await invokeAI({
-        prompt,
-        response_json_schema: SINGLE_KPI_SCHEMA,
-        system_prompt: SINGLE_KPI_SYSTEM_PROMPT
-      });
-
-      if (success && data?.kpi) {
-        return {
-          kpi: data.kpi,
-          differentiation_score: data.differentiation_score || 75
-        };
-      }
-      return null;
-    } catch (error) {
-      console.error('Single KPI generation error:', error);
-      toast.error(t({ en: 'Failed to generate KPI', ar: 'فشل في إنشاء المؤشر' }));
-      return null;
-    }
-  };
-
-  // Generate a single new action that's different from existing ones
-  const generateSingleAction = async (existingActions, targetType = null, targetObjectiveIndex = null) => {
-    if (!aiAvailable) {
-      toast.error(t({ en: 'AI not available', ar: 'الذكاء الاصطناعي غير متاح' }));
-      return null;
-    }
-
-    const context = {
-      planName: wizardData.name_en || wizardData.name_ar || 'Strategic Plan',
-      vision: wizardData.vision_en || wizardData.vision_ar || '',
-      objectives: wizardData.objectives || [],
-      startYear: wizardData.start_year || new Date().getFullYear(),
-      endYear: wizardData.end_year || new Date().getFullYear() + 5
-    };
-
-    // Build existing actions summary
-    const existingActionsSummary = existingActions.map((a, i) =>
-      `${i + 1}. [${a.type || 'Unknown'}] "${a.name_en || a.name_ar}" - Objective ${a.objective_index}, Priority: ${a.priority}`
-    ).join('\n');
-
-    // Calculate type coverage
-    const typeCounts = {};
-    existingActions.forEach(a => {
-      typeCounts[a.type] = (typeCounts[a.type] || 0) + 1;
-    });
-    const typeCoverageSummary = Object.entries(typeCounts)
-      .map(([type, count]) => `${type}: ${count}`)
-      .join(', ') || 'No actions yet';
-
-    const typeTargetInstruction = targetType
-      ? `MANDATORY: Generate an action of type "${targetType}"`
-      : 'Balance action types for comprehensive coverage';
-
-    const prompt = generateSingleActionPrompt({
-      context,
-      wizardData,
-      existingActions,
-      existingActionsSummary,
-      typeCoverageSummary,
-      typeTargetInstruction,
-      targetType,
-      targetObjectiveIndex
-    });
-
-    try {
-      const { success, data } = await invokeAI({
-        prompt,
-        response_json_schema: SINGLE_ACTION_SCHEMA,
-        system_prompt: SINGLE_ACTION_SYSTEM_PROMPT
-      });
-
-      if (success && data?.action) {
-        return {
-          action: data.action,
-          differentiation_score: data.differentiation_score || 75
-        };
-      }
-      return null;
-    } catch (error) {
-      console.error('Single action generation error:', error);
-      toast.error(t({ en: 'Failed to generate action', ar: 'فشل في إنشاء الإجراء' }));
-      return null;
-    }
-  };
 
   const handleNext = async () => {
     if (currentStep < 18) {

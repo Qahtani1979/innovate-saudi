@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useExperts } from '@/hooks/useExpertData';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Button } from "@/components/ui/button";
@@ -53,18 +52,8 @@ function ExpertRegistry() {
   const [page, setPage] = useState(1);
   const pageSize = 24;
 
-  const { data: experts = [], isLoading } = useQuery({
-    queryKey: ['expert-profiles'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('expert_profiles')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(500);
-      return data || [];
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+  const { data: experts = [], isLoading } = useExperts();
+
 
   const filteredExperts = experts.filter(expert => {
     const matchesSearch = expert.bio_en?.toLowerCase().includes(searchTerm.toLowerCase()) ||

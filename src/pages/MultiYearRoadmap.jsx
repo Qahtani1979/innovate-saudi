@@ -1,35 +1,27 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
+import { useRDCallsWithVisibility } from '@/hooks/useRDCallsWithVisibility';
+
+import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { createPageUrl } from '@/utils';
+import { Link } from 'react-router-dom';
 
 function MultiYearRoadmap() {
   const { language, isRTL, t } = useLanguage();
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [viewMode, setViewMode] = useState('timeline'); // timeline | gantt
 
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans'],
-    queryFn: () => base44.entities.StrategicPlan.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs'],
-    queryFn: () => base44.entities.Program.list()
-  });
-
-  const { data: rdCalls = [] } = useQuery({
-    queryKey: ['rd-calls'],
-    queryFn: () => base44.entities.RDCall.list()
-  });
+  const { data: strategicPlans = [] } = useStrategiesWithVisibility();
+  const { data: pilots = [] } = usePilotsWithVisibility();
+  const { data: programs = [] } = useProgramsWithVisibility();
+  const { data: rdCalls = [] } = useRDCallsWithVisibility();
 
   const years = Array.from({ length: 6 }, (_, i) => new Date().getFullYear() + i);
 

@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSolutionVerificationData } from '@/hooks/useSolutionVerificationData';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,28 +13,14 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function SolutionVerification() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [selectedSolution, setSelectedSolution] = useState(null);
   const [showEvaluationForm, setShowEvaluationForm] = useState(false);
   const [blindReview, setBlindReview] = useState(false);
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions-verification'],
-    queryFn: () => base44.entities.Solution.list()
-  });
+  const { solutions, providers, expertAssignments, checkConsensus } = useSolutionVerificationData();
 
-  const { data: providers = [] } = useQuery({
-    queryKey: ['providers'],
-    queryFn: () => base44.entities.Provider.list()
-  });
-
-  const { data: expertAssignments = [] } = useQuery({
-    queryKey: ['expert-assignments-solutions'],
-    queryFn: () => base44.entities.ExpertAssignment.filter({ entity_type: 'Solution' })
-  });
-
-  const pendingSolutions = solutions.filter(s => 
-    ['verification_pending', 'under_review'].includes(s.workflow_stage) || 
+  const pendingSolutions = solutions.filter(s =>
+    ['verification_pending', 'under_review'].includes(s.workflow_stage) ||
     (!s.is_verified && s.is_published)
   );
   const verifiedSolutions = solutions.filter(s => s.is_verified || s.workflow_stage === 'verified');
@@ -47,16 +32,11 @@ function SolutionVerification() {
 
   const handleEvaluationComplete = async () => {
     setShowEvaluationForm(false);
-    
+
     if (selectedSolution) {
-      await base44.functions.invoke('checkConsensus', {
-        entity_type: 'solution',
-        entity_id: selectedSolution.id
-      });
+      checkConsensus.mutate(selectedSolution.id);
     }
-    
     setSelectedSolution(null);
-    queryClient.invalidateQueries(['solutions-verification']);
   };
 
   return (
@@ -145,7 +125,7 @@ function SolutionVerification() {
         {pendingSolutions.map((solution) => {
           const provider = providers.find(p => p.organization_id === solution.provider_id);
           const assignments = expertAssignments.filter(a => a.entity_id === solution.id);
-          
+
           return (
             <Card key={solution.id} className="border-l-4 border-l-yellow-500">
               <CardContent className="pt-6">
@@ -166,7 +146,7 @@ function SolutionVerification() {
                         )}
                       </div>
                       {!blindReview && <p className="text-sm text-slate-600 mt-2">{solution.provider_name}</p>}
-                      
+
                       {/* Expert Assignments */}
                       {assignments.length > 0 && (
                         <div className="mt-3 p-3 bg-blue-50 rounded-lg">
@@ -191,9 +171,9 @@ function SolutionVerification() {
                     </Link>
                   </div>
 
-                  <EvaluationConsensusPanel 
-                    entityType="solution" 
-                    entityId={solution.id} 
+                  <EvaluationConsensusPanel
+                    entityType="solution"
+                    entityId={solution.id}
                   />
 
                   <div className="flex gap-3 mt-4">

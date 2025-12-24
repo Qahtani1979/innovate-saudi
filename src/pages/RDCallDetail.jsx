@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRDCall } from '@/hooks/useRDCallsWithVisibility';
+import { useRDProposalsWithVisibility } from '@/hooks/useRDProposalsWithVisibility';
+import { useRDCallComments, useAddRDCallComment } from '@/hooks/useRDCallComments';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -45,6 +46,7 @@ function RDCallDetailPage() {
   const callId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
   // const { user } = useAuth(); // Removed unused variable
+  const { invoke: invokeAI, status: aiStatus, isLoading: aiLoading } = usePrompt(null);
   const [comment, setComment] = useState('');
   const [showPublish, setShowPublish] = useState(false);
   const [showReview, setShowReview] = useState(false);
@@ -56,66 +58,15 @@ function RDCallDetailPage() {
   const [showAutoAssign, setShowAutoAssign] = useState(false);
   const [showMeetingScheduler, setShowMeetingScheduler] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
-  const queryClient = useQueryClient();
-  const { invoke: invokeAI, status: aiStatus, isLoading: aiLoading } = usePrompt(null);
+  const { data: call, isLoading, error: callError } = useRDCall(callId);
 
-  const { data: call, isLoading, error: callError } = useQuery({
-    queryKey: ['rd-call', callId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_calls')
-        .select('*')
-        .eq('id', callId)
-        .eq('is_deleted', false)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!callId,
-    staleTime: 5 * 60 * 1000
+  const { data: proposals = [] } = useRDProposalsWithVisibility({
+    rdCallId: callId,
+    includeDeleted: false
   });
 
-  const { data: proposals = [] } = useQuery({
-    queryKey: ['proposals-for-call', callId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_proposals')
-        .select('*')
-        .eq('rd_call_id', callId)
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!callId
-  });
-
-  const { data: comments = [] } = useQuery({
-    queryKey: ['rdcall-comments', callId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_call_comments')
-        .select('*')
-        .eq('rd_call_id', callId)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!callId
-  });
-
-  const commentMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase
-        .from('rd_call_comments')
-        .insert([data]);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['rdcall-comments']);
-      setComment('');
-      toast.success(t({ en: 'Comment added', ar: 'تم إضافة التعليق' }));
-    }
-  });
+  const { data: comments = [] } = useRDCallComments(callId);
+  const { mutate: addComment } = useAddRDCallComment();
 
   if (isLoading) {
     return (
@@ -357,7 +308,7 @@ function RDCallDetailPage() {
             </Button>
           </CardHeader>
           <CardContent>
-            <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} className="mb-4" />
+            <AIStatusIndicator status={aiStatus} error={aiError} rateLimitInfo={rateLimitInfo} className="mb-4" />
             {aiLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
@@ -566,16 +517,18 @@ function RDCallDetailPage() {
             </TabsList>
 
             <TabsContent value="workflow">
-              <UnifiedWorkflowApprovalTab
-                entityType="RDCall"
-                entityId={callId}
-                currentStage={
-                  call.status === 'draft' ? 'draft' :
-                    call.status === 'published' || call.status === 'open' ? 'published' :
-                      call.status === 'under_review' ? 'review' :
-                        call.status === 'awarded' ? 'awarded' : 'draft'
-                }
-              />
+              {/** @type {any} */(
+                <UnifiedWorkflowApprovalTab
+                  entityType="RDCall"
+                  entityId={callId}
+                  currentStage={
+                    call.status === 'draft' ? 'draft' :
+                      call.status === 'published' || call.status === 'open' ? 'published' :
+                        call.status === 'under_review' ? 'review' :
+                          call.status === 'awarded' ? 'awarded' : 'draft'
+                  }
+                />
+              )}
             </TabsContent>
 
             <TabsContent value="overview" className="space-y-6">
@@ -796,7 +749,10 @@ function RDCallDetailPage() {
                       rows={3}
                     />
                     <Button
-                      onClick={() => commentMutation.mutate({ rd_call_id: callId, comment_text: comment })}
+                      onClick={() => {
+                        addComment({ rd_call_id: callId, comment_text: comment });
+                        setComment('');
+                      }}
                       className="bg-gradient-to-r from-blue-600 to-teal-600"
                       disabled={!comment}
                     >

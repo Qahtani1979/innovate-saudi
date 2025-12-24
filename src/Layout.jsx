@@ -18,7 +18,14 @@ import {
   Rocket,
   Calendar
 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+// Keep if strictly needed (e.g. auth listener in Layout?) - checks below show it's used only for search here? 
+// Actually line 21 is `import { supabase } ...`. 
+// I'll check if supabase is used elsewhere in Layout.jsx.
+// The code view shows it's used in handleSearch. 
+// Wait, is it used in PortalSwitcher or PersonaSidebar? Those are imports.
+// I will check the file content after update. 
+// For now, I'll ADD useGlobalSearch import.
+import { useGlobalSearch } from '@/hooks/useGlobalSearch';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,9 +45,7 @@ import OnboardingWizard from './components/onboarding/OnboardingWizard';
 
 function LayoutContent({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [searchOpen, setSearchOpen] = useState(false);
+  // Search State moved below
   const [showOnboarding, setShowOnboarding] = useState(false);
   const { language, isRTL, toggleLanguage } = useLanguage();
   const { user, hasPermission, hasAnyPermission, isAdmin, isDeputyship, isMunicipality } = usePermissions();
@@ -59,31 +64,17 @@ function LayoutContent({ children, currentPageName }) {
   }, [isAuthenticated, userProfile]);
 
 
-  const handleSearch = async (query) => {
+  // Search State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const { data: searchResults = [] } = useGlobalSearch(searchQuery);
+
+  const handleSearch = (query) => {
     setSearchQuery(query);
-    if (!query || query.length < 2) {
-      setSearchResults([]);
+    if (query && query.length >= 2) {
+      setSearchOpen(true);
+    } else {
       setSearchOpen(false);
-      return;
-    }
-
-    setSearchOpen(true);
-    try {
-      const [challenges, pilots, solutions, programs] = await Promise.all([
-        base44.entities.Challenge.filter({ title_en: { $regex: query, $options: 'i' } }, '-created_date', 3),
-        base44.entities.Pilot.filter({ title_en: { $regex: query, $options: 'i' } }, '-created_date', 3),
-        base44.entities.Solution.filter({ name_en: { $regex: query, $options: 'i' } }, '-created_date', 3),
-        base44.entities.Program.filter({ name_en: { $regex: query, $options: 'i' } }, '-created_date', 2)
-      ]);
-
-      setSearchResults([
-        ...challenges.map(c => ({ type: 'Challenge', name: c.title_en || c.title_ar, id: c.id, page: 'ChallengeDetail' })),
-        ...pilots.map(p => ({ type: 'Pilot', name: p.title_en || p.title_ar, id: p.id, page: 'PilotDetail' })),
-        ...solutions.map(s => ({ type: 'Solution', name: s.name_en || s.name_ar, id: s.id, page: 'SolutionDetail' })),
-        ...programs.map(p => ({ type: 'Program', name: p.name_en || p.name_ar, id: p.id, page: 'ProgramDetail' }))
-      ]);
-    } catch (error) {
-      console.error('Search error:', error);
     }
   };
 
@@ -164,7 +155,7 @@ function LayoutContent({ children, currentPageName }) {
                 placeholder={language === 'en' ? 'Search challenges, pilots, solutions...' : 'ابحث عن التحديات، التجارب، الحلول...'}
                 className={`w-full ${isRTL ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all`}
               />
-              
+
               {searchOpen && searchResults.length > 0 && (
                 <div className="absolute top-full mt-2 w-full bg-white rounded-xl shadow-xl border border-slate-200 max-h-96 overflow-y-auto z-50">
                   {searchResults.map((result, idx) => (
@@ -277,9 +268,9 @@ function LayoutContent({ children, currentPageName }) {
 
       <div className="flex relative">
         {/* Persona-specific Sidebar */}
-        <PersonaSidebar 
-          isOpen={sidebarOpen} 
-          onClose={() => setSidebarOpen(false)} 
+        <PersonaSidebar
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
         />
 
         {/* Main Content */}
@@ -295,7 +286,7 @@ function LayoutContent({ children, currentPageName }) {
 
       {/* Onboarding Wizard for new users */}
       {showOnboarding && (
-        <OnboardingWizard 
+        <OnboardingWizard
           onComplete={() => {
             setShowOnboarding(false);
             checkAuth?.();

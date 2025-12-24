@@ -1,14 +1,14 @@
 import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
-import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
-import { 
-  CheckCircle2, AlertCircle, ChevronDown, ChevronRight, 
+import { useMunicipalitiesWithVisibility } from '../hooks/useMunicipalitiesWithVisibility';
+import {
+  CheckCircle2, AlertCircle, ChevronDown, ChevronRight,
   Database, FileText, Workflow, Users, Brain, Network, Target, Shield,
   TrendingUp, Zap, History
 } from 'lucide-react';
@@ -22,9 +22,9 @@ function ComprehensiveReportAudit() {
   const [selectedPriority, setSelectedPriority] = useState('all');
   const [activeTab, setActiveTab] = useState('overview');
 
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities-audit'],
-    queryFn: () => base44.entities.Municipality.list()
+  const { data: municipalities = [] } = useMunicipalitiesWithVisibility({
+    includeNational: true,
+    limit: 1000 // Ensure we get enough for the report count
   });
 
   const standardSections = [
@@ -383,25 +383,25 @@ function ComprehensiveReportAudit() {
       category: 'module'
     },
     // === SYSTEM REPORTS ===
-    { name: 'CommunicationsCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 1:{status:'complete',score:100,notes:'5 entities with 73 fields',actions:[]}, 2:{status:'complete',score:100,notes:'9 pages',actions:[]}, 3:{status:'complete',score:100,notes:'8 workflows',actions:[]}, 4:{status:'complete',score:100,notes:'6 personas',actions:[]}, 5:{status:'complete',score:100,notes:'16 AI features',actions:[]}, 6:{status:'complete',score:100,notes:'10 conversion paths',actions:[]}, 7:{status:'complete',score:100,notes:'4 comparison tables',actions:[]}, 8:{status:'complete',score:100,notes:'13 permissions + 4 roles',actions:[]}, 9:{status:'complete',score:100,notes:'28 integration points',actions:[]} }, priority: 'reference', category: 'system' },
-    { name: 'DataManagementCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 1:{status:'complete',score:100,notes:'3 core concepts',actions:[]}, 2:{status:'complete',score:100,notes:'9 pages',actions:[]}, 3:{status:'complete',score:100,notes:'7 workflows',actions:[]}, 4:{status:'complete',score:100,notes:'6 personas',actions:[]}, 5:{status:'complete',score:100,notes:'9 AI features',actions:[]}, 6:{status:'complete',score:100,notes:'10 conversion paths',actions:[]}, 7:{status:'complete',score:100,notes:'4 comparison tables',actions:[]}, 8:{status:'complete',score:100,notes:'9 permissions + 5 roles',actions:[]}, 9:{status:'complete',score:100,notes:'26 integration points',actions:[]} }, priority: 'reference', category: 'system' },
-    { name: 'KnowledgeResourcesCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 1:{status:'complete',score:100,notes:'5 entities with 112 fields',actions:[]}, 2:{status:'complete',score:100,notes:'12 pages',actions:[]}, 3:{status:'complete',score:100,notes:'9 workflows',actions:[]}, 4:{status:'complete',score:100,notes:'6 personas',actions:[]}, 5:{status:'complete',score:100,notes:'23 AI features',actions:[]}, 6:{status:'complete',score:100,notes:'11 conversion paths',actions:[]}, 7:{status:'complete',score:100,notes:'4 comparison tables',actions:[]}, 8:{status:'complete',score:100,notes:'12 permissions + 6 roles',actions:[]}, 9:{status:'complete',score:100,notes:'30 integration points',actions:[]} }, priority: 'reference', category: 'system' },
-    { name: 'PlatformToolsCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 1:{status:'complete',score:100,notes:'3 core concepts',actions:[]}, 2:{status:'complete',score:100,notes:'7 pages',actions:[]}, 3:{status:'complete',score:100,notes:'4 workflows',actions:[]}, 4:{status:'complete',score:100,notes:'6 personas',actions:[]}, 5:{status:'complete',score:100,notes:'4 AI features',actions:[]}, 6:{status:'complete',score:100,notes:'6 conversion paths',actions:[]}, 7:{status:'complete',score:100,notes:'1 comparison table',actions:[]}, 8:{status:'complete',score:100,notes:'6 permissions + 3 roles',actions:[]}, 9:{status:'complete',score:100,notes:'9 integration points',actions:[]} }, priority: 'reference', category: 'system' },
-    { name: 'ProfilesIdentityCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 1:{status:'complete',score:100,notes:'5 profile entities',actions:[]}, 2:{status:'complete',score:100,notes:'10 pages',actions:[]}, 3:{status:'complete',score:100,notes:'6 workflows',actions:[]}, 4:{status:'complete',score:100,notes:'5 personas',actions:[]}, 5:{status:'complete',score:100,notes:'8 AI features',actions:[]}, 6:{status:'complete',score:100,notes:'7 conversion paths',actions:[]}, 7:{status:'complete',score:100,notes:'3 comparison tables',actions:[]}, 8:{status:'complete',score:100,notes:'10 permissions + 6 roles',actions:[]}, 9:{status:'complete',score:100,notes:'20 integration points',actions:[]} }, priority: 'reference', category: 'system' },
-    { name: 'UserSettingsCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 1:{status:'complete',score:100,notes:'3 core entities',actions:[]}, 2:{status:'complete',score:100,notes:'10 tabs',actions:[]}, 3:{status:'complete',score:100,notes:'8 workflows',actions:[]}, 4:{status:'complete',score:100,notes:'6 personas',actions:[]}, 5:{status:'complete',score:100,notes:'5 AI features',actions:[]}, 6:{status:'complete',score:100,notes:'8 conversion paths',actions:[]}, 7:{status:'complete',score:100,notes:'2 comparison tables',actions:[]}, 8:{status:'complete',score:100,notes:'8 permissions + 4 roles',actions:[]}, 9:{status:'complete',score:100,notes:'15 integration points',actions:[]} }, priority: 'reference', category: 'system' },
-    { name: 'RBACCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 1:{status:'complete',score:100,notes:'Full RBAC data model',actions:[]}, 2:{status:'complete',score:100,notes:'All RBAC pages',actions:[]}, 3:{status:'complete',score:100,notes:'Permission workflows',actions:[]}, 4:{status:'complete',score:100,notes:'User journeys',actions:[]}, 5:{status:'complete',score:100,notes:'AI role assignment',actions:[]}, 6:{status:'complete',score:100,notes:'Conversions',actions:[]}, 7:{status:'complete',score:100,notes:'Role comparisons',actions:[]}, 8:{status:'complete',score:100,notes:'Core RBAC',actions:[]}, 9:{status:'complete',score:100,notes:'Integrations',actions:[]} }, priority: 'reference', category: 'system' },
-    { name: 'MenuCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 1:{status:'complete',score:100,notes:'Navigation data model - 202 pages',actions:[]}, 2:{status:'complete',score:100,notes:'2 pages (Layout.js + Report)',actions:[]}, 3:{status:'complete',score:100,notes:'2 workflows',actions:[]}, 4:{status:'complete',score:100,notes:'5 personas',actions:[]}, 5:{status:'complete',score:100,notes:'3 AI features',actions:[]}, 6:{status:'complete',score:100,notes:'5 conversion access points',actions:[]}, 7:{status:'complete',score:100,notes:'1 comparison table',actions:[]}, 8:{status:'complete',score:100,notes:'8 RBAC patterns',actions:[]}, 9:{status:'complete',score:100,notes:'6 integrations',actions:[]} }, priority: 'reference', category: 'system' },
-    { name: 'WorkflowApprovalSystemCoverage', completeness: 100, status: '✅ COMPLETE', sections: { 1:{status:'complete',score:100,notes:'14 entities with workflows',actions:[]}, 2:{status:'complete',score:100,notes:'4 pages',actions:[]}, 3:{status:'complete',score:100,notes:'3 workflows (9 stages, 7 stages, 7 stages)',actions:[]}, 4:{status:'complete',score:100,notes:'4 personas',actions:[]}, 5:{status:'complete',score:100,notes:'4 AI features across 37 gates',actions:[]}, 6:{status:'complete',score:100,notes:'7 conversion quality gates',actions:[]}, 7:{status:'complete',score:100,notes:'1 comparison table',actions:[]}, 8:{status:'complete',score:100,notes:'8 RBAC patterns',actions:[]}, 9:{status:'complete',score:100,notes:'6 integration points',actions:[]} }, priority: 'reference', category: 'system' },
-    { name: 'GateMaturityMatrix', completeness: 100, status: '✅ COMPLETE', sections: { 3:{status:'complete',score:100,notes:'All gates',actions:[]}, 4:{status:'complete',score:100,notes:'Gate journeys',actions:[]}, 8:{status:'complete',score:100,notes:'Gate permissions',actions:[]} }, priority: 'reference', category: 'system' },
-    { name: 'StagesCriteriaCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 3:{status:'complete',score:100,notes:'All stages',actions:[]}, 4:{status:'complete',score:100,notes:'Stage journeys',actions:[]} }, priority: 'reference', category: 'system' },
-    { name: 'CreateWizardsCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 2:{status:'complete',score:100,notes:'All wizards',actions:[]}, 3:{status:'complete',score:100,notes:'Creation workflows',actions:[]}, 4:{status:'complete',score:100,notes:'Creator journeys',actions:[]} }, priority: 'reference', category: 'system' },
-    { name: 'EditPagesCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 2:{status:'complete',score:100,notes:'All edit pages',actions:[]}, 3:{status:'complete',score:100,notes:'Edit workflows',actions:[]}, 4:{status:'complete',score:100,notes:'Editor journeys',actions:[]}, 5:{status:'complete',score:100,notes:'AI features',actions:[]}, 7:{status:'complete',score:100,notes:'Edit vs Create comparison',actions:[]}, 8:{status:'complete',score:100,notes:'Edit permissions',actions:[]}, 9:{status:'complete',score:100,notes:'Integration points',actions:[]} }, priority: 'reference', category: 'system' },
-    { name: 'DetailPagesCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 2:{status:'complete',score:100,notes:'All detail pages',actions:[]}, 3:{status:'complete',score:100,notes:'Workflow tab integration',actions:[]}, 4:{status:'complete',score:100,notes:'Viewer journeys',actions:[]}, 5:{status:'complete',score:100,notes:'AI features per page',actions:[]}, 8:{status:'complete',score:100,notes:'View permissions',actions:[]}, 9:{status:'complete',score:100,notes:'Integration points',actions:[]} }, priority: 'reference', category: 'system' },
-    { name: 'ConversionsCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 3:{status:'complete',score:100,notes:'All conversion workflows',actions:[]}, 4:{status:'complete',score:100,notes:'Conversion journeys',actions:[]}, 5:{status:'complete',score:100,notes:'AI automation',actions:[]}, 6:{status:'complete',score:100,notes:'100% automation',actions:[]}, 9:{status:'complete',score:100,notes:'Integration points',actions:[]} }, priority: 'reference', category: 'system' },
-    { name: 'PortalDesignCoverage', completeness: 100, status: '✅ COMPLETE', sections: { 2:{status:'complete',score:100,notes:'All 10 portals',actions:[]}, 4:{status:'complete',score:100,notes:'Portal journeys',actions:[]}, 5:{status:'complete',score:100,notes:'Portal AI',actions:[]}, 7:{status:'complete',score:100,notes:'Portal comparisons',actions:[]}, 8:{status:'complete',score:100,notes:'Portal RBAC',actions:[]}, 9:{status:'complete',score:100,notes:'Portal integrations',actions:[]} }, priority: 'reference', category: 'system' },
-    { name: 'PlatformCoverageAudit', completeness: 100, status: '✅ COMPLETE', sections: { 1:{status:'complete',score:100,notes:'All platform entities',actions:[]}, 2:{status:'complete',score:100,notes:'All pages',actions:[]}, 3:{status:'complete',score:100,notes:'Platform workflows',actions:[]}, 4:{status:'complete',score:100,notes:'All journeys',actions:[]}, 5:{status:'complete',score:100,notes:'Platform AI',actions:[]}, 8:{status:'complete',score:100,notes:'Platform RBAC',actions:[]}, 9:{status:'complete',score:100,notes:'Integrations',actions:[]} }, priority: 'reference', category: 'system' },
-    { name: 'BilingualCoverageReports', completeness: 100, status: '✅ COMPLETE', sections: { 2:{status:'complete',score:100,notes:'All bilingual pages',actions:[]}, 4:{status:'complete',score:100,notes:'RTL journeys',actions:[]} }, priority: 'reference', category: 'system' },
-    { name: 'InnovationProposalsCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 1:{status:'complete',score:100,notes:'Proposal entity',actions:[]}, 2:{status:'complete',score:100,notes:'All pages',actions:[]}, 3:{status:'complete',score:100,notes:'Workflows',actions:[]}, 4:{status:'complete',score:100,notes:'Journeys',actions:[]}, 5:{status:'complete',score:100,notes:'AI features',actions:[]}, 6:{status:'complete',score:100,notes:'Conversions',actions:[]}, 8:{status:'complete',score:100,notes:'RBAC',actions:[]}, 9:{status:'complete',score:100,notes:'Integrations',actions:[]} }, priority: 'reference', category: 'system' },
+    { name: 'CommunicationsCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 1: { status: 'complete', score: 100, notes: '5 entities with 73 fields', actions: [] }, 2: { status: 'complete', score: 100, notes: '9 pages', actions: [] }, 3: { status: 'complete', score: 100, notes: '8 workflows', actions: [] }, 4: { status: 'complete', score: 100, notes: '6 personas', actions: [] }, 5: { status: 'complete', score: 100, notes: '16 AI features', actions: [] }, 6: { status: 'complete', score: 100, notes: '10 conversion paths', actions: [] }, 7: { status: 'complete', score: 100, notes: '4 comparison tables', actions: [] }, 8: { status: 'complete', score: 100, notes: '13 permissions + 4 roles', actions: [] }, 9: { status: 'complete', score: 100, notes: '28 integration points', actions: [] } }, priority: 'reference', category: 'system' },
+    { name: 'DataManagementCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 1: { status: 'complete', score: 100, notes: '3 core concepts', actions: [] }, 2: { status: 'complete', score: 100, notes: '9 pages', actions: [] }, 3: { status: 'complete', score: 100, notes: '7 workflows', actions: [] }, 4: { status: 'complete', score: 100, notes: '6 personas', actions: [] }, 5: { status: 'complete', score: 100, notes: '9 AI features', actions: [] }, 6: { status: 'complete', score: 100, notes: '10 conversion paths', actions: [] }, 7: { status: 'complete', score: 100, notes: '4 comparison tables', actions: [] }, 8: { status: 'complete', score: 100, notes: '9 permissions + 5 roles', actions: [] }, 9: { status: 'complete', score: 100, notes: '26 integration points', actions: [] } }, priority: 'reference', category: 'system' },
+    { name: 'KnowledgeResourcesCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 1: { status: 'complete', score: 100, notes: '5 entities with 112 fields', actions: [] }, 2: { status: 'complete', score: 100, notes: '12 pages', actions: [] }, 3: { status: 'complete', score: 100, notes: '9 workflows', actions: [] }, 4: { status: 'complete', score: 100, notes: '6 personas', actions: [] }, 5: { status: 'complete', score: 100, notes: '23 AI features', actions: [] }, 6: { status: 'complete', score: 100, notes: '11 conversion paths', actions: [] }, 7: { status: 'complete', score: 100, notes: '4 comparison tables', actions: [] }, 8: { status: 'complete', score: 100, notes: '12 permissions + 6 roles', actions: [] }, 9: { status: 'complete', score: 100, notes: '30 integration points', actions: [] } }, priority: 'reference', category: 'system' },
+    { name: 'PlatformToolsCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 1: { status: 'complete', score: 100, notes: '3 core concepts', actions: [] }, 2: { status: 'complete', score: 100, notes: '7 pages', actions: [] }, 3: { status: 'complete', score: 100, notes: '4 workflows', actions: [] }, 4: { status: 'complete', score: 100, notes: '6 personas', actions: [] }, 5: { status: 'complete', score: 100, notes: '4 AI features', actions: [] }, 6: { status: 'complete', score: 100, notes: '6 conversion paths', actions: [] }, 7: { status: 'complete', score: 100, notes: '1 comparison table', actions: [] }, 8: { status: 'complete', score: 100, notes: '6 permissions + 3 roles', actions: [] }, 9: { status: 'complete', score: 100, notes: '9 integration points', actions: [] } }, priority: 'reference', category: 'system' },
+    { name: 'ProfilesIdentityCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 1: { status: 'complete', score: 100, notes: '5 profile entities', actions: [] }, 2: { status: 'complete', score: 100, notes: '10 pages', actions: [] }, 3: { status: 'complete', score: 100, notes: '6 workflows', actions: [] }, 4: { status: 'complete', score: 100, notes: '5 personas', actions: [] }, 5: { status: 'complete', score: 100, notes: '8 AI features', actions: [] }, 6: { status: 'complete', score: 100, notes: '7 conversion paths', actions: [] }, 7: { status: 'complete', score: 100, notes: '3 comparison tables', actions: [] }, 8: { status: 'complete', score: 100, notes: '10 permissions + 6 roles', actions: [] }, 9: { status: 'complete', score: 100, notes: '20 integration points', actions: [] } }, priority: 'reference', category: 'system' },
+    { name: 'UserSettingsCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 1: { status: 'complete', score: 100, notes: '3 core entities', actions: [] }, 2: { status: 'complete', score: 100, notes: '10 tabs', actions: [] }, 3: { status: 'complete', score: 100, notes: '8 workflows', actions: [] }, 4: { status: 'complete', score: 100, notes: '6 personas', actions: [] }, 5: { status: 'complete', score: 100, notes: '5 AI features', actions: [] }, 6: { status: 'complete', score: 100, notes: '8 conversion paths', actions: [] }, 7: { status: 'complete', score: 100, notes: '2 comparison tables', actions: [] }, 8: { status: 'complete', score: 100, notes: '8 permissions + 4 roles', actions: [] }, 9: { status: 'complete', score: 100, notes: '15 integration points', actions: [] } }, priority: 'reference', category: 'system' },
+    { name: 'RBACCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 1: { status: 'complete', score: 100, notes: 'Full RBAC data model', actions: [] }, 2: { status: 'complete', score: 100, notes: 'All RBAC pages', actions: [] }, 3: { status: 'complete', score: 100, notes: 'Permission workflows', actions: [] }, 4: { status: 'complete', score: 100, notes: 'User journeys', actions: [] }, 5: { status: 'complete', score: 100, notes: 'AI role assignment', actions: [] }, 6: { status: 'complete', score: 100, notes: 'Conversions', actions: [] }, 7: { status: 'complete', score: 100, notes: 'Role comparisons', actions: [] }, 8: { status: 'complete', score: 100, notes: 'Core RBAC', actions: [] }, 9: { status: 'complete', score: 100, notes: 'Integrations', actions: [] } }, priority: 'reference', category: 'system' },
+    { name: 'MenuCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 1: { status: 'complete', score: 100, notes: 'Navigation data model - 202 pages', actions: [] }, 2: { status: 'complete', score: 100, notes: '2 pages (Layout.js + Report)', actions: [] }, 3: { status: 'complete', score: 100, notes: '2 workflows', actions: [] }, 4: { status: 'complete', score: 100, notes: '5 personas', actions: [] }, 5: { status: 'complete', score: 100, notes: '3 AI features', actions: [] }, 6: { status: 'complete', score: 100, notes: '5 conversion access points', actions: [] }, 7: { status: 'complete', score: 100, notes: '1 comparison table', actions: [] }, 8: { status: 'complete', score: 100, notes: '8 RBAC patterns', actions: [] }, 9: { status: 'complete', score: 100, notes: '6 integrations', actions: [] } }, priority: 'reference', category: 'system' },
+    { name: 'WorkflowApprovalSystemCoverage', completeness: 100, status: '✅ COMPLETE', sections: { 1: { status: 'complete', score: 100, notes: '14 entities with workflows', actions: [] }, 2: { status: 'complete', score: 100, notes: '4 pages', actions: [] }, 3: { status: 'complete', score: 100, notes: '3 workflows (9 stages, 7 stages, 7 stages)', actions: [] }, 4: { status: 'complete', score: 100, notes: '4 personas', actions: [] }, 5: { status: 'complete', score: 100, notes: '4 AI features across 37 gates', actions: [] }, 6: { status: 'complete', score: 100, notes: '7 conversion quality gates', actions: [] }, 7: { status: 'complete', score: 100, notes: '1 comparison table', actions: [] }, 8: { status: 'complete', score: 100, notes: '8 RBAC patterns', actions: [] }, 9: { status: 'complete', score: 100, notes: '6 integration points', actions: [] } }, priority: 'reference', category: 'system' },
+    { name: 'GateMaturityMatrix', completeness: 100, status: '✅ COMPLETE', sections: { 3: { status: 'complete', score: 100, notes: 'All gates', actions: [] }, 4: { status: 'complete', score: 100, notes: 'Gate journeys', actions: [] }, 8: { status: 'complete', score: 100, notes: 'Gate permissions', actions: [] } }, priority: 'reference', category: 'system' },
+    { name: 'StagesCriteriaCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 3: { status: 'complete', score: 100, notes: 'All stages', actions: [] }, 4: { status: 'complete', score: 100, notes: 'Stage journeys', actions: [] } }, priority: 'reference', category: 'system' },
+    { name: 'CreateWizardsCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 2: { status: 'complete', score: 100, notes: 'All wizards', actions: [] }, 3: { status: 'complete', score: 100, notes: 'Creation workflows', actions: [] }, 4: { status: 'complete', score: 100, notes: 'Creator journeys', actions: [] } }, priority: 'reference', category: 'system' },
+    { name: 'EditPagesCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 2: { status: 'complete', score: 100, notes: 'All edit pages', actions: [] }, 3: { status: 'complete', score: 100, notes: 'Edit workflows', actions: [] }, 4: { status: 'complete', score: 100, notes: 'Editor journeys', actions: [] }, 5: { status: 'complete', score: 100, notes: 'AI features', actions: [] }, 7: { status: 'complete', score: 100, notes: 'Edit vs Create comparison', actions: [] }, 8: { status: 'complete', score: 100, notes: 'Edit permissions', actions: [] }, 9: { status: 'complete', score: 100, notes: 'Integration points', actions: [] } }, priority: 'reference', category: 'system' },
+    { name: 'DetailPagesCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 2: { status: 'complete', score: 100, notes: 'All detail pages', actions: [] }, 3: { status: 'complete', score: 100, notes: 'Workflow tab integration', actions: [] }, 4: { status: 'complete', score: 100, notes: 'Viewer journeys', actions: [] }, 5: { status: 'complete', score: 100, notes: 'AI features per page', actions: [] }, 8: { status: 'complete', score: 100, notes: 'View permissions', actions: [] }, 9: { status: 'complete', score: 100, notes: 'Integration points', actions: [] } }, priority: 'reference', category: 'system' },
+    { name: 'ConversionsCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 3: { status: 'complete', score: 100, notes: 'All conversion workflows', actions: [] }, 4: { status: 'complete', score: 100, notes: 'Conversion journeys', actions: [] }, 5: { status: 'complete', score: 100, notes: 'AI automation', actions: [] }, 6: { status: 'complete', score: 100, notes: '100% automation', actions: [] }, 9: { status: 'complete', score: 100, notes: 'Integration points', actions: [] } }, priority: 'reference', category: 'system' },
+    { name: 'PortalDesignCoverage', completeness: 100, status: '✅ COMPLETE', sections: { 2: { status: 'complete', score: 100, notes: 'All 10 portals', actions: [] }, 4: { status: 'complete', score: 100, notes: 'Portal journeys', actions: [] }, 5: { status: 'complete', score: 100, notes: 'Portal AI', actions: [] }, 7: { status: 'complete', score: 100, notes: 'Portal comparisons', actions: [] }, 8: { status: 'complete', score: 100, notes: 'Portal RBAC', actions: [] }, 9: { status: 'complete', score: 100, notes: 'Portal integrations', actions: [] } }, priority: 'reference', category: 'system' },
+    { name: 'PlatformCoverageAudit', completeness: 100, status: '✅ COMPLETE', sections: { 1: { status: 'complete', score: 100, notes: 'All platform entities', actions: [] }, 2: { status: 'complete', score: 100, notes: 'All pages', actions: [] }, 3: { status: 'complete', score: 100, notes: 'Platform workflows', actions: [] }, 4: { status: 'complete', score: 100, notes: 'All journeys', actions: [] }, 5: { status: 'complete', score: 100, notes: 'Platform AI', actions: [] }, 8: { status: 'complete', score: 100, notes: 'Platform RBAC', actions: [] }, 9: { status: 'complete', score: 100, notes: 'Integrations', actions: [] } }, priority: 'reference', category: 'system' },
+    { name: 'BilingualCoverageReports', completeness: 100, status: '✅ COMPLETE', sections: { 2: { status: 'complete', score: 100, notes: 'All bilingual pages', actions: [] }, 4: { status: 'complete', score: 100, notes: 'RTL journeys', actions: [] } }, priority: 'reference', category: 'system' },
+    { name: 'InnovationProposalsCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 1: { status: 'complete', score: 100, notes: 'Proposal entity', actions: [] }, 2: { status: 'complete', score: 100, notes: 'All pages', actions: [] }, 3: { status: 'complete', score: 100, notes: 'Workflows', actions: [] }, 4: { status: 'complete', score: 100, notes: 'Journeys', actions: [] }, 5: { status: 'complete', score: 100, notes: 'AI features', actions: [] }, 6: { status: 'complete', score: 100, notes: 'Conversions', actions: [] }, 8: { status: 'complete', score: 100, notes: 'RBAC', actions: [] }, 9: { status: 'complete', score: 100, notes: 'Integrations', actions: [] } }, priority: 'reference', category: 'system' },
     {
       name: 'MIICoverageReport',
       completeness: 96,
@@ -438,9 +438,9 @@ function ComprehensiveReportAudit() {
       priority: 'reference',
       category: 'module'
     },
-    { name: 'PlatformToolsCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 1:{status:'complete',score:100,notes:'3 concepts',actions:[]}, 2:{status:'complete',score:100,notes:'7 pages',actions:[]}, 3:{status:'complete',score:100,notes:'4 workflows',actions:[]}, 4:{status:'complete',score:100,notes:'6 personas',actions:[]}, 5:{status:'complete',score:100,notes:'4 AI features',actions:[]}, 6:{status:'complete',score:100,notes:'6 paths',actions:[]}, 7:{status:'complete',score:100,notes:'1 table',actions:[]}, 8:{status:'complete',score:100,notes:'6 perms + 3 roles',actions:[]}, 9:{status:'complete',score:100,notes:'9 integrations',actions:[]} }, priority: 'reference', category: 'system' },
-    { name: 'ProfilesIdentityCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 1:{status:'complete',score:100,notes:'5 profile entities',actions:[]}, 2:{status:'complete',score:100,notes:'10 pages',actions:[]}, 3:{status:'complete',score:100,notes:'6 workflows',actions:[]}, 4:{status:'complete',score:100,notes:'5 personas',actions:[]}, 5:{status:'complete',score:100,notes:'8 AI features',actions:[]}, 6:{status:'complete',score:100,notes:'7 paths',actions:[]}, 7:{status:'complete',score:100,notes:'3 tables',actions:[]}, 8:{status:'complete',score:100,notes:'10 perms + 6 roles',actions:[]}, 9:{status:'complete',score:100,notes:'20 integrations',actions:[]} }, priority: 'reference', category: 'system' },
-    { name: 'UserSettingsCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 1:{status:'complete',score:100,notes:'3 entities',actions:[]}, 2:{status:'complete',score:100,notes:'10 tabs',actions:[]}, 3:{status:'complete',score:100,notes:'8 workflows',actions:[]}, 4:{status:'complete',score:100,notes:'6 personas',actions:[]}, 5:{status:'complete',score:100,notes:'5 AI features',actions:[]}, 6:{status:'complete',score:100,notes:'8 paths',actions:[]}, 7:{status:'complete',score:100,notes:'2 tables',actions:[]}, 8:{status:'complete',score:100,notes:'8 perms + 4 roles',actions:[]}, 9:{status:'complete',score:100,notes:'15 integrations',actions:[]} }, priority: 'reference', category: 'system' },
+    { name: 'PlatformToolsCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 1: { status: 'complete', score: 100, notes: '3 concepts', actions: [] }, 2: { status: 'complete', score: 100, notes: '7 pages', actions: [] }, 3: { status: 'complete', score: 100, notes: '4 workflows', actions: [] }, 4: { status: 'complete', score: 100, notes: '6 personas', actions: [] }, 5: { status: 'complete', score: 100, notes: '4 AI features', actions: [] }, 6: { status: 'complete', score: 100, notes: '6 paths', actions: [] }, 7: { status: 'complete', score: 100, notes: '1 table', actions: [] }, 8: { status: 'complete', score: 100, notes: '6 perms + 3 roles', actions: [] }, 9: { status: 'complete', score: 100, notes: '9 integrations', actions: [] } }, priority: 'reference', category: 'system' },
+    { name: 'ProfilesIdentityCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 1: { status: 'complete', score: 100, notes: '5 profile entities', actions: [] }, 2: { status: 'complete', score: 100, notes: '10 pages', actions: [] }, 3: { status: 'complete', score: 100, notes: '6 workflows', actions: [] }, 4: { status: 'complete', score: 100, notes: '5 personas', actions: [] }, 5: { status: 'complete', score: 100, notes: '8 AI features', actions: [] }, 6: { status: 'complete', score: 100, notes: '7 paths', actions: [] }, 7: { status: 'complete', score: 100, notes: '3 tables', actions: [] }, 8: { status: 'complete', score: 100, notes: '10 perms + 6 roles', actions: [] }, 9: { status: 'complete', score: 100, notes: '20 integrations', actions: [] } }, priority: 'reference', category: 'system' },
+    { name: 'UserSettingsCoverageReport', completeness: 100, status: '✅ COMPLETE', sections: { 1: { status: 'complete', score: 100, notes: '3 entities', actions: [] }, 2: { status: 'complete', score: 100, notes: '10 tabs', actions: [] }, 3: { status: 'complete', score: 100, notes: '8 workflows', actions: [] }, 4: { status: 'complete', score: 100, notes: '6 personas', actions: [] }, 5: { status: 'complete', score: 100, notes: '5 AI features', actions: [] }, 6: { status: 'complete', score: 100, notes: '8 paths', actions: [] }, 7: { status: 'complete', score: 100, notes: '2 tables', actions: [] }, 8: { status: 'complete', score: 100, notes: '8 perms + 4 roles', actions: [] }, 9: { status: 'complete', score: 100, notes: '15 integrations', actions: [] } }, priority: 'reference', category: 'system' },
     {
       name: 'RDProposalCoverageReport',
       completeness: 100,
@@ -494,7 +494,7 @@ function ComprehensiveReportAudit() {
     goldStandard: reportsData.filter(r => r.status.includes('✅')).length
   };
 
-  const allActions = reportsData.flatMap(report => 
+  const allActions = reportsData.flatMap(report =>
     Object.values(report.sections).flatMap(section => section.actions || [])
   );
 
@@ -505,12 +505,12 @@ function ComprehensiveReportAudit() {
   };
 
   const totalActions = reportsData.reduce((sum, report) => {
-    return sum + Object.values(report.sections).reduce((sectionSum, section) => 
+    return sum + Object.values(report.sections).reduce((sectionSum, section) =>
       sectionSum + (section.actions?.length || 0), 0);
   }, 0);
 
-  const filteredReports = selectedPriority === 'all' 
-    ? reportsData 
+  const filteredReports = selectedPriority === 'all'
+    ? reportsData
     : reportsData.filter(r => r.priority === selectedPriority);
 
   return (
@@ -691,14 +691,14 @@ function ComprehensiveReportAudit() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex gap-3">
-                <Button 
+                <Button
                   variant={selectedPriority === 'all' ? 'default' : 'outline'}
                   onClick={() => setSelectedPriority('all')}
                   size="sm"
                 >
                   All ({reportsData.length})
                 </Button>
-                <Button 
+                <Button
                   variant={selectedPriority === 'reference' ? 'default' : 'outline'}
                   onClick={() => setSelectedPriority('reference')}
                   size="sm"
@@ -706,7 +706,7 @@ function ComprehensiveReportAudit() {
                 >
                   ✅ Reference ({actionsByPriority.reference.length})
                 </Button>
-                <Button 
+                <Button
                   variant={selectedPriority === 'high' ? 'default' : 'outline'}
                   onClick={() => setSelectedPriority('high')}
                   size="sm"
@@ -773,7 +773,7 @@ function ComprehensiveReportAudit() {
                         {Object.entries(report.sections).map(([sectionId, sectionData]) => {
                           const sectionInfo = standardSections.find(s => s.id === parseInt(sectionId));
                           const Icon = sectionInfo.icon;
-                          
+
                           return (
                             <div key={sectionId} className="p-4 border-2 rounded-lg bg-green-50 border-green-300">
                               <div className="flex items-start justify-between mb-3">
@@ -830,7 +830,7 @@ function ComprehensiveReportAudit() {
                   const sectionScores = reportsData.map(r => r.sections[section.id]?.score || 0);
                   const avgScore = Math.round(sectionScores.reduce((a, b) => a + b, 0) / sectionScores.length);
                   const completeCount = reportsData.filter(r => r.sections[section.id]?.status === 'complete').length;
-                  
+
                   return (
                     <div key={section.id} className="p-4 border rounded-lg">
                       <div className="flex items-center justify-between mb-3">
@@ -869,17 +869,17 @@ function ComprehensiveReportAudit() {
                 <p className="font-bold text-green-900 mb-2">📊 Coverage Summary</p>
                 <p className="text-sm text-green-800">
                   <strong>Total Reports:</strong> {completionStats.total} ({reportsData.filter(r => r.category === 'module').length} module + {reportsData.filter(r => r.category === 'system').length} system)
-                  <br/>
+                  <br />
                   <strong>Completion Rate:</strong> {completionStats.complete}/{completionStats.total} = 100%
-                  <br/>
+                  <br />
                   <strong>Average Coverage:</strong> {completionStats.avgCompleteness}%
-                  <br/><br/>
+                  <br /><br />
                   ✅ All 9 standard sections complete across all reports
-                  <br/>✅ Universal workflow system with 37 gates operational
-                  <br/>✅ Dual AI assistance (RequesterAI + ReviewerAI) everywhere
-                  <br/>✅ Full RBAC coverage with expert integration
-                  <br/>✅ Complete conversion network connecting all tracks
-                  <br/><br/>
+                  <br />✅ Universal workflow system with 37 gates operational
+                  <br />✅ Dual AI assistance (RequesterAI + ReviewerAI) everywhere
+                  <br />✅ Full RBAC coverage with expert integration
+                  <br />✅ Complete conversion network connecting all tracks
+                  <br /><br />
                   <strong>Bottom Line:</strong> All {completionStats.total} coverage reports production-ready
                 </p>
               </div>

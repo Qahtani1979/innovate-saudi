@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
+import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,25 +19,11 @@ function AdvancedSearch() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSearch, setActiveSearch] = useState(false);
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['all-challenges'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['all-pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['all-solutions'],
-    queryFn: () => base44.entities.Solution.list()
-  });
-
-  const { data: programs = [] } = useQuery({
-    queryKey: ['all-programs'],
-    queryFn: () => base44.entities.Program.list()
-  });
+  /* Use visibility hooks with high limit for search */
+  const { data: challenges = [] } = useChallengesWithVisibility({ limit: 1000 });
+  const { data: pilots = [] } = usePilotsWithVisibility({ limit: 1000 });
+  const { data: solutions = [] } = useSolutionsWithVisibility({ limit: 1000 });
+  const { data: programs = [] } = useProgramsWithVisibility({ limit: 1000 });
 
   const performSearch = () => {
     if (!searchQuery.trim()) return;
@@ -43,7 +31,7 @@ function AdvancedSearch() {
   };
 
   const searchResults = {
-    challenges: challenges.filter(c => 
+    challenges: challenges.filter(c =>
       c.title_en?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.title_ar?.includes(searchQuery) ||
       c.description_en?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -90,7 +78,7 @@ function AdvancedSearch() {
                 className={`${isRTL ? 'pr-12' : 'pl-12'} text-lg h-14`}
               />
             </div>
-            <Button 
+            <Button
               onClick={performSearch}
               className="bg-gradient-to-r from-blue-600 to-teal-600 h-14 px-8"
             >

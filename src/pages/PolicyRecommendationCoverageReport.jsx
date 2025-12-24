@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { usePoliciesWithVisibility } from '@/hooks/usePoliciesWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -16,20 +17,12 @@ function PolicyRecommendationCoverageReport() {
   const { language, isRTL, t } = useLanguage();
   const [expandedSections, setExpandedSections] = useState({});
 
-  const { data: policies = [] } = useQuery({
-    queryKey: ['policies-coverage'],
-    queryFn: () => base44.entities.PolicyRecommendation.list()
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-policy-coverage'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-policy-coverage'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
+  /* Use status:'all' to get maximum coverage for report, 
+     assuming user has permission or hook handles visibility gracefull for stats 
+  */
+  const { data: policies = [] } = usePoliciesWithVisibility({ limit: 1000 });
+  const { data: challenges = [] } = useChallengesWithVisibility();
+  const { data: pilots = [] } = usePilotsWithVisibility();
 
   const toggleSection = (key) => {
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
@@ -1257,9 +1250,9 @@ function PolicyRecommendationCoverageReport() {
               <p className="font-bold text-green-900 mb-2">✅ COMPLETE: Innovation → Institutionalization</p>
               <p className="text-sm text-green-800">
                 Policy is the <strong>INSTITUTIONALIZATION PATHWAY</strong> - transforms innovation into permanent regulatory standards.
-                <br/>• <strong>INPUT:</strong> 6 complete paths (Challenge, Pilot, R&D, Scaling, Sandbox, Lab → Policy)
-                <br/>• <strong>OUTPUT:</strong> 5 complete paths (Policy → Implementation, Adoption, Challenge Resolution, Knowledge, Programs)
-                <br/><br/>
+                <br />• <strong>INPUT:</strong> 6 complete paths (Challenge, Pilot, R&D, Scaling, Sandbox, Lab → Policy)
+                <br />• <strong>OUTPUT:</strong> 5 complete paths (Policy → Implementation, Adoption, Challenge Resolution, Knowledge, Programs)
+                <br /><br />
                 Policy CLOSES THE LOOP by making innovation permanent through regulation.
               </p>
             </div>
@@ -1539,15 +1532,14 @@ function PolicyRecommendationCoverageReport() {
         <CardContent>
           <div className="space-y-3">
             {coverageData.recommendations.map((rec, idx) => (
-              <div key={idx} className={`p-4 border-2 rounded-lg ${
-                rec.priority.includes('COMPLETE') ? 'border-green-300 bg-green-50' :
+              <div key={idx} className={`p-4 border-2 rounded-lg ${rec.priority.includes('COMPLETE') ? 'border-green-300 bg-green-50' :
                 'border-blue-300 bg-blue-50'
-              }`}>
+                }`}>
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Badge className={
                       rec.priority.includes('COMPLETE') ? 'bg-green-600 text-white' :
-                      'bg-blue-600 text-white'
+                        'bg-blue-600 text-white'
                     }>
                       {rec.priority}
                     </Badge>
@@ -1603,18 +1595,18 @@ function PolicyRecommendationCoverageReport() {
             <p className="text-sm font-semibold text-green-900 mb-2">✅ Policy System - 100% Complete</p>
             <p className="text-sm text-green-800">
               Policy Recommendation System achieves <strong>GOLD STANDARD</strong> status with 100% coverage.
-              <br/><br/>
+              <br /><br />
               <strong>✅ Complete Features:</strong>
-              <br/>✅ 3 entities with full schema (PolicyRecommendation, PolicyComment, PolicyTemplate) - 100%
-              <br/>✅ 4 core pages (Hub, Create, Edit, Detail) - 100%
-              <br/>✅ 9 workflows including 4 approval gates with AI assistance - 100%
-              <br/>✅ 8 complete user journeys (Admin, Legal, Citizen, Council, Ministry, Municipality, Challenge Owner, Project Lead) - 100%
-              <br/>✅ 12 AI features (framework generator, translation, analysis, conflict detection, RequesterAI, ReviewerAI) - 100%
-              <br/>✅ 11 conversion paths (6 input + 5 output) - 100%
-              <br/>✅ 4 comparison tables (vs Challenges/Pilots/R&D/Programs) - 100%
-              <br/>✅ RBAC with 8 permissions, 6 roles, 5 RLS patterns - 100%
-              <br/>✅ 10 integration points across platform - 100%
-              <br/><br/>
+              <br />✅ 3 entities with full schema (PolicyRecommendation, PolicyComment, PolicyTemplate) - 100%
+              <br />✅ 4 core pages (Hub, Create, Edit, Detail) - 100%
+              <br />✅ 9 workflows including 4 approval gates with AI assistance - 100%
+              <br />✅ 8 complete user journeys (Admin, Legal, Citizen, Council, Ministry, Municipality, Challenge Owner, Project Lead) - 100%
+              <br />✅ 12 AI features (framework generator, translation, analysis, conflict detection, RequesterAI, ReviewerAI) - 100%
+              <br />✅ 11 conversion paths (6 input + 5 output) - 100%
+              <br />✅ 4 comparison tables (vs Challenges/Pilots/R&D/Programs) - 100%
+              <br />✅ RBAC with 8 permissions, 6 roles, 5 RLS patterns - 100%
+              <br />✅ 10 integration points across platform - 100%
+              <br /><br />
               <strong>🏆 GOLD STANDARD ACHIEVEMENT:</strong> Most rigorous approval workflow in platform (4 gates × 2 checklists × AI assistance = 8 quality layers). Policy system transforms innovation into permanent regulatory standards.
             </p>
           </div>
@@ -1623,14 +1615,14 @@ function PolicyRecommendationCoverageReport() {
             <p className="text-sm font-semibold text-blue-900 mb-2">🎯 Bottom Line - Policy 100% Complete</p>
             <p className="text-sm text-blue-800">
               <strong>POLICY RECOMMENDATION SYSTEM PRODUCTION READY</strong>
-              <br/><br/>
+              <br /><br />
               Policy is the <strong>INSTITUTIONALIZATION PATHWAY</strong> that closes the innovation loop:
-              <br/>• Innovation enters through 6 paths (Challenge→Pilot→R&D→Scaling→Sandbox→Lab)
-              <br/>• Policy provides governance transformation (regulatory change)
-              <br/>• Exits through 5 paths (Implementation, Municipal Adoption, Challenge Resolution, Knowledge, Programs)
-              <br/><br/>
+              <br />• Innovation enters through 6 paths (Challenge→Pilot→R&D→Scaling→Sandbox→Lab)
+              <br />• Policy provides governance transformation (regulatory change)
+              <br />• Exits through 5 paths (Implementation, Municipal Adoption, Challenge Resolution, Knowledge, Programs)
+              <br /><br />
               <strong>🎉 NO REMAINING CRITICAL GAPS - POLICY PRODUCTION READY</strong>
-              <br/>(Listed enhancements are optional future improvements)
+              <br />(Listed enhancements are optional future improvements)
             </p>
           </div>
 

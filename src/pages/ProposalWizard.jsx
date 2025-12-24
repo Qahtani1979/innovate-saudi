@@ -1,6 +1,5 @@
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useRDCalls } from '@/hooks/useRDCalls';
+import { useRDProposalMutations } from '@/hooks/useRDProposalMutations';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,33 +50,14 @@ export default function ProposalWizard() {
   });
   const { invokeAI, status, isLoading: aiEnhancing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: rdCalls = [] } = useQuery({
-    queryKey: ['open-rd-calls'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_calls')
-        .select('*')
-        .eq('status', 'open')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: rdCalls = [] } = useRDCalls({ status: 'open' });
+  const { createRDProposal } = useRDProposalMutations();
 
-  const submitMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: result, error } = await supabase
-        .from('rd_proposals')
-        .insert([data])
-        .select()
-        .single();
-      if (error) throw error;
-      return result;
-    },
-    onSuccess: () => {
-      setStep(4);
-    }
-  });
+  const handleSubmit = () => {
+    createRDProposal.mutate({ ...formData, status: 'submitted' }, {
+      onSuccess: () => setStep(4)
+    });
+  };
 
   const selectedCall = rdCalls.find(c => c.id === formData.rd_call_id);
 
@@ -156,9 +136,7 @@ Align with Saudi Vision 2030 and municipal innovation goals.`,
     }
   };
 
-  const handleSubmit = () => {
-    submitMutation.mutate({ ...formData, status: 'submitted' });
-  };
+
 
   const progress = (step / 4) * 100;
 

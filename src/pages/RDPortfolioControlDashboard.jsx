@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useRDProjectsWithVisibility } from '@/hooks/useRDProjectsWithVisibility';
+import { useRDCallsWithVisibility } from '@/hooks/useRDCallsWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,32 +21,10 @@ function RDPortfolioControlDashboard() {
   const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   // RLS: Admins see all, researchers see their own projects
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects-portfolio', user?.email],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_projects')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user
-  });
+  const { data: rdProjects = [] } = useRDProjectsWithVisibility({ limit: 500 });
 
   // RLS: R&D calls
-  const { data: rdCalls = [] } = useQuery({
-    queryKey: ['rd-calls-portfolio'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_calls')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user
-  });
+  const { data: rdCalls = [] } = useRDCallsWithVisibility({ limit: 200 });
 
   const activeProjects = rdProjects.filter(p => p.status === 'active');
   const totalPublications = rdProjects.reduce((sum, p) => sum + (p.publications?.length || 0), 0);
@@ -220,6 +198,6 @@ Provide:
   );
 }
 
-export default ProtectedPage(RDPortfolioControlDashboard, { 
-  requiredPermissions: ['rd_view_portfolio'] 
+export default ProtectedPage(RDPortfolioControlDashboard, {
+  requiredPermissions: ['rd_view_portfolio']
 });

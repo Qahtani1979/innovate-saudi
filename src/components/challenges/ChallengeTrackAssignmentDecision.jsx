@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,48 +9,50 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useAuth } from '@/lib/AuthContext';
-import { 
-  TRACK_DECISION_SYSTEM_PROMPT, 
-  buildTrackDecisionPrompt, 
-  TRACK_DECISION_SCHEMA 
+import {
+  TRACK_DECISION_SYSTEM_PROMPT,
+  buildTrackDecisionPrompt,
+  TRACK_DECISION_SCHEMA
 } from '@/lib/ai/prompts/challenges/trackDecision';
 
+import { useAssignChallengeTracks } from '@/hooks/useChallengeMutations';
+
 export default function ChallengeTrackAssignmentDecision({ challenge, onClose }) {
-  const { language, t } = useLanguage();
-  const queryClient = useQueryClient();
+  const { language, isRTL, t } = useLanguage();
+  // queryClient removed
   const { user } = useAuth();
   const [selectedTracks, setSelectedTracks] = useState(challenge.tracks || []);
   const [rationale, setRationale] = useState('');
   const { invokeAI, status, isLoading: aiProcessing, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const tracks = [
-    { 
-      id: 'pilot', 
-      icon: TestTube, 
+    {
+      id: 'pilot',
+      icon: TestTube,
       name: { en: 'Pilot Testing', ar: 'التجريب' },
       description: { en: 'Test innovative solutions in real-world conditions', ar: 'اختبار حلول مبتكرة في ظروف حقيقية' }
     },
-    { 
-      id: 'r_and_d', 
-      icon: Microscope, 
+    {
+      id: 'r_and_d',
+      icon: Microscope,
       name: { en: 'Research & Development', ar: 'البحث والتطوير' },
       description: { en: 'Fund research to develop new approaches', ar: 'تمويل بحث لتطوير نهج جديد' }
     },
-    { 
-      id: 'program', 
-      icon: Calendar, 
+    {
+      id: 'program',
+      icon: Calendar,
       name: { en: 'Innovation Program', ar: 'برنامج ابتكار' },
       description: { en: 'Launch challenge-based program to source solutions', ar: 'إطلاق برنامج قائم على التحديات' }
     },
-    { 
-      id: 'procurement', 
-      icon: Shield, 
+    {
+      id: 'procurement',
+      icon: Shield,
       name: { en: 'Direct Procurement', ar: 'المشتريات المباشرة' },
       description: { en: 'Acquire off-the-shelf solution', ar: 'شراء حل جاهز' }
     },
-    { 
-      id: 'policy', 
-      icon: Shield, 
+    {
+      id: 'policy',
+      icon: Shield,
       name: { en: 'Policy Recommendation', ar: 'توصية سياسات' },
       description: { en: 'Develop policy to address challenge', ar: 'تطوير سياسة لمعالجة التحدي' }
     }
@@ -60,7 +60,7 @@ export default function ChallengeTrackAssignmentDecision({ challenge, onClose })
 
   const handleAISuggestion = async () => {
     if (!isAvailable) return;
-    
+
     const result = await invokeAI({
       system_prompt: TRACK_DECISION_SYSTEM_PROMPT,
       prompt: buildTrackDecisionPrompt({ challenge }),
@@ -74,36 +74,18 @@ export default function ChallengeTrackAssignmentDecision({ challenge, onClose })
     }
   };
 
-  const assignMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('challenges')
-        .update({
-          tracks: selectedTracks,
-          track_assignment_rationale: rationale,
-          track_assigned_by: user?.email,
-          track_assigned_date: new Date().toISOString()
-        })
-        .eq('id', challenge.id);
-      if (error) throw error;
+  const assignMutation = useAssignChallengeTracks();
 
-      // Log activity
-      await supabase.from('system_activities').insert({
-        entity_type: 'Challenge',
-        entity_id: challenge.id,
-        activity_type: 'track_assigned',
-        description: `Treatment tracks assigned: ${selectedTracks.join(', ')}`,
-        performed_by: user?.email,
-        timestamp: new Date().toISOString(),
-        metadata: { tracks: selectedTracks, rationale }
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['challenge'] });
-      toast.success(t({ en: 'Tracks assigned successfully', ar: 'تم تعيين المسارات بنجاح' }));
-      onClose?.();
-    }
-  });
+  const handleAssign = () => {
+    assignMutation.mutate({
+      challengeId: challenge.id,
+      selectedTracks,
+      rationale,
+      userEmail: user?.email
+    }, {
+      onSuccess: () => onClose?.()
+    });
+  };
 
   return (
     <Card className="border-2 border-blue-400 bg-white">
@@ -127,7 +109,7 @@ export default function ChallengeTrackAssignmentDecision({ challenge, onClose })
       <CardContent className="space-y-6">
         <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
         <p className="text-sm text-slate-600">
-          {t({ 
+          {t({
             en: 'Select one or more treatment tracks for this challenge. Multiple tracks can be pursued simultaneously.',
             ar: 'اختر مسار معالجة واحد أو أكثر لهذا التحدي. يمكن اتباع مسارات متعددة في آن واحد.'
           })}
@@ -149,9 +131,8 @@ export default function ChallengeTrackAssignmentDecision({ challenge, onClose })
                     setSelectedTracks([...selectedTracks, track.id]);
                   }
                 }}
-                className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                  isSelected ? 'bg-blue-50 border-blue-400' : 'border-slate-200 hover:border-blue-300'
-                }`}
+                className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${isSelected ? 'bg-blue-50 border-blue-400' : 'border-slate-200 hover:border-blue-300'
+                  }`}
               >
                 <div className="flex items-start gap-3">
                   <div className={`h-10 w-10 rounded-lg ${isSelected ? 'bg-blue-600' : 'bg-slate-200'} flex items-center justify-center`}>
@@ -190,7 +171,7 @@ export default function ChallengeTrackAssignmentDecision({ challenge, onClose })
 
         {/* Submit */}
         <Button
-          onClick={() => assignMutation.mutate()}
+          onClick={handleAssign}
           disabled={selectedTracks.length === 0 || assignMutation.isPending}
           className="w-full bg-gradient-to-r from-blue-600 to-teal-600"
           size="lg"

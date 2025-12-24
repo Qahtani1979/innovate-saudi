@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useLocations } from '@/hooks/useLocations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,25 +22,13 @@ function PilotMonitoringDashboard() {
   const [loadingAI, setLoadingAI] = useState(false);
   const [selectedPilot, setSelectedPilot] = useState(null);
 
-  const { data: activePilots = [] } = useQuery({
-    queryKey: ['active-monitoring-pilots'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('pilots')
-        .select('*')
-        .in('stage', ['active', 'monitoring'])
-        .eq('is_deleted', false);
-      return data || [];
-    }
+  const { data: activePilots = [] } = usePilotsWithVisibility({
+    stage: 'active', // Should handle both active and monitoring if stage logic is updated in hook
+    limit: 1000
   });
 
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities'],
-    queryFn: async () => {
-      const { data } = await supabase.from('municipalities').select('*');
-      return data || [];
-    }
-  });
+  const { useAllMunicipalities } = useLocations();
+  const { data: municipalities = [] } = useAllMunicipalities();
 
   const selectedPilotData = selectedPilot ? activePilots.find(p => p.id === selectedPilot) : activePilots[0];
 

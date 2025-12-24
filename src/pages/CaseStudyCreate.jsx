@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useMutation } from '@tanstack/react-query';
+import { useCaseStudyMutations } from '../hooks/useCaseStudies';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,13 +33,7 @@ function CaseStudyCreate() {
     tags: []
   });
 
-  const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.CaseStudy.create(data),
-    onSuccess: () => {
-      toast.success(t({ en: 'Case study created', ar: 'تم إنشاء دراسة الحالة' }));
-      navigate(createPageUrl('Knowledge'));
-    }
-  });
+  const { createCaseStudy } = useCaseStudyMutations();
 
   return (
     <div className="max-w-4xl mx-auto space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -131,7 +124,7 @@ function CaseStudyCreate() {
 
           <div className="border-t pt-6 space-y-4">
             <h3 className="font-semibold text-slate-900">{t({ en: 'Media Assets', ar: 'الوسائط' })}</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t({ en: 'Main Image', ar: 'الصورة الرئيسية' })}</Label>
@@ -140,6 +133,7 @@ function CaseStudyCreate() {
                   label={t({ en: 'Upload Image', ar: 'رفع صورة' })}
                   maxSize={10}
                   onUploadComplete={(url) => setFormData({ ...formData, image_url: url })}
+                  description="Upload the main case study image"
                 />
               </div>
 
@@ -150,6 +144,7 @@ function CaseStudyCreate() {
                   label={t({ en: 'Upload Thumbnail', ar: 'رفع صورة مصغرة' })}
                   maxSize={5}
                   onUploadComplete={(url) => setFormData({ ...formData, thumbnail_url: url })}
+                  description="Upload a thumbnail version"
                 />
               </div>
             </div>
@@ -174,6 +169,7 @@ function CaseStudyCreate() {
                 maxSize={50}
                 preview={false}
                 onUploadComplete={(url) => setFormData({ ...formData, document_url: url })}
+                description="Upload the full PDF report"
               />
             </div>
           </div>
@@ -186,11 +182,13 @@ function CaseStudyCreate() {
               {t({ en: 'Cancel', ar: 'إلغاء' })}
             </Button>
             <Button
-              onClick={() => createMutation.mutate(formData)}
-              disabled={!formData.title_en || createMutation.isPending}
+              onClick={() => createCaseStudy.mutate(formData, {
+                onSuccess: () => navigate(createPageUrl('Knowledge'))
+              })}
+              disabled={!formData.title_en || createCaseStudy.isPending}
               className="bg-gradient-to-r from-green-600 to-emerald-600"
             >
-              {createMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {createCaseStudy.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {t({ en: 'Create Case Study', ar: 'إنشاء دراسة الحالة' })}
             </Button>
           </div>

@@ -1,15 +1,14 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Zap, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useChallengeMutations } from '@/hooks/useChallengeMutations';
 
 export default function QuickFixWorkflow({ challenge, onComplete }) {
-  const queryClient = useQueryClient();
+  const { updateChallenge } = useChallengeMutations();
   const [fixData, setFixData] = useState({
     fix_description: '',
     fix_cost: '',
@@ -18,33 +17,41 @@ export default function QuickFixWorkflow({ challenge, onComplete }) {
     fix_category: 'operational'
   });
 
-  const quickFixMutation = useMutation({
-    mutationFn: async (data) => {
-      // Update challenge with quick fix resolution
-      const { error } = await supabase.from('challenges').update({
-        status: 'resolved',
-        resolution_date: new Date().toISOString(),
-        treatment_plan: {
-          approach: 'quick_fix',
-          ...data
-        },
-        track: 'operational'
-      }).eq('id', challenge.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['challenges'] });
-      toast.success('Challenge resolved via quick fix');
-      onComplete?.();
-    }
-  });
-
   const handleSubmit = () => {
     if (!fixData.fix_description) {
       toast.error('Please describe the fix implemented');
       return;
     }
-    quickFixMutation.mutate(fixData);
+
+    updateChallenge.mutate({
+      id: challenge.id,
+      data: {
+        status: 'resolved',
+        resolution_date: new Date().toISOString(),
+        track: 'operational',
+        treatment_plan: {
+          approach: 'quick_fix',
+          ...fixData
+        }
+      },
+      activityLog: {
+        activity_type: 'resolved',
+        description: 'Challenge resolved via Quick Fix',
+        details: fixData
+      }
+    }, {
+      onSuccess: () => {
+        // onSuccess handled by hook (toast), but we want custom toast? 
+        // The hook handles generic success. We can add additional actions here if needed.
+        // But hook's onSuccess runs first? No, passed options override? 
+        // TanStack Query v5: callbacks on mutate override? No, they run in addition or override depending on config.
+        // Actually, updateChallenge definition in hook has its own onSuccess.
+        // If I pass { onSuccess } to mutate, it fires *after* mutationFn settles. 
+        // Ideally rely on hook's defaults for standard stuff.
+        toast.success('Challenge resolved via quick fix');
+        onComplete?.();
+      }
+    });
   };
 
   return (
@@ -58,8 +65,8 @@ export default function QuickFixWorkflow({ challenge, onComplete }) {
       <CardContent className="space-y-4">
         <div className="p-3 bg-green-50 rounded-lg border border-green-300">
           <p className="text-sm text-green-900">
-            <strong>Quick Fix Path:</strong> For low-complexity operational challenges that can be resolved 
-            directly without experimentation. Ideal for maintenance issues, simple process improvements, 
+            <strong>Quick Fix Path:</strong> For low-complexity operational challenges that can be resolved
+            directly without experimentation. Ideal for maintenance issues, simple process improvements,
             or administrative fixes.
           </p>
         </div>
@@ -112,12 +119,12 @@ export default function QuickFixWorkflow({ challenge, onComplete }) {
           />
         </div>
 
-        <Button 
-          onClick={handleSubmit} 
-          disabled={quickFixMutation.isPending}
+        <Button
+          onClick={handleSubmit}
+          disabled={updateChallenge.isPending}
           className="w-full bg-green-600"
         >
-          {quickFixMutation.isPending ? (
+          {updateChallenge.isPending ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
           ) : (
             <CheckCircle2 className="h-4 w-4 mr-2" />

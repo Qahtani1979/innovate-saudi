@@ -8,9 +8,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/components/LanguageContext';
 import { useCommunicationPlans } from '@/hooks/strategy/useCommunicationPlans';
 import { useCommunicationAI } from '@/hooks/strategy/useCommunicationAI';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { 
+import { useCommunicationAudienceStats } from '@/hooks/strategy/useCommunicationAudienceStats';
+import { useEventsWithVisibility } from '@/hooks/useEventsWithVisibility';
+import { useCaseStudiesWithVisibility } from '@/hooks/useCaseStudiesWithVisibility';
+import {
   Megaphone, Users, MessageSquare, Calendar, Sparkles, Save, Radio, Mail, Globe, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -36,7 +37,7 @@ export default function StrategyCommunicationPlanner({ strategicPlanId }) {
   const { t, language } = useLanguage();
   const { plans, createPlan, isCreating } = useCommunicationPlans(strategicPlanId);
   const { generateKeyMessages, suggestChannelStrategy, generateContentCalendar, isLoading: isAILoading } = useCommunicationAI();
-  
+
   const [activeTab, setActiveTab] = useState('audiences');
   const [planData, setPlanData] = useState({
     name_en: '',
@@ -52,80 +53,19 @@ export default function StrategyCommunicationPlanner({ strategicPlanId }) {
   });
 
   // Fetch real stakeholder data for audience counts
-  const { data: stakeholderCounts = {} } = useQuery({
-    queryKey: ['stakeholder-counts', strategicPlanId],
-    queryFn: async () => {
-      const [citizensRes, municipalitiesRes, partnersRes, usersRes] = await Promise.all([
-        supabase.from('citizen_profiles').select('id', { count: 'exact', head: true }),
-        supabase.from('municipalities').select('id', { count: 'exact', head: true }).eq('is_active', true),
-        supabase.from('organizations').select('id', { count: 'exact', head: true }),
-        supabase.from('user_profiles').select('id', { count: 'exact', head: true })
-      ]);
-      
-      return {
-        citizens: citizensRes.count || 0,
-        municipalities: municipalitiesRes.count || 0,
-        partners: partnersRes.count || 0,
-        leadership: usersRes.count || 0
-      };
-    }
-  });
-
-  // Fetch existing communication plans
-  const { data: existingPlans = [] } = useQuery({
-    queryKey: ['existing-comm-plans', strategicPlanId],
-    queryFn: async () => {
-      let query = supabase
-        .from('communication_plans')
-        .select('id, name_en, name_ar, status, created_at')
-        .order('created_at', { ascending: false })
-        .limit(5);
-      
-      if (strategicPlanId) {
-        query = query.eq('strategic_plan_id', strategicPlanId);
-      }
-      
-      const { data, error } = await query;
-      if (error) return [];
-      return data || [];
-    }
-  });
+  const { data: stakeholderCounts = {} } = useCommunicationAudienceStats();
 
   // Fetch related events for content calendar integration
-  const { data: relatedEvents = [] } = useQuery({
-    queryKey: ['related-events-comm', strategicPlanId],
-    queryFn: async () => {
-      let query = supabase
-        .from('events')
-        .select('id, title_en, title_ar, start_date, event_type')
-        .gte('start_date', new Date().toISOString())
-        .eq('is_deleted', false)
-        .order('start_date', { ascending: true })
-        .limit(10);
-      
-      if (strategicPlanId) {
-        query = query.contains('strategic_plan_ids', [strategicPlanId]);
-      }
-      
-      const { data, error } = await query;
-      if (error) return [];
-      return data || [];
-    }
+  const { data: relatedEvents = [] } = useEventsWithVisibility({
+    strategicPlanId,
+    upcoming: true,
+    limit: 10
   });
 
   // Fetch case studies for content library
-  const { data: caseStudies = [] } = useQuery({
-    queryKey: ['case-studies-comm', strategicPlanId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('case_studies')
-        .select('id, title_en, title_ar, is_featured, is_published')
-        .eq('is_published', true)
-        .order('created_at', { ascending: false })
-        .limit(10);
-      if (error) return [];
-      return data || [];
-    }
+  const { data: caseStudies = [] } = useCaseStudiesWithVisibility({
+    featuredOnly: true, // Assuming we want featured/published ones
+    limit: 10
   });
 
   const handleAudienceToggle = (audienceId) => {
@@ -172,7 +112,7 @@ export default function StrategyCommunicationPlanner({ strategicPlanId }) {
 
   const handleSuggestChannels = async () => {
     try {
-      const audiences = planData.target_audiences.map(id => 
+      const audiences = planData.target_audiences.map(id =>
         AUDIENCE_TYPES.find(a => a.id === id)?.label_en
       );
       const result = await suggestChannelStrategy(audiences, [planData.description_en]);
@@ -281,13 +221,12 @@ export default function StrategyCommunicationPlanner({ strategicPlanId }) {
               </p>
               <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                 {AUDIENCE_TYPES.map(audience => (
-                  <Card 
+                  <Card
                     key={audience.id}
-                    className={`cursor-pointer transition-all ${
-                      planData.target_audiences.includes(audience.id) 
-                        ? 'border-primary bg-primary/5' 
+                    className={`cursor-pointer transition-all ${planData.target_audiences.includes(audience.id)
+                        ? 'border-primary bg-primary/5'
                         : 'hover:border-primary/50'
-                    }`}
+                      }`}
                     onClick={() => handleAudienceToggle(audience.id)}
                   >
                     <CardContent className="p-4 flex items-center gap-3">
@@ -311,7 +250,7 @@ export default function StrategyCommunicationPlanner({ strategicPlanId }) {
                   {t({ en: 'AI Generate', ar: 'توليد ذكي' })}
                 </Button>
               </div>
-              
+
               <div className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">{t({ en: 'Master Narrative (English)', ar: 'السرد الأساسي (إنجليزي)' })}</label>
@@ -364,11 +303,10 @@ export default function StrategyCommunicationPlanner({ strategicPlanId }) {
                 {CHANNELS.map(channel => {
                   const isSelected = planData.channel_strategy.some(c => c.channel === channel.id);
                   return (
-                    <Card 
+                    <Card
                       key={channel.id}
-                      className={`cursor-pointer transition-all ${
-                        isSelected ? 'border-primary bg-primary/5' : 'hover:border-primary/50'
-                      }`}
+                      className={`cursor-pointer transition-all ${isSelected ? 'border-primary bg-primary/5' : 'hover:border-primary/50'
+                        }`}
                       onClick={() => handleChannelToggle(channel.id)}
                     >
                       <CardContent className="p-4 flex items-center justify-between">

@@ -1,5 +1,3 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '../components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,28 +8,15 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useRDProjectsWithVisibility } from '@/hooks/useRDProjectsWithVisibility';
+import { useRDProposalsWithVisibility } from '@/hooks/useRDProposalsWithVisibility';
 
 function InstitutionRDDashboard() {
   const { language, isRTL, t } = useLanguage();
   const { user } = useAuth();
 
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['institution-rd-projects'],
-    queryFn: async () => {
-      const { data } = await supabase.from('rd_projects').select('*');
-      return data || [];
-    },
-    enabled: !!user
-  });
-
-  const { data: rdProposals = [] } = useQuery({
-    queryKey: ['institution-rd-proposals'],
-    queryFn: async () => {
-      const { data } = await supabase.from('rd_proposals').select('*');
-      return data || [];
-    },
-    enabled: !!user
-  });
+  const { data: rdProjects = [] } = useRDProjectsWithVisibility();
+  const { data: rdProposals = [] } = useRDProposalsWithVisibility();
 
   const activeProjects = rdProjects.filter(p => p.status === 'active');
   const completedProjects = rdProjects.filter(p => p.status === 'completed');

@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,6 +13,7 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader, PersonaButton } from '@/components/layout/PersonaPageLayout';
+import { useCommandCenterData } from '@/hooks/useCommandCenterData';
 import { COMMAND_CENTER_PROMPT_TEMPLATE, COMMAND_CENTER_SCHEMA, COMMAND_CENTER_SYSTEM_PROMPT } from '@/lib/ai/prompts/command/strategicRecommendations';
 
 function CommandCenterPage() {
@@ -22,64 +21,25 @@ function CommandCenterPage() {
   const [aiRecommendations, setAiRecommendations] = useState(null);
   const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-command'],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*');
-      return data || [];
-    }
-  });
+  const {
+    challenges,
+    pilots,
+    criticalItems,
+    pendingApprovals,
+    activeOperations,
+    expertStats,
+    isLoading
+  } = useCommandCenterData();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-command'],
-    queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*');
-      return data || [];
-    }
-  });
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
 
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs-command'],
-    queryFn: async () => {
-      const { data } = await supabase.from('programs').select('*');
-      return data || [];
-    }
-  });
-
-  const { data: expertProfiles = [] } = useQuery({
-    queryKey: ['experts-command'],
-    queryFn: async () => {
-      const { data } = await supabase.from('expert_profiles').select('*');
-      return data || [];
-    }
-  });
-
-  const { data: expertAssignments = [] } = useQuery({
-    queryKey: ['assignments-command'],
-    queryFn: async () => {
-      const { data } = await supabase.from('expert_assignments').select('*');
-      return data || [];
-    }
-  });
-
-  const criticalItems = [
-    ...challenges.filter(c => c.priority === 'tier_1' && c.status === 'under_review'),
-    ...pilots.filter(p => p.risk_level === 'high' && ['active', 'monitoring'].includes(p.stage))
-  ];
-
-  const pendingApprovals = [
-    ...challenges.filter(c => c.status === 'submitted'),
-    ...pilots.filter(p => p.stage === 'approval_pending')
-  ];
-
-  const activeOperations = pilots.filter(p => ['active', 'monitoring'].includes(p.stage));
-
-  const activeExperts = expertProfiles.filter(e => e.is_active).length;
-  const availableExperts = expertProfiles.filter(e =>
-    e.is_active &&
-    (expertAssignments.filter(a => a.expert_email === e.user_email && ['pending', 'in_progress'].includes(a.status)).length < 3)
-  );
-  const expertCapacityRate = activeExperts > 0 ? Math.round((availableExperts.length / activeExperts) * 100) : 0;
+  const { activeExperts, availableExperts, expertCapacityRate } = expertStats;
 
   const generateAIRecommendations = async () => {
     const result = await invokeAI({
@@ -109,15 +69,12 @@ function CommandCenterPage() {
           { icon: Clock, value: pendingApprovals.length, label: { en: 'Pending', ar: 'معلق' } },
           { icon: AlertTriangle, value: criticalItems.length, label: { en: 'Critical', ar: 'حرج' } }
         ]}
-        action={
-          <PersonaButton onClick={generateAIRecommendations} disabled={aiLoading || !isAvailable}>
-            {aiLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-            {t({ en: 'AI Strategy', ar: 'استراتيجية ذكية' })}
-          </PersonaButton>
-        }
-      />
+        action={<PersonaButton onClick={generateAIRecommendations} disabled={aiLoading || !isAvailable}>
+          {aiLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+          {t({ en: 'AI Strategy', ar: 'استراتيجية ذكية' })}
+        </PersonaButton>} subtitle={undefined} actions={undefined} children={undefined} />
 
-      <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} />
+      <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} error={undefined} />
 
       {/* Status Overview */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">

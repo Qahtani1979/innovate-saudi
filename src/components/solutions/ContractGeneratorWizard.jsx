@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,11 +12,12 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { useCreateContract } from '@/hooks/useSolutionWorkflows';
 import { getSystemPrompt } from '@/lib/saudiContext';
-import { 
-  buildContractGeneratorPrompt, 
+import {
+  buildContractGeneratorPrompt,
   contractGeneratorSchema,
-  CONTRACT_GENERATOR_SYSTEM_PROMPT 
+  CONTRACT_GENERATOR_SYSTEM_PROMPT
 } from '@/lib/ai/prompts/solution';
 
 export default function ContractGeneratorWizard({ solution, pilot, onComplete, onCancel }) {
@@ -25,7 +25,7 @@ export default function ContractGeneratorWizard({ solution, pilot, onComplete, o
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState(0);
   const { invokeAI, status, isLoading: isAIGenerating, isAvailable, rateLimitInfo } = useAIWithFallback();
-  
+
   const [contractData, setContractData] = useState({
     contract_number: `CTR-${Date.now()}`,
     title_en: `${solution?.name_en || 'Solution'} Deployment Agreement`,
@@ -76,39 +76,33 @@ export default function ContractGeneratorWizard({ solution, pilot, onComplete, o
   };
 
   const { triggerEmail } = useEmailTrigger();
+  const createContractMutation = useCreateContract();
 
-  const createContractMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: contract, error } = await supabase.from('contracts').insert(data).select().single();
-      if (error) throw error;
-      return contract;
-    },
-    onSuccess: async (createdContract) => {
-      queryClient.invalidateQueries(['contracts']);
-      toast.success(t({ en: 'Contract created', ar: 'تم إنشاء العقد' }));
-      
-      try {
-        await triggerEmail('contract.created', {
-          entity_type: 'contract',
-          entity_id: createdContract?.id,
-          entity_data: {
-            ...contractData,
-            solution_name: solution?.name_en,
-            pilot_title: pilot?.title_en,
-            provider_name: solution?.provider_name
-          },
-          language
-        });
-      } catch (error) {
-        console.error('Failed to send contract.created email:', error);
+  const handleContractCreation = (data) => {
+    createContractMutation.mutate(data, {
+      onSuccess: async (createdContract) => {
+        try {
+          await triggerEmail('contract.created', {
+            entity_type: 'contract',
+            entity_id: createdContract?.id,
+            entity_data: {
+              ...contractData,
+              solution_name: solution?.name_en,
+              pilot_title: pilot?.title_en,
+              provider_name: solution?.provider_name
+            },
+            language
+          });
+        } catch (error) {
+          console.error('Failed to send contract.created email:', error);
+        }
+        onComplete?.();
       }
-      
-      onComplete?.();
-    }
-  });
+    });
+  };
 
   const handleSubmit = () => {
-    createContractMutation.mutate(contractData);
+    handleContractCreation(contractData);
   };
 
   return (
@@ -148,8 +142,8 @@ export default function ContractGeneratorWizard({ solution, pilot, onComplete, o
                 {t({ en: 'Generate a contract using AI based on solution and pilot details', ar: 'توليد عقد باستخدام الذكاء الاصطناعي بناءً على تفاصيل الحل والتجربة' })}
               </p>
             </div>
-            <Button 
-              onClick={generateContract} 
+            <Button
+              onClick={generateContract}
               disabled={isAIGenerating || !isAvailable}
               className="w-full"
             >
@@ -176,7 +170,7 @@ export default function ContractGeneratorWizard({ solution, pilot, onComplete, o
                 <Input
                   type="number"
                   value={contractData.contract_value}
-                  onChange={(e) => setContractData({...contractData, contract_value: parseFloat(e.target.value)})}
+                  onChange={(e) => setContractData({ ...contractData, contract_value: parseFloat(e.target.value) })}
                 />
               </div>
               <div className="space-y-2">
@@ -184,7 +178,7 @@ export default function ContractGeneratorWizard({ solution, pilot, onComplete, o
                 <Input
                   type="date"
                   value={contractData.end_date}
-                  onChange={(e) => setContractData({...contractData, end_date: e.target.value})}
+                  onChange={(e) => setContractData({ ...contractData, end_date: e.target.value })}
                 />
               </div>
             </div>
@@ -193,7 +187,7 @@ export default function ContractGeneratorWizard({ solution, pilot, onComplete, o
               <Label>{t({ en: 'Terms & Conditions', ar: 'الشروط والأحكام' })}</Label>
               <Textarea
                 value={contractData.terms_and_conditions}
-                onChange={(e) => setContractData({...contractData, terms_and_conditions: e.target.value})}
+                onChange={(e) => setContractData({ ...contractData, terms_and_conditions: e.target.value })}
                 rows={8}
               />
             </div>
@@ -226,14 +220,14 @@ export default function ContractGeneratorWizard({ solution, pilot, onComplete, o
         )}
 
         <div className="flex justify-between pt-6 border-t">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => currentStep > 0 ? setCurrentStep(currentStep - 1) : onCancel?.()}
           >
             <ChevronLeft className="h-4 w-4 mr-2" />
             {currentStep === 0 ? t({ en: 'Cancel', ar: 'إلغاء' }) : t({ en: 'Back', ar: 'السابق' })}
           </Button>
-          
+
           {currentStep < steps.length - 1 ? (
             <Button onClick={() => setCurrentStep(currentStep + 1)}>
               {t({ en: 'Next', ar: 'التالي' })}

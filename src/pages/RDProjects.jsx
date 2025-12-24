@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +34,7 @@ import { usePermissions } from '../components/permissions/usePermissions';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useRDProjectsWithVisibility } from '@/hooks/useRDProjectsWithVisibility';
+import { useRDProjectMutations } from '@/hooks/useRDProjectMutations';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function RDProjectsPage() {
@@ -47,26 +46,15 @@ function RDProjectsPage() {
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState(null);
   const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
-  const queryClient = useQueryClient();
+
+
+  const { deleteRDProject } = useRDProjectMutations();
 
   // Use visibility-aware hook for R&D projects
   const { data: projects = [], isLoading, error: projectsError } = useRDProjectsWithVisibility({
     status: filterStatus !== 'all' ? filterStatus : undefined,
     limit: 100,
     staleTime: 5 * 60 * 1000
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      const { error } = await supabase
-        .from('rd_projects')
-        .update({ is_deleted: true, deleted_date: new Date().toISOString() })
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['rd-projects']);
-    }
   });
 
   const filteredProjects = projects.filter(project => {
@@ -138,7 +126,8 @@ Return each insight with both _en and _ar versions.`,
           collaboration_opportunities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
           priority_areas: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
         }
-      }
+      },
+      system_prompt: "You are an expert R&D consultant helping to analyze portfolio data."
     });
     if (result.success) {
       setAiInsights(result.data);
@@ -210,7 +199,10 @@ Return each insight with both _en and _ar versions.`,
         icon={FlaskConical}
         title={{ en: 'R&D Projects', ar: 'مشاريع البحث والتطوير' }}
         description={{ en: 'Research and development initiatives', ar: 'مبادرات البحث والتطوير والابتكار' }}
+        subtitle={{ en: 'Manage Portfolio', ar: 'إدارة المحفظة' }}
         actions={headerActions}
+        action={null}
+        children={null}
       />
 
       <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -228,7 +220,7 @@ Return each insight with both _en and _ar versions.`,
               </Button>
             </CardHeader>
             <CardContent>
-              <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+              <AIStatusIndicator status={status} error={null} rateLimitInfo={rateLimitInfo} className="mb-4" />
               {aiLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin text-purple-600" />

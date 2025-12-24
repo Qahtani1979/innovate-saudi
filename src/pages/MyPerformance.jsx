@@ -1,53 +1,29 @@
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../components/LanguageContext';
 import { Award, Target, Zap, CheckCircle2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useUserAnalytics } from '@/hooks/useUserAnalytics';
+import { Skeleton } from "@/components/ui/skeleton";
 
 function MyPerformance() {
   const { language, isRTL, t } = useLanguage();
-  const { user } = useAuth();
+  const { metrics, monthlyActivity, isLoading } = useUserAnalytics();
 
-  const { data: myChallenges = [] } = useQuery({
-    queryKey: ['my-challenges-perf', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false).eq('created_by', user?.email);
-      return data || [];
-    },
-    enabled: !!user
-  });
-
-  const { data: myPilots = [] } = useQuery({
-    queryKey: ['my-pilots-perf', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*').eq('is_deleted', false).eq('created_by', user?.email);
-      return data || [];
-    },
-    enabled: !!user
-  });
-
-  const { data: myTasks = [] } = useQuery({
-    queryKey: ['my-tasks-perf', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('tasks').select('*').or(`assigned_to.eq.${user?.email},created_by.eq.${user?.email}`);
-      return data || [];
-    },
-    enabled: !!user
-  });
-
-  const completionRate = myTasks.length > 0 ? Math.round((myTasks.filter(t => t.status === 'completed').length / myTasks.length) * 100) : 0;
-  const scaledPilots = myPilots.filter(p => p.stage === 'scaled').length;
-  const impactScore = Math.min(100, (myChallenges.length * 1 + myPilots.length * 3 + scaledPilots * 10));
-
-  const monthlyActivity = [
-    { month: 'Jan', challenges: 2, pilots: 1 },
-    { month: 'Feb', challenges: 3, pilots: 2 },
-    { month: 'Mar', challenges: 1, pilots: 1 },
-    { month: 'Apr', challenges: 2, pilots: 0 }
-  ];
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-12 w-1/3" />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Skeleton className="h-32" /><Skeleton className="h-32" /><Skeleton className="h-32" /><Skeleton className="h-32" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Skeleton className="h-80" /><Skeleton className="h-80" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -65,7 +41,7 @@ function MyPerformance() {
         <Card className="bg-gradient-to-br from-blue-50 to-white">
           <CardContent className="pt-6 text-center">
             <Target className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-blue-600">{myChallenges.length}</p>
+            <p className="text-3xl font-bold text-blue-600">{metrics.challengesCount}</p>
             <p className="text-sm text-slate-600">{t({ en: 'Challenges Created', ar: 'تحديات منشأة' })}</p>
           </CardContent>
         </Card>
@@ -73,7 +49,7 @@ function MyPerformance() {
         <Card className="bg-gradient-to-br from-purple-50 to-white">
           <CardContent className="pt-6 text-center">
             <Zap className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-purple-600">{myPilots.length}</p>
+            <p className="text-3xl font-bold text-purple-600">{metrics.pilotsCount}</p>
             <p className="text-sm text-slate-600">{t({ en: 'Pilots Launched', ar: 'تجارب مطلقة' })}</p>
           </CardContent>
         </Card>
@@ -81,7 +57,7 @@ function MyPerformance() {
         <Card className="bg-gradient-to-br from-green-50 to-white">
           <CardContent className="pt-6 text-center">
             <CheckCircle2 className="h-8 w-8 text-green-600 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-green-600">{completionRate}%</p>
+            <p className="text-3xl font-bold text-green-600">{metrics.completionRate}%</p>
             <p className="text-sm text-slate-600">{t({ en: 'Task Completion', ar: 'إكمال المهام' })}</p>
           </CardContent>
         </Card>
@@ -89,7 +65,7 @@ function MyPerformance() {
         <Card className="bg-gradient-to-br from-amber-50 to-white">
           <CardContent className="pt-6 text-center">
             <Award className="h-8 w-8 text-amber-600 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-amber-600">{impactScore}</p>
+            <p className="text-3xl font-bold text-amber-600">{metrics.impactScore}</p>
             <p className="text-sm text-slate-600">{t({ en: 'Impact Score', ar: 'درجة التأثير' })}</p>
           </CardContent>
         </Card>
@@ -106,10 +82,10 @@ function MyPerformance() {
               <BarChart data={monthlyActivity}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
-                <YAxis />
+                <YAxis allowDecimals={false} />
                 <Tooltip />
-                <Bar dataKey="challenges" fill="#3b82f6" name="Challenges" />
-                <Bar dataKey="pilots" fill="#a855f7" name="Pilots" />
+                <Bar dataKey="challenges" fill="#3b82f6" name={t({ en: 'Challenges', ar: 'تحديات' })} />
+                <Bar dataKey="pilots" fill="#a855f7" name={t({ en: 'Pilots', ar: 'تجارب' })} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -124,13 +100,13 @@ function MyPerformance() {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-slate-600">{t({ en: 'Challenge→Pilot Conversion', ar: 'تحويل التحدي→التجربة' })}</span>
                 <span className="text-sm font-bold text-slate-900">
-                  {myChallenges.length > 0 ? Math.round((myChallenges.filter(c => c.linked_pilot_ids?.length > 0).length / myChallenges.length) * 100) : 0}%
+                  {metrics.challengeConversionRate}%
                 </span>
               </div>
               <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-blue-600" 
-                  style={{ width: `${myChallenges.length > 0 ? Math.round((myChallenges.filter(c => c.linked_pilot_ids?.length > 0).length / myChallenges.length) * 100) : 0}%` }}
+                <div
+                  className="h-full bg-blue-600"
+                  style={{ width: `${metrics.challengeConversionRate}%` }}
                 />
               </div>
             </div>
@@ -139,13 +115,13 @@ function MyPerformance() {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-slate-600">{t({ en: 'Pilot Success Rate', ar: 'معدل نجاح التجارب' })}</span>
                 <span className="text-sm font-bold text-slate-900">
-                  {myPilots.length > 0 ? Math.round((myPilots.filter(p => ['completed', 'scaled'].includes(p.stage)).length / myPilots.length) * 100) : 0}%
+                  {metrics.pilotSuccessRate}%
                 </span>
               </div>
               <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-purple-600" 
-                  style={{ width: `${myPilots.length > 0 ? Math.round((myPilots.filter(p => ['completed', 'scaled'].includes(p.stage)).length / myPilots.length) * 100) : 0}%` }}
+                <div
+                  className="h-full bg-purple-600"
+                  style={{ width: `${metrics.pilotSuccessRate}%` }}
                 />
               </div>
             </div>
@@ -154,7 +130,8 @@ function MyPerformance() {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-slate-600">{t({ en: 'On-Time Delivery', ar: 'التسليم في الوقت' })}</span>
                 <span className="text-sm font-bold text-slate-900">
-                  {myTasks.filter(t => t.status === 'completed').length > 0 ? 85 : 0}%
+                  {/* Placeholder for now as On-Time needs detailed task due/complete date diffs */}
+                  85%
                 </span>
               </div>
               <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
@@ -179,19 +156,19 @@ function MyPerformance() {
               <div className="text-3xl mb-1">🏆</div>
               <p className="text-xs text-slate-600">{t({ en: 'First Challenge', ar: 'أول تحدي' })}</p>
             </div>
-            {myPilots.length >= 10 && (
+            {metrics.pilotsCount >= 10 && (
               <div className="p-3 bg-white rounded-lg text-center">
                 <div className="text-3xl mb-1">🚀</div>
                 <p className="text-xs text-slate-600">{t({ en: '10 Pilots', ar: '10 تجارب' })}</p>
               </div>
             )}
-            {scaledPilots >= 1 && (
+            {metrics.scaledPilotsCount >= 1 && (
               <div className="p-3 bg-white rounded-lg text-center">
                 <div className="text-3xl mb-1">⭐</div>
                 <p className="text-xs text-slate-600">{t({ en: 'First Scale', ar: 'أول توسع' })}</p>
               </div>
             )}
-            {completionRate >= 90 && (
+            {metrics.completionRate >= 90 && (
               <div className="p-3 bg-white rounded-lg text-center">
                 <div className="text-3xl mb-1">💯</div>
                 <p className="text-xs text-slate-600">{t({ en: 'High Performer', ar: 'أداء عالي' })}</p>

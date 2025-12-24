@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
+import { useStrategicLinks } from '@/hooks/useStrategicLinks';
+import { useChallengeMutations } from '@/hooks/useChallengeMutations';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,66 +15,39 @@ import { buildStrategicAlignmentPrompt, STRATEGIC_ALIGNMENT_SCHEMA } from '@/lib
 
 export default function StrategicAlignmentSelector({ challenge, onUpdate }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [selectedPlans, setSelectedPlans] = useState(challenge?.strategic_plan_ids || []);
   const { invokeAI, status, isLoading: validating, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { data: strategicPlans = [] } = useStrategiesWithVisibility();
 
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans'],
-    queryFn: async () => {
-      const { data } = await supabase.from('strategic_plans').select('*');
-      return data || [];
+  const { links: existingLinks, updateLinks, isUpdating: isUpdatingLinks } = useStrategicLinks(challenge?.id);
+  const { updateChallenge, isUpdating: isUpdatingChallenge } = useChallengeMutations();
+
+  const handleUpdate = async () => {
+    if (!challenge.id || challenge.id === 'preview') {
+      if (onUpdate) onUpdate(selectedPlans);
+      return;
     }
-  });
 
-  const { data: existingLinks = [] } = useQuery({
-    queryKey: ['strategic-links', challenge?.id],
-    queryFn: async () => {
-      const { data } = await supabase.from('strategic_plan_challenge_links').select('*').eq('challenge_id', challenge?.id);
-      return data || [];
-    },
-    enabled: !!challenge?.id
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async () => {
-      if (!challenge.id || challenge.id === 'preview') {
-        if (onUpdate) onUpdate(selectedPlans);
-        return;
-      }
-
-      await supabase.from('challenges').update({
-        strategic_plan_ids: selectedPlans
-      }).eq('id', challenge.id);
-
-      const currentLinks = existingLinks.map(l => l.strategic_plan_id);
-      const toAdd = selectedPlans.filter(id => !currentLinks.includes(id));
-      const toRemove = currentLinks.filter(id => !selectedPlans.includes(id));
-
+    try {
       await Promise.all([
-        ...toAdd.map(plan_id => 
-          supabase.from('strategic_plan_challenge_links').insert({
-            strategic_plan_id: plan_id,
-            challenge_id: challenge.id,
-            contribution_type: 'addresses',
-            linked_date: new Date().toISOString()
-          })
-        ),
-        ...toRemove.map(plan_id => {
-          const link = existingLinks.find(l => l.strategic_plan_id === plan_id);
-          return link ? supabase.from('strategic_plan_challenge_links').delete().eq('id', link.id) : Promise.resolve();
+        updateChallenge.mutateAsync({
+          id: challenge.id,
+          data: { strategic_plan_ids: selectedPlans }
+        }),
+        updateLinks({
+          challengeId: challenge.id,
+          selectedPlanIds: selectedPlans,
+          existingLinks
         })
       ]);
-    },
-    onSuccess: () => {
-      if (challenge.id && challenge.id !== 'preview') {
-        queryClient.invalidateQueries(['challenge', challenge.id]);
-        queryClient.invalidateQueries(['strategic-links']);
-      }
       toast.success(t({ en: 'Strategic alignment updated', ar: 'تم تحديث التوافق الاستراتيجي' }));
       if (onUpdate) onUpdate(selectedPlans);
+    } catch (error) {
+      toast.error(t({ en: 'Failed to update alignment', ar: 'فشل في تحديث التوافق' }));
     }
-  });
+  };
+
+  const isPending = isUpdatingLinks || isUpdatingChallenge;
 
   const validateAlignment = async () => {
     if (selectedPlans.length === 0) {
@@ -82,8 +57,9 @@ export default function StrategicAlignmentSelector({ challenge, onUpdate }) {
 
     try {
       const selectedPlanObjects = strategicPlans.filter(p => selectedPlans.includes(p.id));
-      
+
       const response = await invokeAI({
+        system_prompt: 'You are a strategic alignment expert. Analyze the challenge against the selected strategic plan objectives.',
         prompt: buildStrategicAlignmentPrompt(challenge, selectedPlanObjects),
         response_json_schema: STRATEGIC_ALIGNMENT_SCHEMA
       });
@@ -108,9 +84,9 @@ export default function StrategicAlignmentSelector({ challenge, onUpdate }) {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-slate-600">
-            {t({ 
-              en: 'Select which strategic plan objectives this challenge addresses', 
-              ar: 'اختر الأهداف الاستراتيجية التي يعالجها هذا التحدي' 
+            {t({
+              en: 'Select which strategic plan objectives this challenge addresses',
+              ar: 'اختر الأهداف الاستراتيجية التي يعالجها هذا التحدي'
             })}
           </p>
 
@@ -129,14 +105,14 @@ export default function StrategicAlignmentSelector({ challenge, onUpdate }) {
                 />
                 <div className="flex-1">
                   <p className="font-medium text-slate-900 text-sm">
-                    {language === 'ar' && plan.objective_ar ? plan.objective_ar : plan.objective_en || plan.title_en}
+                    {language === 'ar' && plan?.['objective_ar'] ? plan?.['objective_ar'] : plan?.['objective_en'] || plan?.['title_en']}
                   </p>
                   <p className="text-xs text-slate-600 mt-1">
-                    {language === 'ar' && plan.description_ar ? plan.description_ar : plan.description_en}
+                    {language === 'ar' && plan?.['description_ar'] ? plan?.['description_ar'] : plan?.['description_en']}
                   </p>
-                  {plan.target_kpis?.length > 0 && (
+                  {plan?.['target_kpis']?.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
-                      {plan.target_kpis.slice(0, 3).map((kpi, i) => (
+                      {plan?.['target_kpis'].slice(0, 3).map((kpi, i) => (
                         <Badge key={i} variant="outline" className="text-xs">
                           {kpi.name}
                         </Badge>
@@ -181,11 +157,11 @@ export default function StrategicAlignmentSelector({ challenge, onUpdate }) {
       {/* Save */}
       <div className="flex gap-3 justify-end">
         <Button
-          onClick={() => updateMutation.mutate()}
-          disabled={updateMutation.isPending}
+          onClick={handleUpdate}
+          disabled={isPending}
           className="bg-gradient-to-r from-blue-600 to-teal-600"
         >
-          {updateMutation.isPending ? (
+          {isPending ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               {t({ en: 'Saving...', ar: 'جاري الحفظ...' })}

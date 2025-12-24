@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMyDelegation } from '@/hooks/useMyDelegation';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,98 +17,8 @@ function MyDelegation() {
   const [delegateDialogOpen, setDelegateDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedDelegate, setSelectedDelegate] = useState('');
-  const queryClient = useQueryClient();
   const { user } = useAuth();
-
-  const { data: teamMembers = [] } = useQuery({
-    queryKey: ['team-members', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data: userProfile } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_email', user.email)
-        .maybeSingle();
-      if (!userProfile?.organization_id) return [];
-      
-      const { data } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('organization_id', userProfile.organization_id)
-        .neq('user_email', user.email);
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
-
-  const { data: myTasks = [] } = useQuery({
-    queryKey: ['delegatable-tasks', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('created_by', user.email)
-        .is('delegated_to', null)
-        .neq('status', 'completed');
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
-
-  const { data: delegatedItems = [] } = useQuery({
-    queryKey: ['delegated-items', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('delegated_by', user.email);
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
-
-  const delegateMutation = useMutation({
-    mutationFn: async ({ taskId, delegateTo }) => {
-      const { error } = await supabase
-        .from('tasks')
-        .update({
-          delegated_to: delegateTo,
-          delegated_by: user?.email,
-          delegated_date: new Date().toISOString()
-        })
-        .eq('id', taskId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['delegatable-tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['delegated-items'] });
-      setDelegateDialogOpen(false);
-      setSelectedItem(null);
-      setSelectedDelegate('');
-      toast.success(t({ en: 'Task delegated successfully', ar: 'تم تفويض المهمة بنجاح' }));
-    }
-  });
-
-  const recallMutation = useMutation({
-    mutationFn: async (taskId) => {
-      const { error } = await supabase
-        .from('tasks')
-        .update({
-          delegated_to: null,
-          delegated_by: null,
-          delegated_date: null
-        })
-        .eq('id', taskId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['delegatable-tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['delegated-items'] });
-      toast.success(t({ en: 'Task recalled successfully', ar: 'تم استرجاع المهمة بنجاح' }));
-    }
-  });
+  const { teamMembers, myTasks, delegatedItems, delegateMutation, recallMutation } = useMyDelegation(user?.email, t);
 
   const openDelegateDialog = (task) => {
     setSelectedItem(task);
@@ -118,7 +27,13 @@ function MyDelegation() {
 
   const handleDelegate = () => {
     if (selectedItem && selectedDelegate) {
-      delegateMutation.mutate({ taskId: selectedItem.id, delegateTo: selectedDelegate });
+      delegateMutation.mutate({ taskId: selectedItem.id, delegateTo: selectedDelegate }, {
+        onSuccess: () => {
+          setDelegateDialogOpen(false);
+          setSelectedItem(null);
+          setSelectedDelegate('');
+        }
+      });
     }
   };
 
@@ -214,7 +129,7 @@ function MyDelegation() {
             teamMembers.map((member) => {
               const capacity = calculateTeamCapacity(member.user_email);
               const assignedCount = delegatedItems.filter(t => t.delegated_to === member.user_email && t.status !== 'completed').length;
-              
+
               return (
                 <div key={member.id} className="p-4 border rounded-lg">
                   <div className="flex items-center justify-between mb-3">
@@ -294,7 +209,7 @@ function MyDelegation() {
                 <p className="text-sm text-slate-600 mt-1">{selectedItem.description}</p>
               </div>
             )}
-            
+
             <div>
               <label className="text-sm font-medium mb-2 block">
                 {t({ en: 'Select Team Member', ar: 'اختر عضو الفريق' })}
@@ -313,8 +228,8 @@ function MyDelegation() {
               </Select>
             </div>
 
-            <Button 
-              className="w-full bg-blue-600" 
+            <Button
+              className="w-full bg-blue-600"
               onClick={handleDelegate}
               disabled={!selectedDelegate || delegateMutation.isPending}
             >

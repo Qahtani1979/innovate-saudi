@@ -1,11 +1,8 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { AlertCircle } from 'lucide-react';
-import { useLanguage } from '../LanguageContext';
-import { useTaxonomy } from '@/hooks/useTaxonomy';
+import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
+import { useMemo } from 'react';
 
 /**
  * AI-powered sector gap analysis from strategic plans
@@ -13,45 +10,45 @@ import { useTaxonomy } from '@/hooks/useTaxonomy';
 export default function SectorGapAnalysisWidget({ strategicPlanId }) {
   const { t, language } = useLanguage();
   const { getSectorName } = useTaxonomy();
-  
-  const { data: analysis } = useQuery({
-    queryKey: ['sector-gap-analysis', strategicPlanId],
-    queryFn: async () => {
-      // Fetch strategic plan
-      const { data: plan, error: planError } = await supabase
-        .from('strategic_plans')
-        .select('*')
-        .eq('id', strategicPlanId)
-        .maybeSingle();
-      
-      if (planError || !plan) return null;
 
-      // Fetch all related entities
-      const [challengesRes, pilotsRes, solutionsRes] = await Promise.all([
-        supabase.from('challenges').select('id, sector').eq('is_deleted', false),
-        supabase.from('pilots').select('id, sector').eq('is_deleted', false),
-        supabase.from('solutions').select('id, sectors').eq('is_deleted', false)
-      ]);
-
-      const challenges = challengesRes.data || [];
-      const pilots = pilotsRes.data || [];
-      const solutions = solutionsRes.data || [];
-
-      const sectorCounts = {};
-      const targetSectors = plan.focus_sectors || [];
-
-      targetSectors.forEach(sector => {
-        sectorCounts[sector] = {
-          challenges: challenges.filter(c => c.sector === sector).length,
-          pilots: pilots.filter(p => p.sector === sector).length,
-          solutions: solutions.filter(s => s.sectors?.includes(sector)).length
-        };
-      });
-
-      return { targetSectors, sectorCounts };
-    },
-    enabled: !!strategicPlanId
+  // Use centralized hooks
+  const { data: plans = [], isLoading: isLoadingPlans } = useStrategiesWithVisibility({
+    id: strategicPlanId,
+    includeTemplates: true // In case the plan is a template
   });
+  const plan = plans[0];
+
+  const { data: challenges = [], isLoading: isLoadingChallenges } = useChallengesWithVisibility({
+    limit: 1000,
+    includeDeleted: false
+  });
+
+  const { data: pilots = [], isLoading: isLoadingPilots } = usePilotsWithVisibility({
+    limit: 1000,
+    includeDeleted: false
+  });
+
+  const { data: solutions = [], isLoading: isLoadingSolutions } = useSolutionsWithVisibility({
+    limit: 1000,
+    includeDeleted: false
+  });
+
+  const analysis = useMemo(() => {
+    if (!plan) return null;
+
+    const sectorCounts = {};
+    const targetSectors = plan.focus_sectors || [];
+
+    targetSectors.forEach(sector => {
+      sectorCounts[sector] = {
+        challenges: challenges.filter(c => c.sector === sector || c.sector_id === sector).length, // Handle both potential formats
+        pilots: pilots.filter(p => p.sector === sector || p.sector_id === sector).length,
+        solutions: solutions.filter(s => s.sectors?.includes(sector) || s.sector_id === sector).length
+      };
+    });
+
+    return { targetSectors, sectorCounts };
+  }, [plan, challenges, pilots, solutions]);
 
   if (!analysis || analysis.targetSectors.length === 0) {
     return (

@@ -1,6 +1,12 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+
+import { useLocations } from '@/hooks/useLocations';
+import { useSectors } from '@/hooks/useSectors';
+import { useSubsectors } from '@/hooks/useSubsectors';
+import { useKPIs } from '@/hooks/useKPIs';
+import { useTags } from '@/hooks/useTags';
+import { useServices } from '@/hooks/useServices';
+import { useMIIDimensions } from '@/hooks/useMIIDimensions';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -14,45 +20,15 @@ function ReferenceDataClusterAudit() {
   const { t, isRTL } = useLanguage();
   const [expandedSections, setExpandedSections] = useState({});
 
-  const { data: regions = [] } = useQuery({
-    queryKey: ['regions-audit'],
-    queryFn: () => base44.entities.Region.list()
-  });
-
-  const { data: cities = [] } = useQuery({
-    queryKey: ['cities-audit'],
-    queryFn: () => base44.entities.City.list()
-  });
-
-  const { data: sectors = [] } = useQuery({
-    queryKey: ['sectors-audit'],
-    queryFn: () => base44.entities.Sector.list()
-  });
-
-  const { data: subsectors = [] } = useQuery({
-    queryKey: ['subsectors-audit'],
-    queryFn: () => base44.entities.Subsector.list()
-  });
-
-  const { data: kpis = [] } = useQuery({
-    queryKey: ['kpis-audit'],
-    queryFn: () => base44.entities.KPIReference.list()
-  });
-
-  const { data: tags = [] } = useQuery({
-    queryKey: ['tags-audit'],
-    queryFn: () => base44.entities.Tag.list()
-  });
-
-  const { data: services = [] } = useQuery({
-    queryKey: ['services-audit'],
-    queryFn: () => base44.entities.Service.list()
-  });
-
-  const { data: miiDimensions = [] } = useQuery({
-    queryKey: ['mii-dimensions-audit'],
-    queryFn: () => base44.entities.MIIDimension.list()
-  });
+  const { useRegions, useCities } = useLocations();
+  const { data: regions = [] } = useRegions();
+  const { data: cities = [] } = useCities();
+  const { data: sectors = [] } = useSectors();
+  const { data: subsectors = [] } = useSubsectors();
+  const { data: kpis = [] } = useKPIs();
+  const { data: tags = [] } = useTags();
+  const { data: services = [] } = useServices();
+  const { data: miiDimensions = [] } = useMIIDimensions();
 
   const toggleSection = (key) => {
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
@@ -349,13 +325,13 @@ function ReferenceDataClusterAudit() {
             <p className="font-bold text-green-900 mb-2">🎯 Status: Production Ready</p>
             <p className="text-sm text-green-800">
               All reference and taxonomy entities are complete with:
-              <br/>• Full bilingual support (AR/EN)
-              <br/>• Complete CRUD operations via admin pages
-              <br/>• Active integration across all core entities
-              <br/>• Public visibility where appropriate
-              <br/>• Admin-controlled management
-              <br/>• Hierarchical relationships (Region→City, Sector→Subsector→Service)
-              <br/>• MII calculation framework operational
+              <br />• Full bilingual support (AR/EN)
+              <br />• Complete CRUD operations via admin pages
+              <br />• Active integration across all core entities
+              <br />• Public visibility where appropriate
+              <br />• Admin-controlled management
+              <br />• Hierarchical relationships (Region→City, Sector→Subsector→Service)
+              <br />• MII calculation framework operational
             </p>
           </div>
         </CardContent>

@@ -1,5 +1,4 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useRisksWithVisibility } from '@/hooks/useRisksWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../components/LanguageContext';
 import { AlertTriangle, Target, Shield } from 'lucide-react';
@@ -9,10 +8,7 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 function RiskDashboard() {
   const { t } = useLanguage();
 
-  const { data: risks = [], isLoading } = useQuery({
-    queryKey: ['risks'],
-    queryFn: () => base44.entities.Risk.list()
-  });
+  const { data: risks = [], isLoading } = useRisksWithVisibility();
 
   const impactMap = { low: 1, medium: 2, high: 3, critical: 4 };
   const likelihoodMap = { very_low: 1, low: 2, medium: 3, high: 4, very_high: 5 };
@@ -100,17 +96,17 @@ function RiskDashboard() {
           <ResponsiveContainer width="100%" height={400}>
             <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
               <CartesianGrid />
-              <XAxis 
-                type="number" 
-                dataKey="likelihood" 
-                name="Likelihood" 
+              <XAxis
+                type="number"
+                dataKey="likelihood"
+                name="Likelihood"
                 domain={[0, 6]}
                 label={{ value: t({ en: 'Likelihood →', ar: 'الاحتمالية ←' }), position: 'bottom' }}
               />
-              <YAxis 
-                type="number" 
-                dataKey="impact" 
-                name="Impact" 
+              <YAxis
+                type="number"
+                dataKey="impact"
+                name="Impact"
                 domain={[0, 5]}
                 label={{ value: t({ en: '↑ Impact', ar: '↑ التأثير' }), angle: -90, position: 'left' }}
               />
@@ -125,19 +121,19 @@ function RiskDashboard() {
 
           <div className="grid grid-cols-4 gap-2 mt-4">
             <div className="flex items-center gap-2 text-sm">
-              <div className="w-4 h-4 rounded" style={{backgroundColor: severityColors.low}}></div>
+              <div className="w-4 h-4 rounded" style={{ backgroundColor: severityColors.low }}></div>
               <span>{t({ en: 'Low', ar: 'منخفض' })}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <div className="w-4 h-4 rounded" style={{backgroundColor: severityColors.medium}}></div>
+              <div className="w-4 h-4 rounded" style={{ backgroundColor: severityColors.medium }}></div>
               <span>{t({ en: 'Medium', ar: 'متوسط' })}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <div className="w-4 h-4 rounded" style={{backgroundColor: severityColors.high}}></div>
+              <div className="w-4 h-4 rounded" style={{ backgroundColor: severityColors.high }}></div>
               <span>{t({ en: 'High', ar: 'عالي' })}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <div className="w-4 h-4 rounded" style={{backgroundColor: severityColors.critical}}></div>
+              <div className="w-4 h-4 rounded" style={{ backgroundColor: severityColors.critical }}></div>
               <span>{t({ en: 'Critical', ar: 'حرج' })}</span>
             </div>
           </div>

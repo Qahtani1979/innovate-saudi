@@ -1,5 +1,5 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { usePrograms } from '@/hooks/usePrograms';
+import { useMatchingEntities } from '@/hooks/useMatchingEntities';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -10,20 +10,12 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 function ProgramOutcomesAnalytics() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs-outcomes'],
-    queryFn: () => base44.entities.Program.list()
-  });
+  const { programs } = usePrograms({ limit: 1000 }); // Fetch all programs
+  const { useProgramApplications } = usePrograms();
+  const { data: applications = [] } = useProgramApplications();
 
-  const { data: applications = [] } = useQuery({
-    queryKey: ['applications-outcomes'],
-    queryFn: () => base44.entities.ProgramApplication.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-from-programs'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
+  const { usePilots } = useMatchingEntities();
+  const { data: pilots = [] } = usePilots();
 
   const totalGraduates = applications.filter(a => a.status === 'graduated').length;
   const pilotsGenerated = programs.reduce((sum, p) => sum + (p.outcomes?.pilots_generated || 0), 0);

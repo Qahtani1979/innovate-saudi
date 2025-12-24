@@ -5,8 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../LanguageContext';
 import { Search, Filter, X, Calendar } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-
 export default function AdvancedSearchPanel({ onSearch, onClose }) {
   const { t } = useLanguage();
   const [filters, setFilters] = useState({

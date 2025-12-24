@@ -3,10 +3,33 @@ import { Badge } from "@/components/ui/badge";
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { useLanguage } from '@/components/LanguageContext';
-import { Calendar } from 'lucide-react';
+import { Calendar, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
-export default function ChallengeProgramsTab({ linkedPrograms = [] }) {
+export default function ChallengeProgramsTab({ challenge }) {
   const { language, t } = useLanguage();
+
+  const { data: linkedPrograms = [], isLoading } = useQuery({
+    queryKey: ['challenge-programs', challenge?.id],
+    queryFn: async () => {
+      // Return early if no linked programs
+      if (!challenge?.linked_program_ids || challenge.linked_program_ids.length === 0) return [];
+
+      const { data } = await supabase
+        .from('programs')
+        .select('*')
+        .in('id', challenge.linked_program_ids)
+        .eq('is_deleted', false);
+
+      return data || [];
+    },
+    enabled: !!challenge?.linked_program_ids?.length
+  });
+
+  if (isLoading) {
+    return <div className="text-center py-8"><Loader2 className="h-8 w-8 animate-spin mx-auto text-purple-600" /></div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -49,8 +72,8 @@ export default function ChallengeProgramsTab({ linkedPrograms = [] }) {
                     </div>
                     <Badge className={
                       program.status === 'active' ? 'bg-green-100 text-green-700' :
-                      program.status === 'completed' ? 'bg-blue-100 text-blue-700' :
-                      'bg-yellow-100 text-yellow-700'
+                        program.status === 'completed' ? 'bg-blue-100 text-blue-700' :
+                          'bg-yellow-100 text-yellow-700'
                     }>
                       {program.status}
                     </Badge>

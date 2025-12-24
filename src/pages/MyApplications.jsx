@@ -1,46 +1,33 @@
-import { supabase } from '@/integrations/supabase/client';
+import { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useLanguage } from '../components/LanguageContext';
+import { useLanguage } from '@/components/LanguageContext';
 import { Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
-import { FileText, Clock, CheckCircle2 } from 'lucide-react';
+import { createPageUrl } from '@/utils';
+import { FileText, Clock, CheckCircle2, ArrowRight } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import ProtectedPage from '../components/permissions/ProtectedPage';
+import ProtectedPage from '@/components/permissions/ProtectedPage';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useMyApplications } from '@/hooks/useMyApplications';
+import { StandardPagination } from '@/components/ui/StandardPagination';
+import { EntityListSkeleton } from '@/components/ui/skeletons/EntityListSkeleton';
+import { format } from 'date-fns';
 
 function MyApplications() {
-  const { language, isRTL, t } = useLanguage();
+  const { language, t } = useLanguage();
   const { user } = useAuth();
 
-  const { data: matchmakerApps = [] } = useQuery({
-    queryKey: ['my-matchmaker-apps', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('matchmaker_applications').select('*');
-      return (data || []).filter(a => a.contact_email === user?.email || a.created_by === user?.email);
-    },
-    enabled: !!user
-  });
+  const [matchmakerPage, setMatchmakerPage] = useState(1);
+  const [programsPage, setProgramsPage] = useState(1);
+  const [rdPage, setRdPage] = useState(1);
 
-  const { data: programApps = [] } = useQuery({
-    queryKey: ['my-program-apps', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('program_applications').select('*');
-      return (data || []).filter(a => a.applicant_email === user?.email || a.created_by === user?.email);
-    },
-    enabled: !!user
-  });
-
-  const { data: rdProposals = [] } = useQuery({
-    queryKey: ['my-rd-proposals', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('rd_proposals').select('*');
-      return (data || []).filter(p => p.created_by === user?.email);
-    },
-    enabled: !!user
+  // GOLD STANDARD HOOK
+  const { matchmaker, programs, rd, stats: statsData } = useMyApplications(user?.email, {
+    matchmakerPage,
+    programsPage,
+    rdPage
   });
 
   const statusColors = {
@@ -52,11 +39,6 @@ function MyApplications() {
     evaluating: 'bg-indigo-100 text-indigo-700'
   };
 
-  const totalApplications = matchmakerApps.length + programApps.length + rdProposals.length;
-  const pending = [...matchmakerApps, ...programApps, ...rdProposals].filter(a => 
-    ['submitted', 'under_review', 'screening', 'evaluating'].includes(a.status || a.stage)
-  ).length;
-
   return (
     <PageLayout>
       <PageHeader
@@ -66,11 +48,11 @@ function MyApplications() {
       />
 
       {/* Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card className="bg-gradient-to-br from-blue-50 to-white">
           <CardContent className="pt-6 text-center">
             <FileText className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-blue-600">{totalApplications}</p>
+            <p className="text-3xl font-bold text-blue-600">{statsData.total}</p>
             <p className="text-sm text-slate-600">{t({ en: 'Total Applications', ar: 'إجمالي الطلبات' })}</p>
           </CardContent>
         </Card>
@@ -78,7 +60,7 @@ function MyApplications() {
         <Card className="bg-gradient-to-br from-yellow-50 to-white">
           <CardContent className="pt-6 text-center">
             <Clock className="h-8 w-8 text-yellow-600 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-yellow-600">{pending}</p>
+            <p className="text-3xl font-bold text-yellow-600">{statsData.pending}</p>
             <p className="text-sm text-slate-600">{t({ en: 'Under Review', ar: 'قيد المراجعة' })}</p>
           </CardContent>
         </Card>
@@ -86,103 +68,154 @@ function MyApplications() {
         <Card className="bg-gradient-to-br from-green-50 to-white">
           <CardContent className="pt-6 text-center">
             <CheckCircle2 className="h-8 w-8 text-green-600 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-green-600">
-              {[...matchmakerApps, ...programApps, ...rdProposals].filter(a => a.status === 'accepted').length}
-            </p>
+            <p className="text-3xl font-bold text-green-600">{statsData.accepted}</p>
             <p className="text-sm text-slate-600">{t({ en: 'Accepted', ar: 'مقبول' })}</p>
           </CardContent>
         </Card>
       </div>
 
-      <Tabs defaultValue="all">
+      <Tabs defaultValue="all" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="all">{t({ en: 'All', ar: 'الكل' })} ({totalApplications})</TabsTrigger>
-          <TabsTrigger value="matchmaker">{t({ en: 'Matchmaker', ar: 'التوفيق' })} ({matchmakerApps.length})</TabsTrigger>
-          <TabsTrigger value="programs">{t({ en: 'Programs', ar: 'البرامج' })} ({programApps.length})</TabsTrigger>
-          <TabsTrigger value="rd">{t({ en: 'R&D', ar: 'البحث' })} ({rdProposals.length})</TabsTrigger>
+          <TabsTrigger value="all">{t({ en: 'All', ar: 'الكل' })}</TabsTrigger>
+          <TabsTrigger value="matchmaker">{t({ en: 'Matchmaker', ar: 'التوفيق' })}</TabsTrigger>
+          <TabsTrigger value="programs">{t({ en: 'Programs', ar: 'البرامج' })}</TabsTrigger>
+          <TabsTrigger value="rd">{t({ en: 'R&D', ar: 'البحث' })}</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="all" className="space-y-3">
-          {[...matchmakerApps, ...programApps, ...rdProposals].map((app) => (
-            <Card key={app.id}>
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge variant="outline">
-                        {app.organization_name ? 'Matchmaker' : app.program_id ? 'Program' : 'R&D'}
-                      </Badge>
-                      <Badge className={statusColors[app.status || app.stage]}>
-                        {app.status || app.stage}
-                      </Badge>
-                    </div>
-                    <h3 className="font-semibold text-slate-900">
-                      {app.organization_name || app.program_id || app.project_title_en}
-                    </h3>
-                    <p className="text-sm text-slate-600 mt-1">
-                      {t({ en: 'Submitted', ar: 'مقدم' })}: {new Date(app.created_date).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    {t({ en: 'View', ar: 'عرض' })}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </TabsContent>
-
-        <TabsContent value="matchmaker" className="space-y-3">
-          {matchmakerApps.map((app) => (
-            <Link key={app.id} to={createPageUrl(`MatchmakerApplicationDetail?id=${app.id}`)}>
-              <Card className="hover:shadow-lg transition-shadow">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Badge className={statusColors[app.stage]}>{app.stage}</Badge>
-                      <h3 className="font-semibold text-slate-900 mt-2">{app.organization_name}</h3>
-                      <p className="text-sm text-slate-600">{app.classification}</p>
-                    </div>
-                    {app.evaluation_score?.total_score && (
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-purple-600">{app.evaluation_score.total_score}</div>
-                        <div className="text-xs text-slate-500">{t({ en: 'Score', ar: 'الدرجة' })}</div>
+        {/* ALL TAB: Shows first 3 items from each category (Dashboard style) */}
+        <TabsContent value="all" className="space-y-6">
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg text-slate-800">{t({ en: 'Recent Activity', ar: 'النشاط الأخير' })}</h3>
+            {matchmaker.isLoading || programs.isLoading || rd.isLoading ? (
+              <EntityListSkeleton mode="list" rowCount={5} />
+            ) : (
+              [...matchmaker.data, ...programs.data, ...rd.data]
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                .slice(0, 5)
+                .map((item, i) => (
+                  <Card key={i} className="hover:border-blue-300 transition-all">
+                    <CardContent className="pt-6">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="flex gap-2 mb-2">
+                            <Badge variant="outline">
+                              {item.program_id ? 'Program' : item.rd_call_id ? 'R&D' : 'Matchmaker'}
+                            </Badge>
+                            <Badge className={statusColors[item.status] || 'bg-slate-100'}>
+                              {item.status}
+                            </Badge>
+                          </div>
+                          <p className="font-medium text-slate-900">
+                            {item.organization_name || item.project_title_en || (item.program?.name_en || 'Application')}
+                          </p>
+                          <p className="text-xs text-slate-500 mt-1">
+                            {format(new Date(item.created_at), 'PPP')}
+                          </p>
+                        </div>
+                        <Button variant="ghost" size="sm">
+                          <ArrowRight className="h-4 w-4" />
+                        </Button>
                       </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+                    </CardContent>
+                  </Card>
+                ))
+            )}
+          </div>
         </TabsContent>
 
-        <TabsContent value="programs" className="space-y-3">
-          {programApps.map((app) => (
-            <Link key={app.id} to={createPageUrl(`ProgramApplicationDetail?id=${app.id}`)}>
-              <Card className="hover:shadow-lg transition-shadow">
-                <CardContent className="pt-6">
-                  <Badge className={statusColors[app.status]}>{app.status}</Badge>
-                  <h3 className="font-semibold text-slate-900 mt-2">{app.applicant_name}</h3>
-                  <p className="text-sm text-slate-600">Program: {app.program_id}</p>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+        {/* MATCHMAKER TAB */}
+        <TabsContent value="matchmaker" className="space-y-4">
+          {matchmaker.isLoading ? (
+            <EntityListSkeleton mode="list" rowCount={3} />
+          ) : matchmaker.isEmpty ? (
+            <div className="text-center py-8 text-slate-500">{t({ en: 'No applications found', ar: 'لا توجد طلبات' })}</div>
+          ) : (
+            matchmaker.data.map(app => (
+              <Link key={app.id} to={createPageUrl(`MatchmakerApplicationDetail?id=${app.id}`)}>
+                <Card className="hover:shadow-md transition-shadow">
+                  <CardContent className="pt-6">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <Badge className={statusColors[app.status]}>{app.status}</Badge>
+                        <h3 className="font-semibold mt-2">{app.organization_name}</h3>
+                        <p className="text-sm text-slate-600">{app.classification}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs text-slate-400">{format(new Date(app.created_at), 'PPP')}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))
+          )}
+          <StandardPagination
+            currentPage={matchmakerPage}
+            totalPages={matchmaker.totalPages}
+            onPageChange={setMatchmakerPage}
+          />
         </TabsContent>
 
-        <TabsContent value="rd" className="space-y-3">
-          {rdProposals.map((proposal) => (
-            <Link key={proposal.id} to={createPageUrl(`RDProposalDetail?id=${proposal.id}`)}>
-              <Card className="hover:shadow-lg transition-shadow">
-                <CardContent className="pt-6">
-                  <Badge className={statusColors[proposal.status]}>{proposal.status}</Badge>
-                  <h3 className="font-semibold text-slate-900 mt-2">{proposal.project_title_en}</h3>
-                  <p className="text-sm text-slate-600">Call: {proposal.rd_call_id}</p>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+        {/* PROGRAMS TAB */}
+        <TabsContent value="programs" className="space-y-4">
+          {programs.isLoading ? (
+            <EntityListSkeleton mode="list" rowCount={3} />
+          ) : programs.isEmpty ? (
+            <div className="text-center py-8 text-slate-500">{t({ en: 'No program applications', ar: 'لا توجد طلبات برامج' })}</div>
+          ) : (
+            programs.data.map(app => (
+              <Link key={app.id} to={createPageUrl(`ProgramApplicationDetail?id=${app.id}`)}>
+                <Card className="hover:shadow-md transition-shadow">
+                  <CardContent className="pt-6">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <Badge className={statusColors[app.status]}>{app.status}</Badge>
+                        <h3 className="font-semibold mt-2">{app.program?.name_en || 'Unknown Program'}</h3>
+                        <p className="text-sm text-slate-600">{t({ en: 'Applicant', ar: 'المتقدم' })}: {app.applicant_name}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))
+          )}
+          <StandardPagination
+            currentPage={programsPage}
+            totalPages={programs.totalPages}
+            onPageChange={setProgramsPage}
+          />
         </TabsContent>
+
+        {/* RD TAB */}
+        <TabsContent value="rd" className="space-y-4">
+          {rd.isLoading ? (
+            <EntityListSkeleton mode="list" rowCount={3} />
+          ) : rd.isEmpty ? (
+            <div className="text-center py-8 text-slate-500">{t({ en: 'No R&D proposals', ar: 'لا توجد مقترحات بحث' })}</div>
+          ) : (
+            rd.data.map(proposal => (
+              <Link key={proposal.id} to={createPageUrl(`RDProposalDetail?id=${proposal.id}`)}>
+                <Card className="hover:shadow-md transition-shadow">
+                  <CardContent className="pt-6">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <Badge className={statusColors[proposal.status]}>{proposal.status}</Badge>
+                        <h3 className="font-semibold mt-2">{proposal.project_title_en}</h3>
+                        <p className="text-sm text-slate-600">{t({ en: 'Call ID', ar: 'رقم الدعوة' })}: {proposal.rd_call_id}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))
+          )}
+          <StandardPagination
+            currentPage={rdPage}
+            totalPages={rd.totalPages}
+            onPageChange={setRdPage}
+          />
+        </TabsContent>
+
       </Tabs>
     </PageLayout>
   );

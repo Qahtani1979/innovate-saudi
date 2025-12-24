@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,23 +15,18 @@ import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useCities, useRegions } from '@/hooks/useLocations';
+import { useOrganizationMutations } from '@/hooks/useOrganizationMutations';
 
 function OrganizationCreate() {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [currentStep, setCurrentStep] = useState(1);
 
-  const { data: cities = [] } = useQuery({
-    queryKey: ['cities'],
-    queryFn: () => base44.entities.City.list()
-  });
-
-  const { data: regions = [] } = useQuery({
-    queryKey: ['regions'],
-    queryFn: () => base44.entities.Region.list()
-  });
+  // Use existing hooks for cities and regions
+  const { data: cities = [] } = useCities();
+  const { data: regions = [] } = useRegions();
 
   const [formData, setFormData] = useState({
     code: `ORG-${Date.now().toString().slice(-6)}`,
@@ -76,27 +69,11 @@ function OrganizationCreate() {
 
   const [initialThoughts, setInitialThoughts] = useState('');
 
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      const cleanData = { ...data };
-      cleanData.is_active = true; // Always active on creation
-      
-      const org = await base44.entities.Organization.create(cleanData);
-      
-      // Auto-generate embedding
-      base44.functions.invoke('generateEmbeddings', {
-        entity_name: 'Organization',
-        entity_ids: [org.id]
-      }).catch(err => console.error('Embedding generation failed:', err));
-      
-      return org;
-    },
-    onSuccess: (org) => {
-      queryClient.invalidateQueries(['organizations']);
-      localStorage.removeItem('org_draft');
-      toast.success(t({ en: 'Organization created!', ar: 'تم إنشاء الجهة!' }));
-      navigate(createPageUrl(`OrganizationDetail?id=${org.id}`));
-    }
+  // Use existing organization mutations hook
+  const { createOrganization } = useOrganizationMutations(null, (org) => {
+    localStorage.removeItem('org_draft');
+    toast.success(t({ en: 'Organization created!', ar: 'تم إنشاء الجهة!' }));
+    navigate(createPageUrl(`OrganizationDetail?id=${org.id}`));
   });
 
   const sectorOptions = ['urban_design', 'transport', 'environment', 'digital_services', 'health'];
@@ -115,16 +92,16 @@ function OrganizationCreate() {
       toast.error(t({ en: 'Please select organization type first', ar: 'يرجى اختيار نوع الجهة أولاً' }));
       return;
     }
-    
+
     if (!initialThoughts && !formData.name_en) {
       toast.error(t({ en: 'Please describe the organization', ar: 'يرجى وصف الجهة' }));
       return;
     }
 
     try {
-      const { 
-        ORGANIZATION_PROFILE_PROMPT_TEMPLATE, 
-        ORGANIZATION_PROFILE_RESPONSE_SCHEMA 
+      const {
+        ORGANIZATION_PROFILE_PROMPT_TEMPLATE,
+        ORGANIZATION_PROFILE_RESPONSE_SCHEMA
       } = await import('@/lib/ai/prompts/organizations/profileGenerator');
 
       const result = await invokeAI({
@@ -155,7 +132,7 @@ function OrganizationCreate() {
         maturity_level: data.maturity_level || prev.maturity_level,
         funding_stage: data.funding_stage || prev.funding_stage
       }));
-      
+
       toast.success(t({ en: '✨ AI generated organization profile!', ar: '✨ تم إنشاء ملف الجهة!' }));
     } catch (error) {
       toast.error(t({ en: 'AI generation failed', ar: 'فشل التوليد' }));
@@ -165,7 +142,7 @@ function OrganizationCreate() {
   const handleRetranslate = async (field) => {
     const sourceField = field.includes('_en') ? field.replace('_en', '_ar') : field.replace('_ar', '_en');
     const sourceText = formData[sourceField];
-    
+
     if (!sourceText) {
       toast.error(t({ en: 'Source text empty', ar: 'النص المصدر فارغ' }));
       return;
@@ -182,7 +159,7 @@ function OrganizationCreate() {
           }
         }
       });
-      
+
       if (result.success) {
         setFormData(prev => ({ ...prev, [field]: result.data.translation }));
         setHasUserEdited(prev => ({ ...prev, [field]: false }));
@@ -329,7 +306,7 @@ function OrganizationCreate() {
                   <Input
                     value={formData.name_en}
                     onChange={(e) => {
-                      setFormData({...formData, name_en: e.target.value});
+                      setFormData({ ...formData, name_en: e.target.value });
                       setHasUserEdited(prev => ({ ...prev, name_en: true }));
                     }}
                   />
@@ -347,7 +324,7 @@ function OrganizationCreate() {
                   <Input
                     value={formData.name_ar}
                     onChange={(e) => {
-                      setFormData({...formData, name_ar: e.target.value});
+                      setFormData({ ...formData, name_ar: e.target.value });
                       setHasUserEdited(prev => ({ ...prev, name_ar: true }));
                     }}
                     dir="rtl"
@@ -370,7 +347,7 @@ function OrganizationCreate() {
                   <Textarea
                     value={formData.description_en}
                     onChange={(e) => {
-                      setFormData({...formData, description_en: e.target.value});
+                      setFormData({ ...formData, description_en: e.target.value });
                       setHasUserEdited(prev => ({ ...prev, description_en: true }));
                     }}
                     rows={4}
@@ -389,7 +366,7 @@ function OrganizationCreate() {
                   <Textarea
                     value={formData.description_ar}
                     onChange={(e) => {
-                      setFormData({...formData, description_ar: e.target.value});
+                      setFormData({ ...formData, description_ar: e.target.value });
                       setHasUserEdited(prev => ({ ...prev, description_ar: true }));
                     }}
                     rows={4}
@@ -411,443 +388,443 @@ function OrganizationCreate() {
                 </p>
               </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Region</Label>
-              <Select
-                value={formData.region_id}
-                onValueChange={(v) => setFormData({...formData, region_id: v, city_id: '' })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select region..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {regions.map((region) => (
-                    <SelectItem key={region.id} value={region.id}>
-                      {region.name_en}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>City</Label>
-              <Select
-                value={formData.city_id}
-                onValueChange={(v) => setFormData({...formData, city_id: v})}
-                disabled={!formData.region_id}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select city..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {cities.filter(c => c.region_id === formData.region_id).map((city) => (
-                    <SelectItem key={city.id} value={city.id}>
-                      {city.name_en}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Team Size</Label>
-              <Select
-                value={formData.team_size}
-                onValueChange={(v) => setFormData({...formData, team_size: v})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select range..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1-10">1-10</SelectItem>
-                  <SelectItem value="11-50">11-50</SelectItem>
-                  <SelectItem value="51-200">51-200</SelectItem>
-                  <SelectItem value="201-500">201-500</SelectItem>
-                  <SelectItem value="501-1000">501-1000</SelectItem>
-                  <SelectItem value="1000+">1000+</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Maturity Level</Label>
-              <Select
-                value={formData.maturity_level}
-                onValueChange={(v) => setFormData({...formData, maturity_level: v})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select maturity..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="early_stage">Early Stage</SelectItem>
-                  <SelectItem value="growth">Growth</SelectItem>
-                  <SelectItem value="established">Established</SelectItem>
-                  <SelectItem value="mature">Mature</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div>
-            <Label className="mb-2 block">{t({ en: 'Focus Sectors', ar: 'قطاعات التركيز' })}</Label>
-            <div className="grid grid-cols-3 gap-3">
-              {sectorOptions.map((sector) => (
-                <div key={sector} className="flex items-center gap-2">
-                  <Checkbox
-                    checked={formData.sectors.includes(sector)}
-                    onCheckedChange={() => toggleSector(sector)}
-                  />
-                  <label className="text-sm capitalize">{sector.replace(/_/g, ' ')}</label>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Specializations - Bilingual Array */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label>{t({ en: 'Specializations', ar: 'التخصصات' })}</Label>
-              <Button size="sm" variant="outline" onClick={() => setFormData({
-                ...formData,
-                specializations: [...(formData.specializations || []), { name_en: '', name_ar: '' }]
-              })}>
-                <Plus className="h-3 w-3 mr-1" />
-                {t({ en: 'Add', ar: 'إضافة' })}
-              </Button>
-            </div>
-            {(formData.specializations || []).map((spec, i) => (
-              <div key={i} className="p-3 border rounded bg-slate-50 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-600">
-                    {t({ en: `Specialization ${i + 1}`, ar: `التخصص ${i + 1}` })}
-                  </span>
-                  <Button size="sm" variant="ghost" onClick={() => setFormData({
-                    ...formData,
-                    specializations: formData.specializations.filter((_, idx) => idx !== i)
-                  })}>
-                    <X className="h-3 w-3 text-red-600" />
-                  </Button>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Input
-                    value={typeof spec === 'string' ? spec : spec.name_en || ''}
-                    onChange={(e) => {
-                      const updated = [...(formData.specializations || [])];
-                      updated[i] = typeof spec === 'string' ? { name_en: e.target.value, name_ar: '' } : { ...spec, name_en: e.target.value };
-                      setFormData({ ...formData, specializations: updated });
-                    }}
-                    placeholder={t({ en: 'Name (EN)', ar: 'الاسم (إنجليزي)' })}
-                    className="text-sm"
-                  />
-                  <Input
-                    value={typeof spec === 'string' ? '' : spec.name_ar || ''}
-                    onChange={(e) => {
-                      const updated = [...(formData.specializations || [])];
-                      updated[i] = typeof spec === 'string' ? { name_en: spec, name_ar: e.target.value } : { ...spec, name_ar: e.target.value };
-                      setFormData({ ...formData, specializations: updated });
-                    }}
-                    placeholder={t({ en: 'Name (AR)', ar: 'الاسم (عربي)' })}
-                    dir="rtl"
-                    className="text-sm"
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Capabilities - Bilingual Array */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label>{t({ en: 'Capabilities', ar: 'القدرات' })}</Label>
-              <Button size="sm" variant="outline" onClick={() => setFormData({
-                ...formData,
-                capabilities: [...(formData.capabilities || []), { name_en: '', name_ar: '' }]
-              })}>
-                <Plus className="h-3 w-3 mr-1" />
-                {t({ en: 'Add', ar: 'إضافة' })}
-              </Button>
-            </div>
-            {(formData.capabilities || []).map((cap, i) => (
-              <div key={i} className="p-3 border rounded bg-slate-50 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-600">
-                    {t({ en: `Capability ${i + 1}`, ar: `القدرة ${i + 1}` })}
-                  </span>
-                  <Button size="sm" variant="ghost" onClick={() => setFormData({
-                    ...formData,
-                    capabilities: formData.capabilities.filter((_, idx) => idx !== i)
-                  })}>
-                    <X className="h-3 w-3 text-red-600" />
-                  </Button>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Input
-                    value={cap.name_en || ''}
-                    onChange={(e) => {
-                      const updated = [...(formData.capabilities || [])];
-                      updated[i] = { ...cap, name_en: e.target.value };
-                      setFormData({ ...formData, capabilities: updated });
-                    }}
-                    placeholder={t({ en: 'Name (EN)', ar: 'الاسم (إنجليزي)' })}
-                    className="text-sm"
-                  />
-                  <Input
-                    value={cap.name_ar || ''}
-                    onChange={(e) => {
-                      const updated = [...(formData.capabilities || [])];
-                      updated[i] = { ...cap, name_ar: e.target.value };
-                      setFormData({ ...formData, capabilities: updated });
-                    }}
-                    placeholder={t({ en: 'Name (AR)', ar: 'الاسم (عربي)' })}
-                    dir="rtl"
-                    className="text-sm"
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label>Contact Email</Label>
-              <Input
-                type="email"
-                value={formData.contact_email}
-                onChange={(e) => setFormData({...formData, contact_email: e.target.value})}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Contact Phone</Label>
-              <Input
-                value={formData.contact_phone}
-                onChange={(e) => setFormData({...formData, contact_phone: e.target.value})}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Website</Label>
-              <Input
-                value={formData.website}
-                onChange={(e) => setFormData({...formData, website: e.target.value})}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Address</Label>
-            <Input
-              value={formData.address || ''}
-              onChange={(e) => setFormData({...formData, address: e.target.value})}
-              placeholder="Street address"
-            />
-          </div>
-
-          {/* Conditional: Funding & Investment - Only for startup/company/sme */}
-          {['startup', 'company', 'sme'].includes(formData.org_type) && (
-            <div className="border-t pt-6 space-y-4">
-              <h3 className="font-semibold text-slate-900">{t({ en: 'Funding & Investment', ar: 'التمويل والاستثمار' })}</h3>
-              <p className="text-xs text-slate-600">
-                {t({ en: 'Applicable to commercial organizations', ar: 'ينطبق على الجهات التجارية' })}
-              </p>
-              
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>{t({ en: 'Funding Stage', ar: 'مرحلة التمويل' })}</Label>
+                  <Label>Region</Label>
                   <Select
-                    value={formData.funding_stage || ''}
-                    onValueChange={(v) => setFormData({...formData, funding_stage: v})}
+                    value={formData.region_id}
+                    onValueChange={(v) => setFormData({ ...formData, region_id: v, city_id: '' })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={t({ en: 'Select stage...', ar: 'اختر المرحلة...' })} />
+                      <SelectValue placeholder="Select region..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="bootstrapped">{t({ en: 'Bootstrapped', ar: 'ذاتي التمويل' })}</SelectItem>
-                      <SelectItem value="seed">{t({ en: 'Seed', ar: 'تمويل أولي' })}</SelectItem>
-                      <SelectItem value="series_a">{t({ en: 'Series A', ar: 'السلسلة A' })}</SelectItem>
-                      <SelectItem value="series_b">{t({ en: 'Series B', ar: 'السلسلة B' })}</SelectItem>
-                      <SelectItem value="series_c">{t({ en: 'Series C', ar: 'السلسلة C' })}</SelectItem>
-                      <SelectItem value="public">{t({ en: 'Public', ar: 'عام' })}</SelectItem>
+                      {regions.map((region) => (
+                        <SelectItem key={region.id} value={region.id}>
+                          {region.name_en}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t({ en: 'Annual Revenue Range', ar: 'نطاق الإيرادات السنوية' })}</Label>
+                  <Label>City</Label>
                   <Select
-                    value={formData.annual_revenue_range || ''}
-                    onValueChange={(v) => setFormData({...formData, annual_revenue_range: v})}
+                    value={formData.city_id}
+                    onValueChange={(v) => setFormData({ ...formData, city_id: v })}
+                    disabled={!formData.region_id}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={t({ en: 'Select range...', ar: 'اختر النطاق...' })} />
+                      <SelectValue placeholder="Select city..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="0-1M">0-1M {t({ en: 'SAR', ar: 'ريال' })}</SelectItem>
-                      <SelectItem value="1M-10M">1M-10M {t({ en: 'SAR', ar: 'ريال' })}</SelectItem>
-                      <SelectItem value="10M-50M">10M-50M {t({ en: 'SAR', ar: 'ريال' })}</SelectItem>
-                      <SelectItem value="50M-100M">50M-100M {t({ en: 'SAR', ar: 'ريال' })}</SelectItem>
-                      <SelectItem value="100M+">100M+ {t({ en: 'SAR', ar: 'ريال' })}</SelectItem>
+                      {cities.filter(c => c.region_id === formData.region_id).map((city) => (
+                        <SelectItem key={city.id} value={city.id}>
+                          {city.name_en}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Team Size</Label>
+                  <Select
+                    value={formData.team_size}
+                    onValueChange={(v) => setFormData({ ...formData, team_size: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select range..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1-10">1-10</SelectItem>
+                      <SelectItem value="11-50">11-50</SelectItem>
+                      <SelectItem value="51-200">51-200</SelectItem>
+                      <SelectItem value="201-500">201-500</SelectItem>
+                      <SelectItem value="501-1000">501-1000</SelectItem>
+                      <SelectItem value="1000+">1000+</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Maturity Level</Label>
+                  <Select
+                    value={formData.maturity_level}
+                    onValueChange={(v) => setFormData({ ...formData, maturity_level: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select maturity..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="early_stage">Early Stage</SelectItem>
+                      <SelectItem value="growth">Growth</SelectItem>
+                      <SelectItem value="established">Established</SelectItem>
+                      <SelectItem value="mature">Mature</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <Label className="mb-2 block">{t({ en: 'Focus Sectors', ar: 'قطاعات التركيز' })}</Label>
+                <div className="grid grid-cols-3 gap-3">
+                  {sectorOptions.map((sector) => (
+                    <div key={sector} className="flex items-center gap-2">
+                      <Checkbox
+                        checked={formData.sectors.includes(sector)}
+                        onCheckedChange={() => toggleSector(sector)}
+                      />
+                      <label className="text-sm capitalize">{sector.replace(/_/g, ' ')}</label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Specializations - Bilingual Array */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>{t({ en: 'Specializations', ar: 'التخصصات' })}</Label>
+                  <Button size="sm" variant="outline" onClick={() => setFormData({
+                    ...formData,
+                    specializations: [...(formData.specializations || []), { name_en: '', name_ar: '' }]
+                  })}>
+                    <Plus className="h-3 w-3 mr-1" />
+                    {t({ en: 'Add', ar: 'إضافة' })}
+                  </Button>
+                </div>
+                {(formData.specializations || []).map((spec, i) => (
+                  <div key={i} className="p-3 border rounded bg-slate-50 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-slate-600">
+                        {t({ en: `Specialization ${i + 1}`, ar: `التخصص ${i + 1}` })}
+                      </span>
+                      <Button size="sm" variant="ghost" onClick={() => setFormData({
+                        ...formData,
+                        specializations: formData.specializations.filter((_, idx) => idx !== i)
+                      })}>
+                        <X className="h-3 w-3 text-red-600" />
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        value={typeof spec === 'string' ? spec : spec.name_en || ''}
+                        onChange={(e) => {
+                          const updated = [...(formData.specializations || [])];
+                          updated[i] = typeof spec === 'string' ? { name_en: e.target.value, name_ar: '' } : { ...spec, name_en: e.target.value };
+                          setFormData({ ...formData, specializations: updated });
+                        }}
+                        placeholder={t({ en: 'Name (EN)', ar: 'الاسم (إنجليزي)' })}
+                        className="text-sm"
+                      />
+                      <Input
+                        value={typeof spec === 'string' ? '' : spec.name_ar || ''}
+                        onChange={(e) => {
+                          const updated = [...(formData.specializations || [])];
+                          updated[i] = typeof spec === 'string' ? { name_en: spec, name_ar: e.target.value } : { ...spec, name_ar: e.target.value };
+                          setFormData({ ...formData, specializations: updated });
+                        }}
+                        placeholder={t({ en: 'Name (AR)', ar: 'الاسم (عربي)' })}
+                        dir="rtl"
+                        className="text-sm"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Capabilities - Bilingual Array */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>{t({ en: 'Capabilities', ar: 'القدرات' })}</Label>
+                  <Button size="sm" variant="outline" onClick={() => setFormData({
+                    ...formData,
+                    capabilities: [...(formData.capabilities || []), { name_en: '', name_ar: '' }]
+                  })}>
+                    <Plus className="h-3 w-3 mr-1" />
+                    {t({ en: 'Add', ar: 'إضافة' })}
+                  </Button>
+                </div>
+                {(formData.capabilities || []).map((cap, i) => (
+                  <div key={i} className="p-3 border rounded bg-slate-50 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-slate-600">
+                        {t({ en: `Capability ${i + 1}`, ar: `القدرة ${i + 1}` })}
+                      </span>
+                      <Button size="sm" variant="ghost" onClick={() => setFormData({
+                        ...formData,
+                        capabilities: formData.capabilities.filter((_, idx) => idx !== i)
+                      })}>
+                        <X className="h-3 w-3 text-red-600" />
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        value={cap.name_en || ''}
+                        onChange={(e) => {
+                          const updated = [...(formData.capabilities || [])];
+                          updated[i] = { ...cap, name_en: e.target.value };
+                          setFormData({ ...formData, capabilities: updated });
+                        }}
+                        placeholder={t({ en: 'Name (EN)', ar: 'الاسم (إنجليزي)' })}
+                        className="text-sm"
+                      />
+                      <Input
+                        value={cap.name_ar || ''}
+                        onChange={(e) => {
+                          const updated = [...(formData.capabilities || [])];
+                          updated[i] = { ...cap, name_ar: e.target.value };
+                          setFormData({ ...formData, capabilities: updated });
+                        }}
+                        placeholder={t({ en: 'Name (AR)', ar: 'الاسم (عربي)' })}
+                        dir="rtl"
+                        className="text-sm"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Contact Email</Label>
+                  <Input
+                    type="email"
+                    value={formData.contact_email}
+                    onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Contact Phone</Label>
+                  <Input
+                    value={formData.contact_phone}
+                    onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Website</Label>
+                  <Input
+                    value={formData.website}
+                    onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
-                <Label>{t({ en: 'Funding Rounds (JSON format)', ar: 'جولات التمويل' })}</Label>
-                <Textarea
-                  placeholder='[{"round_type": "seed", "amount": 1000000, "date": "2024-01-01", "lead_investor": "Investor Name"}]'
-                  value={JSON.stringify(formData.funding_rounds || [], null, 2)}
-                  onChange={(e) => {
-                    try {
-                      setFormData({...formData, funding_rounds: JSON.parse(e.target.value)});
-                    } catch {}
-                  }}
-                  rows={4}
-                  className="font-mono text-xs"
+                <Label>Address</Label>
+                <Input
+                  value={formData.address || ''}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  placeholder="Street address"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label>{t({ en: 'Key Investors (JSON format)', ar: 'المستثمرون الرئيسيون' })}</Label>
-                <Textarea
-                  placeholder='[{"name": "Investor Name", "type": "vc", "stake_percentage": 15}]'
-                  value={JSON.stringify(formData.key_investors || [], null, 2)}
-                  onChange={(e) => {
-                    try {
-                      setFormData({...formData, key_investors: JSON.parse(e.target.value)});
-                    } catch {}
-                  }}
-                  rows={4}
-                  className="font-mono text-xs"
-                />
-              </div>
-            </div>
-          )}
+              {/* Conditional: Funding & Investment - Only for startup/company/sme */}
+              {['startup', 'company', 'sme'].includes(formData.org_type) && (
+                <div className="border-t pt-6 space-y-4">
+                  <h3 className="font-semibold text-slate-900">{t({ en: 'Funding & Investment', ar: 'التمويل والاستثمار' })}</h3>
+                  <p className="text-xs text-slate-600">
+                    {t({ en: 'Applicable to commercial organizations', ar: 'ينطبق على الجهات التجارية' })}
+                  </p>
 
-          <div className="border-t pt-6 space-y-4">
-            <h3 className="font-semibold text-slate-900">{t({ en: 'Partnerships & Agreements', ar: 'الشراكات والاتفاقيات' })}</h3>
-            
-            <div className="space-y-2">
-              <Label>{t({ en: 'Partnership Agreements (JSON format)', ar: 'اتفاقيات الشراكة' })}</Label>
-              <Textarea
-                placeholder='[{"partner_name": "Company X", "type": "Strategic", "start_date": "2024-01-01", "status": "active"}]'
-                value={JSON.stringify(formData.partnership_agreements || [], null, 2)}
-                onChange={(e) => {
-                  try {
-                    setFormData({...formData, partnership_agreements: JSON.parse(e.target.value)});
-                  } catch {}
-                }}
-                rows={4}
-              />
-            </div>
-          </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>{t({ en: 'Funding Stage', ar: 'مرحلة التمويل' })}</Label>
+                      <Select
+                        value={formData.funding_stage || ''}
+                        onValueChange={(v) => setFormData({ ...formData, funding_stage: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={t({ en: 'Select stage...', ar: 'اختر المرحلة...' })} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="bootstrapped">{t({ en: 'Bootstrapped', ar: 'ذاتي التمويل' })}</SelectItem>
+                          <SelectItem value="seed">{t({ en: 'Seed', ar: 'تمويل أولي' })}</SelectItem>
+                          <SelectItem value="series_a">{t({ en: 'Series A', ar: 'السلسلة A' })}</SelectItem>
+                          <SelectItem value="series_b">{t({ en: 'Series B', ar: 'السلسلة B' })}</SelectItem>
+                          <SelectItem value="series_c">{t({ en: 'Series C', ar: 'السلسلة C' })}</SelectItem>
+                          <SelectItem value="public">{t({ en: 'Public', ar: 'عام' })}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{t({ en: 'Annual Revenue Range', ar: 'نطاق الإيرادات السنوية' })}</Label>
+                      <Select
+                        value={formData.annual_revenue_range || ''}
+                        onValueChange={(v) => setFormData({ ...formData, annual_revenue_range: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={t({ en: 'Select range...', ar: 'اختر النطاق...' })} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0-1M">0-1M {t({ en: 'SAR', ar: 'ريال' })}</SelectItem>
+                          <SelectItem value="1M-10M">1M-10M {t({ en: 'SAR', ar: 'ريال' })}</SelectItem>
+                          <SelectItem value="10M-50M">10M-50M {t({ en: 'SAR', ar: 'ريال' })}</SelectItem>
+                          <SelectItem value="50M-100M">50M-100M {t({ en: 'SAR', ar: 'ريال' })}</SelectItem>
+                          <SelectItem value="100M+">100M+ {t({ en: 'SAR', ar: 'ريال' })}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
-          <div className="border-t pt-6 space-y-4">
-            <h3 className="font-semibold text-slate-900">{t({ en: 'Regulatory Compliance', ar: 'الامتثال التنظيمي' })}</h3>
-            
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.regulatory_compliance?.iso_certified || false}
-                    onChange={(e) => setFormData({
-                      ...formData, 
-                      regulatory_compliance: {...(formData.regulatory_compliance || {}), iso_certified: e.target.checked}
-                    })}
+                  <div className="space-y-2">
+                    <Label>{t({ en: 'Funding Rounds (JSON format)', ar: 'جولات التمويل' })}</Label>
+                    <Textarea
+                      placeholder='[{"round_type": "seed", "amount": 1000000, "date": "2024-01-01", "lead_investor": "Investor Name"}]'
+                      value={JSON.stringify(formData.funding_rounds || [], null, 2)}
+                      onChange={(e) => {
+                        try {
+                          setFormData({ ...formData, funding_rounds: JSON.parse(e.target.value) });
+                        } catch { }
+                      }}
+                      rows={4}
+                      className="font-mono text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>{t({ en: 'Key Investors (JSON format)', ar: 'المستثمرون الرئيسيون' })}</Label>
+                    <Textarea
+                      placeholder='[{"name": "Investor Name", "type": "vc", "stake_percentage": 15}]'
+                      value={JSON.stringify(formData.key_investors || [], null, 2)}
+                      onChange={(e) => {
+                        try {
+                          setFormData({ ...formData, key_investors: JSON.parse(e.target.value) });
+                        } catch { }
+                      }}
+                      rows={4}
+                      className="font-mono text-xs"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="border-t pt-6 space-y-4">
+                <h3 className="font-semibold text-slate-900">{t({ en: 'Partnerships & Agreements', ar: 'الشراكات والاتفاقيات' })}</h3>
+
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Partnership Agreements (JSON format)', ar: 'اتفاقيات الشراكة' })}</Label>
+                  <Textarea
+                    placeholder='[{"partner_name": "Company X", "type": "Strategic", "start_date": "2024-01-01", "status": "active"}]'
+                    value={JSON.stringify(formData.partnership_agreements || [], null, 2)}
+                    onChange={(e) => {
+                      try {
+                        setFormData({ ...formData, partnership_agreements: JSON.parse(e.target.value) });
+                      } catch { }
+                    }}
+                    rows={4}
                   />
-                  <Label>ISO Certified</Label>
                 </div>
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.regulatory_compliance?.gdpr_compliant || false}
-                    onChange={(e) => setFormData({
-                      ...formData, 
-                      regulatory_compliance: {...(formData.regulatory_compliance || {}), gdpr_compliant: e.target.checked}
-                    })}
-                  />
-                  <Label>GDPR Compliant</Label>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.regulatory_compliance?.pdpl_compliant || false}
-                    onChange={(e) => setFormData({
-                      ...formData, 
-                      regulatory_compliance: {...(formData.regulatory_compliance || {}), pdpl_compliant: e.target.checked}
-                    })}
-                  />
-                  <Label>PDPL Compliant</Label>
-                </div>
-              </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label>ISO Standards (comma-separated)</Label>
-              <Input
-                placeholder="ISO 9001, ISO 27001, ISO 14001"
-                value={formData.regulatory_compliance?.iso_standards?.join(', ') || ''}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  regulatory_compliance: {
-                    ...(formData.regulatory_compliance || {}),
-                    iso_standards: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
-                  }
-                })}
-              />
-            </div>
-          </div>
+              <div className="border-t pt-6 space-y-4">
+                <h3 className="font-semibold text-slate-900">{t({ en: 'Regulatory Compliance', ar: 'الامتثال التنظيمي' })}</h3>
 
-          <div className="border-t pt-6 space-y-4">
-            <h3 className="font-semibold text-slate-900">{t({ en: 'Intellectual Property', ar: 'الملكية الفكرية' })}</h3>
-            
-            <div className="space-y-2">
-              <Label>{t({ en: 'Patents (JSON format)', ar: 'براءات الاختراع' })}</Label>
-              <Textarea
-                placeholder='[{"title": "Patent Title", "number": "SA123456", "status": "granted", "filing_date": "2023-01-01"}]'
-                value={JSON.stringify(formData.intellectual_property?.patents || [], null, 2)}
-                onChange={(e) => {
-                  try {
-                    setFormData({
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={formData.regulatory_compliance?.iso_certified || false}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          regulatory_compliance: { ...(formData.regulatory_compliance || {}), iso_certified: e.target.checked }
+                        })}
+                      />
+                      <Label>ISO Certified</Label>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={formData.regulatory_compliance?.gdpr_compliant || false}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          regulatory_compliance: { ...(formData.regulatory_compliance || {}), gdpr_compliant: e.target.checked }
+                        })}
+                      />
+                      <Label>GDPR Compliant</Label>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={formData.regulatory_compliance?.pdpl_compliant || false}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          regulatory_compliance: { ...(formData.regulatory_compliance || {}), pdpl_compliant: e.target.checked }
+                        })}
+                      />
+                      <Label>PDPL Compliant</Label>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>ISO Standards (comma-separated)</Label>
+                  <Input
+                    placeholder="ISO 9001, ISO 27001, ISO 14001"
+                    value={formData.regulatory_compliance?.iso_standards?.join(', ') || ''}
+                    onChange={(e) => setFormData({
                       ...formData,
-                      intellectual_property: {
-                        ...(formData.intellectual_property || {}),
-                        patents: JSON.parse(e.target.value)
+                      regulatory_compliance: {
+                        ...(formData.regulatory_compliance || {}),
+                        iso_standards: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
                       }
-                    });
-                  } catch {}
-                }}
-                rows={4}
-              />
-            </div>
+                    })}
+                  />
+                </div>
+              </div>
 
-            <div className="space-y-2">
-              <Label>{t({ en: 'Trademarks (JSON format)', ar: 'العلامات التجارية' })}</Label>
-              <Textarea
-                placeholder='[{"name": "Brand Name", "registration_number": "TM123456", "registration_date": "2023-01-01"}]'
-                value={JSON.stringify(formData.intellectual_property?.trademarks || [], null, 2)}
-                onChange={(e) => {
-                  try {
-                    setFormData({
-                      ...formData,
-                      intellectual_property: {
-                        ...(formData.intellectual_property || {}),
-                        trademarks: JSON.parse(e.target.value)
-                      }
-                    });
-                  } catch {}
-                }}
-                rows={4}
-              />
-            </div>
-          </div>
+              <div className="border-t pt-6 space-y-4">
+                <h3 className="font-semibold text-slate-900">{t({ en: 'Intellectual Property', ar: 'الملكية الفكرية' })}</h3>
 
-        </CardContent>
-      </Card>
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Patents (JSON format)', ar: 'براءات الاختراع' })}</Label>
+                  <Textarea
+                    placeholder='[{"title": "Patent Title", "number": "SA123456", "status": "granted", "filing_date": "2023-01-01"}]'
+                    value={JSON.stringify(formData.intellectual_property?.patents || [], null, 2)}
+                    onChange={(e) => {
+                      try {
+                        setFormData({
+                          ...formData,
+                          intellectual_property: {
+                            ...(formData.intellectual_property || {}),
+                            patents: JSON.parse(e.target.value)
+                          }
+                        });
+                      } catch { }
+                    }}
+                    rows={4}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>{t({ en: 'Trademarks (JSON format)', ar: 'العلامات التجارية' })}</Label>
+                  <Textarea
+                    placeholder='[{"name": "Brand Name", "registration_number": "TM123456", "registration_date": "2023-01-01"}]'
+                    value={JSON.stringify(formData.intellectual_property?.trademarks || [], null, 2)}
+                    onChange={(e) => {
+                      try {
+                        setFormData({
+                          ...formData,
+                          intellectual_property: {
+                            ...(formData.intellectual_property || {}),
+                            trademarks: JSON.parse(e.target.value)
+                          }
+                        });
+                      } catch { }
+                    }}
+                    rows={4}
+                  />
+                </div>
+              </div>
+
+            </CardContent>
+          </Card>
         </div>
       )}
 
@@ -874,11 +851,11 @@ function OrganizationCreate() {
             </Button>
           ) : (
             <Button
-              onClick={() => createMutation.mutate(formData)}
-              disabled={createMutation.isPending || !formData.name_en || !formData.org_type}
+              onClick={() => createOrganization.mutate(formData)}
+              disabled={createOrganization.isPending || !formData.name_en || !formData.org_type}
               className="bg-gradient-to-r from-green-600 to-emerald-600"
             >
-              {createMutation.isPending ? (
+              {createOrganization.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {t({ en: 'Creating...', ar: 'جاري الإنشاء...' })}

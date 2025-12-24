@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,85 +9,40 @@ import { toast } from 'sonner';
 import StageSpecificEvaluationForm from '../evaluation/StageSpecificEvaluationForm';
 import PermissionGate from '@/components/permissions/PermissionGate';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { useRDProposalMutations } from '@/hooks/useRDProposalMutations';
+import { useMyExpertEvaluation, useExpertEvaluationMutations } from '@/hooks/useExpertEvaluations';
 
 export default function RDProposalReviewGate({ proposal, onClose }) {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
-  const [decision, setDecision] = useState('');
-  const [notes, setNotes] = useState('');
   const [showEvalForm, setShowEvalForm] = useState(false);
   const { user } = useAuth();
   const { triggerEmail } = useEmailTrigger();
+  const { reviewProposal } = useRDProposalMutations();
+  const { submitEvaluation } = useExpertEvaluationMutations();
 
-  const { data: existingEvaluation } = useQuery({
-    queryKey: ['proposal-evaluation', proposal.id],
-    queryFn: async () => {
-      const { data: evals } = await supabase.from('expert_evaluations').select('*')
-        .eq('entity_type', 'rd_proposal')
-        .eq('entity_id', proposal.id)
-        .eq('expert_email', user?.email)
-        .eq('evaluation_stage', 'review');
-      return evals?.[0];
-    },
-    enabled: !!user
-  });
-
-  const reviewMutation = useMutation({
-    mutationFn: async (reviewData) => {
-      // Update proposal status
-      await supabase.from('rd_proposals').update({
-        status: reviewData.decision === 'approve' ? 'shortlisted' : 
-                reviewData.decision === 'reject' ? 'rejected' : 'revisions_requested',
-        review_notes: reviewData.notes,
-        reviewed_by: user?.email,
-        review_date: new Date().toISOString()
-      }).eq('id', proposal.id);
-
-      // Log activity
-      await supabase.from('system_activities').insert({
-        entity_type: 'RDProposal',
-        entity_id: proposal.id,
-        activity_type: 'status_changed',
-        description: `Review completed: ${reviewData.decision}`,
-        performed_by: user?.email,
-        timestamp: new Date().toISOString(),
-        metadata: { decision: reviewData.decision, notes: reviewData.notes }
-      });
-    },
-    onSuccess: async (_, reviewData) => {
-      queryClient.invalidateQueries(['rd-proposal']);
-      
-      // Trigger proposal.reviewed email
-      try {
-        await triggerEmail('proposal.reviewed', {
-          entityType: 'rd_proposal',
-          entityId: proposal.id,
-          variables: {
-            proposalTitle: proposal.title_en,
-            decision: reviewData.decision,
-            reviewerNotes: reviewData.notes,
-            reviewerEmail: user?.email
-          }
-        });
-      } catch (error) {
-        console.error('Failed to send proposal.reviewed email:', error);
-      }
-      
-      toast.success(t({ en: 'Review submitted', ar: 'تم تقديم المراجعة' }));
-      onClose?.();
-    }
-  });
+  // Use the new hook for fetching the specific evaluation
+  const { data: existingEvaluation } = useMyExpertEvaluation(
+    'rd_proposal',
+    proposal.id,
+    user?.email,
+    'review'
+  );
 
   const handleEvaluationSubmit = async (evaluationData) => {
-    await supabase.from('expert_evaluations').insert(evaluationData);
-    queryClient.invalidateQueries(['proposal-evaluation']);
-    toast.success(t({ en: 'Evaluation saved', ar: 'تم حفظ التقييم' }));
-    setShowEvalForm(false);
+    try {
+      await submitEvaluation.mutateAsync(evaluationData);
+      toast.success(t({ en: 'Evaluation saved', ar: 'تم حفظ التقييم' }));
+      setShowEvalForm(false);
+
+    } catch (error) {
+      toast.error(t({ en: 'Failed to save', ar: 'فشل الحفظ' }));
+    }
   };
 
   return (
-    <PermissionGate 
-      anyPermission={['rd_proposal_evaluate', 'rd_proposal_review', 'expert_evaluation']}
+    <PermissionGate
+      permissions={['rd_proposal_evaluate', 'rd_proposal_review', 'expert_evaluation']}
+      anyPermission={true}
       fallback={
         <Card className="border-2 border-red-300 bg-red-50">
           <CardContent className="pt-6 text-center">
@@ -163,11 +116,11 @@ export default function RDProposalReviewGate({ proposal, onClose }) {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-600">{t({ en: 'Overall Score:', ar: 'الدرجة الكلية:' })}</span>
-                  <span className="text-2xl font-bold text-green-600">{existingEvaluation.overall_score}</span>
+                  <span className="text-2xl font-bold text-green-600">{existingEvaluation?.overall_score}</span>
                 </div>
                 <div className="mt-2">
                   <Badge className="bg-green-600 text-white">
-                    {existingEvaluation.recommendation.replace(/_/g, ' ')}
+                    {existingEvaluation?.recommendation?.replace(/_/g, ' ')}
                   </Badge>
                 </div>
               </div>

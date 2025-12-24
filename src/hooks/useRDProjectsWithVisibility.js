@@ -14,7 +14,7 @@ import { usePermissions } from '@/components/permissions/usePermissions';
  * - Others: Published projects only
  */
 export function useRDProjectsWithVisibility(options = {}) {
-  const { 
+  const {
     status,
     sectorId,
     projectType,
@@ -23,19 +23,19 @@ export function useRDProjectsWithVisibility(options = {}) {
   } = options;
 
   const { isAdmin, hasRole, userId, profile } = usePermissions();
-  const { 
-    isNational, 
-    sectorIds, 
-    userMunicipalityId, 
+  const {
+    isNational,
+    sectorIds,
+    userMunicipalityId,
     nationalMunicipalityIds,
     hasFullVisibility,
-    isLoading: visibilityLoading 
+    isLoading: visibilityLoading
   } = useVisibilitySystem();
 
-  const isStaffUser = hasRole('municipality_staff') || 
-                      hasRole('municipality_admin') || 
-                      hasRole('deputyship_staff') || 
-                      hasRole('deputyship_admin');
+  const isStaffUser = hasRole('municipality_staff') ||
+    hasRole('municipality_admin') ||
+    hasRole('deputyship_staff') ||
+    hasRole('deputyship_admin');
 
   const isResearcher = hasRole('academia') || hasRole('researcher');
 
@@ -73,7 +73,7 @@ export function useRDProjectsWithVisibility(options = {}) {
 
       // Apply status filter if provided
       if (status) {
-        query = query.eq('status', status);
+        query = /** @type {any} */(query).eq('status', status);
       }
 
       // Apply sector filter if provided
@@ -162,6 +162,33 @@ export function useRDProjectsWithVisibility(options = {}) {
     },
     enabled: !visibilityLoading,
     staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+}
+
+/**
+ * Hook to fetch a single R&D Project by ID with visibility checks
+ * @param {string} projectId 
+ */
+export function useRDProject(projectId) {
+  return useQuery({
+    queryKey: ['rd-project', projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('rd_projects')
+        .select(`
+          *,
+          municipality:municipalities(id, name_en, name_ar, region_id),
+          sector:sectors(id, name_en, name_ar, code),
+          institution:institutions(id, name_en, name_ar)
+        `)
+        .eq('id', projectId)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!projectId,
+    staleTime: 5 * 60 * 1000
   });
 }
 

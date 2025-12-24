@@ -1,27 +1,26 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from './LanguageContext';
 import { XCircle, Loader2, AlertTriangle, FileText, Lightbulb } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { 
-  POST_MORTEM_SYSTEM_PROMPT, 
-  buildPostMortemPrompt, 
-  POST_MORTEM_SCHEMA 
+import { usePilotMutations } from '@/hooks/usePilotMutations';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  POST_MORTEM_SYSTEM_PROMPT,
+  buildPostMortemPrompt,
+  POST_MORTEM_SCHEMA
 } from '@/lib/ai/prompts/pilots/postMortem';
 
-function PilotTerminationWorkflow({ pilot, onClose }) {
+export default function PilotTerminationWorkflow({ pilot, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const [reason, setReason] = useState('');
   const [lessonsLearned, setLessonsLearned] = useState('');
   const [aiAnalysis, setAiAnalysis] = useState(null);
-  const queryClient = useQueryClient();
   const { invokeAI, status, isLoading: generatingAnalysis, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { updatePilot } = usePilotMutations();
 
   const terminationReasons = [
     { value: 'budget_constraints', label: { en: 'Budget Constraints', ar: 'قيود الميزانية' } },
@@ -35,30 +34,24 @@ function PilotTerminationWorkflow({ pilot, onClose }) {
 
   const [selectedReason, setSelectedReason] = useState('');
 
-  const terminateMutation = useMutation({
-    mutationFn: async () => {
-      await base44.entities.Pilot.update(pilot.id, {
+  const handleTerminate = () => {
+    updatePilot.mutate({
+      id: pilot.id,
+      data: {
         stage: 'terminated',
         termination_reason: reason,
         termination_date: new Date().toISOString(),
         lessons_learned: lessonsLearned ? [
           { category: 'termination', lesson: lessonsLearned, recommendation: aiAnalysis?.recommendations?.[0]?.recommendation || '' }
-        ] : pilot.lessons_learned
-      });
-      await base44.entities.SystemActivity.create({
-        activity_type: 'pilot_terminated',
-        entity_type: 'Pilot',
-        entity_id: pilot.id,
-        description: `Pilot "${pilot.title_en}" terminated`,
+        ] : pilot.lessons_learned,
         metadata: { reason: selectedReason, analysis: aiAnalysis }
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['pilot']);
-      toast.success(t({ en: 'Pilot terminated', ar: 'تم إنهاء التجربة' }));
-      if (onClose) onClose();
-    }
-  });
+      }
+    }, {
+      onSuccess: () => {
+        if (onClose) onClose();
+      }
+    });
+  };
 
   const generatePostMortem = async () => {
     const result = await invokeAI({
@@ -101,7 +94,7 @@ function PilotTerminationWorkflow({ pilot, onClose }) {
           <XCircle className="h-5 w-5" />
           {t({ en: 'Terminate Pilot', ar: 'إنهاء التجربة' })}
         </CardTitle>
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails className="mt-2" />
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={null} showDetails className="mt-2" />
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="p-4 bg-white rounded-lg border border-red-200">
@@ -201,11 +194,11 @@ function PilotTerminationWorkflow({ pilot, onClose }) {
             {t({ en: 'Cancel', ar: 'إلغاء' })}
           </Button>
           <Button
-            onClick={() => terminateMutation.mutate()}
-            disabled={!selectedReason || !reason || terminateMutation.isPending}
+            onClick={handleTerminate}
+            disabled={!selectedReason || !reason || updatePilot.isPending}
             className="flex-1 bg-red-600 hover:bg-red-700"
           >
-            {terminateMutation.isPending ? (
+            {updatePilot.isPending ? (
               <Loader2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} animate-spin`} />
             ) : (
               <XCircle className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
@@ -217,5 +210,3 @@ function PilotTerminationWorkflow({ pilot, onClose }) {
     </Card>
   );
 }
-
-export default PilotTerminationWorkflow;

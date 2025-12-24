@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useStrategicPlanInvalidator } from '@/hooks/useStrategicPlanInvalidator';
+import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
+import { useStrategyMutations } from '@/hooks/useStrategyMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,62 +15,42 @@ export default function StrategicPlanApprovalGate() {
   const { language, isRTL, t } = useLanguage();
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [reviewComments, setReviewComments] = useState('');
-  const queryClient = useQueryClient();
+  const { invalidateStrategicPlans } = useStrategicPlanInvalidator();
   const { user } = useAuth();
 
-  const { data: plans = [] } = useQuery({
-    queryKey: ['strategic-plans-approval'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('strategic_plans')
-        .select('*')
-        .or('is_template.is.null,is_template.eq.false')
-        .or('is_deleted.is.null,is_deleted.eq.false')
-        .order('created_at', { ascending: false });
-      return data || [];
-    }
-  });
+  const { updateStrategy } = useStrategyMutations();
 
-  const approvalMutation = useMutation({
-    mutationFn: async ({ plan_id, action, comments }) => {
-      const updateData = {
-        approval_status: action === 'approve' ? 'approved' : 'rejected',
-        approval_comments: comments,
-        approved_at: action === 'approve' ? new Date().toISOString() : null,
-        approved_by: user?.email,
-        updated_at: new Date().toISOString()
-      };
-      
-      // If approving, also set status to active
-      if (action === 'approve') {
-        updateData.status = 'active';
-        updateData.activated_at = new Date().toISOString();
-        updateData.activated_by = user?.email;
-      }
-      
-      const { data, error } = await supabase
-        .from('strategic_plans')
-        .update(updateData)
-        .eq('id', plan_id)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['strategic-plans']);
-      queryClient.invalidateQueries(['strategic-plans-admin']);
-      queryClient.invalidateQueries(['strategic-plans-global']);
-      queryClient.invalidateQueries(['strategic-plans-approval']);
-      setSelectedPlan(null);
-      setReviewComments('');
-      toast.success(t({ en: 'Action completed', ar: 'تم إكمال الإجراء' }));
-    },
-    onError: (error) => {
-      toast.error(t({ en: 'Action failed', ar: 'فشل الإجراء' }) + ': ' + error.message);
+  const { data: plans = [] } = useStrategiesWithVisibility();
+
+  const handleDecision = (plan_id, action, comments) => {
+    const updateData = {
+      approval_status: action === 'approve' ? 'approved' : 'rejected',
+      approval_comments: comments,
+      approved_at: action === 'approve' ? new Date().toISOString() : null,
+      approved_by: user?.email,
+      updated_at: new Date().toISOString()
+    };
+
+    // If approving, also set status to active
+    if (action === 'approve') {
+      updateData.status = 'active';
+      updateData.activated_at = new Date().toISOString();
+      updateData.activated_by = user?.email;
     }
-  });
+
+    updateStrategy.mutate({
+      id: plan_id,
+      data: updateData,
+      metadata: { action, comments }
+    }, {
+      onSuccess: () => {
+        setSelectedPlan(null);
+        setReviewComments('');
+        // Additional invalidations if needed, but hook handles main keys
+        invalidateStrategicPlans();
+      }
+    });
+  };
 
   const pendingPlans = plans.filter(p => p.approval_status === 'pending' || !p.approval_status);
 
@@ -165,16 +146,16 @@ export default function StrategicPlanApprovalGate() {
 
                         <div className="flex gap-3">
                           <Button
-                            onClick={() => approvalMutation.mutate({ plan_id: plan.id, action: 'approve', comments: reviewComments })}
-                            disabled={approvalMutation.isPending}
+                            onClick={() => handleDecision(plan.id, 'approve', reviewComments)}
+                            disabled={updateStrategy.isPending}
                             className="flex-1 bg-green-600"
                           >
                             <CheckCircle2 className="h-4 w-4 mr-2" />
                             {t({ en: 'Approve', ar: 'موافقة' })}
                           </Button>
                           <Button
-                            onClick={() => approvalMutation.mutate({ plan_id: plan.id, action: 'reject', comments: reviewComments })}
-                            disabled={approvalMutation.isPending}
+                            onClick={() => handleDecision(plan.id, 'reject', reviewComments)}
+                            disabled={updateStrategy.isPending}
                             variant="outline"
                             className="flex-1 border-red-600 text-red-600"
                           >

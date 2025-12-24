@@ -1,5 +1,5 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { usePrograms } from '@/hooks/usePrograms';
+import { useProgramPilotLinks } from '@/hooks/useProgramIntegrations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../components/LanguageContext';
 import { TrendingUp, TestTube, Target, Users } from 'lucide-react';
@@ -9,15 +9,10 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 function ProgramImpactDashboard() {
   const { t } = useLanguage();
 
-  const { data: programLinks = [], isLoading } = useQuery({
-    queryKey: ['program-pilot-links'],
-    queryFn: () => base44.entities.ProgramPilotLink.list('-created_date')
-  });
+  const { data: programLinks = [], isLoading: linksLoading } = useProgramPilotLinks();
+  const { programs, isLoading: programsLoading } = usePrograms();
 
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs'],
-    queryFn: () => base44.entities.Program.list()
-  });
+  const isLoading = linksLoading || programsLoading;
 
   const conversionRate = programLinks.length > 0
     ? (programLinks.filter(pl => pl.conversion_status === 'converted').length / programLinks.length) * 100

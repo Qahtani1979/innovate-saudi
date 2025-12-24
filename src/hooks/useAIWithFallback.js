@@ -44,7 +44,7 @@ export function useAIWithFallback(options = {}) {
   const [error, setError] = useState(null);
   const [rateLimitInfo, setRateLimitInfo] = useState(null);
 
-  const invokeAI = useCallback(async ({ prompt, response_json_schema, system_prompt }) => {
+  const invokeAI = useCallback(async ({ prompt, response_json_schema, system_prompt = '' }) => {
     setStatus(AI_STATUS.LOADING);
     setError(null);
 
@@ -79,7 +79,7 @@ export function useAIWithFallback(options = {}) {
       }
 
       setStatus(AI_STATUS.SUCCESS);
-      
+
       // Extract the response data properly - return it directly for easier access
       const responseData = result?.response || result;
       return { success: true, data: responseData, fallback: false };

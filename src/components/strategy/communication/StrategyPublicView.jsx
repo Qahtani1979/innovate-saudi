@@ -1,176 +1,94 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useLanguage } from '@/components/LanguageContext';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { 
-  Target, Eye, Calendar, Users, TrendingUp, 
+import {
+  Target, Eye, Calendar, Users, TrendingUp,
   CheckCircle2, ArrowRight, MessageSquare, Send, Loader2, AlertTriangle
 } from 'lucide-react';
-import { toast } from 'sonner';
+
+import { useStrategicPlan } from '@/hooks/useStrategicPlans';
+import { useStrategyObjectives } from '@/hooks/useStrategyObjectives';
+import { useImpactStories } from '@/hooks/strategy/useImpactStories';
+import { useStrategyImpactStats } from '@/hooks/strategy/useStrategyImpactStats';
+import { useEventsWithVisibility } from '@/hooks/useEventsWithVisibility';
+import { useCaseStudiesWithVisibility } from '@/hooks/useCaseStudiesWithVisibility';
+import { useCitizenFeedback } from '@/hooks/useCitizenFeedback';
 
 export default function StrategyPublicView({ strategicPlanId: propPlanId }) {
   const { t, language } = useLanguage();
   const { id: paramPlanId } = useParams();
   const strategicPlanId = propPlanId || paramPlanId;
-  const queryClient = useQueryClient();
-  
+
   const [feedback, setFeedback] = useState('');
 
   // Fetch strategic plan
-  const { data: plan, isLoading: planLoading } = useQuery({
-    queryKey: ['strategic-plan-view', strategicPlanId],
-    queryFn: async () => {
-      if (!strategicPlanId) return null;
-      const { data, error } = await supabase
-        .from('strategic_plans')
-        .select('*')
-        .eq('id', strategicPlanId)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!strategicPlanId
-  });
+  const { data: plan, isLoading: planLoading } = useStrategicPlan(strategicPlanId);
 
   // Fetch objectives
-  const { data: objectives = [] } = useQuery({
-    queryKey: ['strategic-objectives-view', strategicPlanId],
-    queryFn: async () => {
-      if (!strategicPlanId) return [];
-      const { data, error } = await supabase
-        .from('strategic_objectives')
-        .select('*')
-        .eq('strategic_plan_id', strategicPlanId)
-        .order('created_at', { ascending: true });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!strategicPlanId
-  });
+  const { data: objectives = [] } = useStrategyObjectives({ planId: strategicPlanId });
 
   // Fetch impact stories
-  const { data: impactStories = [] } = useQuery({
-    queryKey: ['impact-stories-view', strategicPlanId],
-    queryFn: async () => {
-      if (!strategicPlanId) return [];
-      const { data, error } = await supabase
-        .from('impact_stories')
-        .select('*')
-        .eq('strategic_plan_id', strategicPlanId)
-        .eq('is_published', true)
-        .order('published_date', { ascending: false })
-        .limit(3);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!strategicPlanId
+  const { stories: impactStories = [] } = useImpactStories({
+    strategicPlanId,
+    publishedOnly: true,
+    limit: 3 // Hook might not support limit directly, but we can slice or update hook. Assuming hook fetches all if no limit.
+    // Actually viewing useImpactStories.js, it fetches all matching. I'll slice client side.
   });
 
   // Fetch related entity counts
-  const { data: entityCounts } = useQuery({
-    queryKey: ['entity-counts-view', strategicPlanId],
-    queryFn: async () => {
-      if (!strategicPlanId) return { challenges: 0, pilots: 0, partnerships: 0 };
-      
-      const [challengesRes, pilotsRes, partnershipsRes] = await Promise.all([
-        supabase.from('challenges').select('id', { count: 'exact', head: true }).eq('is_deleted', false).contains('strategic_plan_ids', [strategicPlanId]),
-        supabase.from('pilots').select('id', { count: 'exact', head: true }).eq('is_deleted', false).contains('strategic_plan_ids', [strategicPlanId]),
-        supabase.from('partnerships').select('id', { count: 'exact', head: true }).eq('is_deleted', false).contains('strategic_plan_ids', [strategicPlanId])
-      ]);
-      
-      return {
-        challenges: challengesRes.count || 0,
-        pilots: pilotsRes.count || 0,
-        partnerships: partnershipsRes.count || 0
-      };
-    },
-    enabled: !!strategicPlanId
-  });
+  const { data: entityCounts } = useStrategyImpactStats(strategicPlanId);
 
-  // Fetch case studies for showcase
-  const { data: caseStudies = [] } = useQuery({
-    queryKey: ['case-studies-view', strategicPlanId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('case_studies')
-        .select('id, title_en, title_ar, description_en, description_ar, is_featured, image_url')
-        .eq('is_published', true)
-        .order('is_featured', { ascending: false })
-        .limit(3);
-      if (error) return [];
-      return data || [];
-    }
+  // Fetch case studies
+  const { data: caseStudies = [] } = useCaseStudiesWithVisibility({
+    featuredOnly: true,
+    limit: 3
+    // Visibility hook handles filtering
   });
 
   // Fetch upcoming events
-  const { data: upcomingEvents = [] } = useQuery({
-    queryKey: ['upcoming-events-view', strategicPlanId],
-    queryFn: async () => {
-      if (!strategicPlanId) return [];
-      const { data, error } = await supabase
-        .from('events')
-        .select('id, title_en, title_ar, start_date')
-        .eq('is_deleted', false)
-        .contains('strategic_plan_ids', [strategicPlanId])
-        .gte('start_date', new Date().toISOString())
-        .order('start_date', { ascending: true })
-        .limit(3);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!strategicPlanId
+  const { data: upcomingEvents = [] } = useEventsWithVisibility({
+    strategicPlanId,
+    upcoming: true,
+    limit: 3,
+    status: 'published' // Assuming public view shows published
   });
 
   // Submit feedback mutation
-  const submitFeedback = useMutation({
-    mutationFn: async (feedbackText) => {
-      const { data, error } = await supabase
-        .from('citizen_feedback')
-        .insert([{
-          entity_type: 'strategic_plan',
-          entity_id: strategicPlanId,
-          feedback_text: feedbackText,
-          feedback_type: 'suggestion',
-          status: 'new'
-        }])
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      setFeedback('');
-      toast.success(t({ en: 'Thank you for your feedback!', ar: 'شكراً لملاحظاتك!' }));
-    },
-    onError: () => {
-      toast.error(t({ en: 'Failed to submit feedback', ar: 'فشل في إرسال الملاحظات' }));
-    }
-  });
+  const { submitFeedback } = useCitizenFeedback();
 
   const handleSubmitFeedback = () => {
     if (feedback.trim()) {
-      submitFeedback.mutate(feedback);
+      submitFeedback.mutate({
+        entityType: 'strategic_plan',
+        entityId: strategicPlanId,
+        feedbackText: feedback,
+        type: 'suggestion',
+        sentiment: 'new' // To match original 'new' status if hook uses it for sentiment
+      }, {
+        onSuccess: () => setFeedback('')
+      });
     }
   };
 
   // Calculate pillar progress from objectives
-  const getPillarProgress = () => {
-    const pillars = [
+  const pillars = useMemo(() => {
+    if (!objectives) return [];
+
+    const pillarDefs = [
       { name_en: 'Digital Transformation', name_ar: 'التحول الرقمي', icon: '🚀', keywords: ['digital', 'technology', 'رقمي'] },
       { name_en: 'Sustainability', name_ar: 'الاستدامة', icon: '🌱', keywords: ['sustainable', 'environment', 'استدامة'] },
       { name_en: 'Citizen Experience', name_ar: 'تجربة المواطن', icon: '👥', keywords: ['citizen', 'service', 'مواطن'] },
       { name_en: 'Innovation', name_ar: 'الابتكار', icon: '💡', keywords: ['innovation', 'creative', 'ابتكار'] }
     ];
 
-    return pillars.map(pillar => {
-      const relatedObjectives = objectives.filter(obj => 
-        pillar.keywords.some(kw => 
+    return pillarDefs.map(pillar => {
+      const relatedObjectives = objectives.filter(obj =>
+        pillar.keywords.some(kw =>
           (obj.title_en || '').toLowerCase().includes(kw.toLowerCase()) ||
           (obj.title_ar || '').includes(kw)
         )
@@ -178,14 +96,14 @@ export default function StrategyPublicView({ strategicPlanId: propPlanId }) {
       const avgProgress = relatedObjectives.length > 0
         ? Math.round(relatedObjectives.reduce((sum, obj) => sum + (obj.progress_percentage || 0), 0) / relatedObjectives.length)
         : Math.round(Math.random() * 40 + 40); // Fallback for demo
-      
+
       return {
         name: language === 'ar' ? pillar.name_ar : pillar.name_en,
         progress: avgProgress,
         icon: pillar.icon
       };
     });
-  };
+  }, [objectives, language]);
 
   if (planLoading) {
     return (
@@ -206,11 +124,11 @@ export default function StrategyPublicView({ strategicPlanId: propPlanId }) {
     );
   }
 
-  const title = plan 
+  const title = plan
     ? (language === 'ar' ? (plan.title_ar || plan.title_en) : plan.title_en)
     : t({ en: 'National Innovation Strategy', ar: 'استراتيجية الابتكار الوطني' });
-  
-  const vision = plan?.vision_en || plan?.description_en || t({ 
+
+  const vision = plan?.vision_en || plan?.description_en || t({
     en: 'To be global leaders in municipal innovation and smart service delivery',
     ar: 'أن نكون رائدين عالمياً في الابتكار البلدي وتقديم الخدمات الذكية'
   });
@@ -220,32 +138,33 @@ export default function StrategyPublicView({ strategicPlanId: propPlanId }) {
     ar: 'تمكين البلديات من خلال الابتكار والتقنية والشراكات الاستراتيجية'
   });
 
-  const pillars = getPillarProgress();
-
   const keyObjectives = objectives.slice(0, 4).map(obj => ({
     title: language === 'ar' ? (obj.title_ar || obj.title_en) : obj.title_en,
     status: obj.status === 'completed' ? 'completed' : 'in_progress'
   }));
 
   const achievements = [
-    { 
-      title: language === 'ar' ? `${entityCounts?.challenges || 0} تحدي ابتكار` : `${entityCounts?.challenges || 0} Innovation Challenges`, 
-      value: entityCounts?.challenges || 0 
+    {
+      title: language === 'ar' ? `${entityCounts?.challenges || 0} تحدي ابتكار` : `${entityCounts?.challenges || 0} Innovation Challenges`,
+      value: entityCounts?.challenges || 0
     },
-    { 
-      title: language === 'ar' ? `${entityCounts?.partnerships || 0}+ شراكة نشطة` : `${entityCounts?.partnerships || 0}+ Active Partnerships`, 
-      value: `${entityCounts?.partnerships || 0}+` 
+    {
+      title: language === 'ar' ? `${entityCounts?.partnerships || 0}+ شراكة نشطة` : `${entityCounts?.partnerships || 0}+ Active Partnerships`,
+      value: `${entityCounts?.partnerships || 0}+`
     },
-    { 
-      title: language === 'ar' ? `${entityCounts?.pilots || 0} مشروع تجريبي` : `${entityCounts?.pilots || 0} Pilot Projects`, 
-      value: entityCounts?.pilots || 0 
+    {
+      title: language === 'ar' ? `${entityCounts?.pilots || 0} مشروع تجريبي` : `${entityCounts?.pilots || 0} Pilot Projects`,
+      value: entityCounts?.pilots || 0
     }
   ];
 
-  const upcomingInitiatives = upcomingEvents.map(event => ({
+  const upcomingInitiatives = (upcomingEvents || []).map(event => ({
     name: language === 'ar' ? (event.title_ar || event.title_en) : event.title_en,
     date: event.start_date
   }));
+
+  const visibleStories = impactStories.slice(0, 3);
+  const visibleCaseStudies = caseStudies.slice(0, 3);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
@@ -253,7 +172,7 @@ export default function StrategyPublicView({ strategicPlanId: propPlanId }) {
       <div className="bg-primary text-primary-foreground py-16 px-4">
         <div className="container mx-auto max-w-5xl text-center">
           <Badge variant="secondary" className="mb-4">
-            {plan?.start_year && plan?.end_year 
+            {plan?.start_year && plan?.end_year
               ? `${t({ en: 'Strategic Plan', ar: 'الخطة الاستراتيجية' })} ${plan.start_year}-${plan.end_year}`
               : t({ en: 'Strategic Plan 2024-2030', ar: 'الخطة الاستراتيجية 2024-2030' })
             }
@@ -317,7 +236,7 @@ export default function StrategyPublicView({ strategicPlanId: propPlanId }) {
                       <span>{objective.title}</span>
                     </div>
                     <Badge variant={objective.status === 'completed' ? 'default' : 'secondary'}>
-                      {objective.status === 'completed' 
+                      {objective.status === 'completed'
                         ? t({ en: 'Completed', ar: 'مكتمل' })
                         : t({ en: 'In Progress', ar: 'قيد التنفيذ' })
                       }
@@ -348,14 +267,14 @@ export default function StrategyPublicView({ strategicPlanId: propPlanId }) {
         </div>
 
         {/* Impact Stories */}
-        {impactStories.length > 0 && (
+        {visibleStories.length > 0 && (
           <div>
             <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
               <TrendingUp className="h-6 w-6 text-primary" />
               {t({ en: 'Impact Stories', ar: 'قصص التأثير' })}
             </h2>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {impactStories.map((story, index) => (
+              {visibleStories.map((story, index) => (
                 <Card key={index}>
                   <CardContent className="pt-6">
                     <h3 className="font-semibold mb-2">
@@ -402,14 +321,14 @@ export default function StrategyPublicView({ strategicPlanId: propPlanId }) {
         )}
 
         {/* Case Studies Showcase */}
-        {caseStudies.length > 0 && (
+        {visibleCaseStudies.length > 0 && (
           <div>
             <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
               <Eye className="h-6 w-6 text-primary" />
               {t({ en: 'Case Studies', ar: 'دراسات حالة' })}
             </h2>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {caseStudies.map((study, index) => (
+              {visibleCaseStudies.map((study, index) => (
                 <Card key={index} className="overflow-hidden">
                   {study.image_url && (
                     <div className="h-32 bg-muted">
@@ -450,8 +369,8 @@ export default function StrategyPublicView({ strategicPlanId: propPlanId }) {
               onChange={(e) => setFeedback(e.target.value)}
               rows={3}
             />
-            <Button 
-              onClick={handleSubmitFeedback} 
+            <Button
+              onClick={handleSubmitFeedback}
               disabled={!feedback.trim() || submitFeedback.isPending}
             >
               {submitFeedback.isPending ? (

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
@@ -16,20 +17,9 @@ function PredictiveForecastingDashboard() {
   const [forecasts, setForecasts] = useState(null);
   const { invokeAI, status, isLoading: forecasting, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
-
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities'],
-    queryFn: () => base44.entities.Municipality.list()
-  });
+  const { data: pilots = [] } = usePilotsWithVisibility();
+  const { data: challenges = [] } = useChallengesWithVisibility();
+  const { data: municipalities = [] } = useMunicipalitiesWithVisibility();
 
   const generateForecasts = async () => {
     const currentMetrics = {
@@ -41,6 +31,7 @@ function PredictiveForecastingDashboard() {
     };
 
     const result = await invokeAI({
+      system_prompt: 'You are an advanced data scientist and strategic planner. Analyze valid historical data trends and provide realistic forecasts.',
       prompt: `Based on current trajectory, forecast key metrics for next 12, 24, and 36 months.
 
 Current State:

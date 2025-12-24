@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,30 +14,21 @@ import FileUploader from '../components/FileUploader';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { useRDProject } from '@/hooks/useRDProjectsWithVisibility';
+import { useRDProjectMutations } from '@/hooks/useRDProjectMutations';
 
 function RDProjectEditPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const projectId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
-  const { data: project, isLoading } = useQuery({
-    queryKey: ['rd-project', projectId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_projects')
-        .select('*')
-        .eq('id', projectId)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!projectId
-  });
+
+  const { data: project, isLoading } = useRDProject(projectId);
+  const { updateRDProject } = useRDProjectMutations();
 
   const [formData, setFormData] = useState(null);
-  
+
   const { invokeAI, status: aiStatus, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   React.useEffect(() => {
@@ -47,20 +37,9 @@ function RDProjectEditPage() {
     }
   }, [project]);
 
-  const updateMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase
-        .from('rd_projects')
-        .update(data)
-        .eq('id', projectId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['rd-project', projectId]);
-      toast.success(t({ en: 'R&D Project updated', ar: 'تم تحديث المشروع' }));
-      navigate(createPageUrl(`RDProjectDetail?id=${projectId}`));
-    }
-  });
+  const handleUpdate = () => {
+    updateRDProject.mutate(formData);
+  };
 
   const handleAIEnhance = async () => {
     const prompt = `Enhance this R&D project with comprehensive professional academic and technical content for Saudi municipal innovation:
@@ -157,9 +136,10 @@ Generate comprehensive BILINGUAL (English + Arabic) content for ALL fields:
             }
           }
         }
-      }
+      },
+      system_prompt: "You are an expert R&D consultant helping to refine project proposals."
     });
-    
+
     if (result.success && result.data) {
       setFormData(prev => ({
         ...prev,
@@ -242,14 +222,14 @@ Generate comprehensive BILINGUAL (English + Arabic) content for ALL fields:
               <Label>{t({ en: 'Title (English)', ar: 'العنوان (إنجليزي)' })}</Label>
               <Input
                 value={formData.title_en}
-                onChange={(e) => setFormData({...formData, title_en: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, title_en: e.target.value })}
               />
             </div>
             <div className="space-y-2">
               <Label>{t({ en: 'Title (Arabic)', ar: 'العنوان (عربي)' })}</Label>
               <Input
                 value={formData.title_ar || ''}
-                onChange={(e) => setFormData({...formData, title_ar: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, title_ar: e.target.value })}
                 dir="rtl"
               />
             </div>
@@ -260,14 +240,14 @@ Generate comprehensive BILINGUAL (English + Arabic) content for ALL fields:
               <Label>{t({ en: 'Tagline (English)', ar: 'الشعار (إنجليزي)' })}</Label>
               <Input
                 value={formData.tagline_en || ''}
-                onChange={(e) => setFormData({...formData, tagline_en: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, tagline_en: e.target.value })}
               />
             </div>
             <div className="space-y-2">
               <Label>{t({ en: 'Tagline (Arabic)', ar: 'الشعار (عربي)' })}</Label>
               <Input
                 value={formData.tagline_ar || ''}
-                onChange={(e) => setFormData({...formData, tagline_ar: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, tagline_ar: e.target.value })}
                 dir="rtl"
               />
             </div>
@@ -278,7 +258,7 @@ Generate comprehensive BILINGUAL (English + Arabic) content for ALL fields:
               <Label>{t({ en: 'Abstract (English)', ar: 'الملخص (إنجليزي)' })}</Label>
               <Textarea
                 value={formData.abstract_en || ''}
-                onChange={(e) => setFormData({...formData, abstract_en: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, abstract_en: e.target.value })}
                 rows={3}
               />
             </div>
@@ -286,7 +266,7 @@ Generate comprehensive BILINGUAL (English + Arabic) content for ALL fields:
               <Label>{t({ en: 'Abstract (Arabic)', ar: 'الملخص (عربي)' })}</Label>
               <Textarea
                 value={formData.abstract_ar || ''}
-                onChange={(e) => setFormData({...formData, abstract_ar: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, abstract_ar: e.target.value })}
                 rows={3}
                 dir="rtl"
               />
@@ -298,14 +278,14 @@ Generate comprehensive BILINGUAL (English + Arabic) content for ALL fields:
               <Label>{t({ en: 'Institution (English)', ar: 'المؤسسة (إنجليزي)' })}</Label>
               <Input
                 value={formData.institution_en || formData.institution || ''}
-                onChange={(e) => setFormData({...formData, institution_en: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, institution_en: e.target.value })}
               />
             </div>
             <div className="space-y-2">
               <Label>{t({ en: 'Institution (Arabic)', ar: 'المؤسسة (عربي)' })}</Label>
               <Input
                 value={formData.institution_ar || ''}
-                onChange={(e) => setFormData({...formData, institution_ar: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, institution_ar: e.target.value })}
                 dir="rtl"
               />
             </div>
@@ -316,14 +296,14 @@ Generate comprehensive BILINGUAL (English + Arabic) content for ALL fields:
               <Label>{t({ en: 'Research Area (English)', ar: 'مجال البحث (إنجليزي)' })}</Label>
               <Input
                 value={formData.research_area_en || formData.research_area || ''}
-                onChange={(e) => setFormData({...formData, research_area_en: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, research_area_en: e.target.value })}
               />
             </div>
             <div className="space-y-2">
               <Label>{t({ en: 'Research Area (Arabic)', ar: 'مجال البحث (عربي)' })}</Label>
               <Input
                 value={formData.research_area_ar || ''}
-                onChange={(e) => setFormData({...formData, research_area_ar: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, research_area_ar: e.target.value })}
                 dir="rtl"
               />
             </div>
@@ -334,7 +314,7 @@ Generate comprehensive BILINGUAL (English + Arabic) content for ALL fields:
               <Label>{t({ en: 'Methodology (English)', ar: 'المنهجية (إنجليزي)' })}</Label>
               <Textarea
                 value={formData.methodology_en || formData.methodology || ''}
-                onChange={(e) => setFormData({...formData, methodology_en: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, methodology_en: e.target.value })}
                 rows={3}
               />
             </div>
@@ -342,7 +322,7 @@ Generate comprehensive BILINGUAL (English + Arabic) content for ALL fields:
               <Label>{t({ en: 'Methodology (Arabic)', ar: 'المنهجية (عربي)' })}</Label>
               <Textarea
                 value={formData.methodology_ar || ''}
-                onChange={(e) => setFormData({...formData, methodology_ar: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, methodology_ar: e.target.value })}
                 rows={3}
                 dir="rtl"
               />
@@ -354,7 +334,7 @@ Generate comprehensive BILINGUAL (English + Arabic) content for ALL fields:
               <Label>{t({ en: 'Status', ar: 'الحالة' })}</Label>
               <Select
                 value={formData.status}
-                onValueChange={(v) => setFormData({...formData, status: v})}
+                onValueChange={(v) => setFormData({ ...formData, status: v })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -374,7 +354,7 @@ Generate comprehensive BILINGUAL (English + Arabic) content for ALL fields:
               <Input
                 type="number"
                 value={formData.duration_months || ''}
-                onChange={(e) => setFormData({...formData, duration_months: parseInt(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, duration_months: parseInt(e.target.value) })}
               />
             </div>
           </div>
@@ -387,7 +367,7 @@ Generate comprehensive BILINGUAL (English + Arabic) content for ALL fields:
                 min="1"
                 max="9"
                 value={formData.trl_start || ''}
-                onChange={(e) => setFormData({...formData, trl_start: parseInt(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, trl_start: parseInt(e.target.value) })}
               />
             </div>
             <div className="space-y-2">
@@ -397,7 +377,7 @@ Generate comprehensive BILINGUAL (English + Arabic) content for ALL fields:
                 min="1"
                 max="9"
                 value={formData.trl_current || ''}
-                onChange={(e) => setFormData({...formData, trl_current: parseInt(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, trl_current: parseInt(e.target.value) })}
               />
             </div>
             <div className="space-y-2">
@@ -407,7 +387,7 @@ Generate comprehensive BILINGUAL (English + Arabic) content for ALL fields:
                 min="1"
                 max="9"
                 value={formData.trl_target || ''}
-                onChange={(e) => setFormData({...formData, trl_target: parseInt(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, trl_target: parseInt(e.target.value) })}
               />
             </div>
           </div>
@@ -417,7 +397,7 @@ Generate comprehensive BILINGUAL (English + Arabic) content for ALL fields:
             <Input
               type="number"
               value={formData.budget || ''}
-              onChange={(e) => setFormData({...formData, budget: parseFloat(e.target.value)})}
+              onChange={(e) => setFormData({ ...formData, budget: parseFloat(e.target.value) })}
             />
           </div>
 
@@ -426,14 +406,14 @@ Generate comprehensive BILINGUAL (English + Arabic) content for ALL fields:
               <Label>{t({ en: 'Funding Source (English)', ar: 'مصدر التمويل (إنجليزي)' })}</Label>
               <Input
                 value={formData.funding_source_en || formData.funding_source || ''}
-                onChange={(e) => setFormData({...formData, funding_source_en: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, funding_source_en: e.target.value })}
               />
             </div>
             <div className="space-y-2">
               <Label>{t({ en: 'Funding Source (Arabic)', ar: 'مصدر التمويل (عربي)' })}</Label>
               <Input
                 value={formData.funding_source_ar || ''}
-                onChange={(e) => setFormData({...formData, funding_source_ar: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, funding_source_ar: e.target.value })}
                 dir="rtl"
               />
             </div>
@@ -441,17 +421,18 @@ Generate comprehensive BILINGUAL (English + Arabic) content for ALL fields:
 
           <div className="border-t pt-6 space-y-4">
             <h3 className="font-semibold text-slate-900">{t({ en: 'Media & Documentation', ar: 'الوسائط والتوثيق' })}</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t({ en: 'Project Image', ar: 'صورة المشروع' })}</Label>
                 <FileUploader
                   type="image"
                   label={t({ en: 'Upload Image', ar: 'رفع صورة' })}
+                  description={t({ en: 'Project cover image', ar: 'صورة غلاف المشروع' })}
                   maxSize={10}
                   enableImageSearch={true}
                   searchContext={formData.title_en}
-                  onUploadComplete={(url) => setFormData({...formData, image_url: url})}
+                  onUploadComplete={(url) => setFormData({ ...formData, image_url: url })}
                 />
                 {formData.image_url && (
                   <img src={formData.image_url} alt="Current" className="w-full h-32 object-cover rounded" />
@@ -463,9 +444,10 @@ Generate comprehensive BILINGUAL (English + Arabic) content for ALL fields:
                 <FileUploader
                   type="video"
                   label={t({ en: 'Upload Video', ar: 'رفع فيديو' })}
+                  description={t({ en: 'Project presentation video', ar: 'فيديو عرض المشروع' })}
                   maxSize={200}
                   preview={false}
-                  onUploadComplete={(url) => setFormData({...formData, video_url: url})}
+                  onUploadComplete={(url) => setFormData({ ...formData, video_url: url })}
                 />
               </div>
             </div>
@@ -475,6 +457,7 @@ Generate comprehensive BILINGUAL (English + Arabic) content for ALL fields:
               <FileUploader
                 type="image"
                 label={t({ en: 'Add to Gallery', ar: 'إضافة للمعرض' })}
+                description={t({ en: 'Additional project images', ar: 'صور إضافية للمشروع' })}
                 maxSize={10}
                 onUploadComplete={(url) => {
                   setFormData(prev => ({
@@ -513,11 +496,11 @@ Generate comprehensive BILINGUAL (English + Arabic) content for ALL fields:
               {t({ en: 'Cancel', ar: 'إلغاء' })}
             </Button>
             <Button
-              onClick={() => updateMutation.mutate(formData)}
-              disabled={updateMutation.isPending}
+              onClick={handleUpdate}
+              disabled={updateRDProject.isPending}
               className="bg-gradient-to-r from-blue-600 to-teal-600"
             >
-              {updateMutation.isPending ? (
+              {updateRDProject.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {t({ en: 'Saving...', ar: 'جاري الحفظ...' })}

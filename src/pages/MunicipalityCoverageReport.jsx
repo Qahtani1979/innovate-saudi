@@ -1,36 +1,27 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
-import { 
+import {
   CheckCircle2,
   Database, FileText, Workflow, Users, Brain, Network, Target, Shield,
   ChevronDown, ChevronRight
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 
 function MunicipalityCoverageReport() {
   const { language, isRTL, t } = useLanguage();
   const [expandedSection, setExpandedSection] = useState(null);
 
   // Fetch real data
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities'],
-    queryFn: () => base44.entities.Municipality.list()
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
+  const { data: municipalities = [] } = useMunicipalitiesWithVisibility({ includeAll: true });
+  const { data: challenges = [] } = useChallengesWithVisibility({ includeAll: true });
+  const { data: pilots = [] } = usePilotsWithVisibility({ includeAll: true });
 
   // === SECTION 1: DATA MODEL & ENTITY SCHEMA ===
   const dataModel = {
@@ -461,40 +452,40 @@ function MunicipalityCoverageReport() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <div className="p-3 bg-blue-50 rounded">
                         <p className="text-xs text-slate-600">Total Fields</p>
-                        <p className="text-2xl font-bold text-blue-600">{section.data.totalFields}</p>
+                        <p className="text-2xl font-bold text-blue-600">{/** @type {any} */(section.data).totalFields}</p>
                       </div>
                       <div className="p-3 bg-green-50 rounded">
                         <p className="text-xs text-slate-600">Total Records</p>
-                        <p className="text-2xl font-bold text-green-600">{section.data.population.total}</p>
+                        <p className="text-2xl font-bold text-green-600">{/** @type {any} */(section.data).population.total}</p>
                       </div>
                       <div className="p-3 bg-purple-50 rounded">
                         <p className="text-xs text-slate-600">With MII</p>
-                        <p className="text-2xl font-bold text-purple-600">{section.data.population.withMII}</p>
+                        <p className="text-2xl font-bold text-purple-600">{/** @type {any} */(section.data).population.withMII}</p>
                       </div>
                       <div className="p-3 bg-amber-50 rounded">
                         <p className="text-xs text-slate-600">Verified</p>
-                        <p className="text-2xl font-bold text-amber-600">{section.data.population.verified}</p>
+                        <p className="text-2xl font-bold text-amber-600">{/** @type {any} */(section.data).population.verified}</p>
                       </div>
                     </div>
                     <div className="space-y-2">
                       <h4 className="font-semibold">Field Categories:</h4>
-                      {Object.entries(section.data.fieldsByCategory).map(([category, fields]) => (
+                      {Object.entries(/** @type {any} */(section.data).fieldsByCategory).map(([category, fields]) => (
                         <div key={category} className="p-3 border rounded-lg">
-                          <p className="font-medium text-sm capitalize mb-1">{category.replace(/_/g, ' ')} ({fields.length})</p>
+                          <p className="font-medium text-sm capitalize mb-1">{category.replace(/_/g, ' ')} ({/** @type {any[]} */(fields).length})</p>
                           <div className="flex flex-wrap gap-1">
-                            {fields.map(f => <Badge key={f} variant="outline" className="text-xs">{f}</Badge>)}
+                            {/** @type {any[]} */(fields).map(f => <Badge key={f} variant="outline" className="text-xs">{f}</Badge>)}
                           </div>
                         </div>
                       ))}
                     </div>
-                    <p className="text-sm text-slate-600 italic">{section.data.notes}</p>
+                    <p className="text-sm text-slate-600 italic">{/** @type {any} */(section.data).notes}</p>
                   </div>
                 )}
 
                 {/* Section 2: Pages */}
                 {section.id === 2 && (
                   <div className="space-y-3">
-                    {section.data.map((page, i) => (
+                    {/** @type {any[]} */(section.data).map((page, i) => (
                       <div key={i} className="p-4 border-2 border-green-200 rounded-lg bg-green-50">
                         <div className="flex items-center justify-between mb-3">
                           <h4 className="font-semibold text-slate-900">{page.name}</h4>
@@ -525,7 +516,7 @@ function MunicipalityCoverageReport() {
                 {/* Section 3: Workflows */}
                 {section.id === 3 && (
                   <div className="space-y-3">
-                    {section.data.map((workflow, i) => (
+                    {/** @type {any[]} */(section.data).map((workflow, i) => (
                       <div key={i} className="p-4 border rounded-lg">
                         <h4 className="font-semibold mb-2">{workflow.name}</h4>
                         <div className="flex items-center gap-2 mb-2">
@@ -546,7 +537,7 @@ function MunicipalityCoverageReport() {
                 {/* Section 4: User Journeys */}
                 {section.id === 4 && (
                   <div className="space-y-3">
-                    {section.data.map((journey, i) => (
+                    {/** @type {any[]} */(section.data).map((journey, i) => (
                       <div key={i} className="p-4 border-2 border-blue-200 rounded-lg bg-blue-50">
                         <div className="flex items-center justify-between mb-3">
                           <h4 className="font-semibold text-slate-900">{journey.persona}</h4>
@@ -568,7 +559,7 @@ function MunicipalityCoverageReport() {
                 {/* Section 5: AI Features */}
                 {section.id === 5 && (
                   <div className="space-y-3">
-                    {section.data.map((ai, i) => (
+                    {/** @type {any[]} */(section.data).map((ai, i) => (
                       <div key={i} className="p-4 border-2 border-purple-200 rounded-lg bg-purple-50">
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="font-semibold text-purple-900">{ai.name}</h4>
@@ -597,7 +588,7 @@ function MunicipalityCoverageReport() {
                 {/* Section 6: Conversion Paths */}
                 {section.id === 6 && (
                   <div className="space-y-3">
-                    {section.data.map((path, i) => (
+                    {/** @type {any[]} */(section.data).map((path, i) => (
                       <div key={i} className="p-4 border rounded-lg bg-teal-50 border-teal-200">
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="font-semibold">{path.from} → {path.to}</h4>
@@ -615,7 +606,7 @@ function MunicipalityCoverageReport() {
                 {/* Section 7: Comparisons */}
                 {section.id === 7 && (
                   <div className="space-y-4">
-                    {section.data.map((table, i) => (
+                    {/** @type {any[]} */(section.data).map((table, i) => (
                       <div key={i} className="border rounded-lg overflow-hidden">
                         <div className="bg-slate-100 p-3 border-b">
                           <h4 className="font-semibold">{table.title}</h4>
@@ -647,9 +638,9 @@ function MunicipalityCoverageReport() {
                 {section.id === 8 && (
                   <div className="space-y-4">
                     <div>
-                      <h4 className="font-semibold mb-3">Permissions ({section.data.permissions.length})</h4>
+                      <h4 className="font-semibold mb-3">Permissions ({/** @type {any} */(section.data).permissions.length})</h4>
                       <div className="space-y-2">
-                        {section.data.permissions.map((perm, i) => (
+                        {/** @type {any} */(section.data).permissions.map((perm, i) => (
                           <div key={i} className="p-3 border rounded-lg">
                             <div className="flex items-center justify-between mb-1">
                               <code className="text-xs bg-slate-100 px-2 py-1 rounded">{perm.name}</code>
@@ -663,9 +654,9 @@ function MunicipalityCoverageReport() {
                       </div>
                     </div>
                     <div>
-                      <h4 className="font-semibold mb-3">Roles ({section.data.roles.length})</h4>
+                      <h4 className="font-semibold mb-3">Roles ({/** @type {any} */(section.data).roles.length})</h4>
                       <div className="grid grid-cols-2 gap-2">
-                        {section.data.roles.map((role, i) => (
+                        {/** @type {any} */(section.data).roles.map((role, i) => (
                           <div key={i} className="p-3 border rounded-lg bg-blue-50">
                             <p className="font-medium text-sm">{role.name}</p>
                             <p className="text-xs text-slate-600">{role.description}</p>
@@ -676,7 +667,7 @@ function MunicipalityCoverageReport() {
                     <div>
                       <h4 className="font-semibold mb-3">Row-Level Security Rules</h4>
                       <ul className="space-y-1">
-                        {section.data.rlsRules.map((rule, i) => (
+                        {/** @type {any} */(section.data).rlsRules.map((rule, i) => (
                           <li key={i} className="text-sm text-slate-700">• {rule}</li>
                         ))}
                       </ul>
@@ -687,7 +678,7 @@ function MunicipalityCoverageReport() {
                 {/* Section 9: Integrations */}
                 {section.id === 9 && (
                   <div className="space-y-2">
-                    {section.data.map((integration, i) => (
+                    {/** @type {any[]} */(section.data).map((integration, i) => (
                       <div key={i} className="p-3 border rounded-lg">
                         <div className="flex items-center justify-between mb-1">
                           <h4 className="font-semibold text-sm">{integration.entity || integration.service}</h4>
@@ -747,7 +738,7 @@ function MunicipalityCoverageReport() {
             <p className="font-bold text-green-900 mb-2">📊 Coverage Summary</p>
             <p className="text-sm text-green-800">
               <strong>All 9 sections complete:</strong> Data Model (30 fields), {pages.length} Pages, {workflows.length} Workflows, {userJourneys.length} User Journeys, {aiFeatures.length} AI Features, {conversionPaths.length} Conversion Paths, {comparisons.length} Comparison Tables, Complete RBAC, {integrations.length} Integration Points.
-              <br/><br/>
+              <br /><br />
               <strong>Live Data:</strong> Currently tracking {municipalities.length} municipalities with {municipalities.filter(m => m.mii_score).length} having MII scores.
             </p>
           </div>

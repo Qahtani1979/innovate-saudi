@@ -1,6 +1,4 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -14,8 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from 'sonner';
 import { Separator } from "@/components/ui/separator";
+import { useNotificationPreferences } from '@/hooks/useNotificationPreferences';
 
 const EMAIL_CATEGORIES = [
   { key: 'authentication', icon: Shield, labelEn: 'Authentication & Security', labelAr: 'المصادقة والأمان', critical: true },
@@ -56,22 +54,10 @@ const DEFAULT_PREFERENCES = {
 
 export default function NotificationPreferences() {
   const { t, language, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
 
-  const { data: preferences, isLoading } = useQuery({
-    queryKey: ['notification-prefs', currentUser?.email],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('user_notification_preferences')
-        .select('*')
-        .eq('user_email', currentUser?.email)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!currentUser
-  });
+  // Use custom hook
+  const { preferences, isLoading, savePreferences } = useNotificationPreferences(currentUser?.email);
 
   const [localPrefs, setLocalPrefs] = useState(null);
   const [quietHoursEnabled, setQuietHoursEnabled] = useState(false);
@@ -94,43 +80,12 @@ export default function NotificationPreferences() {
     }
   }, [preferences, currentUser]);
 
-  const saveMutation = useMutation({
-    mutationFn: async (data) => {
-      const prefsToSave = {
-        ...data,
-        quiet_hours_start: quietHoursEnabled ? data.quiet_hours_start : null,
-        quiet_hours_end: quietHoursEnabled ? data.quiet_hours_end : null,
-      };
-      
-      if (preferences?.id) {
-        const { error } = await supabase
-          .from('user_notification_preferences')
-          .update(prefsToSave)
-          .eq('id', preferences.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('user_notification_preferences')
-          .insert({
-            ...prefsToSave,
-            user_email: currentUser.email,
-            user_id: currentUser.id
-          });
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['notification-prefs']);
-      toast.success(t({ en: 'Preferences saved successfully', ar: 'تم حفظ التفضيلات بنجاح' }));
-    },
-    onError: (error) => {
-      toast.error(t({ en: 'Failed to save preferences', ar: 'فشل حفظ التفضيلات' }));
-      console.error('Save error:', error);
-    }
-  });
-
   const handleSave = () => {
-    saveMutation.mutate(localPrefs);
+    savePreferences.mutate({
+      data: localPrefs,
+      userId: currentUser.id,
+      quietHoursEnabled
+    });
   };
 
   const updateCategory = (key, value) => {
@@ -183,7 +138,7 @@ export default function NotificationPreferences() {
             </div>
             <Switch
               checked={localPrefs.email_notifications}
-              onCheckedChange={(checked) => setLocalPrefs({...localPrefs, email_notifications: checked})}
+              onCheckedChange={(checked) => setLocalPrefs({ ...localPrefs, email_notifications: checked })}
             />
           </div>
 
@@ -197,7 +152,7 @@ export default function NotificationPreferences() {
             </div>
             <Switch
               checked={localPrefs.in_app_notifications}
-              onCheckedChange={(checked) => setLocalPrefs({...localPrefs, in_app_notifications: checked})}
+              onCheckedChange={(checked) => setLocalPrefs({ ...localPrefs, in_app_notifications: checked })}
             />
           </div>
 
@@ -211,7 +166,7 @@ export default function NotificationPreferences() {
             </div>
             <Switch
               checked={localPrefs.push_notifications}
-              onCheckedChange={(checked) => setLocalPrefs({...localPrefs, push_notifications: checked})}
+              onCheckedChange={(checked) => setLocalPrefs({ ...localPrefs, push_notifications: checked })}
             />
           </div>
         </CardContent>
@@ -226,9 +181,9 @@ export default function NotificationPreferences() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Select 
-            value={localPrefs.frequency} 
-            onValueChange={(val) => setLocalPrefs({...localPrefs, frequency: val})}
+          <Select
+            value={localPrefs.frequency}
+            onValueChange={(val) => setLocalPrefs({ ...localPrefs, frequency: val })}
           >
             <SelectTrigger>
               <SelectValue />
@@ -263,7 +218,7 @@ export default function NotificationPreferences() {
                   <input
                     type="time"
                     value={localPrefs.quiet_hours_start || '22:00'}
-                    onChange={(e) => setLocalPrefs({...localPrefs, quiet_hours_start: e.target.value})}
+                    onChange={(e) => setLocalPrefs({ ...localPrefs, quiet_hours_start: e.target.value })}
                     className="w-full border rounded-lg px-3 py-2 bg-background"
                   />
                 </div>
@@ -274,7 +229,7 @@ export default function NotificationPreferences() {
                   <input
                     type="time"
                     value={localPrefs.quiet_hours_end || '08:00'}
-                    onChange={(e) => setLocalPrefs({...localPrefs, quiet_hours_end: e.target.value})}
+                    onChange={(e) => setLocalPrefs({ ...localPrefs, quiet_hours_end: e.target.value })}
                     className="w-full border rounded-lg px-3 py-2 bg-background"
                   />
                 </div>
@@ -323,12 +278,12 @@ export default function NotificationPreferences() {
 
       {/* Save Button */}
       <div className="flex justify-end gap-3 pb-8">
-        <Button 
-          onClick={handleSave} 
-          disabled={saveMutation.isPending}
+        <Button
+          onClick={handleSave}
+          disabled={savePreferences.isPending}
           className="gap-2"
         >
-          {saveMutation.isPending ? (
+          {savePreferences.isPending ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <Save className="h-4 w-4" />

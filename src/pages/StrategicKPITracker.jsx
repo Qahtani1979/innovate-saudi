@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,8 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import {
   STRATEGIC_KPI_INSIGHTS_SCHEMA,
-  STRATEGIC_KPI_INSIGHTS_PROMPT_TEMPLATE
+  STRATEGIC_KPI_INSIGHTS_PROMPT_TEMPLATE,
+  STRATEGIC_KPI_PROMPT
 } from '@/lib/ai/prompts/kpi/strategicKPI';
 
 function StrategicKPITracker() {
@@ -29,29 +30,8 @@ function StrategicKPITracker() {
    * MIGRATION NOTE: Replaced base44.entities with Supabase direct queries
    * Level 6 Verification: Data Layer Integration
    */
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data;
-    }
-  });
+  const { data: pilots = [] } = usePilotsWithVisibility({ limit: 1000 });
+  const { data: challenges = [] } = useChallengesWithVisibility({ limit: 1000 });
 
   // Mock strategic KPIs - in real app, would come from StrategicPlan entity
   const strategicKPIs = [
@@ -151,6 +131,7 @@ function StrategicKPITracker() {
         activePilots: pilots.length,
         totalChallenges: challenges.length
       }),
+      system_prompt: STRATEGIC_KPI_PROMPT.system,
       response_json_schema: STRATEGIC_KPI_INSIGHTS_SCHEMA
     });
 
@@ -196,7 +177,7 @@ function StrategicKPITracker() {
               {aiLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
               {t({ en: 'AI Analyze', ar: 'تحليل ذكي' })}
             </Button>
-            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mt-2" />
+            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mt-2" error={undefined} />
           </div>
         </CardContent>
       </Card>

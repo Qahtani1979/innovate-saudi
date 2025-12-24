@@ -1,5 +1,3 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,41 +27,16 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowApprovalTab';
 import OrganizationWorkflowTab from '../components/organizations/OrganizationWorkflowTab';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
+import { useOrganization, useOrganizationSolutions, useOrganizationPilots } from '@/hooks/useOrganizations';
 
 function OrganizationDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const orgId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
 
-  const { data: organization, isLoading, error: orgError } = useQuery({
-    queryKey: ['organization', orgId],
-    queryFn: async () => {
-      const orgs = await base44.entities.Organization.list();
-      return orgs.find(o => o.id === orgId);
-    },
-    enabled: !!orgId,
-    staleTime: 5 * 60 * 1000
-  });
-
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions-by-org', orgId],
-    queryFn: async () => {
-      const allSolutions = await base44.entities.Solution.list();
-      return allSolutions.filter(s => s.provider_name === organization?.name_en);
-    },
-    enabled: !!organization,
-    staleTime: 5 * 60 * 1000
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-by-org', orgId],
-    queryFn: async () => {
-      const allPilots = await base44.entities.Pilot.list();
-      return allPilots.filter(p => solutions.some(s => s.id === p.solution_id));
-    },
-    enabled: solutions.length > 0,
-    staleTime: 5 * 60 * 1000
-  });
+  const { data: organization, isLoading, error: orgError } = useOrganization(orgId);
+  const { data: solutions = [] } = useOrganizationSolutions(orgId);
+  const { data: pilots = [] } = useOrganizationPilots(orgId);
 
   if (orgError) {
     return (

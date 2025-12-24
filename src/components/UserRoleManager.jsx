@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useUserRoleMutations } from '@/hooks/useUserRoleMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { Users, Search, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useUsersWithVisibility } from '@/hooks/useUsersWithVisibility';
 
 function UserRoleManager() {
   const { language, isRTL, t } = useLanguage();
@@ -15,21 +16,9 @@ function UserRoleManager() {
   const [editingUser, setEditingUser] = useState(null);
   const queryClient = useQueryClient();
 
-  const { data: users = [] } = useQuery({
-    queryKey: ['all-users'],
-    queryFn: () => base44.entities.User.list()
-  });
+  const { data: users = [] } = useUsersWithVisibility();
 
-  const updateMutation = useMutation({
-    mutationFn: async ({ userId, data }) => {
-      await base44.entities.User.update(userId, data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['all-users']);
-      setEditingUser(null);
-      toast.success(t({ en: 'User roles updated', ar: 'تم تحديث أدوار المستخدم' }));
-    }
-  });
+  const { updateRoles } = useUserRoleMutations();
 
   const specialRoles = [
     { value: 'tech_lead', label: { en: 'Tech Lead', ar: 'قائد تقني' }, color: 'bg-blue-100 text-blue-700' },
@@ -47,10 +36,7 @@ function UserRoleManager() {
   );
 
   const handleSave = (userId, specialRoles) => {
-    updateMutation.mutate({
-      userId,
-      data: { special_roles: specialRoles }
-    });
+    updateRoles.mutate({ userId, roles: specialRoles });
   };
 
   const toggleRole = (user, roleValue) => {
@@ -58,7 +44,7 @@ function UserRoleManager() {
     const newRoles = currentRoles.includes(roleValue)
       ? currentRoles.filter(r => r !== roleValue)
       : [...currentRoles, roleValue];
-    
+
     setEditingUser({ ...user, special_roles: newRoles });
   };
 
@@ -146,7 +132,7 @@ function UserRoleManager() {
                     <div className="flex gap-2">
                       <Button
                         onClick={() => handleSave(user.id, editingUser.special_roles)}
-                        disabled={updateMutation.isPending}
+                        disabled={updateRoles.isPending}
                         className="bg-gradient-to-r from-blue-600 to-teal-600"
                       >
                         <Save className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />

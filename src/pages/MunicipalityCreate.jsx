@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Button } from "@/components/ui/button";
@@ -14,24 +12,18 @@ import { useLanguage } from '../components/LanguageContext';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useRegions } from '@/hooks/useLocations';
+import { useMunicipalityMutations } from '@/hooks/useMunicipalityMutations';
 
 function MunicipalityCreate() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { language, isRTL, t } = useLanguage();
   const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: regions = [], isLoading: regionsLoading } = useQuery({
-    queryKey: ['regions'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('regions')
-        .select('*')
-        .order('name_en');
-      if (error) throw error;
-      return data || [];
-    },
-    staleTime: 5 * 60 * 1000
+  // Use existing hooks
+  const { data: regions = [], isLoading: regionsLoading } = useRegions();
+  const { createMunicipality } = useMunicipalityMutations(() => {
+    navigate(createPageUrl('MunicipalityDashboard'));
   });
 
   const [formData, setFormData] = useState({
@@ -52,12 +44,11 @@ function MunicipalityCreate() {
       return;
     }
     try {
-      // Import centralized prompt module
-      const { 
-        MUNICIPALITY_CREATE_PROMPT_TEMPLATE, 
-        MUNICIPALITY_CREATE_RESPONSE_SCHEMA 
+      const {
+        MUNICIPALITY_CREATE_PROMPT_TEMPLATE,
+        MUNICIPALITY_CREATE_RESPONSE_SCHEMA
       } = await import('@/lib/ai/prompts/municipalities/creation');
-      
+
       const result = await invokeAI({
         prompt: MUNICIPALITY_CREATE_PROMPT_TEMPLATE(formData),
         response_json_schema: MUNICIPALITY_CREATE_RESPONSE_SCHEMA
@@ -74,39 +65,6 @@ function MunicipalityCreate() {
       toast.error(t({ en: 'AI enhancement failed', ar: 'فشل التحسين' }));
     }
   };
-
-  const createMutation = useMutation({
-    mutationFn: async (formDataInput) => {
-      const { data, error } = await supabase
-        .from('municipalities')
-        .insert({
-          name_en: formDataInput.name_en,
-          name_ar: formDataInput.name_ar,
-          region: formDataInput.region,
-          city_type: formDataInput.city_type,
-          population: formDataInput.population || null,
-          contact_person: formDataInput.contact_person || null,
-          contact_email: formDataInput.contact_email || null,
-          mii_score: formDataInput.mii_score || 50,
-          mii_rank: formDataInput.mii_rank || 0,
-          is_active: true,
-          is_deleted: false
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['municipalities'] });
-      toast.success(t({ en: 'Municipality created', ar: 'تم إنشاء البلدية' }));
-      navigate(createPageUrl('MunicipalityDashboard'));
-    },
-    onError: (error) => {
-      toast.error(t({ en: 'Failed to create municipality', ar: 'فشل إنشاء البلدية' }));
-      console.error('Create error:', error);
-    }
-  });
 
   return (
     <PageLayout>
@@ -132,7 +90,7 @@ function MunicipalityCreate() {
               <Label>{t({ en: 'Name (English)', ar: 'الاسم (إنجليزي)' })}</Label>
               <Input
                 value={formData.name_en}
-                onChange={(e) => setFormData({...formData, name_en: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
                 placeholder="Riyadh Municipality"
               />
             </div>
@@ -140,7 +98,7 @@ function MunicipalityCreate() {
               <Label>{t({ en: 'Name (Arabic)', ar: 'الاسم (عربي)' })}</Label>
               <Input
                 value={formData.name_ar}
-                onChange={(e) => setFormData({...formData, name_ar: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
                 placeholder="أمانة الرياض"
                 dir="rtl"
               />
@@ -150,7 +108,7 @@ function MunicipalityCreate() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>{t({ en: 'Region', ar: 'المنطقة' })}</Label>
-              <Select value={formData.region} onValueChange={(v) => setFormData({...formData, region: v})}>
+              <Select value={formData.region} onValueChange={(v) => setFormData({ ...formData, region: v })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -165,7 +123,7 @@ function MunicipalityCreate() {
             </div>
             <div className="space-y-2">
               <Label>{t({ en: 'City Type', ar: 'نوع المدينة' })}</Label>
-              <Select value={formData.city_type} onValueChange={(v) => setFormData({...formData, city_type: v})}>
+              <Select value={formData.city_type} onValueChange={(v) => setFormData({ ...formData, city_type: v })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -185,7 +143,7 @@ function MunicipalityCreate() {
               <Input
                 type="number"
                 value={formData.population}
-                onChange={(e) => setFormData({...formData, population: parseInt(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, population: parseInt(e.target.value) })}
               />
             </div>
             <div className="space-y-2">
@@ -193,7 +151,7 @@ function MunicipalityCreate() {
               <Input
                 type="number"
                 value={formData.mii_score}
-                onChange={(e) => setFormData({...formData, mii_score: parseFloat(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, mii_score: parseFloat(e.target.value) })}
               />
             </div>
           </div>
@@ -203,7 +161,7 @@ function MunicipalityCreate() {
               <Label>{t({ en: 'Contact Person', ar: 'جهة الاتصال' })}</Label>
               <Input
                 value={formData.contact_person}
-                onChange={(e) => setFormData({...formData, contact_person: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
               />
             </div>
             <div className="space-y-2">
@@ -211,14 +169,14 @@ function MunicipalityCreate() {
               <Input
                 type="email"
                 value={formData.contact_email}
-                onChange={(e) => setFormData({...formData, contact_email: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
               />
             </div>
           </div>
 
           <div className="flex justify-between gap-3">
-            <Button 
-              type="button" 
+            <Button
+              type="button"
               onClick={handleAIEnhancement}
               disabled={aiLoading || !formData.name_en}
               variant="outline"
@@ -236,8 +194,8 @@ function MunicipalityCreate() {
                 </>
               )}
             </Button>
-            <Button 
-              onClick={() => createMutation.mutate(formData)}
+            <Button
+              onClick={() => createMunicipality.mutate(formData)}
               disabled={!formData.name_en || !formData.region}
               className="flex-1"
             >

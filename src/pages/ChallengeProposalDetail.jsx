@@ -1,6 +1,4 @@
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +23,9 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useProposal, useChallengeProposalMutations } from '@/hooks/useChallengeProposals';
+import { useChallenge } from '@/hooks/useChallengesWithVisibility';
+import { useSolution } from '@/hooks/useSolutionsWithVisibility';
 
 function ChallengeProposalDetail() {
   const [isEditing, setIsEditing] = useState(false);
@@ -32,61 +33,34 @@ function ChallengeProposalDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const proposalId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
 
-  const { data: proposal, isLoading } = useQuery({
-    queryKey: ['proposal', proposalId],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenge_proposals').select('*').eq('id', proposalId).single();
-      if (data) setFormData(data);
-      return data;
-    },
-    enabled: !!proposalId
-  });
+  const { data: proposal, isLoading } = useProposal(proposalId);
+  const { data: challenge } = useChallenge(proposal?.challenge_id);
+  const { data: solution } = useSolution(proposal?.solution_id);
 
-  const { data: challenge } = useQuery({
-    queryKey: ['challenge', proposal?.challenge_id],
-    queryFn: async () => {
-      if (!proposal?.challenge_id) return null;
-      const { data } = await supabase.from('challenges').select('*').eq('id', proposal.challenge_id).single();
-      return data;
-    },
-    enabled: !!proposal?.challenge_id
-  });
+  const { updateProposal, deleteProposal } = useChallengeProposalMutations();
 
-  const { data: solution } = useQuery({
-    queryKey: ['solution', proposal?.solution_id],
-    queryFn: async () => {
-      if (!proposal?.solution_id) return null;
-      const { data } = await supabase.from('solutions').select('*').eq('id', proposal.solution_id).single();
-      return data;
-    },
-    enabled: !!proposal?.solution_id
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase.from('challenge_proposals').update(data).eq('id', proposalId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['proposal']);
-      queryClient.invalidateQueries(['challenge-proposals']);
-      setIsEditing(false);
-      toast.success(t({ en: 'Proposal updated', ar: 'تم تحديث المقترح' }));
+  useEffect(() => {
+    if (proposal) {
+      setFormData(proposal);
     }
-  });
+  }, [proposal]);
 
-  const deleteMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from('challenge_proposals').delete().eq('id', proposalId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success(t({ en: 'Proposal deleted', ar: 'تم حذف المقترح' }));
-      window.location.href = createPageUrl(`ChallengeDetail?id=${proposal.challenge_id}`);
+  const handleUpdate = () => {
+    updateProposal.mutate({ id: proposalId, updates: formData }, {
+      onSuccess: () => setIsEditing(false)
+    });
+  };
+
+  const handleDelete = () => {
+    if (confirm(t({ en: 'Delete this proposal?', ar: 'حذف هذا المقترح؟' }))) {
+      deleteProposal.mutate(proposalId, {
+        onSuccess: () => {
+          window.location.href = createPageUrl(`ChallengeDetail?id=${proposal.challenge_id}`);
+        }
+      });
     }
-  });
+  };
 
   if (isLoading || !proposal) {
     return (
@@ -128,11 +102,7 @@ function ChallengeProposalDetail() {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => {
-                  if (confirm(t({ en: 'Delete this proposal?', ar: 'حذف هذا المقترح؟' }))) {
-                    deleteMutation.mutate();
-                  }
-                }}
+                onClick={handleDelete}
                 className="gap-2 text-red-600 hover:bg-red-50"
               >
                 <Trash2 className="h-4 w-4" />
@@ -141,8 +111,8 @@ function ChallengeProposalDetail() {
             </>
           ) : (
             <>
-              <Button onClick={() => updateMutation.mutate(formData)} disabled={updateMutation.isPending} className="gap-2">
-                {updateMutation.isPending ? (
+              <Button onClick={handleUpdate} disabled={updateProposal.isPending} className="gap-2">
+                {updateProposal.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <Save className="h-4 w-4" />

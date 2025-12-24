@@ -1,59 +1,21 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
-import { 
-  CheckCircle2, Circle, Clock, TrendingUp, Award, 
+import {
+  CheckCircle2, Circle, Clock, TrendingUp, Award,
   Star, Zap, Trophy, Rocket
 } from 'lucide-react';
 import { ProfileStatCard, ProfileStatGrid } from '@/components/profile/ProfileStatCard';
+import { useUserProgress } from '@/hooks/useUserProgress';
 
 export default function ProgressTab() {
   const { t, isRTL, language } = useLanguage();
   const { user } = useAuth();
 
-  const { data: profile } = useQuery({
-    queryKey: ['profile-progress', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-      const { data } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      return data;
-    },
-    enabled: !!user?.id
-  });
-
-  const { data: activities = [] } = useQuery({
-    queryKey: ['progress-activities', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data } = await supabase
-        .from('user_activities')
-        .select('*')
-        .eq('user_email', user.email);
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
-
-  const { data: achievements = [] } = useQuery({
-    queryKey: ['progress-achievements', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data } = await supabase
-        .from('user_achievements')
-        .select('*, achievement:achievements(*)')
-        .eq('user_email', user.email);
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
+  // Use custom hook for user progress data
+  const { profile, activities, achievements } = useUserProgress(user?.id, user?.email);
 
   // Calculate milestones
   const milestones = [
@@ -85,7 +47,7 @@ export default function ProgressTab() {
       target: 10,
       current: profile?.contribution_count || 0,
       unit: '',
-      status: (profile?.contribution_count || 0) >= 10 ? 'completed' : 
+      status: (profile?.contribution_count || 0) >= 10 ? 'completed' :
         (profile?.contribution_count || 0) >= 1 ? 'in_progress' : 'pending'
     },
     {
@@ -96,7 +58,7 @@ export default function ProgressTab() {
       target: 5,
       current: profile?.skills?.length || 0,
       unit: '',
-      status: (profile?.skills?.length || 0) >= 5 ? 'completed' : 
+      status: (profile?.skills?.length || 0) >= 5 ? 'completed' :
         (profile?.skills?.length || 0) >= 1 ? 'in_progress' : 'pending'
     },
     {
@@ -117,7 +79,7 @@ export default function ProgressTab() {
       target: 5,
       current: achievements.length,
       unit: '',
-      status: achievements.length >= 5 ? 'completed' : 
+      status: achievements.length >= 5 ? 'completed' :
         achievements.length >= 1 ? 'in_progress' : 'pending'
     }
   ];
@@ -137,11 +99,11 @@ export default function ProgressTab() {
 
   const getStatusBadge = (status) => {
     switch (status) {
-      case 'completed': 
+      case 'completed':
         return <Badge className="bg-success/10 text-success border-success/20">{t({ en: 'Complete', ar: 'مكتمل' })}</Badge>;
-      case 'in_progress': 
+      case 'in_progress':
         return <Badge className="bg-primary/10 text-primary border-primary/20">{t({ en: 'In Progress', ar: 'جاري' })}</Badge>;
-      default: 
+      default:
         return <Badge variant="outline">{t({ en: 'Pending', ar: 'معلق' })}</Badge>;
     }
   };
@@ -199,25 +161,22 @@ export default function ProgressTab() {
           const progress = Math.min((milestone.current / milestone.target) * 100, 100);
 
           return (
-            <Card 
-              key={milestone.id} 
-              className={`transition-all ${
-                milestone.status === 'completed' ? 'bg-success/5 border-success/20' :
-                milestone.status === 'in_progress' ? 'bg-primary/5 border-primary/20' : ''
-              }`}
+            <Card
+              key={milestone.id}
+              className={`transition-all ${milestone.status === 'completed' ? 'bg-success/5 border-success/20' :
+                  milestone.status === 'in_progress' ? 'bg-primary/5 border-primary/20' : ''
+                }`}
             >
               <CardContent className="py-4">
                 <div className="flex items-center gap-4">
-                  <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${
-                    milestone.status === 'completed' ? 'bg-success/10' :
-                    milestone.status === 'in_progress' ? 'bg-primary/10' : 'bg-muted'
-                  }`}>
-                    <Icon className={`h-6 w-6 ${
-                      milestone.status === 'completed' ? 'text-success' :
-                      milestone.status === 'in_progress' ? 'text-primary' : 'text-muted-foreground'
-                    }`} />
+                  <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${milestone.status === 'completed' ? 'bg-success/10' :
+                      milestone.status === 'in_progress' ? 'bg-primary/10' : 'bg-muted'
+                    }`}>
+                    <Icon className={`h-6 w-6 ${milestone.status === 'completed' ? 'text-success' :
+                        milestone.status === 'in_progress' ? 'text-primary' : 'text-muted-foreground'
+                      }`} />
                   </div>
-                  
+
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <h4 className="font-medium">{t(milestone.name)}</h4>

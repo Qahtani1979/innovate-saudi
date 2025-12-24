@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+
+import { useStartups } from '../hooks/useStartupProfiles';
+import { useSolutionsWithVisibility } from '../hooks/useSolutionsWithVisibility';
+import { useMatchmakerApplications } from '../hooks/useMatchmakerApplications';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -16,20 +18,9 @@ function StartupCoverageReport() {
   const { language, isRTL, t } = useLanguage();
   const [expandedSections, setExpandedSections] = useState({});
 
-  const { data: startups = [] } = useQuery({
-    queryKey: ['startups-coverage'],
-    queryFn: () => base44.entities.StartupProfile.list()
-  });
-
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions-coverage'],
-    queryFn: () => base44.entities.Solution.list()
-  });
-
-  const { data: matchmakerApps = [] } = useQuery({
-    queryKey: ['matchmaker-apps-coverage'],
-    queryFn: () => base44.entities.MatchmakerApplication.list()
-  });
+  const { data: startups = [] } = useStartups();
+  const { data: solutions = [] } = useSolutionsWithVisibility();
+  const { data: matchmakerApps = [] } = useMatchmakerApplications();
 
   const toggleSection = (key) => {
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
@@ -763,16 +754,16 @@ function StartupCoverageReport() {
     },
 
     comparisons: {
-    startupVsMunicipality: [
-      { aspect: 'Entry', startup: '✅ Registration + onboarding wizard', municipality: '✅ Pre-registered', gap: 'Equal ✅' },
-      { aspect: 'Discovery', startup: '✅ AI matching to challenges (100%)', municipality: '✅ Browse solutions (85%)', gap: 'Startup has superior AI ✅' },
-      { aspect: 'Engagement', startup: '✅ Proposal workflow (100%)', municipality: '✅ Proposal review inbox (100%)', gap: 'BOTH complete ✅' },
-      { aspect: 'Pilot', startup: '✅ Participates (100%)', municipality: '✅ Manages (100%)', gap: 'Both complete ✅' },
-      { aspect: 'Growth', startup: '✅ Portfolio + tracking + multi-city ops (100%)', municipality: '✅ MII + analytics', gap: 'Both tracked ✅' },
-      { aspect: 'Recognition', startup: '✅ Awards + Leaderboard + badges (100%)', municipality: '✅ MII ranking', gap: 'Both visible ✅' },
-      { aspect: 'AI Tools', startup: '✅ 15 AI components integrated (100%)', municipality: '✅ 8 AI features', gap: 'Startup has MORE AI ✅' },
-      { aspect: 'Ecosystem', startup: '✅ Collaboration + mentorship + referrals (100%)', municipality: '✅ Network features', gap: 'Both connected ✅' }
-    ],
+      startupVsMunicipality: [
+        { aspect: 'Entry', startup: '✅ Registration + onboarding wizard', municipality: '✅ Pre-registered', gap: 'Equal ✅' },
+        { aspect: 'Discovery', startup: '✅ AI matching to challenges (100%)', municipality: '✅ Browse solutions (85%)', gap: 'Startup has superior AI ✅' },
+        { aspect: 'Engagement', startup: '✅ Proposal workflow (100%)', municipality: '✅ Proposal review inbox (100%)', gap: 'BOTH complete ✅' },
+        { aspect: 'Pilot', startup: '✅ Participates (100%)', municipality: '✅ Manages (100%)', gap: 'Both complete ✅' },
+        { aspect: 'Growth', startup: '✅ Portfolio + tracking + multi-city ops (100%)', municipality: '✅ MII + analytics', gap: 'Both tracked ✅' },
+        { aspect: 'Recognition', startup: '✅ Awards + Leaderboard + badges (100%)', municipality: '✅ MII ranking', gap: 'Both visible ✅' },
+        { aspect: 'AI Tools', startup: '✅ 15 AI components integrated (100%)', municipality: '✅ 8 AI features', gap: 'Startup has MORE AI ✅' },
+        { aspect: 'Ecosystem', startup: '✅ Collaboration + mentorship + referrals (100%)', municipality: '✅ Network features', gap: 'Both connected ✅' }
+      ],
       startupVsPrograms: [
         { aspect: 'Purpose', startup: 'Build & deploy solutions', programs: 'Build capacity of startups', gap: 'Programs FEED startups ✅' },
         { aspect: 'Connection', startup: '✅ Auto-link via autoProgramStartupLink', programs: '✅ Alumni tracked in program_alumni_ids', gap: 'Complete ✅' },
@@ -794,7 +785,7 @@ function StartupCoverageReport() {
     rbacAndExpertSystem: {
       status: '✅ COMPLETE',
       description: 'Startup verification and expert evaluation system fully operational',
-      
+
       permissions: [
         { key: 'solution_create', description: 'Create solutions', roles: ['Provider', 'Startup'] },
         { key: 'solution_edit', description: 'Edit own solutions', roles: ['Provider', 'Startup', 'Admin'] },
@@ -803,7 +794,7 @@ function StartupCoverageReport() {
         { key: 'solution_verify', description: 'Verify solutions', roles: ['Admin', 'Technical Expert'] },
         { key: 'solution_publish', description: 'Publish to marketplace', roles: ['Admin'] }
       ],
-      
+
       roles: [
         {
           name: 'Solution Provider / Startup',
@@ -824,7 +815,7 @@ function StartupCoverageReport() {
           description: 'Full solution management'
         }
       ],
-      
+
       expertIntegration: {
         status: '✅ COMPLETE (Dec 2025)',
         description: 'Expert technical verification system fully integrated via unified ExpertEvaluation',
@@ -842,7 +833,7 @@ function StartupCoverageReport() {
         coverage: 100,
         gaps: []
       },
-      
+
       verificationWorkflow: {
         stages: [
           { name: 'Startup submits profile', status: 'complete', automation: 'StartupProfile entity' },
@@ -858,7 +849,7 @@ function StartupCoverageReport() {
         coverage: 100,
         gaps: []
       },
-      
+
       ratingSystem: {
         entity: 'SolutionReview',
         description: 'Municipalities rate solutions post-deployment',
@@ -872,7 +863,7 @@ function StartupCoverageReport() {
         coverage: 100,
         gaps: []
       },
-      
+
       accessControlPatterns: [
         { pattern: 'Provider Ownership', rule: 'WHERE created_by = user.email', entities: ['Solution', 'StartupProfile'] },
         { pattern: 'Public Visibility', rule: 'WHERE is_published = true AND is_verified = true', entities: ['Solution'] },
@@ -1233,7 +1224,7 @@ function StartupCoverageReport() {
         </p>
         <div className="mt-3 p-3 bg-blue-100 rounded-lg border border-blue-300">
           <p className="text-sm text-blue-900">
-            <strong>ℹ️ Platform Purpose:</strong> Connect startups to MUNICIPAL INNOVATION OPPORTUNITIES (challenges, pilots, programs). 
+            <strong>ℹ️ Platform Purpose:</strong> Connect startups to MUNICIPAL INNOVATION OPPORTUNITIES (challenges, pilots, programs).
             NOT about fundraising/investment - about OPPORTUNITY DISCOVERY and SOLUTION DEPLOYMENT.
           </p>
         </div>
@@ -1290,11 +1281,11 @@ function StartupCoverageReport() {
           <div className="p-4 bg-blue-100 rounded-lg border-2 border-blue-400 mb-4">
             <p className="font-bold text-blue-900 mb-2">ℹ️ Platform Purpose: OPPORTUNITY DISCOVERY, NOT VC/Funding</p>
             <p className="text-sm text-blue-800">
-              Startups use platform to: (1) EXPLORE municipal innovation opportunities (challenges, programs, pilots), 
+              Startups use platform to: (1) EXPLORE municipal innovation opportunities (challenges, programs, pilots),
               (2) IDENTIFY MATCHES for their solutions, (3) PROVIDE SOLUTIONS to municipalities.
-              <br/><br/>
+              <br /><br />
               <strong>NOT about:</strong> fundraising, investor matching, VC pipeline, valuation tracking.
-              <br/>
+              <br />
               <strong>Focus:</strong> Municipal partnership opportunities and solution deployment.
             </p>
           </div>
@@ -1428,7 +1419,7 @@ function StartupCoverageReport() {
                         <h4 className="font-semibold text-slate-900">{page.name}</h4>
                         <Badge className={
                           page.status === 'exists' ? 'bg-green-100 text-green-700' :
-                          'bg-red-100 text-red-700'
+                            'bg-red-100 text-red-700'
                         }>
                           {page.status}
                         </Badge>
@@ -1572,26 +1563,24 @@ function StartupCoverageReport() {
                   <h4 className="font-semibold text-slate-900 text-lg">{journey.persona}</h4>
                   <Badge className={
                     journey.coverage >= 90 ? 'bg-green-100 text-green-700' :
-                    journey.coverage >= 70 ? 'bg-yellow-100 text-yellow-700' :
-                    journey.coverage >= 50 ? 'bg-orange-100 text-orange-700' :
-                    'bg-red-100 text-red-700'
+                      journey.coverage >= 70 ? 'bg-yellow-100 text-yellow-700' :
+                        journey.coverage >= 50 ? 'bg-orange-100 text-orange-700' :
+                          'bg-red-100 text-red-700'
                   }>{journey.coverage}% Complete</Badge>
                 </div>
                 <div className="space-y-2">
                   {journey.journey.map((step, i) => (
                     <div key={i} className="flex items-start gap-3">
                       <div className="flex flex-col items-center">
-                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                          step.status === 'complete' ? 'bg-green-100 text-green-700' :
+                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${step.status === 'complete' ? 'bg-green-100 text-green-700' :
                           step.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
+                            'bg-red-100 text-red-700'
+                          }`}>
                           {i + 1}
                         </div>
                         {i < journey.journey.length - 1 && (
-                          <div className={`w-0.5 h-8 ${
-                            step.status === 'complete' ? 'bg-green-300' : 'bg-slate-200'
-                          }`} />
+                          <div className={`w-0.5 h-8 ${step.status === 'complete' ? 'bg-green-300' : 'bg-slate-200'
+                            }`} />
                         )}
                       </div>
                       <div className="flex-1 pt-1">
@@ -1663,22 +1652,20 @@ function StartupCoverageReport() {
             </div>
             <div className="space-y-4">
               {coverageData.aiFeatures.map((ai, idx) => (
-                <div key={idx} className={`p-4 border rounded-lg ${
-                  ai.status === 'implemented' ? 'bg-gradient-to-r from-purple-50 to-pink-50' :
+                <div key={idx} className={`p-4 border rounded-lg ${ai.status === 'implemented' ? 'bg-gradient-to-r from-purple-50 to-pink-50' :
                   ai.status === 'partial' ? 'bg-yellow-50' : 'bg-red-50'
-                }`}>
+                  }`}>
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Sparkles className={`h-5 w-5 ${
-                        ai.status === 'implemented' ? 'text-purple-600' :
+                      <Sparkles className={`h-5 w-5 ${ai.status === 'implemented' ? 'text-purple-600' :
                         ai.status === 'partial' ? 'text-yellow-600' : 'text-red-600'
-                      }`} />
+                        }`} />
                       <h4 className="font-semibold text-slate-900">{ai.name}</h4>
                     </div>
                     <Badge className={
                       ai.status === 'implemented' ? 'bg-green-100 text-green-700' :
-                      ai.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-red-100 text-red-700'
+                        ai.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
                     }>{ai.coverage}%</Badge>
                   </div>
                   <p className="text-sm text-slate-600 mb-2">{ai.description}</p>
@@ -1733,11 +1720,11 @@ function StartupCoverageReport() {
               <p className="font-bold text-green-900 mb-2">✅ COMPLETE: Discovery + Outcomes + Ecosystem</p>
               <p className="text-sm text-green-800">
                 Startups have <strong>EXCELLENT INTAKE</strong> (90%): registration, profile, solution, matchmaker, matching. ✅
-                <br/><br/>
+                <br /><br />
                 <strong>COMPLETE OUTCOME TRACKING</strong> (100%): revenue tracking (platform_revenue_generated), growth metrics (StartupJourneyAnalytics), success measurement (calculateStartupReputation), deployment tracking (DeploymentSuccessTracker). ✅
-                <br/><br/>
+                <br /><br />
                 <strong>COMPLETE ECOSYSTEM</strong> (100%): collaboration (StartupCollaborationHub), mentorship (StartupMentorshipMatcher), referrals (StartupReferralProgram), expansion tracking (MultiMunicipalityExpansionTracker), contribution scoring (EcosystemContributionScore), churn prediction (StartupChurnPredictor). ✅
-                <br/><br/>
+                <br /><br />
                 Platform now has FULL END-TO-END: Discover opportunities → Deploy solutions → Track success → Grow ecosystem → Predict churn → Recognize achievements.
               </p>
             </div>
@@ -1746,17 +1733,16 @@ function StartupCoverageReport() {
               <p className="font-semibold text-green-900 mb-3">← INPUT Paths (Excellent - 90%)</p>
               <div className="space-y-3">
                 {coverageData.conversionPaths.incoming.map((path, i) => (
-                  <div key={i} className={`p-3 border-2 rounded-lg ${
-                    path.coverage >= 80 ? 'border-green-300 bg-green-50' :
+                  <div key={i} className={`p-3 border-2 rounded-lg ${path.coverage >= 80 ? 'border-green-300 bg-green-50' :
                     path.coverage >= 50 ? 'border-yellow-300 bg-yellow-50' :
-                    'border-red-300 bg-red-50'
-                  }`}>
+                      'border-red-300 bg-red-50'
+                    }`}>
                     <div className="flex items-center justify-between mb-2">
                       <p className="font-bold">{path.path}</p>
                       <Badge className={
                         path.coverage >= 80 ? 'bg-green-600 text-white' :
-                        path.coverage >= 50 ? 'bg-yellow-600 text-white' :
-                        'bg-red-600 text-white'
+                          path.coverage >= 50 ? 'bg-yellow-600 text-white' :
+                            'bg-red-600 text-white'
                       }>{path.coverage}%</Badge>
                     </div>
                     <p className="text-sm text-slate-700 mb-1">{path.description}</p>
@@ -1777,17 +1763,16 @@ function StartupCoverageReport() {
               <p className="font-semibold text-green-900 mb-3">→ OUTPUT Paths (ALL COMPLETE - 100%)</p>
               <div className="space-y-3">
                 {coverageData.conversionPaths.outgoing.map((path, i) => (
-                  <div key={i} className={`p-3 border-2 rounded-lg ${
-                    path.status === 'complete' ? 'border-green-300 bg-green-50' :
+                  <div key={i} className={`p-3 border-2 rounded-lg ${path.status === 'complete' ? 'border-green-300 bg-green-50' :
                     path.status === 'partial' ? 'border-yellow-300 bg-yellow-50' :
-                    'border-red-300 bg-red-50'
-                  }`}>
+                      'border-red-300 bg-red-50'
+                    }`}>
                     <div className="flex items-center justify-between mb-2">
                       <p className="font-bold">{path.path}</p>
                       <Badge className={
                         path.status === 'complete' ? 'bg-green-600 text-white' :
-                        path.status === 'partial' ? 'bg-yellow-600 text-white' :
-                        'bg-red-600 text-white'
+                          path.status === 'partial' ? 'bg-yellow-600 text-white' :
+                            'bg-red-600 text-white'
                       }>{path.coverage}%</Badge>
                     </div>
                     <p className="text-sm text-slate-700 mb-1">{path.description}</p>
@@ -2098,19 +2083,18 @@ function StartupCoverageReport() {
         <CardContent>
           <div className="space-y-3">
             {coverageData.recommendations.map((rec, idx) => (
-              <div key={idx} className={`p-4 border-2 rounded-lg ${
-                rec.priority === 'P0' ? 'border-red-300 bg-red-50' :
+              <div key={idx} className={`p-4 border-2 rounded-lg ${rec.priority === 'P0' ? 'border-red-300 bg-red-50' :
                 rec.priority === 'P1' ? 'border-orange-300 bg-orange-50' :
-                rec.priority === 'P2' ? 'border-yellow-300 bg-yellow-50' :
-                'border-blue-300 bg-blue-50'
-              }`}>
+                  rec.priority === 'P2' ? 'border-yellow-300 bg-yellow-50' :
+                    'border-blue-300 bg-blue-50'
+                }`}>
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Badge className={
                       rec.priority === 'P0' ? 'bg-red-600 text-white' :
-                      rec.priority === 'P1' ? 'bg-orange-600 text-white' :
-                      rec.priority === 'P2' ? 'bg-yellow-600 text-white' :
-                      'bg-blue-600 text-white'
+                        rec.priority === 'P1' ? 'bg-orange-600 text-white' :
+                          rec.priority === 'P2' ? 'bg-yellow-600 text-white' :
+                            'bg-blue-600 text-white'
                     }>
                       {rec.priority}
                     </Badge>
@@ -2168,17 +2152,17 @@ function StartupCoverageReport() {
             <p className="text-sm font-semibold text-green-900 mb-2">✅ COMPLETE: Full Startup Ecosystem</p>
             <p className="text-sm text-green-800">
               Startups have 100% coverage with <strong>COMPLETE OPPORTUNITY DISCOVERY + DEPLOYMENT SUCCESS TRACKING</strong>:
-              <br/><br/>
+              <br /><br />
               <strong>Platform Purpose:</strong> Connect startups to MUNICIPAL OPPORTUNITIES (challenges, programs, pilots) - NOT VC/funding. ✅ ACHIEVED
-              <br/><br/>
+              <br /><br />
               <strong>OPPORTUNITY DISCOVERY</strong> (95%) - EXCELLENT. Registration, matching to challenges, AI recommendations is best-in-class. ✅
-              <br/>
+              <br />
               <strong>DEPLOYMENT SUCCESS TRACKING</strong> (100%) - COMPLETE. OpportunityPipelineDashboard, ProviderPortfolioDashboard, DeploymentBadges, pilots won counter. ✅
-              <br/><br/>
+              <br /><br />
               Platform can now answer: How many challenges did startup pursue? ✅ How many pilots won? ✅ How many municipal clients? ✅ Deployment success? ✅
-              <br/><br/>
+              <br /><br />
               <strong>Platform impact on startup opportunity pipeline = FULLY MEASURABLE.</strong>
-              <br/><br/>
+              <br /><br />
               All 10 critical gaps resolved: Verification ✅ Rating ✅ Portfolio ✅ Proposal ✅ Tracking ✅ Metrics ✅ Stories ✅ Awards ✅ Spinoff ✅ Ecosystem ✅
             </p>
           </div>
@@ -2187,58 +2171,58 @@ function StartupCoverageReport() {
             <p className="text-sm font-semibold text-green-900 mb-2">🎉 Bottom Line: 100% COMPLETE - FULL STARTUP MODULE</p>
             <p className="text-sm text-green-800">
               <strong>✅ ALL 10 CRITICAL GAPS RESOLVED (100%)</strong>
-              <br/>1. ✅ Opportunity pipeline tracking (OpportunityPipelineDashboard)
-              <br/>2. ✅ Platform success metrics (pilots won, deployments tracked)
-              <br/>3. ✅ Verification & credentialing (StartupVerificationQueue + StartupCredentialBadges)
-              <br/>4. ✅ Proposal/EOI workflow (ProviderProposalWizard + MunicipalProposalInbox)
-              <br/>5. ✅ Rating system (SolutionReview entity)
-              <br/>6. ✅ Portfolio management (ProviderPortfolioDashboard + MultiCityOperationsManager)
-              <br/>7. ✅ Deployment success stories (autoGenerateSuccessStory function)
-              <br/>8. ✅ Provider recognition (ProviderAward + ProviderLeaderboard)
-              <br/>9. ✅ R&D→Startup commercialization (RDToStartupSpinoff)
-              <br/>10. ✅ Ecosystem health (StartupEcosystemDashboard)
-              <br/><br/>
+              <br />1. ✅ Opportunity pipeline tracking (OpportunityPipelineDashboard)
+              <br />2. ✅ Platform success metrics (pilots won, deployments tracked)
+              <br />3. ✅ Verification & credentialing (StartupVerificationQueue + StartupCredentialBadges)
+              <br />4. ✅ Proposal/EOI workflow (ProviderProposalWizard + MunicipalProposalInbox)
+              <br />5. ✅ Rating system (SolutionReview entity)
+              <br />6. ✅ Portfolio management (ProviderPortfolioDashboard + MultiCityOperationsManager)
+              <br />7. ✅ Deployment success stories (autoGenerateSuccessStory function)
+              <br />8. ✅ Provider recognition (ProviderAward + ProviderLeaderboard)
+              <br />9. ✅ R&D→Startup commercialization (RDToStartupSpinoff)
+              <br />10. ✅ Ecosystem health (StartupEcosystemDashboard)
+              <br /><br />
               <strong>✅ ALL 19/19 HIGH-PRIORITY RESOLVED (100%) - FINAL: 2025-12-03</strong>
-              <br/>• 9 AI components INTEGRATED into workflows
-              <br/>• 4 new features: onboarding wizard, public showcase, multi-city ops, credential badges
-              <br/>• 6 workflow integrations: collaboration network, contract tracker, testimonials, auto-linking, readiness gate, reputation scoring
-              <br/>• StartupProfile entity enhanced with 9 critical fields
-              <br/><br/>
+              <br />• 9 AI components INTEGRATED into workflows
+              <br />• 4 new features: onboarding wizard, public showcase, multi-city ops, credential badges
+              <br />• 6 workflow integrations: collaboration network, contract tracker, testimonials, auto-linking, readiness gate, reputation scoring
+              <br />• StartupProfile entity enhanced with 9 critical fields
+              <br /><br />
               <strong>✅ ALL 9/9 MEDIUM-PRIORITY COMPLETE (100%) - FINAL: 2025-12-03</strong>
-              <br/>• 7 ecosystem components created and integrated:
-              <br/>1. ✅ StartupCollaborationHub - startup partnerships & joint solutions
-              <br/>2. ✅ StartupReferralProgram - refer other startups to platform
-              <br/>3. ✅ StartupMentorshipMatcher - AI peer mentorship matching
-              <br/>4. ✅ MultiMunicipalityExpansionTracker - scale-up deployment analytics
-              <br/>5. ✅ EcosystemContributionScore - contribution points system
-              <br/>6. ✅ StartupJourneyAnalytics - registration→growth tracking
-              <br/>7. ✅ StartupChurnPredictor - AI churn risk prediction
-              <br/><br/>
+              <br />• 7 ecosystem components created and integrated:
+              <br />1. ✅ StartupCollaborationHub - startup partnerships & joint solutions
+              <br />2. ✅ StartupReferralProgram - refer other startups to platform
+              <br />3. ✅ StartupMentorshipMatcher - AI peer mentorship matching
+              <br />4. ✅ MultiMunicipalityExpansionTracker - scale-up deployment analytics
+              <br />5. ✅ EcosystemContributionScore - contribution points system
+              <br />6. ✅ StartupJourneyAnalytics - registration→growth tracking
+              <br />7. ✅ StartupChurnPredictor - AI churn risk prediction
+              <br /><br />
               <strong>🏆 COMPLETE STARTUP ECOSYSTEM:</strong> 38/38 gaps resolved, 18 components created, 2 backend functions, 1 entity enhanced. Production-ready startup module with full opportunity discovery, deployment tracking, ecosystem collaboration, and AI-powered insights.
             </p>
           </div>
 
           <div className="grid grid-cols-5 gap-3 text-center">
-          <div className="p-3 bg-white rounded-lg border-2 border-green-300">
-            <p className="text-2xl font-bold text-green-600">100%</p>
-            <p className="text-xs text-slate-600">Critical (10/10)</p>
-          </div>
-          <div className="p-3 bg-white rounded-lg border-2 border-green-300">
-            <p className="text-2xl font-bold text-green-600">100%</p>
-            <p className="text-xs text-slate-600">High (19/19)</p>
-          </div>
-          <div className="p-3 bg-white rounded-lg border">
-            <p className="text-2xl font-bold text-green-600">95%</p>
-            <p className="text-xs text-slate-600">AI Matching</p>
-          </div>
-          <div className="p-3 bg-white rounded-lg border">
-            <p className="text-2xl font-bold text-green-600">100%</p>
-            <p className="text-xs text-slate-600">Opportunity Pipeline</p>
-          </div>
-          <div className="p-3 bg-white rounded-lg border">
-            <p className="text-2xl font-bold text-green-600">100%</p>
-            <p className="text-xs text-slate-600">AI Integration</p>
-          </div>
+            <div className="p-3 bg-white rounded-lg border-2 border-green-300">
+              <p className="text-2xl font-bold text-green-600">100%</p>
+              <p className="text-xs text-slate-600">Critical (10/10)</p>
+            </div>
+            <div className="p-3 bg-white rounded-lg border-2 border-green-300">
+              <p className="text-2xl font-bold text-green-600">100%</p>
+              <p className="text-xs text-slate-600">High (19/19)</p>
+            </div>
+            <div className="p-3 bg-white rounded-lg border">
+              <p className="text-2xl font-bold text-green-600">95%</p>
+              <p className="text-xs text-slate-600">AI Matching</p>
+            </div>
+            <div className="p-3 bg-white rounded-lg border">
+              <p className="text-2xl font-bold text-green-600">100%</p>
+              <p className="text-xs text-slate-600">Opportunity Pipeline</p>
+            </div>
+            <div className="p-3 bg-white rounded-lg border">
+              <p className="text-2xl font-bold text-green-600">100%</p>
+              <p className="text-xs text-slate-600">AI Integration</p>
+            </div>
           </div>
         </CardContent>
       </Card>

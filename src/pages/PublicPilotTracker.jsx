@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { usePublicPilots, usePublicMunicipalities } from '@/hooks/usePublicContent';
+import { usePilotEnrollments } from '@/hooks/useCitizenParticipation';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,12 +12,12 @@ import {
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
-import { 
-  CitizenPageLayout, 
-  CitizenPageHeader, 
-  CitizenSearchFilter, 
-  CitizenCardGrid, 
-  CitizenEmptyState 
+import {
+  CitizenPageLayout,
+  CitizenPageHeader,
+  CitizenSearchFilter,
+  CitizenCardGrid,
+  CitizenEmptyState
 } from '@/components/citizen/CitizenPageLayout';
 
 function PublicPilotTracker() {
@@ -28,50 +28,25 @@ function PublicPilotTracker() {
   const [viewMode, setViewMode] = useState('grid');
   const { user } = useAuth();
 
-  const { data: pilots = [], isLoading } = useQuery({
-    queryKey: ['public-pilots'],
-    queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*')
-        .eq('is_published', true)
-        .eq('is_confidential', false)
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false })
-        .limit(100);
-      return data || [];
-    }
-  });
+  const { data: pilots = [], isLoading } = usePublicPilots({ all: true, limit: 100 });
 
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities-public'],
-    queryFn: async () => {
-      const { data } = await supabase.from('municipalities').select('*');
-      return data || [];
-    }
-  });
+  const { data: municipalities = [] } = usePublicMunicipalities();
 
-  const { data: enrollments = [] } = useQuery({
-    queryKey: ['my-enrollments', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data } = await supabase.from('citizen_pilot_enrollments').select('*').eq('citizen_email', user.email);
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
+  const { data: enrollments = [] } = usePilotEnrollments(user?.email);
 
   const filtered = pilots.filter(p => {
     if (selectedSector !== 'all' && p.sector !== selectedSector) return false;
     if (selectedCity !== 'all' && p.municipality_id !== selectedCity) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      return (p.title_en?.toLowerCase().includes(q) || 
-              p.title_ar?.includes(q) ||
-              p.code?.toLowerCase().includes(q));
+      return (p.title_en?.toLowerCase().includes(q) ||
+        p.title_ar?.includes(q) ||
+        p.code?.toLowerCase().includes(q));
     }
     return true;
   });
 
-  const myAreaPilots = user?.municipality_id 
+  const myAreaPilots = user?.municipality_id
     ? pilots.filter(p => p.municipality_id === user.municipality_id)
     : [];
 
@@ -133,9 +108,9 @@ function PublicPilotTracker() {
             placeholder: t({ en: 'City', ar: 'المدينة' }),
             value: selectedCity,
             onChange: setSelectedCity,
-            options: municipalities.map(m => ({ 
-              value: m.id, 
-              label: language === 'ar' && m.name_ar ? m.name_ar : m.name_en 
+            options: municipalities.map(m => ({
+              value: m.id,
+              label: language === 'ar' && m.name_ar ? m.name_ar : m.name_en
             }))
           }
         ]}
@@ -188,7 +163,7 @@ function PublicPilotTracker() {
       )}
 
       {/* All Pilots */}
-      <CitizenCardGrid 
+      <CitizenCardGrid
         viewMode={viewMode}
         emptyState={
           <CitizenEmptyState
@@ -199,11 +174,10 @@ function PublicPilotTracker() {
         }
       >
         {filtered.map(pilot => (
-          <Card 
-            key={pilot.id} 
-            className={`group overflow-hidden border-border/50 hover:border-primary/30 hover:shadow-lg transition-all duration-300 ${
-              viewMode === 'list' ? 'flex flex-row' : ''
-            }`}
+          <Card
+            key={pilot.id}
+            className={`group overflow-hidden border-border/50 hover:border-primary/30 hover:shadow-lg transition-all duration-300 ${viewMode === 'list' ? 'flex flex-row' : ''
+              }`}
           >
             <CardContent className={`p-5 ${viewMode === 'list' ? 'flex items-center gap-6 w-full' : ''}`}>
               <div className={viewMode === 'list' ? 'flex-1' : ''}>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { usePublicIdeas, useIdeaVotes, useIdeaVoteMutation } from '@/hooks/useCitizenParticipation';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,12 +14,12 @@ import {
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
-import { 
-  CitizenPageLayout, 
-  CitizenPageHeader, 
-  CitizenSearchFilter, 
-  CitizenCardGrid, 
-  CitizenEmptyState 
+import {
+  CitizenPageLayout,
+  CitizenPageHeader,
+  CitizenSearchFilter,
+  CitizenCardGrid,
+  CitizenEmptyState
 } from '@/components/citizen/CitizenPageLayout';
 
 function PublicIdeasBoard() {
@@ -38,68 +38,10 @@ function PublicIdeasBoard() {
     return () => clearInterval(interval);
   }, [queryClient]);
 
-  const { data: ideas = [], isLoading } = useQuery({
-    queryKey: ['public-ideas'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('citizen_ideas')
-        .select('*')
-        .in('status', ['submitted', 'under_review', 'approved'])
-        .order('created_at', { ascending: false })
-        .limit(200);
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: ideas = [], isLoading } = usePublicIdeas({ status: ['submitted', 'under_review', 'approved'], limit: 200 });
 
-  const { data: userVotes = [], refetch: refetchVotes } = useQuery({
-    queryKey: ['idea-votes', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      const { data } = await supabase
-        .from('citizen_votes')
-        .select('entity_id')
-        .eq('user_id', user.id)
-        .eq('entity_type', 'idea');
-      return data?.map(v => v.entity_id) || [];
-    },
-    enabled: !!user?.id
-  });
-
-  const voteMutation = useMutation({
-    mutationFn: async (ideaId) => {
-      if (!user?.id) throw new Error('Not logged in');
-      const isVoted = userVotes.includes(ideaId);
-      
-      if (isVoted) {
-        await supabase.from('citizen_votes').delete()
-          .eq('user_id', user.id)
-          .eq('entity_id', ideaId)
-          .eq('entity_type', 'idea');
-      } else {
-        await supabase.from('citizen_votes').insert({
-          user_id: user.id,
-          user_email: user.email,
-          entity_id: ideaId,
-          entity_type: 'idea',
-          vote_type: 'upvote'
-        });
-      }
-
-      // Update vote count
-      const idea = ideas.find(i => i.id === ideaId);
-      const newCount = isVoted ? (idea?.votes_count || 1) - 1 : (idea?.votes_count || 0) + 1;
-      await supabase.from('citizen_ideas').update({ votes_count: newCount }).eq('id', ideaId);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['public-ideas']);
-      refetchVotes();
-      toast.success(t({ en: 'Vote recorded!', ar: 'تم تسجيل التصويت!' }));
-    },
-    onError: () => {
-      toast.error(t({ en: 'Please login to vote', ar: 'يرجى تسجيل الدخول للتصويت' }));
-    }
-  });
+  const { data: userVotes = [] } = useIdeaVotes(user?.id);
+  const voteMutation = useIdeaVoteMutation(user?.id, user?.email);
 
   const categories = [
     { value: 'transport', label: t({ en: 'Transport', ar: 'النقل' }) },
@@ -111,7 +53,7 @@ function PublicIdeasBoard() {
   ];
 
   const filteredIdeas = ideas.filter(idea => {
-    const matchesSearch = !searchTerm || 
+    const matchesSearch = !searchTerm ||
       idea.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       idea.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || idea.category === categoryFilter;
@@ -127,7 +69,7 @@ function PublicIdeasBoard() {
   const stats = {
     total: ideas.length,
     popular: ideas.filter(i => (i.votes_count || 0) > 10).length,
-    thisMonth: ideas.filter(i => new Date(i.created_at) > new Date(Date.now() - 30*24*60*60*1000)).length
+    thisMonth: ideas.filter(i => new Date(i.created_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length
   };
 
   const getStatusColor = (status) => {
@@ -202,7 +144,7 @@ function PublicIdeasBoard() {
         </Select>
       </div>
 
-      <CitizenCardGrid 
+      <CitizenCardGrid
         viewMode={viewMode}
         emptyState={
           <CitizenEmptyState
@@ -221,11 +163,10 @@ function PublicIdeasBoard() {
         }
       >
         {sortedIdeas.map(idea => (
-          <Card 
-            key={idea.id} 
-            className={`group overflow-hidden border-border/50 hover:border-primary/30 hover:shadow-lg transition-all duration-300 ${
-              viewMode === 'list' ? 'flex flex-row' : ''
-            }`}
+          <Card
+            key={idea.id}
+            className={`group overflow-hidden border-border/50 hover:border-primary/30 hover:shadow-lg transition-all duration-300 ${viewMode === 'list' ? 'flex flex-row' : ''
+              }`}
           >
             <CardContent className={`p-5 ${viewMode === 'list' ? 'flex items-center gap-6 w-full' : ''}`}>
               <div className={viewMode === 'list' ? 'flex-1' : ''}>

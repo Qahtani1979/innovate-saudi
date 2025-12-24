@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+﻿import { useState } from 'react';
+import { useExperts, useAllExpertAssignments, useAllExpertEvaluations } from '@/hooks/useExpertData';
+import { useExpertPanels } from '@/hooks/useExpertPanelData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -29,25 +29,11 @@ function ExpertCoverageReport() {
   const { language, isRTL, t } = useLanguage();
   const [expandedSections, setExpandedSections] = useState({});
 
-  const { data: expertProfiles = [] } = useQuery({
-    queryKey: ['experts-for-coverage'],
-    queryFn: () => base44.entities.ExpertProfile.list()
-  });
+  const { data: expertProfiles = [] } = useExperts();
+  const { data: expertAssignments = [] } = useAllExpertAssignments();
+  const { data: expertEvaluations = [] } = useAllExpertEvaluations();
+  const { data: expertPanels = [] } = useExpertPanels();
 
-  const { data: expertAssignments = [] } = useQuery({
-    queryKey: ['assignments-for-coverage'],
-    queryFn: () => base44.entities.ExpertAssignment.list()
-  });
-
-  const { data: expertEvaluations = [] } = useQuery({
-    queryKey: ['evaluations-for-coverage'],
-    queryFn: () => base44.entities.ExpertEvaluation.list()
-  });
-
-  const { data: expertPanels = [] } = useQuery({
-    queryKey: ['panels-for-coverage'],
-    queryFn: () => base44.entities.ExpertPanel.list()
-  });
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
@@ -56,8 +42,8 @@ function ExpertCoverageReport() {
   const coverageData = {
     overview: {
       description: 'Expert Management System - domain experts, evaluators, mentors, advisors utilized across challenges, pilots, R&D, programs, and strategic initiatives',
-      currentStatus: '✅ FULLY IMPLEMENTED (Dec 2025) - Expert system complete with unified ExpertEvaluation entity across all modules',
-      consistencyNote: '✅ UNIFIED EVALUATION SYSTEM (Dec 2025): All modules migrated to ExpertEvaluation entity. Sandbox, LivingLab, and all legacy evaluation entities consolidated into single unified system.',
+      currentStatus: 'âœ… FULLY IMPLEMENTED (Dec 2025) - Expert system complete with unified ExpertEvaluation entity across all modules',
+      consistencyNote: 'âœ… UNIFIED EVALUATION SYSTEM (Dec 2025): All modules migrated to ExpertEvaluation entity. Sandbox, LivingLab, and all legacy evaluation entities consolidated into single unified system.',
       strategicImportance: 'CORE PLATFORM CAPABILITY - experts provide rigor, quality control, and domain knowledge across entire innovation pipeline'
     },
 
@@ -88,8 +74,8 @@ function ExpertCoverageReport() {
           coverage: 100,
           fields: ['id', 'email', 'full_name', 'role', 'assigned_roles', 'expertise_areas', 'sector_specializations'],
           implementedFields: [
-            '✅ expertise_areas (array) - domains of expertise',
-            '✅ sector_specializations (array) - specific sectors'
+            'âœ… expertise_areas (array) - domains of expertise',
+            'âœ… sector_specializations (array) - specific sectors'
           ]
         },
         {
@@ -98,10 +84,10 @@ function ExpertCoverageReport() {
           coverage: 100,
           fields: ['name', 'description', 'permissions', 'is_expert_role', 'required_expertise_areas', 'required_certifications', 'min_years_experience'],
           implementedFields: [
-            '✅ is_expert_role (boolean)',
-            '✅ required_expertise_areas (array)',
-            '✅ required_certifications (array)',
-            '✅ min_years_experience (number)'
+            'âœ… is_expert_role (boolean)',
+            'âœ… required_expertise_areas (array)',
+            'âœ… required_certifications (array)',
+            'âœ… min_years_experience (number)'
           ]
         },
         {
@@ -110,10 +96,10 @@ function ExpertCoverageReport() {
           coverage: 100,
           fields: ['user_email', 'title', 'organization_id', 'position', 'expertise_areas', 'sector_specializations', 'certifications', 'publications', 'years_of_experience', 'bio_en', 'bio_ar', 'cv_url', 'linkedin_url', 'availability_hours_per_month', 'expert_rating', 'evaluation_count', 'is_verified', 'is_active'],
           implementedFields: [
-            '✅ All 40+ fields implemented',
-            '✅ Vector embeddings for AI matching',
-            '✅ Performance metrics tracking',
-            '✅ Availability management'
+            'âœ… All 40+ fields implemented',
+            'âœ… Vector embeddings for AI matching',
+            'âœ… Performance metrics tracking',
+            'âœ… Availability management'
           ]
         },
         {
@@ -122,9 +108,9 @@ function ExpertCoverageReport() {
           coverage: 100,
           fields: ['expert_email', 'entity_type', 'entity_id', 'assignment_type', 'assigned_date', 'due_date', 'status', 'hours_estimated', 'compensation'],
           implementedFields: [
-            '✅ Complete assignment tracking',
-            '✅ Multi-entity support',
-            '✅ Status workflow management'
+            'âœ… Complete assignment tracking',
+            'âœ… Multi-entity support',
+            'âœ… Status workflow management'
           ]
         },
         {
@@ -133,10 +119,10 @@ function ExpertCoverageReport() {
           coverage: 100,
           fields: ['expert_email', 'entity_type', 'entity_id', 'evaluation_date', 'feasibility_score', 'impact_score', 'innovation_score', 'overall_score', 'recommendation', 'feedback_text', 'strengths', 'weaknesses'],
           implementedFields: [
-            '✅ Unified evaluation system',
-            '✅ Multi-dimensional scoring',
-            '✅ Qualitative feedback',
-            '✅ Supports 9 entity types including rd_project'
+            'âœ… Unified evaluation system',
+            'âœ… Multi-dimensional scoring',
+            'âœ… Qualitative feedback',
+            'âœ… Supports 9 entity types including rd_project'
           ]
         },
         {
@@ -145,9 +131,9 @@ function ExpertCoverageReport() {
           coverage: 100,
           fields: ['panel_name', 'entity_type', 'entity_id', 'panel_members', 'panel_chair_email', 'status', 'consensus_threshold', 'decision', 'voting_results'],
           implementedFields: [
-            '✅ Multi-expert panel management',
-            '✅ Consensus tracking',
-            '✅ Decision workflow'
+            'âœ… Multi-expert panel management',
+            'âœ… Consensus tracking',
+            'âœ… Decision workflow'
           ]
         }
       ],
@@ -157,42 +143,42 @@ function ExpertCoverageReport() {
     components: [
       {
         name: 'Unified Evaluation Components',
-        status: '✅ COMPLETE - 4/4 components implemented',
+        status: 'âœ… COMPLETE - 4/4 components implemented',
         components: [
-          { name: 'UnifiedEvaluationForm', status: '✅ Complete', usage: 'All entity evaluation forms', location: 'components/evaluation/', coverage: 100 },
-          { name: 'EvaluationConsensusPanel', status: '✅ Complete', usage: 'Multi-expert consensus display', location: 'components/evaluation/', coverage: 100 },
-          { name: 'QuickEvaluationCard', status: '✅ Complete', usage: 'Compact evaluation summary', location: 'components/evaluation/', coverage: 100 },
-          { name: 'EvaluationHistory', status: '✅ Complete', usage: 'Evaluation timeline & filtering', location: 'components/evaluation/', coverage: 100 }
+          { name: 'UnifiedEvaluationForm', status: 'âœ… Complete', usage: 'All entity evaluation forms', location: 'components/evaluation/', coverage: 100 },
+          { name: 'EvaluationConsensusPanel', status: 'âœ… Complete', usage: 'Multi-expert consensus display', location: 'components/evaluation/', coverage: 100 },
+          { name: 'QuickEvaluationCard', status: 'âœ… Complete', usage: 'Compact evaluation summary', location: 'components/evaluation/', coverage: 100 },
+          { name: 'EvaluationHistory', status: 'âœ… Complete', usage: 'Evaluation timeline & filtering', location: 'components/evaluation/', coverage: 100 }
         ]
       },
       {
         name: 'Existing Expert Components (Profile/Credential)',
-        status: '✅ FOUND - 3/3 components exist',
+        status: 'âœ… FOUND - 3/3 components exist',
         components: [
-          { name: 'ExpertFinder', status: '✅ Exists', usage: 'AI semantic expert search', location: 'components/profiles/', coverage: 100 },
-          { name: 'ProfileCompletionAI', status: '✅ Exists', usage: 'Profile improvement suggestions', location: 'components/profiles/', coverage: 100 },
-          { name: 'CredentialVerificationAI', status: '✅ Exists', usage: 'AI credential verification', location: 'components/profiles/', coverage: 100 }
+          { name: 'ExpertFinder', status: 'âœ… Exists', usage: 'AI semantic expert search', location: 'components/profiles/', coverage: 100 },
+          { name: 'ProfileCompletionAI', status: 'âœ… Exists', usage: 'Profile improvement suggestions', location: 'components/profiles/', coverage: 100 },
+          { name: 'CredentialVerificationAI', status: 'âœ… Exists', usage: 'AI credential verification', location: 'components/profiles/', coverage: 100 }
         ]
       },
       {
         name: 'Reused Platform Components',
-        status: '✅ COMPLETE',
+        status: 'âœ… COMPLETE',
         components: [
-          { name: 'FileUploader', usage: 'CV upload in ExpertOnboarding', status: '✅ reused', coverage: 100 },
-          { name: 'ActivityFeed', usage: 'Expert activities in feeds', status: '✅ reused (platform-wide)', coverage: 100 },
-          { name: 'NetworkGraph', usage: 'Could show expert collaboration', status: '⚠️ not expert-specific yet', coverage: 0 }
+          { name: 'FileUploader', usage: 'CV upload in ExpertOnboarding', status: 'âœ… reused', coverage: 100 },
+          { name: 'ActivityFeed', usage: 'Expert activities in feeds', status: 'âœ… reused (platform-wide)', coverage: 100 },
+          { name: 'NetworkGraph', usage: 'Could show expert collaboration', status: 'âš ï¸ not expert-specific yet', coverage: 0 }
         ]
       },
       {
         name: 'Missing Expert-Specific Components (Low Priority)',
         note: 'These are optional enhancements - core system functional without them',
         missingComponents: [
-          '⚠️ ExpertProfileCard (reusable expert card widget for dashboards) - P2',
-          '⚠️ ExpertAssignmentCard (assignment summary widget for dashboards) - P2',
-          '⚠️ ExpertAvailabilityCalendar (visual availability picker) - P2',
-          '⚠️ ExpertNetworkGraph (expert collaboration network visualization) - P2',
-          '⚠️ ExpertComparisonTable (side-by-side comparison tool) - P2',
-          '⚠️ ExpertRecommendationWidget (AI expert suggestions for homepage) - P2'
+          'âš ï¸ ExpertProfileCard (reusable expert card widget for dashboards) - P2',
+          'âš ï¸ ExpertAssignmentCard (assignment summary widget for dashboards) - P2',
+          'âš ï¸ ExpertAvailabilityCalendar (visual availability picker) - P2',
+          'âš ï¸ ExpertNetworkGraph (expert collaboration network visualization) - P2',
+          'âš ï¸ ExpertComparisonTable (side-by-side comparison tool) - P2',
+          'âš ï¸ ExpertRecommendationWidget (AI expert suggestions for homepage) - P2'
         ]
       }
     ],
@@ -200,49 +186,49 @@ function ExpertCoverageReport() {
     menuNavigation: {
       presence: [
         {
-          menu: 'Main Left Sidebar → System & Admin → 🎓 Expert Management',
+          menu: 'Main Left Sidebar â†’ System & Admin â†’ ðŸŽ“ Expert Management',
           items: [
-            '✅ ExpertRegistry (Expert Registry)',
-            '✅ ExpertMatchingEngine (Expert Matching)',
-            '✅ ExpertPerformanceDashboard (Expert Performance)',
-            '✅ ExpertPanelManagement (Expert Panels)',
-            '✅ ExpertAssignmentQueue (My Expert Assignments)',
-            '✅ ExpertOnboarding (Become an Expert)'
+            'âœ… ExpertRegistry (Expert Registry)',
+            'âœ… ExpertMatchingEngine (Expert Matching)',
+            'âœ… ExpertPerformanceDashboard (Expert Performance)',
+            'âœ… ExpertPanelManagement (Expert Panels)',
+            'âœ… ExpertAssignmentQueue (My Expert Assignments)',
+            'âœ… ExpertOnboarding (Become an Expert)'
           ],
           status: 'complete',
           visibility: 'ExpertRegistry public, others admin/expert only'
         },
         {
-          menu: 'ChallengeDetail → Experts Tab',
+          menu: 'ChallengeDetail â†’ Experts Tab',
           items: [
-            '✅ Link to ExpertMatchingEngine (Assign Experts button)',
-            '✅ Display of ExpertEvaluations with scores',
-            '✅ Multi-expert consensus display'
+            'âœ… Link to ExpertMatchingEngine (Assign Experts button)',
+            'âœ… Display of ExpertEvaluations with scores',
+            'âœ… Multi-expert consensus display'
           ],
           status: 'complete'
         },
         {
           menu: 'ChallengeReviewWorkflow Component',
           items: [
-            '✅ Shows expert evaluations in review modal',
-            '✅ Consensus percentage display',
-            '✅ Link to assign more experts'
+            'âœ… Shows expert evaluations in review modal',
+            'âœ… Consensus percentage display',
+            'âœ… Link to assign more experts'
           ],
           status: 'complete'
         },
         {
           menu: 'User Profile Pages',
           items: [
-            '✅ ExpertDetail accessible from UserProfile',
-            '✅ Edit own expert profile',
-            '✅ View own assignments'
+            'âœ… ExpertDetail accessible from UserProfile',
+            'âœ… Edit own expert profile',
+            'âœ… View own assignments'
           ],
           status: 'complete'
         }
       ],
       missing: [
-        '⚠️ Expert quick actions in homepage dashboard (minor)',
-        '⚠️ Expert system status in SystemHealthDashboard (optional)'
+        'âš ï¸ Expert quick actions in homepage dashboard (minor)',
+        'âš ï¸ Expert system status in SystemHealthDashboard (optional)'
       ]
     },
 
@@ -251,179 +237,179 @@ function ExpertCoverageReport() {
         {
           name: 'ExpertRegistry',
           path: '/experts',
-          status: '✅ COMPLETE',
+          status: 'âœ… COMPLETE',
           description: 'Browse and search platform experts',
-          fileStatus: '✅ FILE EXISTS',
+          fileStatus: 'âœ… FILE EXISTS',
           features: [
-            '✅ List view with filters (expertise, sector, availability)',
-            '✅ Expert cards with avatar, title, organization, rating',
-            '✅ Search by expertise, bio, keywords',
-            '✅ Filter by sector specialization',
-            '✅ Stats cards (total, verified, avg rating, evaluations)',
-            '✅ Link to ExpertOnboarding',
-            '✅ Link to ExpertDetail for each expert'
+            'âœ… List view with filters (expertise, sector, availability)',
+            'âœ… Expert cards with avatar, title, organization, rating',
+            'âœ… Search by expertise, bio, keywords',
+            'âœ… Filter by sector specialization',
+            'âœ… Stats cards (total, verified, avg rating, evaluations)',
+            'âœ… Link to ExpertOnboarding',
+            'âœ… Link to ExpertDetail for each expert'
           ],
           actualImplementation: 'Grid layout, 4 stat cards, search + sector filter, expert cards with ratings',
-          gaps: ['⚠️ No semantic AI search (uses basic filter)', '⚠️ No export functionality', '⚠️ No availability filter']
+          gaps: ['âš ï¸ No semantic AI search (uses basic filter)', 'âš ï¸ No export functionality', 'âš ï¸ No availability filter']
         },
         {
           name: 'ExpertDetail',
           path: '/expert/:id',
-          status: '✅ COMPLETE',
+          status: 'âœ… COMPLETE',
           description: 'Expert detailed profile page',
-          fileStatus: '✅ FILE EXISTS',
+          fileStatus: 'âœ… FILE EXISTS',
           tabs: [
-            '✅ Profile (bio, certifications, contact, preferences)',
-            '✅ Expertise (areas, sectors, publications)',
-            '✅ Experience (assignment history, evaluation history)',
-            '✅ Performance (quality score, response time, acceptance rate)',
-            '✅ Availability (monthly capacity, current load, status)'
+            'âœ… Profile (bio, certifications, contact, preferences)',
+            'âœ… Expertise (areas, sectors, publications)',
+            'âœ… Experience (assignment history, evaluation history)',
+            'âœ… Performance (quality score, response time, acceptance rate)',
+            'âœ… Availability (monthly capacity, current load, status)'
           ],
           actualImplementation: 'Hero header with stats, 5 tabs, fetches assignments & evaluations',
-          gaps: ['⚠️ No AI-generated profile summary', '⚠️ No recommended assignments', '⚠️ No Edit functionality (button exists but not wired)']
+          gaps: ['âš ï¸ No AI-generated profile summary', 'âš ï¸ No recommended assignments', 'âš ï¸ No Edit functionality (button exists but not wired)']
         },
         {
           name: 'ExpertOnboarding',
           path: '/expert/onboard',
-          status: '⚠️ PARTIAL - Core working but gaps exist',
+          status: 'âš ï¸ PARTIAL - Core working but gaps exist',
           description: 'Expert registration and vetting wizard',
-          fileStatus: '✅ FILE EXISTS',
+          fileStatus: 'âœ… FILE EXISTS',
           steps: [
-            '✅ Step 1: CV upload with AI extraction',
-            '✅ Step 2: Personal information (title, position, bio EN/AR)',
-            '✅ Step 3: Expertise & specializations (areas, sectors, engagement types)',
-            '✅ Step 4: Review & submit'
+            'âœ… Step 1: CV upload with AI extraction',
+            'âœ… Step 2: Personal information (title, position, bio EN/AR)',
+            'âœ… Step 3: Expertise & specializations (areas, sectors, engagement types)',
+            'âœ… Step 4: Review & submit'
           ],
           actualImplementation: '4-step wizard with FileUploader, ExtractDataFromUploadedFile integration, creates ExpertProfile with is_verified=false',
-          workflow: '✅ Upload CV → AI Extract → Fill Form → Submit → (MANUAL admin approval in ExpertDetail)',
-          aiFeatures: ['✅ CV extraction via ExtractDataFromUploadedFile'],
+          workflow: 'âœ… Upload CV â†’ AI Extract â†’ Fill Form â†’ Submit â†’ (MANUAL admin approval in ExpertDetail)',
+          aiFeatures: ['âœ… CV extraction via ExtractDataFromUploadedFile'],
           gaps: [
-            '❌ No Step 3 rendering (code jumps from step 2 to step 4)',
-            '❌ No admin approval workflow page/component',
-            '❌ No automated notification to admins on submission',
-            '❌ ExpertDetail Edit button not functional'
+            'âŒ No Step 3 rendering (code jumps from step 2 to step 4)',
+            'âŒ No admin approval workflow page/component',
+            'âŒ No automated notification to admins on submission',
+            'âŒ ExpertDetail Edit button not functional'
           ]
         },
         {
           name: 'ExpertAssignmentQueue',
           path: '/expert/assignments',
-          status: '✅ COMPLETE - Core functional',
+          status: 'âœ… COMPLETE - Core functional',
           description: 'Expert personal assignment queue (My Work)',
-          fileStatus: '✅ FILE EXISTS',
+          fileStatus: 'âœ… FILE EXISTS',
           features: [
-            '✅ 3 tabs: Pending, Active, Completed',
-            '✅ 4 stat cards (pending, active, completed, total)',
-            '✅ Accept/decline actions for pending assignments',
-            '✅ Link to ExpertEvaluationWorkflow from each assignment',
-            '✅ Display assignment type, entity type, due date, hours'
+            'âœ… 3 tabs: Pending, Active, Completed',
+            'âœ… 4 stat cards (pending, active, completed, total)',
+            'âœ… Accept/decline actions for pending assignments',
+            'âœ… Link to ExpertEvaluationWorkflow from each assignment',
+            'âœ… Display assignment type, entity type, due date, hours'
           ],
           actualImplementation: 'Filters assignments by current user email, accept/decline mutations, navigates to evaluation workflow',
           gaps: [
-            '⚠️ No time tracking (hours_actual not captured)',
-            '⚠️ No AI time estimation',
-            '⚠️ No AI pre-fill evaluation (exists in ExpertEvaluationWorkflow, not in queue)',
-            '⚠️ No workload overview visualization'
+            'âš ï¸ No time tracking (hours_actual not captured)',
+            'âš ï¸ No AI time estimation',
+            'âš ï¸ No AI pre-fill evaluation (exists in ExpertEvaluationWorkflow, not in queue)',
+            'âš ï¸ No workload overview visualization'
           ]
         },
         {
           name: 'ExpertMatchingEngine',
           path: '/admin/expert-matching',
-          status: '⚠️ PARTIAL - Basic matching works but limited entity support',
+          status: 'âš ï¸ PARTIAL - Basic matching works but limited entity support',
           description: 'Admin tool to match experts to entities via AI',
-          fileStatus: '✅ FILE EXISTS',
+          fileStatus: 'âœ… FILE EXISTS',
           features: [
-            '✅ Entity type selection (challenge, pilot)',
-            '✅ Entity dropdown (fetches challenges or pilots)',
-            '✅ AI-recommended experts (LLM-based matching)',
-            '✅ Match score & reason display',
-            '✅ Multi-select experts',
-            '✅ Bulk assignment creation'
+            'âœ… Entity type selection (challenge, pilot)',
+            'âœ… Entity dropdown (fetches challenges or pilots)',
+            'âœ… AI-recommended experts (LLM-based matching)',
+            'âœ… Match score & reason display',
+            'âœ… Multi-select experts',
+            'âœ… Bulk assignment creation'
           ],
           actualImplementation: 'Uses InvokeLLM to analyze entity + experts, creates ExpertAssignment records with status=pending',
           gaps: [
-            '❌ Only supports Challenge and Pilot (not rd_proposal, program_application, solution, matchmaker_application, scaling_plan)',
-            '❌ No availability check',
-            '❌ No workload balancing',
-            '❌ No conflict-of-interest detection',
-            '❌ No assignment preview before sending',
-            '❌ No due date setting',
-            '❌ No hours estimation',
-            '❌ No compensation field',
-            '❌ No notifications sent to experts'
+            'âŒ Only supports Challenge and Pilot (not rd_proposal, program_application, solution, matchmaker_application, scaling_plan)',
+            'âŒ No availability check',
+            'âŒ No workload balancing',
+            'âŒ No conflict-of-interest detection',
+            'âŒ No assignment preview before sending',
+            'âŒ No due date setting',
+            'âŒ No hours estimation',
+            'âŒ No compensation field',
+            'âŒ No notifications sent to experts'
           ]
         },
         {
           name: 'ExpertPerformanceDashboard',
           path: '/admin/expert-performance',
-          status: '✅ COMPLETE - Core metrics implemented',
+          status: 'âœ… COMPLETE - Core metrics implemented',
           description: 'Monitor expert performance and quality',
-          fileStatus: '✅ FILE EXISTS',
+          fileStatus: 'âœ… FILE EXISTS',
           metrics: [
-            '✅ Active experts count',
-            '✅ Average rating',
-            '✅ Total evaluations',
-            '✅ Average response time',
-            '✅ Performance table (ranked by rating)',
-            '✅ Completion rate (calculated)',
-            '✅ Quality scores (from ExpertProfile)'
+            'âœ… Active experts count',
+            'âœ… Average rating',
+            'âœ… Total evaluations',
+            'âœ… Average response time',
+            'âœ… Performance table (ranked by rating)',
+            'âœ… Completion rate (calculated)',
+            'âœ… Quality scores (from ExpertProfile)'
           ],
           actualImplementation: 'Joins ExpertProfile + ExpertAssignment data, calculates completion rate, sortable table',
           gaps: [
-            '⚠️ No consensus rate tracking',
-            '⚠️ No explicit low performer flagging (just sorting)',
-            '⚠️ No workload distribution visualization',
-            '⚠️ No AI performance anomaly detection',
-            '⚠️ No AI burnout prediction'
+            'âš ï¸ No consensus rate tracking',
+            'âš ï¸ No explicit low performer flagging (just sorting)',
+            'âš ï¸ No workload distribution visualization',
+            'âš ï¸ No AI performance anomaly detection',
+            'âš ï¸ No AI burnout prediction'
           ]
         },
         {
           name: 'ExpertEvaluationWorkflow',
           path: '/expert/evaluate?assignment_id=X',
-          status: '⚠️ PARTIAL - Core working but significant gaps',
+          status: 'âš ï¸ PARTIAL - Core working but significant gaps',
           description: 'Evaluation form for assigned experts',
-          fileStatus: '✅ FILE EXISTS',
+          fileStatus: 'âœ… FILE EXISTS',
           features: [
-            '✅ 8 score sliders (feasibility, impact, innovation, cost, risk, alignment, quality, scalability)',
-            '✅ Qualitative fields (strengths, weaknesses, suggestions, feedback)',
-            '✅ Recommendation dropdown (approve/reject/revise/approve_with_conditions)',
-            '✅ AI Assist button (pre-fills scores)',
-            '✅ Submit creates ExpertEvaluation + updates assignment to completed'
+            'âœ… 8 score sliders (feasibility, impact, innovation, cost, risk, alignment, quality, scalability)',
+            'âœ… Qualitative fields (strengths, weaknesses, suggestions, feedback)',
+            'âœ… Recommendation dropdown (approve/reject/revise/approve_with_conditions)',
+            'âœ… AI Assist button (pre-fills scores)',
+            'âœ… Submit creates ExpertEvaluation + updates assignment to completed'
           ],
           actualImplementation: 'Fetches assignment by ID, displays scorecard, uses InvokeLLM for AI assist, navigates back to queue on submit',
-          workflow: '✅ Expert opens assignment → Fills scorecard → AI Assist (optional) → Submit → Redirects to queue',
+          workflow: 'âœ… Expert opens assignment â†’ Fills scorecard â†’ AI Assist (optional) â†’ Submit â†’ Redirects to queue',
           gaps: [
-            '❌ No entity overview/display (only shows entity_type & entity_id from assignment)',
-            '❌ Does NOT fetch actual entity data (challenge/pilot/rd_proposal)',
-            '❌ No Save Draft functionality',
-            '❌ No attachment upload',
-            '❌ No conditions field (if approve_with_conditions selected)',
-            '❌ AI Assist uses generic prompt (no actual entity data)',
-            '⚠️ Recommendation: Should integrate with UnifiedEvaluationForm component instead of custom form'
+            'âŒ No entity overview/display (only shows entity_type & entity_id from assignment)',
+            'âŒ Does NOT fetch actual entity data (challenge/pilot/rd_proposal)',
+            'âŒ No Save Draft functionality',
+            'âŒ No attachment upload',
+            'âŒ No conditions field (if approve_with_conditions selected)',
+            'âŒ AI Assist uses generic prompt (no actual entity data)',
+            'âš ï¸ Recommendation: Should integrate with UnifiedEvaluationForm component instead of custom form'
           ]
         },
         {
           name: 'ExpertPanelManagement',
           path: '/admin/expert-panels',
-          status: '⚠️ MINIMAL - Basic CRUD only',
+          status: 'âš ï¸ MINIMAL - Basic CRUD only',
           description: 'Create and manage expert panels',
-          fileStatus: '✅ FILE EXISTS',
+          fileStatus: 'âœ… FILE EXISTS',
           features: [
-            '✅ List all panels with status badges',
-            '✅ 4 stat cards (total, active, completed, avg size)',
-            '✅ Create panel form (name, entity_type, threshold)',
-            '✅ Display panel members count & consensus threshold'
+            'âœ… List all panels with status badges',
+            'âœ… 4 stat cards (total, active, completed, avg size)',
+            'âœ… Create panel form (name, entity_type, threshold)',
+            'âœ… Display panel members count & consensus threshold'
           ],
           actualImplementation: 'Simple list view + create modal, no panel detail page',
           gaps: [
-            '❌ No expert selection in create form (panel_members field empty)',
-            '❌ No entity selection (entity_id always empty)',
-            '❌ No panel detail page',
-            '❌ No voting mechanism',
-            '❌ No decision recording interface',
-            '❌ No meeting scheduling',
-            '❌ No panel discussion features',
-            '❌ Cannot view panel evaluations',
-            '❌ No link to ExpertMatchingEngine'
+            'âŒ No expert selection in create form (panel_members field empty)',
+            'âŒ No entity selection (entity_id always empty)',
+            'âŒ No panel detail page',
+            'âŒ No voting mechanism',
+            'âŒ No decision recording interface',
+            'âŒ No meeting scheduling',
+            'âŒ No panel discussion features',
+            'âŒ Cannot view panel evaluations',
+            'âŒ No link to ExpertMatchingEngine'
           ]
         }
       ],
@@ -435,53 +421,53 @@ function ExpertCoverageReport() {
       implemented: [
         {
           name: 'Expert Onboarding & Vetting',
-          status: '✅ COMPLETE',
+          status: 'âœ… COMPLETE',
           stages: [
-            '✅ Expert applies → CV & credentials uploaded',
-            '✅ AI extracts expertise from CV → pre-fills profile',
-            '✅ Admin reviews credentials',
-            '✅ Approve/reject → activate expert account'
+            'âœ… Expert applies â†’ CV & credentials uploaded',
+            'âœ… AI extracts expertise from CV â†’ pre-fills profile',
+            'âœ… Admin reviews credentials',
+            'âœ… Approve/reject â†’ activate expert account'
           ],
           automation: 70,
-          aiIntegration: ['✅ CV parsing', '✅ Expertise extraction']
+          aiIntegration: ['âœ… CV parsing', 'âœ… Expertise extraction']
         },
         {
           name: 'Expert Assignment & Matching',
-          status: '✅ COMPLETE',
+          status: 'âœ… COMPLETE',
           stages: [
-            '✅ Entity needs evaluation',
-            '✅ AI recommends 5+ relevant experts (ranked)',
-            '✅ Admin reviews recommendations → selects experts',
-            '✅ System sends assignment invitations',
-            '✅ Expert accepts/declines',
-            '✅ Track assignment completion'
+            'âœ… Entity needs evaluation',
+            'âœ… AI recommends 5+ relevant experts (ranked)',
+            'âœ… Admin reviews recommendations â†’ selects experts',
+            'âœ… System sends assignment invitations',
+            'âœ… Expert accepts/declines',
+            'âœ… Track assignment completion'
           ],
           automation: 80,
-          aiIntegration: ['✅ Semantic matching', '✅ Workload balancing']
+          aiIntegration: ['âœ… Semantic matching', 'âœ… Workload balancing']
         },
         {
           name: 'Multi-Expert Evaluation & Consensus',
-          status: '✅ COMPLETE',
+          status: 'âœ… COMPLETE',
           stages: [
-            '✅ Multiple experts assigned to entity',
-            '✅ Each expert submits evaluation independently',
-            '✅ System calculates consensus score',
-            '✅ Panel discussion workflow',
-            '✅ Final decision recorded'
+            'âœ… Multiple experts assigned to entity',
+            'âœ… Each expert submits evaluation independently',
+            'âœ… System calculates consensus score',
+            'âœ… Panel discussion workflow',
+            'âœ… Final decision recorded'
           ],
           automation: 60,
-          aiIntegration: ['✅ Consensus calculation', '✅ Decision support']
+          aiIntegration: ['âœ… Consensus calculation', 'âœ… Decision support']
         },
         {
           name: 'Expert Performance Review',
-          status: '✅ COMPLETE',
+          status: 'âœ… COMPLETE',
           stages: [
-            '✅ System calculates metrics (response time, quality, consensus)',
-            '✅ Admin reviews performance dashboard',
-            '✅ Performance tracking and analytics'
+            'âœ… System calculates metrics (response time, quality, consensus)',
+            'âœ… Admin reviews performance dashboard',
+            'âœ… Performance tracking and analytics'
           ],
           automation: 80,
-          aiIntegration: ['✅ Performance analytics']
+          aiIntegration: ['âœ… Performance analytics']
         }
       ],
       missing: []
@@ -529,94 +515,94 @@ function ExpertCoverageReport() {
           {
             name: 'Expert Onboards to Platform',
             steps: [
-              '✅ User with domain expertise visits platform',
-              '✅ Navigates to ExpertOnboarding page (or invited by admin)',
-              '✅ Step 1: Fills basic info (name, email, title, organization)',
-              '✅ Step 2: Uploads CV (PDF/DOCX) via FileUploader',
-              '✅ AI extracts expertise_areas, certifications, years_experience from CV',
-              '✅ Step 3: Reviews and confirms/edits extracted data',
-              '✅ Step 4: Adds bio (AR/EN), specializations, availability',
-              '✅ Step 5: Reviews and submits for verification',
-              '✅ System creates ExpertProfile (is_verified=false, is_active=false)',
-              '✅ Admin receives notification via AutoNotification',
-              '✅ Admin opens ExpertRegistry → filters "pending verification"',
-              '✅ Admin clicks expert → opens ExpertDetail',
-              '✅ Admin verifies credentials against LinkedIn/publications',
-              '✅ Admin clicks "Approve" → is_verified=true, is_active=true',
-              '✅ Expert receives welcome email',
-              '✅ Expert appears in ExpertMatchingEngine search results'
+              'âœ… User with domain expertise visits platform',
+              'âœ… Navigates to ExpertOnboarding page (or invited by admin)',
+              'âœ… Step 1: Fills basic info (name, email, title, organization)',
+              'âœ… Step 2: Uploads CV (PDF/DOCX) via FileUploader',
+              'âœ… AI extracts expertise_areas, certifications, years_experience from CV',
+              'âœ… Step 3: Reviews and confirms/edits extracted data',
+              'âœ… Step 4: Adds bio (AR/EN), specializations, availability',
+              'âœ… Step 5: Reviews and submits for verification',
+              'âœ… System creates ExpertProfile (is_verified=false, is_active=false)',
+              'âœ… Admin receives notification via AutoNotification',
+              'âœ… Admin opens ExpertRegistry â†’ filters "pending verification"',
+              'âœ… Admin clicks expert â†’ opens ExpertDetail',
+              'âœ… Admin verifies credentials against LinkedIn/publications',
+              'âœ… Admin clicks "Approve" â†’ is_verified=true, is_active=true',
+              'âœ… Expert receives welcome email',
+              'âœ… Expert appears in ExpertMatchingEngine search results'
             ],
-            pages: ['✅ ExpertOnboarding', '✅ ExpertRegistry', '✅ ExpertDetail'],
-            status: '✅ COMPLETE',
-            aiFeatures: ['✅ CV parsing & extraction', '✅ Auto-suggest expertise areas', '✅ Profile completeness check'],
-            integrations: ['✅ FileUploader', '✅ ExtractDataFromUploadedFile', '✅ AutoNotification', '✅ InvokeLLM']
+            pages: ['âœ… ExpertOnboarding', 'âœ… ExpertRegistry', 'âœ… ExpertDetail'],
+            status: 'âœ… COMPLETE',
+            aiFeatures: ['âœ… CV parsing & extraction', 'âœ… Auto-suggest expertise areas', 'âœ… Profile completeness check'],
+            integrations: ['âœ… FileUploader', 'âœ… ExtractDataFromUploadedFile', 'âœ… AutoNotification', 'âœ… InvokeLLM']
           },
           {
             name: 'Expert Receives & Accepts Assignment',
             steps: [
-              '✅ Admin assigns expert to challenge via ExpertMatchingEngine',
-              '✅ System creates ExpertAssignment (status=pending)',
-              '✅ Expert receives notification (email + in-app)',
-              '✅ Expert visits ExpertAssignmentQueue',
-              '✅ Views pending assignment details (entity, deadline, compensation)',
-              '✅ Clicks "View Details" → sees challenge/pilot overview',
-              '✅ Clicks "Accept" → status changes to "accepted"',
-              '✅ OR clicks "Decline" → provides reason → status="declined"',
-              '✅ Admin notified of acceptance/decline'
+              'âœ… Admin assigns expert to challenge via ExpertMatchingEngine',
+              'âœ… System creates ExpertAssignment (status=pending)',
+              'âœ… Expert receives notification (email + in-app)',
+              'âœ… Expert visits ExpertAssignmentQueue',
+              'âœ… Views pending assignment details (entity, deadline, compensation)',
+              'âœ… Clicks "View Details" â†’ sees challenge/pilot overview',
+              'âœ… Clicks "Accept" â†’ status changes to "accepted"',
+              'âœ… OR clicks "Decline" â†’ provides reason â†’ status="declined"',
+              'âœ… Admin notified of acceptance/decline'
             ],
-            pages: ['✅ ExpertAssignmentQueue', '✅ ChallengeDetail or entity detail'],
-            status: '✅ COMPLETE',
-            aiFeatures: ['✅ AI estimates time needed for assignment']
+            pages: ['âœ… ExpertAssignmentQueue', 'âœ… ChallengeDetail or entity detail'],
+            status: 'âœ… COMPLETE',
+            aiFeatures: ['âœ… AI estimates time needed for assignment']
           },
           {
             name: 'Expert Evaluates Challenge/Pilot/R&D',
             steps: [
-              '✅ Expert opens accepted assignment from ExpertAssignmentQueue',
-              '✅ Clicks "Evaluate" → redirects to ExpertEvaluationWorkflow',
-              '✅ Page loads entity data (challenge/pilot/R&D)',
-              '✅ Expert reviews entity overview tab',
-              '✅ Clicks "AI Assist" → AI pre-fills suggested scores',
-              '✅ Expert adjusts scores (feasibility, impact, innovation, etc.)',
-              '✅ Fills qualitative feedback (strengths, weaknesses, suggestions)',
-              '✅ Selects recommendation (approve/reject/revise)',
-              '✅ Clicks "Save Draft" (optional) OR "Submit Evaluation"',
-              '✅ System creates ExpertEvaluation record',
-              '✅ ExpertAssignment status → "completed"',
-              '✅ Admin sees evaluation in ChallengeDetail Experts tab',
-              '✅ If multiple experts: consensus calculated automatically'
+              'âœ… Expert opens accepted assignment from ExpertAssignmentQueue',
+              'âœ… Clicks "Evaluate" â†’ redirects to ExpertEvaluationWorkflow',
+              'âœ… Page loads entity data (challenge/pilot/R&D)',
+              'âœ… Expert reviews entity overview tab',
+              'âœ… Clicks "AI Assist" â†’ AI pre-fills suggested scores',
+              'âœ… Expert adjusts scores (feasibility, impact, innovation, etc.)',
+              'âœ… Fills qualitative feedback (strengths, weaknesses, suggestions)',
+              'âœ… Selects recommendation (approve/reject/revise)',
+              'âœ… Clicks "Save Draft" (optional) OR "Submit Evaluation"',
+              'âœ… System creates ExpertEvaluation record',
+              'âœ… ExpertAssignment status â†’ "completed"',
+              'âœ… Admin sees evaluation in ChallengeDetail Experts tab',
+              'âœ… If multiple experts: consensus calculated automatically'
             ],
-            pages: ['✅ ExpertAssignmentQueue', '✅ ExpertEvaluationWorkflow', '✅ ChallengeDetail'],
-            status: '✅ COMPLETE',
-            aiFeatures: ['✅ AI pre-scoring', '✅ AI benchmarking', '✅ Consensus calculation']
+            pages: ['âœ… ExpertAssignmentQueue', 'âœ… ExpertEvaluationWorkflow', 'âœ… ChallengeDetail'],
+            status: 'âœ… COMPLETE',
+            aiFeatures: ['âœ… AI pre-scoring', 'âœ… AI benchmarking', 'âœ… Consensus calculation']
           },
           {
             name: 'Expert Mentors Startup in Program',
             steps: [
-              '✅ Program operator assigns expert as mentor via ExpertMatchingEngine',
-              '✅ Expert accepts assignment in ExpertAssignmentQueue',
-              '✅ Expert views startup/team profile',
-              '✅ Expert conducts mentorship sessions (tracked outside platform)',
-              '✅ At program end: expert submits evaluation of startup progress',
-              '✅ Evaluation feeds into program outcomes analytics'
+              'âœ… Program operator assigns expert as mentor via ExpertMatchingEngine',
+              'âœ… Expert accepts assignment in ExpertAssignmentQueue',
+              'âœ… Expert views startup/team profile',
+              'âœ… Expert conducts mentorship sessions (tracked outside platform)',
+              'âœ… At program end: expert submits evaluation of startup progress',
+              'âœ… Evaluation feeds into program outcomes analytics'
             ],
-            pages: ['✅ ExpertMatchingEngine', '✅ ExpertAssignmentQueue', '✅ ProgramDetail'],
-            status: '✅ COMPLETE',
-            aiFeatures: ['✅ Mentor-startup matching via AI']
+            pages: ['âœ… ExpertMatchingEngine', 'âœ… ExpertAssignmentQueue', 'âœ… ProgramDetail'],
+            status: 'âœ… COMPLETE',
+            aiFeatures: ['âœ… Mentor-startup matching via AI']
           },
           {
             name: 'Expert Updates Profile & Availability',
             steps: [
-              '✅ Expert visits UserProfile or ExpertDetail (own profile)',
-              '✅ Clicks "Edit Profile"',
-              '✅ Updates availability_hours_per_month, bio, expertise_areas',
-              '✅ Uploads new certifications or publications',
-              '✅ Clicks "Save"',
-              '✅ AI regenerates embedding if expertise changed',
-              '✅ Updated profile available in ExpertMatchingEngine'
+              'âœ… Expert visits UserProfile or ExpertDetail (own profile)',
+              'âœ… Clicks "Edit Profile"',
+              'âœ… Updates availability_hours_per_month, bio, expertise_areas',
+              'âœ… Uploads new certifications or publications',
+              'âœ… Clicks "Save"',
+              'âœ… AI regenerates embedding if expertise changed',
+              'âœ… Updated profile available in ExpertMatchingEngine'
             ],
-            pages: ['✅ UserProfile', '✅ ExpertDetail'],
-            status: '✅ COMPLETE',
-            aiFeatures: ['✅ Auto-regenerate embeddings on expertise change']
+            pages: ['âœ… UserProfile', 'âœ… ExpertDetail'],
+            status: 'âœ… COMPLETE',
+            aiFeatures: ['âœ… Auto-regenerate embeddings on expertise change']
           }
         ]
       },
@@ -626,76 +612,76 @@ function ExpertCoverageReport() {
           {
             name: 'Admin Recruits & Verifies New Expert',
             steps: [
-              '✅ Admin receives notification of new expert application',
-              '✅ Opens ExpertRegistry → filters by "pending verification"',
-              '✅ Clicks on expert name → opens ExpertDetail',
-              '✅ Reviews CV, credentials, publications, LinkedIn',
-              '✅ Verifies certifications against known institutions',
-              '✅ Checks for conflicts of interest',
-              '✅ Clicks "Approve" button → is_verified=true, is_active=true',
-              '✅ System sends welcome email to expert',
-              '✅ Expert now appears in ExpertMatchingEngine search'
+              'âœ… Admin receives notification of new expert application',
+              'âœ… Opens ExpertRegistry â†’ filters by "pending verification"',
+              'âœ… Clicks on expert name â†’ opens ExpertDetail',
+              'âœ… Reviews CV, credentials, publications, LinkedIn',
+              'âœ… Verifies certifications against known institutions',
+              'âœ… Checks for conflicts of interest',
+              'âœ… Clicks "Approve" button â†’ is_verified=true, is_active=true',
+              'âœ… System sends welcome email to expert',
+              'âœ… Expert now appears in ExpertMatchingEngine search'
             ],
-            pages: ['✅ ExpertRegistry', '✅ ExpertDetail'],
-            status: '✅ COMPLETE',
-            aiFeatures: ['✅ AI flags potential credential issues']
+            pages: ['âœ… ExpertRegistry', 'âœ… ExpertDetail'],
+            status: 'âœ… COMPLETE',
+            aiFeatures: ['âœ… AI flags potential credential issues']
           },
           {
             name: 'Admin Assigns Experts to Challenge (AI-Powered)',
             steps: [
-              '✅ Admin reviews challenge in ChallengeDetail',
-              '✅ Navigates to "Experts" tab',
-              '✅ Clicks "Assign Experts" link',
-              '✅ ExpertMatchingEngine opens with challenge pre-selected',
-              '✅ AI analyzes challenge (sector, keywords, complexity)',
-              '✅ AI retrieves all expert profiles with embeddings',
-              '✅ AI performs semantic matching → ranks top 10 experts',
-              '✅ Admin views ranked list with match scores & reasons',
-              '✅ Admin checks expert availability, past performance',
-              '✅ Admin selects 2-3 experts',
-              '✅ Admin sets due date and optional compensation',
-              '✅ Clicks "Send Assignments"',
-              '✅ System creates ExpertAssignment records (status=pending)',
-              '✅ Experts receive notifications → appear in their queues'
+              'âœ… Admin reviews challenge in ChallengeDetail',
+              'âœ… Navigates to "Experts" tab',
+              'âœ… Clicks "Assign Experts" link',
+              'âœ… ExpertMatchingEngine opens with challenge pre-selected',
+              'âœ… AI analyzes challenge (sector, keywords, complexity)',
+              'âœ… AI retrieves all expert profiles with embeddings',
+              'âœ… AI performs semantic matching â†’ ranks top 10 experts',
+              'âœ… Admin views ranked list with match scores & reasons',
+              'âœ… Admin checks expert availability, past performance',
+              'âœ… Admin selects 2-3 experts',
+              'âœ… Admin sets due date and optional compensation',
+              'âœ… Clicks "Send Assignments"',
+              'âœ… System creates ExpertAssignment records (status=pending)',
+              'âœ… Experts receive notifications â†’ appear in their queues'
             ],
-            pages: ['✅ ChallengeDetail', '✅ ExpertMatchingEngine', '✅ ExpertAssignmentQueue'],
-            status: '✅ COMPLETE',
-            aiFeatures: ['✅ AI semantic expert-entity matching', '✅ AI workload balancing', '✅ AI conflict detection']
+            pages: ['âœ… ChallengeDetail', 'âœ… ExpertMatchingEngine', 'âœ… ExpertAssignmentQueue'],
+            status: 'âœ… COMPLETE',
+            aiFeatures: ['âœ… AI semantic expert-entity matching', 'âœ… AI workload balancing', 'âœ… AI conflict detection']
           },
           {
             name: 'Admin Creates Expert Panel for R&D Review',
             steps: [
-              '✅ Admin opens ExpertPanelManagement',
-              '✅ Clicks "Create Panel"',
-              '✅ Selects entity_type (rd_proposal) and specific proposal',
-              '✅ Uses ExpertMatchingEngine to find relevant experts',
-              '✅ Selects 5-7 panel members',
-              '✅ Designates panel chair',
-              '✅ Sets consensus_threshold (e.g., 75%)',
-              '✅ Creates ExpertPanel record',
-              '✅ System assigns all panel members → sends notifications',
-              '✅ Tracks panel status: forming → reviewing → consensus',
-              '✅ When all evaluations in: displays voting_results',
-              '✅ Admin records final decision based on consensus'
+              'âœ… Admin opens ExpertPanelManagement',
+              'âœ… Clicks "Create Panel"',
+              'âœ… Selects entity_type (rd_proposal) and specific proposal',
+              'âœ… Uses ExpertMatchingEngine to find relevant experts',
+              'âœ… Selects 5-7 panel members',
+              'âœ… Designates panel chair',
+              'âœ… Sets consensus_threshold (e.g., 75%)',
+              'âœ… Creates ExpertPanel record',
+              'âœ… System assigns all panel members â†’ sends notifications',
+              'âœ… Tracks panel status: forming â†’ reviewing â†’ consensus',
+              'âœ… When all evaluations in: displays voting_results',
+              'âœ… Admin records final decision based on consensus'
             ],
-            pages: ['✅ ExpertPanelManagement', '✅ ExpertMatchingEngine', '✅ RDProposalDetail'],
-            status: '✅ COMPLETE',
-            aiFeatures: ['✅ AI suggests panel composition', '✅ AI consensus calculation']
+            pages: ['âœ… ExpertPanelManagement', 'âœ… ExpertMatchingEngine', 'âœ… RDProposalDetail'],
+            status: 'âœ… COMPLETE',
+            aiFeatures: ['âœ… AI suggests panel composition', 'âœ… AI consensus calculation']
           },
           {
             name: 'Admin Monitors Expert Performance',
             steps: [
-              '✅ Admin opens ExpertPerformanceDashboard',
-              '✅ Views metrics: response time, completion rate, quality scores',
-              '✅ Identifies top performers → considers recognition',
-              '✅ Identifies low performers → reviews assignments',
-              '✅ AI flags anomalies (expert taking too long, declining often)',
-              '✅ Admin contacts underperforming experts or adjusts workload',
-              '✅ Exports performance report for quarterly review'
+              'âœ… Admin opens ExpertPerformanceDashboard',
+              'âœ… Views metrics: response time, completion rate, quality scores',
+              'âœ… Identifies top performers â†’ considers recognition',
+              'âœ… Identifies low performers â†’ reviews assignments',
+              'âœ… AI flags anomalies (expert taking too long, declining often)',
+              'âœ… Admin contacts underperforming experts or adjusts workload',
+              'âœ… Exports performance report for quarterly review'
             ],
-            pages: ['✅ ExpertPerformanceDashboard'],
-            status: '✅ COMPLETE',
-            aiFeatures: ['✅ AI performance anomaly detection', '✅ AI burnout prediction']
+            pages: ['âœ… ExpertPerformanceDashboard'],
+            status: 'âœ… COMPLETE',
+            aiFeatures: ['âœ… AI performance anomaly detection', 'âœ… AI burnout prediction']
           }
         ]
       },
@@ -703,22 +689,22 @@ function ExpertCoverageReport() {
         persona: 'Municipality Innovation Officer',
         journeys: [
           {
-            name: 'Municipality Submits Challenge → Receives Expert Evaluation',
+            name: 'Municipality Submits Challenge â†’ Receives Expert Evaluation',
             steps: [
-              '✅ Municipality user creates challenge via ChallengeCreate',
-              '✅ Submits challenge → status changes to "submitted"',
-              '✅ Admin reviews in ChallengeReviewQueue',
-              '✅ Admin assigns experts via ExpertMatchingEngine',
-              '✅ Experts evaluate challenge independently',
-              '✅ Municipality user opens ChallengeDetail → Experts tab',
-              '✅ Views expert evaluations (scores, feedback, recommendations)',
-              '✅ Sees consensus: e.g., "2/3 experts recommend approve"',
-              '✅ Admin makes final decision based on expert consensus',
-              '✅ Municipality receives notification of decision'
+              'âœ… Municipality user creates challenge via ChallengeCreate',
+              'âœ… Submits challenge â†’ status changes to "submitted"',
+              'âœ… Admin reviews in ChallengeReviewQueue',
+              'âœ… Admin assigns experts via ExpertMatchingEngine',
+              'âœ… Experts evaluate challenge independently',
+              'âœ… Municipality user opens ChallengeDetail â†’ Experts tab',
+              'âœ… Views expert evaluations (scores, feedback, recommendations)',
+              'âœ… Sees consensus: e.g., "2/3 experts recommend approve"',
+              'âœ… Admin makes final decision based on expert consensus',
+              'âœ… Municipality receives notification of decision'
             ],
-            pages: ['✅ ChallengeCreate', '✅ ChallengeDetail', '✅ ChallengeReviewQueue'],
-            status: '✅ COMPLETE',
-            aiFeatures: ['✅ AI expert matching', '✅ AI consensus display']
+            pages: ['âœ… ChallengeCreate', 'âœ… ChallengeDetail', 'âœ… ChallengeReviewQueue'],
+            status: 'âœ… COMPLETE',
+            aiFeatures: ['âœ… AI expert matching', 'âœ… AI consensus display']
           }
         ]
       },
@@ -728,17 +714,17 @@ function ExpertCoverageReport() {
           {
             name: 'Startup Receives Expert Feedback on Solution',
             steps: [
-              '✅ Startup submits solution via SolutionCreate',
-              '✅ Admin assigns technical expert via ExpertMatchingEngine (entity_type=solution)',
-              '✅ Expert receives assignment in ExpertAssignmentQueue',
-              '✅ Expert evaluates solution TRL, technical quality, scalability',
-              '✅ Expert submits ExpertEvaluation with technical_quality_score, scalability_score',
-              '✅ Startup views feedback in SolutionDetail',
-              '✅ Startup improves solution based on expert recommendations'
+              'âœ… Startup submits solution via SolutionCreate',
+              'âœ… Admin assigns technical expert via ExpertMatchingEngine (entity_type=solution)',
+              'âœ… Expert receives assignment in ExpertAssignmentQueue',
+              'âœ… Expert evaluates solution TRL, technical quality, scalability',
+              'âœ… Expert submits ExpertEvaluation with technical_quality_score, scalability_score',
+              'âœ… Startup views feedback in SolutionDetail',
+              'âœ… Startup improves solution based on expert recommendations'
             ],
-            pages: ['✅ SolutionCreate', '✅ SolutionDetail', '✅ ExpertMatchingEngine'],
-            status: '✅ READY (infrastructure complete)',
-            aiFeatures: ['✅ AI expert-solution matching']
+            pages: ['âœ… SolutionCreate', 'âœ… SolutionDetail', 'âœ… ExpertMatchingEngine'],
+            status: 'âœ… READY (infrastructure complete)',
+            aiFeatures: ['âœ… AI expert-solution matching']
           }
         ]
       },
@@ -748,31 +734,31 @@ function ExpertCoverageReport() {
           {
             name: 'Researcher Gets Expert Peer Review on R&D Proposal',
             steps: [
-              '✅ Researcher submits R&D proposal via ProposalWizard',
-              '✅ Admin creates ExpertPanel for proposal review',
-              '✅ 5-7 experts assigned via ExpertMatchingEngine',
-              '✅ Each expert independently evaluates proposal',
-              '✅ Expert panel reaches consensus (e.g., 80% approve)',
-              '✅ Researcher sees panel decision in RDProposalDetail',
-              '✅ If approved: R&D project funded and launched'
+              'âœ… Researcher submits R&D proposal via ProposalWizard',
+              'âœ… Admin creates ExpertPanel for proposal review',
+              'âœ… 5-7 experts assigned via ExpertMatchingEngine',
+              'âœ… Each expert independently evaluates proposal',
+              'âœ… Expert panel reaches consensus (e.g., 80% approve)',
+              'âœ… Researcher sees panel decision in RDProposalDetail',
+              'âœ… If approved: R&D project funded and launched'
             ],
-            pages: ['✅ ProposalWizard', '✅ RDProposalDetail', '✅ ExpertPanelManagement'],
-            status: '✅ READY (infrastructure complete)',
-            aiFeatures: ['✅ AI panel composition', '✅ AI consensus calculation']
+            pages: ['âœ… ProposalWizard', 'âœ… RDProposalDetail', 'âœ… ExpertPanelManagement'],
+            status: 'âœ… READY (infrastructure complete)',
+            aiFeatures: ['âœ… AI panel composition', 'âœ… AI consensus calculation']
           },
           {
             name: 'Researcher Requests Expert Mentorship',
             steps: [
-              '✅ Researcher finds relevant expert in ExpertRegistry',
-              '✅ Requests mentorship (via message or through admin)',
-              '✅ Admin creates ExpertAssignment (assignment_type=mentor)',
-              '✅ Expert accepts in ExpertAssignmentQueue',
-              '✅ Mentorship sessions conducted',
-              '✅ Expert tracks hours in assignment'
+              'âœ… Researcher finds relevant expert in ExpertRegistry',
+              'âœ… Requests mentorship (via message or through admin)',
+              'âœ… Admin creates ExpertAssignment (assignment_type=mentor)',
+              'âœ… Expert accepts in ExpertAssignmentQueue',
+              'âœ… Mentorship sessions conducted',
+              'âœ… Expert tracks hours in assignment'
             ],
-            pages: ['✅ ExpertRegistry', '✅ ExpertAssignmentQueue'],
-            status: '✅ READY',
-            aiFeatures: ['✅ AI mentor-researcher matching']
+            pages: ['âœ… ExpertRegistry', 'âœ… ExpertAssignmentQueue'],
+            status: 'âœ… READY',
+            aiFeatures: ['âœ… AI mentor-researcher matching']
           }
         ]
       },
@@ -782,17 +768,17 @@ function ExpertCoverageReport() {
           {
             name: 'Participant Matched with Expert Mentor',
             steps: [
-              '✅ Participant accepted to program',
-              '✅ Program operator assigns mentor via ExpertMatchingEngine',
-              '✅ AI recommends mentors by expertise match',
-              '✅ Mentor accepts assignment',
-              '✅ Mentorship sessions tracked in ExpertAssignment',
-              '✅ End of program: mentor evaluates participant progress',
-              '✅ Evaluation feeds into program completion analytics'
+              'âœ… Participant accepted to program',
+              'âœ… Program operator assigns mentor via ExpertMatchingEngine',
+              'âœ… AI recommends mentors by expertise match',
+              'âœ… Mentor accepts assignment',
+              'âœ… Mentorship sessions tracked in ExpertAssignment',
+              'âœ… End of program: mentor evaluates participant progress',
+              'âœ… Evaluation feeds into program completion analytics'
             ],
-            pages: ['✅ ExpertMatchingEngine', '✅ ExpertAssignmentQueue', '✅ ProgramDetail'],
-            status: '✅ READY',
-            aiFeatures: ['✅ AI mentor-participant matching']
+            pages: ['âœ… ExpertMatchingEngine', 'âœ… ExpertAssignmentQueue', 'âœ… ProgramDetail'],
+            status: 'âœ… READY',
+            aiFeatures: ['âœ… AI mentor-participant matching']
           }
         ]
       }
@@ -802,7 +788,7 @@ function ExpertCoverageReport() {
       implemented: [
         {
           name: 'Expert-Entity Semantic Matching',
-          status: '⚠️ PARTIAL - Basic matching works, limited scope',
+          status: 'âš ï¸ PARTIAL - Basic matching works, limited scope',
           description: 'Match experts to entities using AI',
           input: 'Entity details + expert profiles',
           output: 'Ranked list of top 5 experts with match scores & reasons',
@@ -811,27 +797,27 @@ function ExpertCoverageReport() {
           usage: 'ExpertMatchingEngine page',
           implementation: 'Uses InvokeLLM with text prompt (entity description + expert list)',
           gaps: [
-            '❌ Only works for Challenge & Pilot (not RD/Program/Solution/Matchmaker/Scaling)',
-            '❌ No embeddings used (promised but not implemented)',
-            '❌ No availability check',
-            '❌ No workload balancing',
-            '❌ No conflict-of-interest detection'
+            'âŒ Only works for Challenge & Pilot (not RD/Program/Solution/Matchmaker/Scaling)',
+            'âŒ No embeddings used (promised but not implemented)',
+            'âŒ No availability check',
+            'âŒ No workload balancing',
+            'âŒ No conflict-of-interest detection'
           ]
         },
         {
           name: 'CV Parsing & Expertise Extraction',
-          status: '✅ WORKING - Implemented correctly',
+          status: 'âœ… WORKING - Implemented correctly',
           description: 'Extract expertise, experience, certifications from uploaded CV',
           input: 'CV PDF/DOCX',
           output: 'Structured data (title, position, years_experience, expertise_areas, bio, linkedin, google_scholar)',
           model: 'ExtractDataFromUploadedFile integration',
           accuracy: 'Depends on CV quality',
           usage: 'ExpertOnboarding Step 1',
-          implementation: 'UploadFile → ExtractDataFromUploadedFile with defined JSON schema → auto-fills formData'
+          implementation: 'UploadFile â†’ ExtractDataFromUploadedFile with defined JSON schema â†’ auto-fills formData'
         },
         {
           name: 'Evaluation AI Co-Pilot',
-          status: '⚠️ BROKEN - AI Assist exists but no context',
+          status: 'âš ï¸ BROKEN - AI Assist exists but no context',
           description: 'Pre-fill evaluation scores based on entity data',
           input: 'Entity type + entity ID only (NO ACTUAL ENTITY DATA)',
           output: 'Generic score suggestions (not entity-specific)',
@@ -839,20 +825,20 @@ function ExpertCoverageReport() {
           usage: 'ExpertEvaluationWorkflow',
           implementation: 'AI Assist button calls InvokeLLM with generic prompt mentioning entity_type/id only',
           gaps: [
-            '❌ Does NOT fetch actual entity (challenge/pilot/rd_proposal) data',
-            '❌ AI cannot see challenge description, pilot KPIs, or proposal content',
-            '❌ Suggestions are generic, not entity-specific'
+            'âŒ Does NOT fetch actual entity (challenge/pilot/rd_proposal) data',
+            'âŒ AI cannot see challenge description, pilot KPIs, or proposal content',
+            'âŒ Suggestions are generic, not entity-specific'
           ]
         },
         {
           name: 'Consensus Calculation',
-          status: '⚠️ PARTIAL - Component exists, not integrated',
+          status: 'âš ï¸ PARTIAL - Component exists, not integrated',
           description: 'Calculate consensus across multi-expert evaluations',
           implementation: 'EvaluationConsensusPanel component exists and works in ApplicationReviewHub, ProposalReviewPortal',
           gaps: [
-            '❌ checkConsensus backend function exists but NOT called from pages',
-            '❌ No auto-update of entity status when consensus reached',
-            '❌ No integration in ExpertEvaluationWorkflow or ExpertAssignmentQueue'
+            'âŒ checkConsensus backend function exists but NOT called from pages',
+            'âŒ No auto-update of entity status when consensus reached',
+            'âŒ No integration in ExpertEvaluationWorkflow or ExpertAssignmentQueue'
           ]
         }
       ],
@@ -877,189 +863,189 @@ function ExpertCoverageReport() {
 
     platformIntegration: {
       acrossPlatform: [
-        '✅ Integrated in Layout.js → System & Admin → 🎓 Expert Management section (6 menu items)',
-        '✅ ExpertRegistry accessible from main navigation',
-        '✅ ExpertAssignmentQueue in My Work section',
-        '✅ Expert menu items role-protected (admin vs expert access)',
-        '✅ Expert system uses LanguageContext for bilingual support',
-        '✅ Expert pages use standard UI components (shadcn/ui)',
-        '✅ Expert queries use @tanstack/react-query for data fetching',
-        '✅ Expert mutations invalidate relevant query caches',
-        '✅ Expert notifications via AutoNotification component',
-        '✅ Expert file uploads via FileUploader component'
+        'âœ… Integrated in Layout.js â†’ System & Admin â†’ ðŸŽ“ Expert Management section (6 menu items)',
+        'âœ… ExpertRegistry accessible from main navigation',
+        'âœ… ExpertAssignmentQueue in My Work section',
+        'âœ… Expert menu items role-protected (admin vs expert access)',
+        'âœ… Expert system uses LanguageContext for bilingual support',
+        'âœ… Expert pages use standard UI components (shadcn/ui)',
+        'âœ… Expert queries use @tanstack/react-query for data fetching',
+        'âœ… Expert mutations invalidate relevant query caches',
+        'âœ… Expert notifications via AutoNotification component',
+        'âœ… Expert file uploads via FileUploader component'
       ],
       entityLevelIntegration: [
-        '✅ Challenge → ExpertEvaluation (ChallengeDetail Experts tab)',
-        '✅ Pilot → ExpertEvaluation (infrastructure ready)',
-        '✅ Solution → ExpertEvaluation (infrastructure ready)',
-        '✅ RDProposal → ExpertEvaluation (infrastructure ready)',
-        '✅ Program → ExpertAssignment (mentorship)',
-        '✅ ScalingPlan → ExpertEvaluation (infrastructure ready)',
-        '✅ Organization → ExpertProfile (via organization_id)',
-        '✅ User → ExpertProfile (via user_email)'
+        'âœ… Challenge â†’ ExpertEvaluation (ChallengeDetail Experts tab)',
+        'âœ… Pilot â†’ ExpertEvaluation (infrastructure ready)',
+        'âœ… Solution â†’ ExpertEvaluation (infrastructure ready)',
+        'âœ… RDProposal â†’ ExpertEvaluation (infrastructure ready)',
+        'âœ… Program â†’ ExpertAssignment (mentorship)',
+        'âœ… ScalingPlan â†’ ExpertEvaluation (infrastructure ready)',
+        'âœ… Organization â†’ ExpertProfile (via organization_id)',
+        'âœ… User â†’ ExpertProfile (via user_email)'
       ],
       pageIntegration: [
-        '✅ ChallengeDetail → Experts tab with evaluations & consensus',
-        '✅ ChallengeReviewWorkflow → Expert evaluations display',
-        '✅ PilotDetail → Experts tab integrated with evaluations & assign button',
-        '✅ SolutionDetail → Experts tab integrated for technical verification',
-        '✅ RDProjectDetail → Experts tab integrated for peer review panel + Final Evaluation tab for completion assessment',
-        '✅ ProgramDetail → Mentors tab integrated with ExpertAssignment tracking',
-        '✅ ScalingPlanDetail → Experts tab integrated for scaling approval sign-offs',
-        '✅ MatchmakerApplicationDetail → Experts tab integrated for strategic evaluation',
-        '✅ SandboxApplicationDetail → Experts tab integrated for technical/safety review',
-        '✅ UserProfile → Links to ExpertDetail if user is expert',
-        '✅ NotificationCenter → Expert assignment notification filters',
-        '✅ MyWorkloadDashboard → Expert assignments integrated with status tracking',
-        '✅ ExecutiveDashboard → Expert system performance metrics displayed'
+        'âœ… ChallengeDetail â†’ Experts tab with evaluations & consensus',
+        'âœ… ChallengeReviewWorkflow â†’ Expert evaluations display',
+        'âœ… PilotDetail â†’ Experts tab integrated with evaluations & assign button',
+        'âœ… SolutionDetail â†’ Experts tab integrated for technical verification',
+        'âœ… RDProjectDetail â†’ Experts tab integrated for peer review panel + Final Evaluation tab for completion assessment',
+        'âœ… ProgramDetail â†’ Mentors tab integrated with ExpertAssignment tracking',
+        'âœ… ScalingPlanDetail â†’ Experts tab integrated for scaling approval sign-offs',
+        'âœ… MatchmakerApplicationDetail â†’ Experts tab integrated for strategic evaluation',
+        'âœ… SandboxApplicationDetail â†’ Experts tab integrated for technical/safety review',
+        'âœ… UserProfile â†’ Links to ExpertDetail if user is expert',
+        'âœ… NotificationCenter â†’ Expert assignment notification filters',
+        'âœ… MyWorkloadDashboard â†’ Expert assignments integrated with status tracking',
+        'âœ… ExecutiveDashboard â†’ Expert system performance metrics displayed'
       ],
       workflowIntegration: [
-        '✅ ChallengeSubmissionWizard → triggers expert assignment flow',
-        '✅ ChallengeReviewWorkflow → displays expert consensus',
-        '✅ ChallengeApprovalCenter → considers expert recommendations',
-        '✅ PilotGates → Can require expert sign-off (infrastructure ready)',
-        '✅ RDCallPublishWorkflow → Can trigger expert panel (ready)',
-        '✅ ProgramSelectionWorkflow → Can involve expert evaluation (ready)'
+        'âœ… ChallengeSubmissionWizard â†’ triggers expert assignment flow',
+        'âœ… ChallengeReviewWorkflow â†’ displays expert consensus',
+        'âœ… ChallengeApprovalCenter â†’ considers expert recommendations',
+        'âœ… PilotGates â†’ Can require expert sign-off (infrastructure ready)',
+        'âœ… RDCallPublishWorkflow â†’ Can trigger expert panel (ready)',
+        'âœ… ProgramSelectionWorkflow â†’ Can involve expert evaluation (ready)'
       ],
       aiIntegration: [
-        '✅ Expert embeddings generated alongside entity embeddings',
-        '✅ Semantic search includes experts',
-        '✅ AI Assistant can recommend experts',
-        '✅ Cross-entity AI features leverage expert data'
+        'âœ… Expert embeddings generated alongside entity embeddings',
+        'âœ… Semantic search includes experts',
+        'âœ… AI Assistant can recommend experts',
+        'âœ… Cross-entity AI features leverage expert data'
       ]
     },
 
     integrationPoints: {
       matchmakerClassification: {
-        status: '✅ COMPLETE',
+        status: 'âœ… COMPLETE',
         description: 'Experts provide strategic classification for matchmaker applications (Innovator/Scaler/Specialist)',
-        workflow: '✅ Application submitted → Admin assigns strategic experts → Experts evaluate via UnifiedEvaluationForm → Classification consensus → Matching begins',
+        workflow: 'âœ… Application submitted â†’ Admin assigns strategic experts â†’ Experts evaluate via UnifiedEvaluationForm â†’ Classification consensus â†’ Matching begins',
         entities: ['MatchmakerApplication', 'ExpertEvaluation', 'ExpertAssignment'],
-        pages: ['✅ MatchmakerEvaluationHub', '✅ MatchmakerApplicationDetail Experts tab', '✅ ApplicationReviewHub'],
+        pages: ['âœ… MatchmakerEvaluationHub', 'âœ… MatchmakerApplicationDetail Experts tab', 'âœ… ApplicationReviewHub'],
         implementation: [
-          '✅ ExpertEvaluation supports entity_type=matchmaker_application',
-          '✅ MatchmakerEvaluationHub migrated to UnifiedEvaluationForm',
-          '✅ ApplicationReviewHub supports matchmaker applications',
-          '✅ EvaluationConsensusPanel shows strategic classification consensus',
-          '✅ checkConsensus function auto-updates application classification',
-          '✅ Multi-expert consensus for strategic provider classification'
+          'âœ… ExpertEvaluation supports entity_type=matchmaker_application',
+          'âœ… MatchmakerEvaluationHub migrated to UnifiedEvaluationForm',
+          'âœ… ApplicationReviewHub supports matchmaker applications',
+          'âœ… EvaluationConsensusPanel shows strategic classification consensus',
+          'âœ… checkConsensus function auto-updates application classification',
+          'âœ… Multi-expert consensus for strategic provider classification'
         ]
       },
       challengeEvaluation: {
-        status: '✅ COMPLETE',
+        status: 'âœ… COMPLETE',
         description: 'Experts evaluate challenges for feasibility, impact, strategic alignment, and treatment recommendations',
-        workflow: '✅ Challenge submitted → Admin assigns experts → Experts evaluate via UnifiedEvaluationForm → Consensus → Approval decision',
+        workflow: 'âœ… Challenge submitted â†’ Admin assigns experts â†’ Experts evaluate via UnifiedEvaluationForm â†’ Consensus â†’ Approval decision',
         entities: ['Challenge', 'ExpertEvaluation', 'ExpertAssignment'],
-        pages: ['✅ ChallengeDetail Experts tab', '✅ ChallengeReviewQueue', '✅ ChallengeReviewWorkflow', '✅ ExpertMatchingEngine', '✅ ExpertAssignmentQueue'],
+        pages: ['âœ… ChallengeDetail Experts tab', 'âœ… ChallengeReviewQueue', 'âœ… ChallengeReviewWorkflow', 'âœ… ExpertMatchingEngine', 'âœ… ExpertAssignmentQueue'],
         implementation: [
-          '✅ ChallengeDetail has Experts tab showing evaluations',
-          '✅ ChallengeReviewQueue migrated to UnifiedEvaluationForm',
-          '✅ ChallengeReviewWorkflow shows expert evaluations with consensus',
-          '✅ Link to ExpertMatchingEngine for AI-powered assignment',
-          '✅ EvaluationConsensusPanel displays multi-expert consensus',
-          '✅ checkConsensus function auto-updates challenge status',
-          '✅ Expert feedback visible to municipality users'
+          'âœ… ChallengeDetail has Experts tab showing evaluations',
+          'âœ… ChallengeReviewQueue migrated to UnifiedEvaluationForm',
+          'âœ… ChallengeReviewWorkflow shows expert evaluations with consensus',
+          'âœ… Link to ExpertMatchingEngine for AI-powered assignment',
+          'âœ… EvaluationConsensusPanel displays multi-expert consensus',
+          'âœ… checkConsensus function auto-updates challenge status',
+          'âœ… Expert feedback visible to municipality users'
         ]
       },
       pilotEvaluation: {
-        status: '✅ COMPLETE',
+        status: 'âœ… COMPLETE',
         description: 'Experts evaluate pilots for technical quality, scalability, and scaling readiness',
-        workflow: '✅ Pilot submitted → Admin assigns experts → Experts evaluate via UnifiedEvaluationForm → Consensus calculated → Auto-update pilot status',
+        workflow: 'âœ… Pilot submitted â†’ Admin assigns experts â†’ Experts evaluate via UnifiedEvaluationForm â†’ Consensus calculated â†’ Auto-update pilot status',
         entities: ['Pilot', 'ExpertEvaluation', 'ExpertPanel'],
-        pages: ['✅ PilotEvaluations', '✅ EvaluationPanel', '✅ PilotDetail Experts tab'],
+        pages: ['âœ… PilotEvaluations', 'âœ… EvaluationPanel', 'âœ… PilotDetail Experts tab'],
         implementation: [
-          '✅ ExpertEvaluation supports entity_type=pilot',
-          '✅ PilotEvaluations migrated to UnifiedEvaluationForm',
-          '✅ EvaluationPanel migrated for pilot evaluations',
-          '✅ EvaluationConsensusPanel shows multi-expert consensus',
-          '✅ QuickEvaluationCard displays evaluation summary',
-          '✅ checkConsensus function updates pilot status automatically',
-          '✅ evaluationNotifications alerts stakeholders'
+          'âœ… ExpertEvaluation supports entity_type=pilot',
+          'âœ… PilotEvaluations migrated to UnifiedEvaluationForm',
+          'âœ… EvaluationPanel migrated for pilot evaluations',
+          'âœ… EvaluationConsensusPanel shows multi-expert consensus',
+          'âœ… QuickEvaluationCard displays evaluation summary',
+          'âœ… checkConsensus function updates pilot status automatically',
+          'âœ… evaluationNotifications alerts stakeholders'
         ]
       },
       rdProposalReview: {
-        status: '✅ COMPLETE',
+        status: 'âœ… COMPLETE',
         description: 'Experts provide peer review for R&D proposals with academic rigor',
-        workflow: '✅ Proposal submitted → Admin assigns peer reviewers → Experts evaluate via UnifiedEvaluationForm → Peer consensus → Auto-award decision',
+        workflow: 'âœ… Proposal submitted â†’ Admin assigns peer reviewers â†’ Experts evaluate via UnifiedEvaluationForm â†’ Peer consensus â†’ Auto-award decision',
         entities: ['RDProposal', 'ExpertEvaluation', 'ExpertPanel'],
-        pages: ['✅ ProposalReviewPortal', '✅ EvaluationPanel', '✅ RDProposalDetail Experts tab'],
+        pages: ['âœ… ProposalReviewPortal', 'âœ… EvaluationPanel', 'âœ… RDProposalDetail Experts tab'],
         implementation: [
-          '✅ ExpertEvaluation supports entity_type=rd_proposal',
-          '✅ ProposalReviewPortal migrated to UnifiedEvaluationForm',
-          '✅ EvaluationPanel migrated for R&D proposal peer review',
-          '✅ EvaluationConsensusPanel shows multi-reviewer consensus',
-          '✅ checkConsensus function updates proposal status automatically',
-          '✅ evaluationNotifications alerts researchers and admins'
+          'âœ… ExpertEvaluation supports entity_type=rd_proposal',
+          'âœ… ProposalReviewPortal migrated to UnifiedEvaluationForm',
+          'âœ… EvaluationPanel migrated for R&D proposal peer review',
+          'âœ… EvaluationConsensusPanel shows multi-reviewer consensus',
+          'âœ… checkConsensus function updates proposal status automatically',
+          'âœ… evaluationNotifications alerts researchers and admins'
         ]
       },
       rdProjectFinalEvaluation: {
-        status: '✅ COMPLETE',
+        status: 'âœ… COMPLETE',
         description: 'Experts provide final completion evaluation for R&D projects with multi-expert panel',
-        workflow: '✅ Project completed → Admin assigns evaluation panel → Experts evaluate outcomes → Panel consensus → Scaling/commercialization decision',
+        workflow: 'âœ… Project completed â†’ Admin assigns evaluation panel â†’ Experts evaluate outcomes â†’ Panel consensus â†’ Scaling/commercialization decision',
         entities: ['RDProject', 'ExpertEvaluation', 'ExpertPanel'],
-        pages: ['✅ RDProjectDetail Final Eval tab', '✅ RDProjectFinalEvaluationPanel'],
+        pages: ['âœ… RDProjectDetail Final Eval tab', 'âœ… RDProjectFinalEvaluationPanel'],
         implementation: [
-          '✅ ExpertEvaluation supports entity_type=rd_project',
-          '✅ RDProjectFinalEvaluationPanel component created',
-          '✅ Multi-expert scoring for completion assessment',
-          '✅ Consensus recommendations (scale/archive/further_research)',
-          '✅ Integration in RDProjectDetail as dedicated tab'
+          'âœ… ExpertEvaluation supports entity_type=rd_project',
+          'âœ… RDProjectFinalEvaluationPanel component created',
+          'âœ… Multi-expert scoring for completion assessment',
+          'âœ… Consensus recommendations (scale/archive/further_research)',
+          'âœ… Integration in RDProjectDetail as dedicated tab'
         ]
       },
       programMentorship: {
-        status: '✅ COMPLETE',
+        status: 'âœ… COMPLETE',
         description: 'Experts mentor startups in programs AND evaluate program applications',
-        workflow: '✅ Application submitted → Experts evaluate via UnifiedEvaluationForm → Consensus → Admission decision AND Post-admission: Expert mentors assigned → Track mentorship',
+        workflow: 'âœ… Application submitted â†’ Experts evaluate via UnifiedEvaluationForm â†’ Consensus â†’ Admission decision AND Post-admission: Expert mentors assigned â†’ Track mentorship',
         entities: ['Program', 'ProgramApplication', 'ExpertAssignment', 'ExpertEvaluation', 'StartupProfile'],
-        pages: ['✅ ApplicationReviewHub', '✅ ProgramDetail Mentors tab', '✅ ExpertAssignmentQueue'],
+        pages: ['âœ… ApplicationReviewHub', 'âœ… ProgramDetail Mentors tab', 'âœ… ExpertAssignmentQueue'],
         implementation: [
-          '✅ ExpertEvaluation supports entity_type=program_application',
-          '✅ ApplicationReviewHub migrated to UnifiedEvaluationForm',
-          '✅ Multi-evaluator consensus for admission decisions',
-          '✅ ExpertAssignment supports assignment_type=mentor',
-          '✅ ExpertMatchingEngine can assign mentors',
-          '✅ Assignment tracking via ExpertAssignmentQueue',
-          '✅ checkConsensus function auto-updates application status',
-          '✅ evaluationNotifications alerts applicants and admins'
+          'âœ… ExpertEvaluation supports entity_type=program_application',
+          'âœ… ApplicationReviewHub migrated to UnifiedEvaluationForm',
+          'âœ… Multi-evaluator consensus for admission decisions',
+          'âœ… ExpertAssignment supports assignment_type=mentor',
+          'âœ… ExpertMatchingEngine can assign mentors',
+          'âœ… Assignment tracking via ExpertAssignmentQueue',
+          'âœ… checkConsensus function auto-updates application status',
+          'âœ… evaluationNotifications alerts applicants and admins'
         ]
       },
       solutionVerification: {
-        status: '✅ COMPLETE',
+        status: 'âœ… COMPLETE',
         description: 'Experts verify solution technical quality, TRL, security, and compliance',
-        workflow: '✅ Solution submitted → Admin assigns technical experts → Experts evaluate via UnifiedEvaluationForm → Consensus → Verification decision',
+        workflow: 'âœ… Solution submitted â†’ Admin assigns technical experts â†’ Experts evaluate via UnifiedEvaluationForm â†’ Consensus â†’ Verification decision',
         entities: ['Solution', 'ExpertEvaluation'],
-        pages: ['✅ SolutionVerification', '✅ SolutionDetail Experts tab'],
+        pages: ['âœ… SolutionVerification', 'âœ… SolutionDetail Experts tab'],
         implementation: [
-          '✅ ExpertEvaluation supports entity_type=solution',
-          '✅ SolutionVerification migrated to UnifiedEvaluationForm',
-          '✅ EvaluationConsensusPanel shows technical verification consensus',
-          '✅ Can assign technical experts via ExpertMatchingEngine',
-          '✅ checkConsensus function auto-updates solution verification status'
+          'âœ… ExpertEvaluation supports entity_type=solution',
+          'âœ… SolutionVerification migrated to UnifiedEvaluationForm',
+          'âœ… EvaluationConsensusPanel shows technical verification consensus',
+          'âœ… Can assign technical experts via ExpertMatchingEngine',
+          'âœ… checkConsensus function auto-updates solution verification status'
         ]
       },
       scalingReadiness: {
-        status: '✅ COMPLETE',
+        status: 'âœ… COMPLETE',
         description: 'Experts assess pilot readiness for scaling and provide scaling approval sign-offs',
-        workflow: '✅ Pilot completes → Scaling plan created → Experts evaluate feasibility/impact/scalability → Consensus → Scaling approval',
+        workflow: 'âœ… Pilot completes â†’ Scaling plan created â†’ Experts evaluate feasibility/impact/scalability â†’ Consensus â†’ Scaling approval',
         entities: ['Pilot', 'ScalingPlan', 'ExpertEvaluation', 'ExpertPanel'],
-        pages: ['✅ ScalingPlanDetail Experts tab', '✅ ScalingWorkflow (integration ready)'],
+        pages: ['âœ… ScalingPlanDetail Experts tab', 'âœ… ScalingWorkflow (integration ready)'],
         implementation: [
-          '✅ ExpertEvaluation supports entity_type=scaling_plan',
-          '✅ ScalingPlanDetail has Experts tab displaying evaluations',
-          '✅ Link to ExpertMatchingEngine for scaling readiness reviewers',
-          '✅ EvaluationConsensusPanel shows multi-expert scaling consensus',
-          '✅ ExpertPanel can be created for scaling decisions',
-          '✅ checkConsensus function for scaling approval automation'
+          'âœ… ExpertEvaluation supports entity_type=scaling_plan',
+          'âœ… ScalingPlanDetail has Experts tab displaying evaluations',
+          'âœ… Link to ExpertMatchingEngine for scaling readiness reviewers',
+          'âœ… EvaluationConsensusPanel shows multi-expert scaling consensus',
+          'âœ… ExpertPanel can be created for scaling decisions',
+          'âœ… checkConsensus function for scaling approval automation'
         ]
       },
       strategicAdvisory: {
-        status: '✅ READY',
+        status: 'âœ… READY',
         description: 'Senior experts advise on strategic initiatives and policy',
-        workflow: 'Strategic initiative proposed → Advisory board reviews → Recommendations → Executive decision',
+        workflow: 'Strategic initiative proposed â†’ Advisory board reviews â†’ Recommendations â†’ Executive decision',
         entities: ['StrategicPlan', 'ExpertPanel'],
         implementation: [
-          '✅ ExpertPanel infrastructure supports strategic panels',
-          '✅ Can create strategic advisory boards'
+          'âœ… ExpertPanel infrastructure supports strategic panels',
+          'âœ… Can create strategic advisory boards'
         ]
       }
     },
@@ -1067,166 +1053,166 @@ function ExpertCoverageReport() {
     conversionPaths: {
       implemented: [
         {
-          path: 'User → ExpertProfile',
+          path: 'User â†’ ExpertProfile',
           status: 'complete',
           coverage: 100,
           description: 'Regular users apply to become experts via ExpertOnboarding',
-          implementation: 'ExpertOnboarding wizard → CV upload → AI extraction → Admin approval',
+          implementation: 'ExpertOnboarding wizard â†’ CV upload â†’ AI extraction â†’ Admin approval',
           automation: 'AI CV extraction, auto-profile creation',
           gaps: []
         },
         {
-          path: 'Entity → Expert Assignment',
+          path: 'Entity â†’ Expert Assignment',
           status: 'complete',
           coverage: 100,
           description: 'Challenges/Pilots/R&D trigger expert assignments',
-          implementation: 'ExpertMatchingEngine → AI recommends → Admin assigns → ExpertAssignment created',
+          implementation: 'ExpertMatchingEngine â†’ AI recommends â†’ Admin assigns â†’ ExpertAssignment created',
           automation: 'AI semantic matching, workload balancing',
           gaps: []
         },
         {
-          path: 'Assignment → Evaluation',
+          path: 'Assignment â†’ Evaluation',
           status: 'complete',
           coverage: 100,
           description: 'Expert completes assignment by submitting evaluation',
-          implementation: 'ExpertAssignmentQueue → ExpertEvaluationWorkflow → ExpertEvaluation created',
+          implementation: 'ExpertAssignmentQueue â†’ ExpertEvaluationWorkflow â†’ ExpertEvaluation created',
           automation: 'AI pre-scoring assistance',
           gaps: []
         },
         {
-          path: 'Multiple Evaluations → Panel Consensus',
+          path: 'Multiple Evaluations â†’ Panel Consensus',
           status: 'complete',
           coverage: 100,
           description: 'Multiple expert evaluations trigger consensus calculation',
-          implementation: 'ExpertPanel tracks → Consensus displayed in entity detail pages',
+          implementation: 'ExpertPanel tracks â†’ Consensus displayed in entity detail pages',
           automation: 'Automatic consensus calculation',
           gaps: []
         }
       ],
       missing: [
         {
-          path: 'Expert → Certification Verification',
+          path: 'Expert â†’ Certification Verification',
           status: 'missing',
           coverage: 0,
           description: 'Automated verification of expert certifications with issuing institutions',
           rationale: 'Manual verification is slow and error-prone',
-          gaps: ['❌ No API integration with certification bodies', '❌ No auto-verification workflow']
+          gaps: ['âŒ No API integration with certification bodies', 'âŒ No auto-verification workflow']
         }
       ]
     },
 
     comparisons: {
       expertVsInternalReviewer: [
-        { aspect: 'Qualification', expert: 'Domain expertise required (certifications, publications)', internal: 'General admin role', analysis: '✅ Clear differentiation' },
-        { aspect: 'Assignment', expert: 'AI-matched by expertise + availability', internal: 'Manual assignment', analysis: '✅ Experts get sophisticated matching' },
-        { aspect: 'Evaluation Depth', expert: 'Structured scorecard (8+ dimensions)', internal: 'Basic checklist (8 items)', analysis: '✅ Experts provide rigorous evaluation' },
-        { aspect: 'Consensus', expert: 'Multi-expert panels with voting', internal: 'Single reviewer decision', analysis: '✅ Experts enable collective wisdom' },
-        { aspect: 'Performance Tracking', expert: 'Quality scores, response time, consensus rate', internal: 'No tracking', analysis: '✅ Experts held accountable' },
-        { aspect: 'Compensation', expert: 'Optional hourly rate tracking', internal: 'N/A (staff)', analysis: '✅ Experts can be external contractors' }
+        { aspect: 'Qualification', expert: 'Domain expertise required (certifications, publications)', internal: 'General admin role', analysis: 'âœ… Clear differentiation' },
+        { aspect: 'Assignment', expert: 'AI-matched by expertise + availability', internal: 'Manual assignment', analysis: 'âœ… Experts get sophisticated matching' },
+        { aspect: 'Evaluation Depth', expert: 'Structured scorecard (8+ dimensions)', internal: 'Basic checklist (8 items)', analysis: 'âœ… Experts provide rigorous evaluation' },
+        { aspect: 'Consensus', expert: 'Multi-expert panels with voting', internal: 'Single reviewer decision', analysis: 'âœ… Experts enable collective wisdom' },
+        { aspect: 'Performance Tracking', expert: 'Quality scores, response time, consensus rate', internal: 'No tracking', analysis: 'âœ… Experts held accountable' },
+        { aspect: 'Compensation', expert: 'Optional hourly rate tracking', internal: 'N/A (staff)', analysis: 'âœ… Experts can be external contractors' }
       ],
       evaluationVsComment: [
-        { aspect: 'Structure', evaluation: 'Formal scorecard with 8+ numeric scores', comment: 'Unstructured text', analysis: '✅ Evaluations quantitative' },
-        { aspect: 'Entity Type', evaluation: 'ExpertEvaluation (dedicated entity)', comment: 'ChallengeComment/PilotComment', analysis: '✅ Evaluations first-class' },
-        { aspect: 'Visibility', evaluation: 'Restricted to admins + entity owner', comment: 'Internal vs public flags', analysis: '✅ Evaluations more controlled' },
-        { aspect: 'Workflow Impact', evaluation: 'Triggers consensus, affects approval', comment: 'Informational only', analysis: '✅ Evaluations actionable' },
-        { aspect: 'AI Assistance', evaluation: 'AI pre-scoring, benchmarks', comment: 'None', analysis: '✅ Evaluations AI-enhanced' },
-        { aspect: 'Attribution', evaluation: 'Linked to expert profile + credentials', comment: 'User email only', analysis: '✅ Evaluations credentialed' }
+        { aspect: 'Structure', evaluation: 'Formal scorecard with 8+ numeric scores', comment: 'Unstructured text', analysis: 'âœ… Evaluations quantitative' },
+        { aspect: 'Entity Type', evaluation: 'ExpertEvaluation (dedicated entity)', comment: 'ChallengeComment/PilotComment', analysis: 'âœ… Evaluations first-class' },
+        { aspect: 'Visibility', evaluation: 'Restricted to admins + entity owner', comment: 'Internal vs public flags', analysis: 'âœ… Evaluations more controlled' },
+        { aspect: 'Workflow Impact', evaluation: 'Triggers consensus, affects approval', comment: 'Informational only', analysis: 'âœ… Evaluations actionable' },
+        { aspect: 'AI Assistance', evaluation: 'AI pre-scoring, benchmarks', comment: 'None', analysis: 'âœ… Evaluations AI-enhanced' },
+        { aspect: 'Attribution', evaluation: 'Linked to expert profile + credentials', comment: 'User email only', analysis: 'âœ… Evaluations credentialed' }
       ]
     },
 
     rbacPermissions: {
       note: 'Expert permissions integrated into existing RBAC system via Role entity',
-      status: '✅ Ready for implementation in Role-based access control',
+      status: 'âœ… Ready for implementation in Role-based access control',
       recommended: [
         {
           permission: 'expert_view_all',
           description: 'View all expert profiles in ExpertRegistry',
           roles: ['admin', 'evaluator_manager'],
-          implementation: '✅ Filter ExpertRegistry list based on this permission'
+          implementation: 'âœ… Filter ExpertRegistry list based on this permission'
         },
         {
           permission: 'expert_view_public',
           description: 'View public expert profiles (non-sensitive data only)',
           roles: ['admin', 'user', 'municipality_user'],
-          implementation: '✅ Show limited profile in ExpertDetail'
+          implementation: 'âœ… Show limited profile in ExpertDetail'
         },
         {
           permission: 'expert_create',
           description: 'Onboard new experts via ExpertOnboarding',
           roles: ['admin'],
-          implementation: '✅ Access to ExpertOnboarding page'
+          implementation: 'âœ… Access to ExpertOnboarding page'
         },
         {
           permission: 'expert_edit_own',
           description: 'Experts edit their own profiles',
           roles: ['expert'],
-          implementation: '✅ Edit button in ExpertDetail (own profile only)'
+          implementation: 'âœ… Edit button in ExpertDetail (own profile only)'
         },
         {
           permission: 'expert_edit_all',
           description: 'Admin edit any expert profile',
           roles: ['admin'],
-          implementation: '✅ Edit button in ExpertDetail (all profiles)'
+          implementation: 'âœ… Edit button in ExpertDetail (all profiles)'
         },
         {
           permission: 'expert_approve',
           description: 'Approve expert applications (is_verified=true)',
           roles: ['admin', 'hr_manager'],
-          implementation: '✅ Approve button in ExpertDetail'
+          implementation: 'âœ… Approve button in ExpertDetail'
         },
         {
           permission: 'expert_assign',
           description: 'Assign experts to entities (challenges, pilots, R&D)',
           roles: ['admin', 'program_manager'],
-          implementation: '✅ Access to ExpertMatchingEngine'
+          implementation: 'âœ… Access to ExpertMatchingEngine'
         },
         {
           permission: 'expert_evaluate',
           description: 'Submit evaluations for assigned entities',
           roles: ['expert'],
-          implementation: '✅ Access to ExpertEvaluationWorkflow'
+          implementation: 'âœ… Access to ExpertEvaluationWorkflow'
         },
         {
           permission: 'expert_view_assignments',
           description: 'View own assignment queue',
           roles: ['expert'],
-          implementation: '✅ Access to ExpertAssignmentQueue (own assignments only)'
+          implementation: 'âœ… Access to ExpertAssignmentQueue (own assignments only)'
         },
         {
           permission: 'expert_view_all_assignments',
           description: 'View all expert assignments (admin)',
           roles: ['admin'],
-          implementation: '✅ Filter assignments in admin views'
+          implementation: 'âœ… Filter assignments in admin views'
         },
         {
           permission: 'expert_manage_panel',
           description: 'Create and manage expert panels',
           roles: ['admin', 'panel_coordinator'],
-          implementation: '✅ Access to ExpertPanelManagement'
+          implementation: 'âœ… Access to ExpertPanelManagement'
         },
         {
           permission: 'expert_analytics',
           description: 'View expert performance dashboards',
           roles: ['admin', 'hr_manager'],
-          implementation: '✅ Access to ExpertPerformanceDashboard'
+          implementation: 'âœ… Access to ExpertPerformanceDashboard'
         },
         {
           permission: 'expert_delete',
           description: 'Deactivate experts (soft delete)',
           roles: ['admin'],
-          implementation: '✅ Deactivate button in ExpertDetail'
+          implementation: 'âœ… Deactivate button in ExpertDetail'
         },
         {
           permission: 'expert_view_evaluations',
           description: 'View expert evaluations of entities',
           roles: ['admin', 'entity_owner'],
-          implementation: '✅ Experts tab in ChallengeDetail, PilotDetail, etc.'
+          implementation: 'âœ… Experts tab in ChallengeDetail, PilotDetail, etc.'
         },
         {
           permission: 'expert_compensation_manage',
           description: 'Manage expert compensation and invoicing',
           roles: ['admin', 'finance_manager'],
-          implementation: '⚠️ Future feature'
+          implementation: 'âš ï¸ Future feature'
         }
       ],
       rowLevelSecurity: [
@@ -1234,25 +1220,25 @@ function ExpertCoverageReport() {
           entity: 'ExpertProfile',
           rule: 'Experts can only view/edit their own profile',
           filter: 'user_email = current_user.email',
-          status: '✅ Implemented via base UI logic'
+          status: 'âœ… Implemented via base UI logic'
         },
         {
           entity: 'ExpertAssignment',
           rule: 'Experts can only view their own assignments',
           filter: 'expert_email = current_user.email',
-          status: '✅ Implemented in ExpertAssignmentQueue'
+          status: 'âœ… Implemented in ExpertAssignmentQueue'
         },
         {
           entity: 'ExpertEvaluation',
           rule: 'Experts can only view/edit their own evaluations',
           filter: 'expert_email = current_user.email',
-          status: '✅ Implemented in ExpertEvaluationWorkflow'
+          status: 'âœ… Implemented in ExpertEvaluationWorkflow'
         },
         {
           entity: 'ExpertPanel',
           rule: 'Panel members can view panel details',
           filter: 'current_user.email IN panel_members OR current_user.role = admin',
-          status: '✅ Ready for implementation'
+          status: 'âœ… Ready for implementation'
         }
       ]
     },
@@ -1263,28 +1249,28 @@ function ExpertCoverageReport() {
         status: 'implemented',
         details: 'Expert profiles have is_active flag for soft deletion, CV/certification URLs stored securely',
         compliance: 'GDPR/PDPL compliant data handling',
-        gaps: ['⚠️ No explicit PII redaction for archived experts', '⚠️ No GDPR export functionality']
+        gaps: ['âš ï¸ No explicit PII redaction for archived experts', 'âš ï¸ No GDPR export functionality']
       },
       {
         area: 'Evaluation Confidentiality',
         status: 'implemented',
         details: 'Expert evaluations visible only to admins, entity owners, and panel members',
         compliance: 'Access control enforced',
-        gaps: ['⚠️ No encryption for sensitive feedback', '⚠️ No anonymous evaluation option']
+        gaps: ['âš ï¸ No encryption for sensitive feedback', 'âš ï¸ No anonymous evaluation option']
       },
       {
         area: 'Conflict of Interest',
         status: 'partial',
         details: 'AI matching can detect organization overlap',
         compliance: 'Basic conflict detection',
-        gaps: ['❌ No formal COI declaration workflow', '❌ No relationship graph analysis']
+        gaps: ['âŒ No formal COI declaration workflow', 'âŒ No relationship graph analysis']
       },
       {
         area: 'Expert Credentials Verification',
         status: 'manual',
         details: 'Admin manually verifies certifications',
         compliance: 'Manual verification process',
-        gaps: ['❌ No automated verification with institutions', '❌ No expiry date tracking for certifications']
+        gaps: ['âŒ No automated verification with institutions', 'âŒ No expiry date tracking for certifications']
       },
       {
         area: 'Audit Trail',
@@ -1296,229 +1282,229 @@ function ExpertCoverageReport() {
     ],
 
     gaps: {
-    critical: [],
+      critical: [],
       high: [],
       medium: [
-        '⚠️ M1: Specialized scorecards per entity type (Challenge vs Pilot vs RD)',
-        '⚠️ M2: Blind review option for sensitive evaluations',
-        '⚠️ M3: Evaluation report export/PDF generation',
-        '⚠️ M4: Expert certification expiry tracking and auto-alerts',
-        '⚠️ M5: Expert compensation/invoicing automation',
-        '⚠️ M6: Expert network graph visualization',
-        '⚠️ M7: Expert recommendation widget for dashboards',
-        '⚠️ M8: Expert contribution heatmap by sector/time',
-        '⚠️ M9: Expert peer ranking leaderboard',
-        '⚠️ M10: Expert community forum features',
-        '⚠️ M11: ExpertAvailability entity for detailed calendar',
-        '⚠️ M12: Expert profile video introduction support',
-        '⚠️ M13: Cross-entity expert analytics dashboard',
-        '⚠️ M14: Expert training materials library'
+        'âš ï¸ M1: Specialized scorecards per entity type (Challenge vs Pilot vs RD)',
+        'âš ï¸ M2: Blind review option for sensitive evaluations',
+        'âš ï¸ M3: Evaluation report export/PDF generation',
+        'âš ï¸ M4: Expert certification expiry tracking and auto-alerts',
+        'âš ï¸ M5: Expert compensation/invoicing automation',
+        'âš ï¸ M6: Expert network graph visualization',
+        'âš ï¸ M7: Expert recommendation widget for dashboards',
+        'âš ï¸ M8: Expert contribution heatmap by sector/time',
+        'âš ï¸ M9: Expert peer ranking leaderboard',
+        'âš ï¸ M10: Expert community forum features',
+        'âš ï¸ M11: ExpertAvailability entity for detailed calendar',
+        'âš ï¸ M12: Expert profile video introduction support',
+        'âš ï¸ M13: Cross-entity expert analytics dashboard',
+        'âš ï¸ M14: Expert training materials library'
       ]
     },
 
     crossPlatformIntegration: {
       portals: [
-        { portal: 'Executive Portal', integration: '✅ Complete - Expert metrics in ExecutiveDashboard', missing: [] },
-        { portal: 'Admin Portal', integration: '✅ Complete - All expert management pages accessible', missing: [] },
-        { portal: 'Municipality Portal', integration: '✅ Complete - Sees expert evaluations in ChallengeDetail', missing: [] },
-        { portal: 'Startup Portal', integration: '✅ Complete - SolutionDetail has Experts tab', missing: [] },
-        { portal: 'Academia Portal', integration: '✅ Complete - RDProjectDetail has Experts tab', missing: [] },
-        { portal: 'Program Operator Portal', integration: '✅ Complete - ProgramDetail has Mentors tab', missing: [] },
-        { portal: 'Public Portal', integration: '⚠️ Optional - No public expert directory (not required)', missing: ['Public expert profiles (optional)', 'Expert thought leadership content (optional)'] }
+        { portal: 'Executive Portal', integration: 'âœ… Complete - Expert metrics in ExecutiveDashboard', missing: [] },
+        { portal: 'Admin Portal', integration: 'âœ… Complete - All expert management pages accessible', missing: [] },
+        { portal: 'Municipality Portal', integration: 'âœ… Complete - Sees expert evaluations in ChallengeDetail', missing: [] },
+        { portal: 'Startup Portal', integration: 'âœ… Complete - SolutionDetail has Experts tab', missing: [] },
+        { portal: 'Academia Portal', integration: 'âœ… Complete - RDProjectDetail has Experts tab', missing: [] },
+        { portal: 'Program Operator Portal', integration: 'âœ… Complete - ProgramDetail has Mentors tab', missing: [] },
+        { portal: 'Public Portal', integration: 'âš ï¸ Optional - No public expert directory (not required)', missing: ['Public expert profiles (optional)', 'Expert thought leadership content (optional)'] }
       ],
       majorPages: [
-        { page: 'Home', integration: '✅ Complete - Expert assignment widget added' },
-        { page: 'PersonalizedDashboard', integration: '✅ Complete - Expert assignments widget integrated' },
-        { page: 'MyWorkloadDashboard', integration: '✅ Complete - Expert assignments integrated' },
-        { page: 'MyApprovals', integration: '✅ Complete - Expert evaluations shown as approval items' },
-        { page: 'TaskManagement', integration: '✅ Complete - Expert assignments auto-synced as tasks' },
-        { page: 'NotificationCenter', integration: '✅ Complete - Expert notification filters added' },
-        { page: 'CalendarView', integration: '✅ Complete - Expert assignment deadlines displayed' },
-        { page: 'Messaging', integration: '⚠️ Optional - No expert-specific messaging features' },
-        { page: 'UserDirectory', integration: '⚠️ Optional - Not filterable by expert status' },
-        { page: 'Network', integration: '⚠️ Optional - Expert collaboration network not visualized' },
-        { page: 'Knowledge', integration: '⚠️ Optional - Expert contributions not tracked' },
-        { page: 'KnowledgeGraph', integration: '⚠️ Optional - Experts not nodes in graph' },
-        { page: 'Trends', integration: '⚠️ Optional - Expert insights not incorporated' },
-        { page: 'AdvancedSearch', integration: '⚠️ Optional - No dedicated expert search mode' },
-        { page: 'ReportsBuilder', integration: '⚠️ Optional - No expert reports template' },
-        { page: 'BulkImport', integration: '⚠️ Optional - No bulk expert import' },
-        { page: 'Settings', integration: '⚠️ Optional - No expert-specific settings' }
+        { page: 'Home', integration: 'âœ… Complete - Expert assignment widget added' },
+        { page: 'PersonalizedDashboard', integration: 'âœ… Complete - Expert assignments widget integrated' },
+        { page: 'MyWorkloadDashboard', integration: 'âœ… Complete - Expert assignments integrated' },
+        { page: 'MyApprovals', integration: 'âœ… Complete - Expert evaluations shown as approval items' },
+        { page: 'TaskManagement', integration: 'âœ… Complete - Expert assignments auto-synced as tasks' },
+        { page: 'NotificationCenter', integration: 'âœ… Complete - Expert notification filters added' },
+        { page: 'CalendarView', integration: 'âœ… Complete - Expert assignment deadlines displayed' },
+        { page: 'Messaging', integration: 'âš ï¸ Optional - No expert-specific messaging features' },
+        { page: 'UserDirectory', integration: 'âš ï¸ Optional - Not filterable by expert status' },
+        { page: 'Network', integration: 'âš ï¸ Optional - Expert collaboration network not visualized' },
+        { page: 'Knowledge', integration: 'âš ï¸ Optional - Expert contributions not tracked' },
+        { page: 'KnowledgeGraph', integration: 'âš ï¸ Optional - Experts not nodes in graph' },
+        { page: 'Trends', integration: 'âš ï¸ Optional - Expert insights not incorporated' },
+        { page: 'AdvancedSearch', integration: 'âš ï¸ Optional - No dedicated expert search mode' },
+        { page: 'ReportsBuilder', integration: 'âš ï¸ Optional - No expert reports template' },
+        { page: 'BulkImport', integration: 'âš ï¸ Optional - No bulk expert import' },
+        { page: 'Settings', integration: 'âš ï¸ Optional - No expert-specific settings' }
       ],
       dashboards: [
-        { dashboard: 'ExecutiveDashboard', integration: '✅ Complete - Expert metrics widget added', needed: [] },
-        { dashboard: 'MunicipalityDashboard', integration: '✅ Complete - Challenges show expert evaluations', needed: [] },
-        { dashboard: 'MyWorkloadDashboard', integration: '✅ Complete - Expert assignments tracked', needed: [] },
-        { dashboard: 'SystemHealthDashboard', integration: '✅ Complete - Expert system health monitoring added', needed: [] },
-        { dashboard: 'PipelineHealthDashboard', integration: '✅ Complete - Expert capacity bottleneck tracking added', needed: [] },
-        { dashboard: 'CommandCenter', integration: '✅ Complete - Expert resource planning added', needed: [] },
-        { dashboard: 'Home', integration: '✅ Complete - Expert quick actions widget added', needed: [] },
-        { dashboard: 'PersonalizedDashboard', integration: '✅ Complete - Expert assignments widget added', needed: [] },
-        { dashboard: 'StartupDashboard', integration: '⚠️ Optional - Expert feedback widget (nice-to-have)', needed: ['Expert feedback on my solutions (optional)'] },
-        { dashboard: 'AcademiaDashboard', integration: '⚠️ Optional - Expert collaboration widget (nice-to-have)', needed: ['My expert panel reviews (optional)'] },
-        { dashboard: 'ProgramOperatorPortal', integration: '⚠️ Optional - Mentor management widget (nice-to-have)', needed: ['Mentor roster widget (optional)'] }
+        { dashboard: 'ExecutiveDashboard', integration: 'âœ… Complete - Expert metrics widget added', needed: [] },
+        { dashboard: 'MunicipalityDashboard', integration: 'âœ… Complete - Challenges show expert evaluations', needed: [] },
+        { dashboard: 'MyWorkloadDashboard', integration: 'âœ… Complete - Expert assignments tracked', needed: [] },
+        { dashboard: 'SystemHealthDashboard', integration: 'âœ… Complete - Expert system health monitoring added', needed: [] },
+        { dashboard: 'PipelineHealthDashboard', integration: 'âœ… Complete - Expert capacity bottleneck tracking added', needed: [] },
+        { dashboard: 'CommandCenter', integration: 'âœ… Complete - Expert resource planning added', needed: [] },
+        { dashboard: 'Home', integration: 'âœ… Complete - Expert quick actions widget added', needed: [] },
+        { dashboard: 'PersonalizedDashboard', integration: 'âœ… Complete - Expert assignments widget added', needed: [] },
+        { dashboard: 'StartupDashboard', integration: 'âš ï¸ Optional - Expert feedback widget (nice-to-have)', needed: ['Expert feedback on my solutions (optional)'] },
+        { dashboard: 'AcademiaDashboard', integration: 'âš ï¸ Optional - Expert collaboration widget (nice-to-have)', needed: ['My expert panel reviews (optional)'] },
+        { dashboard: 'ProgramOperatorPortal', integration: 'âš ï¸ Optional - Mentor management widget (nice-to-have)', needed: ['Mentor roster widget (optional)'] }
       ],
       workflows: [
-        { workflow: 'ApprovalCenter', integration: '⚠️ Optional - Expert evaluations could be shown as approval items', status: 'optional enhancement' },
-        { workflow: 'MatchingQueue', integration: '⚠️ Optional - Expert-entity matching queue integration', status: 'optional enhancement' },
-        { workflow: 'ScalingWorkflow', integration: '✅ Complete - Expert sign-off in ScalingPlanDetail', status: 'integrated' },
-        { workflow: 'BulkDataOperations', integration: '⚠️ Optional - Bulk expert operations', status: 'optional' },
-        { workflow: 'ValidationDashboard', integration: '⚠️ Optional - Expert data quality validation', status: 'optional' },
-        { workflow: 'DataManagementHub', integration: '⚠️ Optional - Expert entities in data hub', status: 'optional' }
+        { workflow: 'ApprovalCenter', integration: 'âš ï¸ Optional - Expert evaluations could be shown as approval items', status: 'optional enhancement' },
+        { workflow: 'MatchingQueue', integration: 'âš ï¸ Optional - Expert-entity matching queue integration', status: 'optional enhancement' },
+        { workflow: 'ScalingWorkflow', integration: 'âœ… Complete - Expert sign-off in ScalingPlanDetail', status: 'integrated' },
+        { workflow: 'BulkDataOperations', integration: 'âš ï¸ Optional - Bulk expert operations', status: 'optional' },
+        { workflow: 'ValidationDashboard', integration: 'âš ï¸ Optional - Expert data quality validation', status: 'optional' },
+        { workflow: 'DataManagementHub', integration: 'âš ï¸ Optional - Expert entities in data hub', status: 'optional' }
       ],
       aiFeatures: [
-        { feature: 'AIAssistant (global)', integration: '✅ Functional - Can answer expert-related questions', missing: 'Expert-specific prompts (optional)' },
-        { feature: 'SemanticSearch', integration: '✅ Working - Experts searchable via ExpertRegistry', missing: 'Expert-specific search mode (optional)' },
-        { feature: 'PredictiveAnalytics', integration: '⚠️ Optional - Expert demand forecasting', missing: 'Predict expert shortage by sector (optional)' },
-        { feature: 'PredictiveInsights', integration: '⚠️ Optional - Expert performance predictions', missing: 'Predict expert burnout (optional)' },
-        { feature: 'NetworkIntelligence', integration: '⚠️ Optional - Expert collaboration patterns', missing: 'Expert network analysis (optional)' },
-        { feature: 'PatternRecognition', integration: '⚠️ Optional - Expert evaluation patterns', missing: 'Identify expert bias patterns (optional)' }
+        { feature: 'AIAssistant (global)', integration: 'âœ… Functional - Can answer expert-related questions', missing: 'Expert-specific prompts (optional)' },
+        { feature: 'SemanticSearch', integration: 'âœ… Working - Experts searchable via ExpertRegistry', missing: 'Expert-specific search mode (optional)' },
+        { feature: 'PredictiveAnalytics', integration: 'âš ï¸ Optional - Expert demand forecasting', missing: 'Predict expert shortage by sector (optional)' },
+        { feature: 'PredictiveInsights', integration: 'âš ï¸ Optional - Expert performance predictions', missing: 'Predict expert burnout (optional)' },
+        { feature: 'NetworkIntelligence', integration: 'âš ï¸ Optional - Expert collaboration patterns', missing: 'Expert network analysis (optional)' },
+        { feature: 'PatternRecognition', integration: 'âš ï¸ Optional - Expert evaluation patterns', missing: 'Identify expert bias patterns (optional)' }
       ],
       communications: [
-        { feature: 'AutoNotification', integration: '✅ Complete - Expert assignment notifications working', status: 'integrated' },
-        { feature: 'NotificationCenter', integration: '✅ Complete - Expert notification filters added', status: 'integrated' },
-        { feature: 'Email templates', integration: '⚠️ Optional - Expert-specific email templates', status: 'optional enhancement' },
-        { feature: 'Messaging', integration: '⚠️ Optional - Expert-admin messaging thread', status: 'optional enhancement' },
-        { feature: 'AnnouncementSystem', integration: '⚠️ Optional - Expert community announcements', status: 'optional enhancement' },
-        { feature: 'NotificationPreferences', integration: '⚠️ Optional - Expert notification preferences', status: 'optional enhancement' }
+        { feature: 'AutoNotification', integration: 'âœ… Complete - Expert assignment notifications working', status: 'integrated' },
+        { feature: 'NotificationCenter', integration: 'âœ… Complete - Expert notification filters added', status: 'integrated' },
+        { feature: 'Email templates', integration: 'âš ï¸ Optional - Expert-specific email templates', status: 'optional enhancement' },
+        { feature: 'Messaging', integration: 'âš ï¸ Optional - Expert-admin messaging thread', status: 'optional enhancement' },
+        { feature: 'AnnouncementSystem', integration: 'âš ï¸ Optional - Expert community announcements', status: 'optional enhancement' },
+        { feature: 'NotificationPreferences', integration: 'âš ï¸ Optional - Expert notification preferences', status: 'optional enhancement' }
       ],
       reusableComponents: [
-        { component: 'FileUploader', usage: '✅ Used in ExpertOnboarding for CV upload', status: 'integrated' },
-        { component: 'AIFormAssistant', usage: '✅ Used in ExpertOnboarding', status: 'integrated' },
-        { component: 'AutoNotification', usage: '✅ Used for expert assignments', status: 'integrated' },
-        { component: 'ExportData', usage: '✅ Used in ExpertRegistry', status: 'integrated' },
-        { component: 'SmartActionButton', usage: '⚠️ Optional - Could trigger expert requests', status: 'optional' },
-        { component: 'ActivityFeed', usage: '⚠️ Optional - Expert activities in feed', status: 'optional' },
-        { component: 'NetworkGraph', usage: '⚠️ Optional - Expert network visualization', status: 'optional' },
-        { component: 'ProgressTracker', usage: '⚠️ Optional - Expert onboarding progress', status: 'optional' },
-        { component: 'BulkActions', usage: '⚠️ Optional - Bulk expert actions', status: 'optional' },
-        { component: 'PDFExport', usage: '⚠️ Optional - Expert reports export', status: 'optional' },
-        { component: 'CloneEntity', usage: '⚠️ Optional - Clone expert profile', status: 'optional' },
-        { component: 'TemplateLibrary', usage: '⚠️ Optional - Expert evaluation templates', status: 'optional' }
+        { component: 'FileUploader', usage: 'âœ… Used in ExpertOnboarding for CV upload', status: 'integrated' },
+        { component: 'AIFormAssistant', usage: 'âœ… Used in ExpertOnboarding', status: 'integrated' },
+        { component: 'AutoNotification', usage: 'âœ… Used for expert assignments', status: 'integrated' },
+        { component: 'ExportData', usage: 'âœ… Used in ExpertRegistry', status: 'integrated' },
+        { component: 'SmartActionButton', usage: 'âš ï¸ Optional - Could trigger expert requests', status: 'optional' },
+        { component: 'ActivityFeed', usage: 'âš ï¸ Optional - Expert activities in feed', status: 'optional' },
+        { component: 'NetworkGraph', usage: 'âš ï¸ Optional - Expert network visualization', status: 'optional' },
+        { component: 'ProgressTracker', usage: 'âš ï¸ Optional - Expert onboarding progress', status: 'optional' },
+        { component: 'BulkActions', usage: 'âš ï¸ Optional - Bulk expert actions', status: 'optional' },
+        { component: 'PDFExport', usage: 'âš ï¸ Optional - Expert reports export', status: 'optional' },
+        { component: 'CloneEntity', usage: 'âš ï¸ Optional - Clone expert profile', status: 'optional' },
+        { component: 'TemplateLibrary', usage: 'âš ï¸ Optional - Expert evaluation templates', status: 'optional' }
       ]
     },
 
     recommendations: [
       {
-        priority: '✅ COMPLETED',
+        priority: 'âœ… COMPLETED',
         title: 'Expert Management Core',
         description: 'ExpertProfile, ExpertAssignment, ExpertEvaluation entities + 8 pages',
         status: 'IMPLEMENTED',
         components: [
-          '✅ ExpertProfile entity (40+ fields)',
-          '✅ ExpertAssignment entity',
-          '✅ ExpertEvaluation entity',
-          '✅ ExpertPanel entity',
-          '✅ ExpertRegistry page',
-          '✅ ExpertDetail page',
-          '✅ ExpertOnboarding wizard with AI CV extraction',
-          '✅ ExpertAssignmentQueue page',
-          '✅ User & Role entities updated'
+          'âœ… ExpertProfile entity (40+ fields)',
+          'âœ… ExpertAssignment entity',
+          'âœ… ExpertEvaluation entity',
+          'âœ… ExpertPanel entity',
+          'âœ… ExpertRegistry page',
+          'âœ… ExpertDetail page',
+          'âœ… ExpertOnboarding wizard with AI CV extraction',
+          'âœ… ExpertAssignmentQueue page',
+          'âœ… User & Role entities updated'
         ]
       },
       {
-        priority: '✅ COMPLETED',
+        priority: 'âœ… COMPLETED',
         title: 'AI Expert Matching Engine',
         description: 'Semantic matching between entities and experts',
         status: 'IMPLEMENTED',
         components: [
-          '✅ ExpertMatchingEngine page',
-          '✅ AI semantic matching via LLM',
-          '✅ Match score calculation',
-          '✅ Bulk assignment capability'
+          'âœ… ExpertMatchingEngine page',
+          'âœ… AI semantic matching via LLM',
+          'âœ… Match score calculation',
+          'âœ… Bulk assignment capability'
         ]
       },
       {
-        priority: '✅ COMPLETED',
+        priority: 'âœ… COMPLETED',
         title: 'Unified Evaluation Workflow + Components',
         description: 'Single evaluation interface across all entity types with unified components',
         status: 'IMPLEMENTED',
         components: [
-          '✅ UnifiedEvaluationForm component (all entity types)',
-          '✅ EvaluationConsensusPanel component (consensus display)',
-          '✅ QuickEvaluationCard component (compact display)',
-          '✅ EvaluationHistory component (timeline & filtering)',
-          '✅ ExpertEvaluationWorkflow page',
-          '✅ Dynamic scorecard with 8 dimensions',
-          '✅ AI assistance for evaluations',
-          '✅ Multi-expert consensus calculation',
-          '✅ Evaluation history tracking',
-          '✅ checkConsensus backend function',
-          '✅ evaluationNotifications backend function'
+          'âœ… UnifiedEvaluationForm component (all entity types)',
+          'âœ… EvaluationConsensusPanel component (consensus display)',
+          'âœ… QuickEvaluationCard component (compact display)',
+          'âœ… EvaluationHistory component (timeline & filtering)',
+          'âœ… ExpertEvaluationWorkflow page',
+          'âœ… Dynamic scorecard with 8 dimensions',
+          'âœ… AI assistance for evaluations',
+          'âœ… Multi-expert consensus calculation',
+          'âœ… Evaluation history tracking',
+          'âœ… checkConsensus backend function',
+          'âœ… evaluationNotifications backend function'
         ]
       },
       {
-        priority: '✅ COMPLETED',
+        priority: 'âœ… COMPLETED',
         title: 'Platform Integration + P0/P1 Migration (100% COMPLETE)',
         description: 'Expert evaluation integrated across platform with unified components - ALL 7 critical pages migrated',
         status: 'IMPLEMENTED',
         components: [
-          '✅ ChallengeDetail → Experts tab with evaluations',
-          '✅ ChallengeReviewQueue → UnifiedEvaluationForm + EvaluationConsensusPanel integrated',
-          '✅ ApplicationReviewHub → Migrated to UnifiedEvaluationForm (program_application)',
-          '✅ ProposalReviewPortal → Migrated to UnifiedEvaluationForm (rd_proposal)',
-          '✅ MatchmakerEvaluationHub → Migrated to UnifiedEvaluationForm (matchmaker_application)',
-          '✅ PilotEvaluations → Migrated to UnifiedEvaluationForm (pilot)',
-          '✅ EvaluationPanel → Migrated to UnifiedEvaluationForm (rd_proposal + pilot)',
-          '✅ SolutionVerification → Migrated to UnifiedEvaluationForm (solution)',
-          '✅ ScalingPlanDetail → Experts tab with scaling approval evaluations',
-          '✅ Link to ExpertMatchingEngine from all detail pages',
-          '✅ Multi-entity support (9 entity types: challenge, solution, pilot, rd_proposal, rd_project, program_application, matchmaker_application, scaling_plan, citizen_idea)',
-          '✅ Automatic consensus detection and status updates via checkConsensus function',
-          '✅ All 11 coverage reports updated with unified evaluation workflow integration'
+          'âœ… ChallengeDetail â†’ Experts tab with evaluations',
+          'âœ… ChallengeReviewQueue â†’ UnifiedEvaluationForm + EvaluationConsensusPanel integrated',
+          'âœ… ApplicationReviewHub â†’ Migrated to UnifiedEvaluationForm (program_application)',
+          'âœ… ProposalReviewPortal â†’ Migrated to UnifiedEvaluationForm (rd_proposal)',
+          'âœ… MatchmakerEvaluationHub â†’ Migrated to UnifiedEvaluationForm (matchmaker_application)',
+          'âœ… PilotEvaluations â†’ Migrated to UnifiedEvaluationForm (pilot)',
+          'âœ… EvaluationPanel â†’ Migrated to UnifiedEvaluationForm (rd_proposal + pilot)',
+          'âœ… SolutionVerification â†’ Migrated to UnifiedEvaluationForm (solution)',
+          'âœ… ScalingPlanDetail â†’ Experts tab with scaling approval evaluations',
+          'âœ… Link to ExpertMatchingEngine from all detail pages',
+          'âœ… Multi-entity support (9 entity types: challenge, solution, pilot, rd_proposal, rd_project, program_application, matchmaker_application, scaling_plan, citizen_idea)',
+          'âœ… Automatic consensus detection and status updates via checkConsensus function',
+          'âœ… All 11 coverage reports updated with unified evaluation workflow integration'
         ]
       },
       {
-        priority: '✅ COMPLETED',
+        priority: 'âœ… COMPLETED',
         title: 'Expert Performance Dashboard',
         status: 'IMPLEMENTED',
         components: [
-          '✅ ExpertPerformanceDashboard',
-          '✅ Performance metrics tracking',
-          '✅ Analytics and reporting'
+          'âœ… ExpertPerformanceDashboard',
+          'âœ… Performance metrics tracking',
+          'âœ… Analytics and reporting'
         ]
       },
       {
-        priority: '✅ COMPLETED',
+        priority: 'âœ… COMPLETED',
         title: 'Expert Panel Management',
         status: 'IMPLEMENTED',
         components: [
-          '✅ ExpertPanelManagement page',
-          '✅ Panel creation and tracking',
-          '✅ Consensus management'
+          'âœ… ExpertPanelManagement page',
+          'âœ… Panel creation and tracking',
+          'âœ… Consensus management'
         ]
       },
 
 
       {
-        priority: '✅ P0 COMPLETE',
+        priority: 'âœ… P0 COMPLETE',
         title: 'Expert System Core Workflows - ALL FIXED',
         description: 'All 14 P0 critical gaps resolved - system fully operational',
-        status: '✅ COMPLETED',
+        status: 'âœ… COMPLETED',
         components: [
-          '✅ ExpertOnboarding Step 3 now renders + admin notifications on submission',
-          '✅ ExpertEvaluationWorkflow refactored - uses UnifiedEvaluationForm + fetches entity data',
-          '✅ ExpertMatchingEngine expanded - supports all 9 entity types',
-          '✅ Availability/workload/COI checks added to matching engine',
-          '✅ ExpertPanelManagement fixed - expert/entity selection works',
-          '✅ ExpertPanelDetail page created - voting/consensus UI operational',
-          '✅ Email notifications sent to assigned experts',
-          '✅ ExpertProfileEdit page created and functional'
+          'âœ… ExpertOnboarding Step 3 now renders + admin notifications on submission',
+          'âœ… ExpertEvaluationWorkflow refactored - uses UnifiedEvaluationForm + fetches entity data',
+          'âœ… ExpertMatchingEngine expanded - supports all 9 entity types',
+          'âœ… Availability/workload/COI checks added to matching engine',
+          'âœ… ExpertPanelManagement fixed - expert/entity selection works',
+          'âœ… ExpertPanelDetail page created - voting/consensus UI operational',
+          'âœ… Email notifications sent to assigned experts',
+          'âœ… ExpertProfileEdit page created and functional'
         ],
         estimatedEffort: 'COMPLETED'
       },
       {
-        priority: '⚠️ P1 HIGH PRIORITY ENHANCEMENTS',
+        priority: 'âš ï¸ P1 HIGH PRIORITY ENHANCEMENTS',
         title: 'AI Features & Integration',
         description: 'Implement promised AI features and complete integrations',
         status: 'NEEDED',
         components: [
-          '⚠️ Add semantic AI search to ExpertRegistry',
-          '⚠️ Integrate ExpertFinder, ProfileCompletionAI, CredentialVerificationAI components into flows',
-          '⚠️ Build EvaluationAnalyticsDashboard (cross-entity metrics)',
-          '⚠️ Add AI anomaly detection to ExpertPerformanceDashboard',
-          '⚠️ Implement consensus rate & workload visualization',
-          '⚠️ Add export functionality to ExpertRegistry'
+          'âš ï¸ Add semantic AI search to ExpertRegistry',
+          'âš ï¸ Integrate ExpertFinder, ProfileCompletionAI, CredentialVerificationAI components into flows',
+          'âš ï¸ Build EvaluationAnalyticsDashboard (cross-entity metrics)',
+          'âš ï¸ Add AI anomaly detection to ExpertPerformanceDashboard',
+          'âš ï¸ Implement consensus rate & workload visualization',
+          'âš ï¸ Add export functionality to ExpertRegistry'
         ],
         estimatedEffort: '2 weeks'
       }
@@ -1539,10 +1525,10 @@ function ExpertCoverageReport() {
       {/* Header */}
       <div>
         <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-900 to-blue-900 bg-clip-text text-transparent mb-2">
-          {t({ en: 'Expert Management System - Coverage Report', ar: 'تقرير تغطية نظام إدارة الخبراء' })}
+          {t({ en: 'Expert Management System - Coverage Report', ar: 'ØªÙ‚Ø±ÙŠØ± ØªØºØ·ÙŠØ© Ù†Ø¸Ø§Ù… Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø®Ø¨Ø±Ø§Ø¡' })}
         </h1>
         <p className="text-slate-600">
-          {t({ en: 'Comprehensive analysis of expert management infrastructure across the platform', ar: 'تحليل شامل للبنية التحتية لإدارة الخبراء عبر المنصة' })}
+          {t({ en: 'Comprehensive analysis of expert management infrastructure across the platform', ar: 'ØªØ­Ù„ÙŠÙ„ Ø´Ø§Ù…Ù„ Ù„Ù„Ø¨Ù†ÙŠØ© Ø§Ù„ØªØ­ØªÙŠØ© Ù„Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø®Ø¨Ø±Ø§Ø¡ Ø¹Ø¨Ø± Ø§Ù„Ù…Ù†ØµØ©' })}
         </p>
       </div>
 
@@ -1550,25 +1536,25 @@ function ExpertCoverageReport() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="text-center p-4 bg-white rounded-lg border-2 border-green-200">
           <p className="text-4xl font-bold text-green-600">{overallCoverage}%</p>
-          <p className="text-sm text-slate-600 mt-1">{t({ en: 'Overall Coverage', ar: 'التغطية الإجمالية' })}</p>
-          <Badge className="mt-2 bg-green-600 text-white">✅ ALL COMPLETE - 12/12 P1 Enhancements Done</Badge>
+          <p className="text-sm text-slate-600 mt-1">{t({ en: 'Overall Coverage', ar: 'Ø§Ù„ØªØºØ·ÙŠØ© Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠØ©' })}</p>
+          <Badge className="mt-2 bg-green-600 text-white">âœ… ALL COMPLETE - 12/12 P1 Enhancements Done</Badge>
         </div>
 
         <div className="text-center p-4 bg-white rounded-lg border-2 border-green-200">
           <p className="text-4xl font-bold text-green-600">{implementedPages}</p>
-          <p className="text-sm text-slate-600 mt-1">{t({ en: 'Pages (Complete)', ar: 'الصفحات (مكتمل)' })}</p>
+          <p className="text-sm text-slate-600 mt-1">{t({ en: 'Pages (Complete)', ar: 'Ø§Ù„ØµÙØ­Ø§Øª (Ù…ÙƒØªÙ…Ù„)' })}</p>
           <p className="text-xs text-green-500 mt-1">+3 new pages today</p>
         </div>
 
         <div className="text-center p-4 bg-white rounded-lg border-2 border-green-200">
           <p className="text-4xl font-bold text-green-600">{implementedEntities}</p>
-          <p className="text-sm text-slate-600 mt-1">{t({ en: 'Entities', ar: 'الكيانات' })}</p>
-          <p className="text-xs text-green-500 mt-1">✅ 4 entities complete</p>
+          <p className="text-sm text-slate-600 mt-1">{t({ en: 'Entities', ar: 'Ø§Ù„ÙƒÙŠØ§Ù†Ø§Øª' })}</p>
+          <p className="text-xs text-green-500 mt-1">âœ… 4 entities complete</p>
         </div>
 
         <div className="text-center p-4 bg-white rounded-lg border-2 border-green-200">
           <p className="text-4xl font-bold text-green-600">100%</p>
-          <p className="text-sm text-slate-600 mt-1">{t({ en: 'AI Integration', ar: 'تكامل الذكاء الاصطناعي' })}</p>
+          <p className="text-sm text-slate-600 mt-1">{t({ en: 'AI Integration', ar: 'ØªÙƒØ§Ù…Ù„ Ø§Ù„Ø°ÙƒØ§Ø¡ Ø§Ù„Ø§ØµØ·Ù†Ø§Ø¹ÙŠ' })}</p>
           <p className="text-xs text-green-500 mt-1">{implementedAI} / 4 working</p>
         </div>
       </div>
@@ -1579,19 +1565,19 @@ function ExpertCoverageReport() {
           <CheckCircle2 className="h-6 w-6 text-green-600 mt-0.5 flex-shrink-0" />
           <div className="flex-1">
             <p className="font-bold text-green-900 text-lg mb-2">
-              ✅ {t({ en: 'EXPERT SYSTEM: ALL P0 GAPS FIXED (100% Complete)', ar: 'نظام الخبراء: تم إصلاح جميع الفجوات (100٪ مكتمل)' })}
+              âœ… {t({ en: 'EXPERT SYSTEM: ALL P0 GAPS FIXED (100% Complete)', ar: 'Ù†Ø¸Ø§Ù… Ø§Ù„Ø®Ø¨Ø±Ø§Ø¡: ØªÙ… Ø¥ØµÙ„Ø§Ø­ Ø¬Ù…ÙŠØ¹ Ø§Ù„ÙØ¬ÙˆØ§Øª (100Ùª Ù…ÙƒØªÙ…Ù„)' })}
             </p>
             <p className="text-green-800 text-sm mb-3">
-              {t({ 
+              {t({
                 en: 'All 14 P0 critical gaps + 12 P1 enhancements complete (Dec 3, 2025). Expert system now PLATINUM: semantic search, export, consensus tracking, AI anomaly detection, time tracking, workload viz, AI summaries, profile edit, panel detail, evaluation analytics - all operational.',
-                ar: 'جميع الفجوات الحرجة + 12 تحسين P1 مكتملة. النظام الآن بمستوى بلاتيني مع جميع الميزات المتقدمة.'
+                ar: 'Ø¬Ù…ÙŠØ¹ Ø§Ù„ÙØ¬ÙˆØ§Øª Ø§Ù„Ø­Ø±Ø¬Ø© + 12 ØªØ­Ø³ÙŠÙ† P1 Ù…ÙƒØªÙ…Ù„Ø©. Ø§Ù„Ù†Ø¸Ø§Ù… Ø§Ù„Ø¢Ù† Ø¨Ù…Ø³ØªÙˆÙ‰ Ø¨Ù„Ø§ØªÙŠÙ†ÙŠ Ù…Ø¹ Ø¬Ù…ÙŠØ¹ Ø§Ù„Ù…ÙŠØ²Ø§Øª Ø§Ù„Ù…ØªÙ‚Ø¯Ù…Ø©.'
               })}
             </p>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-xs">
-              <div className="text-green-700">✅ Core Workflows: 100%</div>
-              <div className="text-green-700">✅ Entity Integration: 100% (9/9)</div>
-              <div className="text-green-700">✅ AI Features: 100% (4/4)</div>
-              <div className="text-green-700">✅ Critical Gaps: 0</div>
+              <div className="text-green-700">âœ… Core Workflows: 100%</div>
+              <div className="text-green-700">âœ… Entity Integration: 100% (9/9)</div>
+              <div className="text-green-700">âœ… AI Features: 100% (4/4)</div>
+              <div className="text-green-700">âœ… Critical Gaps: 0</div>
             </div>
           </div>
         </div>
@@ -1606,7 +1592,7 @@ function ExpertCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2">
               <Database className="h-5 w-5 text-blue-600" />
-              {t({ en: 'Data Model & Live Population', ar: 'نموذج البيانات والإحصاءات الحية' })}
+              {t({ en: 'Data Model & Live Population', ar: 'Ù†Ù…ÙˆØ°Ø¬ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª ÙˆØ§Ù„Ø¥Ø­ØµØ§Ø¡Ø§Øª Ø§Ù„Ø­ÙŠØ©' })}
               <Badge className="bg-blue-100 text-blue-700">6 Entities</Badge>
             </CardTitle>
             {expandedSections.entity ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
@@ -1616,7 +1602,7 @@ function ExpertCoverageReport() {
           <CardContent className="space-y-4">
             {/* Live Population Statistics */}
             <div>
-              <p className="font-semibold text-slate-900 mb-3">📊 Live Data Population</p>
+              <p className="font-semibold text-slate-900 mb-3">ðŸ“Š Live Data Population</p>
               <div className="grid grid-cols-4 gap-4">
                 <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
                   <p className="text-sm text-slate-600">Total Experts</p>
@@ -1653,12 +1639,12 @@ function ExpertCoverageReport() {
 
             {/* Implemented Entities */}
             <div>
-              <p className="text-sm font-semibold text-green-700 mb-2">✅ Implemented Entities (6)</p>
+              <p className="text-sm font-semibold text-green-700 mb-2">âœ… Implemented Entities (6)</p>
               {coverageData.entities.existing.map((entity, idx) => (
                 <div key={idx} className="p-3 bg-green-50 border border-green-200 rounded-lg mb-2">
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-medium text-green-900">{entity.name}</span>
-                    <Badge className="bg-green-100 text-green-700">✅ {entity.coverage}% Complete</Badge>
+                    <Badge className="bg-green-100 text-green-700">âœ… {entity.coverage}% Complete</Badge>
                   </div>
                   <p className="text-xs text-slate-600 mb-2">Fields: {entity.fields.join(', ')}</p>
                   {entity.implementedFields && (
@@ -1684,7 +1670,7 @@ function ExpertCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2">
               <Zap className="h-5 w-5 text-orange-600" />
-              {t({ en: 'Components & UI Building Blocks', ar: 'المكونات والعناصر' })}
+              {t({ en: 'Components & UI Building Blocks', ar: 'Ø§Ù„Ù…ÙƒÙˆÙ†Ø§Øª ÙˆØ§Ù„Ø¹Ù†Ø§ØµØ±' })}
               <Badge className="bg-amber-100 text-amber-700">Minimal Custom Components</Badge>
             </CardTitle>
             {expandedSections.components ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
@@ -1694,13 +1680,13 @@ function ExpertCoverageReport() {
           <CardContent className="space-y-4">
             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
               <p className="text-sm text-blue-900">
-                <strong>Architecture Note:</strong> Expert system prioritizes entities, workflows, and AI features over custom components. 
+                <strong>Architecture Note:</strong> Expert system prioritizes entities, workflows, and AI features over custom components.
                 Reuses standard platform components for forms, uploads, and notifications.
               </p>
             </div>
 
             <div>
-              <p className="font-semibold text-green-900 mb-2">✅ Reused Platform Components (4)</p>
+              <p className="font-semibold text-green-900 mb-2">âœ… Reused Platform Components (4)</p>
               <div className="space-y-2">
                 {coverageData.components[0].reusablePatterns.map((pattern, i) => (
                   <div key={i} className="p-3 border rounded-lg bg-green-50 border-green-200">
@@ -1717,7 +1703,7 @@ function ExpertCoverageReport() {
             </div>
 
             <div>
-              <p className="font-semibold text-amber-900 mb-2">⚠️ Missing Custom Components (7)</p>
+              <p className="font-semibold text-amber-900 mb-2">âš ï¸ Missing Custom Components (7)</p>
               <div className="space-y-1">
                 {coverageData.components[0].missingComponents.map((comp, i) => (
                   <div key={i} className="text-sm text-amber-700 p-2 bg-amber-50 rounded border border-amber-200">
@@ -1739,7 +1725,7 @@ function ExpertCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-slate-600" />
-              {t({ en: 'Menu & Navigation Presence', ar: 'وجود القائمة والتنقل' })}
+              {t({ en: 'Menu & Navigation Presence', ar: 'ÙˆØ¬ÙˆØ¯ Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© ÙˆØ§Ù„ØªÙ†Ù‚Ù„' })}
             </CardTitle>
             {expandedSections.menu ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
           </button>
@@ -1755,7 +1741,7 @@ function ExpertCoverageReport() {
                   ))}
                 </div>
                 {nav.visibility && (
-                  <p className="text-xs text-blue-600 mt-2">🔒 {nav.visibility}</p>
+                  <p className="text-xs text-blue-600 mt-2">ðŸ”’ {nav.visibility}</p>
                 )}
               </div>
             ))}
@@ -1785,7 +1771,7 @@ function ExpertCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-purple-600" />
-              {t({ en: 'Pages & Screens', ar: 'الصفحات والشاشات' })}
+              {t({ en: 'Pages & Screens', ar: 'Ø§Ù„ØµÙØ­Ø§Øª ÙˆØ§Ù„Ø´Ø§Ø´Ø§Øª' })}
               <Badge className="bg-green-100 text-green-700">11/11 Complete</Badge>
             </CardTitle>
             {expandedSections.pages ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
@@ -1810,7 +1796,7 @@ function ExpertCoverageReport() {
                       <div className="text-xs text-slate-500">Coverage</div>
                     </div>
                   </div>
-                
+
                   {page.features && (
                     <div className="mb-2">
                       <p className="text-xs font-semibold text-slate-700 mb-1">Features:</p>
@@ -1862,7 +1848,7 @@ function ExpertCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2">
               <Workflow className="h-5 w-5 text-purple-600" />
-              {t({ en: 'Workflows & Lifecycles', ar: 'سير العمل ودورات الحياة' })}
+              {t({ en: 'Workflows & Lifecycles', ar: 'Ø³ÙŠØ± Ø§Ù„Ø¹Ù…Ù„ ÙˆØ¯ÙˆØ±Ø§Øª Ø§Ù„Ø­ÙŠØ§Ø©' })}
             </CardTitle>
             {expandedSections.workflows ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
           </button>
@@ -1909,7 +1895,7 @@ function ExpertCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2">
               <Database className="h-5 w-5 text-indigo-600" />
-              {t({ en: 'Data Model - Field Categories', ar: 'نموذج البيانات - فئات الحقول' })}
+              {t({ en: 'Data Model - Field Categories', ar: 'Ù†Ù…ÙˆØ°Ø¬ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª - ÙØ¦Ø§Øª Ø§Ù„Ø­Ù‚ÙˆÙ„' })}
             </CardTitle>
             {expandedSections.fieldCategories ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
           </button>
@@ -1946,7 +1932,7 @@ function ExpertCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2 text-teal-900">
               <Network className="h-6 w-6" />
-              {t({ en: 'Platform-Wide Integration', ar: 'التكامل على مستوى المنصة' })}
+              {t({ en: 'Platform-Wide Integration', ar: 'Ø§Ù„ØªÙƒØ§Ù…Ù„ Ø¹Ù„Ù‰ Ù…Ø³ØªÙˆÙ‰ Ø§Ù„Ù…Ù†ØµØ©' })}
               <Badge className="bg-green-100 text-green-700">Deep Integration</Badge>
             </CardTitle>
             {expandedSections.platformIntegration ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
@@ -2021,7 +2007,7 @@ function ExpertCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5 text-teal-600" />
-              {t({ en: 'User Journeys (6 Personas)', ar: 'رحلات المستخدم (6 شخصيات)' })}
+              {t({ en: 'User Journeys (6 Personas)', ar: 'Ø±Ø­Ù„Ø§Øª Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… (6 Ø´Ø®ØµÙŠØ§Øª)' })}
               <Badge className="bg-green-100 text-green-700">All Complete</Badge>
             </CardTitle>
             {expandedSections.journeys ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
@@ -2061,7 +2047,7 @@ function ExpertCoverageReport() {
                     </div>
                     <div className="mt-3 pt-3 border-t border-green-200">
                       <p className="text-xs text-slate-500">
-                        <strong>Pages Used:</strong> {journey.pages.join(' → ')}
+                        <strong>Pages Used:</strong> {journey.pages.join(' â†’ ')}
                       </p>
                     </div>
                     {journey.aiFeatures?.length > 0 && (
@@ -2087,7 +2073,7 @@ function ExpertCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2 text-red-900">
               <Shield className="h-6 w-6" />
-              {t({ en: 'RBAC & Permissions Model', ar: 'نموذج الأدوار والصلاحيات' })}
+              {t({ en: 'RBAC & Permissions Model', ar: 'Ù†Ù…ÙˆØ°Ø¬ Ø§Ù„Ø£Ø¯ÙˆØ§Ø± ÙˆØ§Ù„ØµÙ„Ø§Ø­ÙŠØ§Øª' })}
               <Badge className="bg-green-100 text-green-700">14 Permissions Defined</Badge>
             </CardTitle>
             {expandedSections.rbac ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
@@ -2097,7 +2083,7 @@ function ExpertCoverageReport() {
           <CardContent className="space-y-4">
             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
               <p className="text-sm text-blue-900">
-                <strong>Note:</strong> Expert permissions are integrated into the existing RBAC system via the Role entity. 
+                <strong>Note:</strong> Expert permissions are integrated into the existing RBAC system via the Role entity.
                 The Role entity has is_expert_role flag to designate expert roles with required expertise and certifications.
               </p>
             </div>
@@ -2142,7 +2128,7 @@ function ExpertCoverageReport() {
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-semibold text-slate-900">{rls.entity}</span>
                       <Badge className={
-                        rls.status.includes('✅') ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                        rls.status.includes('âœ…') ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                       }>{rls.status}</Badge>
                     </div>
                     <p className="text-sm text-slate-600 mb-1">{rls.rule}</p>
@@ -2164,8 +2150,8 @@ function ExpertCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2 text-indigo-900">
               <Network className="h-6 w-6" />
-              {t({ en: 'Expert Flow & Conversion Paths', ar: 'مسارات الخبراء' })}
-              <Badge className="bg-green-100 text-green-700">✅ Complete</Badge>
+              {t({ en: 'Expert Flow & Conversion Paths', ar: 'Ù…Ø³Ø§Ø±Ø§Øª Ø§Ù„Ø®Ø¨Ø±Ø§Ø¡' })}
+              <Badge className="bg-green-100 text-green-700">âœ… Complete</Badge>
             </CardTitle>
             {expandedSections.conversions ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
           </button>
@@ -2173,7 +2159,7 @@ function ExpertCoverageReport() {
         {expandedSections.conversions && (
           <CardContent className="space-y-6">
             <div>
-              <p className="font-semibold text-green-900 mb-3">✅ Implemented Flows</p>
+              <p className="font-semibold text-green-900 mb-3">âœ… Implemented Flows</p>
               <div className="space-y-3">
                 {coverageData.conversionPaths.implemented.map((path, i) => (
                   <div key={i} className="p-3 border-2 border-green-300 rounded-lg bg-green-50">
@@ -2182,8 +2168,8 @@ function ExpertCoverageReport() {
                       <Badge className="bg-green-600 text-white">{path.coverage}%</Badge>
                     </div>
                     <p className="text-sm text-slate-700 mb-1">{path.description}</p>
-                    <p className="text-xs text-blue-700">📍 {path.implementation}</p>
-                    <p className="text-xs text-purple-700 mt-1">🤖 {path.automation}</p>
+                    <p className="text-xs text-blue-700">ðŸ“ {path.implementation}</p>
+                    <p className="text-xs text-purple-700 mt-1">ðŸ¤– {path.automation}</p>
                   </div>
                 ))}
               </div>
@@ -2191,7 +2177,7 @@ function ExpertCoverageReport() {
 
             {coverageData.conversionPaths.missing?.length > 0 && (
               <div>
-                <p className="font-semibold text-amber-900 mb-3">💡 Future Enhancements</p>
+                <p className="font-semibold text-amber-900 mb-3">ðŸ’¡ Future Enhancements</p>
                 <div className="space-y-3">
                   {coverageData.conversionPaths.missing.map((path, i) => (
                     <div key={i} className="p-3 border-2 border-amber-300 rounded-lg bg-amber-50">
@@ -2200,7 +2186,7 @@ function ExpertCoverageReport() {
                         <Badge variant="outline">Optional</Badge>
                       </div>
                       <p className="text-sm text-slate-700 mb-1">{path.description}</p>
-                      <p className="text-sm text-purple-700 italic">💡 {path.rationale}</p>
+                      <p className="text-sm text-purple-700 italic">ðŸ’¡ {path.rationale}</p>
                     </div>
                   ))}
                 </div>
@@ -2219,7 +2205,7 @@ function ExpertCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2 text-blue-900">
               <Target className="h-6 w-6" />
-              {t({ en: 'Comparison Analysis', ar: 'تحليل المقارنة' })}
+              {t({ en: 'Comparison Analysis', ar: 'ØªØ­Ù„ÙŠÙ„ Ø§Ù„Ù…Ù‚Ø§Ø±Ù†Ø©' })}
             </CardTitle>
             {expandedSections.comparisons ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
           </button>
@@ -2290,7 +2276,7 @@ function ExpertCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2 text-purple-900">
               <Brain className="h-5 w-5" />
-              {t({ en: 'AI & Machine Learning Features', ar: 'ميزات الذكاء الاصطناعي' })}
+              {t({ en: 'AI & Machine Learning Features', ar: 'Ù…ÙŠØ²Ø§Øª Ø§Ù„Ø°ÙƒØ§Ø¡ Ø§Ù„Ø§ØµØ·Ù†Ø§Ø¹ÙŠ' })}
               <Badge className="bg-purple-100 text-purple-700">4/4 Implemented</Badge>
             </CardTitle>
             {expandedSections.ai ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
@@ -2344,7 +2330,7 @@ function ExpertCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-blue-600" />
-              {t({ en: 'Security & Compliance', ar: 'الأمان والامتثال' })}
+              {t({ en: 'Security & Compliance', ar: 'Ø§Ù„Ø£Ù…Ø§Ù† ÙˆØ§Ù„Ø§Ù…ØªØ«Ø§Ù„' })}
             </CardTitle>
             {expandedSections.security ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
           </button>
@@ -2357,12 +2343,12 @@ function ExpertCoverageReport() {
                   <h4 className="font-semibold text-slate-900">{item.area}</h4>
                   <Badge className={
                     item.status === 'implemented' ? 'bg-green-100 text-green-700' :
-                    item.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-red-100 text-red-700'
+                      item.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-red-100 text-red-700'
                   }>{item.status}</Badge>
                 </div>
                 <p className="text-sm text-slate-600 mb-1">{item.details}</p>
-                <p className="text-xs text-blue-600 mb-2">✅ {item.compliance}</p>
+                <p className="text-xs text-blue-600 mb-2">âœ… {item.compliance}</p>
                 {item.gaps?.length > 0 && (
                   <div className="p-2 bg-amber-50 rounded border border-amber-200">
                     {item.gaps.map((gap, i) => (
@@ -2385,7 +2371,7 @@ function ExpertCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2 text-purple-900">
               <Brain className="h-5 w-5" />
-              {t({ en: 'AI & Machine Learning Features', ar: 'ميزات الذكاء الاصطناعي' })}
+              {t({ en: 'AI & Machine Learning Features', ar: 'Ù…ÙŠØ²Ø§Øª Ø§Ù„Ø°ÙƒØ§Ø¡ Ø§Ù„Ø§ØµØ·Ù†Ø§Ø¹ÙŠ' })}
               <Badge className="bg-purple-100 text-purple-700">4/4 Implemented</Badge>
             </CardTitle>
             {expandedSections.ai ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
@@ -2439,7 +2425,7 @@ function ExpertCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2">
               <Network className="h-5 w-5 text-teal-600" />
-              {t({ en: 'Integration Across Platform', ar: 'التكامل عبر المنصة' })}
+              {t({ en: 'Integration Across Platform', ar: 'Ø§Ù„ØªÙƒØ§Ù…Ù„ Ø¹Ø¨Ø± Ø§Ù„Ù…Ù†ØµØ©' })}
             </CardTitle>
             {expandedSections.integration ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
           </button>
@@ -2480,7 +2466,7 @@ function ExpertCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2 text-amber-900">
               <AlertTriangle className="h-6 w-6" />
-              {t({ en: 'Gaps & Missing Features', ar: 'الفجوات والميزات المفقودة' })}
+              {t({ en: 'Gaps & Missing Features', ar: 'Ø§Ù„ÙØ¬ÙˆØ§Øª ÙˆØ§Ù„Ù…ÙŠØ²Ø§Øª Ø§Ù„Ù…ÙÙ‚ÙˆØ¯Ø©' })}
               <Badge className="bg-amber-600 text-white">{coverageData.gaps.critical.length + coverageData.gaps.high.length + coverageData.gaps.medium.length} Total</Badge>
             </CardTitle>
             {expandedSections.gaps ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
@@ -2545,7 +2531,7 @@ function ExpertCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2 text-blue-900">
               <Network className="h-6 w-6" />
-              {t({ en: 'Cross-Platform Integration Analysis', ar: 'تحليل التكامل عبر المنصة' })}
+              {t({ en: 'Cross-Platform Integration Analysis', ar: 'ØªØ­Ù„ÙŠÙ„ Ø§Ù„ØªÙƒØ§Ù…Ù„ Ø¹Ø¨Ø± Ø§Ù„Ù…Ù†ØµØ©' })}
               <Badge className="bg-amber-600 text-white">40+ Integration Points Checked</Badge>
             </CardTitle>
             {expandedSections.crossPlatform ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
@@ -2568,7 +2554,7 @@ function ExpertCoverageReport() {
                     {portal.missing.length > 0 && (
                       <div className="mt-2 space-y-1">
                         {portal.missing.map((item, j) => (
-                          <div key={j} className="text-xs text-amber-700">• {item}</div>
+                          <div key={j} className="text-xs text-amber-700">â€¢ {item}</div>
                         ))}
                       </div>
                     )}
@@ -2582,11 +2568,10 @@ function ExpertCoverageReport() {
               <p className="font-semibold text-slate-900 mb-3">17 Major Platform Pages</p>
               <div className="grid grid-cols-2 gap-2">
                 {coverageData.crossPlatformIntegration.majorPages.map((page, i) => (
-                  <div key={i} className={`p-2 border rounded text-xs ${
-                    page.integration.includes('✅') ? 'bg-green-50 border-green-200 text-green-700' :
-                    page.integration.includes('⚠️') ? 'bg-amber-50 border-amber-200 text-amber-700' :
-                    'bg-red-50 border-red-200 text-red-700'
-                  }`}>
+                  <div key={i} className={`p-2 border rounded text-xs ${page.integration.includes('âœ…') ? 'bg-green-50 border-green-200 text-green-700' :
+                    page.integration.includes('âš ï¸') ? 'bg-amber-50 border-amber-200 text-amber-700' :
+                      'bg-red-50 border-red-200 text-red-700'
+                    }`}>
                     <strong>{page.page}:</strong> {page.integration}
                   </div>
                 ))}
@@ -2608,7 +2593,7 @@ function ExpertCoverageReport() {
                     {dash.needed.length > 0 && (
                       <div className="mt-2 space-y-1">
                         {dash.needed.map((item, j) => (
-                          <div key={j} className="text-xs text-red-700">• Missing: {item}</div>
+                          <div key={j} className="text-xs text-red-700">â€¢ Missing: {item}</div>
                         ))}
                       </div>
                     )}
@@ -2622,11 +2607,10 @@ function ExpertCoverageReport() {
               <p className="font-semibold text-slate-900 mb-3">6 Platform Workflows</p>
               <div className="space-y-1">
                 {coverageData.crossPlatformIntegration.workflows.map((wf, i) => (
-                  <div key={i} className={`p-2 border rounded text-sm ${
-                    wf.status === 'infrastructure ready' ? 'bg-yellow-50 border-yellow-200 text-yellow-700' :
+                  <div key={i} className={`p-2 border rounded text-sm ${wf.status === 'infrastructure ready' ? 'bg-yellow-50 border-yellow-200 text-yellow-700' :
                     wf.status === 'needs integration' ? 'bg-amber-50 border-amber-200 text-amber-700' :
-                    'bg-red-50 border-red-200 text-red-700'
-                  }`}>
+                      'bg-red-50 border-red-200 text-red-700'
+                    }`}>
                     <strong>{wf.workflow}:</strong> {wf.integration} ({wf.status})
                   </div>
                 ))}
@@ -2656,10 +2640,9 @@ function ExpertCoverageReport() {
               <p className="font-semibold text-slate-900 mb-3">5 Communication Systems</p>
               <div className="space-y-1">
                 {coverageData.crossPlatformIntegration.communications.map((comm, i) => (
-                  <div key={i} className={`p-2 border rounded text-sm ${
-                    comm.status === 'integrated' ? 'bg-green-50 border-green-200 text-green-700' :
+                  <div key={i} className={`p-2 border rounded text-sm ${comm.status === 'integrated' ? 'bg-green-50 border-green-200 text-green-700' :
                     'bg-red-50 border-red-200 text-red-700'
-                  }`}>
+                    }`}>
                     <strong>{comm.feature}:</strong> {comm.integration}
                   </div>
                 ))}
@@ -2671,10 +2654,9 @@ function ExpertCoverageReport() {
               <p className="font-semibold text-slate-900 mb-3">12 Reusable Platform Components</p>
               <div className="grid grid-cols-2 gap-2">
                 {coverageData.crossPlatformIntegration.reusableComponents.map((comp, i) => (
-                  <div key={i} className={`p-2 border rounded text-xs ${
-                    comp.status === 'integrated' ? 'bg-green-50 border-green-200 text-green-700' :
+                  <div key={i} className={`p-2 border rounded text-xs ${comp.status === 'integrated' ? 'bg-green-50 border-green-200 text-green-700' :
                     'bg-red-50 border-red-200 text-red-700'
-                  }`}>
+                    }`}>
                     <strong>{comp.component}:</strong> {comp.usage}
                   </div>
                 ))}
@@ -2693,7 +2675,7 @@ function ExpertCoverageReport() {
           >
             <CardTitle className="flex items-center gap-2">
               <Target className="h-5 w-5 text-green-600" />
-              {t({ en: 'Prioritized Recommendations', ar: 'التوصيات ذات الأولوية' })}
+              {t({ en: 'Prioritized Recommendations', ar: 'Ø§Ù„ØªÙˆØµÙŠØ§Øª Ø°Ø§Øª Ø§Ù„Ø£ÙˆÙ„ÙˆÙŠØ©' })}
               <Badge className="bg-red-600 text-white">4 P0 Critical + 3 P1 High</Badge>
             </CardTitle>
             {expandedSections.recommendations ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
@@ -2702,19 +2684,19 @@ function ExpertCoverageReport() {
         {expandedSections.recommendations && (
           <CardContent className="space-y-3">
             {coverageData.recommendations.map((rec, idx) => (
-              <div key={idx} className={`p-4 border rounded-lg ${rec.priority === '✅ COMPLETED' ? 'bg-green-50 border-green-200' : 'border-slate-200'}`}>
+              <div key={idx} className={`p-4 border rounded-lg ${rec.priority === 'âœ… COMPLETED' ? 'bg-green-50 border-green-200' : 'border-slate-200'}`}>
                 <div className="flex items-center justify-between mb-2">
-                  <span className={`font-medium ${rec.priority === '✅ COMPLETED' ? 'text-green-900' : 'text-slate-900'}`}>{rec.title}</span>
+                  <span className={`font-medium ${rec.priority === 'âœ… COMPLETED' ? 'text-green-900' : 'text-slate-900'}`}>{rec.title}</span>
                   <Badge className={
-                    rec.priority === '✅ COMPLETED' ? 'bg-green-100 text-green-700' :
-                    rec.priority === 'P2' ? 'bg-slate-100 text-slate-700' :
-                    'bg-yellow-100 text-yellow-700'
+                    rec.priority === 'âœ… COMPLETED' ? 'bg-green-100 text-green-700' :
+                      rec.priority === 'P2' ? 'bg-slate-100 text-slate-700' :
+                        'bg-yellow-100 text-yellow-700'
                   }>
                     {rec.priority}
                   </Badge>
                 </div>
                 <p className="text-sm text-slate-600 mb-3">{rec.description}</p>
-                
+
                 {rec.status && (
                   <Badge className="mb-3 bg-green-100 text-green-700">{rec.status}</Badge>
                 )}
@@ -2740,7 +2722,7 @@ function ExpertCoverageReport() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-red-900">
             <AlertCircle className="h-6 w-6" />
-            {t({ en: 'Overall Assessment - CRITICAL ISSUES', ar: 'التقييم الشامل - مشاكل حرجة' })}
+            {t({ en: 'Overall Assessment - CRITICAL ISSUES', ar: 'Ø§Ù„ØªÙ‚ÙŠÙŠÙ… Ø§Ù„Ø´Ø§Ù…Ù„ - Ù…Ø´Ø§ÙƒÙ„ Ø­Ø±Ø¬Ø©' })}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -2762,54 +2744,54 @@ function ExpertCoverageReport() {
           </div>
 
           <div className="p-4 bg-green-100 rounded-lg border border-green-300">
-          <p className="text-sm font-semibold text-green-900 mb-2">✅ Bottom Line - Expert System FULLY OPERATIONAL (100% Complete)</p>
-          <p className="text-sm text-green-800">
-            <strong>Expert Management System: ALL P0 GAPS FIXED - PRODUCTION READY (100%)</strong>
-            <br/><br/>
-            <strong>✅ What's Working:</strong>
-            <br/>✅ <strong>Entities (4):</strong> ExpertProfile, ExpertAssignment, ExpertEvaluation, ExpertPanel - schemas complete
-            <br/>✅ <strong>Unified Evaluation:</strong> UnifiedEvaluationForm, EvaluationConsensusPanel, QuickEvaluationCard, EvaluationHistory - working everywhere
-            <br/>✅ <strong>All 11 Pages Enhanced:</strong> ExpertRegistry (semantic search + export), ExpertDetail (AI summary), ExpertOnboarding (complete), ExpertPerformanceDashboard (consensus + anomalies), ExpertAssignmentQueue (time tracking + workload), ExpertPanelManagement, ExpertPanelDetail (NEW - voting UI), ExpertProfileEdit (NEW - full CRUD), EvaluationAnalyticsDashboard (NEW - cross-entity), ExpertMatchingEngine (9 entities), ExpertEvaluationWorkflow (unified)
-            <br/><br/>
-            <strong>✅ What's Fixed:</strong>
-            <br/>✅ <strong>ExpertOnboarding:</strong> Step 3 renders, admin notification sent, full wizard working
-            <br/>✅ <strong>ExpertEvaluationWorkflow:</strong> Fetches entity data, uses UnifiedEvaluationForm, draft saving, view entity link
-            <br/>✅ <strong>ExpertMatchingEngine:</strong> Supports all 9 entity types, workload balancing, COI detection, email notifications, due date/hours/compensation
-            <br/>✅ <strong>ExpertPanelManagement:</strong> Expert/entity selection working, creates functional panels
-            <br/>✅ <strong>ExpertPanelDetail (NEW):</strong> Voting UI, consensus display, decision recording
-            <br/>✅ <strong>ExpertProfileEdit (NEW):</strong> Full edit page with bilingual bio, expertise, sectors, availability
-            <br/>✅ <strong>EvaluationAnalyticsDashboard (NEW):</strong> Cross-entity metrics, top evaluators, charts, consensus tracking
-            <br/>✅ <strong>ExpertRegistry Enhanced:</strong> Semantic AI search + XLSX export + match scoring
-            <br/>✅ <strong>ExpertPerformanceDashboard Enhanced:</strong> Consensus rate + AI burnout prediction + anomaly alerts
-            <br/>✅ <strong>ExpertAssignmentQueue Enhanced:</strong> Time tracking (hours_actual) + workload bars
-            <br/>✅ <strong>ExpertDetail Enhanced:</strong> AI summary generator (strengths, recommendations, value prop)
-            <br/><br/>
-            <strong>✅ 0 CRITICAL GAPS (P0)</strong> | <strong>⚠️ {coverageData.gaps.high.length} OPTIONAL ENHANCEMENTS (P1)</strong>
-            <br/><br/>
-            <strong>📊 Entity Integration:</strong> 9/9 entity types supported (Challenge, Pilot, Solution, RDProposal, RDProject, ProgramApplication, MatchmakerApplication, ScalingPlan, CitizenIdea)
-            <br/><strong>🤖 AI Integration:</strong> 100% - CV extraction, semantic matching, workload balancing, COI detection all working
-            <br/><br/>
-            <strong>✅ Status:</strong> Expert system PRODUCTION READY. All core workflows operational. P1 gaps are optional enhancements only.
-          </p>
+            <p className="text-sm font-semibold text-green-900 mb-2">âœ… Bottom Line - Expert System FULLY OPERATIONAL (100% Complete)</p>
+            <p className="text-sm text-green-800">
+              <strong>Expert Management System: ALL P0 GAPS FIXED - PRODUCTION READY (100%)</strong>
+              <br /><br />
+              <strong>âœ… What's Working:</strong>
+              <br />âœ… <strong>Entities (4):</strong> ExpertProfile, ExpertAssignment, ExpertEvaluation, ExpertPanel - schemas complete
+              <br />âœ… <strong>Unified Evaluation:</strong> UnifiedEvaluationForm, EvaluationConsensusPanel, QuickEvaluationCard, EvaluationHistory - working everywhere
+              <br />âœ… <strong>All 11 Pages Enhanced:</strong> ExpertRegistry (semantic search + export), ExpertDetail (AI summary), ExpertOnboarding (complete), ExpertPerformanceDashboard (consensus + anomalies), ExpertAssignmentQueue (time tracking + workload), ExpertPanelManagement, ExpertPanelDetail (NEW - voting UI), ExpertProfileEdit (NEW - full CRUD), EvaluationAnalyticsDashboard (NEW - cross-entity), ExpertMatchingEngine (9 entities), ExpertEvaluationWorkflow (unified)
+              <br /><br />
+              <strong>âœ… What's Fixed:</strong>
+              <br />âœ… <strong>ExpertOnboarding:</strong> Step 3 renders, admin notification sent, full wizard working
+              <br />âœ… <strong>ExpertEvaluationWorkflow:</strong> Fetches entity data, uses UnifiedEvaluationForm, draft saving, view entity link
+              <br />âœ… <strong>ExpertMatchingEngine:</strong> Supports all 9 entity types, workload balancing, COI detection, email notifications, due date/hours/compensation
+              <br />âœ… <strong>ExpertPanelManagement:</strong> Expert/entity selection working, creates functional panels
+              <br />âœ… <strong>ExpertPanelDetail (NEW):</strong> Voting UI, consensus display, decision recording
+              <br />âœ… <strong>ExpertProfileEdit (NEW):</strong> Full edit page with bilingual bio, expertise, sectors, availability
+              <br />âœ… <strong>EvaluationAnalyticsDashboard (NEW):</strong> Cross-entity metrics, top evaluators, charts, consensus tracking
+              <br />âœ… <strong>ExpertRegistry Enhanced:</strong> Semantic AI search + XLSX export + match scoring
+              <br />âœ… <strong>ExpertPerformanceDashboard Enhanced:</strong> Consensus rate + AI burnout prediction + anomaly alerts
+              <br />âœ… <strong>ExpertAssignmentQueue Enhanced:</strong> Time tracking (hours_actual) + workload bars
+              <br />âœ… <strong>ExpertDetail Enhanced:</strong> AI summary generator (strengths, recommendations, value prop)
+              <br /><br />
+              <strong>âœ… 0 CRITICAL GAPS (P0)</strong> | <strong>âš ï¸ {coverageData.gaps.high.length} OPTIONAL ENHANCEMENTS (P1)</strong>
+              <br /><br />
+              <strong>ðŸ“Š Entity Integration:</strong> 9/9 entity types supported (Challenge, Pilot, Solution, RDProposal, RDProject, ProgramApplication, MatchmakerApplication, ScalingPlan, CitizenIdea)
+              <br /><strong>ðŸ¤– AI Integration:</strong> 100% - CV extraction, semantic matching, workload balancing, COI detection all working
+              <br /><br />
+              <strong>âœ… Status:</strong> Expert system PRODUCTION READY. All core workflows operational. P1 gaps are optional enhancements only.
+            </p>
           </div>
 
           <div className="grid grid-cols-4 gap-3 text-center">
-          <div className="p-3 bg-white rounded-lg border">
-            <p className="text-2xl font-bold text-green-600">11/11</p>
-            <p className="text-xs text-slate-600">Pages Working</p>
-          </div>
-          <div className="p-3 bg-white rounded-lg border">
-            <p className="text-2xl font-bold text-green-600">{implementedAI}/4</p>
-            <p className="text-xs text-slate-600">AI Features Working</p>
-          </div>
-          <div className="p-3 bg-white rounded-lg border">
-            <p className="text-2xl font-bold text-green-600">4/4</p>
-            <p className="text-xs text-slate-600">Workflows Functional</p>
-          </div>
-          <div className="p-3 bg-white rounded-lg border">
-            <p className="text-2xl font-bold text-green-600">{integrationPoints}/9</p>
-            <p className="text-xs text-slate-600">Entity Types Supported</p>
-          </div>
+            <div className="p-3 bg-white rounded-lg border">
+              <p className="text-2xl font-bold text-green-600">11/11</p>
+              <p className="text-xs text-slate-600">Pages Working</p>
+            </div>
+            <div className="p-3 bg-white rounded-lg border">
+              <p className="text-2xl font-bold text-green-600">{implementedAI}/4</p>
+              <p className="text-xs text-slate-600">AI Features Working</p>
+            </div>
+            <div className="p-3 bg-white rounded-lg border">
+              <p className="text-2xl font-bold text-green-600">4/4</p>
+              <p className="text-xs text-slate-600">Workflows Functional</p>
+            </div>
+            <div className="p-3 bg-white rounded-lg border">
+              <p className="text-2xl font-bold text-green-600">{integrationPoints}/9</p>
+              <p className="text-xs text-slate-600">Entity Types Supported</p>
+            </div>
           </div>
         </CardContent>
       </Card>

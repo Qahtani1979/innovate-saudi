@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,15 +19,21 @@ export default function RDProjectKickoffWorkflow({ project, onClose }) {
 
   const kickoffMutation = useMutation({
     mutationFn: async (data) => {
-      await base44.entities.RDProject.update(project.id, {
-        status: 'active',
-        timeline: {
-          ...project.timeline,
-          start_date: data.kickoffDate,
-          milestones: data.milestones
-        },
-        kickoff_notes: data.notes
-      });
+      const { supabase } = await import('@/integrations/supabase/client');
+
+      const { error } = await supabase
+        .from('rd_projects')
+        .update({
+          status: 'active',
+          timeline: {
+            ...project.timeline,
+            start_date: data.kickoffDate,
+            milestones: data.milestones
+          },
+          kickoff_notes: data.notes
+        })
+        .eq('id', project.id);
+      if (error) throw error;
 
       await createNotification({
         title: 'R&D Project Kicked Off',
@@ -50,13 +55,13 @@ export default function RDProjectKickoffWorkflow({ project, onClose }) {
   const generateMilestones = () => {
     const duration = project.duration_months || 12;
     const milestones = [];
-    
+
     // Generate quarterly milestones
     for (let i = 1; i <= Math.ceil(duration / 3); i++) {
       const monthOffset = i * 3;
       const dueDate = new Date(kickoffDate);
       dueDate.setMonth(dueDate.getMonth() + monthOffset);
-      
+
       milestones.push({
         name: `Q${i} Review`,
         description: `Quarter ${i} progress review and deliverables`,
@@ -145,9 +150,9 @@ export default function RDProjectKickoffWorkflow({ project, onClose }) {
                 {t({ en: 'Auto-Generated Milestones', ar: 'المعالم المُنشأة تلقائياً' })}
               </p>
               <p className="text-xs text-slate-700">
-                {t({ 
-                  en: `${Math.ceil((project.duration_months || 12) / 3)} quarterly review milestones + final deliverables will be created`, 
-                  ar: `سيتم إنشاء ${Math.ceil((project.duration_months || 12) / 3)} معالم مراجعة ربع سنوية + المخرجات النهائية` 
+                {t({
+                  en: `${Math.ceil((project.duration_months || 12) / 3)} quarterly review milestones + final deliverables will be created`,
+                  ar: `سيتم إنشاء ${Math.ceil((project.duration_months || 12) / 3)} معالم مراجعة ربع سنوية + المخرجات النهائية`
                 })}
               </p>
             </div>

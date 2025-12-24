@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useResearchers } from '@/hooks/useResearchers';
+import { useRDProjectsWithVisibility } from '@/hooks/useRDProjectsWithVisibility';
+import { useRDCallsWithVisibility } from '@/hooks/useRDCallsWithVisibility';
+import { useRDProposals } from '@/hooks/useMatchmakerApplications';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -16,25 +18,10 @@ function AcademiaCoverageReport() {
   const { language, isRTL, t } = useLanguage();
   const [expandedSections, setExpandedSections] = useState({});
 
-  const { data: researchers = [] } = useQuery({
-    queryKey: ['researchers-coverage'],
-    queryFn: () => base44.entities.ResearcherProfile.list()
-  });
-
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects-coverage'],
-    queryFn: () => base44.entities.RDProject.list()
-  });
-
-  const { data: rdCalls = [] } = useQuery({
-    queryKey: ['rd-calls-coverage'],
-    queryFn: () => base44.entities.RDCall.list()
-  });
-
-  const { data: rdProposals = [] } = useQuery({
-    queryKey: ['rd-proposals-coverage'],
-    queryFn: () => base44.entities.RDProposal.list()
-  });
+  const { data: researchers = [] } = useResearchers({ limit: 1000 });
+  const { data: rdProjects = [] } = useRDProjectsWithVisibility({ limit: 1000 });
+  const { data: rdCalls = [] } = useRDCallsWithVisibility({ limit: 1000 });
+  const { data: rdProposals = [] } = useRDProposals();
 
   const toggleSection = (key) => {
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
@@ -780,7 +767,7 @@ function AcademiaCoverageReport() {
     rbacAndExpertSystem: {
       status: '✅ COMPLETE',
       description: 'R&D evaluation, researcher verification, and expert review system fully operational',
-      
+
       permissions: [
         { key: 'rd_proposal_create', description: 'Submit R&D proposals', roles: ['Researcher', 'PI'] },
         { key: 'rd_proposal_review', description: 'Review proposals', roles: ['R&D Expert', 'Admin'] },
@@ -793,7 +780,7 @@ function AcademiaCoverageReport() {
         { key: 'ethics_review', description: 'Conduct ethics reviews', roles: ['Ethics Committee', 'Admin'] },
         { key: 'rd_evaluate', description: 'Evaluate R&D outputs', roles: ['R&D Expert', 'Admin'] }
       ],
-      
+
       roles: [
         {
           name: 'Researcher / Principal Investigator',
@@ -832,7 +819,7 @@ function AcademiaCoverageReport() {
           description: 'Full R&D system management'
         }
       ],
-      
+
       expertIntegration: {
         status: '✅ COMPLETE',
         description: 'Multi-level expert evaluation system',
@@ -849,7 +836,7 @@ function AcademiaCoverageReport() {
         coverage: 100,
         gaps: []
       },
-      
+
       verificationWorkflow: {
         stages: [
           { name: 'Researcher submits profile', status: 'complete', automation: 'ResearcherProfile entity' },
@@ -864,7 +851,7 @@ function AcademiaCoverageReport() {
         coverage: 100,
         gaps: []
       },
-      
+
       accessControlPatterns: [
         { pattern: 'Researcher Ownership', rule: 'WHERE created_by = user.email OR team_members CONTAINS email', entities: ['RDProposal', 'RDProject'] },
         { pattern: 'Institutional Scoping', rule: 'WHERE institution_id = user.institution_id', entities: ['RDProject (for TTO)'] },
@@ -1362,7 +1349,7 @@ function AcademiaCoverageReport() {
                         <h4 className="font-semibold text-slate-900">{page.name}</h4>
                         <Badge className={
                           page.status === 'exists' ? 'bg-green-100 text-green-700' :
-                          'bg-red-100 text-red-700'
+                            'bg-red-100 text-red-700'
                         }>
                           {page.status}
                         </Badge>
@@ -1499,26 +1486,24 @@ function AcademiaCoverageReport() {
                   <h4 className="font-semibold text-slate-900 text-lg">{journey.persona}</h4>
                   <Badge className={
                     journey.coverage >= 90 ? 'bg-green-100 text-green-700' :
-                    journey.coverage >= 70 ? 'bg-yellow-100 text-yellow-700' :
-                    journey.coverage >= 50 ? 'bg-orange-100 text-orange-700' :
-                    'bg-red-100 text-red-700'
+                      journey.coverage >= 70 ? 'bg-yellow-100 text-yellow-700' :
+                        journey.coverage >= 50 ? 'bg-orange-100 text-orange-700' :
+                          'bg-red-100 text-red-700'
                   }>{journey.coverage}% Complete</Badge>
                 </div>
                 <div className="space-y-2">
                   {journey.journey.map((step, i) => (
                     <div key={i} className="flex items-start gap-3">
                       <div className="flex flex-col items-center">
-                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                          step.status === 'complete' ? 'bg-green-100 text-green-700' :
+                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${step.status === 'complete' ? 'bg-green-100 text-green-700' :
                           step.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
+                            'bg-red-100 text-red-700'
+                          }`}>
                           {i + 1}
                         </div>
                         {i < journey.journey.length - 1 && (
-                          <div className={`w-0.5 h-8 ${
-                            step.status === 'complete' ? 'bg-green-300' : 'bg-slate-200'
-                          }`} />
+                          <div className={`w-0.5 h-8 ${step.status === 'complete' ? 'bg-green-300' : 'bg-slate-200'
+                            }`} />
                         )}
                       </div>
                       <div className="flex-1 pt-1">
@@ -1583,22 +1568,20 @@ function AcademiaCoverageReport() {
             </div>
             <div className="space-y-4">
               {coverageData.aiFeatures.map((ai, idx) => (
-                <div key={idx} className={`p-4 border rounded-lg ${
-                  ai.status === 'implemented' ? 'bg-gradient-to-r from-purple-50 to-pink-50' :
+                <div key={idx} className={`p-4 border rounded-lg ${ai.status === 'implemented' ? 'bg-gradient-to-r from-purple-50 to-pink-50' :
                   ai.status === 'partial' ? 'bg-yellow-50' : 'bg-red-50'
-                }`}>
+                  }`}>
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Sparkles className={`h-5 w-5 ${
-                        ai.status === 'implemented' ? 'text-purple-600' :
+                      <Sparkles className={`h-5 w-5 ${ai.status === 'implemented' ? 'text-purple-600' :
                         ai.status === 'partial' ? 'text-yellow-600' : 'text-red-600'
-                      }`} />
+                        }`} />
                       <h4 className="font-semibold text-slate-900">{ai.name}</h4>
                     </div>
                     <Badge className={
                       ai.status === 'implemented' ? 'bg-green-100 text-green-700' :
-                      ai.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-red-100 text-red-700'
+                        ai.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
                     }>{ai.coverage}%</Badge>
                   </div>
                   <p className="text-sm text-slate-600 mb-2">{ai.description}</p>
@@ -1653,11 +1636,11 @@ function AcademiaCoverageReport() {
               <p className="font-bold text-red-900 mb-2">🚨 CRITICAL: Research Without Knowledge Capture</p>
               <p className="text-sm text-red-800">
                 Academia has <strong>GOOD INTAKE</strong> (80%): researchers register, calls published, proposals submitted, projects executed.
-                <br/><br/>
+                <br /><br />
                 But <strong>ZERO KNOWLEDGE OUTPUT</strong> (0%): R&D outputs do not feed knowledge base, do not inform policy, publications not indexed.
-                <br/><br/>
+                <br /><br />
                 Research happens <strong>IN ISOLATION</strong> - knowledge created but not captured by platform.
-                <br/>
+                <br />
                 Also <strong>NO COMMERCIALIZATION</strong> (0%): R&D produces IP but no pathway to startups or market.
               </p>
             </div>
@@ -1666,17 +1649,16 @@ function AcademiaCoverageReport() {
               <p className="font-semibold text-green-900 mb-3">← INPUT Paths (Good - 80%)</p>
               <div className="space-y-3">
                 {coverageData.conversionPaths.incoming.map((path, i) => (
-                  <div key={i} className={`p-3 border-2 rounded-lg ${
-                    path.coverage >= 80 ? 'border-green-300 bg-green-50' :
+                  <div key={i} className={`p-3 border-2 rounded-lg ${path.coverage >= 80 ? 'border-green-300 bg-green-50' :
                     path.coverage >= 50 ? 'border-yellow-300 bg-yellow-50' :
-                    'border-red-300 bg-red-50'
-                  }`}>
+                      'border-red-300 bg-red-50'
+                    }`}>
                     <div className="flex items-center justify-between mb-2">
                       <p className="font-bold">{path.path}</p>
                       <Badge className={
                         path.coverage >= 80 ? 'bg-green-600 text-white' :
-                        path.coverage >= 50 ? 'bg-yellow-600 text-white' :
-                        'bg-red-600 text-white'
+                          path.coverage >= 50 ? 'bg-yellow-600 text-white' :
+                            'bg-red-600 text-white'
                       }>{path.coverage}%</Badge>
                     </div>
                     <p className="text-sm text-slate-700 mb-1">{path.description}</p>
@@ -1698,17 +1680,16 @@ function AcademiaCoverageReport() {
               <p className="font-semibold text-red-900 mb-3">→ OUTPUT Paths (KNOWLEDGE MISSING - 0%)</p>
               <div className="space-y-3">
                 {coverageData.conversionPaths.outgoing.map((path, i) => (
-                  <div key={i} className={`p-3 border-2 rounded-lg ${
-                    path.coverage >= 80 ? 'border-green-300 bg-green-50' :
+                  <div key={i} className={`p-3 border-2 rounded-lg ${path.coverage >= 80 ? 'border-green-300 bg-green-50' :
                     path.coverage >= 50 ? 'border-yellow-300 bg-yellow-50' :
-                    'border-red-300 bg-red-50'
-                  }`}>
+                      'border-red-300 bg-red-50'
+                    }`}>
                     <div className="flex items-center justify-between mb-2">
                       <p className="font-bold">{path.path}</p>
                       <Badge className={
                         path.coverage >= 80 ? 'bg-green-600 text-white' :
-                        path.coverage >= 50 ? 'bg-yellow-600 text-white' :
-                        'bg-red-600 text-white'
+                          path.coverage >= 50 ? 'bg-yellow-600 text-white' :
+                            'bg-red-600 text-white'
                       }>{path.coverage}%</Badge>
                     </div>
                     <p className="text-sm text-slate-700 mb-1">{path.description}</p>
@@ -1938,19 +1919,18 @@ function AcademiaCoverageReport() {
         <CardContent>
           <div className="space-y-3">
             {coverageData.recommendations.map((rec, idx) => (
-              <div key={idx} className={`p-4 border-2 rounded-lg ${
-                rec.priority === 'P0' ? 'border-red-300 bg-red-50' :
+              <div key={idx} className={`p-4 border-2 rounded-lg ${rec.priority === 'P0' ? 'border-red-300 bg-red-50' :
                 rec.priority === 'P1' ? 'border-orange-300 bg-orange-50' :
-                rec.priority === 'P2' ? 'border-yellow-300 bg-yellow-50' :
-                'border-blue-300 bg-blue-50'
-              }`}>
+                  rec.priority === 'P2' ? 'border-yellow-300 bg-yellow-50' :
+                    'border-blue-300 bg-blue-50'
+                }`}>
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Badge className={
                       rec.priority === 'P0' ? 'bg-red-600 text-white' :
-                      rec.priority === 'P1' ? 'bg-orange-600 text-white' :
-                      rec.priority === 'P2' ? 'bg-yellow-600 text-white' :
-                      'bg-blue-600 text-white'
+                        rec.priority === 'P1' ? 'bg-orange-600 text-white' :
+                          rec.priority === 'P2' ? 'bg-yellow-600 text-white' :
+                            'bg-blue-600 text-white'
                     }>
                       {rec.priority}
                     </Badge>
@@ -2008,15 +1988,15 @@ function AcademiaCoverageReport() {
             <p className="text-sm font-semibold text-red-900 mb-2">🚨 Critical Assessment</p>
             <p className="text-sm text-red-800">
               Academia has {overallCoverage}% coverage with <strong>ISOLATED RESEARCH</strong> problem:
-              <br/><br/>
+              <br /><br />
               <strong>R&D WORKFLOW</strong> (80%) is GOOD - calls published, proposals submitted, projects executed, TRL tracked.
-              <br/>
+              <br />
               <strong>KNOWLEDGE OUTPUT</strong> (0%) is MISSING - R&D outputs do not enrich knowledge base, do not inform policy, publications not indexed.
-              <br/>
+              <br />
               <strong>COMMERCIALIZATION</strong> (0%) is MISSING - R&D produces IP but no pathway to startups/market.
-              <br/><br/>
+              <br /><br />
               Research happens but knowledge <strong>STAYS IN SILOS</strong> - does not feed back into platform intelligence or municipal decision-making.
-              <br/>
+              <br />
               Also: Researchers not verified (fraud risk), no recognition (demotivates), municipalities cannot engage with R&D.
             </p>
           </div>
@@ -2025,18 +2005,18 @@ function AcademiaCoverageReport() {
             <p className="text-sm font-semibold text-blue-900 mb-2">🎯 Bottom Line</p>
             <p className="text-sm text-blue-800">
               <strong>ACADEMIA has RESEARCH WITHOUT KNOWLEDGE CAPTURE.</strong>
-              <br/>
+              <br />
               <strong>Fix priorities:</strong>
-              <br/>1. Build R&D→Knowledge/Policy workflows (MOST CRITICAL - capture research outputs)
-              <br/>2. Build R&D→Startup commercialization (IP transfer, spin-offs)
-              <br/>3. Build Challenge→RDCall auto-generation (close municipal needs gap)
-              <br/>4. Build researcher verification & credentialing
-              <br/>5. INTEGRATE all AI components (10 tools unused)
-              <br/>6. Build publication auto-import & intelligence
-              <br/>7. Build institutional impact dashboard
-              <br/>8. Build municipality R&D engagement tools
-              <br/>9. Build researcher recognition system
-              <br/>10. Build multi-institution collaboration tools
+              <br />1. Build R&D→Knowledge/Policy workflows (MOST CRITICAL - capture research outputs)
+              <br />2. Build R&D→Startup commercialization (IP transfer, spin-offs)
+              <br />3. Build Challenge→RDCall auto-generation (close municipal needs gap)
+              <br />4. Build researcher verification & credentialing
+              <br />5. INTEGRATE all AI components (10 tools unused)
+              <br />6. Build publication auto-import & intelligence
+              <br />7. Build institutional impact dashboard
+              <br />8. Build municipality R&D engagement tools
+              <br />9. Build researcher recognition system
+              <br />10. Build multi-institution collaboration tools
             </p>
           </div>
 

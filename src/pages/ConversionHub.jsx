@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { usePlatformAnalytics } from '@/hooks/usePlatformAnalytics';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,72 +21,20 @@ function ConversionHub() {
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Fetch all entities that can be converted
-  const { data: challenges } = useQuery({
-    queryKey: ['challenges-for-conversion'],
-    queryFn: () => base44.entities.Challenge.list(),
-    initialData: []
-  });
-
-  const { data: pilots } = useQuery({
-    queryKey: ['pilots-for-conversion'],
-    queryFn: () => base44.entities.Pilot.list(),
-    initialData: []
-  });
-
-  const { data: citizenIdeas } = useQuery({
-    queryKey: ['ideas-for-conversion'],
-    queryFn: () => base44.entities.CitizenIdea.list(),
-    initialData: []
-  });
-
-  const { data: innovationProposals } = useQuery({
-    queryKey: ['proposals-for-conversion'],
-    queryFn: () => base44.entities.InnovationProposal.list(),
-    initialData: []
-  });
-
-  const { data: rdProjects } = useQuery({
-    queryKey: ['rd-for-conversion'],
-    queryFn: () => base44.entities.RDProject.list(),
-    initialData: []
-  });
-
-  const { data: solutions } = useQuery({
-    queryKey: ['solutions-for-conversion'],
-    queryFn: () => base44.entities.Solution.list(),
-    initialData: []
-  });
-
-  const { data: scalingPlans } = useQuery({
-    queryKey: ['scaling-for-conversion'],
-    queryFn: () => base44.entities.ScalingPlan.list(),
-    initialData: []
-  });
-
-  const { data: policies } = useQuery({
-    queryKey: ['policies-for-conversion'],
-    queryFn: () => base44.entities.PolicyRecommendation.list(),
-    initialData: []
-  });
-
-  const { data: contracts } = useQuery({
-    queryKey: ['contracts-for-conversion'],
-    queryFn: () => base44.entities.Contract.list(),
-    initialData: []
-  });
-
-  const { data: challengeRelations } = useQuery({
-    queryKey: ['challenge-relations'],
-    queryFn: () => base44.entities.ChallengeRelation.list(),
-    initialData: []
-  });
-
-  const { data: rdCalls } = useQuery({
-    queryKey: ['rd-calls'],
-    queryFn: () => base44.entities.RDCall.list(),
-    initialData: []
-  });
+  /* Refactored to use usePlatformAnalytics hook */
+  const {
+    challenges,
+    pilots,
+    citizenIdeas,
+    innovationProposals,
+    rdProjects,
+    solutions,
+    scalingPlans,
+    policies,
+    contracts,
+    challengeRelations,
+    rdCalls
+  } = usePlatformAnalytics();
 
   // Helper: Check if conversion already exists
   const getConversionStatus = (sourceId, conversionType) => {
@@ -95,96 +42,96 @@ function ConversionHub() {
     let canConvertAgain = true;
     let singleUse = false;
 
-    switch(conversionType) {
+    switch (conversionType) {
       case 'challenge_to_pilot':
         count = pilots.filter(p => p.challenge_id === sourceId).length;
         canConvertAgain = true; // Can create multiple pilots per challenge
         break;
-      
+
       case 'challenge_to_rd_call':
         count = rdCalls.filter(r => r.challenge_ids?.includes(sourceId)).length;
         canConvertAgain = true; // Can create multiple R&D calls
         break;
-      
+
       case 'challenge_to_policy':
         count = policies.filter(p => p.challenge_id === sourceId).length;
         canConvertAgain = true; // Can create multiple policies
         break;
-      
+
       case 'challenge_to_program':
         count = 0; // Not implemented yet
         canConvertAgain = true;
         break;
-      
+
       case 'pilot_to_rd':
         count = rdProjects.filter(r => r.pilot_id === sourceId || r.linked_pilot_ids?.includes(sourceId)).length;
         canConvertAgain = count === 0; // Usually one R&D follow-up per pilot
         break;
-      
+
       case 'pilot_to_policy':
         count = policies.filter(p => p.pilot_id === sourceId).length;
         canConvertAgain = true; // Can generate multiple policy recommendations
         break;
-      
+
       case 'pilot_to_procurement':
         count = contracts.filter(c => c.entity_type === 'pilot' && c.entity_id === sourceId).length;
         canConvertAgain = count === 0; // Usually one procurement per pilot
         singleUse = true;
         break;
-      
+
       case 'pilot_to_scaling':
         count = scalingPlans.filter(s => s.pilot_id === sourceId).length;
         canConvertAgain = count === 0; // One scaling plan per pilot
         singleUse = true;
         break;
-      
+
       case 'citizen_idea_to_challenge':
         const idea = citizenIdeas.find(i => i.id === sourceId);
         count = idea?.converted_challenge_id ? 1 : 0;
         canConvertAgain = count === 0; // 1-to-1 conversion
         singleUse = true;
         break;
-      
+
       case 'citizen_idea_to_solution':
         const idea2 = citizenIdeas.find(i => i.id === sourceId);
         count = idea2?.status === 'converted_to_challenge' ? 1 : 0; // Approximate
         canConvertAgain = true; // Can become both challenge AND solution
         break;
-      
+
       case 'innovation_proposal_to_pilot':
         const proposal = innovationProposals.find(p => p.id === sourceId);
         count = proposal?.converted_entity_id && proposal?.converted_entity_type === 'pilot' ? 1 : 0;
         canConvertAgain = count === 0; // 1-to-1 conversion
         singleUse = true;
         break;
-      
+
       case 'innovation_proposal_to_challenge':
         const proposal2 = innovationProposals.find(p => p.id === sourceId);
         count = proposal2?.converted_entity_type === 'challenge' ? 1 : 0;
         canConvertAgain = count === 0;
         singleUse = true;
         break;
-      
+
       case 'rd_to_pilot':
         count = pilots.filter(p => p.linked_rd_project_id === sourceId).length;
         canConvertAgain = true; // Can create multiple pilots from one R&D
         break;
-      
+
       case 'rd_to_solution':
         count = 0; // Not tracked yet
         canConvertAgain = true;
         break;
-      
+
       case 'rd_to_policy':
         count = policies.filter(p => p.rd_project_id === sourceId).length;
         canConvertAgain = true;
         break;
-      
+
       case 'solution_to_pilot':
         count = pilots.filter(p => p.solution_id === sourceId).length;
         canConvertAgain = true; // Solution can be tested in multiple pilots
         break;
-      
+
       case 'scaling_to_program':
       case 'policy_to_program':
         count = 0; // Not tracked yet
@@ -463,28 +410,28 @@ function ConversionHub() {
   });
 
   // Filter by active tab
-  const filteredOpportunities = activeTab === 'all' 
-    ? conversionOpportunities 
+  const filteredOpportunities = activeTab === 'all'
+    ? conversionOpportunities
     : conversionOpportunities.filter(c => c.source === activeTab);
 
   // Search filter
   const searchFiltered = filteredOpportunities.filter(c => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
-    return c.source.toLowerCase().includes(q) || 
-           c.target.toLowerCase().includes(q) ||
-           c.eligibleRecords.some(r => 
-             (r.title_en?.toLowerCase().includes(q)) || 
-             (r.title_ar?.includes(q)) ||
-             (r.name_en?.toLowerCase().includes(q)) ||
-             (r.name_ar?.includes(q)) ||
-             (r.title?.toLowerCase().includes(q))
-           );
+    return c.source.toLowerCase().includes(q) ||
+      c.target.toLowerCase().includes(q) ||
+      c.eligibleRecords.some(r =>
+        (r.title_en?.toLowerCase().includes(q)) ||
+        (r.title_ar?.includes(q)) ||
+        (r.name_en?.toLowerCase().includes(q)) ||
+        (r.name_ar?.includes(q)) ||
+        (r.title?.toLowerCase().includes(q))
+      );
   });
 
   const getRecordTitle = (record) => {
     return (language === 'ar' && record.title_ar) ? record.title_ar :
-           record.title_en || record.name_en || record.title || record.name_ar || record.code || 'Untitled';
+      record.title_en || record.name_en || record.title || record.name_ar || record.code || 'Untitled';
   };
 
   return (
@@ -498,7 +445,7 @@ function ConversionHub() {
               {t({ en: 'Conversion Control Center', ar: 'مركز التحكم بالتحويلات' })}
             </h1>
             <p className="text-lg text-white/90 mt-2">
-              {t({ 
+              {t({
                 en: 'Real-time conversion opportunities across the innovation pipeline',
                 ar: 'فرص التحويل المباشر عبر خط الابتكار'
               })}
@@ -582,7 +529,7 @@ function ConversionHub() {
           ) : (
             searchFiltered.map((opportunity) => {
               const Icon = opportunity.icon;
-              
+
               if (opportunity.eligibleRecords.length === 0) return null;
 
               return (
@@ -641,7 +588,7 @@ function ConversionHub() {
                       <div className="space-y-2 max-h-64 overflow-y-auto">
                         {opportunity.eligibleRecords.map((record, idx) => {
                           const conversionStatus = getConversionStatus(record.id, opportunity.id);
-                          
+
                           return (
                             <Link
                               key={record.id}
@@ -672,7 +619,7 @@ function ConversionHub() {
                                         {record.stage}
                                       </Badge>
                                     )}
-                                    
+
                                     {/* Conversion Status Badge */}
                                     {conversionStatus.count > 0 && (
                                       <Badge className={conversionStatus.canConvertAgain ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}>
@@ -702,17 +649,17 @@ function ConversionHub() {
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <Button 
-                                    size="sm" 
+                                  <Button
+                                    size="sm"
                                     className="bg-gradient-to-r from-blue-600 to-purple-600"
                                     disabled={conversionStatus.singleUse && conversionStatus.count > 0 && !conversionStatus.canConvertAgain}
                                   >
                                     <ExternalLink className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                                    {conversionStatus.count > 0 && !conversionStatus.singleUse ? 
+                                    {conversionStatus.count > 0 && !conversionStatus.singleUse ?
                                       t({ en: 'Add Another', ar: 'إضافة آخر' }) :
                                       conversionStatus.singleUse && conversionStatus.count > 0 ?
-                                      t({ en: 'View Existing', ar: 'عرض الموجود' }) :
-                                      t({ en: 'Open & Convert', ar: 'فتح وتحويل' })
+                                        t({ en: 'View Existing', ar: 'عرض الموجود' }) :
+                                        t({ en: 'Open & Convert', ar: 'فتح وتحويل' })
                                     }
                                   </Button>
                                 </div>

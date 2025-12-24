@@ -5,7 +5,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import { CheckCircle2, X, Sparkles, Send, Loader2, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
@@ -19,7 +18,7 @@ export default function ProposalSubmissionWizard({ proposal, rdCall, onClose }) 
   const [step, setStep] = useState(1);
   const [notes, setNotes] = useState('');
   const [aiBrief, setAiBrief] = useState(null);
-  
+
   const [checklist, setChecklist] = useState({
     title_complete: false,
     abstract_clear: false,
@@ -38,13 +37,19 @@ export default function ProposalSubmissionWizard({ proposal, rdCall, onClose }) 
 
   const submitMutation = useMutation({
     mutationFn: async () => {
-      await base44.entities.RDProposal.update(proposal.id, {
-        status: 'submitted',
-        submission_date: new Date().toISOString(),
-        submission_checklist: checklist,
-        submission_notes: notes,
-        ai_submission_brief: aiBrief
-      });
+      const { supabase } = await import('@/integrations/supabase/client');
+
+      const { error } = await supabase
+        .from('rd_proposals')
+        .update({
+          status: 'submitted',
+          submission_date: new Date().toISOString(),
+          submission_checklist: checklist,
+          submission_notes: notes,
+          ai_submission_brief: aiBrief
+        })
+        .eq('id', proposal.id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['rdProposal']);
@@ -92,7 +97,7 @@ export default function ProposalSubmissionWizard({ proposal, rdCall, onClose }) 
       </CardHeader>
       <CardContent className="space-y-6 pt-6">
         <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
-        
+
         {/* Step 1: Readiness Checklist */}
         {step === 1 && (
           <div className="space-y-4">
@@ -103,7 +108,7 @@ export default function ProposalSubmissionWizard({ proposal, rdCall, onClose }) 
 
             <div className="space-y-3">
               <h4 className="font-semibold text-slate-900">{t({ en: 'Submission Checklist', ar: 'قائمة التحقق من التقديم' })}</h4>
-              
+
               {[
                 { key: 'title_complete', label: { en: 'Title in both languages', ar: 'العنوان باللغتين' } },
                 { key: 'abstract_clear', label: { en: 'Clear research abstract', ar: 'ملخص بحثي واضح' } },
@@ -116,14 +121,12 @@ export default function ProposalSubmissionWizard({ proposal, rdCall, onClose }) 
               ].map(item => (
                 <div
                   key={item.key}
-                  className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
-                    checklist[item.key] ? 'bg-green-50 border-green-300' : 'bg-white border-slate-200'
-                  }`}
+                  className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all ${checklist[item.key] ? 'bg-green-50 border-green-300' : 'bg-white border-slate-200'
+                    }`}
                   onClick={() => toggleCheck(item.key)}
                 >
-                  <div className={`h-5 w-5 rounded border-2 flex items-center justify-center ${
-                    checklist[item.key] ? 'bg-green-600 border-green-600' : 'border-slate-300'
-                  }`}>
+                  <div className={`h-5 w-5 rounded border-2 flex items-center justify-center ${checklist[item.key] ? 'bg-green-600 border-green-600' : 'border-slate-300'
+                    }`}>
                     {checklist[item.key] && <CheckCircle2 className="h-4 w-4 text-white" />}
                   </div>
                   <span className="text-sm text-slate-900">{item.label[language]}</span>
@@ -141,7 +144,7 @@ export default function ProposalSubmissionWizard({ proposal, rdCall, onClose }) 
                 {t({ en: 'AI Submission Brief', ar: 'ملخص التقديم الذكي' })}
               </h4>
               <p className="text-sm text-slate-600">
-                {t({ 
+                {t({
                   en: 'Generate an AI brief to help reviewers understand your proposal quickly',
                   ar: 'إنشاء ملخص ذكي لمساعدة المراجعين على فهم مقترحك بسرعة'
                 })}
@@ -212,7 +215,7 @@ export default function ProposalSubmissionWizard({ proposal, rdCall, onClose }) 
                 {t({ en: 'Ready to Submit', ar: 'جاهز للتقديم' })}
               </h4>
               <p className="text-sm text-slate-600">
-                {t({ 
+                {t({
                   en: 'Your proposal will be submitted for review',
                   ar: 'سيتم تقديم مقترحك للمراجعة'
                 })}
@@ -226,7 +229,7 @@ export default function ProposalSubmissionWizard({ proposal, rdCall, onClose }) 
               <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder={t({ 
+                placeholder={t({
                   en: 'Add any additional notes for reviewers...',
                   ar: 'أضف أي ملاحظات إضافية للمراجعين...'
                 })}
@@ -245,7 +248,7 @@ export default function ProposalSubmissionWizard({ proposal, rdCall, onClose }) 
             {isRTL ? <ArrowRight className="h-4 w-4 mr-2" /> : <ArrowLeft className="h-4 w-4 mr-2" />}
             {step === 1 ? t({ en: 'Cancel', ar: 'إلغاء' }) : t({ en: 'Back', ar: 'رجوع' })}
           </Button>
-          
+
           {step < 3 ? (
             <Button
               onClick={() => setStep(step + 1)}

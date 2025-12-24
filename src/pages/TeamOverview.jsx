@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +7,6 @@ import { useLanguage } from '../components/LanguageContext';
 import { Users, Shield, UserPlus, Trash2, Search, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -24,95 +21,49 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useTeams } from '@/hooks/useTeams';
+import { useTeamMembers } from '@/hooks/useTeamMembers';
+import { useTeamMutations } from '@/hooks/useTeamMutations';
+import { useUsersWithVisibility } from '@/hooks/useUsersWithVisibility';
 
 export default function TeamOverview() {
   const urlParams = new URLSearchParams(window.location.search);
   const teamId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [addMemberOpen, setAddMemberOpen] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState('');
+  const [selectedUserEmail, setSelectedUserEmail] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const { data: team, isLoading } = useQuery({
-    queryKey: ['team', teamId],
-    queryFn: async () => {
-      const teams = await base44.entities.Team.list();
-      return teams.find(t => t.id === teamId);
-    },
-    enabled: !!teamId
-  });
+  const { data: teams = [], isLoading } = useTeams();
+  const team = teams.find(t => t.id === teamId);
 
-  const { data: allUsers = [] } = useQuery({
-    queryKey: ['users'],
-    queryFn: () => base44.entities.User.list()
-  });
+  const { data: teamMembers = [] } = useTeamMembers({ teamId });
+  const { data: allUsers = [] } = useUsersWithVisibility();
 
-  const { data: allRoles = [] } = useQuery({
-    queryKey: ['roles'],
-    queryFn: () => base44.entities.Role.list()
-  });
+  const { addTeamMember, removeTeamMember } = useTeamMutations();
 
-  const teamMembers = allUsers.filter(u => u.assigned_teams?.includes(teamId));
-  const availableUsers = allUsers.filter(u => !u.assigned_teams?.includes(teamId));
+  const teamMemberEmails = new Set(teamMembers.map(m => m.user_email));
+  const availableUsers = allUsers.filter(u => !teamMemberEmails.has(u.email));
 
-  const addMemberMutation = useMutation({
-    mutationFn: async (userId) => {
-      const user = allUsers.find(u => u.id === userId);
-      const updatedTeams = [...(user.assigned_teams || []), teamId];
-      await base44.entities.User.update(userId, { assigned_teams: updatedTeams });
-      
-      // Update team member count
-      await base44.entities.Team.update(teamId, { member_count: (team.member_count || 0) + 1 });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries();
-      setAddMemberOpen(false);
-      setSelectedUserId('');
-      toast.success(t({ en: 'Member added', ar: 'تمت الإضافة' }));
-    }
-  });
-
-  const removeMemberMutation = useMutation({
-    mutationFn: async (userId) => {
-      const user = allUsers.find(u => u.id === userId);
-      const updatedTeams = (user.assigned_teams || []).filter(tid => tid !== teamId);
-      await base44.entities.User.update(userId, { assigned_teams: updatedTeams });
-      
-      // Update team member count
-      await base44.entities.Team.update(teamId, { member_count: Math.max(0, (team.member_count || 1) - 1) });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries();
-      toast.success(t({ en: 'Member removed', ar: 'تمت الإزالة' }));
-    }
-  });
-
-  const getUserPermissions = (user) => {
-    const permissions = new Set();
-    
-    // From roles
-    if (user.assigned_roles?.length) {
-      user.assigned_roles.forEach(roleId => {
-        const role = allRoles.find(r => r.id === roleId);
-        if (role?.permissions) {
-          role.permissions.forEach(p => permissions.add(p));
-        }
-      });
-    }
-    
-    // From this team
-    if (team?.permissions) {
-      team.permissions.forEach(p => permissions.add(p));
-    }
-    
-    return Array.from(permissions);
+  const handleAddMember = () => {
+    if (!selectedUserEmail) return;
+    addTeamMember.mutate({
+      teamId,
+      userEmail: selectedUserEmail,
+      role: 'member',
+    }, {
+      onSuccess: () => {
+        setAddMemberOpen(false);
+        setSelectedUserEmail('');
+      },
+    });
   };
 
-  const filteredMembers = teamMembers.filter(u => 
-    u.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredMembers = teamMembers.filter(m => {
+    const user = allUsers.find(u => u.email === m.user_email);
+    return user?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user?.email?.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   if (isLoading || !team) {
     return (
@@ -221,47 +172,34 @@ export default function TeamOverview() {
                 {t({ en: 'No members found', ar: 'لم يتم العثور على أعضاء' })}
               </p>
             ) : (
-              filteredMembers.map((user) => {
-                const userPermissions = getUserPermissions(user);
-                const userRoles = user.assigned_roles?.map(rid => allRoles.find(r => r.id === rid)?.name).filter(Boolean) || [];
-                
+              filteredMembers.map((member) => {
+                const user = allUsers.find(u => u.email === member.user_email);
+                if (!user) return null;
+
                 return (
-                  <div key={user.id} className="flex items-start justify-between p-4 border rounded-lg hover:bg-slate-50">
+                  <div key={member.id} className="flex items-start justify-between p-4 border rounded-lg hover:bg-slate-50">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <p className="font-medium text-slate-900">{user.full_name}</p>
                         {team.lead_user_email === user.email && (
                           <Badge className="bg-yellow-100 text-yellow-700">Lead</Badge>
                         )}
+                        {member.role && (
+                          <Badge variant="outline">{member.role}</Badge>
+                        )}
                       </div>
                       <p className="text-sm text-slate-600">{user.email}</p>
                       {user.job_title && (
                         <p className="text-xs text-slate-500 mt-1">{user.job_title}</p>
                       )}
-                      
-                      <div className="mt-2 space-y-1">
-                        {userRoles.length > 0 && (
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs text-slate-500">{t({ en: 'Roles:', ar: 'الأدوار:' })}</span>
-                            {userRoles.map((role, idx) => (
-                              <Badge key={idx} variant="outline" className="text-xs">{role}</Badge>
-                            ))}
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs text-slate-500">{t({ en: 'Total Permissions:', ar: 'إجمالي الصلاحيات:' })}</span>
-                          <Badge className="text-xs bg-blue-100 text-blue-700">{userPermissions.length}</Badge>
-                        </div>
-                      </div>
                     </div>
-                    
+
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => removeMemberMutation.mutate(user.id)}
+                      onClick={() => removeTeamMember.mutate({ teamId, userEmail: user.email })}
                       className="text-red-600 hover:bg-red-50"
-                      disabled={removeMemberMutation.isPending}
+                      disabled={removeTeamMember.isPending}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -279,13 +217,13 @@ export default function TeamOverview() {
             <DialogTitle>{t({ en: 'Add Team Member', ar: 'إضافة عضو للفريق' })}</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+            <Select value={selectedUserEmail} onValueChange={setSelectedUserEmail}>
               <SelectTrigger>
                 <SelectValue placeholder={t({ en: 'Select user...', ar: 'اختر مستخدم...' })} />
               </SelectTrigger>
               <SelectContent>
                 {availableUsers.map(user => (
-                  <SelectItem key={user.id} value={user.id}>
+                  <SelectItem key={user.email} value={user.email}>
                     {user.full_name} ({user.email})
                   </SelectItem>
                 ))}
@@ -296,9 +234,9 @@ export default function TeamOverview() {
             <Button variant="outline" onClick={() => setAddMemberOpen(false)}>
               {t({ en: 'Cancel', ar: 'إلغاء' })}
             </Button>
-            <Button 
-              onClick={() => addMemberMutation.mutate(selectedUserId)}
-              disabled={!selectedUserId || addMemberMutation.isPending}
+            <Button
+              onClick={handleAddMember}
+              disabled={!selectedUserEmail || addTeamMember.isPending}
             >
               {t({ en: 'Add', ar: 'إضافة' })}
             </Button>

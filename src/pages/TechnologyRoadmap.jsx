@@ -1,36 +1,26 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Cpu, Sparkles, TrendingUp, Loader2, ArrowRight } from 'lucide-react';
-import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { TECHNOLOGY_ROADMAP_PROMPT_TEMPLATE, TECHNOLOGY_ROADMAP_RESPONSE_SCHEMA } from '@/lib/ai/prompts/technology/roadmap';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
+import { useRDProjects } from '@/hooks/useRDProjects';
+import { toast } from 'sonner';
 
 function TechnologyRoadmap() {
   const { language, isRTL, t } = useLanguage();
   const [aiRoadmap, setAiRoadmap] = useState(null);
   const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions'],
-    queryFn: () => base44.entities.Solution.list()
-  });
-
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects'],
-    queryFn: () => base44.entities.RDProject.list()
-  });
+  const { data: pilots = [] } = usePilotsWithVisibility();
+  const { data: solutions = [] } = useSolutionsWithVisibility();
+  const { data: rdProjects = [] } = useRDProjects();
 
   const generateRoadmap = async () => {
     const pilotTech = pilots.map(p => p.technology_stack?.map(t => t.technology).join(', ')).filter(Boolean).slice(0, 10).join('; ');
@@ -39,6 +29,7 @@ function TechnologyRoadmap() {
 
     const response = await invokeAI({
       prompt: TECHNOLOGY_ROADMAP_PROMPT_TEMPLATE({ pilotTech, solutionTech, rdFocus }),
+      system_prompt: "You are an expert Technology Strategist for Innovate Saudi. Your goal is to analyze the current technology landscape and generate a roadmap for adoption.",
       response_json_schema: TECHNOLOGY_ROADMAP_RESPONSE_SCHEMA
     });
 
@@ -46,12 +37,6 @@ function TechnologyRoadmap() {
       setAiRoadmap(response.data);
       toast.success(t({ en: 'Technology roadmap generated', ar: 'تم إنشاء خارطة التقنية' }));
     }
-  };
-
-  const stageColors = {
-    emerging: 'from-blue-600 to-cyan-600',
-    maturing: 'from-purple-600 to-pink-600',
-    mainstream: 'from-green-600 to-emerald-600'
   };
 
   return (

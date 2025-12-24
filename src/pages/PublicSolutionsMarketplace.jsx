@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { usePublicSolutions, usePublicSuccessfulDeployments } from '@/hooks/usePublicData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +8,7 @@ import { useLanguage } from '../components/LanguageContext';
 import DeploymentBadges from '../components/solutions/DeploymentBadges';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { Search, Lightbulb, Award, CheckCircle2, Star, TrendingUp, Filter } from 'lucide-react';
+import { Search, Lightbulb, Award, CheckCircle2, Star, TrendingUp, Filter, ArrowRight } from 'lucide-react';
 
 export default function PublicSolutionsMarketplace() {
   const { language, isRTL, t } = useLanguage();
@@ -17,25 +16,8 @@ export default function PublicSolutionsMarketplace() {
   const [selectedSector, setSelectedSector] = useState('all');
   const [selectedMaturity, setSelectedMaturity] = useState('all');
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['public-solutions'],
-    queryFn: async () => {
-      const all = await base44.entities.Solution.list();
-      return all.filter(s => s.is_published && !s.is_archived);
-    }
-  });
-
-  const { data: successfulDeployments = [] } = useQuery({
-    queryKey: ['successful-deployments'],
-    queryFn: async () => {
-      const pilots = await base44.entities.Pilot.filter({
-        stage: { $in: ['completed', 'scaled'] },
-        recommendation: 'scale',
-        is_published: true
-      }, '-updated_date', 6);
-      return pilots;
-    }
-  });
+  const { data: solutions = [] } = usePublicSolutions();
+  const { data: successfulDeployments = [] } = usePublicSuccessfulDeployments();
 
   const sectors = [...new Set(solutions.flatMap(s => s.sectors || []))];
   const maturities = ['concept', 'prototype', 'pilot_ready', 'market_ready', 'proven'];
@@ -43,7 +25,7 @@ export default function PublicSolutionsMarketplace() {
   const filteredSolutions = solutions.filter(s => {
     const sectorMatch = selectedSector === 'all' || s.sectors?.includes(selectedSector);
     const maturityMatch = selectedMaturity === 'all' || s.maturity_level === selectedMaturity;
-    const searchMatch = !searchTerm || 
+    const searchMatch = !searchTerm ||
       s.name_en?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.provider_name?.toLowerCase().includes(searchTerm.toLowerCase());
     return sectorMatch && maturityMatch && searchMatch;
@@ -137,7 +119,7 @@ export default function PublicSolutionsMarketplace() {
               {successfulDeployments.map((pilot) => {
                 const solution = solutions.find(s => s.id === pilot.solution_id);
                 if (!solution) return null;
-                
+
                 return (
                   <Card key={pilot.id} className="hover:shadow-lg transition-all border-2 border-green-200">
                     <CardContent className="pt-4">
@@ -152,12 +134,12 @@ export default function PublicSolutionsMarketplace() {
                           <p className="text-xs text-slate-600">{solution.provider_name}</p>
                         </div>
                       </div>
-                      
+
                       <div className="space-y-2">
                         <p className="text-xs text-slate-700 line-clamp-2">
                           {language === 'ar' && pilot.title_ar ? pilot.title_ar : pilot.title_en}
                         </p>
-                        
+
                         {pilot.kpis && pilot.kpis.length > 0 && (
                           <div className="p-2 bg-green-50 rounded border border-green-200">
                             <p className="text-xs font-semibold text-green-900 mb-1">
@@ -168,7 +150,7 @@ export default function PublicSolutionsMarketplace() {
                             </p>
                           </div>
                         )}
-                        
+
                         <div className="flex items-center gap-2 flex-wrap">
                           {pilot.deployment_count > 0 && (
                             <Badge className="bg-green-600 text-white text-xs">
@@ -180,7 +162,7 @@ export default function PublicSolutionsMarketplace() {
                             {pilot.stage}
                           </Badge>
                         </div>
-                        
+
                         <Link to={createPageUrl(`SolutionDetail?id=${solution.id}`)}>
                           <Button size="sm" variant="outline" className="w-full mt-2">
                             {t({ en: 'View Solution', ar: 'عرض الحل' })}
@@ -260,8 +242,8 @@ export default function PublicSolutionsMarketplace() {
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge className={
                   solution.maturity_level === 'proven' ? 'bg-green-600' :
-                  solution.maturity_level === 'market_ready' ? 'bg-blue-600' :
-                  'bg-amber-600'
+                    solution.maturity_level === 'market_ready' ? 'bg-blue-600' :
+                      'bg-amber-600'
                 }>
                   {solution.maturity_level?.replace(/_/g, ' ')}
                 </Badge>

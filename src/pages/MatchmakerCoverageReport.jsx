@@ -1,48 +1,19 @@
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '../components/LanguageContext';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import BaseCoverageReport from '../components/reports/BaseCoverageReport';
 import { getMatchmakerCoverageData } from './matchmakerCoverageData';
+import { useMatchmakerApplications } from '@/hooks/useMatchmakerApplications';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 
 function MatchmakerCoverageReport() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: applications = [] } = useQuery({
-    queryKey: ['matchmaker-applications-coverage'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('matchmaker_applications').select('*');
-      if (error) throw error;
-      return data;
-    }
-  });
+  const { data: applications = [] } = useMatchmakerApplications();
+  const { data: challenges = [] } = useChallengesWithVisibility({ includeAll: true });
+  const { data: pilots = [] } = usePilotsWithVisibility({ includeAll: true });
 
-  const { data: evaluations = [] } = useQuery({
-    queryKey: ['matchmaker-evaluations-coverage'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('expert_evaluations').select('*').eq('entity_type', 'matchmaker_application');
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-coverage-matchmaker'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('challenges').select('*');
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-coverage-matchmaker'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('pilots').select('*');
-      if (error) throw error;
-      return data;
-    }
-  });
+  const evaluations = applications.flatMap(app => app.expert_evaluations || []);
 
   const coverageData = getMatchmakerCoverageData(applications, evaluations, challenges, pilots);
 

@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/lib/AuthContext';
-import { useQuery } from '@tanstack/react-query';
+import { useMyChallenges, useMyPilots, useMyTasks, useMyExpertAssignments } from '@/hooks/useMyWorkload';
 import { usePrompt } from '@/hooks/usePrompt';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,9 +8,9 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { 
-  AlertCircle, CheckCircle2, Clock, TrendingUp, Target, 
-  FileText, Loader2, Sparkles, Zap, BookOpen 
+import {
+  AlertCircle, CheckCircle2, Clock, TrendingUp, Target,
+  FileText, Loader2, Sparkles, Zap, BookOpen
 } from 'lucide-react';
 import MyWeekAhead from '../components/MyWeekAhead';
 import ProtectedPage from '../components/permissions/ProtectedPage';
@@ -22,46 +20,11 @@ function MyWorkloadDashboard() {
   const { language, isRTL, t } = useLanguage();
   const [aiPriorities, setAiPriorities] = useState(null);
   const { invoke: invokeAI, status, isLoading: loadingAI, rateLimitInfo, isAvailable } = usePrompt(null);
-  const { user } = useAuth();
-
-  const { data: myChallenges = [] } = useQuery({
-    queryKey: ['my-challenges', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false);
-      return data?.filter(c => c.created_by === user?.email || c.reviewer === user?.email) || [];
-    },
-    enabled: !!user
-  });
-
-  const { data: myPilots = [] } = useQuery({
-    queryKey: ['my-pilots', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('is_deleted', false);
-      return data?.filter(p => p.created_by === user?.email || p.team?.some(t => t.email === user?.email)) || [];
-    },
-    enabled: !!user
-  });
-
-  const { data: myTasks = [] } = useQuery({
-    queryKey: ['my-tasks', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('tasks').select('*');
-      return data?.filter(t => t.assigned_to === user?.email || t.created_by === user?.email) || [];
-    },
-    enabled: !!user
-  });
-
-  const { data: myExpertAssignments = [] } = useQuery({
-    queryKey: ['my-expert-assignments', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('expert_assignments').select('*');
-      return data?.filter(a => a.expert_email === user?.email) || [];
-    },
-    enabled: !!user
-  });
+  /* New hooks replacing direct queries */
+  const { data: myChallenges = [] } = useMyChallenges();
+  const { data: myPilots = [] } = useMyPilots();
+  const { data: myTasks = [] } = useMyTasks();
+  const { data: myExpertAssignments = [] } = useMyExpertAssignments();
 
   const generateAIPriorities = async () => {
     const workItems = formatWorkItemsForPrioritization({
@@ -102,7 +65,7 @@ function MyWorkloadDashboard() {
             {loadingAI ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
             {t({ en: 'AI Prioritize', ar: 'الأولوية بالذكاء' })}
           </Button>
-          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={undefined} />
         </div>
       </div>
 
@@ -239,8 +202,8 @@ function MyWorkloadDashboard() {
                   <div className="flex items-center justify-between mb-2">
                     <Badge className={
                       assignment.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                      assignment.status === 'accepted' ? 'bg-blue-100 text-blue-700' :
-                      'bg-purple-100 text-purple-700'
+                        assignment.status === 'accepted' ? 'bg-blue-100 text-blue-700' :
+                          'bg-purple-100 text-purple-700'
                     }>
                       {assignment.status}
                     </Badge>

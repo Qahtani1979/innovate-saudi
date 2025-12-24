@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +8,7 @@ import { Shield, Search, Plus, FileText, CheckCircle2, AlertTriangle } from 'luc
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
+import { useRegulatoryLibrary } from '@/hooks/useRegulatoryLibrary';
 
 export default function RegulatoryLibrary() {
   const { language, isRTL, t } = useLanguage();
@@ -20,15 +19,9 @@ export default function RegulatoryLibrary() {
   const [filterRisk, setFilterRisk] = useState('all');
   const [sortBy, setSortBy] = useState('title');
 
-  const { data: exemptions = [] } = useQuery({
-    queryKey: ['regulatory-exemptions'],
-    queryFn: () => base44.entities.RegulatoryExemption.list()
-  });
-
-  const { data: auditLogs = [] } = useQuery({
-    queryKey: ['exemption-audits'],
-    queryFn: () => base44.entities.ExemptionAuditLog.list()
-  });
+  const { useExemptions, useExemptionAuditLogs } = useRegulatoryLibrary();
+  const { data: exemptions = [] } = useExemptions();
+  const { data: auditLogs = [] } = useExemptionAuditLogs();
 
   const filteredExemptions = exemptions
     .filter(ex => {
@@ -40,12 +33,12 @@ export default function RegulatoryLibrary() {
         ex.description_en?.toLowerCase().includes(searchLower) ||
         ex.legal_basis?.toLowerCase().includes(searchLower) ||
         ex.conditions?.some(c => c.toLowerCase().includes(searchLower));
-      
+
       const matchesCategory = filterCategory === 'all' || ex.category === filterCategory;
       const matchesDomain = filterDomain === 'all' || ex.domain === filterDomain;
       const matchesStatus = filterStatus === 'all' || ex.status === filterStatus;
       const matchesRisk = filterRisk === 'all' || ex.risk_level === filterRisk;
-      
+
       return matchesSearch && matchesCategory && matchesDomain && matchesStatus && matchesRisk;
     })
     .sort((a, b) => {
@@ -240,8 +233,8 @@ export default function RegulatoryLibrary() {
                 </SelectContent>
               </Select>
 
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => {
                   setSearchTerm('');
                   setFilterCategory('all');
@@ -262,7 +255,7 @@ export default function RegulatoryLibrary() {
       <div className="grid grid-cols-1 gap-4">
         {filteredExemptions.map((exemption) => {
           const usageCount = auditLogs.filter(log => log.exemption_id === exemption.id && log.action === 'granted').length;
-          const daysUntilExpiry = exemption.expiration_date ? 
+          const daysUntilExpiry = exemption.expiration_date ?
             Math.floor((new Date(exemption.expiration_date) - new Date()) / (1000 * 60 * 60 * 24)) : null;
 
           return (

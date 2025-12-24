@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { useScaling } from '@/hooks/useScaling';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,61 +31,22 @@ function ScalingWorkflow() {
   const [showBudgetGate, setShowBudgetGate] = useState(false);
   const [showIntegrationGate, setShowIntegrationGate] = useState(false);
 
-  const { data: completedPilots = [] } = useQuery({
-    queryKey: ['completed-pilots', user?.email, user?.role],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('is_deleted', false)
-        .eq('stage', 'completed')
-        .eq('recommendation', 'scale');
-      return data || [];
-    },
-    enabled: !!user
-  });
+  const {
+    useCompletedPilots,
+    useScaledPilots,
+    useScalingPlans,
+    useApproveScaling
+  } = useScaling();
 
-  const { data: scaledPilots = [] } = useQuery({
-    queryKey: ['scaled-pilots', user?.email, user?.role],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('is_deleted', false)
-        .eq('stage', 'scaled');
-      return data || [];
-    },
-    enabled: !!user
-  });
-
-  const scaleApprovalMutation = useMutation({
-    mutationFn: async ({ pilotId, plan }) => {
-      const { error } = await supabase.from('pilots').update({ 
-        stage: 'scaled',
-        scaling_plan: plan,
-        scaled_date: new Date().toISOString()
-      }).eq('id', pilotId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['completed-pilots']);
-      queryClient.invalidateQueries(['scaled-pilots']);
-      toast.success(t({ en: 'Pilot approved for scaling', ar: 'تمت الموافقة على التوسع' }));
-    }
-  });
+  const { data: completedPilots = [] } = useCompletedPilots(user);
+  const { data: scaledPilots = [] } = useScaledPilots(user);
+  const { data: scalingPlansData = [] } = useScalingPlans();
+  const scaleApprovalMutation = useApproveScaling();
 
   const handleApproveScaling = (pilotId) => {
     const plan = scalingPlans[pilotId] || {};
     scaleApprovalMutation.mutate({ pilotId, plan });
   };
-
-  const { data: scalingPlansData = [] } = useQuery({
-    queryKey: ['scaling-plans'],
-    queryFn: async () => {
-      const { data } = await supabase.from('scaling_plans').select('*');
-      return data || [];
-    }
-  });
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -458,7 +419,7 @@ function ScalingWorkflow() {
                           </div>
                           <div>
                             <span className="text-slate-600">Budget:</span>
-                            <p className="font-medium">{pilot.scaling_plan.estimated_cost ? `${(pilot.scaling_plan.estimated_cost/1000).toFixed(0)}K` : 'TBD'}</p>
+                            <p className="font-medium">{pilot.scaling_plan.estimated_cost ? `${(pilot.scaling_plan.estimated_cost / 1000).toFixed(0)}K` : 'TBD'}</p>
                           </div>
                         </div>
                       </div>
@@ -495,6 +456,6 @@ function ScalingWorkflow() {
   );
 }
 
-export default ProtectedPage(ScalingWorkflow, { 
-  requiredPermissions: ['pilot_scale_approve'] 
+export default ProtectedPage(ScalingWorkflow, {
+  requiredPermissions: ['pilot_scale_approve']
 });

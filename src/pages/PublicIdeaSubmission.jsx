@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { usePublicMunicipalities } from '@/hooks/usePublicData';
+import { usePublicIdeaActions } from '@/hooks/usePublicIdeaActions';
 import { useLanguage } from '@/components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Lightbulb, Send, Sparkles, ArrowRight, ArrowLeft, CheckCircle2, 
+import {
+  Lightbulb, Send, Sparkles, ArrowRight, ArrowLeft, CheckCircle2,
   Loader2, Star, Users, Trophy, Heart, Rocket
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -21,29 +21,29 @@ const MAX_SUBMISSIONS_PER_DAY = 3;
 const checkRateLimit = () => {
   const stored = localStorage.getItem(RATE_LIMIT_KEY);
   if (!stored) return { allowed: true, remaining: MAX_SUBMISSIONS_PER_DAY };
-  
+
   const { count, date } = JSON.parse(stored);
   const today = new Date().toDateString();
-  
+
   if (date !== today) {
     return { allowed: true, remaining: MAX_SUBMISSIONS_PER_DAY };
   }
-  
-  return { 
-    allowed: count < MAX_SUBMISSIONS_PER_DAY, 
-    remaining: MAX_SUBMISSIONS_PER_DAY - count 
+
+  return {
+    allowed: count < MAX_SUBMISSIONS_PER_DAY,
+    remaining: MAX_SUBMISSIONS_PER_DAY - count
   };
 };
 
 const recordSubmission = () => {
   const stored = localStorage.getItem(RATE_LIMIT_KEY);
   const today = new Date().toDateString();
-  
+
   if (!stored) {
     localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify({ count: 1, date: today }));
     return;
   }
-  
+
   const { count, date } = JSON.parse(stored);
   if (date !== today) {
     localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify({ count: 1, date: today }));
@@ -65,26 +65,26 @@ const getSessionId = () => {
 
 export default function PublicIdeaSubmission() {
   const { language, isRTL, t } = useLanguage();
-  
+
   const [currentStep, setCurrentStep] = useState(1);
   const [isAIProcessing, setIsAIProcessing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [rateLimitInfo, setRateLimitInfo] = useState({ allowed: true, remaining: MAX_SUBMISSIONS_PER_DAY });
   const [serverRateLimitInfo, setServerRateLimitInfo] = useState(null); // Server-side AI rate limit
-  
+
   // Get session ID for this user
   const sessionId = getSessionId();
-  
+
   // Check rate limit on mount and after submissions
   useEffect(() => {
     setRateLimitInfo(checkRateLimit());
   }, [submitted]);
-  
+
   // Step 1: Initial input
   const [initialIdea, setInitialIdea] = useState('');
   const [selectedMunicipality, setSelectedMunicipality] = useState('');
-  
+
   // Step 2: AI-generated data
   const [formData, setFormData] = useState({
     title: '',
@@ -100,7 +100,7 @@ export default function PublicIdeaSubmission() {
     ai_summary: '',
     ai_summary_ar: ''
   });
-  
+
   const [contactInfo, setContactInfo] = useState({
     name: '',
     email: '',
@@ -108,24 +108,16 @@ export default function PublicIdeaSubmission() {
   });
 
   // Fetch municipalities
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['public-municipalities'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('municipalities')
-        .select('id, name_en, name_ar')
-        .eq('is_active', true)
-        .order('name_en');
-      return data || [];
-    }
-  });
+  const { data: municipalities = [] } = usePublicMunicipalities();
+
+  const { analyzeIdea, submitIdea } = usePublicIdeaActions();
 
   // AI Generate idea details
   const handleAIGenerate = async () => {
     if (!initialIdea.trim()) {
-      toast.error(t({ 
-        en: 'Please describe your idea first', 
-        ar: 'يرجى وصف فكرتك أولاً' 
+      toast.error(t({
+        en: 'Please describe your idea first',
+        ar: 'يرجى وصف فكرتك أولاً'
       }));
       return;
     }
@@ -133,37 +125,18 @@ export default function PublicIdeaSubmission() {
     setIsAIProcessing(true);
     try {
       const municipality = municipalities.find(m => m.id === selectedMunicipality);
-      
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/public-idea-ai`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
-        },
-        body: JSON.stringify({
-          idea: initialIdea,
-          municipality: municipality ? `${municipality.name_en} (${municipality.name_ar})` : null,
-          session_id: sessionId,
-          user_type: 'anonymous' // Public users are anonymous
-        })
+
+      const result = await analyzeIdea({
+        idea: initialIdea,
+        municipality: municipality ? `${municipality.name_en} (${municipality.name_ar})` : null,
+        sessionId
       });
 
-      const result = await response.json();
 
-      // Handle rate limit errors
-      if (response.status === 429) {
-        const remaining = result.rate_limit?.daily_remaining || 0;
-        setServerRateLimitInfo(result.rate_limit);
-        toast.error(t({ 
-          en: `AI analysis limit reached. You have ${remaining} analyses remaining today.`, 
-          ar: `تم الوصول إلى حد التحليل. لديك ${remaining} تحليلات متبقية اليوم.` 
-        }));
-        return;
-      }
 
-      if (!response.ok) {
-        throw new Error(result.error || 'AI generation failed');
-      }
+      // Handle rate limit errors via catch block from analyzeIdea throw or here if needed (the hook throws)
+
+
 
       // Update server rate limit info if provided
       if (result._rate_limit) {
@@ -172,12 +145,12 @@ export default function PublicIdeaSubmission() {
 
       // Show cache hit notification
       if (result._cached) {
-        toast.info(t({ 
-          en: 'Retrieved from our analysis cache for faster results!', 
-          ar: 'تم استرجاع النتائج من الذاكرة المؤقتة للحصول على نتائج أسرع!' 
+        toast.info(t({
+          en: 'Retrieved from our analysis cache for faster results!',
+          ar: 'تم استرجاع النتائج من الذاكرة المؤقتة للحصول على نتائج أسرع!'
         }));
       }
-      
+
       setFormData({
         title: result.title_en || '',
         title_ar: result.title_ar || '',
@@ -192,18 +165,27 @@ export default function PublicIdeaSubmission() {
         ai_summary: result.ai_summary_en || result.ai_summary || '',
         ai_summary_ar: result.ai_summary_ar || ''
       });
-      
+
       setCurrentStep(2);
-      toast.success(t({ 
-        en: 'AI has analyzed your idea!', 
-        ar: 'قام الذكاء الاصطناعي بتحليل فكرتك!' 
+      toast.success(t({
+        en: 'AI has analyzed your idea!',
+        ar: 'قام الذكاء الاصطناعي بتحليل فكرتك!'
       }));
     } catch (error) {
-      console.error('AI generation error:', error);
-      toast.error(t({ 
-        en: 'AI analysis failed. Please try again.', 
-        ar: 'فشل تحليل الذكاء الاصطناعي. يرجى المحاولة مرة أخرى.' 
-      }));
+      if (error.rateLimit) {
+        const remaining = error.rateLimit.daily_remaining || 0;
+        setServerRateLimitInfo(error.rateLimit);
+        toast.error(t({
+          en: `AI analysis limit reached. You have ${remaining} analyses remaining today.`,
+          ar: `تم الوصول إلى حد التحليل. لديك ${remaining} تحليلات متبقية اليوم.`
+        }));
+      } else {
+        console.error('AI generation error:', error);
+        toast.error(t({
+          en: 'AI analysis failed. Please try again.',
+          ar: 'فشل تحليل الذكاء الاصطناعي. يرجى المحاولة مرة أخرى.'
+        }));
+      }
     } finally {
       setIsAIProcessing(false);
     }
@@ -214,83 +196,43 @@ export default function PublicIdeaSubmission() {
     // Re-check rate limit
     const rateLimit = checkRateLimit();
     if (!rateLimit.allowed) {
-      toast.error(t({ 
-        en: `Daily limit reached. You can submit ${MAX_SUBMISSIONS_PER_DAY} ideas per day. Please come back tomorrow!`, 
-        ar: `تم الوصول إلى الحد اليومي. يمكنك تقديم ${MAX_SUBMISSIONS_PER_DAY} أفكار يوميًا. يرجى العودة غدًا!` 
+      toast.error(t({
+        en: `Daily limit reached. You can submit ${MAX_SUBMISSIONS_PER_DAY} ideas per day. Please come back tomorrow!`,
+        ar: `تم الوصول إلى الحد اليومي. يمكنك تقديم ${MAX_SUBMISSIONS_PER_DAY} أفكار يوميًا. يرجى العودة غدًا!`
       }));
       setRateLimitInfo(rateLimit);
       return;
     }
 
     if (!formData.title.trim()) {
-      toast.error(t({ 
-        en: 'Please provide an idea title', 
-        ar: 'يرجى تقديم عنوان للفكرة' 
+      toast.error(t({
+        en: 'Please provide an idea title',
+        ar: 'يرجى تقديم عنوان للفكرة'
       }));
       return;
     }
 
     setIsSubmitting(true);
     try {
-      // Build metadata including contact info
-      const submissionMetadata = {
-        original_input: initialIdea,
-        ai_generated: true,
-        contact_name: contactInfo.is_anonymous ? null : contactInfo.name,
-        contact_email: contactInfo.is_anonymous ? null : contactInfo.email,
-        is_anonymous: contactInfo.is_anonymous,
-        submitted_at: new Date().toISOString()
-      };
+      await submitIdea.mutateAsync({
+        formData: { ...formData, municipality_id: selectedMunicipality },
+        initialIdea,
+        contactInfo,
+        language
+      });
 
-      const { data: insertedIdea, error } = await supabase
-        .from('citizen_ideas')
-        .insert({
-          title: language === 'ar' ? formData.title_ar : formData.title,
-          description: language === 'ar' ? formData.description_ar : formData.description,
-          category: formData.category,
-          municipality_id: selectedMunicipality || null,
-          tags: formData.tags,
-          status: 'pending',
-          is_published: false
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      
-      // Send confirmation email if contact provided
-      if (!contactInfo.is_anonymous && contactInfo.email) {
-        try {
-          await supabase.functions.invoke('email-trigger-hub', {
-            body: {
-              trigger: 'idea.submitted',
-              recipient_email: contactInfo.email,
-              variables: {
-                userName: contactInfo.name || 'Citizen',
-                ideaTitle: formData.title,
-                ideaDescription: formData.description,
-                ideaCategory: formData.category,
-                submissionDate: new Date().toISOString()
-              }
-            }
-          });
-        } catch (emailError) {
-          console.log('Email notification failed (non-critical):', emailError);
-        }
-      }
-      
       recordSubmission();
       setRateLimitInfo(checkRateLimit());
       setSubmitted(true);
-      toast.success(t({ 
-        en: 'Your idea has been submitted successfully!', 
-        ar: 'تم إرسال فكرتك بنجاح!' 
+      toast.success(t({
+        en: 'Your idea has been submitted successfully!',
+        ar: 'تم إرسال فكرتك بنجاح!'
       }));
     } catch (error) {
       console.error('Submit error:', error);
-      toast.error(t({ 
-        en: 'Failed to submit. Please try again.', 
-        ar: 'فشل الإرسال. يرجى المحاولة مرة أخرى.' 
+      toast.error(t({
+        en: 'Failed to submit. Please try again.',
+        ar: 'فشل الإرسال. يرجى المحاولة مرة أخرى.'
       }));
     } finally {
       setIsSubmitting(false);
@@ -331,15 +273,15 @@ export default function PublicIdeaSubmission() {
               <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center mx-auto mb-6 animate-bounce">
                 <CheckCircle2 className="h-10 w-10 text-white" />
               </div>
-              
+
               <h2 className="text-3xl font-bold text-slate-900 mb-3">
                 {t({ en: 'Thank You, Changemaker!', ar: 'شكراً لك، صانع التغيير!' })}
               </h2>
-              
+
               <p className="text-lg text-slate-600 mb-8">
-                {t({ 
-                  en: 'Your idea has been submitted and will be reviewed by the municipality team. You are helping shape the future of your city!', 
-                  ar: 'تم إرسال فكرتك وستتم مراجعتها من قبل فريق البلدية. أنت تساهم في صياغة مستقبل مدينتك!' 
+                {t({
+                  en: 'Your idea has been submitted and will be reviewed by the municipality team. You are helping shape the future of your city!',
+                  ar: 'تم إرسال فكرتك وستتم مراجعتها من قبل فريق البلدية. أنت تساهم في صياغة مستقبل مدينتك!'
                 })}
               </p>
 
@@ -349,7 +291,7 @@ export default function PublicIdeaSubmission() {
                   <Star className="h-5 w-5 text-yellow-500" />
                   {t({ en: 'Join Our Community', ar: 'انضم إلى مجتمعنا' })}
                 </h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div className="flex flex-col items-center p-4 bg-white rounded-lg shadow-sm">
                     <Trophy className="h-8 w-8 text-amber-500 mb-2" />
@@ -380,7 +322,7 @@ export default function PublicIdeaSubmission() {
                   </div>
                 </div>
 
-                <Button 
+                <Button
                   onClick={() => window.location.href = '/auth'}
                   className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-3"
                 >
@@ -409,7 +351,7 @@ export default function PublicIdeaSubmission() {
   return (
     <div className={`min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       <PublicHeader />
-      
+
       <div className="container mx-auto px-4 py-12">
         {/* Hero Section */}
         <div className="text-center mb-10">
@@ -423,9 +365,9 @@ export default function PublicIdeaSubmission() {
             {t({ en: 'Share Your Vision', ar: 'شارك رؤيتك' })}
           </h1>
           <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-            {t({ 
-              en: 'Help improve your city with innovative ideas. Our AI will help refine and categorize your submission.', 
-              ar: 'ساعد في تحسين مدينتك بأفكار مبتكرة. سيساعدك الذكاء الاصطناعي في تحسين وتصنيف فكرتك.' 
+            {t({
+              en: 'Help improve your city with innovative ideas. Our AI will help refine and categorize your submission.',
+              ar: 'ساعد في تحسين مدينتك بأفكار مبتكرة. سيساعدك الذكاء الاصطناعي في تحسين وتصنيف فكرتك.'
             })}
           </p>
         </div>
@@ -442,14 +384,14 @@ export default function PublicIdeaSubmission() {
                   {t({ en: 'Daily Limit Reached', ar: 'تم الوصول إلى الحد اليومي' })}
                 </h3>
                 <p className="text-amber-700 text-sm mt-1">
-                  {t({ 
+                  {t({
                     en: `You've submitted ${MAX_SUBMISSIONS_PER_DAY} ideas today. Come back tomorrow to share more ideas!`,
                     ar: `لقد قدمت ${MAX_SUBMISSIONS_PER_DAY} أفكار اليوم. عد غدًا لمشاركة المزيد من الأفكار!`
                   })}
                 </p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="mt-3 border-amber-300 text-amber-700 hover:bg-amber-100"
                   onClick={() => window.location.href = '/public-challenges'}
                 >
@@ -463,7 +405,7 @@ export default function PublicIdeaSubmission() {
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-3">
               <Sparkles className="h-5 w-5 text-blue-600" />
               <p className="text-blue-700 text-sm">
-                {t({ 
+                {t({
                   en: `You have ${rateLimitInfo.remaining} idea${rateLimitInfo.remaining === 1 ? '' : 's'} remaining today.`,
                   ar: `لديك ${rateLimitInfo.remaining} ${rateLimitInfo.remaining === 1 ? 'فكرة متبقية' : 'أفكار متبقية'} اليوم.`
                 })}
@@ -499,9 +441,9 @@ export default function PublicIdeaSubmission() {
                   {t({ en: 'Describe Your Idea', ar: 'صف فكرتك' })}
                 </CardTitle>
                 <p className="text-white/90 mt-2">
-                  {t({ 
-                    en: 'Tell us about your idea in your own words. AI will help structure and enhance it.', 
-                    ar: 'أخبرنا عن فكرتك بكلماتك الخاصة. سيساعدك الذكاء الاصطناعي في هيكلتها وتحسينها.' 
+                  {t({
+                    en: 'Tell us about your idea in your own words. AI will help structure and enhance it.',
+                    ar: 'أخبرنا عن فكرتك بكلماتك الخاصة. سيساعدك الذكاء الاصطناعي في هيكلتها وتحسينها.'
                   })}
                 </p>
               </CardHeader>
@@ -533,17 +475,17 @@ export default function PublicIdeaSubmission() {
                   <Textarea
                     value={initialIdea}
                     onChange={(e) => setInitialIdea(e.target.value)}
-                    placeholder={t({ 
-                      en: 'Describe your idea in detail. What problem does it solve? What improvements would it bring? Be as specific as possible...', 
-                      ar: 'صف فكرتك بالتفصيل. ما المشكلة التي تحلها؟ ما التحسينات التي ستجلبها؟ كن محددًا قدر الإمكان...' 
+                    placeholder={t({
+                      en: 'Describe your idea in detail. What problem does it solve? What improvements would it bring? Be as specific as possible...',
+                      ar: 'صف فكرتك بالتفصيل. ما المشكلة التي تحلها؟ ما التحسينات التي ستجلبها؟ كن محددًا قدر الإمكان...'
                     })}
                     rows={8}
                     className="text-lg"
                   />
                   <p className="text-sm text-slate-500 mt-2">
-                    {t({ 
-                      en: `${initialIdea.length} characters - We recommend at least 50 characters for better AI analysis`, 
-                      ar: `${initialIdea.length} حرف - نوصي بما لا يقل عن 50 حرفًا لتحليل أفضل بالذكاء الاصطناعي` 
+                    {t({
+                      en: `${initialIdea.length} characters - We recommend at least 50 characters for better AI analysis`,
+                      ar: `${initialIdea.length} حرف - نوصي بما لا يقل عن 50 حرفًا لتحليل أفضل بالذكاء الاصطناعي`
                     })}
                   </p>
                 </div>
@@ -574,16 +516,16 @@ export default function PublicIdeaSubmission() {
                 {/* Rate limit info */}
                 <div className="text-center text-sm text-slate-500 space-y-1">
                   <p>
-                    {t({ 
-                      en: `Submissions: ${rateLimitInfo.remaining}/${MAX_SUBMISSIONS_PER_DAY} remaining today`, 
-                      ar: `الإرسال: ${rateLimitInfo.remaining}/${MAX_SUBMISSIONS_PER_DAY} متبقي اليوم` 
+                    {t({
+                      en: `Submissions: ${rateLimitInfo.remaining}/${MAX_SUBMISSIONS_PER_DAY} remaining today`,
+                      ar: `الإرسال: ${rateLimitInfo.remaining}/${MAX_SUBMISSIONS_PER_DAY} متبقي اليوم`
                     })}
                   </p>
                   {serverRateLimitInfo && (
                     <p className="text-indigo-600">
-                      {t({ 
-                        en: `AI Analyses: ${serverRateLimitInfo.daily_remaining}/${serverRateLimitInfo.daily_limit} remaining today`, 
-                        ar: `تحليلات الذكاء الاصطناعي: ${serverRateLimitInfo.daily_remaining}/${serverRateLimitInfo.daily_limit} متبقي اليوم` 
+                      {t({
+                        en: `AI Analyses: ${serverRateLimitInfo.daily_remaining}/${serverRateLimitInfo.daily_limit} remaining today`,
+                        ar: `تحليلات الذكاء الاصطناعي: ${serverRateLimitInfo.daily_remaining}/${serverRateLimitInfo.daily_limit} متبقي اليوم`
                       })}
                     </p>
                   )}
@@ -603,9 +545,9 @@ export default function PublicIdeaSubmission() {
                   {t({ en: 'Review & Submit', ar: 'المراجعة والإرسال' })}
                 </CardTitle>
                 <p className="text-white/90 mt-2">
-                  {t({ 
-                    en: 'AI has analyzed your idea. Review the details below and submit when ready.', 
-                    ar: 'قام الذكاء الاصطناعي بتحليل فكرتك. راجع التفاصيل أدناه وأرسل عندما تكون جاهزًا.' 
+                  {t({
+                    en: 'AI has analyzed your idea. Review the details below and submit when ready.',
+                    ar: 'قام الذكاء الاصطناعي بتحليل فكرتك. راجع التفاصيل أدناه وأرسل عندما تكون جاهزًا.'
                   })}
                 </p>
               </CardHeader>
@@ -712,15 +654,15 @@ export default function PublicIdeaSubmission() {
                   <h3 className="text-lg font-semibold text-slate-900 mb-4">
                     {t({ en: 'Your Information (Optional)', ar: 'معلوماتك (اختياري)' })}
                   </h3>
-                  
+
                   {/* Anonymous Toggle */}
                   <div className="flex items-center gap-3 mb-4 p-3 bg-slate-50 rounded-lg">
                     <input
                       type="checkbox"
                       id="anonymous"
                       checked={contactInfo.is_anonymous}
-                      onChange={(e) => setContactInfo(prev => ({ 
-                        ...prev, 
+                      onChange={(e) => setContactInfo(prev => ({
+                        ...prev,
                         is_anonymous: e.target.checked,
                         name: e.target.checked ? '' : prev.name,
                         email: e.target.checked ? '' : prev.email
@@ -757,9 +699,9 @@ export default function PublicIdeaSubmission() {
                       </div>
                     </div>
                   )}
-                  
+
                   <p className="text-sm text-slate-500 mt-3">
-                    {contactInfo.is_anonymous 
+                    {contactInfo.is_anonymous
                       ? t({ en: 'Your idea will be submitted without any personal information.', ar: 'سيتم إرسال فكرتك دون أي معلومات شخصية.' })
                       : t({ en: 'Providing your contact info helps us follow up on your idea.', ar: 'تقديم معلومات الاتصال يساعدنا في متابعة فكرتك.' })
                     }
@@ -799,7 +741,7 @@ export default function PublicIdeaSubmission() {
           )}
         </div>
       </div>
-      
+
       <PublicFooter />
     </div>
   );

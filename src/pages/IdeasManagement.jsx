@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import useChallengesWithVisibility from '@/hooks/useChallengesWithVisibility';
+import { useCitizenIdeas } from '@/hooks/useCitizenIdeas';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,7 +45,7 @@ function IdeasManagement() {
   const { userProfile } = useAuth();
   const [searchParams] = useSearchParams();
   const municipalityFilter = searchParams.get('municipality') || userProfile?.municipality_id;
-  
+
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -57,33 +59,13 @@ function IdeasManagement() {
   const [selectedIdeaIds, setSelectedIdeaIds] = useState([]);
   const queryClient = useQueryClient();
 
-  // Filter by municipality if provided (from URL or user profile)
-  const { data: ideas = [], isLoading } = useQuery({
-    queryKey: ['citizen-ideas', municipalityFilter],
-    queryFn: async () => {
-      const allIdeas = await base44.entities.CitizenIdea.list('-created_date', 200);
-      if (municipalityFilter) {
-        return allIdeas.filter(idea => idea.municipality_id === municipalityFilter);
-      }
-      return allIdeas;
-    }
+  // ... inside component ...
+  const { ideas: { data: ideas = [], isLoading }, updateIdea } = useCitizenIdeas({
+    municipalityId: municipalityFilter,
+    status: statusFilter
   });
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-for-matching'],
-    queryFn: () => base44.entities.Challenge.list('-created_date', 50)
-  });
-
-  const updateIdeaMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.CitizenIdea.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['citizen-ideas']);
-      setSelectedIdea(null);
-      setReviewMode(null);
-      setReviewNotes('');
-      toast.success(t({ en: 'Idea updated', ar: 'تم تحديث الفكرة' }));
-    }
-  });
+  // Removed inline updateIdeaMutation as we use updateIdea from hook now
 
   const handleReview = async (action) => {
     if (!selectedIdea) return;
@@ -95,7 +77,7 @@ function IdeasManagement() {
       review_date: new Date().toISOString()
     };
 
-    await updateIdeaMutation.mutateAsync({ id: selectedIdea.id, data: updates });
+    await updateIdea.mutateAsync({ id: selectedIdea.id, updates });
 
     // Trigger auto-notification
     if (selectedIdea.submitter_email) {
@@ -113,7 +95,7 @@ function IdeasManagement() {
 
   const convertToChallenge = async () => {
     if (!selectedIdea) return;
-    
+
     setConvertingToChallenge(true);
     try {
       const { data: newChallenge, error } = await supabase
@@ -188,14 +170,18 @@ function IdeasManagement() {
     }
 
     try {
-      const response = await base44.functions.invoke('semanticSearch', {
-        entity_name: 'CitizenIdea',
-        query_embedding: idea.embedding,
-        top_k: 5,
-        threshold: 0.75
+      const { data: response, error } = await supabase.functions.invoke('semanticSearch', {
+        body: {
+          entity_name: 'CitizenIdea',
+          query_embedding: idea.embedding,
+          top_k: 5,
+          threshold: 0.75
+        }
       });
 
-      const duplicates = response.data.results
+      if (error) throw error;
+
+      const duplicates = response.results
         .filter(r => r.id !== idea.id)
         .map(r => ({ ...r, similarity: (r.similarity * 100).toFixed(0) }));
 
@@ -212,7 +198,7 @@ function IdeasManagement() {
 
   const filteredIdeas = ideas.filter(idea => {
     const matchesSearch = idea.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         idea.description?.toLowerCase().includes(searchTerm.toLowerCase());
+      idea.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || idea.status === statusFilter;
     const matchesCategory = categoryFilter === 'all' || idea.category === categoryFilter;
     return matchesSearch && matchesStatus && matchesCategory;
@@ -309,8 +295,8 @@ function IdeasManagement() {
       </div>
 
       {/* Bulk Actions */}
-      <IdeaBulkActions 
-        selectedIds={selectedIdeaIds} 
+      <IdeaBulkActions
+        selectedIds={selectedIdeaIds}
         onComplete={() => setSelectedIdeaIds([])}
       />
 
@@ -441,7 +427,7 @@ function IdeasManagement() {
                   <TableCell>
                     <div className="flex items-center gap-1 text-sm">
                       <ThumbsUp className="h-3 w-3 text-green-600" />
-                      <span className="font-medium">{idea.vote_count || 0}</span>
+                      <span className="font-medium">{idea.votes_count || 0}</span>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -516,7 +502,7 @@ function IdeasManagement() {
                 </div>
                 <div className="p-3 bg-slate-50 rounded-lg">
                   <p className="text-xs text-slate-500">{t({ en: 'Votes', ar: 'الأصوات' })}</p>
-                  <p className="font-medium">{selectedIdea.vote_count || 0}</p>
+                  <p className="font-medium">{selectedIdea.votes_count || 0}</p>
                 </div>
                 <div className="p-3 bg-slate-50 rounded-lg">
                   <p className="text-xs text-slate-500">{t({ en: 'Submitter', ar: 'المُقدِّم' })}</p>
@@ -545,7 +531,7 @@ function IdeasManagement() {
                       <p className="text-xs text-slate-600 mb-1">{t({ en: 'Priority Score', ar: 'نقاط الأولوية' })}</p>
                       <div className="flex items-center gap-2">
                         <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
-                          <div 
+                          <div
                             className="h-full bg-purple-600"
                             style={{ width: `${selectedIdea.ai_classification.priority_score || 0}%` }}
                           />
@@ -631,7 +617,7 @@ function IdeasManagement() {
                   <div className="flex gap-3 pt-4 border-t">
                     <Button
                       onClick={() => handleReview('approved')}
-                      disabled={updateIdeaMutation.isPending}
+                      disabled={updateIdea.isPending}
                       className="flex-1 bg-green-600"
                     >
                       <CheckCircle2 className="h-4 w-4 mr-2" />
@@ -647,7 +633,7 @@ function IdeasManagement() {
                     </Button>
                     <Button
                       onClick={() => handleReview('duplicate')}
-                      disabled={updateIdeaMutation.isPending}
+                      disabled={updateIdea.isPending}
                       variant="outline"
                       className="flex-1"
                     >
@@ -656,7 +642,7 @@ function IdeasManagement() {
                     </Button>
                     <Button
                       onClick={() => handleReview('rejected')}
-                      disabled={updateIdeaMutation.isPending}
+                      disabled={updateIdea.isPending}
                       variant="outline"
                       className="flex-1 text-red-600"
                     >
@@ -697,12 +683,20 @@ function IdeasManagement() {
               <CardContent>
                 <ResponseTemplates
                   onSelect={async (text) => {
-                    await base44.functions.invoke('citizenNotifications', {
-                      eventType: 'custom_response',
-                      ideaId: selectedIdea.id,
-                      citizenEmail: selectedIdea.submitter_email,
-                      customMessage: text
+                    const { error } = await supabase.functions.invoke('citizenNotifications', {
+                      body: {
+                        eventType: 'custom_response',
+                        ideaId: selectedIdea.id,
+                        citizenEmail: selectedIdea.submitter_email,
+                        customMessage: text
+                      }
                     });
+
+                    if (error) {
+                      toast.error(t({ en: 'Failed to send response', ar: 'فشل الإرسال' }));
+                      return;
+                    }
+
                     setShowResponseTemplate(false);
                     toast.success(t({ en: 'Response sent', ar: 'تم الإرسال' }));
                   }}

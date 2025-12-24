@@ -1,54 +1,39 @@
 import React from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../components/LanguageContext';
-import { useAuth } from '@/lib/AuthContext';
 import { Building2, CheckCircle2, XCircle } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useVendors } from '@/hooks/useVendors';
+import { useVendorMutations } from '@/hooks/useVendorMutations';
 
 function VendorApproval() {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
   const [selectedVendor, setSelectedVendor] = React.useState(null);
   const [reviewNotes, setReviewNotes] = React.useState('');
 
-  const { data: vendors = [], isLoading } = useQuery({
-    queryKey: ['vendors-pending'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('vendors')
-        .select('*')
-        .eq('status', 'under_review');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: vendors = [], isLoading } = useVendors({ status: 'under_review' });
+  const { approveVendor, rejectVendor } = useVendorMutations();
 
-  const approveMutation = useMutation({
-    mutationFn: async ({ vendorId, approved }) => {
-      const { error } = await supabase
-        .from('vendors')
-        .update({
-          status: approved ? 'approved' : 'registered',
-          is_approved: approved,
-          approval_date: approved ? new Date().toISOString() : null,
-          reviewed_by: user?.email,
-          review_notes: reviewNotes
-        })
-        .eq('id', vendorId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['vendors-pending'] });
-      setSelectedVendor(null);
-      setReviewNotes('');
-    }
-  });
+  const handleApprove = (vendorId) => {
+    approveVendor.mutate(vendorId, {
+      onSuccess: () => {
+        setSelectedVendor(null);
+        setReviewNotes('');
+      },
+    });
+  };
+
+  const handleReject = (vendorId) => {
+    rejectVendor.mutate({ id: vendorId, reason: reviewNotes }, {
+      onSuccess: () => {
+        setSelectedVendor(null);
+        setReviewNotes('');
+      },
+    });
+  };
 
   if (isLoading) {
     return (
@@ -125,15 +110,17 @@ function VendorApproval() {
                   />
                   <div className="flex gap-2">
                     <Button
-                      onClick={() => approveMutation.mutate({ vendorId: vendor.id, approved: true })}
+                      onClick={() => handleApprove(vendor.id)}
                       className="bg-green-600 hover:bg-green-700"
+                      disabled={approveVendor.isPending}
                     >
                       <CheckCircle2 className="h-4 w-4 mr-2" />
                       {t({ en: 'Approve', ar: 'موافقة' })}
                     </Button>
                     <Button
-                      onClick={() => approveMutation.mutate({ vendorId: vendor.id, approved: false })}
+                      onClick={() => handleReject(vendor.id)}
                       variant="destructive"
+                      disabled={rejectVendor.isPending || !reviewNotes.trim()}
                     >
                       <XCircle className="h-4 w-4 mr-2" />
                       {t({ en: 'Reject', ar: 'رفض' })}

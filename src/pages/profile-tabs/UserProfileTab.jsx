@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,62 +9,27 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
-import { 
-  User, Edit, Award, Mail, Globe, Save, Upload, 
+import {
+  User, Edit, Award, Mail, Globe, Save, Upload,
   Plus, X, Linkedin, Trophy, Star, Zap, Eye, EyeOff, CheckCircle
 } from 'lucide-react';
-import { toast } from 'sonner';
 import SupabaseFileUploader from '@/components/uploads/SupabaseFileUploader';
 import { ProfileStatCard, ProfileStatGrid } from '@/components/profile/ProfileStatCard';
 import { ProfileBadge } from '@/components/profile/ProfileBadge';
 import RoleRequestStatusBanner from '@/components/profile/RoleRequestStatusBanner';
+import { useUserProfileManagement } from '@/hooks/useUserProfileManagement';
 
 export default function UserProfileTab() {
   const { language, isRTL, t } = useLanguage();
   const { user: authUser } = useAuth();
-  const queryClient = useQueryClient();
   const [editMode, setEditMode] = useState(false);
   const [profileData, setProfileData] = useState({});
   const [newSkill, setNewSkill] = useState('');
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [coverPreview, setCoverPreview] = useState(null);
 
-  const { data: profile, isLoading } = useQuery({
-    queryKey: ['user-profile', authUser?.id],
-    queryFn: async () => {
-      if (!authUser?.id) return null;
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', authUser.id)
-        .single();
-      if (error && error.code !== 'PGRST116') throw error;
-      return data;
-    },
-    enabled: !!authUser?.id
-  });
-
-  const updateProfileMutation = useMutation({
-    mutationFn: async (data) => {
-      if (!authUser?.id) throw new Error('Not authenticated');
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ ...data, updated_at: new Date().toISOString() })
-        .eq('user_id', authUser.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['user-profile']);
-      setEditMode(false);
-      setAvatarPreview(null);
-      setCoverPreview(null);
-      setProfileData({});
-      toast.success(t({ en: 'Profile updated', ar: 'تم تحديث الملف' }));
-    },
-    onError: () => {
-      toast.error(t({ en: 'Failed to update profile', ar: 'فشل في تحديث الملف' }));
-    }
-  });
+  // Use custom hook for profile management
+  const { profile, isLoading, updateProfile } = useUserProfileManagement(authUser?.id);
 
   const handleSave = () => {
     const updateData = {
@@ -80,7 +43,14 @@ export default function UserProfileTab() {
       cover_image_url: profileData.cover_image_url ?? profile?.cover_image_url,
       is_public: profileData.is_public ?? profile?.is_public,
     };
-    updateProfileMutation.mutate(updateData);
+    updateProfile.mutate(updateData, {
+      onSuccess: () => {
+        setEditMode(false);
+        setAvatarPreview(null);
+        setCoverPreview(null);
+        setProfileData({});
+      }
+    });
   };
 
   const handleEditMode = (entering) => {
@@ -125,7 +95,7 @@ export default function UserProfileTab() {
     if (editMode) {
       setProfileData({ ...profileData, is_public: checked });
     } else {
-      updateProfileMutation.mutate({ is_public: checked });
+      updateProfile.mutate({ is_public: checked });
     }
   };
 
@@ -148,15 +118,15 @@ export default function UserProfileTab() {
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       <RoleRequestStatusBanner />
-      
+
       {/* Cover & Avatar */}
       <Card className="overflow-hidden">
         <div className="h-36 sm:h-44 bg-gradient-to-br from-primary/80 to-primary relative overflow-hidden">
           {(coverPreview ?? profileData.cover_image_url ?? profile?.cover_image_url) && (
-            <img 
-              src={coverPreview ?? profileData.cover_image_url ?? profile?.cover_image_url} 
-              alt="Cover" 
-              className="w-full h-full object-cover absolute inset-0" 
+            <img
+              src={coverPreview ?? profileData.cover_image_url ?? profile?.cover_image_url}
+              alt="Cover"
+              className="w-full h-full object-cover absolute inset-0"
             />
           )}
           {editMode && (
@@ -165,7 +135,7 @@ export default function UserProfileTab() {
                 bucket="avatars"
                 onUpload={(url) => {
                   setCoverPreview(url);
-                  setProfileData({...profileData, cover_image_url: url});
+                  setProfileData({ ...profileData, cover_image_url: url });
                 }}
                 accept="image/*"
                 trigger={
@@ -178,7 +148,7 @@ export default function UserProfileTab() {
               {(coverPreview || profileData.cover_image_url) && (
                 <Button size="sm" variant="destructive" className="h-8" onClick={() => {
                   setCoverPreview(null);
-                  setProfileData({...profileData, cover_image_url: null});
+                  setProfileData({ ...profileData, cover_image_url: null });
                 }}>
                   <X className="h-3 w-3" />
                 </Button>
@@ -191,10 +161,10 @@ export default function UserProfileTab() {
             <div className="relative">
               <div className="h-28 w-28 rounded-2xl bg-background border-4 border-background shadow-xl flex items-center justify-center overflow-hidden">
                 {(avatarPreview ?? profileData.avatar_url ?? profile?.avatar_url) ? (
-                  <img 
-                    src={avatarPreview ?? profileData.avatar_url ?? profile?.avatar_url} 
-                    alt="Avatar" 
-                    className="h-full w-full object-cover" 
+                  <img
+                    src={avatarPreview ?? profileData.avatar_url ?? profile?.avatar_url}
+                    alt="Avatar"
+                    className="h-full w-full object-cover"
                   />
                 ) : (
                   <User className="h-14 w-14 text-muted-foreground" />
@@ -211,7 +181,7 @@ export default function UserProfileTab() {
                     bucket="avatars"
                     onUpload={(url) => {
                       setAvatarPreview(url);
-                      setProfileData({...profileData, avatar_url: url});
+                      setProfileData({ ...profileData, avatar_url: url });
                     }}
                     accept="image/*"
                     trigger={
@@ -235,7 +205,7 @@ export default function UserProfileTab() {
                 </div>
                 <div className="flex gap-2 flex-wrap justify-center sm:justify-end">
                   {editMode && (
-                    <Button onClick={handleSave} size="sm" disabled={updateProfileMutation.isPending}>
+                    <Button onClick={handleSave} size="sm" disabled={updateProfile.isPending}>
                       <Save className="h-4 w-4 mr-1" />
                       {t({ en: 'Save', ar: 'حفظ' })}
                     </Button>
@@ -350,7 +320,7 @@ export default function UserProfileTab() {
                   <Label className="text-xs">{t({ en: 'Bio (English)', ar: 'النبذة (إنجليزي)' })}</Label>
                   <Textarea
                     value={profileData.bio_en || ''}
-                    onChange={(e) => setProfileData({...profileData, bio_en: e.target.value})}
+                    onChange={(e) => setProfileData({ ...profileData, bio_en: e.target.value })}
                     rows={3}
                     placeholder={t({ en: 'Tell us about yourself...', ar: 'أخبرنا عن نفسك...' })}
                   />
@@ -359,7 +329,7 @@ export default function UserProfileTab() {
                   <Label className="text-xs">{t({ en: 'Bio (Arabic)', ar: 'النبذة (عربي)' })}</Label>
                   <Textarea
                     value={profileData.bio_ar || ''}
-                    onChange={(e) => setProfileData({...profileData, bio_ar: e.target.value})}
+                    onChange={(e) => setProfileData({ ...profileData, bio_ar: e.target.value })}
                     rows={3}
                     dir="rtl"
                   />
@@ -367,7 +337,7 @@ export default function UserProfileTab() {
               </div>
             ) : (
               <p className="text-muted-foreground text-sm leading-relaxed">
-                {(language === 'ar' ? profile?.bio_ar : profile?.bio_en) || 
+                {(language === 'ar' ? profile?.bio_ar : profile?.bio_en) ||
                   t({ en: 'No bio added yet', ar: 'لم تضاف نبذة بعد' })}
               </p>
             )}
@@ -430,7 +400,7 @@ export default function UserProfileTab() {
                 <Label className="text-xs">{t({ en: 'LinkedIn URL', ar: 'رابط لينكد إن' })}</Label>
                 <Input
                   value={profileData.linkedin_url || ''}
-                  onChange={(e) => setProfileData({...profileData, linkedin_url: e.target.value})}
+                  onChange={(e) => setProfileData({ ...profileData, linkedin_url: e.target.value })}
                   placeholder="https://linkedin.com/in/username"
                 />
               </div>
@@ -438,7 +408,7 @@ export default function UserProfileTab() {
                 <Label className="text-xs">{t({ en: 'Title (English)', ar: 'اللقب (إنجليزي)' })}</Label>
                 <Input
                   value={profileData.title_en || ''}
-                  onChange={(e) => setProfileData({...profileData, title_en: e.target.value})}
+                  onChange={(e) => setProfileData({ ...profileData, title_en: e.target.value })}
                   placeholder={t({ en: 'e.g. Software Engineer', ar: 'مثال: مهندس برمجيات' })}
                 />
               </div>

@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useRoles } from '@/hooks/useRoles';
+import { useSystemPermissions } from '@/hooks/useSystemPermissions';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '@/components/LanguageContext';
-import { 
+import {
   Menu, Shield, Search, Lock, Unlock,
   Users, Eye, Filter
 } from 'lucide-react';
@@ -20,7 +21,7 @@ const menuItems = [
   { path: '/about', name: 'About', isPublic: true, requiredPermission: null },
   { path: '/contact', name: 'Contact', isPublic: true, requiredPermission: null },
   { path: '/news', name: 'News', isPublic: true, requiredPermission: null },
-  
+
   // Auth-required pages
   { path: '/challenges', name: 'Challenges', isPublic: false, requiredPermission: 'challenges_view' },
   { path: '/pilots', name: 'Pilots', isPublic: false, requiredPermission: 'pilots_view' },
@@ -29,24 +30,24 @@ const menuItems = [
   { path: '/organizations', name: 'Organizations', isPublic: false, requiredPermission: 'organizations_view' },
   { path: '/rd-projects', name: 'R&D Projects', isPublic: false, requiredPermission: 'rd_view' },
   { path: '/living-labs', name: 'Living Labs', isPublic: false, requiredPermission: 'living_labs_view' },
-  
+
   // Dashboard pages
   { path: '/dashboard', name: 'Dashboard', isPublic: false, requiredPermission: 'dashboard_view' },
   { path: '/my-challenges', name: 'My Challenges', isPublic: false, requiredPermission: 'challenges_view' },
   { path: '/my-pilots', name: 'My Pilots', isPublic: false, requiredPermission: 'pilots_view' },
-  
+
   // Admin pages
   { path: '/admin-portal', name: 'Admin Portal', isPublic: false, requiredPermission: 'admin_access', requireAdmin: true },
   { path: '/user-management', name: 'User Management', isPublic: false, requiredPermission: 'users_manage', requireAdmin: true },
   { path: '/rbac-hub', name: 'RBAC Hub', isPublic: false, requiredPermission: 'rbac_manage', requireAdmin: true },
   { path: '/role-permission-manager', name: 'Role Manager', isPublic: false, requiredPermission: 'roles_manage', requireAdmin: true },
   { path: '/delegation-manager', name: 'Delegation Manager', isPublic: false, requiredPermission: 'delegation_manage', requireAdmin: true },
-  
+
   // Coverage reports
   { path: '/challenge-coverage-report', name: 'Challenge Coverage', isPublic: false, requiredPermission: 'reports_view', requireAdmin: true },
   { path: '/pilot-coverage-report', name: 'Pilot Coverage', isPublic: false, requiredPermission: 'reports_view', requireAdmin: true },
   { path: '/rbac-coverage-report', name: 'RBAC Coverage', isPublic: false, requiredPermission: 'reports_view', requireAdmin: true },
-  
+
   // Data management
   { path: '/bulk-data-operations', name: 'Bulk Operations', isPublic: false, requiredPermission: 'data_import', requireAdmin: true },
   { path: '/data-management-hub', name: 'Data Management', isPublic: false, requiredPermission: 'data_manage', requireAdmin: true },
@@ -58,38 +59,15 @@ function MenuRBACContentInner() {
   const [filterType, setFilterType] = useState('all');
 
   // Fetch roles and permissions
-  const { data: roles = [] } = useQuery({
-    queryKey: ['menu-rbac-roles'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('roles').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: permissions = [] } = useQuery({
-    queryKey: ['menu-rbac-permissions'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('permissions').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: rolePermissions = [] } = useQuery({
-    queryKey: ['menu-rbac-role-permissions'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('role_permissions').select('*, permissions(code)');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: roles = [] } = useRoles();
+  const { data: permissions = [] } = useSystemPermissions();
+  const { data: rolePermissions = [] } = useRolePermissions();
 
   const filteredItems = useMemo(() => {
     return menuItems.filter(item => {
       const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           item.path.toLowerCase().includes(searchTerm.toLowerCase());
-      
+        item.path.toLowerCase().includes(searchTerm.toLowerCase());
+
       if (filterType === 'public') return matchesSearch && item.isPublic;
       if (filterType === 'protected') return matchesSearch && !item.isPublic && !item.requireAdmin;
       if (filterType === 'admin') return matchesSearch && item.requireAdmin;
@@ -103,7 +81,7 @@ function MenuRBACContentInner() {
     const protectedPages = menuItems.filter(i => !i.isPublic && !i.requireAdmin).length;
     const adminPages = menuItems.filter(i => i.requireAdmin).length;
     const withPermissions = menuItems.filter(i => i.requiredPermission).length;
-    
+
     return { total, publicPages, protectedPages, adminPages, withPermissions };
   }, []);
 
@@ -112,7 +90,7 @@ function MenuRBACContentInner() {
     if (!permissionCode) return [];
     const perm = permissions.find(p => p.code === permissionCode);
     if (!perm) return [];
-    
+
     return rolePermissions
       .filter(rp => rp.permission_id === perm.id)
       .map(rp => roles.find(r => r.id === rp.role_id)?.name)
@@ -214,13 +192,12 @@ function MenuRBACContentInner() {
           <div className="space-y-2">
             {filteredItems.map((item, i) => {
               const rolesWithAccess = getRolesWithPermission(item.requiredPermission);
-              
+
               return (
-                <div key={i} className={`p-3 border rounded-lg ${
-                  item.isPublic ? 'bg-green-50/50 border-green-200' :
+                <div key={i} className={`p-3 border rounded-lg ${item.isPublic ? 'bg-green-50/50 border-green-200' :
                   item.requireAdmin ? 'bg-red-50/50 border-red-200' :
-                  'bg-yellow-50/50 border-yellow-200'
-                }`}>
+                    'bg-yellow-50/50 border-yellow-200'
+                  }`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {item.isPublic ? (
@@ -282,10 +259,10 @@ function MenuRBACContentInner() {
 // Wrap with PermissionGate for admin-only access
 export default function MenuRBACContent() {
   const { t } = useLanguage();
-  
+
   return (
-    <PermissionGate 
-      requireAdmin 
+    <PermissionGate
+      requireAdmin
       fallback={
         <Card className="border-red-200 bg-red-50">
           <CardContent className="pt-6 text-center">

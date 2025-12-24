@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useCityManagement } from '@/hooks/useCityManagement';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,47 +18,22 @@ function CityManagement() {
   const [newCity, setNewCity] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [regionFilter, setRegionFilter] = useState('all');
-  const queryClient = useQueryClient();
+  /* 
+    Refactored to use useCityManagement hook 
+    Removed direct Supabase calls and local mutations
+  */
+  const {
+    cities,
+    regions,
+    createCityMutation,
+    updateCityMutation,
+    deleteCityMutation
+  } = useCityManagement(t);
 
-  const { data: cities = [] } = useQuery({
-    queryKey: ['cities'],
-    queryFn: () => base44.entities.City.list()
-  });
-
-  const { data: regions = [] } = useQuery({
-    queryKey: ['regions'],
-    queryFn: () => base44.entities.Region.list()
-  });
-
-  const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.City.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['cities']);
-      setNewCity(null);
-      toast.success(t({ en: 'City created', ar: 'تم إنشاء المدينة' }));
-    }
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.City.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['cities']);
-      setEditingCity(null);
-      toast.success(t({ en: 'City updated', ar: 'تم تحديث المدينة' }));
-    }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.City.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['cities']);
-      toast.success(t({ en: 'City deleted', ar: 'تم حذف المدينة' }));
-    }
-  });
 
   const filteredCities = cities.filter(city => {
     const matchesSearch = city.name_en?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         city.name_ar?.toLowerCase().includes(searchTerm.toLowerCase());
+      city.name_ar?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRegion = regionFilter === 'all' || city.region_id === regionFilter;
     return matchesSearch && matchesRegion;
   });
@@ -77,15 +51,12 @@ function CityManagement() {
         subtitle={{ en: 'Manage cities and their administrative regions', ar: 'إدارة المدن ومناطقها الإدارية' }}
         stats={[
           { icon: Building2, value: cities.length, label: { en: 'Total Cities', ar: 'إجمالي المدن' } },
-          { icon: MapPin, value: cities.filter(c => c.is_municipality).length, label: { en: 'Municipalities', ar: 'البلديات' } },
+          { icon: MapPin, value: cities.filter(c => c.municipality_id).length, label: { en: 'Municipalities', ar: 'البلديات' } },
         ]}
-        action={
-          <Button onClick={() => setNewCity({ region_id: '', name_en: '', name_ar: '', population: 0, is_municipality: true })}>
-            <Plus className="h-4 w-4 mr-2" />
-            {t({ en: 'Add City', ar: 'إضافة مدينة' })}
-          </Button>
-        }
-      />
+        action={<Button onClick={() => setNewCity({ region_id: '', name_en: '', name_ar: '', population: 0 })}>
+          <Plus className="h-4 w-4 mr-2" />
+          {t({ en: 'Add City', ar: 'إضافة مدينة' })}
+        </Button>} description={undefined} actions={undefined} children={undefined} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-gradient-to-br from-blue-50 to-white">
@@ -106,7 +77,7 @@ function CityManagement() {
               <div>
                 <p className="text-sm text-slate-600">{t({ en: 'Municipalities', ar: 'البلديات' })}</p>
                 <p className="text-3xl font-bold text-green-600">
-                  {cities.filter(c => c.is_municipality).length}
+                  {cities.filter(c => c.municipality_id).length}
                 </p>
               </div>
               <MapPin className="h-8 w-8 text-green-600" />
@@ -186,6 +157,7 @@ function CityManagement() {
                 />
               </div>
             </div>
+            {/* 
             <div className="flex items-center gap-3">
               <Switch
                 checked={newCity.is_municipality}
@@ -195,8 +167,9 @@ function CityManagement() {
                 {t({ en: 'Has its own municipality', ar: 'لديها بلدية خاصة' })}
               </label>
             </div>
+             */}
             <div className="flex gap-2">
-              <Button onClick={() => createMutation.mutate(newCity)} disabled={!newCity.name_en || !newCity.region_id}>
+              <Button onClick={() => createCityMutation.mutate(newCity, { onSuccess: () => setNewCity(null) })} disabled={!newCity.name_en || !newCity.region_id}>
                 <Save className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                 {t({ en: 'Create', ar: 'إنشاء' })}
               </Button>
@@ -251,9 +224,8 @@ function CityManagement() {
               const current = isEditing ? editingCity : city;
 
               return (
-                <div key={city.id} className={`p-4 border rounded-lg transition-all ${
-                  isEditing ? 'border-blue-500 bg-blue-50' : 'hover:border-blue-300'
-                }`}>
+                <div key={city.id} className={`p-4 border rounded-lg transition-all ${isEditing ? 'border-blue-500 bg-blue-50' : 'hover:border-blue-300'
+                  }`}>
                   {isEditing ? (
                     <div className="space-y-3">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -287,6 +259,7 @@ function CityManagement() {
                           placeholder="Population"
                         />
                       </div>
+                      {/* 
                       <div className="flex items-center gap-3">
                         <Switch
                           checked={current.is_municipality}
@@ -296,8 +269,9 @@ function CityManagement() {
                           {t({ en: 'Has municipality', ar: 'لديها بلدية' })}
                         </label>
                       </div>
+             */}
                       <div className="flex gap-2">
-                        <Button size="sm" onClick={() => updateMutation.mutate({ id: city.id, data: editingCity })}>
+                        <Button size="sm" onClick={() => updateCityMutation.mutate({ id: city.id, data: editingCity }, { onSuccess: () => setEditingCity(null) })}>
                           <Save className="h-3 w-3" />
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => setEditingCity(null)}>
@@ -312,7 +286,7 @@ function CityManagement() {
                           <p className="font-semibold text-slate-900 text-lg">
                             {language === 'ar' ? city.name_ar : city.name_en}
                           </p>
-                          {city.is_municipality && (
+                          {city.municipality_id && (
                             <Badge className="bg-green-100 text-green-700">
                               {t({ en: 'Municipality', ar: 'بلدية' })}
                             </Badge>
@@ -334,7 +308,7 @@ function CityManagement() {
                         <Button variant="outline" size="sm" onClick={() => setEditingCity(city)}>
                           <Edit2 className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => deleteMutation.mutate(city.id)}>
+                        <Button variant="outline" size="sm" onClick={() => deleteCityMutation.mutate(city.id)}>
                           <Trash2 className="h-4 w-4 text-red-600" />
                         </Button>
                       </div>

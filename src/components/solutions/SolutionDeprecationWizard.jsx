@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
 import { AlertTriangle, Calendar, Mail, CheckCircle2, Loader2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useDeprecateSolution } from '@/hooks/useSolutionWorkflows';
 import {
   Dialog,
   DialogContent,
@@ -23,7 +23,7 @@ export default function SolutionDeprecationWizard({ solution, onComplete }) {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
-  
+
   const [deprecationData, setDeprecationData] = useState({
     deprecation_reason: '',
     end_of_life_date: '',
@@ -41,78 +41,16 @@ export default function SolutionDeprecationWizard({ solution, onComplete }) {
     { title: { en: 'Confirm', ar: 'تأكيد' }, icon: CheckCircle2 }
   ];
 
-  const deprecateMutation = useMutation({
-    mutationFn: async (data) => {
-      // Update solution
-      await supabase.from('solutions').update({
-        workflow_stage: 'deprecated',
-        is_published: false,
-        is_archived: true,
-        deprecation_date: new Date().toISOString(),
-        deprecation_reason: data.deprecation_reason,
-        end_of_life_date: data.end_of_life_date,
-        replacement_solution_id: data.replacement_solution_id,
-        support_end_date: data.support_end_date
-      }).eq('id', solution.id);
+  const deprecateMutation = useDeprecateSolution();
 
-      // Get all pilots using this solution
-      const { data: activePilots = [] } = await supabase.from('pilots').select('*')
-        .eq('solution_id', solution.id)
-        .in('stage', ['active', 'monitoring', 'preparation']);
-
-      // Notify all affected municipalities
-      for (const pilot of activePilots) {
-        if (pilot.created_by) {
-          await supabase.functions.invoke('email-trigger-hub', {
-            body: {
-              trigger: 'solution.deprecated',
-              recipient_email: pilot.created_by,
-              entity_type: 'solution',
-              entity_id: solution.id,
-              variables: {
-                solutionName: solution.name_en,
-                pilotTitle: pilot.title_en,
-                deprecationReason: data.deprecation_reason,
-                endOfLifeDate: data.end_of_life_date,
-                supportEndDate: data.support_end_date || 'Not specified',
-                replacementAvailable: !!data.replacement_solution_id,
-                migrationSupportOffered: data.migration_support_offered,
-                notificationMessage: data.notification_message_en
-              }
-            }
-          });
-        }
+  const handleDeprecate = () => {
+    deprecateMutation.mutate({ solution, deprecationData }, {
+      onSuccess: (result) => {
+        setOpen(false);
+        onComplete?.();
       }
-
-      // Log activity
-      await supabase.from('system_activities').insert({
-        entity_type: 'Solution',
-        entity_id: solution.id,
-        activity_type: 'deprecated',
-        description_en: `Solution deprecated: ${data.deprecation_reason}`,
-        metadata: {
-          affected_pilots: activePilots.length,
-          end_of_life_date: data.end_of_life_date,
-          replacement_solution_id: data.replacement_solution_id
-        }
-      });
-
-      return { affectedPilots: activePilots.length };
-    },
-    onSuccess: (result) => {
-      queryClient.invalidateQueries(['solution']);
-      queryClient.invalidateQueries(['solutions']);
-      toast.success(t({ 
-        en: `Solution deprecated. ${result.affectedPilots} municipalities notified.`, 
-        ar: `تم إيقاف الحل. تم إشعار ${result.affectedPilots} بلدية.` 
-      }));
-      setOpen(false);
-      onComplete?.();
-    },
-    onError: () => {
-      toast.error(t({ en: 'Failed to deprecate solution', ar: 'فشل إيقاف الحل' }));
-    }
-  });
+    });
+  };
 
   const handleNext = () => {
     if (step < steps.length - 1) setStep(step + 1);
@@ -127,7 +65,7 @@ export default function SolutionDeprecationWizard({ solution, onComplete }) {
       toast.error(t({ en: 'Please fill required fields', ar: 'يرجى ملء الحقول المطلوبة' }));
       return;
     }
-    deprecateMutation.mutate(deprecationData);
+    handleDeprecate();
   };
 
   return (
@@ -169,22 +107,22 @@ export default function SolutionDeprecationWizard({ solution, onComplete }) {
               <div className="space-y-4">
                 <div className="p-4 bg-red-50 rounded-lg border border-red-200">
                   <p className="text-sm text-red-900">
-                    {t({ 
+                    {t({
                       en: 'Warning: Deprecating this solution will notify all municipalities using it in active pilots.',
-                      ar: 'تحذير: إيقاف هذا الحل سيشعر جميع البلديات التي تستخدمه في التجارب النشطة.' 
+                      ar: 'تحذير: إيقاف هذا الحل سيشعر جميع البلديات التي تستخدمه في التجارب النشطة.'
                     })}
                   </p>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label>{t({ en: 'Deprecation Reason *', ar: 'سبب الإيقاف *' })}</Label>
                   <Textarea
                     value={deprecationData.deprecation_reason}
-                    onChange={(e) => setDeprecationData({...deprecationData, deprecation_reason: e.target.value})}
+                    onChange={(e) => setDeprecationData({ ...deprecationData, deprecation_reason: e.target.value })}
                     rows={4}
-                    placeholder={t({ 
-                      en: 'Explain why this solution is being deprecated...', 
-                      ar: 'اشرح سبب إيقاف هذا الحل...' 
+                    placeholder={t({
+                      en: 'Explain why this solution is being deprecated...',
+                      ar: 'اشرح سبب إيقاف هذا الحل...'
                     })}
                     dir={isRTL ? 'rtl' : 'ltr'}
                   />
@@ -200,20 +138,20 @@ export default function SolutionDeprecationWizard({ solution, onComplete }) {
                     <Input
                       type="date"
                       value={deprecationData.end_of_life_date}
-                      onChange={(e) => setDeprecationData({...deprecationData, end_of_life_date: e.target.value})}
+                      onChange={(e) => setDeprecationData({ ...deprecationData, end_of_life_date: e.target.value })}
                       min={new Date().toISOString().split('T')[0]}
                     />
                     <p className="text-xs text-slate-500">
                       {t({ en: 'Date when solution will no longer be available', ar: 'التاريخ الذي لن يكون فيه الحل متاحاً' })}
                     </p>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label>{t({ en: 'Support End Date', ar: 'تاريخ انتهاء الدعم' })}</Label>
                     <Input
                       type="date"
                       value={deprecationData.support_end_date}
-                      onChange={(e) => setDeprecationData({...deprecationData, support_end_date: e.target.value})}
+                      onChange={(e) => setDeprecationData({ ...deprecationData, support_end_date: e.target.value })}
                       min={new Date().toISOString().split('T')[0]}
                     />
                     <p className="text-xs text-slate-500">
@@ -227,7 +165,7 @@ export default function SolutionDeprecationWizard({ solution, onComplete }) {
                     type="checkbox"
                     id="migration-support"
                     checked={deprecationData.migration_support_offered}
-                    onChange={(e) => setDeprecationData({...deprecationData, migration_support_offered: e.target.checked})}
+                    onChange={(e) => setDeprecationData({ ...deprecationData, migration_support_offered: e.target.checked })}
                     className="h-4 w-4"
                   />
                   <label htmlFor="migration-support" className="text-sm text-blue-900 cursor-pointer">
@@ -243,17 +181,17 @@ export default function SolutionDeprecationWizard({ solution, onComplete }) {
                   <Label>{t({ en: 'Notification Message (EN)', ar: 'رسالة الإشعار (EN)' })}</Label>
                   <Textarea
                     value={deprecationData.notification_message_en}
-                    onChange={(e) => setDeprecationData({...deprecationData, notification_message_en: e.target.value})}
+                    onChange={(e) => setDeprecationData({ ...deprecationData, notification_message_en: e.target.value })}
                     rows={4}
                     placeholder="This solution will be deprecated effective..."
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label>{t({ en: 'Notification Message (AR)', ar: 'رسالة الإشعار (AR)' })}</Label>
                   <Textarea
                     value={deprecationData.notification_message_ar}
-                    onChange={(e) => setDeprecationData({...deprecationData, notification_message_ar: e.target.value})}
+                    onChange={(e) => setDeprecationData({ ...deprecationData, notification_message_ar: e.target.value })}
                     rows={4}
                     placeholder="سيتم إيقاف هذا الحل اعتباراً من..."
                     dir="rtl"
@@ -292,9 +230,9 @@ export default function SolutionDeprecationWizard({ solution, onComplete }) {
 
                 <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <p className="text-xs text-blue-900">
-                    {t({ 
+                    {t({
                       en: 'Affected municipalities will be notified via email. Solution will be hidden from marketplace and marked as deprecated.',
-                      ar: 'سيتم إشعار البلديات المتأثرة عبر البريد الإلكتروني. سيتم إخفاء الحل من السوق ووضع علامة إيقاف عليه.' 
+                      ar: 'سيتم إشعار البلديات المتأثرة عبر البريد الإلكتروني. سيتم إخفاء الحل من السوق ووضع علامة إيقاف عليه.'
                     })}
                   </p>
                 </div>
@@ -307,14 +245,14 @@ export default function SolutionDeprecationWizard({ solution, onComplete }) {
             <Button variant="outline" onClick={step === 0 ? () => setOpen(false) : handleBack}>
               {step === 0 ? t({ en: 'Cancel', ar: 'إلغاء' }) : t({ en: 'Back', ar: 'السابق' })}
             </Button>
-            
+
             {step < steps.length - 1 ? (
               <Button onClick={handleNext}>
                 {t({ en: 'Next', ar: 'التالي' })}
               </Button>
             ) : (
-              <Button 
-                onClick={handleSubmit} 
+              <Button
+                onClick={handleSubmit}
                 disabled={deprecateMutation.isPending}
                 className="bg-red-600 hover:bg-red-700"
               >

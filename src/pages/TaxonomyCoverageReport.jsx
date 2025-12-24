@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+
+import { useTaxonomy } from '@/contexts/TaxonomyContext';
+import { useAnalyticsData } from '@/hooks/useAnalyticsData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -16,30 +17,14 @@ function TaxonomyCoverageReport() {
   const { language, isRTL, t } = useLanguage();
   const [expandedSections, setExpandedSections] = useState({});
 
-  const { data: sectors = [] } = useQuery({
-    queryKey: ['sectors-coverage'],
-    queryFn: () => base44.entities.Sector.list()
-  });
+  // Data from Context
+  const { sectors, subsectors, services } = useTaxonomy();
 
-  const { data: subsectors = [] } = useQuery({
-    queryKey: ['subsectors-coverage'],
-    queryFn: () => base44.entities.Subsector.list()
-  });
+  // Data from Analytics Hook
+  const { useInnovationPipelineData } = useAnalyticsData();
+  const { data: pipelineData = { challenges: [], solutions: [] } } = useInnovationPipelineData();
+  const { challenges, solutions } = pipelineData;
 
-  const { data: services = [] } = useQuery({
-    queryKey: ['services-coverage'],
-    queryFn: () => base44.entities.Service.list()
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-taxonomy'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
-
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions-taxonomy'],
-    queryFn: () => base44.entities.Solution.list()
-  });
 
   const toggleSection = (key) => {
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
@@ -1452,26 +1437,24 @@ function TaxonomyCoverageReport() {
                   <h4 className="font-semibold text-slate-900 text-lg">{journey.persona}</h4>
                   <Badge className={
                     journey.coverage >= 90 ? 'bg-green-100 text-green-700' :
-                    journey.coverage >= 70 ? 'bg-yellow-100 text-yellow-700' :
-                    journey.coverage >= 50 ? 'bg-orange-100 text-orange-700' :
-                    'bg-red-100 text-red-700'
+                      journey.coverage >= 70 ? 'bg-yellow-100 text-yellow-700' :
+                        journey.coverage >= 50 ? 'bg-orange-100 text-orange-700' :
+                          'bg-red-100 text-red-700'
                   }>{journey.coverage}% Complete</Badge>
                 </div>
                 <div className="space-y-2">
                   {journey.journey.map((step, i) => (
                     <div key={i} className="flex items-start gap-3">
                       <div className="flex flex-col items-center">
-                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                          step.status === 'complete' ? 'bg-green-100 text-green-700' :
+                        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${step.status === 'complete' ? 'bg-green-100 text-green-700' :
                           step.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
+                            'bg-red-100 text-red-700'
+                          }`}>
                           {i + 1}
                         </div>
                         {i < journey.journey.length - 1 && (
-                          <div className={`w-0.5 h-8 ${
-                            step.status === 'complete' ? 'bg-green-300' : 'bg-slate-200'
-                          }`} />
+                          <div className={`w-0.5 h-8 ${step.status === 'complete' ? 'bg-green-300' : 'bg-slate-200'
+                            }`} />
                         )}
                       </div>
                       <div className="flex-1 pt-1">
@@ -1537,22 +1520,20 @@ function TaxonomyCoverageReport() {
             </div>
             <div className="space-y-4">
               {coverageData.aiFeatures.map((ai, idx) => (
-                <div key={idx} className={`p-4 border rounded-lg ${
-                  ai.status === 'implemented' ? 'bg-gradient-to-r from-purple-50 to-pink-50' :
+                <div key={idx} className={`p-4 border rounded-lg ${ai.status === 'implemented' ? 'bg-gradient-to-r from-purple-50 to-pink-50' :
                   ai.status === 'partial' ? 'bg-yellow-50' : 'bg-red-50'
-                }`}>
+                  }`}>
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Sparkles className={`h-5 w-5 ${
-                        ai.status === 'implemented' ? 'text-purple-600' :
+                      <Sparkles className={`h-5 w-5 ${ai.status === 'implemented' ? 'text-purple-600' :
                         ai.status === 'partial' ? 'text-yellow-600' : 'text-red-600'
-                      }`} />
+                        }`} />
                       <h4 className="font-semibold text-slate-900">{ai.name}</h4>
                     </div>
                     <Badge className={
                       ai.status === 'implemented' ? 'bg-green-100 text-green-700' :
-                      ai.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-red-100 text-red-700'
+                        ai.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
                     }>{ai.coverage}%</Badge>
                   </div>
                   <p className="text-sm text-slate-600 mb-2">{ai.description}</p>
@@ -1607,11 +1588,11 @@ function TaxonomyCoverageReport() {
               <p className="font-bold text-green-900 mb-2">✅ Achievement: Foundation + Intelligence</p>
               <p className="text-sm text-green-800">
                 Taxonomy is <strong>WELL-STRUCTURED FOUNDATION</strong> (100%): comprehensive hierarchy, version-controlled, standards-aligned.
-                <br/><br/>
+                <br /><br />
                 AND <strong>ACTIVE & INTELLIGENT</strong> (95% intelligence): AI evolution, analytics, performance tracking, insights, predictions.
-                <br/><br/>
+                <br /><br />
                 Taxonomy used to <strong>CATEGORIZE</strong> (100%), <strong>ANALYZE</strong> (95%), <strong>PREDICT</strong> (85%), and <strong>GUIDE</strong> (90%).
-                <br/><br/>
+                <br /><br />
                 Achievement: Entities properly categorized (100%) → platform analyzes sector gaps (95%), tracks service performance (100%), provides AI-powered insights (90%), validates alignment with standards (95%), and guides strategic decisions (85%).
               </p>
             </div>
@@ -1620,17 +1601,16 @@ function TaxonomyCoverageReport() {
               <p className="font-semibold text-green-900 mb-3">← INPUT Paths (Good - 80%)</p>
               <div className="space-y-3">
                 {coverageData.conversionPaths.incoming.map((path, i) => (
-                  <div key={i} className={`p-3 border-2 rounded-lg ${
-                    path.coverage >= 80 ? 'border-green-300 bg-green-50' :
+                  <div key={i} className={`p-3 border-2 rounded-lg ${path.coverage >= 80 ? 'border-green-300 bg-green-50' :
                     path.coverage >= 50 ? 'border-yellow-300 bg-yellow-50' :
-                    'border-red-300 bg-red-50'
-                  }`}>
+                      'border-red-300 bg-red-50'
+                    }`}>
                     <div className="flex items-center justify-between mb-2">
                       <p className="font-bold">{path.path}</p>
                       <Badge className={
                         path.coverage >= 80 ? 'bg-green-600 text-white' :
-                        path.coverage >= 50 ? 'bg-yellow-600 text-white' :
-                        'bg-red-600 text-white'
+                          path.coverage >= 50 ? 'bg-yellow-600 text-white' :
+                            'bg-red-600 text-white'
                       }>{path.coverage}%</Badge>
                     </div>
                     <p className="text-sm text-slate-700 mb-1">{path.description}</p>
@@ -1651,17 +1631,16 @@ function TaxonomyCoverageReport() {
               <p className="font-semibold text-amber-900 mb-3">→ OUTPUT Paths (USAGE EXCELLENT, ANALYTICS WEAK)</p>
               <div className="space-y-3">
                 {coverageData.conversionPaths.outgoing.map((path, i) => (
-                  <div key={i} className={`p-3 border-2 rounded-lg ${
-                    path.coverage >= 80 ? 'border-green-300 bg-green-50' :
+                  <div key={i} className={`p-3 border-2 rounded-lg ${path.coverage >= 80 ? 'border-green-300 bg-green-50' :
                     path.coverage >= 50 ? 'border-yellow-300 bg-yellow-50' :
-                    'border-red-300 bg-red-50'
-                  }`}>
+                      'border-red-300 bg-red-50'
+                    }`}>
                     <div className="flex items-center justify-between mb-2">
                       <p className="font-bold">{path.path}</p>
                       <Badge className={
                         path.coverage >= 80 ? 'bg-green-600 text-white' :
-                        path.coverage >= 50 ? 'bg-yellow-600 text-white' :
-                        'bg-red-600 text-white'
+                          path.coverage >= 50 ? 'bg-yellow-600 text-white' :
+                            'bg-red-600 text-white'
                       }>{path.coverage}%</Badge>
                     </div>
                     <p className="text-sm text-slate-700 mb-1">{path.description}</p>
@@ -1718,7 +1697,7 @@ function TaxonomyCoverageReport() {
                       </tr>
                     </thead>
                     <tbody>
-                      {rows.map((row, i) => (
+                      {Array.isArray(rows) && rows.map((row, i) => (
                         <tr key={i} className="border-b hover:bg-slate-50">
                           <td className="py-2 px-3 font-semibold">{row.aspect}</td>
                           <td className="py-2 px-3 text-slate-700">{row.taxonomy}</td>
@@ -1973,19 +1952,18 @@ function TaxonomyCoverageReport() {
         <CardContent>
           <div className="space-y-3">
             {coverageData.recommendations.map((rec, idx) => (
-              <div key={idx} className={`p-4 border-2 rounded-lg ${
-                rec.priority === 'P0' ? 'border-red-300 bg-red-50' :
+              <div key={idx} className={`p-4 border-2 rounded-lg ${rec.priority === 'P0' ? 'border-red-300 bg-red-50' :
                 rec.priority === 'P1' ? 'border-orange-300 bg-orange-50' :
-                rec.priority === 'P2' ? 'border-yellow-300 bg-yellow-50' :
-                'border-blue-300 bg-blue-50'
-              }`}>
+                  rec.priority === 'P2' ? 'border-yellow-300 bg-yellow-50' :
+                    'border-blue-300 bg-blue-50'
+                }`}>
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Badge className={
                       rec.priority === 'P0' ? 'bg-red-600 text-white' :
-                      rec.priority === 'P1' ? 'bg-orange-600 text-white' :
-                      rec.priority === 'P2' ? 'bg-yellow-600 text-white' :
-                      'bg-blue-600 text-white'
+                        rec.priority === 'P1' ? 'bg-orange-600 text-white' :
+                          rec.priority === 'P2' ? 'bg-yellow-600 text-white' :
+                            'bg-blue-600 text-white'
                     }>
                       {rec.priority}
                     </Badge>
@@ -2043,23 +2021,23 @@ function TaxonomyCoverageReport() {
             <p className="text-sm font-semibold text-green-900 mb-2">✅ Assessment: TRANSFORMATION COMPLETE</p>
             <p className="text-sm text-green-800">
               Taxonomy has {overallCoverage}% coverage - <strong>EXCELLENT FOUNDATION WITH ACTIVE INTELLIGENCE</strong>:
-              <br/><br/>
+              <br /><br />
               <strong>STRUCTURE</strong> (100%) is EXCELLENT - 3-tier hierarchy, bilingual, comprehensive, version-controlled.
-              <br/>
+              <br />
               <strong>USAGE</strong> (100%) is EXCELLENT - all entities properly categorized with AI assistance.
-              <br/>
+              <br />
               <strong>INTELLIGENCE</strong> (95%) is STRONG - AI generation, gap detection, analytics, insights.
-              <br/>
+              <br />
               <strong>GOVERNANCE</strong> (95%) is STRONG - versioning, approval workflows, standards alignment.
-              <br/><br/>
+              <br /><br />
               Platform now:
-              <br/>✅ Analyzes sector performance (SectorDashboard + AI insights)
-              <br/>✅ Tracks service quality (ServicePerformance + SLA monitoring + citizen ratings)
-              <br/>✅ Detects taxonomy gaps (TaxonomyGapDetector integrated)
-              <br/>✅ Generates sector insights (AI trend analysis + benchmarking)
-              <br/>✅ Evolves taxonomy intelligently (AI generation from challenge patterns)
-              <br/>✅ Validates alignment (Vision 2030, NTP, QOL standards)
-              <br/><br/>
+              <br />✅ Analyzes sector performance (SectorDashboard + AI insights)
+              <br />✅ Tracks service quality (ServicePerformance + SLA monitoring + citizen ratings)
+              <br />✅ Detects taxonomy gaps (TaxonomyGapDetector integrated)
+              <br />✅ Generates sector insights (AI trend analysis + benchmarking)
+              <br />✅ Evolves taxonomy intelligently (AI generation from challenge patterns)
+              <br />✅ Validates alignment (Vision 2030, NTP, QOL standards)
+              <br /><br />
               Taxonomy used to <strong>ORGANIZE</strong> (100%), <strong>UNDERSTAND</strong> (95%), <strong>IMPROVE</strong> (90%), and <strong>GOVERN</strong> (95%).
             </p>
           </div>
@@ -2068,17 +2046,17 @@ function TaxonomyCoverageReport() {
             <p className="text-sm font-semibold text-green-900 mb-2">🎉 Bottom Line: TAXONOMY MODULE 100% COMPLETE</p>
             <p className="text-sm text-green-800">
               <strong>TAXONOMY TRANSFORMED FROM PASSIVE FOUNDATION → ACTIVE INTELLIGENCE LAYER</strong>
-              <br/><br/>
+              <br /><br />
               <strong>✅ ALL PRIORITIES IMPLEMENTED:</strong>
-              <br/>✅ 1. Service performance & quality tracking - ServicePerformance entity + ServiceQualityDashboard + SLA monitoring + citizen ratings
-              <br/>✅ 2. AI taxonomy intelligence - AITaxonomyGenerator + TaxonomyGapDetector + auto-categorization (all entities)
-              <br/>✅ 3. Sector analytics & insights - SectorDashboard + SectorBenchmarkingDashboard + AI trend analysis
-              <br/>✅ 4. Taxonomy versioning & governance - TaxonomyVersion + approval workflow + changelog
-              <br/>✅ 5. Service → challenge impact tracking - ServiceChallengeAggregation + AI linking
-              <br/>✅ 6. Standards alignment - StandardsAlignmentValidator + bulk import (Vision 2030, NTP, QOL)
-              <br/>✅ 7. Knowledge + playbooks organization - Sector-tagged knowledge base + best practices
-              <br/>✅ 8. RBAC complete - 12 permissions + 6 roles + 6 RLS rules + governance
-              <br/><br/>
+              <br />✅ 1. Service performance & quality tracking - ServicePerformance entity + ServiceQualityDashboard + SLA monitoring + citizen ratings
+              <br />✅ 2. AI taxonomy intelligence - AITaxonomyGenerator + TaxonomyGapDetector + auto-categorization (all entities)
+              <br />✅ 3. Sector analytics & insights - SectorDashboard + SectorBenchmarkingDashboard + AI trend analysis
+              <br />✅ 4. Taxonomy versioning & governance - TaxonomyVersion + approval workflow + changelog
+              <br />✅ 5. Service → challenge impact tracking - ServiceChallengeAggregation + AI linking
+              <br />✅ 6. Standards alignment - StandardsAlignmentValidator + bulk import (Vision 2030, NTP, QOL)
+              <br />✅ 7. Knowledge + playbooks organization - Sector-tagged knowledge base + best practices
+              <br />✅ 8. RBAC complete - 12 permissions + 6 roles + 6 RLS rules + governance
+              <br /><br />
               <strong>Taxonomy Coverage: 100% across all 9 report sections</strong>
             </p>
           </div>

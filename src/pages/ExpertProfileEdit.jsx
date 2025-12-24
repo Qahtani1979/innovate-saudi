@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+﻿import { useState, useEffect } from 'react';
+import { useExpertProfileById } from '@/hooks/useExpertData';
+import { useExpertMutations } from '@/hooks/useExpertMutations';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Button } from "@/components/ui/button";
@@ -19,31 +19,27 @@ function ExpertProfileEdit() {
   const expertId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
-  const { data: expert, isLoading } = useQuery({
-    queryKey: ['expert-profile', expertId],
-    queryFn: async () => {
-      const experts = await base44.entities.ExpertProfile.list();
-      return experts.find(e => e.id === expertId);
-    },
-    enabled: !!expertId
-  });
+  const { data: expert, isLoading } = useExpertProfileById(expertId);
+  const { updateExpertProfile } = useExpertMutations();
 
-  const [formData, setFormData] = useState(expert || {});
+  const [formData, setFormData] = useState({});
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (expert) setFormData(expert);
   }, [expert]);
 
-  const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.ExpertProfile.update(expertId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['expert-profile']);
-      toast.success(t({ en: 'Profile updated', ar: 'تم تحديث الملف' }));
-      navigate(createPageUrl(`ExpertDetail?id=${expertId}`));
-    }
-  });
+  const handleUpdate = () => {
+    updateExpertProfile.mutate(
+      { id: expertId, data: formData },
+      {
+        onSuccess: () => {
+          navigate(createPageUrl(`ExpertDetail?id=${expertId}`));
+        }
+      }
+    );
+  };
+
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-96">
@@ -55,12 +51,12 @@ function ExpertProfileEdit() {
     <PageLayout>
       <PageHeader
         icon={UserCog}
-        title={t({ en: 'Edit Expert Profile', ar: 'تعديل ملف الخبير' })}
-        description={t({ en: 'Update your expert profile information', ar: 'تحديث معلومات ملف الخبير' })}
+        title={t({ en: 'Edit Expert Profile', ar: 'ØªØ¹Ø¯ÙŠÙ„ Ù…Ù„Ù Ø§Ù„Ø®Ø¨ÙŠØ±' })}
+        description={t({ en: 'Update your expert profile information', ar: 'ØªØ­Ø¯ÙŠØ« Ù…Ø¹Ù„ÙˆÙ…Ø§Øª Ù…Ù„Ù Ø§Ù„Ø®Ø¨ÙŠØ±' })}
         action={
           <Button variant="outline" onClick={() => navigate(createPageUrl(`ExpertDetail?id=${expertId}`))}>
             <X className="h-4 w-4 mr-2" />
-            {t({ en: 'Cancel', ar: 'إلغاء' })}
+            {t({ en: 'Cancel', ar: 'Ø¥Ù„ØºØ§Ø¡' })}
           </Button>
         }
       />
@@ -69,14 +65,14 @@ function ExpertProfileEdit() {
         <CardContent className="pt-6 space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium">{t({ en: 'Title', ar: 'اللقب' })}</label>
+              <label className="text-sm font-medium">{t({ en: 'Title', ar: 'Ø§Ù„Ù„Ù‚Ø¨' })}</label>
               <Input
                 value={formData.title || ''}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               />
             </div>
             <div>
-              <label className="text-sm font-medium">{t({ en: 'Position', ar: 'المنصب' })}</label>
+              <label className="text-sm font-medium">{t({ en: 'Position', ar: 'Ø§Ù„Ù…Ù†ØµØ¨' })}</label>
               <Input
                 value={formData.position || ''}
                 onChange={(e) => setFormData({ ...formData, position: e.target.value })}
@@ -85,7 +81,7 @@ function ExpertProfileEdit() {
           </div>
 
           <div>
-            <label className="text-sm font-medium">{t({ en: 'Biography (English)', ar: 'السيرة (إنجليزي)' })}</label>
+            <label className="text-sm font-medium">{t({ en: 'Biography (English)', ar: 'Ø§Ù„Ø³ÙŠØ±Ø© (Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ)' })}</label>
             <Textarea
               value={formData.bio_en || ''}
               onChange={(e) => setFormData({ ...formData, bio_en: e.target.value })}
@@ -94,7 +90,7 @@ function ExpertProfileEdit() {
           </div>
 
           <div>
-            <label className="text-sm font-medium">{t({ en: 'Biography (Arabic)', ar: 'السيرة (عربي)' })}</label>
+            <label className="text-sm font-medium">{t({ en: 'Biography (Arabic)', ar: 'Ø§Ù„Ø³ÙŠØ±Ø© (Ø¹Ø±Ø¨ÙŠ)' })}</label>
             <Textarea
               value={formData.bio_ar || ''}
               onChange={(e) => setFormData({ ...formData, bio_ar: e.target.value })}
@@ -105,12 +101,12 @@ function ExpertProfileEdit() {
 
           <div>
             <label className="text-sm font-medium mb-2 block">
-              {t({ en: 'Expertise Areas (comma-separated)', ar: 'مجالات الخبرة' })}
+              {t({ en: 'Expertise Areas (comma-separated)', ar: 'Ù…Ø¬Ø§Ù„Ø§Øª Ø§Ù„Ø®Ø¨Ø±Ø©' })}
             </label>
             <Input
               defaultValue={formData.expertise_areas?.join(', ')}
-              onChange={(e) => setFormData({ 
-                ...formData, 
+              onChange={(e) => setFormData({
+                ...formData,
                 expertise_areas: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
               })}
             />
@@ -118,7 +114,7 @@ function ExpertProfileEdit() {
 
           <div>
             <label className="text-sm font-medium mb-2 block">
-              {t({ en: 'Sector Specializations', ar: 'التخصصات القطاعية' })}
+              {t({ en: 'Sector Specializations', ar: 'Ø§Ù„ØªØ®ØµØµØ§Øª Ø§Ù„Ù‚Ø·Ø§Ø¹ÙŠØ©' })}
             </label>
             <div className="grid grid-cols-2 gap-3">
               {['urban_design', 'transport', 'environment', 'digital_services', 'health', 'education', 'safety', 'economic_development'].map((sector) => (
@@ -142,7 +138,7 @@ function ExpertProfileEdit() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium">{t({ en: 'Availability (hours/month)', ar: 'التوفر (ساعات/شهر)' })}</label>
+              <label className="text-sm font-medium">{t({ en: 'Availability (hours/month)', ar: 'Ø§Ù„ØªÙˆÙØ± (Ø³Ø§Ø¹Ø§Øª/Ø´Ù‡Ø±)' })}</label>
               <Input
                 type="number"
                 value={formData.availability_hours_per_month || 20}
@@ -150,7 +146,7 @@ function ExpertProfileEdit() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium">{t({ en: 'Years of Experience', ar: 'سنوات الخبرة' })}</label>
+              <label className="text-sm font-medium">{t({ en: 'Years of Experience', ar: 'Ø³Ù†ÙˆØ§Øª Ø§Ù„Ø®Ø¨Ø±Ø©' })}</label>
               <Input
                 type="number"
                 value={formData.years_of_experience || 0}
@@ -161,16 +157,16 @@ function ExpertProfileEdit() {
 
           <div className="flex gap-3">
             <Button
-              onClick={() => updateMutation.mutate(formData)}
-              disabled={updateMutation.isPending}
+              onClick={handleUpdate}
+              disabled={updateExpertProfile.isPending}
               className="flex-1 bg-purple-600"
             >
-              {updateMutation.isPending ? (
+              {updateExpertProfile.isPending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
                 <Save className="h-4 w-4 mr-2" />
               )}
-              {t({ en: 'Save Changes', ar: 'حفظ التغييرات' })}
+              {t({ en: 'Save Changes', ar: 'Ø­ÙØ¸ Ø§Ù„ØªØºÙŠÙŠØ±Ø§Øª' })}
             </Button>
           </div>
         </CardContent>

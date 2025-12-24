@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import ChallengeClustering from '../components/challenges/ChallengeClustering';
 import ChallengeToProgramWorkflow from '../components/challenges/ChallengeToProgramWorkflow';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Button } from "@/components/ui/button";
@@ -45,7 +44,6 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from 'sonner';
 import ExportData from '../components/ExportData';
-import { createNotification } from '../components/AutoNotification';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePermissions } from '../components/permissions/usePermissions';
 import ProtectedPage from '../components/permissions/ProtectedPage';
@@ -53,8 +51,8 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 import { useChallengeListRealtime } from '@/hooks/useChallengeRealtime';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
-import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import VirtualizedChallengeGrid from '@/components/challenges/VirtualizedChallengeGrid';
+import { useChallengeMutations } from '@/hooks/useChallengeMutations';
 
 function Challenges() {
   const { hasPermission, isAdmin, isDeputyship, isMunicipality, isStaffUser } = usePermissions();
@@ -66,7 +64,6 @@ function Challenges() {
   const [aiInsights, setAiInsights] = useState(null);
   const queryClient = useQueryClient();
   const { language, isRTL, t } = useLanguage();
-  const { triggerEmail } = useEmailTrigger();
 
   const { invokeAI, status: aiStatus, isLoading: aiAnalyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
@@ -79,47 +76,9 @@ function Challenges() {
 
   // Enable realtime updates (rt-1, live-1)
   const { isConnected: realtimeConnected } = useChallengeListRealtime();
-  const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      const { error } = await supabase
-        .from('challenges')
-        .update({ is_deleted: true })
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['challenges']);
-      toast.success(t({ en: 'Challenge deleted', ar: 'تم حذف التحدي' }));
-    }
-  });
 
-  const archiveMutation = useMutation({
-    mutationFn: async (id) => {
-      const { error } = await supabase
-        .from('challenges')
-        .update({ status: 'archived', is_archived: true })
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries(['challenges']);
-      // Trigger status changed email
-      const challenge = challenges.find(c => c.id === id);
-      if (challenge) {
-        triggerEmail('challenge.status_changed', {
-          entity_type: 'challenge',
-          entity_id: id,
-          variables: {
-            challenge_title: challenge.title_en || challenge.title_ar,
-            challenge_code: challenge.code,
-            old_status: challenge.status,
-            new_status: 'archived'
-          }
-        }).catch(err => console.error('Email trigger failed:', err));
-      }
-      toast.success(t({ en: 'Challenge archived', ar: 'تم أرشفة التحدي' }));
-    }
-  });
+  // Use mutations hook
+  const { deleteChallenge, archiveChallenge, changeStatus } = useChallengeMutations();
 
   const generateAIInsights = async () => {
     if (!challenges || challenges.length === 0) {
@@ -240,71 +199,30 @@ function Challenges() {
     if (selectedIds.length === 0) return;
 
     if (action === 'approve') {
-      for (const id of selectedIds) {
-        const challenge = challenges.find(c => c.id === id);
-
-        await supabase.from('challenges').update({ status: 'approved' }).eq('id', id);
-
-        await createNotification({
-          title: t({ en: 'Challenge Approved', ar: 'تمت الموافقة على التحدي' }),
-          body: t({ en: `${challenge?.code} has been approved`, ar: `تمت الموافقة على ${challenge?.code}` }),
-          type: 'alert',
-          priority: 'medium',
-          linkUrl: `ChallengeDetail?id=${id}`,
-          entityType: 'challenge',
-          entityId: id
-        });
-        // Trigger status changed email
-        if (challenge) {
-          triggerEmail('challenge.status_changed', {
-            entity_type: 'challenge',
-            entity_id: id,
-            variables: {
-              challenge_title: challenge.title_en || challenge.title_ar,
-              challenge_code: challenge.code,
-              old_status: challenge.status,
-              new_status: 'approved'
-            }
-          }).catch(err => console.error('Email trigger failed:', err));
-        }
+      try {
+        await Promise.all(selectedIds.map(id => changeStatus.mutateAsync({ id, newStatus: 'approved' })));
+        toast.success(t({ en: `${selectedIds.length} challenges approved`, ar: `تم اعتماد ${selectedIds.length} تحديات` }));
+      } catch (error) {
+        console.error("Bulk approve failed", error);
+        toast.error(t({ en: 'Bulk approval failed', ar: 'فشل الاعتماد الجماعي' }));
       }
-      toast.success(t({ en: `${selectedIds.length} challenges approved`, ar: `تم اعتماد ${selectedIds.length} تحديات` }));
     } else if (action === 'archive') {
-      for (const id of selectedIds) {
-        const challenge = challenges.find(c => c.id === id);
-
-        await supabase.from('challenges').update({ is_archived: true, status: 'archived' }).eq('id', id);
-
-        await createNotification({
-          title: t({ en: 'Challenge Archived', ar: 'تم أرشفت التحدي' }),
-          body: t({ en: `${challenge?.code} has been archived`, ar: `تمت أرشفة ${challenge?.code}` }),
-          type: 'alert',
-          priority: 'low',
-          linkUrl: `ChallengeDetail?id=${id}`,
-          entityType: 'challenge',
-          entityId: id
-        });
-        // Trigger status changed email
-        if (challenge) {
-          triggerEmail('challenge.status_changed', {
-            entity_type: 'challenge',
-            entity_id: id,
-            variables: {
-              challenge_title: challenge.title_en || challenge.title_ar,
-              challenge_code: challenge.code,
-              old_status: challenge.status,
-              new_status: 'archived'
-            }
-          }).catch(err => console.error('Email trigger failed:', err));
-        }
+      try {
+        await Promise.all(selectedIds.map(id => archiveChallenge.mutateAsync(id)));
+        toast.success(t({ en: `${selectedIds.length} challenges archived`, ar: `تم أرشفة ${selectedIds.length} تحديات` }));
+      } catch (error) {
+        console.error("Bulk archive failed", error);
+        toast.error(t({ en: 'Bulk archive failed', ar: 'فشل الأرشفة الجماعية' }));
       }
-      toast.success(t({ en: `${selectedIds.length} challenges archived`, ar: `تم أرشفة ${selectedIds.length} تحديات` }));
     } else if (action === 'delete') {
       if (confirm(t({ en: `Delete ${selectedIds.length} challenges permanently?`, ar: `حذف ${selectedIds.length} تحديات نهائياً؟` }))) {
-        for (const id of selectedIds) {
-          await supabase.from('challenges').update({ is_deleted: true }).eq('id', id);
+        try {
+          await Promise.all(selectedIds.map(id => deleteChallenge.mutateAsync(id)));
+          toast.success(t({ en: `${selectedIds.length} challenges deleted`, ar: `تم حذف ${selectedIds.length} تحديات` }));
+        } catch (error) {
+          console.error("Bulk delete failed", error);
+          toast.error(t({ en: 'Bulk delete failed', ar: 'فشل الحذف الجماعي' }));
         }
-        toast.success(t({ en: `${selectedIds.length} challenges deleted`, ar: `تم حذف ${selectedIds.length} تحديات` }));
       }
     }
     queryClient.invalidateQueries(['challenges']);
@@ -579,6 +497,7 @@ function Challenges() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t({ en: 'All Status', ar: 'جميع الحالات' })}</SelectItem>
+                  {/* ... statuses ... */}
                   <SelectItem value="draft">{t({ en: 'Draft', ar: 'مسودة' })}</SelectItem>
                   <SelectItem value="submitted">{t({ en: 'Submitted', ar: 'مُقدّم' })}</SelectItem>
                   <SelectItem value="under_review">{t({ en: 'Under Review', ar: 'قيد المراجعة' })}</SelectItem>
@@ -731,7 +650,7 @@ function Challenges() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => archiveMutation.mutate(challenge.id)}
+                                onClick={() => archiveChallenge.mutate(challenge.id)}
                                 className="hover:bg-amber-50"
                               >
                                 <Archive className="h-4 w-4 text-amber-600" />
@@ -743,7 +662,7 @@ function Challenges() {
                                 size="icon"
                                 onClick={() => {
                                   if (confirm(t({ en: 'Delete permanently?', ar: 'حذف نهائياً؟' }))) {
-                                    deleteMutation.mutate(challenge.id);
+                                    deleteChallenge.mutate(challenge.id);
                                   }
                                 }}
                                 className="hover:bg-red-50"

@@ -1,5 +1,4 @@
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useEvaluations } from '@/hooks/useEvaluations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../components/LanguageContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -9,20 +8,11 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 function EvaluationAnalyticsDashboard() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: evaluations = [] } = useQuery({
-    queryKey: ['all-evaluations'],
-    queryFn: () => base44.entities.ExpertEvaluation.list()
-  });
+  const { useAllEvaluations, useAllExperts, useAllAssignments } = useEvaluations();
 
-  const { data: experts = [] } = useQuery({
-    queryKey: ['experts-analytics'],
-    queryFn: () => base44.entities.ExpertProfile.list()
-  });
-
-  const { data: assignments = [] } = useQuery({
-    queryKey: ['assignments-analytics'],
-    queryFn: () => base44.entities.ExpertAssignment.list()
-  });
+  const { data: evaluations = [] } = useAllEvaluations();
+  const { data: experts = [] } = useAllExperts();
+  const { data: assignments = [] } = useAllAssignments();
 
   // Analytics calculations
   const evaluationsByEntityType = evaluations.reduce((acc, e) => {
@@ -49,7 +39,7 @@ function EvaluationAnalyticsDashboard() {
     .map(([email, count]) => ({
       email,
       count,
-      avgScore: avgScoreByExpert[email].reduce((a,b) => a+b, 0) / avgScoreByExpert[email].length
+      avgScore: avgScoreByExpert[email].reduce((a, b) => a + b, 0) / avgScoreByExpert[email].length
     }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 10);

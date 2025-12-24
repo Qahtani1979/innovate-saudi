@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Button } from "@/components/ui/button";
@@ -22,6 +21,10 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import { CHALLENGE_ANALYSIS_PROMPT_TEMPLATE } from '@/lib/ai/prompts/challenges/challengeAnalysis';
+import { useChallengeCreateForm } from '@/hooks/useChallengeCreateForm';
+import { useChallengeMutations } from '@/hooks/useChallengeMutations';
+import { useSectors } from '@/hooks/useSectors';
+import { useMunicipalities, useRegions, useCities, useServices, useSubsectors, useCitizenIdeas, useCitizenIdea } from '@/hooks/useReferenceData';
 
 function ChallengeCreatePage() {
   const { hasPermission } = usePermissions();
@@ -37,269 +40,51 @@ function ChallengeCreatePage() {
   const ideaId = urlParams.get('idea_id');
   const strategicPlanId = urlParams.get('strategic_plan_id');
 
-  const [currentStep, setCurrentStep] = useState(1);
   const [initialThoughts, setInitialThoughts] = useState('');
   const [linkedIdea, setLinkedIdea] = useState(ideaId || '');
-  const [hasUserEdited, setHasUserEdited] = useState({
-    title_en: false,
-    title_ar: false,
-    description_en: false,
-    description_ar: false
-  });
 
-  // Fetch data using Supabase
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('municipalities').select('*').order('name_en');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { formData, updateField, updateFields, currentStep, nextStep, prevStep, goToStep, hasUserEdited, setHasUserEdited } = useChallengeCreateForm();
 
-  const { data: citizenIdeas = [] } = useQuery({
-    queryKey: ['citizen-ideas-approved'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('citizen_ideas').select('*').eq('status', 'approved');
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !ideaId
-  });
+  // Fetch data using Hooks
+  const { data: municipalities = [] } = useMunicipalities();
+  const { data: sectors = [] } = useSectors();
+  const { data: subsectors = [] } = useSubsectors();
+  const { data: services = [] } = useServices();
+  const { data: regions = [] } = useRegions();
+  const { data: cities = [] } = useCities();
 
-  const { data: selectedIdea } = useQuery({
-    queryKey: ['citizen-idea', ideaId],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('citizen_ideas').select('*').eq('id', ideaId).maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!ideaId
-  });
+  const { createChallenge } = useChallengeMutations();
 
-  const { data: sectors = [] } = useQuery({
-    queryKey: ['sectors'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('sectors').select('*').order('name_en');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // ... Citizen Idea fetching remains for now as it's specific context ...
+  const { data: citizenIdeas = [] } = useCitizenIdeas();
 
-  const { data: subsectors = [] } = useQuery({
-    queryKey: ['subsectors'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('subsectors').select('*').order('name_en');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: services = [] } = useQuery({
-    queryKey: ['services'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('services').select('*').order('name_en');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: regions = [] } = useQuery({
-    queryKey: ['regions'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('regions').select('*').order('name_en');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: cities = [] } = useQuery({
-    queryKey: ['cities'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('cities').select('*').order('name_en');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const [formData, setFormData] = useState({
-    code: `CH-${Date.now().toString().slice(-6)}`,
-    municipality_id: '',
-    title_en: '',
-    title_ar: '',
-    tagline_en: '',
-    tagline_ar: '',
-    description_en: '',
-    description_ar: '',
-    problem_statement_en: '',
-    problem_statement_ar: '',
-    current_situation_en: '',
-    current_situation_ar: '',
-    desired_outcome_en: '',
-    desired_outcome_ar: '',
-    root_cause_en: '',
-    root_cause_ar: '',
-    root_causes: [],
-    theme: '',
-    theme_en: '',
-    theme_ar: '',
-    keywords: [],
-    challenge_type: 'other',
-    category: '',
-    sector: '',
-    sector_id: '',
-    sub_sector: '',
-    subsector_id: '',
-    service_id: '',
-    affected_services: [],
-    ministry_service: '',
-    responsible_agency: '',
-    responsible_agency_en: '',
-    responsible_agency_ar: '',
-    department: '',
-    department_en: '',
-    department_ar: '',
-    challenge_owner: '',
-    challenge_owner_email: '',
-    city_id: '',
-    region_id: '',
-    coordinates: { latitude: null, longitude: null },
-    priority: 'tier_3',
-    status: 'draft',
-    tracks: [],
-    source: '',
-    strategic_goal: '',
-    strategic_plan_ids: strategicPlanId ? [strategicPlanId] : [],
-    severity_score: 50,
-    impact_score: 50,
-    overall_score: 50,
-    affected_population: { size: null, demographics: '', location: '' },
-    affected_population_size: null,
-    budget_estimate: null,
-    timeline_estimate: '',
-    kpis: [],
-    stakeholders: [],
-    data_evidence: [],
-    constraints: [],
-    innovation_framing: null,
-    image_url: '',
-    gallery_urls: [],
-    citizen_origin_idea_id: ideaId || null
-  });
+  const { data: selectedIdea } = useCitizenIdea(ideaId);
 
   // Auto-fill from CitizenIdea
   useEffect(() => {
     if (selectedIdea) {
       setInitialThoughts(selectedIdea.description || '');
-      setFormData(prev => ({
-        ...prev,
+      updateFields({
         title_en: selectedIdea.title || '',
         description_en: selectedIdea.description || '',
         municipality_id: selectedIdea.municipality_id || '',
         category: selectedIdea.category || '',
         citizen_origin_idea_id: selectedIdea.id
-      }));
+      });
       toast.success(t({ en: 'Pre-filled from citizen idea', ar: 'تم التعبئة من فكرة المواطن' }));
     }
-  }, [selectedIdea]);
+  }, [selectedIdea, updateFields]);
 
-  // Auto-save draft
-  useEffect(() => {
-    if (currentStep >= 2 && formData.title_en) {
-      const autoSave = setInterval(() => {
-        localStorage.setItem('challenge_draft', JSON.stringify({
-          formData,
-          linkedIdea,
-          initialThoughts,
-          timestamp: new Date().toISOString()
-        }));
-      }, 30000);
-      return () => clearInterval(autoSave);
-    }
-  }, [formData, linkedIdea, initialThoughts, currentStep]);
+  // Handle Create using Hook
+  const handleCreate = async () => {
+    createChallenge.mutate(formData, {
+      onSuccess: (challenge) => {
+        navigate(createPageUrl(`ChallengeDetail?id=${challenge.id}`));
+        localStorage.removeItem('challenge_draft');
+      }
+    });
+  };
 
-  // Load draft on mount
-  useEffect(() => {
-    const draft = localStorage.getItem('challenge_draft');
-    if (draft && !ideaId) {
-      try {
-        const parsed = JSON.parse(draft);
-        const draftAge = Date.now() - new Date(parsed.timestamp).getTime();
-        if (draftAge < 24 * 60 * 60 * 1000) {
-          if (confirm(t({ en: 'A draft was found. Load it?', ar: 'تم العثور على مسودة. تحميلها؟' }))) {
-            setFormData(parsed.formData);
-            setLinkedIdea(parsed.linkedIdea || '');
-            setInitialThoughts(parsed.initialThoughts || '');
-            setCurrentStep(2);
-          }
-        }
-      } catch (e) { }
-    }
-  }, []);
-
-  const createMutation = useMutation({
-    mutationFn: async (/** @type {any} */ data) => {
-      const cleanData = { ...data };
-      delete cleanData.reviewer;
-      delete cleanData.review_date;
-      delete cleanData.submission_date;
-      delete cleanData.processing_date;
-      delete cleanData.approval_date;
-      delete cleanData.resolution_date;
-      delete cleanData.archive_date;
-
-      cleanData.entry_date = new Date().toISOString().split('T')[0];
-      cleanData.overall_score = Math.round((data.severity_score + data.impact_score) / 2);
-
-      // Use Supabase client instead of base44
-      const { data: challenge, error } = await supabase
-        .from('challenges')
-        .insert(cleanData)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Generate embedding via edge function
-      supabase.functions.invoke('generateEmbeddings', {
-        body: {
-          entity_type: 'challenge',
-          entity_id: challenge.id,
-          title: challenge.title_en,
-          content: challenge.description_en || challenge.problem_statement_en || ''
-        }
-      }).catch(err => console.error('Embedding generation failed:', err));
-
-      // Log activity
-      await supabase.from('challenge_activities').insert({
-        challenge_id: challenge.id,
-        activity_type: 'created',
-        activity_category: 'lifecycle',
-        description: `Challenge created: ${challenge.title_en}`,
-        timestamp: new Date().toISOString()
-      });
-
-      return challenge;
-    },
-    onSuccess: async (challenge) => {
-      queryClient.invalidateQueries({ queryKey: ['challenges'] });
-      localStorage.removeItem('challenge_draft');
-
-      // Trigger email notification for challenge creation
-      await triggerEmail('challenge.created', {
-        entity_type: 'challenge',
-        entity_id: challenge.id,
-        variables: {
-          challenge_title: challenge.title_en,
-          challenge_code: challenge.code,
-          municipality_id: challenge.municipality_id
-        }
-      }).catch(err => console.error('Email trigger failed:', err));
-
-      toast.success(t({ en: 'Challenge created successfully!', ar: 'تم إنشاء التحدي بنجاح!' }));
-      navigate(createPageUrl(`ChallengeDetail?id=${challenge.id}`));
-    }
-  });
 
   const handleAIGenerate = async () => {
     if (!formData.municipality_id) {
@@ -341,51 +126,14 @@ function ChallengeCreatePage() {
 
       const sector = sectors.find(s => s.id === result.sector_id);
 
-      setFormData(prev => ({
-        ...prev,
-        title_en: result.title_en || prev.title_en,
-        title_ar: result.title_ar || prev.title_ar,
-        tagline_en: result.tagline_en || prev.tagline_en,
-        tagline_ar: result.tagline_ar || prev.tagline_ar,
-        description_en: result.description_en || prev.description_en,
-        description_ar: result.description_ar || prev.description_ar,
-        problem_statement_en: result.problem_statement_en || prev.problem_statement_en,
-        problem_statement_ar: result.problem_statement_ar || prev.problem_statement_ar,
-        current_situation_en: result.current_situation_en || prev.current_situation_en,
-        current_situation_ar: result.current_situation_ar || prev.current_situation_ar,
-        desired_outcome_en: result.desired_outcome_en || prev.desired_outcome_en,
-        desired_outcome_ar: result.desired_outcome_ar || prev.desired_outcome_ar,
-        root_cause_en: result.root_cause_en || prev.root_cause_en,
-        root_cause_ar: result.root_cause_ar || prev.root_cause_ar,
-        root_causes: result.root_causes || prev.root_causes,
-        sector_id: result.sector_id || prev.sector_id,
-        sector: sector?.code || prev.sector,
-        subsector_id: result.subsector_id || prev.subsector_id,
-        service_id: result.service_id || prev.service_id,
-        affected_services: result.affected_services || prev.affected_services,
-        keywords: result.keywords || prev.keywords,
-        severity_score: result.severity_score || prev.severity_score,
-        impact_score: result.impact_score || prev.impact_score,
+      // Replaced by updateFields or specific field updates
+      updateFields({
+        ...result,
         overall_score: Math.round(((result.severity_score || 50) + (result.impact_score || 50)) / 2),
-        affected_population: result.affected_population || prev.affected_population,
-        kpis: result.kpis || prev.kpis,
-        stakeholders: result.stakeholders || prev.stakeholders,
-        data_evidence: result.data_evidence || prev.data_evidence,
-        constraints: result.constraints || prev.constraints,
-        theme: result.theme || prev.theme,
-        category: result.category || prev.category,
-        challenge_type: result.challenge_type || prev.challenge_type,
-        priority: `tier_${result.priority_tier || 3}`,
-        tracks: result.tracks || prev.tracks,
-        budget_estimate: result.budget_estimate || prev.budget_estimate,
-        timeline_estimate: result.timeline_estimate || prev.timeline_estimate,
-        ministry_service: result.ministry_service || prev.ministry_service,
-        responsible_agency: result.responsible_agency || prev.responsible_agency,
-        department: result.department || prev.department,
-        strategic_goal: result.strategic_goal || prev.strategic_goal
-      }));
+        priority: `tier_${result.priority_tier || 3}`
+      });
 
-      setCurrentStep(2);
+      goToStep(2);
       toast.success(t({ en: '✨ AI generated complete challenge!', ar: '✨ تم إنشاء التحدي الكامل!' }));
     } catch (error) {
       toast.error(t({ en: 'AI generation failed', ar: 'فشل التوليد الذكي' }));
@@ -417,7 +165,8 @@ function ChallengeCreatePage() {
       });
 
       if (result.success && result.data?.translation) {
-        setFormData(prev => ({ ...prev, [field]: result.data.translation }));
+        updateFields({ [field]: result.data.translation });
+        // Manually override hasUserEdited to false for this field since it was AI generated
         setHasUserEdited(prev => ({ ...prev, [field]: false }));
         toast.success(t({ en: 'Re-translated', ar: 'تمت إعادة الترجمة' }));
       }
@@ -427,90 +176,79 @@ function ChallengeCreatePage() {
   };
 
   const handleFieldEdit = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (['title_en', 'title_ar', 'description_en', 'description_ar'].includes(field)) {
-      setHasUserEdited(prev => ({ ...prev, [field]: true }));
-    }
+    updateField(field, value);
   };
 
   const addKPI = () => {
-    setFormData(prev => ({
-      ...prev,
-      kpis: [...prev.kpis, { name_en: '', name_ar: '', baseline: '', target: '', unit: '' }]
-    }));
+    updateFields({
+      kpis: [...formData.kpis, { name_en: '', name_ar: '', baseline: '', target: '', unit: '' }]
+    });
   };
 
   const updateKPI = (index, field, value) => {
     const updated = [...formData.kpis];
     updated[index] = { ...updated[index], [field]: value };
-    setFormData(prev => ({ ...prev, kpis: updated }));
+    updateFields({ kpis: updated });
   };
 
   const removeKPI = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      kpis: prev.kpis.filter((_, i) => i !== index)
-    }));
+    updateFields({
+      kpis: formData.kpis.filter((_, i) => i !== index)
+    });
   };
 
   const addStakeholder = () => {
-    setFormData(prev => ({
-      ...prev,
-      stakeholders: [...prev.stakeholders, { name: '', role: '', involvement: '' }]
-    }));
+    updateFields({
+      stakeholders: [...formData.stakeholders, { name: '', role: '', involvement: '' }]
+    });
   };
 
   const updateStakeholder = (index, field, value) => {
     const updated = [...formData.stakeholders];
     updated[index] = { ...updated[index], [field]: value };
-    setFormData(prev => ({ ...prev, stakeholders: updated }));
+    updateFields({ stakeholders: updated });
   };
 
   const removeStakeholder = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      stakeholders: prev.stakeholders.filter((_, i) => i !== index)
-    }));
+    updateFields({
+      stakeholders: formData.stakeholders.filter((_, i) => i !== index)
+    });
   };
 
   const addEvidence = () => {
-    setFormData(prev => ({
-      ...prev,
-      data_evidence: [...prev.data_evidence, { type: '', source: '', value: '', date: '' }]
-    }));
+    updateFields({
+      data_evidence: [...formData.data_evidence, { type: '', source: '', value: '', date: '' }]
+    });
   };
 
   const updateEvidence = (index, field, value) => {
     const updated = [...formData.data_evidence];
     updated[index] = { ...updated[index], [field]: value };
-    setFormData(prev => ({ ...prev, data_evidence: updated }));
+    updateFields({ data_evidence: updated });
   };
 
   const removeEvidence = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      data_evidence: prev.data_evidence.filter((_, i) => i !== index)
-    }));
+    updateFields({
+      data_evidence: formData.data_evidence.filter((_, i) => i !== index)
+    });
   };
 
   const addConstraint = () => {
-    setFormData(prev => ({
-      ...prev,
-      constraints: [...prev.constraints, { type: '', description: '' }]
-    }));
+    updateFields({
+      constraints: [...formData.constraints, { type: '', description: '' }]
+    });
   };
 
   const updateConstraint = (index, field, value) => {
     const updated = [...formData.constraints];
     updated[index] = { ...updated[index], [field]: value };
-    setFormData(prev => ({ ...prev, constraints: updated }));
+    updateFields({ constraints: updated });
   };
 
   const removeConstraint = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      constraints: prev.constraints.filter((_, i) => i !== index)
-    }));
+    updateFields({
+      constraints: formData.constraints.filter((_, i) => i !== index)
+    });
   };
 
   const filteredSubsectors = formData.sector_id
@@ -526,8 +264,7 @@ function ChallengeCreatePage() {
       <PageHeader
         icon={Target}
         title={{ en: 'Create New Challenge', ar: 'إنشاء تحدي جديد' }}
-        description={{ en: 'AI-powered challenge submission for Saudi municipalities', ar: 'تقديم تحدي بدعم ذكي للبلديات السعودية' }}
-      />
+        description={{ en: 'AI-powered challenge submission for Saudi municipalities', ar: 'تقديم تحدي بدعم ذكي للبلديات السعودية' }} subtitle={undefined} action={undefined} actions={undefined} children={undefined} />
 
       {/* Progress */}
       <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200">
@@ -575,7 +312,7 @@ function ChallengeCreatePage() {
               </Label>
               <Select
                 value={formData.municipality_id}
-                onValueChange={(value) => setFormData({ ...formData, municipality_id: value })}
+                onValueChange={(value) => updateField('municipality_id', value)}
               >
                 <SelectTrigger className="h-12 text-base border-2">
                   <SelectValue placeholder={t({ en: 'Select municipality...', ar: 'اختر البلدية...' })} />
@@ -735,14 +472,14 @@ function ChallengeCreatePage() {
                   <Label>{t({ en: 'Tagline (English)', ar: 'الشعار (إنجليزي)' })}</Label>
                   <Input
                     value={formData.tagline_en}
-                    onChange={(e) => setFormData({ ...formData, tagline_en: e.target.value })}
+                    onChange={(e) => updateField('tagline_en', e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>{t({ en: 'Tagline (Arabic)', ar: 'الشعار (عربي)' })}</Label>
                   <Input
                     value={formData.tagline_ar}
-                    onChange={(e) => setFormData({ ...formData, tagline_ar: e.target.value })}
+                    onChange={(e) => updateField('tagline_ar', e.target.value)}
                     dir="rtl"
                   />
                 </div>
@@ -793,7 +530,7 @@ function ChallengeCreatePage() {
                   <Label>{t({ en: 'Problem Statement (EN)', ar: 'بيان المشكلة (إنجليزي)' })}</Label>
                   <Textarea
                     value={formData.problem_statement_en}
-                    onChange={(e) => setFormData({ ...formData, problem_statement_en: e.target.value })}
+                    onChange={(e) => updateField('problem_statement_en', e.target.value)}
                     rows={3}
                   />
                 </div>
@@ -801,7 +538,7 @@ function ChallengeCreatePage() {
                   <Label>{t({ en: 'Problem Statement (AR)', ar: 'بيان المشكلة (عربي)' })}</Label>
                   <Textarea
                     value={formData.problem_statement_ar}
-                    onChange={(e) => setFormData({ ...formData, problem_statement_ar: e.target.value })}
+                    onChange={(e) => updateField('problem_statement_ar', e.target.value)}
                     rows={3}
                     dir="rtl"
                   />
@@ -813,7 +550,7 @@ function ChallengeCreatePage() {
                   <Label>{t({ en: 'Current Situation (EN)', ar: 'الوضع الحالي (إنجليزي)' })}</Label>
                   <Textarea
                     value={formData.current_situation_en}
-                    onChange={(e) => setFormData({ ...formData, current_situation_en: e.target.value })}
+                    onChange={(e) => updateField('current_situation_en', e.target.value)}
                     rows={3}
                   />
                 </div>
@@ -821,7 +558,7 @@ function ChallengeCreatePage() {
                   <Label>{t({ en: 'Current Situation (AR)', ar: 'الوضع الحالي (عربي)' })}</Label>
                   <Textarea
                     value={formData.current_situation_ar}
-                    onChange={(e) => setFormData({ ...formData, current_situation_ar: e.target.value })}
+                    onChange={(e) => updateField('current_situation_ar', e.target.value)}
                     rows={3}
                     dir="rtl"
                   />
@@ -833,7 +570,7 @@ function ChallengeCreatePage() {
                   <Label>{t({ en: 'Desired Outcome (EN)', ar: 'النتيجة المرغوبة (إنجليزي)' })}</Label>
                   <Textarea
                     value={formData.desired_outcome_en}
-                    onChange={(e) => setFormData({ ...formData, desired_outcome_en: e.target.value })}
+                    onChange={(e) => updateField('desired_outcome_en', e.target.value)}
                     rows={3}
                     placeholder="Describe end state, not specific solution"
                   />
@@ -845,7 +582,7 @@ function ChallengeCreatePage() {
                   <Label>{t({ en: 'Desired Outcome (AR)', ar: 'النتيجة المرغوبة (عربي)' })}</Label>
                   <Textarea
                     value={formData.desired_outcome_ar}
-                    onChange={(e) => setFormData({ ...formData, desired_outcome_ar: e.target.value })}
+                    onChange={(e) => updateField('desired_outcome_ar', e.target.value)}
                     rows={3}
                     dir="rtl"
                     placeholder="صف الحالة النهائية، ليس نهج الحل"
@@ -859,7 +596,7 @@ function ChallengeCreatePage() {
                   <Label>{t({ en: 'Root Cause (EN)', ar: 'السبب الجذري (إنجليزي)' })}</Label>
                   <Textarea
                     value={formData.root_cause_en}
-                    onChange={(e) => setFormData({ ...formData, root_cause_en: e.target.value })}
+                    onChange={(e) => updateField('root_cause_en', e.target.value)}
                     rows={2}
                   />
                 </div>
@@ -867,7 +604,7 @@ function ChallengeCreatePage() {
                   <Label>{t({ en: 'Root Cause (AR)', ar: 'السبب الجذري (عربي)' })}</Label>
                   <Textarea
                     value={formData.root_cause_ar}
-                    onChange={(e) => setFormData({ ...formData, root_cause_ar: e.target.value })}
+                    onChange={(e) => updateField('root_cause_ar', e.target.value)}
                     rows={2}
                     dir="rtl"
                   />
@@ -882,8 +619,7 @@ function ChallengeCreatePage() {
                   label={t({ en: 'Upload or search image', ar: 'رفع أو بحث عن صورة' })}
                   enableImageSearch={true}
                   searchContext={formData.title_en || initialThoughts?.substring(0, 100)}
-                  onUploadComplete={(url) => setFormData({ ...formData, image_url: url })}
-                />
+                  onUploadComplete={(url) => updateField('image_url', url)} description={undefined} />
               </div>
             </CardContent>
           </Card>
@@ -902,7 +638,7 @@ function ChallengeCreatePage() {
                     value={formData.sector_id}
                     onValueChange={(value) => {
                       const sector = sectors.find(s => s.id === value);
-                      setFormData({ ...formData, sector_id: value, sector: sector?.code, subsector_id: '', service_id: '' });
+                      updateFields({ sector_id: value, sector: sector?.code, subsector_id: '', service_id: '' });
                     }}
                   >
                     <SelectTrigger>
@@ -923,7 +659,7 @@ function ChallengeCreatePage() {
                     value={formData.subsector_id}
                     onValueChange={(value) => {
                       const subsector = subsectors.find(ss => ss.id === value);
-                      setFormData({ ...formData, subsector_id: value, sub_sector: subsector?.name_en });
+                      updateFields({ subsector_id: value, sub_sector: subsector?.name_en });
                     }}
                     disabled={!formData.sector_id}
                   >
@@ -943,7 +679,7 @@ function ChallengeCreatePage() {
                   <Label>{t({ en: 'Service', ar: 'الخدمة' })}</Label>
                   <Select
                     value={formData.service_id}
-                    onValueChange={(value) => setFormData({ ...formData, service_id: value })}
+                    onValueChange={(value) => updateField('service_id', value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder={t({ en: 'Select...', ar: 'اختر...' })} />
@@ -965,7 +701,7 @@ function ChallengeCreatePage() {
                   <Label>{t({ en: 'Region', ar: 'المنطقة' })}</Label>
                   <Select
                     value={formData.region_id}
-                    onValueChange={(value) => setFormData({ ...formData, region_id: value, city_id: '' })}
+                    onValueChange={(value) => updateFields({ region_id: value, city_id: '' })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder={t({ en: 'Select...', ar: 'اختر...' })} />
@@ -985,8 +721,7 @@ function ChallengeCreatePage() {
                     value={formData.city_id}
                     onValueChange={(value) => {
                       const city = cities.find(c => c.id === value);
-                      setFormData({
-                        ...formData,
+                      updateFields({
                         city_id: value,
                         region_id: city?.region_id || formData.region_id,
                         coordinates: city?.coordinates || formData.coordinates
@@ -1014,7 +749,7 @@ function ChallengeCreatePage() {
                     <Label>{t({ en: 'Responsible Agency (EN)', ar: 'الجهة المسؤولة (إنجليزي)' })}</Label>
                     <Input
                       value={formData.responsible_agency_en || formData.responsible_agency || ''}
-                      onChange={(e) => setFormData({ ...formData, responsible_agency_en: e.target.value, responsible_agency: e.target.value })}
+                      onChange={(e) => updateFields({ responsible_agency_en: e.target.value, responsible_agency: e.target.value })}
                       placeholder="Ministry of Municipalities and Housing"
                     />
                   </div>
@@ -1022,7 +757,7 @@ function ChallengeCreatePage() {
                     <Label>{t({ en: 'Responsible Agency (AR)', ar: 'الجهة المسؤولة (عربي)' })}</Label>
                     <Input
                       value={formData.responsible_agency_ar || ''}
-                      onChange={(e) => setFormData({ ...formData, responsible_agency_ar: e.target.value })}
+                      onChange={(e) => updateField('responsible_agency_ar', e.target.value)}
                       placeholder="وزارة البلديات والإسكان"
                       dir="rtl"
                     />
@@ -1033,7 +768,7 @@ function ChallengeCreatePage() {
                     <Label>{t({ en: 'Department (EN)', ar: 'الإدارة (إنجليزي)' })}</Label>
                     <Input
                       value={formData.department_en || formData.department || ''}
-                      onChange={(e) => setFormData({ ...formData, department_en: e.target.value, department: e.target.value })}
+                      onChange={(e) => updateFields({ department_en: e.target.value, department: e.target.value })}
                       placeholder="Infrastructure Planning"
                     />
                   </div>
@@ -1041,7 +776,7 @@ function ChallengeCreatePage() {
                     <Label>{t({ en: 'Department (AR)', ar: 'الإدارة (عربي)' })}</Label>
                     <Input
                       value={formData.department_ar || ''}
-                      onChange={(e) => setFormData({ ...formData, department_ar: e.target.value })}
+                      onChange={(e) => updateField('department_ar', e.target.value)}
                       placeholder="إدارة تخطيط البنية التحتية"
                       dir="rtl"
                     />
@@ -1055,7 +790,7 @@ function ChallengeCreatePage() {
                   <Label>{t({ en: 'Challenge Type', ar: 'نوع التحدي' })}</Label>
                   <Select
                     value={formData.challenge_type}
-                    onValueChange={(v) => setFormData({ ...formData, challenge_type: v })}
+                    onValueChange={(v) => updateField('challenge_type', v)}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -1076,7 +811,7 @@ function ChallengeCreatePage() {
                   <Label>{t({ en: 'Priority', ar: 'الأولوية' })}</Label>
                   <Select
                     value={formData.priority}
-                    onValueChange={(v) => setFormData({ ...formData, priority: v })}
+                    onValueChange={(v) => updateField('priority', v)}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -1093,7 +828,7 @@ function ChallengeCreatePage() {
                   <Label>{t({ en: 'Category', ar: 'الفئة' })}</Label>
                   <Input
                     value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    onChange={(e) => updateField('category', e.target.value)}
                     placeholder={t({ en: 'e.g., Road Safety', ar: 'مثال: سلامة الطرق' })}
                   />
                 </div>
@@ -1105,7 +840,7 @@ function ChallengeCreatePage() {
                   <Label>{t({ en: 'Theme (EN)', ar: 'الثيم (إنجليزي)' })}</Label>
                   <Input
                     value={formData.theme_en || formData.theme || ''}
-                    onChange={(e) => setFormData({ ...formData, theme_en: e.target.value, theme: e.target.value })}
+                    onChange={(e) => updateFields({ theme_en: e.target.value, theme: e.target.value })}
                     placeholder="Urban Mobility Enhancement"
                   />
                 </div>
@@ -1113,7 +848,7 @@ function ChallengeCreatePage() {
                   <Label>{t({ en: 'Theme (AR)', ar: 'الثيم (عربي)' })}</Label>
                   <Input
                     value={formData.theme_ar || ''}
-                    onChange={(e) => setFormData({ ...formData, theme_ar: e.target.value })}
+                    onChange={(e) => updateField('theme_ar', e.target.value)}
                     placeholder="تحسين التنقل الحضري"
                     dir="rtl"
                   />
@@ -1155,7 +890,7 @@ function ChallengeCreatePage() {
                           const updated = e.target.checked
                             ? [...(formData.tracks || []), track.value]
                             : (formData.tracks || []).filter(t => t !== track.value);
-                          setFormData({ ...formData, tracks: updated });
+                          updateField('tracks', updated);
                         }}
                         className="rounded"
                       />
@@ -1180,14 +915,14 @@ function ChallengeCreatePage() {
                   <Input
                     type="number"
                     value={formData.budget_estimate || ''}
-                    onChange={(e) => setFormData({ ...formData, budget_estimate: parseFloat(e.target.value) || null })}
+                    onChange={(e) => updateField('budget_estimate', parseFloat(e.target.value) || null)}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>{t({ en: 'Timeline Estimate', ar: 'تقدير المدة' })}</Label>
                   <Input
                     value={formData.timeline_estimate}
-                    onChange={(e) => setFormData({ ...formData, timeline_estimate: e.target.value })}
+                    onChange={(e) => updateField('timeline_estimate', e.target.value)}
                     placeholder={t({ en: '6 months, 1 year', ar: '6 أشهر، سنة' })}
                   />
                 </div>
@@ -1199,10 +934,7 @@ function ChallengeCreatePage() {
                 <Input
                   type="number"
                   value={formData.affected_population?.size || ''}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    affected_population: { ...formData.affected_population, size: parseInt(e.target.value) || null }
-                  })}
+                  onChange={(e) => updateField('affected_population', { ...formData.affected_population, size: parseInt(e.target.value) || null })}
                 />
               </div>
 
@@ -1456,7 +1188,7 @@ function ChallengeCreatePage() {
           <CardContent>
             <InnovationFramingGenerator
               challenge={formData}
-              onFramingGenerated={(framing) => setFormData({ ...formData, innovation_framing: framing })}
+              onFramingGenerated={(framing) => updateFields({ innovation_framing: framing })}
             />
           </CardContent>
         </Card>
@@ -1474,7 +1206,7 @@ function ChallengeCreatePage() {
           <CardContent>
             <StrategicAlignmentSelector
               challenge={{ ...formData, id: 'preview' }}
-              onUpdate={(planIds) => setFormData({ ...formData, strategic_plan_ids: planIds })}
+              onUpdate={(planIds) => updateFields({ strategic_plan_ids: planIds })}
             />
           </CardContent>
         </Card>
@@ -1534,7 +1266,7 @@ function ChallengeCreatePage() {
       {/* Navigation */}
       <div className="flex justify-between">
         {currentStep > 1 && (
-          <Button variant="outline" onClick={() => setCurrentStep(currentStep - 1)}>
+          <Button variant="outline" onClick={prevStep}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             {t({ en: 'Previous', ar: 'السابق' })}
           </Button>
@@ -1542,7 +1274,7 @@ function ChallengeCreatePage() {
         <div className={currentStep === 1 ? 'w-full' : 'ml-auto'}>
           {currentStep < 5 ? (
             <Button
-              onClick={() => setCurrentStep(currentStep + 1)}
+              onClick={nextStep}
               disabled={currentStep === 1 && !formData.title_en}
               className="bg-gradient-to-r from-blue-600 to-purple-600"
             >
@@ -1551,11 +1283,11 @@ function ChallengeCreatePage() {
             </Button>
           ) : (
             <Button
-              onClick={() => createMutation.mutate(formData)}
-              disabled={createMutation.isPending}
+              onClick={handleCreate}
+              disabled={createChallenge.isPending}
               className="bg-gradient-to-r from-green-600 to-emerald-600"
             >
-              {createMutation.isPending ? (
+              {createChallenge.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {t({ en: 'Creating...', ar: 'جاري الإنشاء...' })}

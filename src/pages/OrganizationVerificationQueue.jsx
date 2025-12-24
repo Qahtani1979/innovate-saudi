@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOrganizationVerificationData } from '@/hooks/useOrganizationVerificationData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,81 +15,7 @@ import { useAuth } from '@/lib/AuthContext';
 function OrganizationVerificationQueue() {
   const { t, language } = useLanguage();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const [selectedOrg, setSelectedOrg] = useState(null);
-  const [verificationData, setVerificationData] = useState({
-    legal_verified: false,
-    financial_verified: false,
-    operational_verified: false,
-    technical_verified: false,
-    verification_notes: '',
-    risk_flags: []
-  });
-
-  const { data: organizations = [] } = useQuery({
-    queryKey: ['organizations-verification'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('organizations')
-        .select('*')
-        .eq('is_verified', false)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const verifyMutation = useMutation({
-    mutationFn: async ({ orgId, decision }) => {
-      const score = [
-        verificationData.legal_verified,
-        verificationData.financial_verified,
-        verificationData.operational_verified,
-        verificationData.technical_verified
-      ].filter(Boolean).length * 25;
-
-      const { error: verifyError } = await supabase
-        .from('organization_verifications')
-        .insert({
-          organization_id: orgId,
-          verifier_email: user?.email,
-          legal_verified: verificationData.legal_verified,
-          financial_verified: verificationData.financial_verified,
-          operational_verified: verificationData.operational_verified,
-          technical_verified: verificationData.technical_verified,
-          overall_status: decision,
-          verification_score: score,
-          verification_notes: verificationData.verification_notes,
-          risk_flags: verificationData.risk_flags,
-          verification_date: new Date().toISOString(),
-          expiry_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
-        });
-      if (verifyError) throw verifyError;
-
-      const { error: updateError } = await supabase
-        .from('organizations')
-        .update({
-          is_verified: decision === 'verified',
-          verification_date: new Date().toISOString(),
-          verification_notes: verificationData.verification_notes
-        })
-        .eq('id', orgId);
-      if (updateError) throw updateError;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['organizations-verification'] });
-      toast.success(t({ en: 'Verification completed', ar: 'اكتمل التحقق' }));
-      setSelectedOrg(null);
-      setVerificationData({
-        legal_verified: false,
-        financial_verified: false,
-        operational_verified: false,
-        technical_verified: false,
-        verification_notes: '',
-        risk_flags: []
-      });
-    }
-  });
+  const { organizations, verifyOrganization } = useOrganizationVerificationData(user);
 
   return (
     <div className="space-y-6">
@@ -114,11 +39,10 @@ function OrganizationVerificationQueue() {
                 <div
                   key={org.id}
                   onClick={() => setSelectedOrg(org)}
-                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                    selectedOrg?.id === org.id
+                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${selectedOrg?.id === org.id
                       ? 'border-blue-500 bg-blue-50'
                       : 'border-slate-200 hover:border-blue-300'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-start justify-between">
                     <div>
@@ -224,16 +148,52 @@ function OrganizationVerificationQueue() {
 
                 <div className="flex gap-2">
                   <Button
-                    onClick={() => verifyMutation.mutate({ orgId: selectedOrg.id, decision: 'verified' })}
-                    disabled={verifyMutation.isPending}
+                    onClick={() => {
+                      verifyOrganization.mutate(
+                        { orgId: selectedOrg.id, decision: 'verified', verificationData },
+                        {
+                          onSuccess: () => {
+                            toast.success(t({ en: 'Verification completed', ar: 'اكتمل التحقق' }));
+                            setSelectedOrg(null);
+                            setVerificationData({
+                              legal_verified: false,
+                              financial_verified: false,
+                              operational_verified: false,
+                              technical_verified: false,
+                              verification_notes: '',
+                              risk_flags: []
+                            });
+                          }
+                        }
+                      );
+                    }}
+                    disabled={verifyOrganization.isPending}
                     className="flex-1 bg-green-600"
                   >
                     <CheckCircle2 className="h-4 w-4 mr-2" />
                     {t({ en: 'Verify', ar: 'تحقق' })}
                   </Button>
                   <Button
-                    onClick={() => verifyMutation.mutate({ orgId: selectedOrg.id, decision: 'rejected' })}
-                    disabled={verifyMutation.isPending}
+                    onClick={() => {
+                      verifyOrganization.mutate(
+                        { orgId: selectedOrg.id, decision: 'rejected', verificationData },
+                        {
+                          onSuccess: () => {
+                            toast.success(t({ en: 'Verification completed', ar: 'اكتمل التحقق' }));
+                            setSelectedOrg(null);
+                            setVerificationData({
+                              legal_verified: false,
+                              financial_verified: false,
+                              operational_verified: false,
+                              technical_verified: false,
+                              verification_notes: '',
+                              risk_flags: []
+                            });
+                          }
+                        }
+                      );
+                    }}
+                    disabled={verifyOrganization.isPending}
                     variant="outline"
                     className="flex-1"
                   >

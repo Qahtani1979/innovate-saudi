@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,74 +10,42 @@ import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
+import { useChallengeMatchingMutations } from '@/hooks/useChallengeMatches';
 
 function ChallengeSolutionMatching() {
   const { language, isRTL, t } = useLanguage();
   const [selectedChallenge, setSelectedChallenge] = useState(null);
-  const [matching, setMatching] = useState(false);
   const [matches, setMatches] = useState([]);
   const [notifying, setNotifying] = useState(false);
-  const queryClient = useQueryClient();
   const { triggerEmail } = useEmailTrigger();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-for-matching'],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*').in('status', ['approved', 'in_treatment']);
-      return data || [];
-    }
+  const { createMatch, createNotification, semanticSearch } = useChallengeMatchingMutations();
+
+  const { data: challenges = [] } = useChallengesWithVisibility({
+    status: ['approved', 'in_treatment'],
+    limit: 1000
   });
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions-for-matching'],
-    queryFn: async () => {
-      const { data } = await supabase.from('solutions').select('*').eq('is_verified', true).eq('is_published', true);
-      return data || [];
-    }
-  });
-
-  const createMatchMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase.from('challenge_solution_matches').insert([data]);
-      if (error) throw error;
-    },
-    onSuccess: async (result, variables) => {
-      // Trigger solution matched email
-      await triggerEmail('solution.matched', {
-        entityType: 'solution',
-        entityId: variables.solution_id,
-        variables: {
-          solution_id: variables.solution_id,
-          challenge_id: selectedChallenge.id,
-          challenge_title: selectedChallenge.title_en,
-          match_score: variables.similarity_score
-        }
-      }).catch(err => console.error('Email trigger failed:', err));
-
-      queryClient.invalidateQueries(['matches']);
-      toast.success(t({ en: 'Match saved', ar: 'تم حفظ المطابقة' }));
-    }
+  const { data: solutions = [] } = useSolutionsWithVisibility({
+    limit: 5000,
+    verifiedOnly: true,
+    publishedOnly: true
   });
 
   const runMatching = async () => {
     if (!selectedChallenge) return;
 
-    setMatching(true);
     try {
-      const { data, error } = await supabase.functions.invoke('semanticSearch', {
-        body: {
-          challenge_id: selectedChallenge.id,
-          limit: 10
-        }
+      const data = await semanticSearch.mutateAsync({
+        challengeId: selectedChallenge.id,
+        limit: 10
       });
-
-      if (error) throw error;
       setMatches(data || []);
       toast.success(t({ en: 'Matching complete', ar: 'اكتملت المطابقة' }));
     } catch (error) {
       toast.error(t({ en: 'Matching failed', ar: 'فشلت المطابقة' }));
-    } finally {
-      setMatching(false);
     }
   };
 
@@ -92,7 +58,7 @@ function ChallengeSolutionMatching() {
         const solution = solutions.find(s => s.id === match.solution_id);
         if (!solution?.contact_email) continue;
 
-        // Use triggerEmail hook instead of direct supabase call
+        // Use triggerEmail hook
         await triggerEmail('challenge.match_found', {
           entityType: 'solution',
           entityId: solution.id,
@@ -110,7 +76,7 @@ function ChallengeSolutionMatching() {
         });
 
         // Create notification record
-        const { error } = await supabase.from('notifications').insert([{
+        await createNotification.mutateAsync({
           user_email: solution.contact_email,
           type: 'solution_match',
           title: `New Challenge Match: ${selectedChallenge.code}`,
@@ -118,8 +84,7 @@ function ChallengeSolutionMatching() {
           entity_type: 'challenge',
           entity_id: selectedChallenge.id,
           is_read: false
-        }]);
-        if (error) console.error('Notification creation failed:', error);
+        });
       }
 
       toast.success(t({
@@ -134,12 +99,31 @@ function ChallengeSolutionMatching() {
   };
 
   const saveMatch = (match) => {
-    createMatchMutation.mutate({
+    createMatch.mutate({
       challenge_id: selectedChallenge.id,
       solution_id: match.solution_id,
       similarity_score: match.similarity_score,
       match_method: 'ai_semantic',
       status: 'discovered'
+    }, {
+      onSuccess: () => {
+        // Trigger email on success if needed, logically it was in onSuccess before.
+        // But here we are passing onSuccess callback.
+        // Original code triggered 'solution.matched' email in onSuccess.
+        // I should probably move that logic here or add it to mutation hook but mutation hook is generic.
+        // I'll keep it simple here or add it inside this callback.
+        triggerEmail('solution.matched', {
+          entityType: 'solution',
+          entityId: match.solution_id,
+          variables: {
+            solution_id: match.solution_id,
+            challenge_id: selectedChallenge.id,
+            challenge_title: selectedChallenge.title_en,
+            match_score: match.similarity_score
+          }
+        }).catch(err => console.error('Email trigger failed:', err));
+        toast.success(t({ en: 'Match saved', ar: 'تم حفظ المطابقة' }));
+      }
     });
   };
 
@@ -169,8 +153,8 @@ function ChallengeSolutionMatching() {
                 key={challenge.id}
                 onClick={() => setSelectedChallenge(challenge)}
                 className={`w-full p-3 text-left border-2 rounded-lg transition-all ${selectedChallenge?.id === challenge.id
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-slate-200 hover:border-blue-300'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-slate-200 hover:border-blue-300'
                   }`}
               >
                 <div className="flex items-center gap-2 mb-1">

@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+﻿import React, { useState } from 'react';
+import { useMatchingEntities } from '@/hooks/useMatchingEntities';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,10 +13,8 @@ function SolutionComparison() {
   const { language, isRTL, t } = useLanguage();
   const [selectedSolutions, setSelectedSolutions] = useState([]);
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions-compare'],
-    queryFn: () => base44.entities.Solution.list()
-  });
+  const { useSolutions } = useMatchingEntities();
+  const { data: solutions = [] } = useSolutions();
 
   const urlParams = new URLSearchParams(window.location.search);
   const preselected = urlParams.get('ids')?.split(',') || [];
@@ -37,26 +34,26 @@ function SolutionComparison() {
   };
 
   const comparisonFields = [
-    { key: 'provider_name', label: { en: 'Provider', ar: 'المزود' } },
-    { key: 'provider_type', label: { en: 'Provider Type', ar: 'نوع المزود' } },
-    { key: 'maturity_level', label: { en: 'Maturity', ar: 'النضج' } },
-    { key: 'trl', label: { en: 'TRL Level', ar: 'المستوى التقني' } },
-    { key: 'deployment_count', label: { en: 'Deployments', ar: 'النشر' } },
-    { key: 'success_rate', label: { en: 'Success Rate', ar: 'معدل النجاح' } },
-    { key: 'pricing_model', label: { en: 'Pricing Model', ar: 'نموذج التسعير' } },
-    { key: 'is_verified', label: { en: 'Verified', ar: 'معتمد' } },
-    { key: 'sectors', label: { en: 'Sectors', ar: 'القطاعات' } },
-    { key: 'features', label: { en: 'Features', ar: 'المميزات' } }
+    { key: 'provider_name', label: { en: 'Provider', ar: 'Ø§Ù„Ù…Ø²ÙˆØ¯' } },
+    { key: 'provider_type', label: { en: 'Provider Type', ar: 'Ù†ÙˆØ¹ Ø§Ù„Ù…Ø²ÙˆØ¯' } },
+    { key: 'maturity_level', label: { en: 'Maturity', ar: 'Ø§Ù„Ù†Ø¶Ø¬' } },
+    { key: 'trl', label: { en: 'TRL Level', ar: 'Ø§Ù„Ù…Ø³ØªÙˆÙ‰ Ø§Ù„ØªÙ‚Ù†ÙŠ' } },
+    { key: 'deployment_count', label: { en: 'Deployments', ar: 'Ø§Ù„Ù†Ø´Ø±' } },
+    { key: 'success_rate', label: { en: 'Success Rate', ar: 'Ù…Ø¹Ø¯Ù„ Ø§Ù„Ù†Ø¬Ø§Ø­' } },
+    { key: 'pricing_model', label: { en: 'Pricing Model', ar: 'Ù†Ù…ÙˆØ°Ø¬ Ø§Ù„ØªØ³Ø¹ÙŠØ±' } },
+    { key: 'is_verified', label: { en: 'Verified', ar: 'Ù…Ø¹ØªÙ…Ø¯' } },
+    { key: 'sectors', label: { en: 'Sectors', ar: 'Ø§Ù„Ù‚Ø·Ø§Ø¹Ø§Øª' } },
+    { key: 'features', label: { en: 'Features', ar: 'Ø§Ù„Ù…Ù…ÙŠØ²Ø§Øª' } }
   ];
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
       <div>
         <h1 className="text-4xl font-bold text-slate-900">
-          {t({ en: '⚖️ Solution Comparison Tool', ar: '⚖️ أداة مقارنة الحلول' })}
+          {t({ en: 'âš–ï¸ Solution Comparison Tool', ar: 'âš–ï¸ Ø£Ø¯Ø§Ø© Ù…Ù‚Ø§Ø±Ù†Ø© Ø§Ù„Ø­Ù„ÙˆÙ„' })}
         </h1>
         <p className="text-slate-600 mt-2">
-          {t({ en: 'Compare up to 5 solutions side-by-side to make informed decisions', ar: 'قارن حتى 5 حلول جنباً إلى جنب' })}
+          {t({ en: 'Compare up to 5 solutions side-by-side to make informed decisions', ar: 'Ù‚Ø§Ø±Ù† Ø­ØªÙ‰ 5 Ø­Ù„ÙˆÙ„ Ø¬Ù†Ø¨Ø§Ù‹ Ø¥Ù„Ù‰ Ø¬Ù†Ø¨' })}
         </p>
       </div>
 
@@ -64,7 +61,7 @@ function SolutionComparison() {
       {selectedSolutions.length < 5 && (
         <Card>
           <CardHeader>
-            <CardTitle>{t({ en: 'Select Solutions to Compare', ar: 'اختر الحلول للمقارنة' })} ({selectedSolutions.length}/5)</CardTitle>
+            <CardTitle>{t({ en: 'Select Solutions to Compare', ar: 'Ø§Ø®ØªØ± Ø§Ù„Ø­Ù„ÙˆÙ„ Ù„Ù„Ù…Ù‚Ø§Ø±Ù†Ø©' })} ({selectedSolutions.length}/5)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -110,7 +107,7 @@ function SolutionComparison() {
               <thead>
                 <tr className="border-b-2">
                   <th className="text-left py-3 px-3 font-semibold text-slate-900 bg-slate-50">
-                    {t({ en: 'Attribute', ar: 'الخاصية' })}
+                    {t({ en: 'Attribute', ar: 'Ø§Ù„Ø®Ø§ØµÙŠØ©' })}
                   </th>
                   {selectedSolutions.map((solution) => (
                     <th key={solution.id} className="text-left py-3 px-3 min-w-[200px]">
@@ -132,7 +129,7 @@ function SolutionComparison() {
                     </td>
                     {selectedSolutions.map((solution) => {
                       const value = solution[field.key];
-                      
+
                       if (field.key === 'is_verified') {
                         return (
                           <td key={solution.id} className="py-3 px-3">
@@ -192,7 +189,7 @@ function SolutionComparison() {
           <CardContent className="py-16 text-center">
             <Target className="h-16 w-16 text-slate-300 mx-auto mb-4" />
             <p className="text-slate-500">
-              {t({ en: 'Select at least 2 solutions to compare', ar: 'اختر حلين على الأقل للمقارنة' })}
+              {t({ en: 'Select at least 2 solutions to compare', ar: 'Ø§Ø®ØªØ± Ø­Ù„ÙŠÙ† Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„ Ù„Ù„Ù…Ù‚Ø§Ø±Ù†Ø©' })}
             </p>
           </CardContent>
         </Card>

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useExpertMutations } from '@/hooks/useExpertMutations';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +34,7 @@ function ExpertOnboarding() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { invokeAI } = useAIWithFallback();
+  const { createExpertProfile } = useExpertMutations();
 
   const [formData, setFormData] = useState({
     user_email: '',
@@ -56,28 +58,16 @@ function ExpertOnboarding() {
     languages: ['English', 'Arabic']
   });
 
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: result, error } = await supabase.from('expert_profiles').insert(data).select().single();
-      if (error) throw error;
-      return result;
-    },
-    onSuccess: (result) => {
-      queryClient.invalidateQueries(['expert-profiles']);
-      toast.success(t({ en: 'Expert profile created successfully', ar: 'تم إنشاء ملف الخبير بنجاح' }));
-      navigate(createPageUrl(`ExpertDetail?id=${result.id}`));
-    }
-  });
 
   const handleCVUpload = async (fileUrl) => {
     if (!fileUrl) {
       setFormData(prev => ({ ...prev, cv_url: '' }));
       return;
     }
-    
+
     setFormData(prev => ({ ...prev, cv_url: fileUrl }));
     setExtracting(true);
-    
+
     try {
       // Use AI-powered extraction instead of base44
       const result = await invokeAI({
@@ -136,11 +126,15 @@ Extract the following in JSON format:
       return;
     }
 
-    createMutation.mutate({
+    createExpertProfile.mutate({
       ...formData,
       user_email: user?.email,
       is_verified: false,
       is_active: false
+    }, {
+      onSuccess: (result) => {
+        navigate(createPageUrl(`ExpertDetail?id=${result.id}`));
+      }
     });
 
     // Notify admins via email-trigger-hub
@@ -179,9 +173,8 @@ Extract the following in JSON format:
       <div className="flex items-center justify-center gap-2">
         {[1, 2, 3, 4].map((s) => (
           <div key={s} className="flex items-center">
-            <div className={`h-10 w-10 rounded-full flex items-center justify-center font-semibold ${
-              step >= s ? 'bg-purple-600 text-white' : 'bg-slate-200 text-slate-500'
-            }`}>
+            <div className={`h-10 w-10 rounded-full flex items-center justify-center font-semibold ${step >= s ? 'bg-purple-600 text-white' : 'bg-slate-200 text-slate-500'
+              }`}>
               {s}
             </div>
             {s < 4 && (
@@ -328,8 +321,8 @@ Extract the following in JSON format:
               </label>
               <Input
                 placeholder={t({ en: 'AI, Smart Cities, IoT, Data Analytics...', ar: 'الذكاء الاصطناعي، المدن الذكية، إنترنت الأشياء...' })}
-                onChange={(e) => setFormData({ 
-                  ...formData, 
+                onChange={(e) => setFormData({
+                  ...formData,
                   expertise_areas: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
                 })}
               />
@@ -444,7 +437,7 @@ Extract the following in JSON format:
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-900">
                 <Sparkles className="h-4 w-4 inline mr-1" />
-                {t({ 
+                {t({
                   en: 'Your application will be reviewed by platform admins. You will be notified once verified.',
                   ar: 'سيتم مراجعة طلبك من قبل مسؤولي المنصة. سيتم إخطارك بمجرد التحقق.'
                 })}
@@ -458,10 +451,10 @@ Extract the following in JSON format:
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={createMutation.isPending}
+                disabled={createExpertProfile.isPending}
                 className="bg-gradient-to-r from-purple-600 to-blue-600"
               >
-                {createMutation.isPending ? (
+                {createExpertProfile.isPending ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
                   <Award className="h-4 w-4 mr-2" />

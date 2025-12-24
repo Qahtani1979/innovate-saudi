@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,55 +6,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../components/LanguageContext';
 import { CheckCircle2, XCircle, Clock, TestTube, Calendar, Microscope } from 'lucide-react';
 import { toast } from 'sonner';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
+import { useRDCalls } from '@/hooks/useRDCalls';
+import { useInitiativeLaunchMutations } from '@/hooks/useInitiativeLaunchMutations';
 
 export default function InitiativeLaunchGate() {
   const { language, isRTL, t } = useLanguage();
   const [selectedItem, setSelectedItem] = useState(null);
   const [comments, setComments] = useState('');
-  const queryClient = useQueryClient();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*').eq('is_deleted', false);
-      return data || [];
-    }
-  });
+  const { data: pilots = [] } = usePilotsWithVisibility();
+  const { data: programs = [] } = useProgramsWithVisibility();
+  const { data: rdCalls = [] } = useRDCalls();
 
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs'],
-    queryFn: async () => {
-      const { data } = await supabase.from('programs').select('*').eq('is_deleted', false);
-      return data || [];
-    }
-  });
-
-  const { data: rdCalls = [] } = useQuery({
-    queryKey: ['rd-calls'],
-    queryFn: async () => {
-      const { data } = await supabase.from('rd_calls').select('*').eq('is_deleted', false);
-      return data || [];
-    }
-  });
-
-  const launchMutation = useMutation({
-    mutationFn: async ({ entity_type, entity_id, action, comments }) => {
-      const table = entity_type === 'pilot' ? 'pilots' : entity_type === 'program' ? 'programs' : 'rd_calls';
-      const { error } = await supabase.from(table).update({ 
-        launch_status: action === 'approve' ? 'approved' : 'rejected',
-        launch_comments: comments
-      }).eq('id', entity_id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['pilots']);
-      queryClient.invalidateQueries(['programs']);
-      queryClient.invalidateQueries(['rd-calls']);
-      setSelectedItem(null);
-      setComments('');
-      toast.success(t({ en: 'Launch decision recorded', ar: 'تم تسجيل قرار الإطلاق' }));
-    }
-  });
+  const { launchMutation } = useInitiativeLaunchMutations();
 
   const pendingPilots = pilots.filter(p => p.launch_status === 'pending_approval');
   const pendingPrograms = programs.filter(p => p.launch_status === 'pending_approval');
@@ -120,7 +84,7 @@ export default function InitiativeLaunchGate() {
                 const Icon = item.icon;
                 const title = item.type === 'pilot' ? item.data.title_en : item.data.name_en;
                 const titleAr = item.type === 'pilot' ? item.data.title_ar : item.data.name_ar;
-                
+
                 return (
                   <Card key={idx} className="border-2 border-yellow-200">
                     <CardContent className="pt-6">
@@ -142,14 +106,34 @@ export default function InitiativeLaunchGate() {
                               />
                               <div className="flex gap-2">
                                 <Button
-                                  onClick={() => launchMutation.mutate({ entity_type: item.type, entity_id: item.data.id, action: 'approve', comments })}
+                                  onClick={() => {
+                                    launchMutation.mutate(
+                                      { entity_type: item.type, entity_id: item.data.id, action: 'approve', comments },
+                                      {
+                                        onSuccess: () => {
+                                          setSelectedItem(null);
+                                          setComments('');
+                                        }
+                                      }
+                                    );
+                                  }}
                                   className="bg-green-600"
                                 >
                                   <CheckCircle2 className="h-4 w-4 mr-2" />
                                   {t({ en: 'Approve Launch', ar: 'موافقة الإطلاق' })}
                                 </Button>
                                 <Button
-                                  onClick={() => launchMutation.mutate({ entity_type: item.type, entity_id: item.data.id, action: 'reject', comments })}
+                                  onClick={() => {
+                                    launchMutation.mutate(
+                                      { entity_type: item.type, entity_id: item.data.id, action: 'reject', comments },
+                                      {
+                                        onSuccess: () => {
+                                          setSelectedItem(null);
+                                          setComments('');
+                                        }
+                                      }
+                                    );
+                                  }}
                                   variant="destructive"
                                 >
                                   <XCircle className="h-4 w-4 mr-2" />

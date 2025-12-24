@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useSectorsWithVisibility } from '@/hooks/useSectorsWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,14 +14,15 @@ import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function BudgetAllocationTool() {
   const { language, isRTL, t } = useLanguage();
   const [totalBudget, setTotalBudget] = useState(50000000);
   const [allocations, setAllocations] = useState({});
-  const { invokeAI, status, isLoading: aiLoading, rateLimitInfo, isAvailable } = useAIWithFallback();
+  const { invokeAI, status, error: aiError, isLoading: aiLoading, rateLimitInfo, isAvailable } = useAIWithFallback();
   const [lockedCategories, setLockedCategories] = useState({});
-  const [lastYearAllocations, setLastYearAllocations] = useState({
+  const [lastYearAllocations] = useState({
     pilots: 30,
     rd: 25,
     programs: 20,
@@ -29,29 +31,9 @@ function BudgetAllocationTool() {
     operations: 5
   });
 
-  const { data: sectors = [] } = useQuery({
-    queryKey: ['sectors'],
-    queryFn: async () => {
-      const { data } = await supabase.from('sectors').select('*');
-      return data || [];
-    }
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false);
-      return data || [];
-    }
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*').eq('is_deleted', false);
-      return data || [];
-    }
-  });
+  const { data: sectors = [] } = useSectorsWithVisibility();
+  const { data: challenges = [] } = useChallengesWithVisibility();
+  const { data: pilots = [] } = usePilotsWithVisibility();
 
   const categories = [
     { id: 'pilots', name_en: 'Pilot Programs', name_ar: 'برامج التجريب', color: '#3b82f6' },
@@ -65,18 +47,19 @@ function BudgetAllocationTool() {
   const handleAIOptimize = async () => {
     // Import centralized prompt module
     const { BUDGET_OPTIMIZER_PROMPT_TEMPLATE, BUDGET_OPTIMIZER_RESPONSE_SCHEMA } = await import('@/lib/ai/prompts/budget/allocationOptimizer');
-    
+
     const promptData = {
       totalBudget,
       challengeCount: challenges.length,
-      sectorBreakdown: sectors.map(s => `${s.name_en}: ${challenges.filter(c => c.sector === s.code).length}`).join(', '),
+      sectorBreakdown: sectors.map(s => `${s?.['name_en']}: ${challenges.filter(c => c.sector === s?.['code']).length}`).join(', '),
       pilotCount: pilots.length,
       highPriorityChallenges: challenges.filter(c => c.priority === 'tier_1').length
     };
 
     const result = await invokeAI({
       prompt: BUDGET_OPTIMIZER_PROMPT_TEMPLATE(promptData),
-      response_json_schema: BUDGET_OPTIMIZER_RESPONSE_SCHEMA
+      response_json_schema: BUDGET_OPTIMIZER_RESPONSE_SCHEMA,
+      system_prompt: 'You are a strategic budget analyst for a national innovation platform.'
     });
 
     if (result.success) {
@@ -96,65 +79,24 @@ function BudgetAllocationTool() {
   })).filter(d => d.value > 0);
 
   return (
-    <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-green-600 via-emerald-600 to-teal-600 p-8 text-white">
-        <h1 className="text-5xl font-bold mb-2">
-          {t({ en: '💰 Budget Allocation Tool', ar: '💰 أداة توزيع الميزانية' })}
-        </h1>
-        <p className="text-xl text-white/90">
-          {t({ en: 'AI-powered strategic budget planning and optimization', ar: 'تخطيط وتحسين الميزانية الاستراتيجية بالذكاء الاصطناعي' })}
-        </p>
-        <div className="mt-4">
+    <PageLayout>
+      <PageHeader
+        title={{ en: 'Budget Allocation Tool', ar: 'أداة توزيع الميزانية' }}
+        subtitle={{ en: 'AI-powered strategic budget planning and optimization', ar: 'تخطيط وتحسين الميزانية الاستراتيجية بالذكاء الاصطناعي' }}
+        icon={<DollarSign className="h-6 w-6 text-white" />}
+        description=""
+        action={
           <Badge variant="outline" className="bg-white/20 text-white border-white/40 text-lg px-4 py-2">
             {(totalBudget / 1000000).toFixed(1)}M SAR
           </Badge>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-blue-50 to-white">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <DollarSign className="h-10 w-10 text-blue-600 mx-auto mb-2" />
-              <p className="text-sm text-slate-600">{t({ en: 'Total Budget', ar: 'الميزانية الإجمالية' })}</p>
-              <p className="text-3xl font-bold text-blue-600">{(totalBudget / 1000000).toFixed(0)}M</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-green-50 to-white">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <PieChart className="h-10 w-10 text-green-600 mx-auto mb-2" />
-              <p className="text-sm text-slate-600">{t({ en: 'Allocated', ar: 'المخصص' })}</p>
-              <p className="text-3xl font-bold text-green-600">{totalAllocated.toFixed(0)}%</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className={`bg-gradient-to-br ${remaining > 0 ? 'from-amber-50' : 'from-red-50'} to-white`}>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <TrendingUp className={`h-10 w-10 ${remaining > 0 ? 'text-amber-600' : 'text-red-600'} mx-auto mb-2`} />
-              <p className="text-sm text-slate-600">{t({ en: 'Remaining', ar: 'المتبقي' })}</p>
-              <p className={`text-3xl font-bold ${remaining > 0 ? 'text-amber-600' : 'text-red-600'}`}>
-                {remaining.toFixed(0)}%
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-purple-50 to-white">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <Badge className="bg-purple-100 text-purple-700 mb-2">
-                {categories.filter(c => allocations[c.id] > 0).length}/{categories.length}
-              </Badge>
-              <p className="text-sm text-slate-600">{t({ en: 'Categories', ar: 'الفئات' })}</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+        }
+        actions={null}
+        stats={[
+          { icon: DollarSign, value: `${(totalBudget / 1000000).toFixed(0)} M`, label: { en: 'Total Budget', ar: 'الميزانية الإجمالية' } },
+          { icon: PieChart, value: `${totalAllocated.toFixed(0)}%`, label: { en: 'Allocated', ar: 'المخصص' } },
+          { icon: TrendingUp, value: `${remaining.toFixed(0)}%`, label: { en: 'Remaining', ar: 'المتبقي' } },
+        ]}
+      />
 
       <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white">
         <CardContent className="pt-6">
@@ -167,15 +109,17 @@ function BudgetAllocationTool() {
                 {t({ en: 'Let AI suggest optimal allocation based on challenges, priorities, and ROI', ar: 'دع الذكاء الاصطناعي يقترح التوزيع الأمثل بناءً على التحديات والأولويات والعائد' })}
               </p>
             </div>
-            <Button onClick={handleAIOptimize} disabled={aiLoading || !isAvailable} className="bg-blue-600">
-              {aiLoading ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Sparkles className="h-4 w-4 mr-2" />
-              )}
-              {t({ en: 'Optimize', ar: 'تحسين' })}
-            </Button>
-            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+            <div className="flex items-center gap-4">
+              <Button onClick={handleAIOptimize} disabled={aiLoading || !isAvailable} className="bg-blue-600">
+                {aiLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4 mr-2" />
+                )}
+                {t({ en: 'Optimize', ar: 'تحسين' })}
+              </Button>
+              <AIStatusIndicator status={status} error={aiError} rateLimitInfo={rateLimitInfo} showDetails />
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -206,7 +150,7 @@ function BudgetAllocationTool() {
             {categories.map((category) => {
               const percentage = allocations[category.id] || 0;
               const amount = (percentage / 100) * totalBudget;
-              
+
               return (
                 <div key={category.id} className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -214,7 +158,7 @@ function BudgetAllocationTool() {
                       <Button
                         size="icon"
                         variant="ghost"
-                        onClick={() => setLockedCategories({...lockedCategories, [category.id]: !lockedCategories[category.id]})}
+                        onClick={() => setLockedCategories({ ...lockedCategories, [category.id]: !lockedCategories[category.id] })}
                         className="h-6 w-6"
                       >
                         {lockedCategories[category.id] ? <Lock className="h-3 w-3 text-amber-600" /> : <Unlock className="h-3 w-3 text-slate-400" />}
@@ -301,14 +245,14 @@ function BudgetAllocationTool() {
         <CardContent>
           <div className="space-y-3">
             {sectors.slice(0, 8).map((sector) => {
-              const sectorChallenges = challenges.filter(c => c.sector === sector.code);
-              const suggestedAllocation = Math.min(20, (sectorChallenges.length / challenges.length) * 100);
-              
+              const sectorChallenges = challenges.filter(c => c.sector === sector?.['code']);
+              const suggestedAllocation = challenges.length > 0 ? Math.min(20, (sectorChallenges.length / challenges.length) * 100) : 0;
+
               return (
                 <div key={sector.id} className="p-4 border rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <div>
-                      <p className="font-medium text-slate-900">{language === 'ar' ? sector.name_ar : sector.name_en}</p>
+                      <p className="font-medium text-slate-900">{language === 'ar' ? sector?.['name_ar'] : sector?.['name_en']}</p>
                       <p className="text-xs text-slate-500">{sectorChallenges.length} challenges</p>
                     </div>
                     <Badge variant="outline">{suggestedAllocation.toFixed(0)}% suggested</Badge>
@@ -336,8 +280,8 @@ function BudgetAllocationTool() {
                   <span className="font-bold text-blue-600">This Year: {allocations[cat.id] || 0}%</span>
                   <Badge className={
                     (allocations[cat.id] || 0) > (lastYearAllocations[cat.id] || 0) ? 'bg-green-100 text-green-700' :
-                    (allocations[cat.id] || 0) < (lastYearAllocations[cat.id] || 0) ? 'bg-red-100 text-red-700' :
-                    'bg-slate-100 text-slate-700'
+                      (allocations[cat.id] || 0) < (lastYearAllocations[cat.id] || 0) ? 'bg-red-100 text-red-700' :
+                        'bg-slate-100 text-slate-700'
                   }>
                     {((allocations[cat.id] || 0) - (lastYearAllocations[cat.id] || 0) > 0 ? '+' : '')}
                     {((allocations[cat.id] || 0) - (lastYearAllocations[cat.id] || 0)).toFixed(0)}%
@@ -350,14 +294,14 @@ function BudgetAllocationTool() {
       </Card>
 
       <div className="flex items-center gap-3">
-        <Button 
+        <Button
           variant="outline"
           onClick={() => {
             const unlocked = categories.filter(c => !lockedCategories[c.id]);
             const lockedTotal = categories.filter(c => lockedCategories[c.id]).reduce((sum, c) => sum + (allocations[c.id] || 0), 0);
             const remaining = 100 - lockedTotal;
             const perUnlocked = remaining / unlocked.length;
-            const optimized = {...allocations};
+            const optimized = { ...allocations };
             unlocked.forEach(c => optimized[c.id] = perUnlocked);
             setAllocations(optimized);
             toast.success('Optimized unlocked categories');
@@ -375,14 +319,8 @@ function BudgetAllocationTool() {
           {t({ en: 'Export Report', ar: 'تصدير التقرير' })}
         </Button>
       </div>
-    </div>
+    </PageLayout>
   );
 }
 
-export default function BudgetAllocationToolWrapper() {
-  return (
-    <ProtectedPage requiredPermissions={['budget_management']}>
-      <BudgetAllocationTool />
-    </ProtectedPage>
-  );
-}
+export default ProtectedPage(BudgetAllocationTool, { requiredPermissions: ['budget_management'] });

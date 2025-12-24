@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
+import { useStrategicKPIs } from '@/hooks/useStrategicKPIs';
+import { usePrograms } from '@/hooks/usePrograms';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,115 +15,61 @@ import { toast } from 'sonner';
 export default function ProgramOutcomeKPITracker({ program }) {
   const { language, isRTL, t } = useLanguage();
   const queryClient = useQueryClient();
-  const [kpiContributions, setKpiContributions] = useState({});
-
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans-kpi'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('strategic_plans').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: strategicKPIs = [] } = useQuery({
-    queryKey: ['strategic-kpis'],
-    queryFn: async () => {
-      // Try to get from strategic_kpis table
-      try {
-        const { data: kpis, error } = await supabase.from('strategic_kpis').select('*');
-        if (!error && kpis?.length) return kpis;
-      } catch (e) {
-        console.log('Strategic KPIs table not available, using plan objectives');
-      }
-      
-      // Fallback: extract KPIs from strategic plan objectives
-      const linkedPlans = strategicPlans.filter(p => 
-        program.strategic_plan_ids?.includes(p.id) || 
-        program.strategic_objective_ids?.includes(p.id)
-      );
-      
-      const extractedKPIs = [];
-      linkedPlans.forEach(plan => {
-        (plan.objectives || plan.strategic_objectives || []).forEach((obj, i) => {
-          extractedKPIs.push({
-            id: `${plan.id}-kpi-${i}`,
-            plan_id: plan.id,
-            name_en: typeof obj === 'object' ? obj.name_en || obj.title : obj,
-            name_ar: typeof obj === 'object' ? obj.name_ar : null,
-            target: typeof obj === 'object' ? obj.target || 100 : 100,
-            current: typeof obj === 'object' ? obj.current || 0 : 0,
-            unit: typeof obj === 'object' ? obj.unit || '%' : '%'
-          });
-        });
-      });
-      
-      return extractedKPIs;
-    },
-    enabled: strategicPlans.length > 0 && program.strategic_plan_ids?.length > 0
+  const { kpis: strategicKPIs, isLoading: isLoadingKPIs, recordContribution, isRecording } = useStrategicKPIs({
+    planIds: program?.['strategic_plan_ids'] || program?.['strategic_objective_ids'] || [],
+    strategicPlans
   });
 
   // Get program outcomes
-  const programOutcomes = program.target_outcomes || program.outcomes || [];
-  const completedOutcomes = programOutcomes.filter(o => 
+  const programOutcomes = program?.['target_outcomes'] || program?.['outcomes'] || [];
+  const completedOutcomes = programOutcomes.filter(o =>
     (o.current >= o.target) || o.status === 'achieved'
   );
 
   // Calculate contribution score
-  const contributionScore = programOutcomes.length > 0 
+  const contributionScore = programOutcomes.length > 0
     ? Math.round((completedOutcomes.length / programOutcomes.length) * 100)
     : 0;
 
-  const submitContributionMutation = useMutation({
-    mutationFn: async ({ kpiId, contribution }) => {
-      // Update program with KPI contribution record
-      const existingContributions = program.kpi_contributions || [];
+  const { updateProgram } = usePrograms();
+
+  const handleRecordContribution = async (kpiId, contribution) => {
+    try {
+      const kpi = strategicKPIs.find(k => k.id === kpiId);
+      const existingContributions = program?.['kpi_contributions'] || [];
       const newContribution = {
         kpi_id: kpiId,
         contribution_value: contribution,
         contributed_at: new Date().toISOString(),
-        program_id: program.id
+        program_id: program?.['id']
       };
 
-      const { error } = await supabase
-        .from('programs')
-        .update({
-          kpi_contributions: [...existingContributions, newContribution],
-          last_kpi_contribution_date: new Date().toISOString()
-        })
-        .eq('id', program.id);
-      if (error) throw error;
+      await Promise.all([
+        updateProgram({
+          programId: program?.['id'],
+          updates: {
+            kpi_contributions: [...existingContributions, newContribution],
+            last_kpi_contribution_date: new Date().toISOString()
+          }
+        }),
+        recordContribution({
+          kpiId,
+          contribution,
+          programId: program?.['id'],
+          currentKpi: kpi
+        }).catch(e => console.warn('Could not update strategic_kpis table:', e))
+      ]);
 
-      // Try to update strategic KPI if table exists
-      try {
-        const kpi = strategicKPIs.find(k => k.id === kpiId);
-        if (kpi) {
-          await supabase
-            .from('strategic_kpis')
-            .update({
-              current: (kpi.current || 0) + contribution,
-              last_updated: new Date().toISOString(),
-              contributing_programs: [...(kpi.contributing_programs || []), program.id]
-            })
-            .eq('id', kpiId);
-        }
-      } catch (e) {
-        console.log('Could not update strategic_kpis table:', e);
-      }
-
-      return newContribution;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['programs'] });
-      queryClient.invalidateQueries({ queryKey: ['strategic-kpis'] });
       toast.success(t({ en: 'KPI contribution recorded', ar: 'تم تسجيل المساهمة في مؤشر الأداء' }));
-      setKpiContributions({});
-    },
-    onError: (error) => {
-      console.error('KPI contribution error:', error);
+      setKpiContributions(prev => {
+        const next = { ...prev };
+        delete next[kpiId];
+        return next;
+      });
+    } catch (error) {
       toast.error(t({ en: 'Failed to record contribution', ar: 'فشل في تسجيل المساهمة' }));
     }
-  });
+  };
 
   if (!program.strategic_plan_ids?.length && !program.strategic_objective_ids?.length) {
     return (
@@ -147,9 +95,9 @@ export default function ProgramOutcomeKPITracker({ program }) {
           {t({ en: 'Program → Strategic KPI Tracker', ar: 'متتبع مؤشرات الأداء الاستراتيجية للبرنامج' })}
         </CardTitle>
         <p className="text-sm text-slate-600 mt-1">
-          {t({ 
-            en: 'Track how program outcomes contribute to strategic KPIs', 
-            ar: 'تتبع كيف تساهم نتائج البرنامج في مؤشرات الأداء الاستراتيجية' 
+          {t({
+            en: 'Track how program outcomes contribute to strategic KPIs',
+            ar: 'تتبع كيف تساهم نتائج البرنامج في مؤشرات الأداء الاستراتيجية'
           })}
         </p>
       </CardHeader>
@@ -179,7 +127,7 @@ export default function ProgramOutcomeKPITracker({ program }) {
             {programOutcomes.map((outcome, index) => {
               const progress = outcome.target ? Math.round((outcome.current / outcome.target) * 100) : 0;
               const isComplete = progress >= 100;
-              
+
               return (
                 <div key={index} className={`p-3 rounded-lg border ${isComplete ? 'bg-green-50 border-green-200' : 'bg-white border-slate-200'}`}>
                   <div className="flex items-center justify-between mb-2">
@@ -213,7 +161,7 @@ export default function ProgramOutcomeKPITracker({ program }) {
             {strategicKPIs.map((kpi) => {
               const progress = kpi.target ? Math.round((kpi.current / kpi.target) * 100) : 0;
               const contribution = kpiContributions[kpi.id] || '';
-              
+
               return (
                 <div key={kpi.id} className="p-4 border rounded-lg bg-white">
                   <div className="flex items-center justify-between mb-2">
@@ -228,28 +176,25 @@ export default function ProgramOutcomeKPITracker({ program }) {
                     </Badge>
                   </div>
                   <Progress value={Math.min(progress, 100)} className="h-2 mb-3" />
-                  
+
                   {/* Contribution Input */}
                   <div className="flex items-center gap-2">
-                    <Input 
+                    <Input
                       type="number"
                       placeholder={t({ en: 'Contribution value', ar: 'قيمة المساهمة' })}
                       value={contribution}
-                      onChange={(e) => setKpiContributions(prev => ({ 
-                        ...prev, 
-                        [kpi.id]: e.target.value 
+                      onChange={(e) => setKpiContributions(prev => ({
+                        ...prev,
+                        [kpi.id]: e.target.value
                       }))}
                       className="w-32"
                     />
-                    <Button 
+                    <Button
                       size="sm"
-                      onClick={() => submitContributionMutation.mutate({ 
-                        kpiId: kpi.id, 
-                        contribution: parseFloat(contribution) 
-                      })}
-                      disabled={!contribution || submitContributionMutation.isPending}
+                      onClick={() => handleRecordContribution(kpi.id, parseFloat(contribution))}
+                      disabled={!contribution || isRecording}
                     >
-                      {submitContributionMutation.isPending ? (
+                      {isRecording ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <>

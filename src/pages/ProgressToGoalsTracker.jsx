@@ -1,6 +1,8 @@
-import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useMemo } from 'react';
+import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
+import { useKPIs } from '@/hooks/useKPIs';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,22 +18,21 @@ function ProgressToGoalsTracker() {
   const [aiRecommendations, setAiRecommendations] = useState(null);
   const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans'],
-    queryFn: () => base44.entities.StrategicPlan.list()
-  });
+  const { data: strategicPlans = [] } = useStrategiesWithVisibility();
+  const { data: kpis = [] } = useKPIs();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
+  const { data: pilots = [] } = usePilotsWithVisibility();
+  const { data: challenges = [] } = useChallengesWithVisibility();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
+  // Join KPIs to plans
+  const connectedPlans = useMemo(() => {
+    return strategicPlans.map(plan => ({
+      ...plan,
+      kpis: kpis.filter(k => k.plan_id === plan.id)
+    }));
+  }, [strategicPlans, kpis]);
 
-  const activePlan = strategicPlans.find(p => p.status === 'active') || strategicPlans[0];
+  const activePlan = connectedPlans.find(p => p.status === 'active') || connectedPlans[0];
 
   const calculateKPIProgress = (kpi) => {
     const baseline = parseFloat(kpi.baseline) || 0;
@@ -68,9 +69,9 @@ function ProgressToGoalsTracker() {
     if (!activePlan?.kpis) return;
 
     // Import centralized prompt module
-    const { 
-      KPI_PROGRESS_PROMPT_TEMPLATE, 
-      KPI_PROGRESS_RESPONSE_SCHEMA 
+    const {
+      KPI_PROGRESS_PROMPT_TEMPLATE,
+      KPI_PROGRESS_RESPONSE_SCHEMA
     } = await import('@/lib/ai/prompts/analytics/kpiProgress');
 
     const kpiData = activePlan.kpis.map(kpi => ({
@@ -230,14 +231,14 @@ function ProgressToGoalsTracker() {
                   </div>
                   <p className="text-sm text-slate-700">
                     {progress.monthsToTarget < 100 ? (
-                      t({ 
-                        en: `At current pace, will reach target in ${progress.monthsToTarget} months`, 
-                        ar: `بالوتيرة الحالية، سنصل للهدف في ${progress.monthsToTarget} شهر` 
+                      t({
+                        en: `At current pace, will reach target in ${progress.monthsToTarget} months`,
+                        ar: `بالوتيرة الحالية، سنصل للهدف في ${progress.monthsToTarget} شهر`
                       })
                     ) : (
-                      t({ 
-                        en: 'Current velocity too low - will miss target without intervention', 
-                        ar: 'السرعة الحالية منخفضة جداً - سنفقد الهدف بدون تدخل' 
+                      t({
+                        en: 'Current velocity too low - will miss target without intervention',
+                        ar: 'السرعة الحالية منخفضة جداً - سنفقد الهدف بدون تدخل'
                       })
                     )}
                   </p>

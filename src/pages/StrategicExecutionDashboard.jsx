@@ -1,7 +1,10 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useRDProjectsWithVisibility } from '@/hooks/useRDProjectsWithVisibility';
+import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,68 +16,13 @@ import { Target, AlertTriangle, TrendingUp, CheckCircle2, Sparkles, AlertCircle,
 export default function StrategicExecutionDashboard() {
   const { language, isRTL, t } = useLanguage();
   const [aiInsights, setAiInsights] = useState(null);
-  const { invokeAI, status, isLoading, rateLimitInfo, isAvailable } = useAIWithFallback();
+  const { invokeAI, status, isLoading, rateLimitInfo, isAvailable, error } = useAIWithFallback();
 
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('strategic_plans')
-        .select('*')
-        .or('is_template.is.null,is_template.eq.false')
-        .or('is_deleted.is.null,is_deleted.eq.false');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*, strategic_goal, tags, status')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*, tags, stage')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_projects')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('programs')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: strategicPlans = [] } = useStrategiesWithVisibility();
+  const { data: challenges = [] } = useChallengesWithVisibility();
+  const { data: pilots = [] } = usePilotsWithVisibility();
+  const { data: rdProjects = [] } = useRDProjectsWithVisibility();
+  const { data: programs = [] } = useProgramsWithVisibility();
 
   const activePlan = strategicPlans.find(p => p.status === 'active') || strategicPlans[0];
 
@@ -185,7 +133,7 @@ Be specific and actionable.`,
             <Sparkles className="h-4 w-4 mr-2" />
             {t({ en: 'AI Insights', ar: 'رؤى الذكاء الاصطناعي' })}
           </Button>
-          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={error} />
         </div>
       </div>
 

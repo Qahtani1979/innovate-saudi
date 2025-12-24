@@ -1,6 +1,5 @@
-// import { base44 } from '@/api/base44Client'; // Removed legacy client
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { useLanguage } from '../components/LanguageContext';
 import WhatIfSimulator from '../components/strategy/WhatIfSimulator';
 import HistoricalComparison from '../components/strategy/HistoricalComparison';
@@ -10,29 +9,8 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 function WhatIfSimulatorPage() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: challenges = [] } = useChallengesWithVisibility();
+  const { data: pilots = [] } = usePilotsWithVisibility();
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>

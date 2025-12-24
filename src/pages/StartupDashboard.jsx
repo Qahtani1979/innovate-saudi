@@ -1,5 +1,5 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useMatchingEntities } from '@/hooks/useMatchingEntities';
+import { useProposals } from '@/hooks/useProposals';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,146 +26,66 @@ function StartupDashboard() {
   const { language, isRTL, t } = useLanguage();
   const { user, userProfile } = useAuth();
 
+  // Custom hooks
+  const {
+    useOrganizations,
+    useChallenges,
+    useMatchmakerApplications,
+    useSolutions,
+    usePilots,
+    usePrograms,
+    useProgramApplications
+  } = useMatchingEntities();
+  const { useUserProposals } = useProposals({ user });
+
   // Find startup's organization profile
-  const { data: myOrganization } = useQuery({
-    queryKey: ['my-organization', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('organizations').select('*');
-      return data?.find(o =>
-        o.contact_email === user?.email ||
-        o.primary_contact_name === user?.full_name
-      );
-    },
-    enabled: !!user
-  });
+  const { data: organizations = [] } = useOrganizations({ userEmail: user?.email });
+  const myOrganization = organizations.find(o => o.contact_email === user?.email || o.primary_contact_name === user?.full_name);
 
   // RLS: Startup sees only PUBLISHED challenges
-  const { data: openChallenges = [] } = useQuery({
-    queryKey: ['published-challenges'],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false).eq('is_published', true);
-      return data?.filter(c =>
-        ['approved', 'in_treatment'].includes(c.status)
-      );
-    }
-  });
+  const { data: allChallenges = [] } = useChallenges({ published: true, deleted: false });
+  const openChallenges = allChallenges.filter(c => ['approved', 'in_treatment'].includes(c.status));
 
   // Matchmaker application
-  const { data: myMatchmakerApp } = useQuery({
-    queryKey: ['my-matchmaker-app', user?.email],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('matchmaker_applications')
-        .select('*')
-        .eq('contact_email', user?.email)
-        .maybeSingle();
-
-      if (error && error.code !== 'PGRST116') throw error;
-      return data;
-    },
-    enabled: !!user?.email
-  });
+  const { data: matchmakerApps = [] } = useMatchmakerApplications({ contactEmail: user?.email });
+  const myMatchmakerApp = matchmakerApps[0];
 
   // Matched challenges from matchmaker
-  const { data: matchedChallenges = [] } = useQuery({
-    queryKey: ['my-matched-challenges', myMatchmakerApp?.id],
-    queryFn: async () => {
-      if (!myMatchmakerApp?.matched_challenges?.length) return [];
-
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*')
-        .in('id', myMatchmakerApp.matched_challenges)
-        .eq('is_published', true);
-
-      if (error) throw error;
-      return data || [];
-    },
+  // We can fetch these using useChallenges with IDs if needed, but since we already fetch all published challenges, 
+  // we can filter them here or fetch specifically if list is large. 
+  // For now, let's filter openChallenges if IDs exist, or fetch explicitly if we want to be safe.
+  // Actually, let's just use the existing logic adapted to hook if possible, or new hook call.
+  // Using a new hook call for specific IDs is cleaner if supported.
+  const { data: matchedChallenges = [] } = useChallenges({
+    ids: myMatchmakerApp?.matched_challenges,
+    published: true,
     enabled: !!myMatchmakerApp?.matched_challenges?.length
   });
 
   // My solutions
-  const { data: mySolutions = [] } = useQuery({
-    queryKey: ['my-solutions', myOrganization?.id, user?.email],
-    queryFn: async () => {
-      let query = supabase.from('solutions').select('*');
-
-      if (myOrganization?.id) {
-        query = query.eq('provider_id', myOrganization.id);
-      } else {
-        query = query.eq('created_by', user?.email);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!myOrganization || !!user
+  const { data: mySolutions = [] } = useSolutions({
+    providerId: myOrganization?.id,
+    createdBy: !myOrganization?.id ? user?.email : undefined
   });
 
   // My pilots (where my solution is used)
-  const { data: myPilots = [] } = useQuery({
-    queryKey: ['my-pilots-startup', myOrganization?.id, mySolutions.length],
-    queryFn: async () => {
-      if (mySolutions.length === 0) return [];
-      const solutionIds = mySolutions.map(s => s.id);
-
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*')
-        .in('solution_id', solutionIds);
-
-      if (error) throw error;
-      return data || [];
-    },
+  const { data: myPilots = [] } = usePilots({
+    solutionIds: mySolutions.map(s => s.id),
     enabled: mySolutions.length > 0
   });
 
   // My proposals
-  const { data: myProposals = [] } = useQuery({
-    queryKey: ['my-proposals-startup', user?.email],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenge_proposals')
-        .select('*')
-        .or(`proposer_email.eq.${user?.email},created_by.eq.${user?.email}`);
-
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
+  const { data: myProposals = [] } = useUserProposals();
 
   // Programs I can apply to
-  const { data: openPrograms = [] } = useQuery({
-    queryKey: ['open-programs-startup'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('programs')
-        .select('*')
-        .eq('status', 'applications_open')
-        .eq('is_published', true)
-        .in('program_type', ['accelerator', 'incubator', 'matchmaker']);
-
-      if (error) throw error;
-      return data || [];
-    }
+  const { data: openPrograms = [] } = usePrograms({
+    status: 'applications_open',
+    published: true,
+    types: ['accelerator', 'incubator', 'matchmaker']
   });
 
   // My program applications
-  const { data: myProgramApps = [] } = useQuery({
-    queryKey: ['my-program-apps', user?.email],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('program_applications')
-        .select('*')
-        .or(`applicant_email.eq.${user?.email},created_by.eq.${user?.email}`);
-
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
+  const { data: myProgramApps = [] } = useProgramApplications({ userEmail: user?.email });
 
   return (
     <PageLayout>
