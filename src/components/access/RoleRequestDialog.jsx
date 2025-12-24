@@ -86,7 +86,9 @@ export default function RoleRequestDialog({ open, onOpenChange, availableRoles, 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
+      {/* @ts-ignore */}
       <DialogContent className="max-w-md">
+        {/* @ts-ignore */}
         <DialogHeader className="text-left">
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="h-5 w-5" />
@@ -158,6 +160,7 @@ export default function RoleRequestDialog({ open, onOpenChange, availableRoles, 
           </div>
         </div>
 
+        {/* @ts-ignore */}
         <DialogFooter className="flex-row justify-end gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t({ en: 'Cancel', ar: 'إلغاء' })}

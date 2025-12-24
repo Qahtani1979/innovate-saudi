@@ -104,4 +104,19 @@ export function useRoleRequestMutations() {
                 const { error: assignError } = await supabase
                     .from('user_roles')
                     .insert({
-                        user_
+                        user_id: userId,
+                        role_id: roleId,
+                        assigned_by: (await supabase.auth.getUser()).data.user?.email
+                    });
+                if (assignError) throw assignError;
+            }
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['role-requests'] });
+            toast.success('Request updated');
+        },
+        onError: (error) => toast.error(error.message)
+    });
+
+    return { requestRole, updateRequestStatus };
+}

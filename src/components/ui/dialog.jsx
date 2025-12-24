@@ -14,6 +14,7 @@ const DialogPortal = DialogPrimitive.Portal
 
 const DialogClose = DialogPrimitive.Close
 
+/** @type {React.ForwardRefExoticComponent<DialogPrimitive.DialogOverlayProps & React.RefAttributes<HTMLDivElement>>} */
 const DialogOverlay = React.forwardRef(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
     ref={ref}
@@ -25,6 +26,7 @@ const DialogOverlay = React.forwardRef(({ className, ...props }, ref) => (
 ))
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
+/** @type {React.ForwardRefExoticComponent<DialogPrimitive.DialogContentProps & React.RefAttributes<HTMLDivElement>>} */
 const DialogContent = React.forwardRef(({ className, children, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
@@ -46,6 +48,7 @@ const DialogContent = React.forwardRef(({ className, children, ...props }, ref) 
 ))
 DialogContent.displayName = DialogPrimitive.Content.displayName
 
+/** @param {{ className?: string, children?: React.ReactNode }} props */
 const DialogHeader = ({
   className,
   children,
@@ -59,6 +62,7 @@ const DialogHeader = ({
 )
 DialogHeader.displayName = "DialogHeader"
 
+/** @param {{ className?: string, children?: React.ReactNode }} props */
 const DialogFooter = ({
   className,
   children,
@@ -72,6 +76,7 @@ const DialogFooter = ({
 )
 DialogFooter.displayName = "DialogFooter"
 
+/** @type {React.ForwardRefExoticComponent<DialogPrimitive.DialogTitleProps & React.RefAttributes<HTMLHeadingElement>>} */
 const DialogTitle = React.forwardRef(({ className, children, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
@@ -82,6 +87,7 @@ const DialogTitle = React.forwardRef(({ className, children, ...props }, ref) =>
 ))
 DialogTitle.displayName = DialogPrimitive.Title.displayName
 
+/** @type {React.ForwardRefExoticComponent<DialogPrimitive.DialogDescriptionProps & React.RefAttributes<HTMLParagraphElement>>} */
 const DialogDescription = React.forwardRef(({ className, children, ...props }, ref) => (
   <DialogPrimitive.Description
     ref={ref}

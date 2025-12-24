@@ -10,6 +10,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { useAuth } from '@/lib/AuthContext';
 import { usePendingDelegations, useDelegationMutations } from '@/hooks/useDelegations';
@@ -136,7 +137,9 @@ export default function DelegationApprovalQueue() {
       </Card>
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        {/* @ts-ignore */}
         <DialogContent className="max-w-md">
+          {/* @ts-ignore */}
           <DialogHeader className="text-left">
             <DialogTitle className="text-xl">
               {selectedDelegation?.action === 'approve' ?
@@ -164,23 +167,25 @@ export default function DelegationApprovalQueue() {
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setShowDialog(false)}>
-                {t({ en: 'Cancel', ar: 'إلغاء' })}
-              </Button>
-              <Button
-                onClick={confirmAction}
-                className={selectedDelegation?.action === 'approve' ?
-                  'bg-green-600 hover:bg-green-700' : ''}
-                variant={selectedDelegation?.action === 'reject' ? 'destructive' : 'default'}
-                disabled={approveDelegation.isPending}
-              >
-                {selectedDelegation?.action === 'approve' ?
-                  t({ en: 'Approve', ar: 'موافقة' }) :
-                  t({ en: 'Reject', ar: 'رفض' })}
-              </Button>
-            </div>
           </div>
+
+          {/* @ts-ignore */}
+          <DialogFooter className="flex-row justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setShowDialog(false)}>
+              {t({ en: 'Cancel', ar: 'إلغاء' })}
+            </Button>
+            <Button
+              onClick={confirmAction}
+              className={selectedDelegation?.action === 'approve' ?
+                'bg-green-600 hover:bg-green-700' : ''}
+              variant={selectedDelegation?.action === 'reject' ? 'destructive' : 'default'}
+              disabled={approveDelegation.isPending}
+            >
+              {selectedDelegation?.action === 'approve' ?
+                t({ en: 'Approve', ar: 'موافقة' }) :
+                t({ en: 'Reject', ar: 'رفض' })}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
