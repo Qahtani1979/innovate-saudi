@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +5,7 @@ import { useLanguage } from './LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { AlertTriangle, Clock, Calendar } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function DeadlineAlerts() {
   const { language, isRTL, t } = useLanguage();
@@ -13,11 +13,12 @@ export default function DeadlineAlerts() {
   const { data: tasks = [] } = useQuery({
     queryKey: ['upcoming-tasks'],
     queryFn: async () => {
-      const all = await base44.entities.Task.list();
-      const upcoming = all.filter(t => {
+      const { data, error } = await supabase.from('tasks').select('*').neq('status', 'completed');
+      if (error) throw error;
+      const upcoming = (data || []).filter(t => {
         if (!t.due_date) return false;
         const daysUntil = Math.ceil((new Date(t.due_date) - new Date()) / (1000 * 60 * 60 * 24));
-        return daysUntil >= 0 && daysUntil <= 7 && t.status !== 'completed';
+        return daysUntil >= 0 && daysUntil <= 7;
       });
       return upcoming.sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
     }
@@ -26,8 +27,9 @@ export default function DeadlineAlerts() {
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots-milestones'],
     queryFn: async () => {
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => {
+      const { data, error } = await supabase.from('pilots').select('*');
+      if (error) throw error;
+      return (data || []).filter(p => {
         if (!p.milestones) return false;
         return p.milestones.some(m => {
           if (!m.due_date || m.completed) return false;
@@ -41,8 +43,9 @@ export default function DeadlineAlerts() {
   const { data: programs = [] } = useQuery({
     queryKey: ['programs-deadlines'],
     queryFn: async () => {
-      const all = await base44.entities.Program.list();
-      return all.filter(p => {
+      const { data, error } = await supabase.from('programs').select('*');
+      if (error) throw error;
+      return (data || []).filter(p => {
         if (!p.application_deadline) return false;
         const daysUntil = Math.ceil((new Date(p.application_deadline) - new Date()) / (1000 * 60 * 60 * 24));
         return daysUntil >= 0 && daysUntil <= 14;

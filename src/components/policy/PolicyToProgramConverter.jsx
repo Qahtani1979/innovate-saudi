@@ -12,6 +12,7 @@ import {
   POLICY_TO_PROGRAM_SYSTEM_PROMPT, 
   POLICY_TO_PROGRAM_SCHEMA 
 } from '@/lib/ai/prompts/policy/policyToProgram';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function PolicyToProgramConverter({ policy, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
@@ -27,17 +28,19 @@ export default function PolicyToProgramConverter({ policy, onClose, onSuccess })
 
   const createProgramMutation = useMutation({
     mutationFn: async (data) => {
-      const program = await base44.entities.Program.create(data);
+      const { data: program, error: programError } = await supabase.from('programs').insert(data).select().single();
+      if (programError) throw programError;
       
-      await base44.entities.PolicyRecommendation.update(policy.id, {
+      const { error: policyError } = await supabase.from('policy_recommendations').update({
         implementation_program_id: program.id
-      });
+      }).eq('id', policy.id);
+      if (policyError) throw policyError;
 
-      await base44.entities.SystemActivity.create({
+      await supabase.from('system_activities').insert({
         entity_type: 'policy',
         entity_id: policy.id,
-        action: 'implementation_program_created',
-        description: `Implementation program created: ${program.name_en}`
+        activity_type: 'implementation_program_created',
+        description_en: `Implementation program created: ${program.name_en}`
       });
 
       return program;

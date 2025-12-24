@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { GraduationCap, Users, Award } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function StartupMentorshipMatcher({ startupId }) {
   const { t } = useLanguage();
@@ -14,21 +14,23 @@ export default function StartupMentorshipMatcher({ startupId }) {
   const { data: startup } = useQuery({
     queryKey: ['startup-mentorship', startupId],
     queryFn: async () => {
-      const all = await base44.entities.StartupProfile.list();
-      return all.find(s => s.id === startupId);
+      const { data, error } = await supabase.from('startup_profiles').select('*').eq('id', startupId).maybeSingle();
+      if (error) throw error;
+      return data;
     }
   });
 
   const { data: potentialMentors = [] } = useQuery({
     queryKey: ['potential-mentors', startupId],
     queryFn: async () => {
-      const all = await base44.entities.StartupProfile.list();
-      return all.filter(s => 
-        s.id !== startupId &&
-        s.pilot_success_rate > 70 &&
-        s.municipal_clients_count >= 2 &&
-        s.sectors?.some(sector => startup?.sectors?.includes(sector))
-      ).slice(0, 5);
+      const { data, error } = await supabase.from('startup_profiles')
+        .select('*')
+        .neq('id', startupId)
+        .gt('pilot_success_rate', 70)
+        .gte('municipal_clients_count', 2)
+        .limit(5);
+      if (error) throw error;
+      return (data || []).filter(s => s.sectors?.some(sector => startup?.sectors?.includes(sector)));
     },
     enabled: !!startup
   });
@@ -56,13 +58,14 @@ export default function StartupMentorshipMatcher({ startupId }) {
         }
       });
 
-      await base44.entities.ProgramMentorship.create({
+      const { error: mentorshipError } = await supabase.from('program_mentorships').insert({
         mentor_startup_id: mentorId,
         mentee_startup_id: startupId,
         status: 'requested',
         mentorship_type: 'peer_startup',
         focus_areas: startup?.sectors || []
       });
+      if (mentorshipError) throw mentorshipError;
     },
     onSuccess: () => {
       toast.success(t({ en: 'Mentorship request sent', ar: 'تم إرسال طلب التوجيه' }));

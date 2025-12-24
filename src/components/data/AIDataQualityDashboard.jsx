@@ -1,28 +1,40 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../LanguageContext';
 import { Database, AlertCircle, TrendingUp } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
+import { supabase } from '@/integrations/supabase/client';
 
 export default function AIDataQualityDashboard() {
   const { language, t } = useLanguage();
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list(),
+    queryFn: async () => {
+      const { data, error } = await supabase.from('challenges').select('*');
+      if (error) throw error;
+      return data || [];
+    },
     initialData: []
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list(),
+    queryFn: async () => {
+      const { data, error } = await supabase.from('pilots').select('*');
+      if (error) throw error;
+      return data || [];
+    },
     initialData: []
   });
 
   const { data: solutions = [] } = useQuery({
     queryKey: ['solutions'],
-    queryFn: () => base44.entities.Solution.list(),
+    queryFn: async () => {
+      const { data, error } = await supabase.from('solutions').select('*');
+      if (error) throw error;
+      return data || [];
+    },
     initialData: []
   });
 

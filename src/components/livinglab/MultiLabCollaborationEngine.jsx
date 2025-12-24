@@ -14,6 +14,7 @@ import {
   getCollaborationFinderSchema,
   COLLABORATION_FINDER_SYSTEM_PROMPT 
 } from '@/lib/ai/prompts/livinglab';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function MultiLabCollaborationEngine({ currentLabId }) {
   const { language, t } = useLanguage();
@@ -22,7 +23,11 @@ export default function MultiLabCollaborationEngine({ currentLabId }) {
 
   const { data: labs = [] } = useQuery({
     queryKey: ['living-labs'],
-    queryFn: () => base44.entities.LivingLab.list()
+    queryFn: async () => {
+      const { data, error } = await supabase.from('living_labs').select('*');
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const currentLab = labs.find(l => l.id === currentLabId);

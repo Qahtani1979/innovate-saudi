@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Award } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Auto-track and display organization reputation
@@ -10,24 +11,34 @@ import { Award } from 'lucide-react';
 export default function OrganizationReputationTracker({ organizationId }) {
   const { data: org } = useQuery({
     queryKey: ['org', organizationId],
-    queryFn: () => base44.entities.Organization.filter({ id: organizationId }).then(r => r[0]),
+    queryFn: async () => {
+      const { data, error } = await supabase.from('organizations').select('*').eq('id', organizationId).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
     enabled: !!organizationId
   });
 
   const { data: solutions = [] } = useQuery({
     queryKey: ['org-solutions', organizationId],
-    queryFn: () => base44.entities.Solution.filter({ provider_id: organizationId }),
+    queryFn: async () => {
+      const { data, error } = await supabase.from('solutions').select('*').eq('provider_id', organizationId);
+      if (error) throw error;
+      return data || [];
+    },
     enabled: !!organizationId
   });
 
   const { data: pilots = [] } = useQuery({
     queryKey: ['org-pilots', organizationId],
-    queryFn: () => base44.entities.Pilot.filter({ 
-      $or: [
-        { 'team.organization_id': organizationId },
-        { 'stakeholders.organization_id': organizationId }
-      ]
-    }),
+    queryFn: async () => {
+      const { data, error } = await supabase.from('pilots').select('*');
+      if (error) throw error;
+      return (data || []).filter(p => 
+        p.team?.some(t => t.organization_id === organizationId) || 
+        p.stakeholders?.some(s => s.organization_id === organizationId)
+      );
+    },
     enabled: !!organizationId
   });
 
@@ -46,7 +57,7 @@ export default function OrganizationReputationTracker({ organizationId }) {
         (Math.min(solutions.length, 10) * 2)
       );
 
-      await base44.entities.Organization.update(organizationId, {
+      await supabase.from('organizations').update({
         reputation_score: reputationScore,
         reputation_factors: {
           avg_solution_rating: avgRating,
@@ -54,10 +65,8 @@ export default function OrganizationReputationTracker({ organizationId }) {
           solution_count: solutions.length,
           pilot_count: pilots.length
         }
-      });
+      }).eq('id', organizationId);
     };
-
-    calculateReputation();
   }, [solutions, pilots, organizationId]);
 
   if (!org?.reputation_score) return null;
