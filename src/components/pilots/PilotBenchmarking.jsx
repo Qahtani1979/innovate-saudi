@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { usePilotsList } from '@/hooks/usePilots';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
@@ -13,20 +13,16 @@ import { getSystemPrompt } from '@/lib/saudiContext';
 export default function PilotBenchmarking({ pilot }) {
   const { language, t } = useLanguage();
   const [benchmarks, setBenchmarks] = useState(null);
-  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo, error } = useAIWithFallback();
 
-  const { data: similarPilots = [] } = useQuery({
-    queryKey: ['similar-pilots', pilot.sector],
-    queryFn: async () => {
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => 
-        p.sector === pilot.sector && 
-        p.id !== pilot.id && 
-        p.status === 'completed'
-      ).slice(0, 10);
-    },
-    initialData: []
+  const { data: allSimilar = [] } = usePilotsList({
+    sector: pilot.sector,
+    stage: 'completed'
   });
+
+  const similarPilots = allSimilar
+    .filter(p => p.id !== pilot.id)
+    .slice(0, 10);
 
   const runBenchmark = async () => {
     const response = await invokeAI({
@@ -60,7 +56,7 @@ export default function PilotBenchmarking({ pilot }) {
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={error} className="mb-4" />
 
         {!benchmarks && !isLoading && (
           <div className="text-center py-8">

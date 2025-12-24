@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,11 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from './LanguageContext';
 import { Users, Plus, Trash2, Shield, Building2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { useSandboxCollaborators, useSandboxCollaboratorMutations } from '@/hooks/useSandboxCollaborators';
+import { useOrganizationsList } from '@/hooks/useOrganizations';
 
 export default function SandboxCollaboratorManager({ sandbox }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     organization_id: '',
@@ -22,63 +21,21 @@ export default function SandboxCollaboratorManager({ sandbox }) {
     permissions: []
   });
 
-  const { data: collaborators = [] } = useQuery({
-    queryKey: ['sandbox-collaborators', sandbox?.id],
-    queryFn: async () => {
-      const { supabase } = await import('@/integrations/supabase/client');
-      const { data, error } = await supabase
-        .from('sandbox_collaborators')
-        .select('*')
-        .eq('sandbox_id', sandbox?.id);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!sandbox
-  });
+  const { data: collaborators = [] } = useSandboxCollaborators(sandbox?.id);
+  const { data: organizations = [] } = useOrganizationsList();
+  const { createCollaborator, deleteCollaborator } = useSandboxCollaboratorMutations();
 
-  const { data: organizations = [] } = useQuery({
-    queryKey: ['organizations'],
-    queryFn: async () => {
-      const { supabase } = await import('@/integrations/supabase/client');
-      const { data, error } = await supabase.from('organizations').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      const { supabase } = await import('@/integrations/supabase/client');
-      const { error } = await supabase
-        .from('sandbox_collaborators')
-        .insert([{
-          ...data,
-          sandbox_id: sandbox.id
-        }]);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['sandbox-collaborators']);
-      setDialogOpen(false);
-      resetForm();
-      toast.success('Collaborator added');
-    }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      const { supabase } = await import('@/integrations/supabase/client');
-      const { error } = await supabase
-        .from('sandbox_collaborators')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['sandbox-collaborators']);
-      toast.success('Collaborator removed');
-    }
-  });
+  const handleCreate = () => {
+    createCollaborator.mutate({
+      data: formData,
+      sandboxId: sandbox.id
+    }, {
+      onSuccess: () => {
+        setDialogOpen(false);
+        resetForm();
+      }
+    });
+  };
 
   const resetForm = () => {
     setFormData({
@@ -158,7 +115,7 @@ export default function SandboxCollaboratorManager({ sandbox }) {
                   <Button variant="outline" onClick={() => setDialogOpen(false)}>
                     {t({ en: 'Cancel', ar: 'إلغاء' })}
                   </Button>
-                  <Button onClick={() => createMutation.mutate(formData)} disabled={!formData.user_email}>
+                  <Button onClick={handleCreate} disabled={!formData.user_email || createCollaborator.isPending}>
                     {t({ en: 'Add', ar: 'إضافة' })}
                   </Button>
                 </div>
@@ -191,7 +148,8 @@ export default function SandboxCollaboratorManager({ sandbox }) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => deleteMutation.mutate(collab.id)}
+                    onClick={() => deleteCollaborator.mutate(collab.id)}
+                    disabled={deleteCollaborator.isPending}
                     className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
                     <Trash2 className="h-4 w-4" />

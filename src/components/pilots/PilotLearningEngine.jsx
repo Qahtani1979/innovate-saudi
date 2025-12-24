@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { usePilotsList } from '@/hooks/usePilots';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,23 +16,18 @@ import {
 export default function PilotLearningEngine({ pilot }) {
   const { language, t } = useLanguage();
   const [similarPilots, setSimilarPilots] = useState(null);
-  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo, error } = useAIWithFallback();
 
-  const { data: allPilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list(),
-    initialData: []
+  const { data: completed = [] } = usePilotsList({
+    stage: 'completed',
+    sector: pilot.sector
   });
 
   const findSimilar = async () => {
-    const completed = allPilots.filter(p => 
-      p.stage === 'completed' && 
-      p.id !== pilot.id &&
-      p.sector === pilot.sector
-    );
+    const relevantPilots = completed.filter(p => p.id !== pilot.id);
 
     const result = await invokeAI({
-      prompt: buildPilotLearningEnginePrompt({ pilot, completedPilots: completed }),
+      prompt: buildPilotLearningEnginePrompt({ pilot, completedPilots: relevantPilots }),
       response_json_schema: PILOT_LEARNING_ENGINE_SCHEMA
     });
 
@@ -61,7 +56,7 @@ export default function PilotLearningEngine({ pilot }) {
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={error} className="mb-4" />
 
         {!similarPilots && !isLoading && (
           <div className="text-center py-8">

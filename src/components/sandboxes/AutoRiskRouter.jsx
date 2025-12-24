@@ -1,22 +1,22 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
 import { AlertTriangle, Shield, ArrowRight, Sparkles } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useAuth } from '@/lib/AuthContext';
 import { getAutoRiskRouterPrompt, autoRiskRouterSchema } from '@/lib/ai/prompts/sandbox';
 import { getSystemPrompt } from '@/lib/saudiContext';
+import { useSandboxApplicationMutations } from '@/hooks/useSandboxApplications';
 
 export default function AutoRiskRouter({ entity, entityType }) {
   const { t } = useLanguage();
   const { user } = useAuth();
   const [riskAssessment, setRiskAssessment] = useState(null);
   const { invokeAI, status, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { createApplication } = useSandboxApplicationMutations();
 
   const assessRisk = async () => {
     const result = await invokeAI({
@@ -30,23 +30,16 @@ export default function AutoRiskRouter({ entity, entityType }) {
     }
   };
 
-  const routeToSandbox = async () => {
-    try {
-      const { error } = await supabase.from('sandbox_applications').insert({
-        applicant_email: user?.email,
-        source_entity_type: entityType,
-        source_entity_id: entity.id,
-        project_title: entity.title_en || entity.name_en,
-        project_description: entity.description_en || entity.abstract_en,
-        risk_level: riskAssessment.overall_risk >= 70 ? 'high' : riskAssessment.overall_risk >= 40 ? 'medium' : 'low',
-        status: 'pending'
-      });
-      if (error) throw error;
+  const routeToSandbox = () => {
+    const riskLevel = riskAssessment.overall_risk >= 70 ? 'high' :
+      riskAssessment.overall_risk >= 40 ? 'medium' : 'low';
 
-      toast.success(t({ en: 'Sandbox application created', ar: 'تم إنشاء طلب منطقة التجريب' }));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to create application', ar: 'فشل إنشاء الطلب' }));
-    }
+    createApplication.mutate({
+      userEmail: user?.email,
+      entityType,
+      entity,
+      riskLevel
+    });
   };
 
   if (!entity) return null;
@@ -104,32 +97,31 @@ export default function AutoRiskRouter({ entity, entityType }) {
               </div>
             </div>
 
-            <div className={`p-4 rounded-lg border-2 ${
-              riskAssessment.recommendation === 'sandbox_required' ? 'bg-red-50 border-red-400' :
+            <div className={`p-4 rounded-lg border-2 ${riskAssessment.recommendation === 'sandbox_required' ? 'bg-red-50 border-red-400' :
               riskAssessment.recommendation === 'sandbox_recommended' ? 'bg-yellow-50 border-yellow-400' :
-              'bg-green-50 border-green-400'
-            }`}>
+                'bg-green-50 border-green-400'
+              }`}>
               <div className="flex items-center gap-2 mb-2">
                 <Badge className={
                   riskAssessment.recommendation === 'sandbox_required' ? 'bg-red-600' :
-                  riskAssessment.recommendation === 'sandbox_recommended' ? 'bg-yellow-600' :
-                  'bg-green-600'
+                    riskAssessment.recommendation === 'sandbox_recommended' ? 'bg-yellow-600' :
+                      'bg-green-600'
                 }>
                   {t({ en: 'Overall Risk:', ar: 'المخاطر الإجمالية:' })} {riskAssessment.overall_risk}%
                 </Badge>
               </div>
               <p className="font-semibold text-sm mb-1">
-                {riskAssessment.recommendation === 'sandbox_required' 
+                {riskAssessment.recommendation === 'sandbox_required'
                   ? t({ en: '⚠️ Sandbox Testing REQUIRED', ar: '⚠️ اختبار منطقة التجريب مطلوب' })
                   : riskAssessment.recommendation === 'sandbox_recommended'
-                  ? t({ en: '💡 Sandbox Testing Recommended', ar: '💡 اختبار منطقة التجريب موصى به' })
-                  : t({ en: '✅ Can proceed to direct pilot', ar: '✅ يمكن المتابعة للتجربة المباشرة' })}
+                    ? t({ en: '💡 Sandbox Testing Recommended', ar: '💡 اختبار منطقة التجريب موصى به' })
+                    : t({ en: '✅ Can proceed to direct pilot', ar: '✅ يمكن المتابعة للتجربة المباشرة' })}
               </p>
               <p className="text-sm text-slate-700">{riskAssessment.reasoning}</p>
             </div>
 
             {(riskAssessment.recommendation === 'sandbox_required' || riskAssessment.recommendation === 'sandbox_recommended') && (
-              <Button onClick={routeToSandbox} className="w-full bg-orange-600">
+              <Button onClick={routeToSandbox} disabled={createApplication.isPending} className="w-full bg-orange-600">
                 <ArrowRight className="h-4 w-4 mr-2" />
                 {t({ en: 'Route to Sandbox', ar: 'توجيه إلى منطقة التجريب' })}
               </Button>

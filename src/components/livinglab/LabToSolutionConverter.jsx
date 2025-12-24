@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,10 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
 import { Lightbulb, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLivingLabMutations } from '@/hooks/useLivingLabs';
 
 export default function LabToSolutionConverter({ rdProject, livingLabId }) {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
   const [solutionData, setSolutionData] = useState({
     name_en: rdProject.title_en || '',
@@ -20,50 +18,21 @@ export default function LabToSolutionConverter({ rdProject, livingLabId }) {
     pricing_model: 'subscription'
   });
 
-  const convertMutation = useMutation({
-    mutationFn: async () => {
-      // Create Solution
-      const { data: solution, error } = await supabase.from('solutions').insert({
-        code: `SOL-LAB-${Date.now()}`,
-        name_en: solutionData.name_en,
-        name_ar: rdProject.title_ar,
-        description_en: solutionData.description_en,
-        description_ar: rdProject.abstract_ar,
-        provider_name: rdProject.institution_en,
-        provider_type: 'research_center',
-        sectors: [rdProject.research_area_en],
-        maturity_level: 'pilot_ready',
-        trl: rdProject.trl_current || 6,
-        pricing_model: solutionData.pricing_model,
-        workflow_stage: 'verification_pending',
-        is_verified: false
-      }).select().single();
-      if (error) throw error;
-
-      // Create certification
-      await supabase.from('lab_solution_certifications').insert({
-        living_lab_id: livingLabId,
-        solution_id: solution.id,
-        certification_type: 'citizen_tested',
-        certification_date: new Date().toISOString(),
-        citizen_participants_count: rdProject.team_members?.length || 0,
-        research_findings: rdProject.abstract_en,
-        issued_by: user?.email
-      });
-
-      // Update RDProject
-      await supabase.from('rd_projects').update({
-        commercialization_potential_score: 75
-      }).eq('id', rdProject.id);
-
-      return solution;
-    },
-    onSuccess: (solution) => {
-      queryClient.invalidateQueries();
-      toast.success(t({ en: 'Solution created from research', ar: 'تم إنشاء الحل من البحث' }));
-      window.open(`/SolutionDetail?id=${solution.id}`, '_blank');
-    }
-  });
+  const { convertProjectToSolution } = useLivingLabMutations();
+  const handleConvert = () => {
+    convertProjectToSolution.mutate({
+      rdProject,
+      livingLabId,
+      solutionData,
+      userEmail: user?.email
+    }, {
+      onSuccess: (solution) => {
+        if (solution?.id) {
+          window.open(`/SolutionDetail?id=${solution.id}`, '_blank');
+        }
+      }
+    });
+  };
 
   return (
     <Card className="border-2 border-green-300">
@@ -87,8 +56,8 @@ export default function LabToSolutionConverter({ rdProject, livingLabId }) {
         />
 
         <Button
-          onClick={() => convertMutation.mutate()}
-          disabled={!solutionData.name_en || convertMutation.isPending}
+          onClick={handleConvert}
+          disabled={!solutionData.name_en || convertProjectToSolution.isPending}
           className="w-full bg-green-600"
         >
           <ArrowRight className="h-4 w-4 mr-2" />

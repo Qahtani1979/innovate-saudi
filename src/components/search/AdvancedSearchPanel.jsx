@@ -5,9 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../LanguageContext';
 import { Search, Filter, X, Calendar } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { useAdvancedSearch } from '@/hooks/useAdvancedSearch';
+
 export default function AdvancedSearchPanel({ onSearch, onClose }) {
   const { t } = useLanguage();
+  const { searchWithFilters } = useAdvancedSearch();
   const [filters, setFilters] = useState({
     query: '',
     entityType: 'all',
@@ -31,53 +33,13 @@ export default function AdvancedSearchPanel({ onSearch, onClose }) {
   ];
 
   const sectors = [
-    'all', 'urban_design', 'transport', 'environment', 'digital_services', 
+    'all', 'urban_design', 'transport', 'environment', 'digital_services',
     'health', 'education', 'safety', 'economic_development', 'social_services'
   ];
 
   const handleSearch = async () => {
     const results = await searchWithFilters(filters);
     onSearch(results);
-  };
-
-  const searchWithFilters = async (filters) => {
-    const results = [];
-    const entityTypeToTable = {
-      Challenge: 'challenges',
-      Pilot: 'pilots',
-      Solution: 'solutions',
-      RDProject: 'rd_projects',
-      Program: 'programs',
-      Organization: 'organizations'
-    };
-    
-    const entities = filters.entityType === 'all' 
-      ? ['Challenge', 'Pilot', 'Solution', 'RDProject', 'Program', 'Organization']
-      : [filters.entityType];
-
-    for (const entityType of entities) {
-      try {
-        const tableName = entityTypeToTable[entityType];
-        let query = supabase.from(tableName).select('*').limit(10);
-        
-        if (filters.sector !== 'all') query = query.eq('sector', filters.sector);
-        if (filters.status !== 'all') query = query.eq('status', filters.status);
-        if (filters.priority !== 'all') query = query.eq('priority', filters.priority);
-        if (filters.dateFrom) query = query.gte('created_at', filters.dateFrom);
-        if (filters.query) {
-          query = query.or(`title_en.ilike.%${filters.query}%,name_en.ilike.%${filters.query}%,description_en.ilike.%${filters.query}%`);
-        }
-        
-        const { data, error } = await query.order('created_at', { ascending: false });
-        if (!error && data) {
-          results.push(...data.map(item => ({ ...item, _type: entityType })));
-        }
-      } catch (error) {
-        console.error(`Search error for ${entityType}:`, error);
-      }
-    }
-
-    return results;
   };
 
   return (
@@ -211,8 +173,8 @@ export default function AdvancedSearchPanel({ onSearch, onClose }) {
             <Search className="h-4 w-4 mr-2" />
             {t({ en: 'Search', ar: 'بحث' })}
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => setFilters({
               query: '', entityType: 'all', sector: 'all', status: 'all',
               priority: 'all', dateFrom: '', dateTo: '', city: 'all', tags: []

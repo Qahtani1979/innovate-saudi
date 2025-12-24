@@ -9,14 +9,15 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useLanguage } from '@/components/LanguageContext';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useStrategyContext, checkObjectiveSimilarity } from '@/hooks/strategy/useStrategyContext';
-import { 
-  Sparkles, 
-  Loader2, 
-  Target, 
+import { useStrategicPlan } from '@/hooks/useStrategicPlans';
+import { useStrategicPlanMutations } from '@/hooks/useStrategicPlanMutations';
+import { useStrategyAIGeneration } from '@/hooks/useStrategyAIGeneration';
+import {
+  Sparkles,
+  Loader2,
+  Target,
   BarChart3,
   TrendingUp,
   Calendar,
@@ -27,7 +28,8 @@ import {
 
 export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectivesGenerated }) {
   const { t, language, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
+  const { updatePlan } = useStrategicPlanMutations();
+  const { generateObjectives: generateObjectivesAI } = useStrategyAIGeneration();
   const [isGenerating, setIsGenerating] = useState(false);
   const [objectives, setObjectives] = useState([]);
   const [selectedPillar, setSelectedPillar] = useState('');
@@ -37,27 +39,15 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
   // Fetch strategic context for deduplication
   const { existingObjectives, isLoading: contextLoading } = useStrategyContext();
 
-  // Fetch strategic plan with pillars using Supabase
-  const { data: strategicPlan } = useQuery({
-    queryKey: ['strategic-plan-objectives', strategicPlanId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('strategic_plans')
-        .select('*')
-        .eq('id', strategicPlanId)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!strategicPlanId
-  });
+  // Fetch strategic plan with pillars
+  const { data: strategicPlan } = useStrategicPlan(strategicPlanId);
 
   const pillars = strategicPlan?.pillars || [];
 
   // Check for duplicates when objectives change
   const objectivesWithDuplicateCheck = useMemo(() => {
     if (!objectives.length || !existingObjectives.length) return objectives;
-    
+
     return objectives.map((obj, index) => {
       const duplicates = checkObjectiveSimilarity(obj, existingObjectives, 0.5);
       return {
@@ -68,60 +58,57 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
     });
   }, [objectives, existingObjectives]);
 
-  const generateObjectives = async () => {
+  const generateObjectives = () => {
     setIsGenerating(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('strategy-objective-generator', {
-        body: {
-          strategic_plan_id: strategicPlanId,
-          pillar_name: selectedPillar || undefined,
-          vision_statement: strategicPlan?.vision_en,
-          objectives_per_pillar: objectivesPerPillar,
-          include_kpis: true,
-          existing_objectives: existingObjectives.map(o => ({
-            name: o.name_en,
-            plan: o.planName
-          }))
-        }
-      });
+    generateObjectivesAI.mutate({
+      strategic_plan_id: strategicPlanId,
+      pillar_name: selectedPillar || undefined,
+      vision_statement: strategicPlan?.vision_en,
+      objectives_per_pillar: objectivesPerPillar,
+      include_kpis: true,
+      existing_objectives: existingObjectives.map(o => ({
+        name: o.name_en,
+        plan: o.planName
+      }))
+    }, {
+      onSuccess: (data) => {
+        if (data?.objectives) {
+          const warnings = [];
+          data.objectives.forEach((obj, index) => {
+            const duplicates = checkObjectiveSimilarity(obj, existingObjectives, 0.5);
+            if (duplicates.length > 0) {
+              warnings.push({
+                index,
+                objective: obj.name_en,
+                duplicates: duplicates.slice(0, 3)
+              });
+            }
+          });
 
-      if (error) throw error;
+          setDuplicateWarnings(warnings);
+          setObjectives(data.objectives);
 
-      if (data?.objectives) {
-        const warnings = [];
-        data.objectives.forEach((obj, index) => {
-          const duplicates = checkObjectiveSimilarity(obj, existingObjectives, 0.5);
-          if (duplicates.length > 0) {
-            warnings.push({
-              index,
-              objective: obj.name_en,
-              duplicates: duplicates.slice(0, 3)
-            });
+          if (warnings.length > 0) {
+            toast.warning(t({
+              en: `${warnings.length} objectives may be similar to existing ones. Review highlighted items.`,
+              ar: `${warnings.length} أهداف قد تكون مشابهة للأهداف الحالية. راجع العناصر المميزة.`
+            }));
+          } else {
+            toast.success(t({
+              en: `Generated ${data.objectives.length} unique strategic objectives with KPIs`,
+              ar: `تم إنشاء ${data.objectives.length} أهداف استراتيجية فريدة مع مؤشرات الأداء`
+            }));
           }
-        });
-        
-        setDuplicateWarnings(warnings);
-        setObjectives(data.objectives);
-        
-        if (warnings.length > 0) {
-          toast.warning(t({ 
-            en: `${warnings.length} objectives may be similar to existing ones. Review highlighted items.`, 
-            ar: `${warnings.length} أهداف قد تكون مشابهة للأهداف الحالية. راجع العناصر المميزة.` 
-          }));
-        } else {
-          toast.success(t({ 
-            en: `Generated ${data.objectives.length} unique strategic objectives with KPIs`, 
-            ar: `تم إنشاء ${data.objectives.length} أهداف استراتيجية فريدة مع مؤشرات الأداء` 
-          }));
+          onObjectivesGenerated?.(data.objectives);
         }
-        onObjectivesGenerated?.(data.objectives);
+        setIsGenerating(false);
+      },
+      onError: (error) => {
+        console.error('Error generating objectives:', error);
+        toast.error(t({ en: 'Failed to generate objectives', ar: 'فشل في إنشاء الأهداف' }));
+        setIsGenerating(false);
       }
-    } catch (error) {
-      console.error('Error generating objectives:', error);
-      toast.error(t({ en: 'Failed to generate objectives', ar: 'فشل في إنشاء الأهداف' }));
-    } finally {
-      setIsGenerating(false);
-    }
+    });
   };
 
   const updateObjective = (index, field, value) => {
@@ -135,19 +122,19 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
     setDuplicateWarnings(duplicateWarnings.filter(w => w.index !== index));
   };
 
-  const saveObjectives = async () => {
+  const saveObjectives = () => {
     if (!strategicPlanId) {
       toast.error(t({ en: 'No strategic plan selected', ar: 'لم يتم تحديد خطة استراتيجية' }));
       return;
     }
 
-    const highSimilarityCount = duplicateWarnings.filter(w => 
+    const highSimilarityCount = duplicateWarnings.filter(w =>
       w.duplicates.some(d => d.similarity >= 70)
     ).length;
-    
+
     if (highSimilarityCount > 0) {
       const confirmed = window.confirm(
-        t({ 
+        t({
           en: `${highSimilarityCount} objectives have high similarity (>70%) with existing ones. Continue anyway?`,
           ar: `${highSimilarityCount} أهداف لها تشابه عالي (>70%) مع الأهداف الحالية. المتابعة على أي حال؟`
         })
@@ -155,39 +142,28 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
       if (!confirmed) return;
     }
 
-    try {
-      const existingPlanObjectives = strategicPlan?.objectives || [];
-      
-      const newObjectivesWithMeta = objectives.map(obj => ({
-        ...obj,
-        _added_at: new Date().toISOString(),
-        _source: 'ai_generated',
-        _dedup_checked: true
-      }));
-      
-      const updatedObjectives = [...existingPlanObjectives, ...newObjectivesWithMeta];
+    const existingPlanObjectives = strategicPlan?.objectives || [];
 
-      const { error } = await supabase
-        .from('strategic_plans')
-        .update({ 
-          objectives: updatedObjectives,
-          objectives_generated_at: new Date().toISOString()
-        })
-        .eq('id', strategicPlanId);
+    const newObjectivesWithMeta = objectives.map(obj => ({
+      ...obj,
+      _added_at: new Date().toISOString(),
+      _source: 'ai_generated',
+      _dedup_checked: true
+    }));
 
-      if (error) throw error;
+    const updatedObjectives = [...existingPlanObjectives, ...newObjectivesWithMeta];
 
-      queryClient.invalidateQueries(['strategic-plan-objectives', strategicPlanId]);
-      queryClient.invalidateQueries(['strategic-plans']);
-      queryClient.invalidateQueries(['strategy-context-plans']);
-      
-      toast.success(t({ en: 'Objectives saved successfully', ar: 'تم حفظ الأهداف بنجاح' }));
-      setObjectives([]);
-      setDuplicateWarnings([]);
-    } catch (error) {
-      console.error('Error saving objectives:', error);
-      toast.error(t({ en: 'Failed to save objectives', ar: 'فشل في حفظ الأهداف' }));
-    }
+    updatePlan.mutate({
+      id: strategicPlanId,
+      objectives: updatedObjectives,
+      objectives_generated_at: new Date().toISOString()
+    }, {
+      onSuccess: () => {
+        toast.success(t({ en: 'Objectives saved successfully', ar: 'تم حفظ الأهداف بنجاح' }));
+        setObjectives([]);
+        setDuplicateWarnings([]);
+      }
+    });
   };
 
   return (
@@ -232,8 +208,8 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
             />
           </div>
           <div className="flex items-end">
-            <Button 
-              onClick={generateObjectives} 
+            <Button
+              onClick={generateObjectives}
               disabled={isGenerating}
               className="w-full"
             >
@@ -251,9 +227,9 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
           <Alert className="bg-yellow-50 border-yellow-200">
             <AlertTriangle className="h-4 w-4 text-yellow-600" />
             <AlertDescription className="text-yellow-800">
-              {t({ 
-                en: 'No pillars found. Generate strategic pillars first for better objective alignment.', 
-                ar: 'لم يتم العثور على ركائز. قم بإنشاء الركائز الاستراتيجية أولاً لتحسين توافق الأهداف.' 
+              {t({
+                en: 'No pillars found. Generate strategic pillars first for better objective alignment.',
+                ar: 'لم يتم العثور على ركائز. قم بإنشاء الركائز الاستراتيجية أولاً لتحسين توافق الأهداف.'
               })}
             </AlertDescription>
           </Alert>
@@ -286,9 +262,9 @@ export default function StrategyObjectiveGenerator({ strategicPlanId, onObjectiv
                           <span>by {objective.target_year}</span>
                         </div>
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={(e) => { e.stopPropagation(); removeObjective(index); }}
                         className="text-destructive"
                       >

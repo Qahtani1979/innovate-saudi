@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,11 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from './LanguageContext';
 import { TestTube, X, Sparkles, Loader2, ArrowRight } from 'lucide-react';
-import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import usePilotMutations from '@/hooks/usePilotMutations';
+import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
+import { toast } from 'sonner';
 import {
   buildRDToPilotPrompt,
   rdToPilotSchema,
@@ -60,35 +60,19 @@ import {
  */
 export default function RDToPilotTransition({ project, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
   /** @type {any} */
   const castSetPilotData = useState(null);
   const [pilotData, setPilotData] = castSetPilotData;
 
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('municipalities').select('*');
-      if (error) throw error;
-      return data;
-    }
-  });
+  const { data: municipalities = [] } = useMunicipalitiesWithVisibility();
+  const { createPilot } = usePilotMutations();
 
-  const createPilotMutation = useMutation({
-    /** @param {PilotData} data */
-    mutationFn: async (data) => {
-      const { data: pilot, error } = await supabase.from('pilots').insert(data).select().single();
-      if (error) throw error;
-      return pilot;
-    },
-    onSuccess: (pilot) => {
-      queryClient.invalidateQueries({ queryKey: ['pilots'] });
-      toast.success(t({ en: 'Pilot created from R&D', ar: 'تم إنشاء التجربة من البحث' }));
-      navigate(createPageUrl(`PilotDetail?id=${pilot.id}`));
-    }
-  });
+  const handlePilotCreated = (pilot) => {
+    toast.success(t({ en: 'Pilot created from R&D', ar: 'تم إنشاء التجربة من البحث' }));
+    navigate(createPageUrl(`PilotDetail?id=${pilot.id}`));
+  };
 
   const generatePilotScope = async () => {
     const response = await invokeAI({
@@ -137,7 +121,9 @@ export default function RDToPilotTransition({ project, onClose }) {
       description_ar: (pilotData.description_ar || pilotData.objective_ar || '')
     };
 
-    createPilotMutation.mutate(payload);
+    createPilot.mutate(payload, {
+      onSuccess: handlePilotCreated
+    });
   };
 
   return (
@@ -261,7 +247,7 @@ export default function RDToPilotTransition({ project, onClose }) {
               </Button>
               <Button
                 onClick={handleCreatePilot}
-                disabled={createPilotMutation.isPending || !pilotData.municipality_id}
+                disabled={createPilot.isPending || !pilotData.municipality_id}
                 className="flex-1 bg-blue-600 hover:bg-blue-700"
               >
                 <TestTube className="h-4 w-4 mr-2" />

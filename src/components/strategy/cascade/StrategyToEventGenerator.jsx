@@ -5,14 +5,17 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/components/LanguageContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Sparkles, CalendarDays, Loader2, CheckCircle2, Plus, Users, MapPin, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { useApprovalRequest } from '@/hooks/useApprovalRequest';
+import { useEvents } from '@/hooks/useEvents';
+import { useStrategyAIGeneration } from '@/hooks/useStrategyAIGeneration';
 
 export default function StrategyToEventGenerator({ strategicPlanId, strategicPlan, onEventCreated }) {
   const { t, isRTL } = useLanguage();
   const { createApprovalRequest } = useApprovalRequest();
+  const { createEvent } = useEvents();
+  const { generateEvents } = useStrategyAIGeneration();
   const [eventType, setEventType] = useState('workshop');
   const [targetAudience, setTargetAudience] = useState([]);
   const [generatedEvents, setGeneratedEvents] = useState([]);
@@ -40,8 +43,8 @@ export default function StrategyToEventGenerator({ strategicPlanId, strategicPla
   ];
 
   const handleAudienceToggle = (audience) => {
-    setTargetAudience(prev => 
-      prev.includes(audience) 
+    setTargetAudience(prev =>
+      prev.includes(audience)
         ? prev.filter(a => a !== audience)
         : [...prev, audience]
     );
@@ -55,49 +58,50 @@ export default function StrategyToEventGenerator({ strategicPlanId, strategicPla
 
     setIsGenerating(true);
     try {
-      const { data, error } = await supabase.functions.invoke('strategy-event-planner', {
-        body: {
-          strategic_plan_id: selectedPlanId,
-          event_type: eventType,
-          target_audience: targetAudience
+      generateEvents.mutate({
+        strategic_plan_id: selectedPlanId,
+        event_type: eventType,
+        target_audience: targetAudience
+      }, {
+        onSuccess: (data) => {
+          setGeneratedEvents(data?.events || []);
+          toast.success(t({ en: 'Event concepts generated', ar: 'تم إنشاء مفاهيم الفعاليات' }));
+        },
+        onError: (error) => {
+          console.error('Generation error:', error);
+          toast.error(t({ en: 'Failed to generate events', ar: 'فشل في إنشاء الفعاليات' }));
+        },
+        onSettled: () => {
+          setIsGenerating(false);
         }
       });
-
-      if (error) throw error;
-      setGeneratedEvents(data?.events || []);
-      toast.success(t({ en: 'Event concepts generated', ar: 'تم إنشاء مفاهيم الفعاليات' }));
     } catch (error) {
       console.error('Generation error:', error);
       toast.error(t({ en: 'Failed to generate events', ar: 'فشل في إنشاء الفعاليات' }));
-    } finally {
       setIsGenerating(false);
     }
   };
 
   const handleSaveEvent = async (event, index, submitForApproval = false) => {
     try {
-      const { data, error } = await supabase
-        .from('events')
-        .insert({
-          title_en: event.title_en,
-          title_ar: event.title_ar,
-          description_en: event.description_en,
-          description_ar: event.description_ar,
-          event_type: eventType,
-          target_audience: targetAudience,
-          strategic_plan_ids: [selectedPlanId],
-          is_strategy_derived: true,
-          strategy_derivation_date: new Date().toISOString(),
-          status: submitForApproval ? 'pending' : 'planning',
-          estimated_attendees: event.estimated_attendees,
-          suggested_agenda: event.agenda,
-          is_deleted: false,
-          is_published: false
-        })
-        .select()
-        .single();
+      const eventData = {
+        title_en: event.title_en,
+        title_ar: event.title_ar,
+        description_en: event.description_en,
+        description_ar: event.description_ar,
+        event_type: eventType,
+        target_audience: targetAudience,
+        strategic_plan_ids: [selectedPlanId],
+        is_strategy_derived: true,
+        strategy_derivation_date: new Date().toISOString(),
+        status: submitForApproval ? 'pending' : 'planning',
+        estimated_attendees: event.estimated_attendees,
+        suggested_agenda: event.agenda,
+        is_deleted: false,
+        is_published: false
+      };
 
-      if (error) throw error;
+      const data = await createEvent(eventData);
 
       // Create approval request if submitting (Phase 4 integration)
       if (submitForApproval) {
@@ -118,10 +122,10 @@ export default function StrategyToEventGenerator({ strategicPlanId, strategicPla
       const updated = [...generatedEvents];
       updated[index] = { ...updated[index], saved: true, savedId: data.id, submitted: submitForApproval };
       setGeneratedEvents(updated);
-      
-      toast.success(t({ 
-        en: submitForApproval ? 'Event saved and submitted for approval' : 'Event saved successfully', 
-        ar: submitForApproval ? 'تم حفظ الفعالية وإرسالها للموافقة' : 'تم حفظ الفعالية بنجاح' 
+
+      toast.success(t({
+        en: submitForApproval ? 'Event saved and submitted for approval' : 'Event saved successfully',
+        ar: submitForApproval ? 'تم حفظ الفعالية وإرسالها للموافقة' : 'تم حفظ الفعالية بنجاح'
       }));
       onEventCreated?.(data);
     } catch (error) {
@@ -141,7 +145,7 @@ export default function StrategyToEventGenerator({ strategicPlanId, strategicPla
             {t({ en: 'Strategic Event Planner', ar: 'مخطط الفعاليات الاستراتيجية' })}
           </CardTitle>
           <CardDescription>
-            {t({ 
+            {t({
               en: 'Generate event concepts aligned with strategic objectives',
               ar: 'إنشاء مفاهيم فعاليات متوافقة مع الأهداف الاستراتيجية'
             })}
@@ -209,7 +213,7 @@ export default function StrategyToEventGenerator({ strategicPlanId, strategicPla
             {t({ en: 'Generated Events', ar: 'الفعاليات المُنشأة' })}
             <Badge variant="secondary">{generatedEvents.length}</Badge>
           </h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {generatedEvents.map((event, idx) => (
               <Card key={idx} className={event.saved ? 'border-green-500/50 bg-green-50/50' : ''}>
@@ -231,7 +235,7 @@ export default function StrategyToEventGenerator({ strategicPlanId, strategicPla
                     {event.saved ? (
                       <Badge variant="outline" className={event.submitted ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}>
                         <CheckCircle2 className="h-3 w-3 mr-1" />
-                        {event.submitted 
+                        {event.submitted
                           ? t({ en: 'Submitted', ar: 'مُرسل' })
                           : t({ en: 'Saved', ar: 'محفوظ' })}
                       </Badge>

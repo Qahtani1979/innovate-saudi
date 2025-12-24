@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../LanguageContext';
@@ -28,6 +28,9 @@ import {
   Zap
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { useEntityActivity } from '@/hooks/useUserActivity';
+import { useComments } from '@/hooks/useComments';
+import { useEntityApprovalHistory } from '@/hooks/useApprovalRequests';
 
 const ACTIVITY_ICONS = {
   created: PlayCircle,
@@ -91,68 +94,45 @@ export default function PilotActivityLog({ pilotId }) {
   const { language, isRTL, t } = useLanguage();
   const [viewMode, setViewMode] = useState('timeline');
 
-  // Fetch pilot activities (SystemActivity entity)
-  const { data: activities = [], isLoading } = useQuery({
-    queryKey: ['pilot-activities', pilotId],
-    queryFn: async () => {
-      const allActivities = await base44.entities.SystemActivity.filter({
-        entity_type: 'pilot',
-        entity_id: pilotId
-      }, '-created_date', 100);
-      return allActivities;
-    },
-    enabled: !!pilotId
-  });
-
-  // Fetch pilot comments
-  const { data: comments = [] } = useQuery({
-    queryKey: ['pilot-comments', pilotId],
-    queryFn: () => base44.entities.PilotComment.filter({ pilot_id: pilotId }, '-created_date', 50),
-    enabled: !!pilotId
-  });
-
-  // Fetch approval requests for this pilot
-  const { data: approvals = [] } = useQuery({
-    queryKey: ['pilot-approvals', pilotId],
-    queryFn: () => base44.entities.ApprovalRequest.filter({ 
-      entity_type: 'pilot',
-      entity_id: pilotId 
-    }, '-created_date', 50),
-    enabled: !!pilotId
-  });
+  /* 
+   * Refactored to use Gold Standard Hooks
+   */
+  const { data: activities = [], isLoading } = useEntityActivity(pilotId);
+  const { data: comments = [] } = useComments('pilot', pilotId);
+  const { data: approvals = [] } = useEntityApprovalHistory(pilotId, 'pilot');
 
   // Combine all into unified timeline
   const combinedTimeline = [
-    ...activities.map(a => ({ ...a, source: 'activity' })),
-    ...comments.map(c => ({ 
-      ...c, 
+    ...(activities || []).map(a => ({ ...a, source: 'activity' })),
+    ...(comments || []).map(c => ({
+      ...c,
       source: 'comment',
       activity_type: 'comment_added',
       description: c.comment_text,
-      created_date: c.created_date,
+      created_date: c.created_at, // Map created_at to created_date for consistency
       performed_by: c.user_email
     })),
-    ...approvals.map(a => ({
+    ...(approvals || []).map(a => ({
       ...a,
       source: 'approval',
-      activity_type: a.status === 'approved' ? 'approved' : a.status === 'rejected' ? 'rejected' : 'submitted',
-      description: `${a.gate_name} gate: ${a.status}`,
-      created_date: a.decision_date || a.created_date,
-      performed_by: a.reviewer_email || a.requester_email
+      activity_type: a.approval_status === 'approved' ? 'approved' : a.approval_status === 'rejected' ? 'rejected' : 'submitted',
+      description: `${a.approval_step || 'Approval'} gate: ${a.approval_status}`,
+      created_date: a.review_date || a.created_at,
+      performed_by: a.reviewer_email || 'System'
     }))
-  ].sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+  ].sort((a, b) => new Date(b.created_date || b.created_at) - new Date(a.created_date || a.created_at));
 
   // Filter by category
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const filtered = categoryFilter === 'all' 
-    ? combinedTimeline 
+  const filtered = categoryFilter === 'all'
+    ? combinedTimeline
     : combinedTimeline.filter(item => {
-        if (categoryFilter === 'workflow') return ['status_changed', 'stage_changed', 'submitted', 'approved', 'rejected'].includes(item.activity_type);
-        if (categoryFilter === 'milestones') return ['milestone_completed', 'kpi_updated'].includes(item.activity_type);
-        if (categoryFilter === 'budget') return ['budget_approved', 'budget_updated'].includes(item.activity_type);
-        if (categoryFilter === 'risks') return ['risk_flagged', 'issue_logged'].includes(item.activity_type);
-        return true;
-      });
+      if (categoryFilter === 'workflow') return ['status_changed', 'stage_changed', 'submitted', 'approved', 'rejected'].includes(item.activity_type);
+      if (categoryFilter === 'milestones') return ['milestone_completed', 'kpi_updated'].includes(item.activity_type);
+      if (categoryFilter === 'budget') return ['budget_approved', 'budget_updated'].includes(item.activity_type);
+      if (categoryFilter === 'risks') return ['risk_flagged', 'issue_logged'].includes(item.activity_type);
+      return true;
+    });
 
   if (isLoading) {
     return (
@@ -176,7 +156,7 @@ export default function PilotActivityLog({ pilotId }) {
             {t({ en: 'Activity Log', ar: 'سجل النشاط' })}
             <Badge variant="outline">{filtered.length} {t({ en: 'events', ar: 'حدث' })}</Badge>
           </CardTitle>
-          
+
           <div className="flex items-center gap-2">
             <Tabs value={viewMode} onValueChange={setViewMode}>
               <TabsList>
@@ -238,18 +218,18 @@ export default function PilotActivityLog({ pilotId }) {
               <div className="relative">
                 {/* Timeline line */}
                 <div className={`absolute ${isRTL ? 'right-6' : 'left-6'} top-0 bottom-0 w-0.5 bg-slate-200`} />
-                
+
                 {filtered.map((item, idx) => {
                   const Icon = ACTIVITY_ICONS[item.activity_type] || Activity;
                   const colorClass = ACTIVITY_COLORS[item.activity_type] || 'text-slate-600 bg-slate-50 border-slate-200';
-                  
+
                   return (
                     <div key={idx} className="relative flex gap-4 mb-6">
                       {/* Icon */}
                       <div className={`relative z-10 flex-shrink-0 h-12 w-12 rounded-full border-2 ${colorClass} flex items-center justify-center`}>
                         <Icon className="h-5 w-5" />
                       </div>
-                      
+
                       {/* Content */}
                       <div className="flex-1 pt-1">
                         <div className="flex items-start justify-between mb-2">
@@ -270,7 +250,7 @@ export default function PilotActivityLog({ pilotId }) {
                             </p>
                           </div>
                         </div>
-                        
+
                         {/* Metadata */}
                         <div className="flex flex-wrap gap-2 mt-2">
                           {item.performed_by && (
@@ -279,13 +259,13 @@ export default function PilotActivityLog({ pilotId }) {
                               {item.performed_by}
                             </Badge>
                           )}
-                          
+
                           {item.source === 'approval' && (
                             <Badge className="bg-purple-100 text-purple-700 text-xs">
                               {item.gate_name}
                             </Badge>
                           )}
-                          
+
                           {item.metadata && Object.keys(item.metadata).length > 0 && (
                             <Badge variant="outline" className="text-xs">
                               {Object.keys(item.metadata).length} details
@@ -361,12 +341,12 @@ export default function PilotActivityLog({ pilotId }) {
               <tbody>
                 {filtered.map((item, idx) => {
                   const Icon = ACTIVITY_ICONS[item.activity_type] || Activity;
-                  
+
                   return (
                     <tr key={idx} className="border-b hover:bg-slate-50">
                       <td className="p-3">
                         <div className="text-xs text-slate-600">
-                          {item.created_date && format(new Date(item.created_date), 'MMM dd, yyyy HH:mm')}
+                          {item.created_date && format(new Date(item.created_date), 'MMM dd, yyyy HH:mm') || item.created_at && format(new Date(item.created_at), 'MMM dd, yyyy HH:mm')}
                         </div>
                       </td>
                       <td className="p-3">

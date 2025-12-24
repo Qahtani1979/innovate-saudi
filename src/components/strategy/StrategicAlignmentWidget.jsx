@@ -1,5 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useEntity } from '@/hooks/useEntityData';
 import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,20 +20,8 @@ export default function StrategicAlignmentWidget({
 }) {
   const { language, t } = useLanguage();
 
-  // Fetch the entity to get its strategic plan IDs
-  const { data: entity, isLoading: entityLoading } = useQuery({
-    queryKey: [entityType, entityId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from(entityType === 'scaling_plan' ? 'scaling_plans' : `${entityType}s`)
-        .select('*')
-        .eq('id', entityId)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!entityId
-  });
+  // Fetch the entity to get its strategic plan IDs using the centralized hook
+  const { data: entity, isLoading: entityLoading } = useEntity(entityType, entityId);
 
   // Fetch all strategic plans
   const { data: strategicPlans = [], isLoading: plansLoading } = useStrategiesWithVisibility();

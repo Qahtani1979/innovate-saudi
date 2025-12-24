@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import { useQuery } from '@tanstack/react-query';
+import { usePilotsList } from '@/hooks/usePilots';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
-import { BarChart3, Sparkles, Loader2, TrendingUp } from 'lucide-react';
+import { BarChart3, Sparkles, Loader2, TrendingUp, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function PilotPerformanceBenchmarking({ pilot }) {
@@ -12,18 +12,14 @@ export default function PilotPerformanceBenchmarking({ pilot }) {
   const [benchmark, setBenchmark] = useState(null);
   const { invokeAI, status, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: allPilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
+  const { data: peers = [] } = usePilotsList({
+    stage: 'completed',
+    sector: pilot.sector
   });
 
   const analyzeBenchmark = async () => {
     try {
-      const peers = allPilots.filter(p => 
-        p.sector === pilot.sector && 
-        p.id !== pilot.id &&
-        p.stage === 'completed'
-      );
+      const filteredPeers = peers.filter(p => p.id !== pilot.id);
 
       const response = await invokeAI({
         prompt: `Benchmark pilot performance:
@@ -33,10 +29,10 @@ SECTOR: ${pilot.sector}
 BUDGET: ${pilot.budget || 'N/A'}
 DURATION: ${pilot.duration_weeks || 'N/A'} weeks
 
-PEER PILOTS: ${peers.length} completed pilots in same sector
-Sample: ${peers.slice(0, 5).map(p => 
-  `${p.title_en} - ${p.recommendation || 'unknown'} - ${p.duration_weeks || '?'} weeks`
-).join('\n')}
+PEER PILOTS: ${filteredPeers.length} completed pilots in same sector
+Sample: ${filteredPeers.slice(0, 5).map(p =>
+          `${p.title_en} - ${p.recommendation || 'unknown'} - ${p.duration_weeks || '?'} weeks`
+        ).join('\n')}
 
 Provide:
 1. Percentile ranking: where does this pilot rank? (0-100)

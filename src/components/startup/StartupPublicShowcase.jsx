@@ -1,37 +1,30 @@
 
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { Rocket, Award, CheckCircle2, Star } from 'lucide-react';
+import { useStartups } from '@/hooks/useStartups';
+import { useSolutions } from '@/hooks/useSolutions';
+import { useProviderAwards } from '@/hooks/useProviderAwards';
 
 export default function StartupPublicShowcase() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: startups = [] } = useQuery({
-    queryKey: ['verified-startups'],
-    queryFn: async () => {
-      const all = await base44.entities.StartupProfile.list();
-      return all.filter(s => s.is_verified);
-    }
-  });
+  /* 
+   * Refactored to use Gold Standard Hooks
+   */
+  const { data: allStartups = [] } = useStartups(); // Fetch all and filter client-side for now to match legacy logic
+  const startups = allStartups.filter(s => s.is_verified);
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['all-solutions'],
-    queryFn: () => base44.entities.Solution.list()
-  });
-
-  const { data: awards = [] } = useQuery({
-    queryKey: ['provider-awards'],
-    queryFn: () => base44.entities.ProviderAward.list()
-  });
+  const { solutions = [] } = useSolutions({ publishedOnly: false }); // Fetch all solutions
+  const { data: awards = [] } = useProviderAwards();
 
   const enrichedStartups = startups.map(startup => {
     const startupSolutions = solutions.filter(s => s.provider_type === 'startup' && s.provider_name === startup.name_en);
     const startupAwards = awards.filter(a => a.provider_id === startup.id);
-    
+
     return {
       ...startup,
       solutions_count: startupSolutions.length,

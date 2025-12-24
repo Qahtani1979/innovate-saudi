@@ -6,15 +6,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/components/LanguageContext';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Sparkles, FlaskConical, Loader2, CheckCircle2, Plus, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { useApprovalRequest } from '@/hooks/useApprovalRequest';
+import { useLivingLabMutations } from '@/hooks/useLivingLabs';
+import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
+import { useStrategyAIGeneration } from '@/hooks/useStrategyAIGeneration';
 
 export default function StrategyToLivingLabGenerator({ strategicPlanId, strategicPlan, onLabCreated }) {
   const { t, isRTL } = useLanguage();
   const { createApprovalRequest } = useApprovalRequest();
+  const { createLab } = useLivingLabMutations();
+  const { generateLivingLabs } = useStrategyAIGeneration();
   const [selectedMunicipality, setSelectedMunicipality] = useState('');
   const [researchFocus, setResearchFocus] = useState('');
   const [targetPopulation, setTargetPopulation] = useState('');
@@ -24,18 +27,8 @@ export default function StrategyToLivingLabGenerator({ strategicPlanId, strategi
   // Use the passed strategicPlanId from context
   const selectedPlanId = strategicPlanId;
 
-  const { data: municipalities } = useQuery({
-    queryKey: ['municipalities-for-lab-gen'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('municipalities')
-        .select('id, name_en, name_ar')
-        .eq('is_active', true)
-        .order('name_en');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // Use centralized hook for municipalities
+  const { data: municipalities = [] } = useMunicipalitiesWithVisibility();
 
   const handleGenerate = async () => {
     if (!selectedPlanId) {
@@ -45,68 +38,75 @@ export default function StrategyToLivingLabGenerator({ strategicPlanId, strategi
 
     setIsGenerating(true);
     try {
-      const { data, error } = await supabase.functions.invoke('strategy-lab-research-generator', {
-        body: {
-          strategic_plan_id: selectedPlanId,
-          municipality_id: selectedMunicipality || null,
-          research_focus: researchFocus,
-          target_population: targetPopulation
+      generateLivingLabs.mutate({
+        strategic_plan_id: selectedPlanId,
+        municipality_id: selectedMunicipality,
+        research_focus: researchFocus,
+        target_population: targetPopulation
+      }, {
+        onSuccess: (data) => {
+          setGeneratedLabs(data?.labs || []);
+          toast.success(t({ en: 'Living labs generated', ar: 'تم إنشاء المختبرات الحية' }));
+        },
+        onError: (error) => {
+          console.error('Generation error:', error);
+          toast.error(t({ en: 'Failed to generate living labs', ar: 'فشل في إنشاء المختبرات الحية' }));
+        },
+        onSettled: () => {
+          setIsGenerating(false);
         }
       });
-
-      if (error) throw error;
-      setGeneratedLabs(data?.living_labs || []);
-      toast.success(t({ en: 'Living lab concepts generated', ar: 'تم إنشاء مفاهيم المختبرات الحية' }));
     } catch (error) {
       console.error('Generation error:', error);
       toast.error(t({ en: 'Failed to generate living labs', ar: 'فشل في إنشاء المختبرات الحية' }));
-    } finally {
       setIsGenerating(false);
     }
   };
 
   const handleSaveLab = async (lab, index, submitForApproval = false) => {
     try {
-      const { data, error } = await supabase
-        .from('living_labs')
-        .insert({
-          name_en: lab.name_en,
-          name_ar: lab.name_ar,
-          description_en: lab.description_en,
-          description_ar: lab.description_ar,
-          research_focus: lab.research_focus,
-          target_outcomes: lab.target_outcomes,
-          municipality_id: selectedMunicipality || null,
-          strategic_plan_ids: [selectedPlanId],
-          is_strategy_derived: true,
-          strategy_derivation_date: new Date().toISOString(),
-          status: submitForApproval ? 'pending' : 'planning'
-        })
-        .select()
-        .single();
+      const labData = {
+        name_en: lab.name_en,
+        name_ar: lab.name_ar,
+        description_en: lab.description_en,
+        description_ar: lab.description_ar,
+        research_focus: lab.research_focus,
+        target_outcomes: lab.target_outcomes,
+        municipality_id: selectedMunicipality || null,
+        strategic_plan_ids: [selectedPlanId],
+        is_strategy_derived: true,
+        strategy_derivation_date: new Date().toISOString(),
+        status: submitForApproval ? 'pending' : 'planning'
+      };
 
-      if (error) throw error;
+      createLab.mutate(labData, {
+        onSuccess: async (data) => {
+          if (submitForApproval) {
+            await createApprovalRequest({
+              entityType: 'living_lab',
+              entityId: data.id,
+              entityTitle: lab.name_en,
+              isStrategyDerived: true,
+              strategicPlanIds: [selectedPlanId],
+              metadata: { source: 'cascade_generator' }
+            });
+          }
 
-      if (submitForApproval) {
-        await createApprovalRequest({
-          entityType: 'living_lab',
-          entityId: data.id,
-          entityTitle: lab.name_en,
-          isStrategyDerived: true,
-          strategicPlanIds: [selectedPlanId],
-          metadata: { source: 'cascade_generator' }
-        });
-      }
+          const updated = [...generatedLabs];
+          updated[index] = { ...updated[index], saved: true, savedId: data.id, submitted: submitForApproval };
+          setGeneratedLabs(updated);
 
-      const updated = [...generatedLabs];
-      updated[index] = { ...updated[index], saved: true, savedId: data.id, submitted: submitForApproval };
-      setGeneratedLabs(updated);
-      
-      toast.success(t({ 
-        en: submitForApproval ? 'Living lab saved and submitted' : 'Living lab saved successfully', 
-        ar: submitForApproval ? 'تم حفظ المختبر وإرساله' : 'تم حفظ المختبر الحي بنجاح' 
-      }));
-      onLabCreated?.(data);
+          toast.success(t({
+            en: submitForApproval ? 'Living lab saved and submitted' : 'Living lab saved successfully',
+            ar: submitForApproval ? 'تم حفظ المختبر وإرساله' : 'تم حفظ المختبر الحي بنجاح'
+          }));
+          onLabCreated?.(data);
+        },
+        onError: (error) => {
+          console.error('Save error:', error);
+          toast.error(t({ en: 'Failed to save living lab', ar: 'فشل في حفظ المختبر الحي' }));
+        }
+      });
     } catch (error) {
       console.error('Save error:', error);
       toast.error(t({ en: 'Failed to save living lab', ar: 'فشل في حفظ المختبر الحي' }));
@@ -122,7 +122,7 @@ export default function StrategyToLivingLabGenerator({ strategicPlanId, strategi
             {t({ en: 'Living Lab Generator', ar: 'مولد المختبرات الحية' })}
           </CardTitle>
           <CardDescription>
-            {t({ 
+            {t({
               en: 'Generate living lab concepts from strategic research priorities',
               ar: 'إنشاء مفاهيم المختبرات الحية من أولويات البحث الاستراتيجي'
             })}
@@ -154,7 +154,7 @@ export default function StrategyToLivingLabGenerator({ strategicPlanId, strategi
             <Textarea
               value={researchFocus}
               onChange={(e) => setResearchFocus(e.target.value)}
-              placeholder={t({ 
+              placeholder={t({
                 en: 'e.g., Smart mobility, Urban sustainability, Digital inclusion...',
                 ar: 'مثال: التنقل الذكي، الاستدامة الحضرية، الشمول الرقمي...'
               })}
@@ -169,7 +169,7 @@ export default function StrategyToLivingLabGenerator({ strategicPlanId, strategi
             <Input
               value={targetPopulation}
               onChange={(e) => setTargetPopulation(e.target.value)}
-              placeholder={t({ 
+              placeholder={t({
                 en: 'e.g., Youth, Elderly, Small businesses...',
                 ar: 'مثال: الشباب، كبار السن، المشاريع الصغيرة...'
               })}
@@ -199,7 +199,7 @@ export default function StrategyToLivingLabGenerator({ strategicPlanId, strategi
             {t({ en: 'Generated Living Labs', ar: 'المختبرات الحية المُنشأة' })}
             <Badge variant="secondary">{generatedLabs.length}</Badge>
           </h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {generatedLabs.map((lab, idx) => (
               <Card key={idx} className={lab.saved ? 'border-green-500/50 bg-green-50/50' : ''}>

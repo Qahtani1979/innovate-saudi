@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useNationalAlignments } from '@/hooks/strategy';
-import { supabase } from '@/integrations/supabase/client';
+import { useStrategyAIGeneration } from '@/hooks/useStrategyAIGeneration';
 import {
   Link2,
   Target,
@@ -57,27 +57,28 @@ const NationalStrategyLinker = ({ strategicPlan, strategicPlanId: propPlanId, ob
   const { t, isRTL, language } = useLanguage();
   const { toast } = useToast();
   const strategicPlanId = propPlanId || strategicPlan?.id;
-  
+
   const {
     alignments: dbAlignments,
     isLoading,
     saveAlignment,
     deleteAlignment
   } = useNationalAlignments(strategicPlanId);
-  
+
   const [isAutoLinking, setIsAutoLinking] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('vision2030');
+  const { linkNationalStrategy } = useStrategyAIGeneration();
 
   const [alignments, setAlignments] = useState([]);
-  
+
   // Initialize alignments from objectives and merge with DB data
   useEffect(() => {
     if (objectives.length > 0) {
       const newAlignments = objectives.map(obj => {
         // Find existing DB alignments for this objective
         const existingAlignments = dbAlignments?.filter(a => a.objective_id === obj.id) || [];
-        
+
         // Extract vision_2030, sdg, national_priorities from existing alignments
         const vision_2030 = existingAlignments
           .filter(a => a.national_strategy_type === 'vision_2030')
@@ -88,12 +89,12 @@ const NationalStrategyLinker = ({ strategicPlan, strategicPlanId: propPlanId, ob
         const national_priorities = existingAlignments
           .filter(a => a.national_strategy_type === 'national_priorities')
           .map(a => a.national_goal_code);
-        
+
         // Calculate score
         const totalLinks = vision_2030.length + sdg.length + national_priorities.length;
         const maxPossible = VISION_2030_GOALS.length + SDG_GOALS.length + NATIONAL_PRIORITIES.length;
         const score = maxPossible > 0 ? Math.round((totalLinks / maxPossible) * 100) : 0;
-        
+
         return {
           objective_id: obj.id,
           objective_title: obj.title_en || obj.name_en || 'Untitled',
@@ -115,12 +116,12 @@ const NationalStrategyLinker = ({ strategicPlan, strategicPlanId: propPlanId, ob
       const updated = current.includes(goalId)
         ? current.filter(id => id !== goalId)
         : [...current, goalId];
-      
+
       // Recalculate alignment score
-      const totalLinks = updated.length + 
+      const totalLinks = updated.length +
         (category === 'vision_2030' ? a.sdg.length + a.national_priorities.length :
-         category === 'sdg' ? a.vision_2030.length + a.national_priorities.length :
-         a.vision_2030.length + a.sdg.length);
+          category === 'sdg' ? a.vision_2030.length + a.national_priorities.length :
+            a.vision_2030.length + a.sdg.length);
       const maxPossible = VISION_2030_GOALS.length + SDG_GOALS.length + NATIONAL_PRIORITIES.length;
       const score = Math.round((totalLinks / maxPossible) * 100);
 
@@ -131,47 +132,49 @@ const NationalStrategyLinker = ({ strategicPlan, strategicPlanId: propPlanId, ob
   const autoLinkWithAI = async () => {
     setIsAutoLinking(true);
     try {
-      const { data, error } = await supabase.functions.invoke('strategy-national-linker', {
-        body: {
-          objectives: alignments.map(a => ({ 
-            objective_id: a.objective_id,
-            title_en: a.objective_title 
-          })),
-          strategic_plan_context: strategicPlan?.vision_en || 'Municipal Innovation Strategy'
+      linkNationalStrategy.mutate({
+        objectives: alignments.map(a => ({
+          objective_id: a.objective_id,
+          title_en: a.objective_title
+        })),
+        strategic_plan_context: strategicPlan?.vision_en || 'Municipal Innovation Strategy'
+      }, {
+        onSuccess: (data) => {
+          if (data?.error) {
+            throw new Error(data.error);
+          }
+          const { alignments: aiAlignments } = data;
+          setAlignments(prev => prev.map((a, index) => {
+            const suggestion = aiAlignments?.find(s => s.objective_index === index);
+            if (!suggestion) return a;
+            const newVision = [...new Set([...a.vision_2030, ...(suggestion.vision_2030 || [])])];
+            const newSDG = [...new Set([...a.sdg, ...(suggestion.sdg || [])])];
+            const newNP = [...new Set([...a.national_priorities, ...(suggestion.national_priorities || [])])];
+            const totalLinks = newVision.length + newSDG.length + newNP.length;
+            const maxPossible = VISION_2030_GOALS.length + SDG_GOALS.length + NATIONAL_PRIORITIES.length;
+            return {
+              ...a,
+              vision_2030: newVision,
+              sdg: newSDG,
+              national_priorities: newNP,
+              alignment_score: Math.round((totalLinks / maxPossible) * 100)
+            };
+          }));
+          toast({
+            title: t({ en: 'Auto-Linking Complete', ar: 'اكتمل الربط التلقائي' }),
+            description: t({ en: 'AI has suggested alignments based on objective text analysis', ar: 'اقترح الذكاء الاصطناعي المحاذاة بناءً على تحليل نص الهدف' })
+          });
+        },
+        onError: (error) => {
+          toast({
+            title: t({ en: 'Error', ar: 'خطأ' }),
+            description: error.message,
+            variant: 'destructive'
+          });
+        },
+        onSettled: () => {
+          setIsAutoLinking(false);
         }
-      });
-
-      if (error) throw error;
-      
-      if (data?.error) {
-        throw new Error(data.error);
-      }
-
-      const { alignments: aiAlignments } = data;
-
-      setAlignments(prev => prev.map((a, index) => {
-        const suggestion = aiAlignments?.find(s => s.objective_index === index);
-        if (!suggestion) return a;
-        
-        const newVision = [...new Set([...a.vision_2030, ...(suggestion.vision_2030 || [])])];
-        const newSDG = [...new Set([...a.sdg, ...(suggestion.sdg || [])])];
-        const newNP = [...new Set([...a.national_priorities, ...(suggestion.national_priorities || [])])];
-        
-        const totalLinks = newVision.length + newSDG.length + newNP.length;
-        const maxPossible = VISION_2030_GOALS.length + SDG_GOALS.length + NATIONAL_PRIORITIES.length;
-        
-        return {
-          ...a,
-          vision_2030: newVision,
-          sdg: newSDG,
-          national_priorities: newNP,
-          alignment_score: Math.round((totalLinks / maxPossible) * 100)
-        };
-      }));
-
-      toast({
-        title: t({ en: 'Auto-Linking Complete', ar: 'اكتمل الربط التلقائي' }),
-        description: t({ en: 'AI has suggested alignments based on objective text analysis', ar: 'اقترح الذكاء الاصطناعي المحاذاة بناءً على تحليل نص الهدف' })
       });
     } catch (error) {
       toast({
@@ -179,7 +182,6 @@ const NationalStrategyLinker = ({ strategicPlan, strategicPlanId: propPlanId, ob
         description: error.message,
         variant: 'destructive'
       });
-    } finally {
       setIsAutoLinking(false);
     }
   };
@@ -196,22 +198,9 @@ const NationalStrategyLinker = ({ strategicPlan, strategicPlanId: propPlanId, ob
 
     setIsSaving(true);
     try {
-      // First, delete existing alignments for this plan
-      const { data: existingAlignments } = await supabase
-        .from('national_strategy_alignments')
-        .select('id')
-        .eq('strategic_plan_id', strategicPlanId);
-      
-      if (existingAlignments && existingAlignments.length > 0) {
-        await supabase
-          .from('national_strategy_alignments')
-          .delete()
-          .eq('strategic_plan_id', strategicPlanId);
-      }
-
       // Build individual alignment records for each goal linked to each objective
       const records = [];
-      
+
       for (const alignment of alignments) {
         // Vision 2030 alignments
         for (const goalId of alignment.vision_2030) {
@@ -228,7 +217,7 @@ const NationalStrategyLinker = ({ strategicPlan, strategicPlanId: propPlanId, ob
             });
           }
         }
-        
+
         // SDG alignments
         for (const goalId of alignment.sdg) {
           const goal = SDG_GOALS.find(g => g.id === goalId);
@@ -244,7 +233,7 @@ const NationalStrategyLinker = ({ strategicPlan, strategicPlanId: propPlanId, ob
             });
           }
         }
-        
+
         // National Priorities alignments
         for (const goalId of alignment.national_priorities) {
           const goal = NATIONAL_PRIORITIES.find(g => g.id === goalId);
@@ -262,23 +251,21 @@ const NationalStrategyLinker = ({ strategicPlan, strategicPlanId: propPlanId, ob
         }
       }
 
-      // Insert all records
+      // Save all alignments using the hook (which handles delete + insert)
       if (records.length > 0) {
-        const { error } = await supabase
-          .from('national_strategy_alignments')
-          .insert(records);
-        
-        if (error) throw error;
+        for (const record of records) {
+          await saveAlignment(record);
+        }
       }
 
       toast({
         title: t({ en: 'Saved Successfully', ar: 'تم الحفظ بنجاح' }),
-        description: t({ 
-          en: `${records.length} alignments saved`, 
-          ar: `تم حفظ ${records.length} ارتباط` 
+        description: t({
+          en: `${records.length} alignments saved`,
+          ar: `تم حفظ ${records.length} ارتباط`
         })
       });
-      
+
       if (onSave) onSave(alignments);
     } catch (error) {
       console.error('Save error:', error);
@@ -435,9 +422,8 @@ const NationalStrategyLinker = ({ strategicPlan, strategicPlanId: propPlanId, ob
                         return (
                           <div
                             key={goal.id}
-                            className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                              isLinked ? 'border-green-500 bg-green-50' : 'border-slate-200 hover:border-slate-300'
-                            }`}
+                            className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${isLinked ? 'border-green-500 bg-green-50' : 'border-slate-200 hover:border-slate-300'
+                              }`}
                             onClick={() => toggleAlignment(alignment.objective_id, 'vision_2030', goal.id)}
                           >
                             <div className="flex items-center gap-3">
@@ -485,9 +471,8 @@ const NationalStrategyLinker = ({ strategicPlan, strategicPlanId: propPlanId, ob
                         return (
                           <div
                             key={goal.id}
-                            className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                              isLinked ? 'border-green-500 bg-green-50' : 'border-slate-200 hover:border-slate-300'
-                            }`}
+                            className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${isLinked ? 'border-green-500 bg-green-50' : 'border-slate-200 hover:border-slate-300'
+                              }`}
                             onClick={() => toggleAlignment(alignment.objective_id, 'sdg', goal.id)}
                           >
                             <div className="flex items-center gap-3">
@@ -534,9 +519,8 @@ const NationalStrategyLinker = ({ strategicPlan, strategicPlanId: propPlanId, ob
                         return (
                           <div
                             key={priority.id}
-                            className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                              isLinked ? 'border-green-500 bg-green-50' : 'border-slate-200 hover:border-slate-300'
-                            }`}
+                            className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${isLinked ? 'border-green-500 bg-green-50' : 'border-slate-200 hover:border-slate-300'
+                              }`}
                             onClick={() => toggleAlignment(alignment.objective_id, 'national_priorities', priority.id)}
                           >
                             <div className="flex items-center justify-between">
@@ -577,8 +561,8 @@ const NationalStrategyLinker = ({ strategicPlan, strategicPlanId: propPlanId, ob
                   {new Set(alignments.flatMap(a => a.vision_2030)).size}/{VISION_2030_GOALS.length}
                 </span>
               </div>
-              <Progress 
-                value={(new Set(alignments.flatMap(a => a.vision_2030)).size / VISION_2030_GOALS.length) * 100} 
+              <Progress
+                value={(new Set(alignments.flatMap(a => a.vision_2030)).size / VISION_2030_GOALS.length) * 100}
                 className="h-2"
               />
             </div>
@@ -589,8 +573,8 @@ const NationalStrategyLinker = ({ strategicPlan, strategicPlanId: propPlanId, ob
                   {new Set(alignments.flatMap(a => a.sdg)).size}/{SDG_GOALS.length}
                 </span>
               </div>
-              <Progress 
-                value={(new Set(alignments.flatMap(a => a.sdg)).size / SDG_GOALS.length) * 100} 
+              <Progress
+                value={(new Set(alignments.flatMap(a => a.sdg)).size / SDG_GOALS.length) * 100}
                 className="h-2"
               />
             </div>
@@ -601,8 +585,8 @@ const NationalStrategyLinker = ({ strategicPlan, strategicPlanId: propPlanId, ob
                   {new Set(alignments.flatMap(a => a.national_priorities)).size}/{NATIONAL_PRIORITIES.length}
                 </span>
               </div>
-              <Progress 
-                value={(new Set(alignments.flatMap(a => a.national_priorities)).size / NATIONAL_PRIORITIES.length) * 100} 
+              <Progress
+                value={(new Set(alignments.flatMap(a => a.national_priorities)).size / NATIONAL_PRIORITIES.length) * 100}
                 className="h-2"
               />
             </div>

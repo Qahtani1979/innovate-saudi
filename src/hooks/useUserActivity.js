@@ -86,4 +86,25 @@ export function useLogActivity() {
     });
 }
 
+/**
+ * Hook to fetch activities for a specific entity (e.g., startup)
+ */
+export function useEntityActivity(entityId) {
+    return useQuery({
+        queryKey: ['entity-activities', entityId],
+        queryFn: async () => {
+            if (!entityId) return [];
+            const { data, error } = await supabase
+                .from('user_activities')
+                .select('*')
+                .eq('entity_id', entityId)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            return data || [];
+        },
+        enabled: !!entityId
+    });
+}
+
 export default useUserActivity;

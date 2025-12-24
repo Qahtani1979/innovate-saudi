@@ -1,6 +1,4 @@
 import React from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,9 +7,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Target, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useStrategicPlans } from '@/hooks/useStrategicPlans';
 
-export default function StrategicPlanSelector({ 
-  selectedPlanIds = [], 
+export default function StrategicPlanSelector({
+  selectedPlanIds = [],
   selectedObjectiveIds = [],
   onPlanChange,
   onObjectiveChange,
@@ -22,19 +21,7 @@ export default function StrategicPlanSelector({
   const { language, t } = useLanguage();
   const [isOpen, setIsOpen] = React.useState(false);
 
-  const { data: strategicPlans = [], isLoading } = useQuery({
-    queryKey: ['strategic-plans-selector'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('strategic_plans')
-        .select('*')
-        .or('is_template.is.null,is_template.eq.false')
-        .or('is_deleted.is.null,is_deleted.eq.false')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: strategicPlans = [], isLoading } = useStrategicPlans();
 
   const handlePlanToggle = (planId) => {
     const newPlanIds = selectedPlanIds.includes(planId)
@@ -71,14 +58,14 @@ export default function StrategicPlanSelector({
       {selectedPlans.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-2">
           {selectedPlans.map(plan => (
-            <Badge 
-              key={plan.id} 
-              variant="secondary" 
+            <Badge
+              key={plan.id}
+              variant="secondary"
               className="bg-indigo-100 text-indigo-800 flex items-center gap-1"
             >
               {language === 'ar' && plan.name_ar ? plan.name_ar : plan.name_en}
-              <X 
-                className="h-3 w-3 cursor-pointer hover:text-red-600" 
+              <X
+                className="h-3 w-3 cursor-pointer hover:text-red-600"
                 onClick={(e) => removeFromPlan(plan.id, e)}
               />
             </Badge>
@@ -90,7 +77,7 @@ export default function StrategicPlanSelector({
         <CollapsibleTrigger asChild>
           <Button variant="outline" className="w-full justify-between">
             <span>
-              {selectedPlanIds.length === 0 
+              {selectedPlanIds.length === 0
                 ? t({ en: 'Select Strategic Plans', ar: 'اختر الخطط الاستراتيجية' })
                 : t({ en: `${selectedPlanIds.length} plan(s) selected`, ar: `تم اختيار ${selectedPlanIds.length} خطة` })}
             </span>
@@ -113,7 +100,7 @@ export default function StrategicPlanSelector({
                         checked={selectedPlanIds.includes(plan.id)}
                         onCheckedChange={() => handlePlanToggle(plan.id)}
                       />
-                      <label 
+                      <label
                         htmlFor={`plan-${plan.id}`}
                         className="text-sm font-medium cursor-pointer flex-1"
                       >
@@ -138,7 +125,7 @@ export default function StrategicPlanSelector({
                               checked={selectedObjectiveIds.includes(obj.id)}
                               onCheckedChange={() => handleObjectiveToggle(obj.id)}
                             />
-                            <label 
+                            <label
                               htmlFor={`obj-${obj.id}`}
                               className="text-xs cursor-pointer"
                             >
@@ -158,9 +145,9 @@ export default function StrategicPlanSelector({
 
       {selectedObjectiveIds.length > 0 && (
         <p className="text-xs text-muted-foreground">
-          {t({ 
+          {t({
             en: `${selectedObjectiveIds.length} objective(s) selected`,
-            ar: `تم اختيار ${selectedObjectiveIds.length} هدف` 
+            ar: `تم اختيار ${selectedObjectiveIds.length} هدف`
           })}
         </p>
       )}

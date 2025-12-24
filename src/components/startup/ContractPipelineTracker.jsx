@@ -1,40 +1,31 @@
 
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { FileText, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useSolutions } from '@/hooks/useSolutions';
+import { useContracts, useAllContracts } from '@/hooks/useContracts';
+import { usePilotsList } from '@/hooks/usePilots';
 
 export default function ContractPipelineTracker({ providerId }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['provider-solutions-contracts', providerId],
-    queryFn: async () => {
-      const all = await base44.entities.Solution.list();
-      return all.filter(s => s.provider_id === providerId);
-    }
-  });
+  /* 
+   * Refactored to use Gold Standard Hooks
+   */
+  const { solutions = [] } = useSolutions({ publishedOnly: false }); // Fetch all solutions for provider logic
+  const providerSolutions = solutions.filter(s => s.provider_id === providerId);
+  const providerSolutionIds = providerSolutions.map(s => s.id);
 
-  const { data: contracts = [] } = useQuery({
-    queryKey: ['provider-contracts', providerId],
-    queryFn: async () => {
-      const solutionIds = solutions.map(s => s.id);
-      const all = await base44.entities.Contract.list();
-      return all.filter(c => solutionIds.includes(c.solution_id) || c.provider_id === providerId);
-    },
-    enabled: solutions.length > 0
-  });
+  const { data: allContracts = [] } = useAllContracts(); // Or useContracts(providerId) if backend supports robust filtering
+  // Legacy logic filtered by solution_id inclusion or direct provider_id
+  const contracts = allContracts.filter(c =>
+    (c.solution_id && providerSolutionIds.includes(c.solution_id)) ||
+    c.provider_id === providerId
+  );
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['provider-pilots-contracts', providerId],
-    queryFn: async () => {
-      const solutionIds = solutions.map(s => s.id);
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => solutionIds.includes(p.solution_id));
-    },
-    enabled: solutions.length > 0
-  });
+  const { data: allPilots = [] } = usePilotsList();
+  const pilots = allPilots.filter(p => providerSolutionIds.includes(p.solution_id));
 
   const pipeline = {
     pending: contracts.filter(c => c.status === 'draft' || c.status === 'pending').length,
@@ -120,9 +111,9 @@ export default function ContractPipelineTracker({ providerId }) {
                   </div>
                   <Badge className={
                     contract.status === 'active' ? 'bg-green-100 text-green-700' :
-                    contract.status === 'signed' ? 'bg-blue-100 text-blue-700' :
-                    contract.status === 'negotiation' ? 'bg-amber-100 text-amber-700' :
-                    'bg-slate-100 text-slate-700'
+                      contract.status === 'signed' ? 'bg-blue-100 text-blue-700' :
+                        contract.status === 'negotiation' ? 'bg-amber-100 text-amber-700' :
+                          'bg-slate-100 text-slate-700'
                   }>
                     {contract.status}
                   </Badge>

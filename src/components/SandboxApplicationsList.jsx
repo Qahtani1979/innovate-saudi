@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,23 +7,13 @@ import { useLanguage } from './LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Shield, Search, FileText, Calendar, Users } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { useSandboxApplications } from '@/hooks/useSandboxApplications';
 
 export default function SandboxApplicationsList({ sandbox }) {
   const { language, isRTL, t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
 
-  const { data: applications = [] } = useQuery({
-    queryKey: ['sandbox-applications', sandbox.id],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('sandbox_applications')
-        .select('*')
-        .eq('sandbox_id', sandbox.id)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: applications = [] } = useSandboxApplications({ sandboxId: sandbox.id });
 
   const statusColors = {
     draft: 'bg-slate-100 text-slate-700',

@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export const useKPIReferences = ({ entityId } = {}) => {
     return useQuery({
@@ -7,7 +8,8 @@ export const useKPIReferences = ({ entityId } = {}) => {
         queryFn: async () => {
             let query = supabase
                 .from('kpi_references')
-                .select('*');
+                .select('*')
+                .order('code');
 
             if (entityId) {
                 query = query.eq('entity_id', entityId);
@@ -20,3 +22,35 @@ export const useKPIReferences = ({ entityId } = {}) => {
         staleTime: 1000 * 60 * 5,
     });
 };
+
+export function useKPIReferenceMutations() {
+    const queryClient = useQueryClient();
+
+    const createKPIReference = useMutation({
+        mutationFn: async (data) => {
+            const { data: newKPI, error } = await supabase.from('kpi_references').insert(data).select().single();
+            if (error) throw error;
+            return newKPI;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['kpi-references']);
+            toast.success('KPI Reference created');
+        }
+    });
+
+    const deleteKPIReference = useMutation({
+        mutationFn: async (id) => {
+            const { error } = await supabase.from('kpi_references').delete().eq('id', id);
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['kpi-references']);
+            toast.success('KPI Reference deleted');
+        }
+    });
+
+    return {
+        createKPIReference,
+        deleteKPIReference
+    };
+}

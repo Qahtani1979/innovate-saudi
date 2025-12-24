@@ -26,7 +26,13 @@ export function useUserRoles(userId, userEmail) {
 
 /**
  * Assign a role to a user.
- * Expects params: { user_id, role_id, municipality_id?, organization_id? }
+ * @typedef {Object} AssignRoleParams
+ * @property {string} user_id
+ * @property {string} role_id
+ * @property {string} [municipality_id]
+ * @property {string} [organization_id]
+ * 
+ * @returns {import('@tanstack/react-query').UseMutationResult<any, Error, AssignRoleParams>}
  */
 export function useAssignRole() {
   const queryClient = useQueryClient();
@@ -46,7 +52,13 @@ export function useAssignRole() {
 
 /**
  * Assign a role to multiple users.
- * Expects params: { user_ids: string[], role_id: string, municipality_id?: string, organization_id?: string }
+ * @typedef {Object} BulkAssignRoleParams
+ * @property {string[]} user_ids
+ * @property {string} role_id
+ * @property {string} [municipality_id]
+ * @property {string} [organization_id]
+ * 
+ * @returns {import('@tanstack/react-query').UseMutationResult<any[], Error, BulkAssignRoleParams>}
  */
 export function useBulkAssignRole() {
   const queryClient = useQueryClient();
@@ -98,7 +110,16 @@ export function useCheckAutoApproval() {
 
 /**
  * Approve a role request.
- * Expects params: { request_id, user_id, user_email, role, municipality_id?, organization_id?, approver_email }
+ * @typedef {Object} ApproveRoleRequestParams
+ * @property {string} request_id
+ * @property {string} user_id
+ * @property {string} user_email
+ * @property {string} role
+ * @property {string} [municipality_id]
+ * @property {string} [organization_id]
+ * @property {string} approver_email
+ * 
+ * @returns {import('@tanstack/react-query').UseMutationResult<any, Error, ApproveRoleRequestParams>}
  */
 export function useApproveRoleRequest() {
   const queryClient = useQueryClient();
@@ -119,7 +140,12 @@ export function useApproveRoleRequest() {
 
 /**
  * Reject a role request.
- * Expects params: { request_id, reason, approver_email }
+ * @typedef {Object} RejectRoleRequestParams
+ * @property {string} request_id
+ * @property {string} reason
+ * @property {string} approver_email
+ * 
+ * @returns {import('@tanstack/react-query').UseMutationResult<any, Error, RejectRoleRequestParams>}
  */
 export function useRejectRoleRequest() {
   const queryClient = useQueryClient();

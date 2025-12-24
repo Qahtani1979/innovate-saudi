@@ -45,7 +45,7 @@ export function useApprovalRequests() {
             const tableName = entityTableMap[entityType];
             if (!tableName) return approvals;
 
-            const entities = await fetchWithVisibility(tableName);
+            const { data: entities } = await fetchWithVisibility(tableName);
 
             return (approvals || []).map(a => ({
                 ...a,
@@ -182,3 +182,26 @@ export function useApprovalRequests() {
         isProcessing: processApprovalMutation.isPending
     };
 }
+
+/**
+ * Fetch approval history for a specific entity
+ */
+export const useEntityApprovalHistory = (entityId, entityType) => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    return useQuery({
+        queryKey: ['approval-history', entityId],
+        queryFn: async () => {
+            if (!entityId) return [];
+            const { data, error } = await supabase
+                .from('approval_requests')
+                .select('*')
+                .eq('entity_id', entityId)
+                .eq('entity_type', entityType)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            return data || [];
+        },
+        enabled: !!entityId
+    });
+};

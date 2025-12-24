@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useSolution } from '@/hooks/useSolutions';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,7 +15,6 @@ import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function PilotToProcurementWorkflow({ pilot, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const { invokeAI, status, isLoading: aiGenerating, rateLimitInfo, isAvailable } = useAIWithFallback();
   const { triggerEmail } = useEmailTrigger();
 
@@ -28,14 +27,7 @@ export default function PilotToProcurementWorkflow({ pilot, onClose }) {
     rfp_text: ''
   });
 
-  const { data: solution } = useQuery({
-    queryKey: ['solution', pilot?.solution_id],
-    queryFn: async () => {
-      const solutions = await base44.entities.Solution.list();
-      return solutions.find(s => s.id === pilot?.solution_id);
-    },
-    enabled: !!pilot?.solution_id
-  });
+  const { data: solution } = useSolution(pilot?.solution_id);
 
   const generateRFP = async () => {
     const result = await invokeAI({
@@ -57,35 +49,10 @@ export default function PilotToProcurementWorkflow({ pilot, onClose }) {
     }
   };
 
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      return await base44.entities.Contract.create(data);
-    },
-    onSuccess: async (createdContract) => {
-      queryClient.invalidateQueries(['contracts']);
-      
-      // Trigger contract.created email
-      try {
-        await triggerEmail('contract.created', {
-          entityType: 'contract',
-          entityId: createdContract?.id,
-          variables: {
-            contractTitle: `Procurement: ${pilot.title_en}`,
-            pilotTitle: pilot.title_en,
-            estimatedValue: formData.estimated_value
-          }
-        });
-      } catch (error) {
-        console.error('Failed to send contract.created email:', error);
-      }
-      
-      toast.success(t({ en: 'Procurement initiated', ar: 'تم بدء المشتريات' }));
-      onClose();
-    }
-  });
+  const { mutate: createContract, isPending: isCreating } = useCreateContract();
 
   const handleSubmit = () => {
-    createMutation.mutate({
+    createContract({
       title_en: `Procurement: ${pilot.title_en}`,
       title_ar: pilot.title_ar ? `مشتريات: ${pilot.title_ar}` : '',
       contract_type: 'procurement',
@@ -101,6 +68,26 @@ export default function PilotToProcurementWorkflow({ pilot, onClose }) {
       linked_pilot_id: pilot.id,
       linked_solution_id: pilot.solution_id,
       rfp_document_text: formData.rfp_text
+    }, {
+      onSuccess: async (createdContract) => {
+        // Trigger contract.created email
+        try {
+          await triggerEmail('contract.created', {
+            entityType: 'contract',
+            entityId: createdContract?.id,
+            variables: {
+              contractTitle: `Procurement: ${pilot.title_en}`,
+              pilotTitle: pilot.title_en,
+              estimatedValue: formData.estimated_value
+            }
+          });
+        } catch (error) {
+          console.error('Failed to send contract.created email:', error);
+        }
+
+        toast.success(t({ en: 'Procurement initiated', ar: 'تم بدء المشتريات' }));
+        onClose();
+      }
     });
   };
 
@@ -129,7 +116,7 @@ export default function PilotToProcurementWorkflow({ pilot, onClose }) {
         </div>
 
         <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
-        
+
         <Button
           onClick={generateRFP}
           disabled={aiGenerating || !isAvailable}
@@ -152,7 +139,7 @@ export default function PilotToProcurementWorkflow({ pilot, onClose }) {
             value={formData.procurement_scope}
             onChange={(e) => setFormData({ ...formData, procurement_scope: e.target.value })}
             rows={3}
-            placeholder={t({ 
+            placeholder={t({
               en: 'What is being procured?',
               ar: 'ما الذي يتم شراؤه؟'
             })}
@@ -211,10 +198,10 @@ export default function PilotToProcurementWorkflow({ pilot, onClose }) {
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!formData.procurement_scope || createMutation.isPending}
+            disabled={!formData.procurement_scope || isCreating}
             className="flex-1 bg-gradient-to-r from-green-600 to-teal-600"
           >
-            {createMutation.isPending ? (
+            {isCreating ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <FileText className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />

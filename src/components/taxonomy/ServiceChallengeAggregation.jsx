@@ -1,5 +1,4 @@
 
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -7,37 +6,36 @@ import { AlertCircle, Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useServicePerformance } from '@/hooks/useServicePerformance';
+import { useServiceDetail } from '@/hooks/useServiceDetail';
+
 export default function ServiceChallengeAggregation({ serviceId }) {
   const { t, language } = useLanguage();
 
-  const { data: service } = useQuery({
-    queryKey: ['service-detail', serviceId],
-    queryFn: async () => {
-      const services = await base44.entities.Service.list();
-      return services.find(s => s.id === serviceId);
-    }
-  });
+  // Replace direct supabase call with a hook or useTaxonomy if available.
+  // Since we need a single service and useTaxonomy loads all, we can filter or creating a lightweight hook.
+  // Actually, let's use useTaxonomy logic or just create a useServiceDetail hook to be clean.
+  // But wait, useTaxonomy stores "services" in context? 
+  // "const { services } = useTaxonomy()"
+  // Let's check if useTaxonomy is efficient enough. If context has it, use it.
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['service-challenges', serviceId],
-    queryFn: async () => {
-      const all = await base44.entities.Challenge.list();
-      return all.filter(c => c.service_id === serviceId || c.affected_services?.includes(serviceId));
-    }
-  });
+  // Checking ServiceChallengeAggregation.jsx again...
+  // It fetches ONE service.
+  // Let's rely on useTaxonomy for now if it's already cached, OR create useServiceDetail.
 
-  const { data: performance = [] } = useQuery({
-    queryKey: ['service-performance', serviceId],
-    queryFn: async () => {
-      const all = await base44.entities.ServicePerformance.list();
-      return all.filter(p => p.service_id === serviceId)
-        .sort((a, b) => new Date(b.period_end) - new Date(a.period_end));
-    }
-  });
+  // I'll create useServiceDetail.js for cleanliness and future reuse.
+  const { data: service } = useServiceDetail(serviceId);
+
+  // Use visible challenges
+  const { data: allChallenges = [] } = useChallengesWithVisibility({ limit: 1000 });
+  const challenges = allChallenges.filter(c => c.service_id === serviceId || c.affected_services?.includes(serviceId));
+
+  const { data: performance = [] } = useServicePerformance(serviceId);
 
   const openChallenges = challenges.filter(c => !['resolved', 'archived'].includes(c.status));
   const resolvedChallenges = challenges.filter(c => c.status === 'resolved');
-  const resolutionRate = challenges.length > 0 
+  const resolutionRate = challenges.length > 0
     ? Math.round((resolvedChallenges.length / challenges.length) * 100)
     : 0;
 

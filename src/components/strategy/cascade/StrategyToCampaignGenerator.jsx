@@ -5,14 +5,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/components/LanguageContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Megaphone, Sparkles, Loader2, Target, Calendar, Users, CheckCircle2, Plus, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { useApprovalRequest } from '@/hooks/useApprovalRequest';
+import { useStrategyAIGeneration } from '@/hooks/useStrategyAIGeneration';
 
 export default function StrategyToCampaignGenerator({ strategicPlanId, strategicPlan, onCampaignCreated }) {
   const { t, isRTL } = useLanguage();
   const { createApprovalRequest } = useApprovalRequest();
+  const { generateCampaigns } = useStrategyAIGeneration();
   const [additionalContext, setAdditionalContext] = useState('');
   const [campaignCount, setCampaignCount] = useState(3);
   const [campaigns, setCampaigns] = useState([]);
@@ -29,79 +30,75 @@ export default function StrategyToCampaignGenerator({ strategicPlanId, strategic
 
     setIsGenerating(true);
     try {
-      const { data, error } = await supabase.functions.invoke('strategy-campaign-generator', {
-        body: {
-          strategic_plan_id: selectedPlanId,
-          strategic_context: additionalContext,
-          campaign_count: campaignCount,
+      generateCampaigns.mutate({
+        strategic_plan_id: selectedPlanId,
+        strategic_context: additionalContext,
+        campaign_count: campaignCount
+      }, {
+        onSuccess: (data) => {
+          setCampaigns(data?.campaigns || []);
+          toast.success(t({ en: 'Campaigns generated successfully', ar: 'تم إنشاء الحملات بنجاح' }));
         },
+        onError: (error) => {
+          console.error('Generation error:', error);
+          toast.error(t({ en: 'Failed to generate campaigns', ar: 'فشل في إنشاء الحملات' }));
+        },
+        onSettled: () => {
+          setIsGenerating(false);
+        }
       });
-
-      if (error) throw error;
-      setCampaigns(data?.campaigns || []);
-      toast.success(t({ en: 'Campaigns generated successfully', ar: 'تم إنشاء الحملات بنجاح' }));
     } catch (error) {
       console.error('Generation error:', error);
       toast.error(t({ en: 'Failed to generate campaigns', ar: 'فشل في إنشاء الحملات' }));
-    } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleSaveCampaign = async (campaign, index, submitForApproval = false) => {
-    try {
-      const { data, error } = await supabase
-        .from('marketing_campaigns')
-        .insert({
-          name_en: campaign.name_en,
-          name_ar: campaign.name_ar,
-          objective_en: campaign.objective_en,
-          objective_ar: campaign.objective_ar,
-          target_audience_en: campaign.target_audience_en,
-          target_audience_ar: campaign.target_audience_ar,
-          duration: campaign.duration,
-          channels: campaign.channels,
-          kpis: campaign.kpis,
-          strategic_plan_ids: [selectedPlanId],
-          is_strategy_derived: true,
-          strategy_derivation_date: new Date().toISOString(),
-          status: submitForApproval ? 'pending' : 'draft',
-        })
-        .select()
-        .single();
+  const handleSaveCampaign = (campaign, index, submitForApproval = false) => {
+    createCampaign.mutate({
+      name_en: campaign.name_en,
+      name_ar: campaign.name_ar,
+      objective_en: campaign.objective_en,
+      objective_ar: campaign.objective_ar,
+      target_audience_en: campaign.target_audience_en,
+      target_audience_ar: campaign.target_audience_ar,
+      duration: campaign.duration,
+      channels: campaign.channels,
+      kpis: campaign.kpis,
+      strategic_plan_ids: [selectedPlanId],
+      is_strategy_derived: true,
+      strategy_derivation_date: new Date().toISOString(),
+      status: submitForApproval ? 'pending' : 'draft',
+    }, {
+      onSuccess: async (data) => {
+        if (submitForApproval) {
+          await createApprovalRequest({
+            entityType: 'marketing_campaign',
+            entityId: data.id,
+            entityTitle: campaign.name_en,
+            isStrategyDerived: true,
+            strategicPlanIds: [selectedPlanId],
+            metadata: {
+              source: 'cascade_generator'
+            }
+          });
+        }
 
-      if (error) throw error;
+        const updated = [...campaigns]; // Changed from generatedCampaigns to campaigns
+        updated[index] = { ...updated[index], saved: true, savedId: data.id, submitted: submitForApproval };
+        setCampaigns(updated); // Changed from setGeneratedCampaigns to setCampaigns
 
-      // Create approval request if submitting (Phase 4 integration)
-      if (submitForApproval) {
-        await createApprovalRequest({
-          entityType: 'campaign',
-          entityId: data.id,
-          entityTitle: campaign.name_en,
-          isStrategyDerived: true,
-          strategicPlanIds: [selectedPlanId],
-          metadata: {
-            channels: campaign.channels,
-            source: 'cascade_generator',
-          },
-        });
-      }
-
-      const updated = [...campaigns];
-      updated[index] = { ...updated[index], saved: true, savedId: data.id, submitted: submitForApproval };
-      setCampaigns(updated);
-
-      toast.success(
-        t({
+        toast.success(t({
           en: submitForApproval ? 'Campaign saved and submitted for approval' : 'Campaign saved successfully',
-          ar: submitForApproval ? 'تم حفظ الحملة وإرسالها للموافقة' : 'تم حفظ الحملة بنجاح',
-        }),
-      );
-      onCampaignCreated?.(data);
-    } catch (error) {
-      console.error('Save error:', error);
-      toast.error(t({ en: 'Failed to save campaign', ar: 'فشل في حفظ الحملة' }));
-    }
+          ar: submitForApproval ? 'تم حفظ الحملة وإرسالها للموافقة' : 'تم حفظ الحملة بنجاح'
+        }));
+        onCampaignCreated?.(data);
+      },
+      onError: (error) => {
+        console.error('Save error:', error);
+        toast.error(t({ en: 'Failed to save campaign', ar: 'فشل في حفظ الحملة' }));
+      }
+    });
   };
 
   return (

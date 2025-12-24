@@ -6,15 +6,18 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useLanguage } from '@/components/LanguageContext';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Sparkles, Target, Loader2, CheckCircle2, Plus, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { useApprovalRequest } from '@/hooks/useApprovalRequest';
+import { useSectors } from '@/hooks/useSectors';
+import { useChallengeMutations } from '@/hooks/useChallengeMutations';
+import { useStrategyAIGeneration } from '@/hooks/useStrategyAIGeneration';
 
 export default function StrategyChallengeGenerator({ strategicPlanId, strategicPlan, onChallengeCreated }) {
   const { t, isRTL } = useLanguage();
   const { createApprovalRequest } = useApprovalRequest();
+  const { createChallenge } = useChallengeMutations();
+  const { generateChallenges: generateChallengesAI } = useStrategyAIGeneration();
   const [selectedObjectives, setSelectedObjectives] = useState([]);
   const [selectedSector, setSelectedSector] = useState('');
   const [challengeCount, setChallengeCount] = useState(3);
@@ -25,108 +28,87 @@ export default function StrategyChallengeGenerator({ strategicPlanId, strategicP
   const selectedPlanId = strategicPlanId;
   const objectives = strategicPlan?.objectives || [];
 
-  const { data: sectors } = useQuery({
-    queryKey: ['sectors-for-challenge-gen'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('sectors')
-        .select('id, name_en, name_ar')
-        .eq('is_active', true)
-        .order('name_en');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: sectors } = useSectors();
 
   const handleObjectiveToggle = (objectiveId) => {
-    setSelectedObjectives(prev => 
-      prev.includes(objectiveId) 
+    setSelectedObjectives(prev =>
+      prev.includes(objectiveId)
         ? prev.filter(id => id !== objectiveId)
         : [...prev, objectiveId]
     );
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = () => {
     if (!selectedPlanId || selectedObjectives.length === 0) {
       toast.error(t({ en: 'Please select a plan and at least one objective', ar: 'الرجاء اختيار خطة وهدف واحد على الأقل' }));
       return;
     }
 
-    setIsGenerating(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('strategy-challenge-generator', {
-        body: {
-          strategic_plan_id: selectedPlanId,
-          objective_ids: selectedObjectives,
-          sector_id: selectedSector || null,
-          challenge_count: challengeCount,
-          additional_context: additionalContext
-        }
-      });
-
-      if (error) throw error;
-      setGeneratedChallenges(data?.challenges || []);
-      toast.success(t({ en: 'Challenges generated successfully', ar: 'تم إنشاء التحديات بنجاح' }));
-    } catch (error) {
-      console.error('Generation error:', error);
-      toast.error(t({ en: 'Failed to generate challenges', ar: 'فشل في إنشاء التحديات' }));
-    } finally {
-      setIsGenerating(false);
-    }
+    generateChallengesAI.mutate({
+      strategic_plan_id: selectedPlanId,
+      objective_ids: selectedObjectives,
+      sector_id: selectedSector || null,
+      challenge_count: challengeCount,
+      additional_context: additionalContext
+    }, {
+      onSuccess: (data) => {
+        setGeneratedChallenges(data?.challenges || []);
+        toast.success(t({ en: 'Challenges generated successfully', ar: 'تم إنشاء التحديات بنجاح' }));
+      },
+      onError: (error) => {
+        console.error('Generation error:', error);
+        toast.error(t({ en: 'Failed to generate challenges', ar: 'فشل في إنشاء التحديات' }));
+      }
+    });
   };
 
-  const handleSaveChallenge = async (challenge, index, submitForApproval = false) => {
-    try {
-      const { data, error } = await supabase
-        .from('challenges')
-        .insert({
-          title_en: challenge.title_en,
-          title_ar: challenge.title_ar,
-          description_en: challenge.description_en,
-          description_ar: challenge.description_ar,
-          problem_statement_en: challenge.problem_statement_en,
-          problem_statement_ar: challenge.problem_statement_ar,
-          desired_outcome_en: challenge.desired_outcome_en,
-          desired_outcome_ar: challenge.desired_outcome_ar,
-          sector_id: selectedSector || null,
-          strategic_plan_ids: [selectedPlanId],
-          is_strategy_derived: true,
-          strategy_derivation_date: new Date().toISOString(),
-          status: submitForApproval ? 'pending' : 'draft',
-          source: 'ai_generated'
-        })
-        .select()
-        .single();
+  const handleSaveChallenge = (challenge, index, submitForApproval = false) => {
+    createChallenge.mutate({
+      title_en: challenge.title_en,
+      title_ar: challenge.title_ar,
+      description_en: challenge.description_en,
+      description_ar: challenge.description_ar,
+      problem_statement_en: challenge.problem_statement_en,
+      problem_statement_ar: challenge.problem_statement_ar,
+      desired_outcome_en: challenge.desired_outcome_en,
+      desired_outcome_ar: challenge.desired_outcome_ar,
+      sector_id: selectedSector || null,
+      strategic_plan_ids: [selectedPlanId],
+      is_strategy_derived: true,
+      strategy_derivation_date: new Date().toISOString(),
+      status: submitForApproval ? 'pending' : 'draft',
+      source: 'ai_generated'
+    }, {
+      onSuccess: async (data) => {
+        if (submitForApproval) {
+          await createApprovalRequest({
+            entityType: 'challenge',
+            entityId: data.id,
+            entityTitle: challenge.title_en,
+            isStrategyDerived: true,
+            strategicPlanIds: [selectedPlanId],
+            metadata: {
+              sector_id: selectedSector,
+              source: 'cascade_generator'
+            }
+          });
+        }
 
-      if (error) throw error;
+        const updated = [...generatedChallenges];
+        updated[index] = { ...updated[index], saved: true, savedId: data.id, submitted: submitForApproval };
+        setGeneratedChallenges(updated);
 
-      if (submitForApproval) {
-        await createApprovalRequest({
-          entityType: 'challenge',
-          entityId: data.id,
-          entityTitle: challenge.title_en,
-          isStrategyDerived: true,
-          strategicPlanIds: [selectedPlanId],
-          metadata: {
-            sector_id: selectedSector,
-            source: 'cascade_generator'
-          }
-        });
+        toast.success(t({
+          en: submitForApproval ? 'Challenge saved and submitted for approval' : 'Challenge saved successfully',
+          ar: submitForApproval ? 'تم حفظ التحدي وإرساله للموافقة' : 'تم حفظ التحدي بنجاح'
+        }));
+        onChallengeCreated?.(data);
+      },
+      onError: (error) => {
+        console.error('Save error:', error);
+        toast.error(t({ en: 'Failed to save challenge', ar: 'فشل في حفظ التحدي' }));
       }
-
-      const updated = [...generatedChallenges];
-      updated[index] = { ...updated[index], saved: true, savedId: data.id, submitted: submitForApproval };
-      setGeneratedChallenges(updated);
-      
-      toast.success(t({ 
-        en: submitForApproval ? 'Challenge saved and submitted for approval' : 'Challenge saved successfully', 
-        ar: submitForApproval ? 'تم حفظ التحدي وإرساله للموافقة' : 'تم حفظ التحدي بنجاح' 
-      }));
-      onChallengeCreated?.(data);
-    } catch (error) {
-      console.error('Save error:', error);
-      toast.error(t({ en: 'Failed to save challenge', ar: 'فشل في حفظ التحدي' }));
-    }
+    });
   };
 
   return (
@@ -138,7 +120,7 @@ export default function StrategyChallengeGenerator({ strategicPlanId, strategicP
             {t({ en: 'AI Challenge Generator', ar: 'مولد التحديات بالذكاء الاصطناعي' })}
           </CardTitle>
           <CardDescription>
-            {t({ 
+            {t({
               en: 'Generate innovation challenges aligned with strategic objectives',
               ar: 'إنشاء تحديات الابتكار المتوافقة مع الأهداف الاستراتيجية'
             })}
@@ -153,7 +135,7 @@ export default function StrategyChallengeGenerator({ strategicPlanId, strategicP
               </p>
             </div>
           )}
-          
+
           <div className="space-y-2">
             <label className="text-sm font-medium">
               {t({ en: 'Sector Focus', ar: 'القطاع المستهدف' })}
@@ -202,7 +184,7 @@ export default function StrategyChallengeGenerator({ strategicPlanId, strategicP
             <Textarea
               value={additionalContext}
               onChange={(e) => setAdditionalContext(e.target.value)}
-              placeholder={t({ 
+              placeholder={t({
                 en: 'Add any specific requirements or focus areas...',
                 ar: 'أضف أي متطلبات محددة أو مجالات تركيز...'
               })}
@@ -254,7 +236,7 @@ export default function StrategyChallengeGenerator({ strategicPlanId, strategicP
             {t({ en: 'Generated Challenges', ar: 'التحديات المُنشأة' })}
             <Badge variant="secondary">{generatedChallenges.length}</Badge>
           </h3>
-          
+
           <div className="grid grid-cols-1 gap-4">
             {generatedChallenges.map((challenge, idx) => (
               <Card key={idx} className={challenge.saved ? 'border-green-500/50 bg-green-50/50' : ''}>
@@ -271,7 +253,7 @@ export default function StrategyChallengeGenerator({ strategicPlanId, strategicP
                     {challenge.saved ? (
                       <Badge variant="outline" className={challenge.submitted ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}>
                         <CheckCircle2 className="h-3 w-3 mr-1" />
-                        {challenge.submitted 
+                        {challenge.submitted
                           ? t({ en: 'Submitted', ar: 'مُرسل' })
                           : t({ en: 'Saved', ar: 'محفوظ' })}
                       </Badge>

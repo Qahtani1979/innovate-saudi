@@ -6,117 +6,100 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/components/LanguageContext';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Sparkles, GraduationCap, Loader2, CheckCircle2, Plus, DollarSign, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { useApprovalRequest } from '@/hooks/useApprovalRequest';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useStrategyAIGeneration } from '@/hooks/useStrategyAIGeneration';
+import { useRDCallMutations } from '@/hooks/useRDCallMutations';
 
 export default function StrategyToRDCallGenerator({ strategicPlanId, strategicPlan, onRDCallCreated }) {
   const { t, isRTL } = useLanguage();
   const { createApprovalRequest } = useApprovalRequest();
+  const { generateRDCalls: generateRDCallsAI } = useStrategyAIGeneration();
+  const { createRDCall } = useRDCallMutations();
   const [selectedChallenges, setSelectedChallenges] = useState([]);
   const [budgetMin, setBudgetMin] = useState('50000');
   const [budgetMax, setBudgetMax] = useState('500000');
   const [duration, setDuration] = useState('12');
   const [generatedCalls, setGeneratedCalls] = useState([]);
-  const [isGenerating, setIsGenerating] = useState(false);
 
-  // Filter challenges by strategic plan
-  const { data: challenges } = useQuery({
-    queryKey: ['challenges-for-rd-gen', strategicPlanId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('id, title_en, title_ar, status, sector_id, strategic_plan_ids')
-        .eq('is_deleted', false)
-        .in('status', ['approved', 'published', 'open'])
-        .order('created_at', { ascending: false })
-        .limit(50);
-      if (error) throw error;
-      
-      // Filter by strategic plan if one is selected
-      if (strategicPlanId) {
-        return (data || []).filter(c => c.strategic_plan_ids?.includes(strategicPlanId));
-      }
-      return data || [];
-    }
+  // Use hook for challenges
+  const { data: allChallenges = [] } = useChallengesWithVisibility({
+    status: ['approved', 'published', 'open'],
+    strategicPlanId,
+    limit: 50
   });
 
+  // Filter by strategic plan
+  const challenges = strategicPlanId
+    ? allChallenges.filter(c => c.strategic_plan_ids?.includes(strategicPlanId))
+    : allChallenges;
+
   const handleChallengeToggle = (challengeId) => {
-    setSelectedChallenges(prev => 
-      prev.includes(challengeId) 
+    setSelectedChallenges(prev =>
+      prev.includes(challengeId)
         ? prev.filter(id => id !== challengeId)
         : [...prev, challengeId]
     );
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = () => {
     if (selectedChallenges.length === 0) {
       toast.error(t({ en: 'Please select at least one challenge', ar: 'الرجاء اختيار تحدٍ واحد على الأقل' }));
       return;
     }
 
-    setIsGenerating(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('strategy-rd-call-generator', {
-        body: {
-          challenge_ids: selectedChallenges,
-          budget_range: { min: Number(budgetMin), max: Number(budgetMax) },
-          duration_months: Number(duration)
-        }
-      });
-
-      if (error) throw error;
-      setGeneratedCalls(data?.rd_calls || []);
-      toast.success(t({ en: 'R&D calls generated successfully', ar: 'تم إنشاء طلبات البحث والتطوير بنجاح' }));
-    } catch (error) {
-      console.error('Generation error:', error);
-      toast.error(t({ en: 'Failed to generate R&D calls', ar: 'فشل في إنشاء طلبات البحث والتطوير' }));
-    } finally {
-      setIsGenerating(false);
-    }
+    generateRDCallsAI.mutate({
+      challenge_ids: selectedChallenges,
+      budget_range: { min: Number(budgetMin), max: Number(budgetMax) },
+      duration_months: Number(duration)
+    }, {
+      onSuccess: (data) => {
+        setGeneratedCalls(data?.rd_calls || []);
+        toast.success(t({ en: 'R&D calls generated successfully', ar: 'تم إنشاء طلبات البحث والتطوير بنجاح' }));
+      },
+      onError: (error) => {
+        console.error('Generation error:', error);
+        toast.error(t({ en: 'Failed to generate R&D calls', ar: 'فشل في إنشاء طلبات البحث والتطوير' }));
+      }
+    });
   };
 
-  const handleSaveCall = async (call, index) => {
-    try {
-      // Get strategic_plan_ids from the selected challenges
-      const selectedChallengesData = challenges?.filter(c => selectedChallenges.includes(c.id)) || [];
-      const strategicPlanIds = [...new Set(selectedChallengesData.flatMap(c => c.strategic_plan_ids || []))];
-      
-      const { data, error } = await supabase
-        .from('rd_calls')
-        .insert({
-          title_en: call.title_en,
-          title_ar: call.title_ar,
-          description_en: call.description_en,
-          description_ar: call.description_ar,
-          research_objectives: call.research_objectives,
-          eligibility_criteria: call.eligibility_criteria,
-          budget_min: Number(budgetMin),
-          budget_max: Number(budgetMax),
-          duration_months: Number(duration),
-          challenge_ids: selectedChallenges,
-          strategic_plan_ids: strategicPlanIds,
-          is_strategy_derived: strategicPlanIds.length > 0,
-          strategy_derivation_date: strategicPlanIds.length > 0 ? new Date().toISOString() : null,
-          status: 'draft'
-        })
-        .select()
-        .single();
+  const handleSaveCall = (call, index) => {
+    // Get strategic_plan_ids from the selected challenges
+    const selectedChallengesData = challenges?.filter(c => selectedChallenges.includes(c.id)) || [];
+    const strategicPlanIds = [...new Set(selectedChallengesData.flatMap(c => c.strategic_plan_ids || []))];
 
-      if (error) throw error;
+    createRDCall.mutate({
+      title_en: call.title_en,
+      title_ar: call.title_ar,
+      description_en: call.description_en,
+      description_ar: call.description_ar,
+      research_objectives: call.research_objectives,
+      eligibility_criteria: call.eligibility_criteria,
+      budget_min: Number(budgetMin),
+      budget_max: Number(budgetMax),
+      duration_months: Number(duration),
+      challenge_ids: selectedChallenges,
+      strategic_plan_ids: strategicPlanIds,
+      is_strategy_derived: strategicPlanIds.length > 0,
+      strategy_derivation_date: strategicPlanIds.length > 0 ? new Date().toISOString() : null,
+      status: 'draft'
+    }, {
+      onSuccess: (data) => {
+        const updated = [...generatedCalls];
+        updated[index] = { ...updated[index], saved: true, savedId: data.id };
+        setGeneratedCalls(updated);
 
-      const updated = [...generatedCalls];
-      updated[index] = { ...updated[index], saved: true, savedId: data.id };
-      setGeneratedCalls(updated);
-      
-      toast.success(t({ en: 'R&D call saved successfully', ar: 'تم حفظ طلب البحث والتطوير بنجاح' }));
-      onRDCallCreated?.(data);
-    } catch (error) {
-      console.error('Save error:', error);
-      toast.error(t({ en: 'Failed to save R&D call', ar: 'فشل في حفظ طلب البحث والتطوير' }));
-    }
+        toast.success(t({ en: 'R&D call saved successfully', ar: 'تم حفظ طلب البحث والتطوير بنجاح' }));
+        onRDCallCreated?.(data);
+      },
+      onError: (error) => {
+        console.error('Save error:', error);
+        toast.error(t({ en: 'Failed to save R&D call', ar: 'فشل في حفظ طلب البحث والتطوير' }));
+      }
+    });
   };
 
   return (
@@ -128,7 +111,7 @@ export default function StrategyToRDCallGenerator({ strategicPlanId, strategicPl
             {t({ en: 'R&D Call Generator', ar: 'مولد طلبات البحث والتطوير' })}
           </CardTitle>
           <CardDescription>
-            {t({ 
+            {t({
               en: 'Generate research and development calls from strategic challenges',
               ar: 'إنشاء طلبات البحث والتطوير من التحديات الاستراتيجية'
             })}
@@ -224,7 +207,7 @@ export default function StrategyToRDCallGenerator({ strategicPlanId, strategicPl
             {t({ en: 'Generated R&D Calls', ar: 'طلبات البحث والتطوير المُنشأة' })}
             <Badge variant="secondary">{generatedCalls.length}</Badge>
           </h3>
-          
+
           <div className="grid grid-cols-1 gap-4">
             {generatedCalls.map((call, idx) => (
               <Card key={idx} className={call.saved ? 'border-green-500/50 bg-green-50/50' : ''}>

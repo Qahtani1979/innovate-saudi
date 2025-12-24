@@ -5,6 +5,7 @@ import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { useAutoNotification } from '@/hooks/useAutoNotification';
 import { toast } from 'sonner';
+import { useAccessControl } from '@/hooks/useAccessControl';
 
 /**
  * Hook for event CRUD operations
@@ -23,6 +24,7 @@ export function useEvents(options = {}) {
   const { triggerEmail } = useEmailTrigger();
   const { logEventActivity, logApprovalActivity } = useAuditLog();
   const { notifyEventAction } = useAutoNotification();
+  const { checkPermission, checkEntityAccess } = useAccessControl();
 
   // Fetch events
   const eventsQuery = useQuery({
@@ -73,6 +75,7 @@ export function useEvents(options = {}) {
   const createEventMutation = useMutation({
     /** @param {any} eventData */
     mutationFn: async (eventData) => {
+      checkPermission(['admin', 'innovation_manager', 'program_manager']);
       // Determine status: if publishing, set to 'pending' for approval workflow
       const status = eventData.is_published ? 'pending' : (eventData.status || 'draft');
 
@@ -178,6 +181,9 @@ export function useEvents(options = {}) {
   const updateEventMutation = useMutation({
     /** @param {{eventId: string, updates: any}} params */
     mutationFn: async ({ eventId, updates }) => {
+      const { data: currentEvent } = await supabase.from('events').select('created_by').eq('id', eventId).single();
+      checkEntityAccess(currentEvent, 'created_by', 'email');
+
       const { data, error } = await supabase
         .from('events')
         .update({
@@ -224,6 +230,9 @@ export function useEvents(options = {}) {
   const cancelEventMutation = useMutation({
     /** @param {{eventId: string, reason: string, notifyRegistrants: boolean}} params */
     mutationFn: async ({ eventId, reason, notifyRegistrants }) => {
+      const { data: currentEvent } = await supabase.from('events').select('created_by').eq('id', eventId).single();
+      checkEntityAccess(currentEvent, 'created_by', 'email');
+
       const { data, error } = await supabase
         .from('events')
         .update({
@@ -275,6 +284,9 @@ export function useEvents(options = {}) {
   const deleteEventMutation = useMutation({
     /** @param {string} eventId */
     mutationFn: async (eventId) => {
+      const { data: currentEvent } = await supabase.from('events').select('created_by').eq('id', eventId).single();
+      checkEntityAccess(currentEvent, 'created_by', 'email');
+
       const { error } = await supabase
         .from('events')
         .update({

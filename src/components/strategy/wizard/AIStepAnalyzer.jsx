@@ -5,15 +5,15 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { 
+import {
   Brain, Loader2, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle,
-  Target, TrendingUp, AlertCircle, Lightbulb, Award, BarChart3, 
+  Target, TrendingUp, AlertCircle, Lightbulb, Award, BarChart3,
   RefreshCw, Zap, ArrowRight, XCircle, Layers
 } from 'lucide-react';
 import { useLanguage } from '../../LanguageContext';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from "@/lib/utils";
+import { useStrategyAIGeneration } from '@/hooks/useStrategyAIGeneration';
 
 /**
  * Generic AI Step Analyzer
@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
  * Reusable component for AI analysis of any wizard step.
  * Supports customizable context, titles, and analysis endpoints.
  */
-export default function AIStepAnalyzer({ 
+export default function AIStepAnalyzer({
   stepNumber,
   stepName,
   items = [],
@@ -33,6 +33,7 @@ export default function AIStepAnalyzer({
   icon: StepIcon = Target
 }) {
   const { language, t, isRTL } = useLanguage();
+  const { analyzeStrategicPlan } = useStrategyAIGeneration();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState(null);
   const [error, setError] = useState(null);
@@ -52,7 +53,7 @@ export default function AIStepAnalyzer({
     if (contextBuilderFn) {
       return contextBuilderFn(wizardData, items, taxonomyData);
     }
-    
+
     // Default context builder
     return {
       stepNumber,
@@ -78,39 +79,44 @@ export default function AIStepAnalyzer({
 
   const handleAnalyze = async () => {
     if (items.length === 0) {
-      toast.warning(t({ 
-        en: `Please add at least one ${itemsLabel?.en || 'item'} before analyzing`, 
-        ar: `يرجى إضافة ${itemsLabel?.ar || 'عنصر'} واحد على الأقل قبل التحليل` 
+      toast.warning(t({
+        en: `Please add at least one ${itemsLabel?.en || 'item'} before analyzing`,
+        ar: `يرجى إضافة ${itemsLabel?.ar || 'عنصر'} واحد على الأقل قبل التحليل`
       }));
       return;
     }
 
     setIsAnalyzing(true);
     setError(null);
-    
+
     try {
       const context = buildAnalysisContext();
-      
-      const { data, error: fnError } = await supabase.functions.invoke(edgeFunctionName, {
-        body: { 
-          context,
-          language,
-          stepNumber,
-          stepName,
-          itemsCount: items.length
+
+      analyzeStrategicPlan.mutate({
+        context,
+        language,
+        stepNumber,
+        stepName,
+        itemsCount: items.length
+      }, {
+        onSuccess: (data) => {
+          if (data.error) throw new Error(data.error);
+          setAnalysis(data.analysis);
+          toast.success(t({ en: 'Analysis complete', ar: 'اكتمل التحليل' }));
+        },
+        onError: (err) => {
+          console.error('Analysis error:', err);
+          setError(err.message);
+          toast.error(t({ en: 'Failed to analyze', ar: 'فشل التحليل' }));
+        },
+        onSettled: () => {
+          setIsAnalyzing(false);
         }
       });
-
-      if (fnError) throw fnError;
-      if (data.error) throw new Error(data.error);
-      
-      setAnalysis(data.analysis);
-      toast.success(t({ en: 'Analysis complete', ar: 'اكتمل التحليل' }));
     } catch (err) {
       console.error('Analysis error:', err);
       setError(err.message);
       toast.error(t({ en: 'Failed to analyze', ar: 'فشل التحليل' }));
-    } finally {
       setIsAnalyzing(false);
     }
   };
@@ -130,7 +136,7 @@ export default function AIStepAnalyzer({
   };
 
   const getPriorityIcon = (priority) => {
-    switch(priority) {
+    switch (priority) {
       case 'critical': return <AlertCircle className="w-4 h-4 text-red-500" />;
       case 'high': return <AlertTriangle className="w-4 h-4 text-orange-500" />;
       case 'medium': return <TrendingUp className="w-4 h-4 text-yellow-500" />;
@@ -151,15 +157,15 @@ export default function AIStepAnalyzer({
                 {t({ en: `AI ${stepName} Analyzer`, ar: `محلل ${stepName} بالذكاء الاصطناعي` })}
               </CardTitle>
               <CardDescription>
-                {t({ 
-                  en: 'Comprehensive analysis with full strategic context', 
-                  ar: 'تحليل شامل مع السياق الاستراتيجي الكامل' 
+                {t({
+                  en: 'Comprehensive analysis with full strategic context',
+                  ar: 'تحليل شامل مع السياق الاستراتيجي الكامل'
                 })}
               </CardDescription>
             </div>
           </div>
-          
-          <Button 
+
+          <Button
             onClick={handleAnalyze}
             disabled={isAnalyzing || items.length === 0}
             className="gap-2"
@@ -172,7 +178,7 @@ export default function AIStepAnalyzer({
             ) : (
               <>
                 {analysis ? <RefreshCw className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
-                {analysis 
+                {analysis
                   ? t({ en: 'Re-analyze', ar: 'إعادة التحليل' })
                   : t({ en: 'Analyze', ar: 'تحليل' })
                 }
@@ -180,7 +186,7 @@ export default function AIStepAnalyzer({
             )}
           </Button>
         </div>
-        
+
         {/* Context indicators */}
         <div className="flex flex-wrap gap-2 mt-3">
           <Badge variant="outline" className="text-xs">
@@ -206,9 +212,9 @@ export default function AIStepAnalyzer({
           <div className="text-center py-8 text-muted-foreground">
             <Brain className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="text-sm">
-              {t({ 
-                en: 'Click "Analyze" to get AI-powered insights and recommendations', 
-                ar: 'انقر على "تحليل" للحصول على رؤى وتوصيات الذكاء الاصطناعي' 
+              {t({
+                en: 'Click "Analyze" to get AI-powered insights and recommendations',
+                ar: 'انقر على "تحليل" للحصول على رؤى وتوصيات الذكاء الاصطناعي'
               })}
             </p>
           </div>
@@ -234,13 +240,13 @@ export default function AIStepAnalyzer({
               </CollapsibleTrigger>
               <CollapsibleContent className="pt-3 space-y-3">
                 <Progress value={analysis.overallScore || 0} className="h-2" />
-                
+
                 {analysis.summary && (
                   <p className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg">
                     {analysis.summary}
                   </p>
                 )}
-                
+
                 {/* Score breakdown */}
                 {analysis.scores && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -274,8 +280,8 @@ export default function AIStepAnalyzer({
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3 space-y-2">
                   {analysis.gaps.map((gap, idx) => (
-                    <div 
-                      key={idx} 
+                    <div
+                      key={idx}
                       className="p-3 bg-background rounded-lg border border-orange-200 dark:border-orange-800"
                     >
                       <div className="flex items-start gap-2">
@@ -311,8 +317,8 @@ export default function AIStepAnalyzer({
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pt-3 space-y-2">
                   {analysis.recommendations.map((rec, idx) => (
-                    <div 
-                      key={idx} 
+                    <div
+                      key={idx}
                       className="p-3 bg-background rounded-lg border border-green-200 dark:border-green-800"
                     >
                       <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
@@ -330,8 +336,8 @@ export default function AIStepAnalyzer({
                           </div>
                         </div>
                         {rec.priority && (
-                          <Badge 
-                            variant="outline" 
+                          <Badge
+                            variant="outline"
                             className={cn(
                               "shrink-0",
                               rec.priority === 'critical' && "border-red-500 text-red-600",

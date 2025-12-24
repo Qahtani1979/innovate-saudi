@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { usePilotsList } from '@/hooks/usePilots';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,17 +16,10 @@ export default function SuccessPatternAnalyzer({ sector }) {
   const [patterns, setPatterns] = useState(null);
   const { invokeAI, isLoading: analyzing, status, error, rateLimitInfo } = useAIWithFallback();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['successful-pilots', sector],
-    queryFn: async () => {
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => 
-        p.sector === sector && 
-        ['completed', 'scaled'].includes(p.stage) &&
-        p.recommendation === 'scale'
-      );
-    },
-    initialData: []
+  const { data: pilots = [] } = usePilotsList({
+    sector,
+    stage: ['completed', 'scaled'],
+    recommendation: 'scale'
   });
 
   const analyzePatterns = async () => {
@@ -62,7 +55,7 @@ export default function SuccessPatternAnalyzer({ sector }) {
       </CardHeader>
       <CardContent className="pt-6">
         <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} className="mb-4" />
-        
+
         {!patterns && !analyzing && (
           <div className="text-center py-8">
             <TrendingUp className="h-12 w-12 text-purple-300 mx-auto mb-3" />

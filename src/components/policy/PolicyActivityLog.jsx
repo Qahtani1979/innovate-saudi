@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { usePolicy } from '@/hooks/usePolicy';
+import { useEntityApprovalHistory } from '@/hooks/useApprovalRequests';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -7,43 +8,31 @@ import { Activity, FileEdit, GitBranch, CheckCircle2, Scale, Building2, Shield, 
 export default function PolicyActivityLog({ policyId }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: activities = [] } = useQuery({
-    queryKey: ['policy-activities', policyId],
-    queryFn: async () => {
-      // For now, generate from policy data - in production, would track in separate entity
-      const policies = await base44.entities.PolicyRecommendation.list();
-      const policy = policies.find(p => p.id === policyId);
-      if (!policy) return [];
+  const { data: policy } = usePolicy(policyId);
+  const { data: approvals = [] } = useEntityApprovalHistory(policyId, 'policy_recommendation');
 
-      const log = [];
-      
-      // Creation
-      log.push({
-        type: 'created',
-        timestamp: policy.created_date,
-        user: policy.created_by,
-        description: 'Policy recommendation created'
-      });
-
-      // Workflow transitions (inferred from approvals)
-      if (policy.approvals) {
-        policy.approvals.forEach(approval => {
-          log.push({
-            type: 'approval',
-            stage: approval.stage,
-            timestamp: approval.approved_date,
-            user: approval.approved_by,
-            status: approval.status,
-            description: `${approval.stage.replace(/_/g, ' ')} - ${approval.status}`,
-            comments: approval.comments
-          });
-        });
-      }
-
-      // Sort by date
-      return log.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    }
-  });
+  // Combine and sort activities
+  const activities = [
+    ...(policy ? [{
+      type: 'created',
+      timestamp: policy.created_at,
+      // @ts-ignore - submitted_by is from extended type
+      user: policy.submitted_by || 'Unknown',
+      description: 'Policy recommendation created',
+      stage: null,
+      status: null,
+      comments: null
+    }] : []),
+    ...approvals.map(approval => ({
+      type: 'approval',
+      stage: approval.request_type || 'approval',
+      timestamp: approval.approved_at || approval.created_at,
+      user: approval.approver_email || approval.requester_email,
+      status: approval.approval_status || 'pending',
+      description: approval.request_type ? `${approval.request_type.replace(/_/g, ' ')} - ${approval.approval_status}` : `Approval - ${approval.approval_status}`,
+      comments: approval.rejection_reason || approval.requester_notes
+    }))
+  ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   const activityIcons = {
     created: FileEdit,
@@ -71,7 +60,7 @@ export default function PolicyActivityLog({ policyId }) {
         <div className="space-y-3">
           {activities.map((activity, idx) => {
             const Icon = activity.stage ? stageIcons[activity.stage] : activityIcons[activity.type] || activityIcons.default;
-            
+
             return (
               <div key={idx} className="flex items-start gap-3 pb-3 border-b last:border-0">
                 <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-1">
@@ -83,8 +72,8 @@ export default function PolicyActivityLog({ policyId }) {
                     {activity.status && (
                       <Badge className={
                         activity.status === 'approved' ? 'bg-green-100 text-green-700' :
-                        activity.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                        'bg-yellow-100 text-yellow-700'
+                          activity.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                            'bg-yellow-100 text-yellow-700'
                       }>
                         {activity.status}
                       </Badge>

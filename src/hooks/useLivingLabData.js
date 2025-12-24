@@ -4,14 +4,20 @@ import { supabase } from '@/integrations/supabase/client';
 /**
  * Hook to fetch living lab bookings
  */
-export function useLivingLabBookings() {
+export function useLivingLabBookings(labId = null) {
     return useQuery({
-        queryKey: ['lab-bookings'],
+        queryKey: ['lab-bookings', labId],
         queryFn: async () => {
-            const { data, error } = await supabase
+            let query = supabase
                 .from('living_lab_bookings')
                 .select('*')
                 .eq('is_deleted', false);
+
+            if (labId) {
+                query = query.eq('living_lab_id', labId);
+            }
+
+            const { data, error } = await query;
             if (error) throw error;
             return data || [];
         },

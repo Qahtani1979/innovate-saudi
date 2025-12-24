@@ -1,77 +1,26 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { GraduationCap, Users, Award } from 'lucide-react';
-import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { useStartupProfile } from '@/hooks/useStartupProfiles';
+import { usePotentialMentors, useStartupMentorshipMutations } from '@/hooks/useStartupMentorship';
 
 export default function StartupMentorshipMatcher({ startupId }) {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
 
-  const { data: startup } = useQuery({
-    queryKey: ['startup-mentorship', startupId],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('startup_profiles').select('*').eq('id', startupId).maybeSingle();
-      if (error) throw error;
-      return data;
-    }
-  });
+  const { data: startup } = useStartupProfile(startupId);
+  const { data: potentialMentors = [] } = usePotentialMentors(startupId, startup);
+  const { requestMentorship } = useStartupMentorshipMutations();
 
-  const { data: potentialMentors = [] } = useQuery({
-    queryKey: ['potential-mentors', startupId],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('startup_profiles')
-        .select('*')
-        .neq('id', startupId)
-        .gt('pilot_success_rate', 70)
-        .gte('municipal_clients_count', 2)
-        .limit(5);
-      if (error) throw error;
-      return (data || []).filter(s => s.sectors?.some(sector => startup?.sectors?.includes(sector)));
-    },
-    enabled: !!startup
-  });
-
-  const requestMentorshipMutation = useMutation({
-    mutationFn: async (mentorId) => {
-      const mentor = potentialMentors.find(m => m.id === mentorId);
-      
-      // Send mentorship request via email-trigger-hub
-      const { supabase } = await import('@/integrations/supabase/client');
-      await supabase.functions.invoke('email-trigger-hub', {
-        body: {
-          trigger: 'pilot.feedback_request',
-          recipient_email: mentor.contact_email,
-          entity_type: 'startup',
-          entity_id: startupId,
-          variables: {
-            startupName: startup?.name_en,
-            mentorName: mentor.name_en,
-            sectors: startup?.sectors?.join(', '),
-            stage: startup?.stage,
-            teamSize: startup?.team_size
-          },
-          triggered_by: 'system'
-        }
-      });
-
-      const { error: mentorshipError } = await supabase.from('program_mentorships').insert({
-        mentor_startup_id: mentorId,
-        mentee_startup_id: startupId,
-        status: 'requested',
-        mentorship_type: 'peer_startup',
-        focus_areas: startup?.sectors || []
-      });
-      if (mentorshipError) throw mentorshipError;
-    },
-    onSuccess: () => {
-      toast.success(t({ en: 'Mentorship request sent', ar: 'تم إرسال طلب التوجيه' }));
-      queryClient.invalidateQueries(['potential-mentors']);
-    }
-  });
+  const handleRequestMentorship = (mentor) => {
+    requestMentorship.mutate({
+      mentorId: mentor.id,
+      mentor,
+      startup,
+      startupId
+    });
+  };
 
   return (
     <Card>
@@ -87,7 +36,7 @@ export default function StartupMentorshipMatcher({ startupId }) {
             {t({ en: 'Learn from Successful Startups', ar: 'تعلم من الشركات الناجحة' })}
           </p>
           <p className="text-xs text-slate-600">
-            {t({ 
+            {t({
               en: 'Connect with proven startups who have successfully deployed solutions with municipalities',
               ar: 'تواصل مع الشركات التي نشرت حلولاً بنجاح مع البلديات'
             })}
@@ -117,8 +66,8 @@ export default function StartupMentorshipMatcher({ startupId }) {
                       {mentor.sectors?.join(', ')}
                     </p>
                   </div>
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     onClick={() => requestMentorshipMutation.mutate(mentor.id)}
                   >
                     {t({ en: 'Request', ar: 'طلب' })}

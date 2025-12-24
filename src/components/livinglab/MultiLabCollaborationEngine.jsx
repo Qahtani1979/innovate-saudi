@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,26 +8,19 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { getSystemPrompt } from '@/lib/saudiContext';
-import { 
-  buildCollaborationFinderPrompt, 
+import {
+  buildCollaborationFinderPrompt,
   getCollaborationFinderSchema,
-  COLLABORATION_FINDER_SYSTEM_PROMPT 
+  COLLABORATION_FINDER_SYSTEM_PROMPT
 } from '@/lib/ai/prompts/livinglab';
-import { supabase } from '@/integrations/supabase/client';
+import { useLivingLabs } from '@/hooks/useLivingLabs';
 
 export default function MultiLabCollaborationEngine({ currentLabId }) {
   const { language, t } = useLanguage();
   const [opportunities, setOpportunities] = useState([]);
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: labs = [] } = useQuery({
-    queryKey: ['living-labs'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('living_labs').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: labs = [] } = useLivingLabs();
 
   const currentLab = labs.find(l => l.id === currentLabId);
   const otherLabs = labs.filter(l => l.id !== currentLabId);
@@ -42,9 +34,9 @@ export default function MultiLabCollaborationEngine({ currentLabId }) {
 
     if (result.success && result.data?.opportunities) {
       setOpportunities(result.data.opportunities);
-      toast.success(t({ 
-        en: `${result.data.opportunities.length} opportunities found`, 
-        ar: `${result.data.opportunities.length} فرصة وُجدت` 
+      toast.success(t({
+        en: `${result.data.opportunities.length} opportunities found`,
+        ar: `${result.data.opportunities.length} فرصة وُجدت`
       }));
     }
   };
@@ -75,8 +67,8 @@ export default function MultiLabCollaborationEngine({ currentLabId }) {
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
-        
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails error={undefined} />
+
         {!opportunities.length && !isLoading && (
           <div className="text-center py-8">
             <Network className="h-12 w-12 text-indigo-300 mx-auto mb-3" />
@@ -108,7 +100,7 @@ export default function MultiLabCollaborationEngine({ currentLabId }) {
                 <p className="text-sm text-slate-700 mb-2">
                   {getLocalizedField(opp, 'description')}
                 </p>
-                
+
                 <div className="p-3 bg-green-50 rounded border border-green-200">
                   <p className="text-sm font-medium text-green-900 mb-1">{t({ en: 'Benefit:', ar: 'الفائدة:' })}</p>
                   <p className="text-xs text-slate-700">{getLocalizedField(opp, 'benefit')}</p>

@@ -1,13 +1,12 @@
 import React from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { toast } from 'sonner';
-import { 
-  GitBranch, 
-  CheckCircle2, 
+import { usePolicyMutations } from '@/hooks/usePolicy';
+import {
+  GitBranch,
+  CheckCircle2,
   ArrowRight,
   FileText,
   Scale,
@@ -20,7 +19,7 @@ import {
 
 export default function PolicyWorkflowManager({ policy, onUpdate }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  const { updatePolicy } = usePolicyMutations();
 
   const workflowStages = [
     { key: 'draft', icon: FileText, label: { en: 'Draft', ar: 'مسودة' }, color: 'slate' },
@@ -33,19 +32,18 @@ export default function PolicyWorkflowManager({ policy, onUpdate }) {
     { key: 'active', icon: CheckCircle2, label: { en: 'Active', ar: 'فعال' }, color: 'emerald' }
   ];
 
-  const transitionMutation = useMutation({
-    mutationFn: async (nextStage) => {
-      return await base44.entities.PolicyRecommendation.update(policy.id, {
-        workflow_stage: nextStage,
-        ...(nextStage === 'legal_review' && { submission_date: new Date().toISOString() })
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['policy', policy.id]);
-      toast.success(t({ en: 'Workflow updated', ar: 'تم تحديث سير العمل' }));
-      onUpdate?.();
-    }
-  });
+  const handleStageTransition = (nextStage) => {
+    updatePolicy.mutate({
+      id: policy.id,
+      workflow_stage: nextStage,
+      ...(nextStage === 'legal_review' && { submission_date: new Date().toISOString() })
+    }, {
+      onSuccess: () => {
+        onUpdate?.();
+        // Toast is handled by the hook
+      }
+    });
+  };
 
   const currentStage = policy.workflow_stage || policy.status || 'draft';
   const currentIndex = workflowStages.findIndex(s => s.key === currentStage);
@@ -75,29 +73,25 @@ export default function PolicyWorkflowManager({ policy, onUpdate }) {
             return (
               <React.Fragment key={stage.key}>
                 <div className={`flex flex-col items-center gap-1 flex-shrink-0`}>
-                  <div className={`h-12 w-12 rounded-full flex items-center justify-center border-2 ${
-                    isActive ? `bg-${stage.color}-100 border-${stage.color}-500` :
+                  <div className={`h-12 w-12 rounded-full flex items-center justify-center border-2 ${isActive ? `bg-${stage.color}-100 border-${stage.color}-500` :
                     isPast ? `bg-${stage.color}-500 text-white border-${stage.color}-500` :
-                    'bg-slate-100 border-slate-300'
-                  }`}>
-                    <Icon className={`h-5 w-5 ${
-                      isActive ? `text-${stage.color}-700` :
+                      'bg-slate-100 border-slate-300'
+                    }`}>
+                    <Icon className={`h-5 w-5 ${isActive ? `text-${stage.color}-700` :
                       isPast ? 'text-white' :
-                      'text-slate-400'
-                    }`} />
+                        'text-slate-400'
+                      }`} />
                   </div>
-                  <p className={`text-xs font-medium text-center ${
-                    isActive ? 'text-blue-700' :
+                  <p className={`text-xs font-medium text-center ${isActive ? 'text-blue-700' :
                     isPast ? 'text-slate-700' :
-                    'text-slate-400'
-                  }`}>
+                      'text-slate-400'
+                    }`}>
                     {stage.label[language]}
                   </p>
                 </div>
                 {idx < workflowStages.length - 1 && (
-                  <ArrowRight className={`h-4 w-4 flex-shrink-0 ${
-                    isPast ? 'text-green-500' : 'text-slate-300'
-                  }`} />
+                  <ArrowRight className={`h-4 w-4 flex-shrink-0 ${isPast ? 'text-green-500' : 'text-slate-300'
+                    }`} />
                 )}
               </React.Fragment>
             );
@@ -128,8 +122,8 @@ export default function PolicyWorkflowManager({ policy, onUpdate }) {
               {t({ en: 'Available Actions:', ar: 'الإجراءات المتاحة:' })}
             </p>
             <Button
-              onClick={() => transitionMutation.mutate(workflowStages[currentIndex + 1].key)}
-              disabled={transitionMutation.isPending}
+              onClick={() => handleStageTransition(workflowStages[currentIndex + 1].key)}
+              disabled={updatePolicy.isPending}
               className="w-full gap-2"
             >
               <ArrowRight className="h-4 w-4" />

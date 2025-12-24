@@ -11,6 +11,7 @@ import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useSectorStrategies } from '@/hooks/strategy';
 import { useTaxonomy } from '@/hooks/useTaxonomy';
+import { useStrategyAIGeneration } from '@/hooks/useStrategyAIGeneration';
 import {
   Layers,
   Plus,
@@ -31,7 +32,7 @@ const SectorStrategyBuilder = ({ parentPlan, onSave }) => {
   const { t, isRTL, language } = useLanguage();
   const { toast } = useToast();
   const strategicPlanId = parentPlan?.id;
-  
+
   const {
     strategies: dbStrategies,
     isLoading,
@@ -42,19 +43,20 @@ const SectorStrategyBuilder = ({ parentPlan, onSave }) => {
 
   // Use TaxonomyContext for sectors (cached globally)
   const { sectors: taxonomySectors, isLoading: taxonomyLoading } = useTaxonomy();
-  
+
   // Add colors to sectors from taxonomy
   const SECTORS = taxonomySectors.map((s, idx) => ({
     ...s,
     color: SECTOR_COLORS[idx % SECTOR_COLORS.length]
   }));
-  
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedSector, setSelectedSector] = useState(null);
   const [viewMode, setViewMode] = useState('list'); // 'list' | 'detail'
+  const { generateSectorStrategy } = useStrategyAIGeneration();
 
   const [sectorStrategies, setSectorStrategies] = useState([]);
-  
+
   useEffect(() => {
     if (dbStrategies && dbStrategies.length > 0) {
       setSectorStrategies(dbStrategies);
@@ -184,40 +186,45 @@ const SectorStrategyBuilder = ({ parentPlan, onSave }) => {
     setIsGenerating(true);
     try {
       const strategy = sectorStrategies.find(s => s.id === strategyId);
-      
-      const { data, error } = await supabase.functions.invoke('strategy-sector-generator', {
-        body: {
-          sector_id: strategy.sector_id,
-          sector_name_en: strategy.sector_name_en,
-          sector_name_ar: strategy.sector_name_ar,
-          strategic_plan_id: strategicPlanId,
-          plan_vision: parentPlan?.vision_en,
-          plan_objectives: parentPlan?.objectives
+
+      generateSectorStrategy.mutate({
+        sector_id: strategy.sector_id,
+        sector_name_en: strategy.sector_name_en,
+        sector_name_ar: strategy.sector_name_ar,
+        strategic_plan_id: strategicPlanId,
+        plan_vision: parentPlan?.vision_en,
+        plan_objectives: parentPlan?.objectives
+      }, {
+        onSuccess: (data) => {
+          if (data?.error) {
+            throw new Error(data.error);
+          }
+          const { sector_strategy } = data;
+          setSectorStrategies(prev => prev.map(s => {
+            if (s.id !== strategyId) return s;
+            return {
+              ...s,
+              vision_en: sector_strategy.vision_en,
+              vision_ar: sector_strategy.vision_ar,
+              objectives: [...s.objectives, ...sector_strategy.objectives],
+              kpis: [...s.kpis, ...sector_strategy.kpis]
+            };
+          }));
+          toast({
+            title: t({ en: 'Content Generated', ar: 'تم إنشاء المحتوى' }),
+            description: t({ en: 'AI has generated vision, objectives, and KPIs', ar: 'أنشأ الذكاء الاصطناعي الرؤية والأهداف ومؤشرات الأداء' })
+          });
+        },
+        onError: (error) => {
+          toast({
+            title: t({ en: 'Error', ar: 'خطأ' }),
+            description: error.message,
+            variant: 'destructive'
+          });
+        },
+        onSettled: () => {
+          setIsGenerating(false);
         }
-      });
-
-      if (error) throw error;
-      
-      if (data?.error) {
-        throw new Error(data.error);
-      }
-
-      const { sector_strategy } = data;
-
-      setSectorStrategies(prev => prev.map(s => {
-        if (s.id !== strategyId) return s;
-        return {
-          ...s,
-          vision_en: sector_strategy.vision_en,
-          vision_ar: sector_strategy.vision_ar,
-          objectives: [...s.objectives, ...sector_strategy.objectives],
-          kpis: [...s.kpis, ...sector_strategy.kpis]
-        };
-      }));
-
-      toast({
-        title: t({ en: 'Content Generated', ar: 'تم إنشاء المحتوى' }),
-        description: t({ en: 'AI has generated vision, objectives, and KPIs', ar: 'أنشأ الذكاء الاصطناعي الرؤية والأهداف ومؤشرات الأداء' })
       });
     } catch (error) {
       toast({
@@ -225,7 +232,6 @@ const SectorStrategyBuilder = ({ parentPlan, onSave }) => {
         description: error.message,
         variant: 'destructive'
       });
-    } finally {
       setIsGenerating(false);
     }
   };
@@ -316,7 +322,7 @@ const SectorStrategyBuilder = ({ parentPlan, onSave }) => {
           {/* Existing Strategies */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {sectorStrategies.map(strategy => (
-              <Card 
+              <Card
                 key={strategy.id}
                 className="cursor-pointer hover:shadow-md transition-all border-2"
                 onClick={() => { setSelectedSector(strategy.id); setViewMode('detail'); }}
@@ -580,7 +586,7 @@ const SectorStrategyBuilder = ({ parentPlan, onSave }) => {
                       <span>{t({ en: 'Progress', ar: 'التقدم' })}</span>
                       <span>{Math.round(((kpi.current - kpi.baseline) / (kpi.target - kpi.baseline)) * 100) || 0}%</span>
                     </div>
-                    <Progress 
+                    <Progress
                       value={Math.min(100, Math.max(0, ((kpi.current - kpi.baseline) / (kpi.target - kpi.baseline)) * 100)) || 0}
                       className="h-2"
                     />

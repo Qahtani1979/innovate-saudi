@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,62 +7,47 @@ import { useLanguage } from '../LanguageContext';
 import { Users, Handshake, MessageSquare, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { usePartnerships, useStartups } from '@/hooks/useStartups';
 
 export default function StartupCollaborationHub({ startupId }) {
   const { t } = useLanguage();
   const [showRequest, setShowRequest] = useState(false);
   const [requestData, setRequestData] = useState({ type: '', description: '' });
-  const queryClient = useQueryClient();
   const { triggerEmail } = useEmailTrigger();
 
-  const { data: partnerships = [] } = useQuery({
-    queryKey: ['startup-partnerships', startupId],
-    queryFn: async () => {
-      const all = await base44.entities.Partnership.list();
-      return all.filter(p => 
-        p.partner_a_id === startupId || p.partner_b_id === startupId
-      );
-    }
-  });
-
-  const { data: allStartups = [] } = useQuery({
-    queryKey: ['all-startups-collaboration'],
-    queryFn: () => base44.entities.StartupProfile.list()
-  });
-
-  const createPartnershipMutation = useMutation({
-    mutationFn: (data) => base44.entities.Partnership.create(data),
-    onSuccess: async (partnership) => {
-      queryClient.invalidateQueries(['startup-partnerships']);
-      setShowRequest(false);
-      setRequestData({ type: '', description: '' });
-      
-      // Trigger partnership.created email
-      try {
-        await triggerEmail('partnership.created', {
-          entityType: 'partnership',
-          entityId: partnership?.id,
-          variables: {
-            partnershipType: requestData.type,
-            partnerDescription: requestData.description
-          }
-        });
-      } catch (error) {
-        console.error('Failed to send partnership.created email:', error);
-      }
-      
-      toast.success(t({ en: 'Partnership request sent', ar: 'تم إرسال طلب الشراكة' }));
-    }
-  });
+  /* 
+   * Refactored to use Gold Standard Hooks
+   */
+  const { data: partnerships = [], createPartnership } = usePartnerships(startupId);
+  const { data: allStartups = [] } = useStartups();
 
   const handleRequest = () => {
-    createPartnershipMutation.mutate({
+    createPartnership.mutate({
       partner_a_id: startupId,
       partner_b_id: requestData.partner_id,
       partnership_type: requestData.type,
       description: requestData.description,
       status: 'pending',
       initiated_by: 'current_user'
+    }, {
+      onSuccess: async (partnership) => {
+        setShowRequest(false);
+        setRequestData({ type: '', description: '' });
+
+        // Trigger partnership.created email (keeping existing logic)
+        try {
+          await triggerEmail('partnership.created', {
+            entityType: 'partnership',
+            entityId: partnership?.id,
+            variables: {
+              partnershipType: requestData.type,
+              partnerDescription: requestData.description
+            }
+          });
+        } catch (error) {
+          console.error('Failed to send partnership.created email:', error);
+        }
+      }
     });
   };
 
@@ -104,7 +88,7 @@ export default function StartupCollaborationHub({ startupId }) {
             <select
               className="w-full p-2 border rounded"
               value={requestData.partner_id || ''}
-              onChange={(e) => setRequestData({...requestData, partner_id: e.target.value})}
+              onChange={(e) => setRequestData({ ...requestData, partner_id: e.target.value })}
             >
               <option value="">{t({ en: 'Select Partner', ar: 'اختر الشريك' })}</option>
               {allStartups.filter(s => s.id !== startupId).map(s => (
@@ -114,7 +98,7 @@ export default function StartupCollaborationHub({ startupId }) {
             <select
               className="w-full p-2 border rounded"
               value={requestData.type}
-              onChange={(e) => setRequestData({...requestData, type: e.target.value})}
+              onChange={(e) => setRequestData({ ...requestData, type: e.target.value })}
             >
               <option value="">{t({ en: 'Partnership Type', ar: 'نوع الشراكة' })}</option>
               <option value="joint_solution">Joint Solution</option>
@@ -125,7 +109,7 @@ export default function StartupCollaborationHub({ startupId }) {
             <Textarea
               placeholder={t({ en: 'Why collaborate?', ar: 'لماذا التعاون؟' })}
               value={requestData.description}
-              onChange={(e) => setRequestData({...requestData, description: e.target.value})}
+              onChange={(e) => setRequestData({ ...requestData, description: e.target.value })}
             />
             <Button onClick={handleRequest} className="w-full">
               {t({ en: 'Send Request', ar: 'إرسال الطلب' })}

@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/lib/AuthContext';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useLivingLabMutations } from '@/hooks/useLivingLabs';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,54 +11,26 @@ import { useLivingLabsWithVisibility } from '@/hooks/useLivingLabsWithVisibility
 
 export default function LabRoutingHub({ entity, entityType }) {
   const { t, language } = useLanguage();
-  const queryClient = useQueryClient();
   const [selectedLab, setSelectedLab] = useState('');
   const [routing, setRouting] = useState(false);
   const { user } = useAuth();
 
   // Use visibility-aware hook
   const { data: livingLabs = [] } = useLivingLabsWithVisibility();
+  const { routeToLab } = useLivingLabMutations();
 
-  const routeToLabMutation = useMutation({
-    mutationFn: async () => {
-      // Create RDProject from source entity
-      const { data: rdProject, error } = await supabase.from('rd_projects').insert({
-        code: `RD-LAB-${Date.now()}`,
-        title_en: `Lab Research: ${entity.title_en || entity.name_en}`,
-        title_ar: entity.title_ar || entity.name_ar,
-        abstract_en: entity.description_en || entity.problem_statement_en,
-        living_lab_id: selectedLab,
-        research_area_en: entity.sector || 'Municipal Innovation',
-        institution_en: 'Municipal Living Lab',
-        institution_type: 'government_lab',
-        status: 'proposal',
-        trl_start: entityType === 'solution' ? entity.trl : 3,
-        trl_target: 6
-      }).select().single();
-      if (error) throw error;
+  const handleRoute = () => {
+    routeToLab.mutate({
+      entity,
+      entityType,
+      selectedLab
+    }, {
+      onSuccess: () => setRouting(false)
+    });
+  };
 
-      // Link back to source
-      if (entityType === 'challenge') {
-        await supabase.from('challenges').update({
-          linked_rd_ids: [...(entity.linked_rd_ids || []), rdProject.id]
-        }).eq('id', entity.id);
-      } else if (entityType === 'pilot') {
-        await supabase.from('pilots').update({
-          linked_rd_ids: [...(entity.linked_rd_ids || []), rdProject.id]
-        }).eq('id', entity.id);
-      }
-
-      return rdProject;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries();
-      toast.success(t({ en: 'Routed to Living Lab', ar: 'تم التوجيه للمختبر الحي' }));
-      setRouting(false);
-    }
-  });
-
-  const relevantLabs = livingLabs.filter(lab => 
-    !entity.sector || 
+  const relevantLabs = livingLabs.filter(lab =>
+    !entity.sector ||
     lab.sector_id === entity.sector_id ||
     lab.service_focus_ids?.includes(entity.service_id)
   );
@@ -100,8 +70,8 @@ export default function LabRoutingHub({ entity, entityType }) {
         </div>
 
         <Button
-          onClick={() => routeToLabMutation.mutate()}
-          disabled={!selectedLab || routeToLabMutation.isPending}
+          onClick={handleRoute}
+          disabled={!selectedLab || routeToLab.isPending}
           className="w-full bg-teal-600"
         >
           <ArrowRight className="h-4 w-4 mr-2" />

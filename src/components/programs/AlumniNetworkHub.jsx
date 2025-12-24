@@ -1,49 +1,18 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from '../LanguageContext';
 import { Users, Search, Sparkles, Mail } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useAlumniNetwork } from '@/hooks/useAlumniNetwork';
 
 export default function AlumniNetworkHub({ programId }) {
   const { language, t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState('all');
 
-  const { data: applications = [] } = useQuery({
-    queryKey: ['alumni-applications', programId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('program_applications')
-        .select('*')
-        .eq('program_id', programId)
-        .eq('status', 'accepted');
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!programId
-  });
-
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['alumni-solutions'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('solutions').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['alumni-pilots'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('pilots').select('*').eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { applications, solutions, pilots } = useAlumniNetwork(programId);
 
   const alumni = applications.map(app => ({
     ...app,
@@ -54,7 +23,7 @@ export default function AlumniNetworkHub({ programId }) {
   }));
 
   const filteredAlumni = alumni.filter(a => {
-    const matchesSearch = !searchQuery || 
+    const matchesSearch = !searchQuery ||
       a.startup_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       a.sector?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filter === 'all' || a.sector === filter;

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from './LanguageContext';
 import { Tags, Plus, Trash2, Save, X } from 'lucide-react';
-import { toast } from 'sonner';
+import { useSectors } from '@/hooks/useSectors';
+import { useTags } from '@/hooks/useTags';
+import { useKPIReferences, useKPIReferenceMutations } from '@/hooks/useKPIReferences';
+import { useTaxonomyMutations } from '@/hooks/useTaxonomyMutations';
 
 function TaxonomyManager() {
   const { language, isRTL, t } = useLanguage();
@@ -15,73 +17,32 @@ function TaxonomyManager() {
   const [newSector, setNewSector] = useState(null);
   const [newTag, setNewTag] = useState(null);
   const [newKpi, setNewKpi] = useState(null);
-  const queryClient = useQueryClient();
 
-  const { data: sectors = [] } = useQuery({
-    queryKey: ['sectors'],
-    queryFn: () => base44.entities.Sector.list()
-  });
+  const { data: sectors = [] } = useSectors();
+  const { data: tags = [] } = useTags();
+  const { data: kpiRefs = [] } = useKPIReferences();
 
-  const { data: tags = [] } = useQuery({
-    queryKey: ['tags'],
-    queryFn: () => base44.entities.Tag.list()
-  });
+  const { createSector, deleteSector, createTag, deleteTag } = useTaxonomyMutations();
+  const { createKPIReference, deleteKPIReference } = useKPIReferenceMutations();
 
-  const { data: kpiRefs = [] } = useQuery({
-    queryKey: ['kpi-references'],
-    queryFn: () => base44.entities.KPIReference.list()
-  });
+  // Wrappers to match legacy state handling if needed, or direct usage
+  const handleCreateSector = () => {
+    createSector.mutate(newSector, {
+      onSuccess: () => setNewSector(null)
+    });
+  };
 
-  const createSectorMutation = useMutation({
-    mutationFn: (data) => base44.entities.Sector.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['sectors']);
-      setNewSector(null);
-      toast.success(t({ en: 'Sector created', ar: 'تم إنشاء القطاع' }));
-    }
-  });
+  const handleCreateTag = () => {
+    createTag.mutate(newTag, {
+      onSuccess: () => setNewTag(null)
+    });
+  };
 
-  const createTagMutation = useMutation({
-    mutationFn: (data) => base44.entities.Tag.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['tags']);
-      setNewTag(null);
-      toast.success(t({ en: 'Tag created', ar: 'تم إنشاء الوسم' }));
-    }
-  });
-
-  const createKpiMutation = useMutation({
-    mutationFn: (data) => base44.entities.KPIReference.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['kpi-references']);
-      setNewKpi(null);
-      toast.success(t({ en: 'KPI template created', ar: 'تم إنشاء قالب المؤشر' }));
-    }
-  });
-
-  const deleteSectorMutation = useMutation({
-    mutationFn: (id) => base44.entities.Sector.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['sectors']);
-      toast.success(t({ en: 'Sector deleted', ar: 'تم حذف القطاع' }));
-    }
-  });
-
-  const deleteTagMutation = useMutation({
-    mutationFn: (id) => base44.entities.Tag.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['tags']);
-      toast.success(t({ en: 'Tag deleted', ar: 'تم حذف الوسم' }));
-    }
-  });
-
-  const deleteKpiMutation = useMutation({
-    mutationFn: (id) => base44.entities.KPIReference.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['kpi-references']);
-      toast.success(t({ en: 'KPI deleted', ar: 'تم حذف المؤشر' }));
-    }
-  });
+  const handleCreateKpi = () => {
+    createKPIReference.mutate(newKpi, {
+      onSuccess: () => setNewKpi(null)
+    });
+  };
 
   const renderSectorManager = () => (
     <div className="space-y-4">
@@ -117,7 +78,7 @@ function TaxonomyManager() {
               />
             </div>
             <div className="flex gap-2">
-              <Button size="sm" onClick={() => createSectorMutation.mutate(newSector)} disabled={!newSector.name_en || !newSector.code}>
+              <Button size="sm" onClick={handleCreateSector} disabled={!newSector.name_en || !newSector.code}>
                 <Save className="h-3 w-3" />
               </Button>
               <Button size="sm" variant="outline" onClick={() => setNewSector(null)}>
@@ -142,7 +103,7 @@ function TaxonomyManager() {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => deleteSectorMutation.mutate(sector.id)}>
+                <Button variant="outline" size="sm" onClick={() => deleteSector.mutate(sector.id)}>
                   <Trash2 className="h-4 w-4 text-red-600" />
                 </Button>
               </div>
@@ -182,7 +143,7 @@ function TaxonomyManager() {
               />
             </div>
             <div className="flex gap-2">
-              <Button size="sm" onClick={() => createTagMutation.mutate(newTag)} disabled={!newTag.name_en}>
+              <Button size="sm" onClick={handleCreateTag} disabled={!newTag.name_en}>
                 <Save className="h-3 w-3" />
               </Button>
               <Button size="sm" variant="outline" onClick={() => setNewTag(null)}>
@@ -200,11 +161,11 @@ function TaxonomyManager() {
               <Badge style={{ backgroundColor: tag.color || '#3b82f6', color: 'white' }}>
                 {language === 'ar' ? tag.name_ar : tag.name_en}
               </Badge>
-              <Button variant="outline" size="sm" onClick={() => deleteTagMutation.mutate(tag.id)}>
+              <Button variant="outline" size="sm" onClick={() => deleteTag.mutate(tag.id)}>
                 <Trash2 className="h-3 w-3 text-red-600" />
               </Button>
             </div>
-            <p className="text-xs text-slate-600">Type: {tag.type}</p>
+            <p className="text-xs text-slate-600">Type: {tag.tag_type}</p>
           </div>
         ))}
       </div>
@@ -250,7 +211,7 @@ function TaxonomyManager() {
               />
             </div>
             <div className="flex gap-2">
-              <Button size="sm" onClick={() => createKpiMutation.mutate(newKpi)} disabled={!newKpi.code || !newKpi.name_en}>
+              <Button size="sm" onClick={handleCreateKpi} disabled={!newKpi.code || !newKpi.name_en}>
                 <Save className="h-3 w-3" />
               </Button>
               <Button size="sm" variant="outline" onClick={() => setNewKpi(null)}>
@@ -273,7 +234,7 @@ function TaxonomyManager() {
                 </div>
                 <p className="text-sm text-slate-600">{kpi.code}</p>
               </div>
-              <Button variant="outline" size="sm" onClick={() => deleteKpiMutation.mutate(kpi.id)}>
+              <Button variant="outline" size="sm" onClick={() => deleteKPIReference.mutate(kpi.id)}>
                 <Trash2 className="h-4 w-4 text-red-600" />
               </Button>
             </div>

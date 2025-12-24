@@ -1,38 +1,28 @@
-
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { BookOpen, Award, TestTube, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
+import { useRDProjects } from '@/hooks/useRDProjects';
+import { usePilotsList } from '@/hooks/usePilots';
 
 export default function ResearchOutputImpactTracker({ labId }) {
   const { language, t } = useLanguage();
 
-  const { data: projects = [] } = useQuery({
-    queryKey: ['rd-projects-lab', labId],
-    queryFn: async () => {
-      const all = await base44.entities.RDProject.list();
-      return all.filter(p => p.living_lab_id === labId);
-    }
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
+  const { data: projects = [] } = useRDProjects({ living_lab_id: labId });
+  const { data: pilots = [] } = usePilotsList();
 
   const totalPublications = projects.reduce((sum, p) => sum + (p.publications?.length || 0), 0);
-  const totalCitations = projects.reduce((sum, p) => 
+  const totalCitations = projects.reduce((sum, p) =>
     sum + (p.publications?.reduce((s, pub) => s + (pub.citations || 0), 0) || 0), 0);
   const totalPatents = projects.reduce((sum, p) => sum + (p.patents?.length || 0), 0);
 
-  const pilotConversions = projects.filter(p => 
+  const pilotConversions = projects.filter(p =>
     pilots.some(pilot => pilot.rd_project_id === p.id)
   );
 
-  const deployments = pilots.filter(p => 
+  const deployments = pilots.filter(p =>
     projects.some(proj => proj.id === p.rd_project_id) && p.stage === 'scaled'
   );
 
@@ -82,7 +72,7 @@ export default function ResearchOutputImpactTracker({ labId }) {
             {t({ en: 'Impact Summary', ar: 'ملخص التأثير' })}
           </h4>
           <p className="text-sm text-slate-700">
-            {t({ 
+            {t({
               en: `Lab research generated ${totalPublications} publications (${totalCitations} citations), ${totalPatents} patents, resulted in ${pilotConversions.length} municipal pilots with ${deployments.length} scaled deployments.`,
               ar: `بحث المختبر ولّد ${totalPublications} منشور (${totalCitations} اقتباس)، ${totalPatents} براءة اختراع، أدى إلى ${pilotConversions.length} تجربة بلدية مع ${deployments.length} عمليات نشر موسعة.`
             })}

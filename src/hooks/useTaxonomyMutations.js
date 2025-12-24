@@ -77,8 +77,67 @@ export function useTaxonomyMutations() {
         }
     });
 
+    // --- Services ---
+    const createService = useMutation({
+        mutationFn: async (data) => {
+            const { data: newService, error } = await supabase.from('services').insert(data).select().single();
+            if (error) throw error;
+            return newService;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['services']);
+            toast.success('Service created');
+        }
+    });
+
+    const updateService = useMutation({
+        mutationFn: async ({ id, data }) => {
+            const { data: updated, error } = await supabase.from('services').update(data).eq('id', id).select().single();
+            if (error) throw error;
+            return updated;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['services']);
+            toast.success('Service updated');
+        }
+    });
+
+    const deleteService = useMutation({
+        mutationFn: async (id) => {
+            const { error } = await supabase.from('services').delete().eq('id', id);
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['services']);
+            toast.success('Service deleted');
+        }
+    });
+
     // --- Tags ---
-    // (Assuming tags might strictly need mutation later, but Builder fetched them)
+    const createTag = useMutation({
+        mutationFn: async (data) => {
+            const { data: newTag, error } = await supabase.from('tags').insert(data).select().single();
+            if (error) throw error;
+            return newTag;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['tags']);
+            queryClient.invalidateQueries(['tags-all']); // Invalidate both potential keys
+            toast.success('Tag created');
+        }
+    });
+
+    const deleteTag = useMutation({
+        mutationFn: async (id) => {
+            const { error } = await supabase.from('tags').delete().eq('id', id);
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['tags']);
+            queryClient.invalidateQueries(['tags-all']);
+            toast.success('Tag deleted');
+        }
+    });
 
     return {
         createSector,
@@ -86,6 +145,11 @@ export function useTaxonomyMutations() {
         deleteSector,
         createSubsector,
         updateSubsector,
-        deleteSubsector
+        deleteSubsector,
+        createService,
+        updateService,
+        deleteService,
+        createTag,
+        deleteTag
     };
 }

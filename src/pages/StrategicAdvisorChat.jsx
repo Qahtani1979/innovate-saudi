@@ -16,9 +16,7 @@ function StrategicAdvisorChat() {
   const [loading, setLoading] = useState(false);
 
   /* 
-   * MIGRATION NOTE: Replaced base44.agents with useAIWithFallback
-   * Level 6 Verification: Data Layer Integration
-   * TODO: Implement Supabase persistence for chat history if needed in future phases.
+   * Local chat state management
    */
   const { invokeAI, isLoading: aiLoading } = useAIWithFallback();
 

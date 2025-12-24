@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useLivingLabMutations } from '@/hooks/useLivingLabs';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,7 +11,6 @@ import { useAuth } from '@/lib/AuthContext';
 
 export default function LivingLabAccreditationWorkflow({ lab, onClose }) {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
   const [criteria, setCriteria] = useState({
     infrastructure: false,
@@ -25,22 +23,21 @@ export default function LivingLabAccreditationWorkflow({ lab, onClose }) {
 
   const allMet = Object.values(criteria).every(v => v);
 
-  const accreditMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from('living_labs').update({
+  const { accreditLab } = useLivingLabMutations();
+
+  const handleAccredit = () => {
+    accreditLab.mutate({
+      labId: lab.id,
+      accreditationData: {
         accreditation_status: 'accredited',
         accreditation_date: new Date().toISOString(),
         accredited_by: user?.email,
         accreditation_notes: notes
-      }).eq('id', lab.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['livinglab']);
-      toast.success(t({ en: 'Lab accredited', ar: 'تم اعتماد المختبر' }));
-      onClose?.();
-    }
-  });
+      }
+    }, {
+      onSuccess: () => onClose?.()
+    });
+  };
 
   return (
     <Card className="border-2 border-teal-400">
@@ -72,8 +69,8 @@ export default function LivingLabAccreditationWorkflow({ lab, onClose }) {
         <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t({ en: 'Accreditation notes...', ar: 'ملاحظات الاعتماد...' })} rows={3} />
 
         <Button
-          onClick={() => accreditMutation.mutate()}
-          disabled={!allMet || accreditMutation.isPending}
+          onClick={handleAccredit}
+          disabled={!allMet || accreditLab.isPending}
           className="w-full bg-gradient-to-r from-teal-600 to-cyan-600"
           size="lg"
         >

@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useLivingLabActivities, useRecentLivingLabBookings } from '@/hooks/useLivingLabActivity';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -8,37 +7,8 @@ import { Activity, Calendar, Clock, User } from 'lucide-react';
 export default function LivingLabActivityLog({ livingLabId }) {
   const { t, language } = useLanguage();
 
-  const { data: activities = [] } = useQuery({
-    queryKey: ['lab-activities', livingLabId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('system_activities')
-        .select('*')
-        .eq('entity_id', livingLabId)
-        .eq('entity_type', 'LivingLab')
-        .order('created_date', { ascending: false })
-        .limit(100);
-
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: bookings = [] } = useQuery({
-    queryKey: ['lab-bookings', livingLabId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('living_lab_bookings')
-        .select('*')
-        .eq('living_lab_id', livingLabId)
-        .order('created_date', { ascending: false })
-        .limit(30);
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!livingLabId
-  });
+  const { data: activities = [] } = useLivingLabActivities(livingLabId);
+  const { data: bookings = [] } = useRecentLivingLabBookings(livingLabId);
 
   const allEvents = [
     ...activities.map(a => ({ ...a, type: 'activity' })),
@@ -86,8 +56,8 @@ export default function LivingLabActivityLog({ livingLabId }) {
                   )}
                   {event.booking_status && (
                     <Badge className={`mt-2 text-xs ${event.booking_status === 'approved' ? 'bg-green-600' :
-                        event.booking_status === 'pending' ? 'bg-yellow-600' :
-                          'bg-slate-600'
+                      event.booking_status === 'pending' ? 'bg-yellow-600' :
+                        'bg-slate-600'
                       }`}>
                       {event.booking_status}
                     </Badge>

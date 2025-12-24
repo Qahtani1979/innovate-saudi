@@ -9,8 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useStrategyOwnership } from '@/hooks/strategy';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useStrategyAIGeneration } from '@/hooks/useStrategyAIGeneration';
+import { useUserProfiles } from '@/hooks/useUserProfiles';
 import {
   Users,
   UserCog,
@@ -42,7 +42,7 @@ const StrategyOwnershipAssigner = ({ strategicPlanId, strategicPlan, objectives 
   const { t, isRTL } = useLanguage();
   const { toast } = useToast();
   const planId = strategicPlanId || strategicPlan?.id;
-  
+
   const {
     assignments: dbAssignments,
     isLoading,
@@ -51,49 +51,27 @@ const StrategyOwnershipAssigner = ({ strategicPlanId, strategicPlan, objectives 
     deleteAssignment
   } = useStrategyOwnership(planId);
 
+  const { generateOwnership } = useStrategyAIGeneration();
+
   // Fetch real users from the platform for assignment selection
-  const { data: platformUsers = [] } = useQuery({
-    queryKey: ['platform-users-for-ownership'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('user_email, full_name, persona_type, municipality_id')
-        .order('full_name');
-      if (error) return [];
-      return data?.map(u => ({
-        email: u.user_email,
-        name: u.full_name || u.user_email,
-        role: u.persona_type || 'User'
-      })) || [];
-    }
-  });
+  const { data: platformUsers = [] } = useUserProfiles();
 
-  // Fetch team members for quick assignment
-  const { data: teamMembers = [] } = useQuery({
-    queryKey: ['team-members-for-ownership'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('team_members')
-        .select('id, user_email, role, team_id')
-        .order('created_at', { ascending: false })
-        .limit(50);
-      if (error) return [];
-      return data || [];
-    }
-  });
-
-  // Use platform users if available, fallback to sample
-  const availableUsers = platformUsers.length > 0 ? platformUsers : [
+  // Transform user profiles to assignment format
+  const availableUsers = platformUsers.length > 0 ? platformUsers.map(u => ({
+    email: u.user_email,
+    name: u.full_name || u.user_email,
+    role: u.persona_type || 'User'
+  })) : [
     { email: 'director@innovation.gov.sa', name: 'Ahmed Al-Rashid', role: 'Innovation Director' },
     { email: 'manager@digital.gov.sa', name: 'Fatima Al-Qahtani', role: 'Digital Transformation Manager' },
     { email: 'analyst@strategy.gov.sa', name: 'Mohammed Al-Harbi', role: 'Strategy Analyst' },
     { email: 'coordinator@muni.gov.sa', name: 'Sara Al-Dosari', role: 'Municipality Coordinator' }
   ];
-  
+
   const [activeTab, setActiveTab] = useState('assignments');
-  
+
   const [assignments, setAssignments] = useState([]);
-  
+
   useEffect(() => {
     if (dbAssignments && dbAssignments.length > 0) {
       setAssignments(dbAssignments);
@@ -116,15 +94,15 @@ const StrategyOwnershipAssigner = ({ strategicPlanId, strategicPlan, objectives 
   const [newInformed, setNewInformed] = useState({});
 
   const updateAssignment = (objectiveId, field, value) => {
-    setAssignments(prev => prev.map(a => 
+    setAssignments(prev => prev.map(a =>
       a.objective_id === objectiveId ? { ...a, [field]: value } : a
     ));
   };
 
   const addToList = (objectiveId, field, value) => {
     if (!value) return;
-    setAssignments(prev => prev.map(a => 
-      a.objective_id === objectiveId 
+    setAssignments(prev => prev.map(a =>
+      a.objective_id === objectiveId
         ? { ...a, [field]: [...a[field], value] }
         : a
     ));
@@ -136,53 +114,58 @@ const StrategyOwnershipAssigner = ({ strategicPlanId, strategicPlan, objectives 
   };
 
   const removeFromList = (objectiveId, field, index) => {
-    setAssignments(prev => prev.map(a => 
-      a.objective_id === objectiveId 
+    setAssignments(prev => prev.map(a =>
+      a.objective_id === objectiveId
         ? { ...a, [field]: a[field].filter((_, i) => i !== index) }
         : a
     ));
   };
 
   const [isSuggestingAI, setIsSuggestingAI] = useState(false);
+  const { generateOwnership } = useStrategyAIGeneration();
 
   const suggestWithAI = async () => {
     setIsSuggestingAI(true);
     try {
-      const { data, error } = await supabase.functions.invoke('strategy-ownership-ai', {
-        body: {
-          objectives: assignments.map(a => ({
-            objective_id: a.objective_id,
-            title_en: a.objective_title
-          })),
-          available_users: availableUsers,
-          strategic_plan_context: strategicPlan?.vision_en || 'Municipal Innovation Strategy'
+      generateOwnership.mutate({
+        objectives: assignments.map(a => ({
+          objective_id: a.objective_id,
+          title_en: a.objective_title
+        })),
+        available_users: availableUsers,
+        strategic_plan_context: strategicPlan?.vision_en || 'Municipal Innovation Strategy'
+      }, {
+        onSuccess: (data) => {
+          if (data?.error) {
+            throw new Error(data.error);
+          }
+          const { assignments: aiAssignments } = data;
+          setAssignments(prev => prev.map((a, index) => {
+            const suggestion = aiAssignments?.find(s => s.objective_index === index);
+            if (!suggestion) return a;
+            return {
+              ...a,
+              responsible: suggestion.responsible || a.responsible,
+              accountable: suggestion.accountable || a.accountable,
+              consulted: [...new Set([...a.consulted, ...(suggestion.consulted || [])])],
+              informed: [...new Set([...a.informed, ...(suggestion.informed || [])])]
+            };
+          }));
+          toast({
+            title: t({ en: 'AI Suggestions Applied', ar: 'تم تطبيق اقتراحات الذكاء الاصطناعي' }),
+            description: t({ en: 'RACI assignments suggested based on roles and objectives', ar: 'تم اقتراح تعيينات RACI بناءً على الأدوار والأهداف' })
+          });
+        },
+        onError: (error) => {
+          toast({
+            title: t({ en: 'Suggestion Failed', ar: 'فشل الاقتراح' }),
+            description: error.message,
+            variant: 'destructive'
+          });
+        },
+        onSettled: () => {
+          setIsSuggestingAI(false);
         }
-      });
-
-      if (error) throw error;
-      
-      if (data?.error) {
-        throw new Error(data.error);
-      }
-
-      const { assignments: aiAssignments } = data;
-
-      setAssignments(prev => prev.map((a, index) => {
-        const suggestion = aiAssignments?.find(s => s.objective_index === index);
-        if (!suggestion) return a;
-        
-        return {
-          ...a,
-          responsible: suggestion.responsible || a.responsible,
-          accountable: suggestion.accountable || a.accountable,
-          consulted: [...new Set([...a.consulted, ...(suggestion.consulted || [])])],
-          informed: [...new Set([...a.informed, ...(suggestion.informed || [])])]
-        };
-      }));
-
-      toast({
-        title: t({ en: 'AI Suggestions Applied', ar: 'تم تطبيق اقتراحات الذكاء الاصطناعي' }),
-        description: t({ en: 'RACI assignments suggested based on roles and objectives', ar: 'تم اقتراح تعيينات RACI بناءً على الأدوار والأهداف' })
       });
     } catch (error) {
       toast({
@@ -190,7 +173,6 @@ const StrategyOwnershipAssigner = ({ strategicPlanId, strategicPlan, objectives 
         description: error.message,
         variant: 'destructive'
       });
-    } finally {
       setIsSuggestingAI(false);
     }
   };
@@ -252,8 +234,8 @@ const StrategyOwnershipAssigner = ({ strategicPlanId, strategicPlan, objectives 
                 <p className="text-sm text-slate-500">{t({ en: 'Completion', ar: 'الاكتمال' })}</p>
                 <p className="text-2xl font-bold text-indigo-600">{status.percentage}%</p>
               </div>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={suggestWithAI}
                 disabled={isSuggestingAI}
               >
@@ -507,7 +489,7 @@ const StrategyOwnershipAssigner = ({ strategicPlanId, strategicPlan, objectives 
                         else if (assignment.accountable === user.email) { role = 'A'; color = 'bg-purple-500'; }
                         else if (assignment.consulted.includes(user.email)) { role = 'C'; color = 'bg-amber-500'; }
                         else if (assignment.informed.includes(user.email)) { role = 'I'; color = 'bg-green-500'; }
-                        
+
                         return (
                           <td key={user.email} className="p-2 text-center">
                             {role && (

@@ -1,42 +1,29 @@
 
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { TrendingUp, Calendar, Rocket, Target } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useSolutions } from '@/hooks/useSolutions';
+import { usePilotsList } from '@/hooks/usePilots';
+import { useStartup } from '@/hooks/useStartups';
 
 export default function StartupJourneyAnalytics({ startupId }) {
   const { t } = useLanguage();
 
-  const { data: startup } = useQuery({
-    queryKey: ['startup-journey', startupId],
-    queryFn: async () => {
-      const all = await base44.entities.StartupProfile.list();
-      return all.find(s => s.id === startupId);
-    }
-  });
+  const { data: startup } = useStartup(startupId);
+  const { solutions = [] } = useSolutions({ publishedOnly: false });
+  const providerSolutions = solutions.filter(s => s.provider_id === startupId);
+  const providerSolutionIds = providerSolutions.map(s => s.id);
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['startup-solutions-journey', startupId],
-    queryFn: async () => {
-      const all = await base44.entities.Solution.list();
-      return all.filter(s => s.provider_id === startupId);
-    }
-  });
+  const { data: allPilots = [] } = usePilotsList();
+  const pilots = allPilots.filter(p => providerSolutionIds.includes(p.solution_id));
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['startup-pilots-journey', startupId],
-    queryFn: async () => {
-      const solutionIds = solutions.map(s => s.id);
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => solutionIds.includes(p.solution_id));
-    },
-    enabled: solutions.length > 0
-  });
+  // Derive unique municipalities (clients) from pilots
+  const uniqueMunicipalities = new Set(pilots.map(p => p.municipality_id).filter(Boolean));
 
   const registrationDate = startup?.created_date ? new Date(startup.created_date) : null;
-  const daysSinceRegistration = registrationDate 
+  const daysSinceRegistration = registrationDate
     ? Math.floor((new Date() - registrationDate) / (1000 * 60 * 60 * 24))
     : 0;
 
@@ -49,10 +36,10 @@ export default function StartupJourneyAnalytics({ startupId }) {
 
   const growthData = [
     { month: 'Month 0', solutions: 0, pilots: 0, clients: 0 },
-    { month: 'Month 1', solutions: solutions.length > 0 ? 1 : 0, pilots: 0, clients: 0 },
-    { month: 'Month 2', solutions: solutions.length, pilots: Math.floor(pilots.length * 0.3), clients: 0 },
-    { month: 'Month 3', solutions: solutions.length, pilots: Math.floor(pilots.length * 0.6), clients: Math.floor(uniqueMunicipalities.size * 0.5) },
-    { month: 'Now', solutions: solutions.length, pilots: pilots.length, clients: uniqueMunicipalities.size }
+    { month: 'Month 1', solutions: providerSolutions.length > 0 ? 1 : 0, pilots: 0, clients: 0 },
+    { month: 'Month 2', solutions: providerSolutions.length, pilots: Math.floor(pilots.length * 0.3), clients: 0 },
+    { month: 'Month 3', solutions: providerSolutions.length, pilots: Math.floor(pilots.length * 0.6), clients: Math.floor(uniqueMunicipalities.size * 0.5) },
+    { month: 'Now', solutions: providerSolutions.length, pilots: pilots.length, clients: uniqueMunicipalities.size }
   ];
 
   return (

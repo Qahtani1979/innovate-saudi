@@ -6,15 +6,15 @@ import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { 
+import {
   Brain, Loader2, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle,
-  Target, TrendingUp, AlertCircle, Lightbulb, Award, BarChart3, 
+  Target, TrendingUp, AlertCircle, Lightbulb, Award, BarChart3,
   RefreshCw, Zap, ArrowRight, XCircle, ExternalLink, ListPlus,
   Navigation, Wand2
 } from 'lucide-react';
 import { useLanguage } from '../../LanguageContext';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useStrategyAIGeneration } from '@/hooks/useStrategyAIGeneration';
 
 // Map section names to wizard step numbers
 const SECTION_TO_STEP = {
@@ -60,13 +60,14 @@ const SECTION_TO_STEP = {
   'Change Readiness': 17
 };
 
-export default function AIStrategicPlanAnalyzer({ 
-  planData, 
+export default function AIStrategicPlanAnalyzer({
+  planData,
   onNavigateToStep,
   onApplySuggestion,
   onCreateTask
 }) {
   const { language, t, isRTL } = useLanguage();
+  const { analyzeStrategicPlan } = useStrategyAIGeneration();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState(null);
   const [analysisLanguage, setAnalysisLanguage] = useState(null); // Track which language the analysis was done in
@@ -97,23 +98,28 @@ export default function AIStrategicPlanAnalyzer({
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
     setError(null);
-    
-    try {
-      const { data, error: fnError } = await supabase.functions.invoke('analyze-strategic-plan', {
-        body: { planData, language }
-      });
 
-      if (fnError) throw fnError;
-      if (data.error) throw new Error(data.error);
-      
-      setAnalysis(data.analysis);
-      setAnalysisLanguage(language); // Store which language the analysis was done in
-      toast.success(t({ en: 'Analysis complete', ar: 'اكتمل التحليل' }));
+    try {
+      analyzeStrategicPlan.mutate({ planData, language }, {
+        onSuccess: (data) => {
+          if (data.error) throw new Error(data.error);
+          setAnalysis(data.analysis);
+          setAnalysisLanguage(language);
+          toast.success(t({ en: 'Analysis complete', ar: 'اكتمل التحليل' }));
+        },
+        onError: (err) => {
+          console.error('Analysis error:', err);
+          setError(err.message);
+          toast.error(t({ en: 'Failed to analyze plan', ar: 'فشل تحليل الخطة' }));
+        },
+        onSettled: () => {
+          setIsAnalyzing(false);
+        }
+      });
     } catch (err) {
       console.error('Analysis error:', err);
       setError(err.message);
       toast.error(t({ en: 'Failed to analyze plan', ar: 'فشل تحليل الخطة' }));
-    } finally {
       setIsAnalyzing(false);
     }
   };
@@ -121,7 +127,7 @@ export default function AIStrategicPlanAnalyzer({
   const findStepForSection = (sectionName) => {
     // Try exact match first
     if (SECTION_TO_STEP[sectionName]) return SECTION_TO_STEP[sectionName];
-    
+
     // Try partial match
     const lowerName = sectionName.toLowerCase();
     for (const [key, step] of Object.entries(SECTION_TO_STEP)) {
@@ -145,7 +151,7 @@ export default function AIStrategicPlanAnalyzer({
   const handleApply = async (type, item, index) => {
     const key = `${type}-${index}`;
     setApplyingItems(prev => ({ ...prev, [key]: true }));
-    
+
     try {
       if (onApplySuggestion) {
         await onApplySuggestion(type, item);
@@ -161,7 +167,7 @@ export default function AIStrategicPlanAnalyzer({
   const handleCreateTask = async (recommendation, index) => {
     const key = `task-${index}`;
     setCreatingTasks(prev => ({ ...prev, [key]: true }));
-    
+
     try {
       if (onCreateTask) {
         await onCreateTask({
@@ -226,7 +232,7 @@ export default function AIStrategicPlanAnalyzer({
 
   const SectionToggle = ({ sectionKey, title, icon: Icon, count }) => (
     <CollapsibleTrigger asChild>
-      <div 
+      <div
         className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50 rounded-lg transition-colors"
       >
         <div className="flex items-center gap-2">
@@ -246,10 +252,10 @@ export default function AIStrategicPlanAnalyzer({
   );
 
   const ActionButton = ({ onClick, icon: Icon, label, loading, variant = 'outline', size = 'xs' }) => (
-    <Button 
-      variant={variant} 
-      size={size} 
-      onClick={onClick} 
+    <Button
+      variant={variant}
+      size={size}
+      onClick={onClick}
       disabled={loading}
       className="h-6 text-xs gap-1"
     >
@@ -268,8 +274,8 @@ export default function AIStrategicPlanAnalyzer({
               {t({ en: 'AI Plan Analyzer', ar: 'محلل الخطة الذكي' })}
             </CardTitle>
           </div>
-          <Button 
-            onClick={handleAnalyze} 
+          <Button
+            onClick={handleAnalyze}
             disabled={isAnalyzing}
             size="sm"
           >
@@ -292,9 +298,9 @@ export default function AIStrategicPlanAnalyzer({
           </Button>
         </div>
         <CardDescription>
-          {t({ 
-            en: 'Get AI-powered insights with actionable recommendations you can apply directly', 
-            ar: 'احصل على رؤى مدعومة بالذكاء الاصطناعي مع توصيات قابلة للتنفيذ مباشرة' 
+          {t({
+            en: 'Get AI-powered insights with actionable recommendations you can apply directly',
+            ar: 'احصل على رؤى مدعومة بالذكاء الاصطناعي مع توصيات قابلة للتنفيذ مباشرة'
           })}
         </CardDescription>
       </CardHeader>
@@ -313,9 +319,9 @@ export default function AIStrategicPlanAnalyzer({
           <div className="text-center py-8 text-muted-foreground">
             <Brain className="h-12 w-12 mx-auto mb-3 opacity-30" />
             <p className="text-sm">
-              {t({ 
-                en: 'Click "Analyze Plan" to get AI-powered evaluation and actionable recommendations', 
-                ar: 'اضغط "تحليل الخطة" للحصول على تقييم وتوصيات قابلة للتنفيذ' 
+              {t({
+                en: 'Click "Analyze Plan" to get AI-powered evaluation and actionable recommendations',
+                ar: 'اضغط "تحليل الخطة" للحصول على تقييم وتوصيات قابلة للتنفيذ'
               })}
             </p>
           </div>
@@ -350,7 +356,7 @@ export default function AIStrategicPlanAnalyzer({
                 </div>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
               <div className="text-center p-2 bg-background rounded-lg">
                 <p className={`text-2xl font-bold ${getScoreColor(analysis.executive_summary?.overall_score)}`}>
@@ -364,7 +370,7 @@ export default function AIStrategicPlanAnalyzer({
                 </Badge>
               </div>
             </div>
-            
+
             <p className="text-sm text-muted-foreground">
               {analysis.executive_summary?.verdict}
             </p>
@@ -408,10 +414,10 @@ export default function AIStrategicPlanAnalyzer({
 
           {/* Detailed Scores */}
           <Collapsible open={expandedSections.scores} onOpenChange={() => toggleSection('scores')}>
-            <SectionToggle 
-              sectionKey="scores" 
-              title={t({ en: 'Detailed Scores', ar: 'النتائج التفصيلية' })} 
-              icon={BarChart3} 
+            <SectionToggle
+              sectionKey="scores"
+              title={t({ en: 'Detailed Scores', ar: 'النتائج التفصيلية' })}
+              icon={BarChart3}
             />
             <CollapsibleContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-3">
@@ -453,10 +459,10 @@ export default function AIStrategicPlanAnalyzer({
 
           {/* Strengths */}
           <Collapsible open={expandedSections.strengths} onOpenChange={() => toggleSection('strengths')}>
-            <SectionToggle 
-              sectionKey="strengths" 
-              title={t({ en: 'Strengths', ar: 'نقاط القوة' })} 
-              icon={Award} 
+            <SectionToggle
+              sectionKey="strengths"
+              title={t({ en: 'Strengths', ar: 'نقاط القوة' })}
+              icon={Award}
               count={analysis.strengths?.length}
             />
             <CollapsibleContent>
@@ -473,10 +479,10 @@ export default function AIStrategicPlanAnalyzer({
 
           {/* Critical Gaps - Actionable */}
           <Collapsible open={expandedSections.gaps} onOpenChange={() => toggleSection('gaps')}>
-            <SectionToggle 
-              sectionKey="gaps" 
-              title={t({ en: 'Critical Gaps', ar: 'الفجوات الحرجة' })} 
-              icon={AlertCircle} 
+            <SectionToggle
+              sectionKey="gaps"
+              title={t({ en: 'Critical Gaps', ar: 'الفجوات الحرجة' })}
+              icon={AlertCircle}
               count={analysis.critical_gaps?.length}
             />
             <CollapsibleContent>
@@ -520,10 +526,10 @@ export default function AIStrategicPlanAnalyzer({
 
           {/* Section Analysis - Actionable */}
           <Collapsible open={expandedSections.sections} onOpenChange={() => toggleSection('sections')}>
-            <SectionToggle 
-              sectionKey="sections" 
-              title={t({ en: 'Section-by-Section Analysis', ar: 'تحليل كل قسم' })} 
-              icon={Target} 
+            <SectionToggle
+              sectionKey="sections"
+              title={t({ en: 'Section-by-Section Analysis', ar: 'تحليل كل قسم' })}
+              icon={Target}
               count={analysis.section_analysis?.length}
             />
             <CollapsibleContent>
@@ -592,10 +598,10 @@ export default function AIStrategicPlanAnalyzer({
 
           {/* SMART KPI Analysis - Actionable */}
           <Collapsible open={expandedSections.kpis} onOpenChange={() => toggleSection('kpis')}>
-            <SectionToggle 
-              sectionKey="kpis" 
-              title={t({ en: 'SMART KPI Analysis', ar: 'تحليل مؤشرات SMART' })} 
-              icon={TrendingUp} 
+            <SectionToggle
+              sectionKey="kpis"
+              title={t({ en: 'SMART KPI Analysis', ar: 'تحليل مؤشرات SMART' })}
+              icon={TrendingUp}
             />
             <CollapsibleContent>
               <div className="p-3">
@@ -651,10 +657,10 @@ export default function AIStrategicPlanAnalyzer({
 
           {/* Strategic Recommendations - Actionable with Task Creation */}
           <Collapsible open={expandedSections.recommendations} onOpenChange={() => toggleSection('recommendations')}>
-            <SectionToggle 
-              sectionKey="recommendations" 
-              title={t({ en: 'Strategic Recommendations', ar: 'التوصيات الاستراتيجية' })} 
-              icon={Lightbulb} 
+            <SectionToggle
+              sectionKey="recommendations"
+              title={t({ en: 'Strategic Recommendations', ar: 'التوصيات الاستراتيجية' })}
+              icon={Lightbulb}
               count={analysis.strategic_recommendations?.length}
             />
             <CollapsibleContent>

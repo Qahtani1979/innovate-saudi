@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -9,18 +8,18 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../LanguageContext';
 import { TestTube, Loader2, Sparkles } from 'lucide-react';
-import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
-import { useEmailTrigger } from '@/hooks/useEmailTrigger';
-import { 
-  PROGRAM_PILOT_SYSTEM_PROMPT, 
-  buildProgramPilotPrompt, 
-  PROGRAM_PILOT_SCHEMA 
+import usePilotMutations from '@/hooks/usePilotMutations';
+import { toast } from 'sonner';
+import {
+  PROGRAM_PILOT_SYSTEM_PROMPT,
+  buildProgramPilotPrompt,
+  PROGRAM_PILOT_SCHEMA
 } from '@/lib/ai/prompts/programs/pilotWorkflow';
 
 export default function ProgramToPilotWorkflow({ program, graduateApplication }) {
@@ -30,7 +29,7 @@ export default function ProgramToPilotWorkflow({ program, graduateApplication })
   const [loading, setLoading] = useState(false);
   const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
   const { user } = useAuth();
-  const { triggerEmail } = useEmailTrigger();
+  const { createPilot } = usePilotMutations();
 
   // Use visibility-aware hooks
   const { data: municipalities = [] } = useMunicipalitiesWithVisibility({ includeNational: true });
@@ -52,59 +51,26 @@ export default function ProgramToPilotWorkflow({ program, graduateApplication })
       prompt: buildProgramPilotPrompt({ program, graduateApplication }),
       response_json_schema: PROGRAM_PILOT_SCHEMA
     });
-    
+
     if (result.success) {
       setFormData(prev => ({ ...prev, ...result.data }));
       toast.success(t({ en: 'Pilot proposal generated', ar: 'تم توليد مقترح التجربة' }));
     }
   };
 
-  const handleSubmit = async () => {
-    setLoading(true);
-    try {
-      const { data: pilot, error } = await supabase.from('pilots').insert({
-        ...formData,
-        stage: 'design',
-        trl_start: 5,
-        trl_target: 7
-      }).select().single();
-      if (error) throw error;
-
-      await supabase.from('challenge_relations').insert({
-        challenge_id: program.id,
-        related_entity_type: 'pilot',
-        related_entity_id: pilot.id,
-        relation_role: 'derived_from'
-      });
-
-      await supabase.from('system_activities').insert({
-        entity_type: 'program',
-        entity_id: program.id,
-        activity_type: 'pilot_created',
-        performed_by: user?.email,
-        timestamp: new Date().toISOString(),
-        metadata: { pilot_id: pilot.id }
-      });
-
-      // Send pilot created email notification using hook
-      await triggerEmail('pilot.created', {
-        entityType: 'pilot',
-        entityId: pilot.id,
-        variables: {
-          pilot_title: formData.title_en || formData.title_ar,
-          pilot_code: pilot.code || `PLT-${pilot.id.substring(0, 8)}`,
-          program_name: program.name_en,
-          start_date: formData.start_date || new Date().toISOString().split('T')[0]
-        }
-      }).catch(err => console.error('Email trigger failed:', err));
-
-      toast.success(t({ en: 'Pilot created', ar: 'تم إنشاء التجربة' }));
-      navigate(createPageUrl(`PilotDetail?id=${pilot.id}`));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to create pilot', ar: 'فشل إنشاء التجربة' }));
-    } finally {
-      setLoading(false);
-    }
+  const handleSubmit = () => {
+    createPilot.mutate({
+      ...formData,
+      stage: 'design',
+      trl_start: 5,
+      trl_target: 7
+    }, {
+      onSuccess: (pilot) => {
+        toast.success(t({ en: 'Pilot created from program', ar: 'تم إنشاء التجربة من البرنامج' }));
+        navigate(createPageUrl(`PilotDetail?id=${pilot.id}`));
+        setOpen(false);
+      }
+    });
   };
 
   return (
@@ -138,17 +104,17 @@ export default function ProgramToPilotWorkflow({ program, graduateApplication })
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Title (EN)</Label>
-              <Input value={formData.title_en} onChange={(e) => setFormData({...formData, title_en: e.target.value})} />
+              <Input value={formData.title_en} onChange={(e) => setFormData({ ...formData, title_en: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label>العنوان (AR)</Label>
-              <Input value={formData.title_ar} onChange={(e) => setFormData({...formData, title_ar: e.target.value})} dir="rtl" />
+              <Input value={formData.title_ar} onChange={(e) => setFormData({ ...formData, title_ar: e.target.value })} dir="rtl" />
             </div>
           </div>
 
           <div className="space-y-2">
             <Label>Municipality</Label>
-            <Select value={formData.municipality_id} onValueChange={(v) => setFormData({...formData, municipality_id: v})}>
+            <Select value={formData.municipality_id} onValueChange={(v) => setFormData({ ...formData, municipality_id: v })}>
               <SelectTrigger>
                 <SelectValue placeholder="Select municipality" />
               </SelectTrigger>
@@ -162,12 +128,12 @@ export default function ProgramToPilotWorkflow({ program, graduateApplication })
 
           <div className="space-y-2">
             <Label>Description (EN)</Label>
-            <Textarea value={formData.description_en} onChange={(e) => setFormData({...formData, description_en: e.target.value})} rows={4} />
+            <Textarea value={formData.description_en} onChange={(e) => setFormData({ ...formData, description_en: e.target.value })} rows={4} />
           </div>
 
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setOpen(false)}>{t({ en: 'Cancel', ar: 'إلغاء' })}</Button>
-            <Button onClick={handleSubmit} disabled={loading || !formData.municipality_id}>
+            <Button onClick={handleSubmit} disabled={createPilot.isPending || !formData.municipality_id}>
               {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
               {t({ en: 'Create Pilot', ar: 'إنشاء تجربة' })}
             </Button>

@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,12 +6,11 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
 import { Users, CheckCircle2, XCircle, Clock } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+import { useSandboxEvaluations, useSandboxEvaluationMutations } from '@/hooks/useSandboxEvaluations';
 
 export default function MultiStakeholderApprovalPanel({ sandboxApplicationId }) {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
   const [evaluating, setEvaluating] = useState(false);
   const [myEvaluation, setMyEvaluation] = useState({
@@ -25,44 +22,18 @@ export default function MultiStakeholderApprovalPanel({ sandboxApplicationId }) 
     recommendation: 'approve'
   });
 
-  const { data: evaluations = [] } = useQuery({
-    queryKey: ['sandbox-evaluations', sandboxApplicationId],
-    queryFn: async () => {
-      const { data } = await supabase.from('sandbox_application_evaluations').select('*').eq('sandbox_application_id', sandboxApplicationId);
-      return data || [];
-    }
-  });
+  const { data: evaluations = [] } = useSandboxEvaluations(sandboxApplicationId);
+  const { submitEvaluation } = useSandboxEvaluationMutations();
 
-  const submitEvaluationMutation = useMutation({
-    mutationFn: async () => {
-      const overall = Math.round(
-        (myEvaluation.safety_score * 0.3) +
-        (myEvaluation.regulatory_compliance_score * 0.3) +
-        (myEvaluation.technical_feasibility_score * 0.2) +
-        (myEvaluation.infrastructure_readiness_score * 0.2)
-      );
-
-      const { error } = await supabase.from('sandbox_application_evaluations').insert({
-        sandbox_application_id: sandboxApplicationId,
-        evaluator_email: user?.email,
-        evaluator_role: 'technical_expert',
-        safety_score: myEvaluation.safety_score,
-        regulatory_compliance_score: myEvaluation.regulatory_compliance_score,
-        technical_feasibility_score: myEvaluation.technical_feasibility_score,
-        infrastructure_readiness_score: myEvaluation.infrastructure_readiness_score,
-        overall_score: overall,
-        recommendation: myEvaluation.recommendation,
-        evaluation_notes: myEvaluation.evaluation_notes,
-        evaluation_date: new Date().toISOString()
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sandbox-evaluations'] });
-      toast.success(t({ en: 'Evaluation submitted', ar: 'تم تقديم التقييم' }));
-      setEvaluating(false);
-    }
-  });
+  const handleSubmit = () => {
+    submitEvaluation.mutate({
+      sandboxApplicationId,
+      userEmail: user?.email,
+      evaluation: myEvaluation
+    }, {
+      onSuccess: () => setEvaluating(false)
+    });
+  };
 
   const requiredStakeholders = [
     { role: 'safety_officer', label: { en: 'Safety Officer', ar: 'مسؤول السلامة' } },
@@ -181,16 +152,17 @@ export default function MultiStakeholderApprovalPanel({ sandboxApplicationId }) 
             />
 
             <div className="flex gap-2">
-              <Button onClick={() => submitEvaluationMutation.mutate()} className="flex-1 bg-green-600">
+              <Button onClick={handleSubmit} disabled={submitEvaluation.isPending} className="flex-1 bg-green-600">
                 <CheckCircle2 className="h-4 w-4 mr-2" />
                 {t({ en: 'Approve', ar: 'موافقة' })}
               </Button>
-              <Button 
+              <Button
                 onClick={() => {
                   setMyEvaluation(prev => ({ ...prev, recommendation: 'reject' }));
-                  submitEvaluationMutation.mutate();
+                  handleSubmit();
                 }}
-                variant="outline" 
+                disabled={submitEvaluation.isPending}
+                variant="outline"
                 className="flex-1"
               >
                 <XCircle className="h-4 w-4 mr-2" />

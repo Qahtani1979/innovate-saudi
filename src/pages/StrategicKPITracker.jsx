@@ -27,7 +27,6 @@ function StrategicKPITracker() {
   const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   /* 
-   * MIGRATION NOTE: Replaced base44.entities with Supabase direct queries
    * Level 6 Verification: Data Layer Integration
    */
   const { data: pilots = [] } = usePilotsWithVisibility({ limit: 1000 });

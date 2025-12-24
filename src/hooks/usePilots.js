@@ -128,14 +128,26 @@ export function useIterationPilots() {
 /**
  * Hook to fetch a list of pilots with optional filters
  */
-export function usePilotsList({ stage } = {}) {
+export function usePilotsList({ stage, sector, recommendation } = {}) {
     return useQuery({
-        queryKey: ['pilots-list', { stage }],
+        queryKey: ['pilots-list', { stage, sector, recommendation }],
         queryFn: async () => {
             let query = supabase.from('pilots').select('*').eq('is_deleted', false);
 
             if (stage) {
-                query = query.eq('stage', stage);
+                if (Array.isArray(stage)) {
+                    query = query.in('stage', stage);
+                } else {
+                    query = query.eq('stage', stage);
+                }
+            }
+
+            if (sector) {
+                query = query.eq('sector', sector);
+            }
+
+            if (recommendation) {
+                query = query.eq('recommendation', recommendation);
             }
 
             const { data, error } = await query;

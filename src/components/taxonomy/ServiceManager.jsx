@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,38 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '../LanguageContext';
 import { Plus, Save, X, Edit2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTaxonomyMutations } from '@/hooks/useTaxonomyMutations';
 
 export default function ServiceManager({ subsector, services, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const [newService, setNewService] = useState(null);
   const [editingService, setEditingService] = useState(null);
-  const queryClient = useQueryClient();
-
-  const createServiceMutation = useMutation({
-    mutationFn: (data) => base44.entities.Service.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['services']);
-      setNewService(null);
-      toast.success(t({ en: 'Service created', ar: 'تم إنشاء الخدمة' }));
-    }
-  });
-
-  const updateServiceMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Service.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['services']);
-      setEditingService(null);
-      toast.success(t({ en: 'Service updated', ar: 'تم تحديث الخدمة' }));
-    }
-  });
-
-  const deleteServiceMutation = useMutation({
-    mutationFn: (id) => base44.entities.Service.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['services']);
-      toast.success(t({ en: 'Service deleted', ar: 'تم حذف الخدمة' }));
-    }
-  });
+  // queryClient logic is inside the hook
+  const { createService, updateService, deleteService } = useTaxonomyMutations();
 
   const subsectorServices = services.filter(s => s.subsector_id === subsector.id);
 
@@ -136,7 +111,9 @@ export default function ServiceManager({ subsector, services, onClose }) {
               />
             </div>
             <div className="flex gap-2">
-              <Button size="sm" onClick={() => createServiceMutation.mutate(newService)} disabled={!newService.name_en || !newService.service_code}>
+              <Button size="sm" onClick={() => createService.mutate(newService, {
+                onSuccess: () => setNewService(null)
+              })} disabled={!newService.name_en || !newService.service_code}>
                 <Save className="h-3 w-3 mr-1" />
                 {t({ en: 'Create', ar: 'إنشاء' })}
               </Button>
@@ -172,7 +149,7 @@ export default function ServiceManager({ subsector, services, onClose }) {
                 <Button variant="ghost" size="sm" onClick={() => setEditingService(service)}>
                   <Edit2 className="h-3 w-3" />
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => deleteServiceMutation.mutate(service.id)}>
+                <Button variant="ghost" size="sm" onClick={() => deleteService.mutate(service.id)}>
                   <Trash2 className="h-3 w-3 text-red-600" />
                 </Button>
               </div>

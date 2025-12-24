@@ -2,15 +2,20 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useAccessControl } from '@/hooks/useAccessControl';
+import { useAuth } from '@/lib/AuthContext';
 
 /**
  * Hook for R&D Proposal mutations (create, update, delete)
  */
 export function useRDProposalMutations() {
     const queryClient = useQueryClient();
+    const { checkPermission, checkEntityAccess } = useAccessControl();
+    const { user } = useAuth();
 
     const createRDProposal = useMutation({
         mutationFn: async (/** @type {any} */ newProposal) => {
+            checkPermission(['admin', 'innovation_manager', 'researcher']);
             // @ts-ignore
             const { data, error } = await supabase
                 .from('rd_proposals')
@@ -32,7 +37,11 @@ export function useRDProposalMutations() {
     });
 
     const updateRDProposal = useMutation({
+        /** @param {{id: string, updates: any}} params */
         mutationFn: async ({ id, updates }) => {
+            const { data: existing } = await supabase.from('rd_proposals').select('created_by').eq('id', id).single();
+            checkEntityAccess(existing, 'created_by');
+
             // @ts-ignore
             const { data, error } = await supabase
                 .from('rd_proposals')
@@ -57,6 +66,9 @@ export function useRDProposalMutations() {
 
     const deleteRDProposal = useMutation({
         mutationFn: async (/** @type {string} */ id) => {
+            const { data: existing } = await supabase.from('rd_proposals').select('created_by').eq('id', id).single();
+            checkEntityAccess(existing, 'created_by');
+
             const { error } = await supabase
                 .from('rd_proposals')
                 .delete()
@@ -75,7 +87,8 @@ export function useRDProposalMutations() {
     });
 
     const awardProposal = useMutation({
-        mutationFn: async (/** @type {{ proposal: any, awardAmount: number, awardNotes: string, startDate: string, user: any, rdCall: any }} */ { proposal, awardAmount, awardNotes, startDate, user, rdCall }) => {
+        mutationFn: async (/** @type {{ proposal: any, awardAmount: number, awardNotes: string, startDate: string, user: any, rdCall: any }} */ { proposal, awardAmount, awardNotes, startDate, user: paramUser, rdCall }) => {
+            checkPermission(['admin', 'innovation_manager']);
             // 1. Create R&D Project
             const { data: rdProject, error: projectError } = await supabase.from('rd_projects').insert({
                 code: `RD-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
@@ -143,7 +156,7 @@ export function useRDProposalMutations() {
                             recipientName: proposal.principal_investigator.name,
                             proposalTitle: proposal.title_en,
                             awardedAmount: awardAmount.toLocaleString(),
-                            startDate: startDate
+                            startDate: /** @type {any} */(startDate)
                         },
                         triggered_by: user?.email
                     }
@@ -165,6 +178,7 @@ export function useRDProposalMutations() {
 
     const reviewProposal = useMutation({
         mutationFn: async (/** @type {{ proposalId: string, decision: string, notes: string, userEmail: string }} */ { proposalId, decision, notes, userEmail }) => {
+            checkPermission(['admin', 'innovation_manager']);
             // 1. Update proposal status
             const status = decision === 'approve' ? 'shortlisted' :
                 decision === 'reject' ? 'rejected' : 'revisions_requested';

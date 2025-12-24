@@ -7,26 +7,37 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { getSystemPrompt } from '@/lib/saudiContext';
-import { 
-  buildTaxonomyGeneratorPrompt, 
-  taxonomyGeneratorSchema, 
-  TAXONOMY_GENERATOR_SYSTEM_PROMPT 
+import {
+  buildTaxonomyGeneratorPrompt,
+  taxonomyGeneratorSchema,
+  TAXONOMY_GENERATOR_SYSTEM_PROMPT
 } from '@/lib/ai/prompts/taxonomy';
+
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useSolutions } from '@/hooks/useSolutions';
+import { useTaxonomy } from '@/hooks/useTaxonomy';
+import { useTaxonomyMutations } from '@/hooks/useTaxonomyMutations';
 
 export default function AITaxonomyGenerator({ onGenerate }) {
   const { t } = useLanguage();
   const [suggestions, setSuggestions] = useState(null);
   const { invokeAI, status, isLoading: generating, isAvailable, rateLimitInfo } = useAIWithFallback();
 
+  // Hooks for data
+  const { data: challenges = [] } = useChallengesWithVisibility({ limit: 100 });
+  const { solutions = [] } = useSolutions({ limit: 100 });
+  const { sectors } = useTaxonomy();
+
+  // Hooks for mutations
+  const { createSector, createSubsector, createService } = useTaxonomyMutations();
+
   const generateTaxonomy = async () => {
-    const [challenges, solutions, sectors] = await Promise.all([
-      base44.entities.Challenge.list(),
-      base44.entities.Solution.list(),
-      base44.entities.Sector.list()
-    ]);
+    // Data is already fetched by hooks, but we might want to wait if loading?
+    // Since we are in an event handler, we use current values. 
+    // Ideally we disable button if loading, but for now we assume data is there or partial.
 
     const result = await invokeAI({
-      systemPrompt: getSystemPrompt(TAXONOMY_GENERATOR_SYSTEM_PROMPT),
+      system_prompt: getSystemPrompt(TAXONOMY_GENERATOR_SYSTEM_PROMPT),
       prompt: buildTaxonomyGeneratorPrompt(sectors, challenges, solutions),
       response_json_schema: taxonomyGeneratorSchema
     });
@@ -41,7 +52,7 @@ export default function AITaxonomyGenerator({ onGenerate }) {
   const applySuggestion = async (type, item) => {
     try {
       if (type === 'sector') {
-        await base44.entities.Sector.create({
+        await createSector.mutateAsync({
           name_en: item.name_en,
           name_ar: item.name_ar,
           code: item.code,
@@ -49,23 +60,28 @@ export default function AITaxonomyGenerator({ onGenerate }) {
           is_active: true
         });
       } else if (type === 'subsector') {
-        const sector = await base44.entities.Sector.filter({ name_en: item.sector_name });
-        if (sector[0]) {
-          await base44.entities.Subsector.create({
-            sector_id: sector[0].id,
+        // Find sector by name (case insensitive?)
+        const sector = sectors.find(s => s.name_en === item.sector_name);
+        if (sector) {
+          await createSubsector.mutateAsync({
+            sector_id: sector.id,
             name_en: item.subsector_name_en,
             name_ar: item.subsector_name_ar,
-            code: `${sector[0].code}-${item.subsector_name_en.substring(0, 3).toUpperCase()}`,
+            code: `${sector.code}-${item.subsector_name_en.substring(0, 3).toUpperCase()}`,
             description_en: item.rationale,
             is_active: true
           });
+        } else {
+          toast.error(t({ en: 'Sector not found', ar: 'القطاع غير موجود' }));
+          return;
         }
       } else if (type === 'service') {
-        const sector = await base44.entities.Sector.filter({ name_en: item.sector });
-        await base44.entities.Service.create({
+        const sector = sectors.find(s => s.name_en === item.sector);
+
+        await createService.mutateAsync({
           name_en: item.name_en,
           name_ar: item.name_ar,
-          sector_id: sector[0]?.id,
+          sector_id: sector?.id, // Legacy behavior
           description_en: item.rationale,
           code: `SRV-${item.name_en.substring(0, 3).toUpperCase()}-${Date.now().toString().slice(-4)}`
         });
@@ -74,6 +90,7 @@ export default function AITaxonomyGenerator({ onGenerate }) {
       toast.success(t({ en: 'Taxonomy updated', ar: 'تم تحديث التصنيف' }));
       if (onGenerate) onGenerate();
     } catch (error) {
+      console.error(error);
       toast.error(t({ en: 'Failed to apply', ar: 'فشل التطبيق' }));
     }
   };
@@ -87,7 +104,7 @@ export default function AITaxonomyGenerator({ onGenerate }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={undefined} />
         {!suggestions && (
           <div className="text-center py-8">
             <Sparkles className="h-16 w-16 text-purple-600 mx-auto mb-4" />

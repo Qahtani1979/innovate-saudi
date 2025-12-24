@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,9 +10,11 @@ import { format } from 'date-fns';
 import RequesterAI from '../approval/RequesterAI';
 import ReviewerAI from '../approval/ReviewerAI';
 
+import { usePolicyMutations } from '@/hooks/usePolicy';
+
 export default function PolicyPublicConsultationGate({ policy, approvalRequest, currentUser }) {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
+  const { updatePolicy } = usePolicyMutations();
   const [consultationData, setConsultationData] = useState({
     stakeholders: policy.stakeholder_list || [],
     consultation_url: policy.public_consultation_url || '',
@@ -22,15 +23,9 @@ export default function PolicyPublicConsultationGate({ policy, approvalRequest, 
     feedback_received: 0
   });
 
-  const updatePolicyMutation = useMutation({
-    mutationFn: (data) => base44.entities.PolicyRecommendation.update(policy.id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['policy', policy.id]);
-    }
-  });
-
   const handleStartConsultation = async () => {
-    await updatePolicyMutation.mutateAsync({
+    await updatePolicy.mutateAsync({
+      id: policy.id,
       public_consultation_status: 'active',
       public_consultation_url: consultationData.consultation_url,
       public_consultation_start_date: consultationData.start_date,
@@ -62,6 +57,7 @@ export default function PolicyPublicConsultationGate({ policy, approvalRequest, 
                 { en: 'Duration set (min 30 days)', ar: 'المدة محددة (30 يوم كحد أدنى)' }
               ]
             }}
+            onSelfCheckUpdate={(result) => console.log('AI Check Result:', result)}
           />
 
           <Card>
@@ -78,7 +74,7 @@ export default function PolicyPublicConsultationGate({ policy, approvalRequest, 
                 </label>
                 <Input
                   value={consultationData.consultation_url}
-                  onChange={(e) => setConsultationData({...consultationData, consultation_url: e.target.value})}
+                  onChange={(e) => setConsultationData({ ...consultationData, consultation_url: e.target.value })}
                   placeholder="https://..."
                 />
               </div>
@@ -99,7 +95,7 @@ export default function PolicyPublicConsultationGate({ policy, approvalRequest, 
                       <Calendar
                         mode="single"
                         selected={consultationData.start_date}
-                        onSelect={(date) => setConsultationData({...consultationData, start_date: date})}
+                        onSelect={(date) => setConsultationData({ ...consultationData, start_date: date })}
                       />
                     </PopoverContent>
                   </Popover>
@@ -120,7 +116,7 @@ export default function PolicyPublicConsultationGate({ policy, approvalRequest, 
                       <Calendar
                         mode="single"
                         selected={consultationData.end_date}
-                        onSelect={(date) => setConsultationData({...consultationData, end_date: date})}
+                        onSelect={(date) => setConsultationData({ ...consultationData, end_date: date })}
                       />
                     </PopoverContent>
                   </Popover>
@@ -141,7 +137,7 @@ export default function PolicyPublicConsultationGate({ policy, approvalRequest, 
                 </div>
               )}
 
-              <Button 
+              <Button
                 onClick={handleStartConsultation}
                 className="w-full bg-blue-600 hover:bg-blue-700"
                 disabled={!consultationData.consultation_url || !consultationData.start_date || !consultationData.end_date}

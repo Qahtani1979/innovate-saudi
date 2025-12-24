@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useKPIs = ({ planId } = {}) => {
@@ -34,5 +34,23 @@ export const usePilotKPIDatapoints = (pilotIds) => {
         },
         enabled: !!pilotIds && pilotIds.length > 0,
         staleTime: 1000 * 60 // 1 minute
+    });
+};
+
+export const useAddKPIDatapoint = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (newDatapoint) => {
+            const { data, error } = await supabase
+                .from('pilot_kpi_datapoints')
+                .insert(newDatapoint)
+                .select();
+            if (error) throw error;
+            return data[0];
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['pilot-kpi-datapoints']);
+            queryClient.invalidateQueries(['pilot-kpis']);
+        }
     });
 };

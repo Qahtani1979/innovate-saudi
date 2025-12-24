@@ -5,14 +5,17 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/components/LanguageContext';
-import { supabase } from '@/integrations/supabase/client';
 import { ScrollText, Sparkles, Loader2, Scale, FileText, AlertTriangle, CheckCircle2, Plus, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { useApprovalRequest } from '@/hooks/useApprovalRequest';
+import { usePolicyMutations } from '@/hooks/usePolicyMutations';
+import { useStrategyAIGeneration } from '@/hooks/useStrategyAIGeneration';
 
 export default function StrategyToPolicyGenerator({ strategicPlanId, strategicPlan, onPolicyCreated }) {
   const { t, isRTL } = useLanguage();
   const { createApprovalRequest } = useApprovalRequest();
+  const { createPolicy } = usePolicyMutations();
+  const { generatePolicies } = useStrategyAIGeneration();
   const [additionalContext, setAdditionalContext] = useState('');
   const [policyCount, setPolicyCount] = useState(2);
   const [policies, setPolicies] = useState([]);
@@ -29,76 +32,84 @@ export default function StrategyToPolicyGenerator({ strategicPlanId, strategicPl
 
     setIsGenerating(true);
     try {
-      const { data, error } = await supabase.functions.invoke('strategy-policy-generator', {
-        body: {
-          strategic_plan_id: selectedPlanId,
-          strategic_context: additionalContext,
-          policy_count: policyCount,
+      generatePolicies.mutate({
+        strategic_plan_id: selectedPlanId,
+        policy_count: policyCount,
+        focus_area: additionalContext
+      }, {
+        onSuccess: (data) => {
+          setPolicies(data?.policies || []);
+          toast.success(t({ en: 'Policies generated successfully', ar: 'تم إنشاء السياسات بنجاح' }));
         },
+        onError: (error) => {
+          console.error('Generation error:', error);
+          toast.error(t({ en: 'Failed to generate policies', ar: 'فشل في إنشاء السياسات' }));
+        },
+        onSettled: () => {
+          setIsGenerating(false);
+        }
       });
-
-      if (error) throw error;
-      setPolicies(data?.policies || []);
-      toast.success(t({ en: 'Policies generated successfully', ar: 'تم إنشاء السياسات بنجاح' }));
     } catch (error) {
       console.error('Generation error:', error);
       toast.error(t({ en: 'Failed to generate policies', ar: 'فشل في إنشاء السياسات' }));
-    } finally {
       setIsGenerating(false);
     }
   };
 
   const handleSavePolicy = async (policy, index, submitForApproval = false) => {
     try {
-      const { data, error } = await supabase
-        .from('policies')
-        .insert({
-          title_en: policy.title_en,
-          title_ar: policy.title_ar,
-          description_en: policy.description_en,
-          description_ar: policy.description_ar,
-          policy_type: policy.type,
-          scope: policy.scope,
-          objectives: policy.objectives,
-          stakeholders: policy.stakeholders,
-          risk_level: policy.risk_level,
-          strategic_plan_ids: [selectedPlanId],
-          is_strategy_derived: true,
-          strategy_derivation_date: new Date().toISOString(),
-          status: submitForApproval ? 'pending' : 'draft',
-        })
-        .select()
-        .single();
+      // Use centralized mutation hook
+      const policyData = {
+        title_en: policy.title_en,
+        title_ar: policy.title_ar,
+        description_en: policy.description_en,
+        description_ar: policy.description_ar,
+        policy_type: policy.type,
+        scope: policy.scope,
+        objectives: policy.objectives,
+        stakeholders: policy.stakeholders,
+        risk_level: policy.risk_level,
+        strategic_plan_ids: [selectedPlanId],
+        is_strategy_derived: true,
+        strategy_derivation_date: new Date().toISOString(),
+        status: submitForApproval ? 'pending' : 'draft',
+      };
 
-      if (error) throw error;
+      createPolicy.mutate(policyData, {
+        onSuccess: async (data) => {
+          // Create approval request if submitting (Phase 4 integration)
+          if (submitForApproval) {
+            await createApprovalRequest({
+              entityType: 'policy',
+              entityId: data.id,
+              entityTitle: policy.title_en,
+              isStrategyDerived: true,
+              strategicPlanIds: [selectedPlanId],
+              metadata: {
+                policy_type: policy.type,
+                risk_level: policy.risk_level,
+                source: 'cascade_generator',
+              },
+            });
+          }
 
-      // Create approval request if submitting (Phase 4 integration)
-      if (submitForApproval) {
-        await createApprovalRequest({
-          entityType: 'policy',
-          entityId: data.id,
-          entityTitle: policy.title_en,
-          isStrategyDerived: true,
-          strategicPlanIds: [selectedPlanId],
-          metadata: {
-            policy_type: policy.type,
-            risk_level: policy.risk_level,
-            source: 'cascade_generator',
-          },
-        });
-      }
+          const updated = [...policies];
+          updated[index] = { ...updated[index], saved: true, savedId: data.id, submitted: submitForApproval };
+          setPolicies(updated);
 
-      const updated = [...policies];
-      updated[index] = { ...updated[index], saved: true, savedId: data.id, submitted: submitForApproval };
-      setPolicies(updated);
-
-      toast.success(
-        t({
-          en: submitForApproval ? 'Policy saved and submitted for approval' : 'Policy saved successfully',
-          ar: submitForApproval ? 'تم حفظ السياسة وإرسالها للموافقة' : 'تم حفظ السياسة بنجاح',
-        }),
-      );
-      onPolicyCreated?.(data);
+          toast.success(
+            t({
+              en: submitForApproval ? 'Policy saved and submitted for approval' : 'Policy saved successfully',
+              ar: submitForApproval ? 'تم حفظ السياسة وإرسالها للموافقة' : 'تم حفظ السياسة بنجاح',
+            }),
+          );
+          onPolicyCreated?.(data);
+        },
+        onError: (error) => {
+          console.error('Save error:', error);
+          toast.error(t({ en: 'Failed to save policy', ar: 'فشل في حفظ السياسة' }));
+        }
+      });
     } catch (error) {
       console.error('Save error:', error);
       toast.error(t({ en: 'Failed to save policy', ar: 'فشل في حفظ السياسة' }));

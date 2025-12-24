@@ -1,5 +1,3 @@
-
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,26 +5,24 @@ import { Target, TrendingUp, CheckCircle2, AlertCircle, Microscope } from 'lucid
 import { useLanguage } from '../LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
+import { useStrategicPlans } from '@/hooks/useStrategicPlans';
 
 export default function StrategicAlignmentLivingLab({ livingLab }) {
   const { language, t } = useLanguage();
 
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans-alignment'],
-    queryFn: () => base44.entities.StrategicPlan.list()
-  });
+  const { data: strategicPlans = [] } = useStrategicPlans();
 
-  const linkedPlans = strategicPlans.filter(p => 
+  const linkedPlans = strategicPlans.filter(p =>
     livingLab?.strategic_plan_ids?.includes(p.id)
   );
 
-  const linkedObjectives = strategicPlans.flatMap(plan => 
-    (plan.objectives || []).filter(obj => 
+  const linkedObjectives = strategicPlans.flatMap(plan =>
+    (plan.objectives || []).filter(obj =>
       livingLab?.strategic_objective_ids?.includes(obj.id)
     ).map(obj => ({ ...obj, planName: language === 'ar' && plan.name_ar ? plan.name_ar : plan.name_en }))
   );
 
-  const alignmentScore = livingLab?.strategic_objective_ids?.length 
+  const alignmentScore = livingLab?.strategic_objective_ids?.length
     ? Math.min(100, (livingLab.strategic_objective_ids.length * 20))
     : 0;
 

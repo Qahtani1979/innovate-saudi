@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,40 +7,34 @@ import { useLanguage } from '../LanguageContext';
 import { Globe, Sparkles, Loader2 } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { 
-  buildSectorBenchmarkPrompt, 
-  SECTOR_BENCHMARK_SYSTEM_PROMPT, 
-  SECTOR_BENCHMARK_SCHEMA 
+import {
+  buildSectorBenchmarkPrompt,
+  SECTOR_BENCHMARK_SYSTEM_PROMPT,
+  SECTOR_BENCHMARK_SCHEMA
 } from '@/lib/ai/prompts/taxonomy/sectorBenchmark';
+
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 
 export default function SectorBenchmarkingDashboard({ sectorId }) {
   const { t } = useLanguage();
   const { invokeAI, status, isLoading: benchmarking, rateLimitInfo, isAvailable } = useAIWithFallback();
   const [benchmarkData, setBenchmarkData] = useState(null);
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['sector-challenges', sectorId],
-    queryFn: async () => {
-      const all = await base44.entities.Challenge.list();
-      return all.filter(c => c.sector_id === sectorId);
-    }
-  });
+  // Use hooks for data
+  const { data: allChallenges = [] } = useChallengesWithVisibility({ limit: 1000 });
+  const challenges = allChallenges.filter(c => c.sector_id === sectorId || c.sector === sectorId);
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['sector-pilots', sectorId],
-    queryFn: async () => {
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => p.sector === sectorId);
-    }
-  });
+  const { data: allPilots = [] } = usePilotsWithVisibility();
+  const pilots = allPilots.filter(p => p.sector === sectorId);
 
   const generateBenchmark = async () => {
     if (!isAvailable) return;
-    
+
     const activePilotCount = pilots.filter(p => ['active', 'monitoring'].includes(p.stage)).length;
     const completedPilotCount = pilots.filter(p => p.stage === 'completed').length;
     const successRate = pilots.length > 0 ? Math.round((pilots.filter(p => p.recommendation === 'scale').length / pilots.length) * 100) : 0;
-    
+
     const result = await invokeAI({
       system_prompt: SECTOR_BENCHMARK_SYSTEM_PROMPT,
       prompt: buildSectorBenchmarkPrompt({

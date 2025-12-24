@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,21 +12,20 @@ import { Beaker, Sparkles, Loader2, CheckCircle2, ArrowRight } from 'lucide-reac
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import { getSystemPrompt } from '@/lib/saudiContext';
-import { 
-  buildLabDesignPrompt, 
+import { useLivingLabMutations } from '@/hooks/useLivingLabs';
+
+import {
+  buildLabDesignPrompt,
   getLabDesignSchema,
-  LAB_DESIGNER_SYSTEM_PROMPT 
+  LAB_DESIGNER_SYSTEM_PROMPT
 } from '@/lib/ai/prompts/livinglab';
 
 export default function LivingLabCreateWizard({ onClose }) {
   const { language, t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
   const { invokeAI, status, isLoading: aiGenerating, rateLimitInfo, isAvailable } = useAIWithFallback();
-  const { triggerEmail } = useEmailTrigger();
   const [formData, setFormData] = useState({
     name_en: '',
     name_ar: '',
@@ -42,7 +41,7 @@ export default function LivingLabCreateWizard({ onClose }) {
 
   const handleAIGenerate = async () => {
     if (!isAvailable) return;
-    
+
     const result = await invokeAI({
       prompt: buildLabDesignPrompt(formData.lab_type, formData.description_en),
       response_json_schema: getLabDesignSchema(),
@@ -50,8 +49,8 @@ export default function LivingLabCreateWizard({ onClose }) {
     });
 
     if (result.success && result.data) {
-      setFormData(prev => ({ 
-        ...prev, 
+      setFormData(prev => ({
+        ...prev,
         ...result.data,
         research_areas: result.data.research_areas || prev.research_areas,
         equipment: result.data.equipment || prev.equipment,
@@ -62,31 +61,16 @@ export default function LivingLabCreateWizard({ onClose }) {
     }
   };
 
-  const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.LivingLab.create(data),
-    onSuccess: async (lab) => {
-      queryClient.invalidateQueries(['livinglabs']);
-      
-      // Trigger livinglab.created email
-      try {
-        await triggerEmail('livinglab.created', {
-          entityType: 'living_lab',
-          entityId: lab.id,
-          variables: {
-            labName: formData.name_en,
-            labType: formData.lab_type,
-            researchAreas: formData.research_areas?.join(', ')
-          }
-        });
-      } catch (error) {
-        console.error('Failed to send livinglab.created email:', error);
+  const { createLab } = useLivingLabMutations();
+
+  const handleCreate = () => {
+    createLab.mutate(formData, {
+      onSuccess: (lab) => {
+        navigate(createPageUrl(`LivingLabDetail?id=${lab.id}`));
+        onClose?.();
       }
-      
-      toast.success(t({ en: 'Living Lab created!', ar: 'تم إنشاء المختبر!' }));
-      navigate(createPageUrl(`LivingLabDetail?id=${lab.id}`));
-      onClose?.();
-    }
-  });
+    });
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -177,12 +161,12 @@ export default function LivingLabCreateWizard({ onClose }) {
                   {t({ en: 'Back', ar: 'رجوع' })}
                 </Button>
                 <Button
-                  onClick={() => createMutation.mutate(formData)}
-                  disabled={createMutation.isPending || !formData.name_en}
+                  onClick={handleCreate}
+                  disabled={createLab.isPending || !formData.name_en}
                   className="flex-1 bg-gradient-to-r from-teal-600 to-cyan-600"
                   size="lg"
                 >
-                  {createMutation.isPending ? (
+                  {createLab.isPending ? (
                     <><Loader2 className="h-5 w-5 mr-2 animate-spin" />{t({ en: 'Creating...', ar: 'جاري الإنشاء...' })}</>
                   ) : (
                     <><CheckCircle2 className="h-5 w-5 mr-2" />{t({ en: 'Create Living Lab', ar: 'إنشاء المختبر' })}</>

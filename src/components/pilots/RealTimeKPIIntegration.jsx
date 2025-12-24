@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useAddKPIDatapoint } from '@/hooks/useKPIs';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 
 export default function RealTimeKPIIntegration({ pilot, kpi }) {
   const { language, t } = useLanguage();
-  const queryClient = useQueryClient();
+  const { mutateAsync: addDatapoint } = useAddKPIDatapoint();
   const [syncing, setSyncing] = useState(false);
   const [apiEndpoint, setApiEndpoint] = useState('');
 
@@ -18,15 +18,14 @@ export default function RealTimeKPIIntegration({ pilot, kpi }) {
     try {
       // Simulate API data sync
       const newValue = Math.random() * 100;
-      
-      await base44.entities.PilotKPIDatapoint.create({
+
+      await addDatapoint({
         pilot_kpi_id: kpi.id,
         value: newValue.toFixed(2),
         timestamp: new Date().toISOString(),
         source: 'api_sync'
       });
 
-      queryClient.invalidateQueries(['pilot-kpis']);
       toast.success(t({ en: 'KPI data synced', ar: 'بيانات المؤشر متزامنة' }));
     } catch (error) {
       toast.error(t({ en: 'Sync failed', ar: 'فشلت المزامنة' }));
@@ -66,9 +65,9 @@ export default function RealTimeKPIIntegration({ pilot, kpi }) {
 
         <div className="p-3 bg-blue-50 rounded border border-blue-300">
           <p className="text-xs text-slate-600">
-            {t({ 
-              en: 'KPI data will sync automatically every hour. Real-time updates without manual entry.', 
-              ar: 'بيانات المؤشرات ستتزامن تلقائياً كل ساعة. تحديثات فورية بدون إدخال يدوي.' 
+            {t({
+              en: 'KPI data will sync automatically every hour. Real-time updates without manual entry.',
+              ar: 'بيانات المؤشرات ستتزامن تلقائياً كل ساعة. تحديثات فورية بدون إدخال يدوي.'
             })}
           </p>
         </div>
@@ -76,9 +75,9 @@ export default function RealTimeKPIIntegration({ pilot, kpi }) {
         <div className="p-3 bg-amber-50 rounded border border-amber-300 flex items-start gap-2">
           <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5" />
           <p className="text-xs text-slate-700">
-            {t({ 
-              en: 'AI will detect anomalies and alert if KPI drops >40% in one week', 
-              ar: 'الذكاء سيكتشف الشذوذات وينبه إذا انخفض المؤشر >40% في أسبوع' 
+            {t({
+              en: 'AI will detect anomalies and alert if KPI drops >40% in one week',
+              ar: 'الذكاء سيكتشف الشذوذات وينبه إذا انخفض المؤشر >40% في أسبوع'
             })}
           </p>
         </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { usePolicyMutations } from '@/hooks/usePolicyMutations';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../LanguageContext';
@@ -16,15 +16,7 @@ export default function LabPolicyEvidenceWorkflow({ livingLab }) {
   const { t } = useLanguage();
   const { invokeAI, status, isLoading: generating, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [policyDraft, setPolicyDraft] = useState(null);
-  const queryClient = useQueryClient();
-
-  const createPolicyMutation = useMutation({
-    mutationFn: (data) => base44.entities.PolicyRecommendation.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['policies'] });
-      toast.success(t({ en: 'Policy created from citizen evidence', ar: 'تم إنشاء السياسة من أدلة المواطنين' }));
-    }
-  });
+  const { createPolicy: createPolicyMutation } = usePolicyMutations();
 
   const generateFromCitizenEvidence = async () => {
     const result = await invokeAI({
@@ -67,13 +59,13 @@ export default function LabPolicyEvidenceWorkflow({ livingLab }) {
         {!policyDraft ? (
           <div className="text-center p-6">
             <p className="text-sm text-slate-600 mb-4">
-              {t({ 
+              {t({
                 en: 'Generate policy recommendation from citizen science findings',
                 ar: 'توليد توصية سياسة من نتائج علوم المواطنين'
               })}
             </p>
-            <Button 
-              onClick={generateFromCitizenEvidence} 
+            <Button
+              onClick={generateFromCitizenEvidence}
               disabled={generating}
               className="bg-teal-600"
             >
@@ -98,7 +90,7 @@ export default function LabPolicyEvidenceWorkflow({ livingLab }) {
               </h4>
               <p className="text-sm text-slate-700 mb-3">{policyDraft.evidence_summary_en}</p>
               <p className="text-sm text-slate-700 mb-3">{policyDraft.problem_statement_en}</p>
-              
+
               <div className="text-xs">
                 <p className="font-semibold text-slate-700 mb-1">Recommended Changes:</p>
                 <ul className="space-y-1 text-slate-600">

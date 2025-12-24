@@ -62,6 +62,32 @@ export function useSandboxApplication(id) {
 export function useSandboxApplicationMutations() {
     const queryClient = useQueryClient();
 
+    const createApplication = useMutation({
+        /**
+         * @param {{ userEmail: string, entityType: string, entity: any, riskLevel: string }} params
+         */
+        mutationFn: async ({ userEmail, entityType, entity, riskLevel }) => {
+            const { error } = await supabase.from('sandbox_applications').insert({
+                applicant_email: userEmail,
+                source_entity_type: entityType,
+                source_entity_id: entity.id,
+                project_title: entity.title_en || entity.name_en,
+                project_description: entity.description_en || entity.abstract_en,
+                risk_level: riskLevel,
+                status: 'pending'
+            });
+
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['sandbox-applications'] });
+            toast.success('Sandbox application created successfully');
+        },
+        onError: (error) => {
+            toast.error(`Failed to create application: ${error.message}`);
+        }
+    });
+
     const updateApplication = useMutation({
         mutationFn: async ({ id, data }) => {
             const { data: result, error } = await supabase
@@ -85,6 +111,7 @@ export function useSandboxApplicationMutations() {
     });
 
     return {
+        createApplication,
         updateApplication,
         isUpdating: updateApplication.isPending
     };

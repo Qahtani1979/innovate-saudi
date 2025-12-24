@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-export function useStartupProfiles() {
-    const useStartupProfile = (id) => useQuery({
+export function useStartupProfile(id) {
+    return useQuery({
         queryKey: ['startup-profile', id],
         queryFn: async () => {
             if (!id) return null;
@@ -10,14 +10,16 @@ export function useStartupProfiles() {
                 .from('startup_profiles')
                 .select('*')
                 .eq('id', id)
-                .maybeSingle();
+                .single();
 
-            if (error && error.code !== 'PGRST116') throw error;
-            return data ? [data] : [];
+            if (error) throw error;
+            return data;
         },
         enabled: !!id
     });
+}
 
+export function useStartupProfiles() {
     return {
         useStartupProfile
     };

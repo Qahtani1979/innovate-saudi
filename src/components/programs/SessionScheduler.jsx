@@ -7,15 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../LanguageContext';
 import { Calendar as CalendarIcon, Plus, MapPin, User, Clock } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { useAuth } from '@/lib/AuthContext';
+import { useProgramSessions, useProgramSessionMutations } from '@/hooks/useProgramSessions';
 
 export default function SessionScheduler({ programId }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [newSession, setNewSession] = useState({
@@ -27,44 +22,22 @@ export default function SessionScheduler({ programId }) {
     description: ''
   });
 
-  const { data: program } = useQuery({
-    queryKey: ['program', programId],
-    queryFn: async () => {
-      const { data } = await supabase.from('programs').select('*').eq('id', programId).eq('is_deleted', false).maybeSingle();
-      return data;
-    },
-    enabled: !!programId
-  });
+  const { data: program } = useProgramSessions(programId);
+  const { createSession } = useProgramSessionMutations(programId);
 
   const sessions = program?.events || [];
 
-  const createSessionMutation = useMutation({
-    mutationFn: async (sessionData) => {
-      const { error } = await supabase.from('programs').update({
-        events: [...sessions, {
-          ...sessionData,
-          status: 'scheduled',
-          created_date: new Date().toISOString()
-        }]
-      }).eq('id', programId);
-      if (error) throw error;
-
-      await supabase.from('system_activities').insert({
-        entity_type: 'program',
-        entity_id: programId,
-        activity_type: 'session_scheduled',
-        performed_by: user?.email,
-        timestamp: new Date().toISOString(),
-        metadata: { session_title: sessionData.title, session_date: sessionData.date }
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['program', programId]);
-      setShowForm(false);
-      setNewSession({ title: '', date: '', time: '', speaker: '', location: 'virtual', description: '' });
-      toast.success(t({ en: 'Session scheduled', ar: 'تم جدولة الجلسة' }));
-    }
-  });
+  const handleCreateSession = () => {
+    createSession.mutate({
+      sessionData: newSession,
+      existingSessions: sessions
+    }, {
+      onSuccess: () => {
+        setShowForm(false);
+        setNewSession({ title: '', date: '', time: '', speaker: '', location: 'virtual', description: '' });
+      }
+    });
+  };
 
   return (
     <Card>
@@ -83,29 +56,29 @@ export default function SessionScheduler({ programId }) {
       <CardContent className="space-y-4">
         {showForm && (
           <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 space-y-3">
-            <Input 
-              placeholder={t({ en: 'Session title', ar: 'عنوان الجلسة' })} 
+            <Input
+              placeholder={t({ en: 'Session title', ar: 'عنوان الجلسة' })}
               value={newSession.title}
-              onChange={(e) => setNewSession({...newSession, title: e.target.value})}
+              onChange={(e) => setNewSession({ ...newSession, title: e.target.value })}
             />
             <div className="grid grid-cols-2 gap-3">
-              <Input 
-                type="date" 
+              <Input
+                type="date"
                 value={newSession.date}
-                onChange={(e) => setNewSession({...newSession, date: e.target.value})}
+                onChange={(e) => setNewSession({ ...newSession, date: e.target.value })}
               />
-              <Input 
-                type="time" 
+              <Input
+                type="time"
                 value={newSession.time}
-                onChange={(e) => setNewSession({...newSession, time: e.target.value})}
+                onChange={(e) => setNewSession({ ...newSession, time: e.target.value })}
               />
             </div>
-            <Input 
-              placeholder={t({ en: 'Speaker name', ar: 'اسم المتحدث' })} 
+            <Input
+              placeholder={t({ en: 'Speaker name', ar: 'اسم المتحدث' })}
               value={newSession.speaker}
-              onChange={(e) => setNewSession({...newSession, speaker: e.target.value})}
+              onChange={(e) => setNewSession({ ...newSession, speaker: e.target.value })}
             />
-            <Select value={newSession.location} onValueChange={(v) => setNewSession({...newSession, location: v})}>
+            <Select value={newSession.location} onValueChange={(v) => setNewSession({ ...newSession, location: v })}>
               <SelectTrigger>
                 <SelectValue placeholder={t({ en: 'Location', ar: 'الموقع' })} />
               </SelectTrigger>
@@ -115,17 +88,17 @@ export default function SessionScheduler({ programId }) {
                 <SelectItem value="gdisb">GDISB HQ</SelectItem>
               </SelectContent>
             </Select>
-            <Textarea 
-              placeholder={t({ en: 'Session description', ar: 'وصف الجلسة' })} 
-              rows={2} 
+            <Textarea
+              placeholder={t({ en: 'Session description', ar: 'وصف الجلسة' })}
+              rows={2}
               value={newSession.description}
-              onChange={(e) => setNewSession({...newSession, description: e.target.value})}
+              onChange={(e) => setNewSession({ ...newSession, description: e.target.value })}
             />
             <div className="flex gap-2">
-              <Button 
+              <Button
                 className="flex-1"
-                onClick={() => createSessionMutation.mutate(newSession)}
-                disabled={!newSession.title || !newSession.date || createSessionMutation.isPending}
+                onClick={handleCreateSession}
+                disabled={!newSession.title || !newSession.date || createSession.isPending}
               >
                 {t({ en: 'Save', ar: 'حفظ' })}
               </Button>

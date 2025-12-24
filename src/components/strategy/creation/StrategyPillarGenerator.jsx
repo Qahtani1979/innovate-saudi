@@ -5,19 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '@/components/LanguageContext';
-import { supabase } from '@/integrations/supabase/client';
-import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { 
-  Sparkles, 
-  Loader2, 
-  Target, 
-  Users, 
-  Lightbulb, 
-  Building, 
-  Globe, 
-  Shield, 
-  Zap, 
+import { useStrategicPlanMutations } from '@/hooks/useStrategicPlanMutations';
+import { useStrategyAIGeneration } from '@/hooks/useStrategyAIGeneration';
+import {
+  Sparkles,
+  Loader2,
+  Target,
+  Users,
+  Lightbulb,
+  Building,
+  Globe,
+  Shield,
+  Zap,
   Heart,
   Plus,
   Trash2,
@@ -30,41 +30,35 @@ const PILLAR_ICONS = {
 
 export default function StrategyPillarGenerator({ strategicPlanId, onPillarsGenerated }) {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
-  const [isGenerating, setIsGenerating] = useState(false);
+  const { updatePlan } = useStrategicPlanMutations();
+  const { generatePillars: generatePillarsAI } = useStrategyAIGeneration();
   const [pillars, setPillars] = useState([]);
   const [visionStatement, setVisionStatement] = useState('');
   const [municipalityContext, setMunicipalityContext] = useState('');
   const [pillarCount, setPillarCount] = useState(4);
 
-  const generatePillars = async () => {
-    setIsGenerating(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('strategy-pillar-generator', {
-        body: {
-          strategic_plan_id: strategicPlanId,
-          vision_statement: visionStatement,
-          municipality_context: municipalityContext,
-          pillar_count: pillarCount
+  const generatePillars = () => {
+    generatePillarsAI.mutate({
+      strategic_plan_id: strategicPlanId,
+      vision_statement: visionStatement,
+      municipality_context: municipalityContext,
+      pillar_count: pillarCount
+    }, {
+      onSuccess: (data) => {
+        if (data?.pillars) {
+          setPillars(data.pillars);
+          toast.success(t({
+            en: `Generated ${data.pillars.length} strategic pillars`,
+            ar: `تم إنشاء ${data.pillars.length} ركائز استراتيجية`
+          }));
+          onPillarsGenerated?.(data.pillars);
         }
-      });
-
-      if (error) throw error;
-
-      if (data?.pillars) {
-        setPillars(data.pillars);
-        toast.success(t({ 
-          en: `Generated ${data.pillars.length} strategic pillars`, 
-          ar: `تم إنشاء ${data.pillars.length} ركائز استراتيجية` 
-        }));
-        onPillarsGenerated?.(data.pillars);
+      },
+      onError: (error) => {
+        console.error('Error generating pillars:', error);
+        toast.error(t({ en: 'Failed to generate pillars', ar: 'فشل في إنشاء الركائز' }));
       }
-    } catch (error) {
-      console.error('Error generating pillars:', error);
-      toast.error(t({ en: 'Failed to generate pillars', ar: 'فشل في إنشاء الركائز' }));
-    } finally {
-      setIsGenerating(false);
-    }
+    });
   };
 
   const updatePillar = (index, field, value) => {
@@ -92,29 +86,25 @@ export default function StrategyPillarGenerator({ strategicPlanId, onPillarsGene
     }]);
   };
 
-  const savePillars = async () => {
+  const savePillars = () => {
     if (!strategicPlanId) {
       toast.error(t({ en: 'No strategic plan selected', ar: 'لم يتم تحديد خطة استراتيجية' }));
       return;
     }
 
-    try {
-      const { error } = await supabase
-        .from('strategic_plans')
-        .update({ 
-          pillars,
-          pillars_generated_at: new Date().toISOString()
-        })
-        .eq('id', strategicPlanId);
-
-      if (error) throw error;
-
-      queryClient.invalidateQueries(['strategic-plans']);
-      toast.success(t({ en: 'Pillars saved successfully', ar: 'تم حفظ الركائز بنجاح' }));
-    } catch (error) {
-      console.error('Error saving pillars:', error);
-      toast.error(t({ en: 'Failed to save pillars', ar: 'فشل في حفظ الركائز' }));
-    }
+    updatePlan.mutate({
+      id: strategicPlanId,
+      pillars,
+      pillars_generated_at: new Date().toISOString()
+    }, {
+      onSuccess: () => {
+        toast.success(t({ en: 'Pillars saved successfully', ar: 'تم حفظ الركائز بنجاح' }));
+      },
+      onError: (error) => {
+        console.error('Error saving pillars:', error);
+        toast.error(t({ en: 'Failed to save pillars', ar: 'فشل في حفظ الركائز' }));
+      }
+    });
   };
 
   const getIconComponent = (iconName) => {
@@ -171,8 +161,8 @@ export default function StrategyPillarGenerator({ strategicPlanId, onPillarsGene
               className="w-24"
             />
           </div>
-          <Button 
-            onClick={generatePillars} 
+          <Button
+            onClick={generatePillars}
             disabled={isGenerating}
             className="mt-5"
           >
@@ -212,7 +202,7 @@ export default function StrategyPillarGenerator({ strategicPlanId, onPillarsGene
                     <CardContent className="pt-4 space-y-3">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-2">
-                          <div 
+                          <div
                             className="p-2 rounded-lg"
                             style={{ backgroundColor: `${pillar.color}20` }}
                           >
@@ -234,9 +224,9 @@ export default function StrategyPillarGenerator({ strategicPlanId, onPillarsGene
                             />
                           </div>
                         </div>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => removePillar(index)}
                           className="text-destructive"
                         >

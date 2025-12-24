@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +7,9 @@ import { AlertTriangle, Sparkles, TrendingDown, Loader2 } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { buildChurnPredictorPrompt, CHURN_PREDICTOR_SCHEMA } from '@/lib/ai/prompts/startup';
+import { useStartup } from '@/hooks/useStartups';
+import { useSolutions } from '@/hooks/useSolutions';
+import { useEntityActivity } from '@/hooks/useUserActivity';
 
 export default function StartupChurnPredictor({ startupId }) {
   const { t } = useLanguage();
@@ -18,33 +20,19 @@ export default function StartupChurnPredictor({ startupId }) {
     fallbackData: null
   });
 
-  const { data: startup } = useQuery({
-    queryKey: ['startup-churn', startupId],
-    queryFn: async () => {
-      const all = await base44.entities.StartupProfile.list();
-      return all.find(s => s.id === startupId);
-    }
-  });
+  /* 
+   * Refactored to use Gold Standard Hooks
+   */
+  const { data: startup } = useStartup(startupId);
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['startup-solutions-churn', startupId],
-    queryFn: async () => {
-      const all = await base44.entities.Solution.list();
-      return all.filter(s => s.provider_id === startupId);
-    }
-  });
+  const { solutions: allSolutions = [] } = useSolutions({ publishedOnly: false });
+  const solutions = allSolutions.filter(s => s.provider_id === startupId);
 
-  const { data: activities = [] } = useQuery({
-    queryKey: ['startup-activities-churn', startupId],
-    queryFn: async () => {
-      const all = await base44.entities.UserActivity.list();
-      const last30Days = new Date();
-      last30Days.setDate(last30Days.getDate() - 30);
-      return all.filter(a => 
-        a.entity_id === startupId && 
-        new Date(a.created_date) >= last30Days
-      );
-    }
+  const { data: allActivities = [] } = useEntityActivity(startupId);
+  const activities = allActivities.filter(a => {
+    const last30Days = new Date();
+    last30Days.setDate(last30Days.getDate() - 30);
+    return new Date(a.created_at) >= last30Days; // Note: 'created_at' usually standard, checking legacy 'created_date' below if needed
   });
 
   const runPrediction = async () => {
@@ -68,7 +56,7 @@ export default function StartupChurnPredictor({ startupId }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
-        
+
         {!prediction && (
           <Button onClick={runPrediction} disabled={isLoading || !isAvailable} className="w-full">
             {isLoading ? (
@@ -87,23 +75,21 @@ export default function StartupChurnPredictor({ startupId }) {
 
         {prediction && (
           <div className="space-y-4">
-            <div className={`p-6 rounded-lg border-2 text-center ${
-              prediction.churn_risk === 'high' ? 'bg-red-50 border-red-400' :
+            <div className={`p-6 rounded-lg border-2 text-center ${prediction.churn_risk === 'high' ? 'bg-red-50 border-red-400' :
               prediction.churn_risk === 'medium' ? 'bg-amber-50 border-amber-400' :
-              'bg-green-50 border-green-400'
-            }`}>
-              <AlertTriangle className={`h-12 w-12 mx-auto mb-2 ${
-                prediction.churn_risk === 'high' ? 'text-red-600' :
+                'bg-green-50 border-green-400'
+              }`}>
+              <AlertTriangle className={`h-12 w-12 mx-auto mb-2 ${prediction.churn_risk === 'high' ? 'text-red-600' :
                 prediction.churn_risk === 'medium' ? 'text-amber-600' :
-                'text-green-600'
-              }`} />
+                  'text-green-600'
+                }`} />
               <p className="text-3xl font-bold mb-1">
                 {prediction.churn_probability}%
               </p>
               <Badge className={
                 prediction.churn_risk === 'high' ? 'bg-red-600' :
-                prediction.churn_risk === 'medium' ? 'bg-amber-600' :
-                'bg-green-600'
+                  prediction.churn_risk === 'medium' ? 'bg-amber-600' :
+                    'bg-green-600'
               }>
                 {prediction.churn_risk.toUpperCase()} RISK
               </Badge>

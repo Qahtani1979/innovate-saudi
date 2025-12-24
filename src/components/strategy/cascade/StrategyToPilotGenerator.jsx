@@ -6,15 +6,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/components/LanguageContext';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Sparkles, Rocket, Loader2, CheckCircle2, Plus, Clock, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { useApprovalRequest } from '@/hooks/useApprovalRequest';
+import { usePilotMutations } from '@/hooks/usePilotMutations';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
+import { useStrategyAIGeneration } from '@/hooks/useStrategyAIGeneration';
 
 export default function StrategyToPilotGenerator({ strategicPlanId, strategicPlan, onPilotCreated }) {
   const { t, isRTL } = useLanguage();
   const { createApprovalRequest } = useApprovalRequest();
+  const { createPilot } = usePilotMutations();
   const [selectedChallenge, setSelectedChallenge] = useState('');
   const [selectedSolution, setSelectedSolution] = useState('');
   const [pilotDuration, setPilotDuration] = useState('3');
@@ -22,138 +25,102 @@ export default function StrategyToPilotGenerator({ strategicPlanId, strategicPla
   const [additionalContext, setAdditionalContext] = useState('');
   const [generatedPilots, setGeneratedPilots] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const { generatePilots } = useStrategyAIGeneration();
+
+  // Use hooks for data fetching
+  const { data: allChallenges = [] } = useChallengesWithVisibility({
+    status: ['approved', 'published', 'open'],
+    strategicPlanId,
+    limit: 50
+  });
+
+  const { data: solutions = [] } = useSolutionsWithVisibility({
+    status: ['approved', 'validated'],
+    limit: 50
+  });
 
   // Filter challenges by strategic plan
-  const { data: challenges } = useQuery({
-    queryKey: ['challenges-for-pilot-gen', strategicPlanId],
-    queryFn: async () => {
-      let query = supabase
-        .from('challenges')
-        .select('id, title_en, title_ar, municipality_id, strategic_plan_ids')
-        .eq('is_deleted', false)
-        .in('status', ['approved', 'published', 'open'])
-        .order('created_at', { ascending: false })
-        .limit(50);
-      
-      const { data, error } = await query;
-      if (error) throw error;
-      
-      // Filter by strategic plan if one is selected
-      if (strategicPlanId) {
-        return (data || []).filter(c => c.strategic_plan_ids?.includes(strategicPlanId));
-      }
-      return data || [];
-    }
-  });
+  const challenges = strategicPlanId
+    ? allChallenges.filter(c => c.strategic_plan_ids?.includes(strategicPlanId))
+    : allChallenges;
 
-  const { data: solutions } = useQuery({
-    queryKey: ['solutions-for-pilot-gen', selectedChallenge],
-    queryFn: async () => {
-      let query = supabase
-        .from('solutions')
-        .select('id, name_en, name_ar, provider_id')
-        .eq('is_deleted', false)
-        .in('status', ['approved', 'validated'])
-        .order('created_at', { ascending: false })
-        .limit(50);
-      
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: true
-  });
-
-  const handleGenerate = async () => {
+  const handleGenerate = () => {
     if (!selectedChallenge) {
       toast.error(t({ en: 'Please select a challenge', ar: 'الرجاء اختيار تحدٍ' }));
       return;
     }
 
-    setIsGenerating(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('strategy-pilot-generator', {
-        body: {
-          challenge_id: selectedChallenge,
-          solution_id: selectedSolution || null,
-          pilot_duration_months: Number(pilotDuration),
-          target_participants: Number(targetParticipants),
-          additional_context: additionalContext
-        }
-      });
-
-      if (error) throw error;
-      setGeneratedPilots(data?.pilots || []);
-      toast.success(t({ en: 'Pilot designs generated', ar: 'تم إنشاء تصميمات التجارب' }));
-    } catch (error) {
-      console.error('Generation error:', error);
-      toast.error(t({ en: 'Failed to generate pilots', ar: 'فشل في إنشاء التجارب' }));
-    } finally {
-      setIsGenerating(false);
-    }
+    generatePilots.mutate({
+      challenge_id: selectedChallenge,
+      solution_id: selectedSolution || null,
+      pilot_duration_months: Number(pilotDuration),
+      target_participants: Number(targetParticipants),
+      additional_context: additionalContext
+    }, {
+      onSuccess: (data) => {
+        setGeneratedPilots(data?.pilots || []);
+        toast.success(t({ en: 'Pilot designs generated', ar: 'تم إنشاء تصميمات التجارب' }));
+      },
+      onError: (error) => {
+        console.error('Generation error:', error);
+        toast.error(t({ en: 'Failed to generate pilots', ar: 'فشل في إنشاء التجارب' }));
+      }
+    });
   };
 
-  const handleSavePilot = async (pilot, index, submitForApproval = false) => {
+  const handleSavePilot = (pilot, index, submitForApproval = false) => {
     const challenge = challenges?.find(c => c.id === selectedChallenge);
-    
-    try {
-      // Get strategic_plan_ids from the challenge
-      const challengeData = challenges?.find(c => c.id === selectedChallenge);
-      const strategicPlanIds = challengeData?.strategic_plan_ids || [];
-      
-      const { data, error } = await supabase
-        .from('pilots')
-        .insert({
-          name_en: pilot.name_en,
-          name_ar: pilot.name_ar,
-          description_en: pilot.description_en,
-          description_ar: pilot.description_ar,
-          challenge_id: selectedChallenge,
-          solution_id: selectedSolution || null,
-          municipality_id: challenge?.municipality_id,
-          duration_months: Number(pilotDuration),
-          target_participants: Number(targetParticipants),
-          success_criteria: pilot.success_criteria,
-          kpis: pilot.kpis,
-          risks: pilot.risks,
-          strategic_plan_ids: strategicPlanIds,
-          is_strategy_derived: strategicPlanIds.length > 0,
-          strategy_derivation_date: strategicPlanIds.length > 0 ? new Date().toISOString() : null,
-          status: submitForApproval ? 'pending' : 'proposed'
-        })
-        .select()
-        .single();
+    const challengeData = challenges?.find(c => c.id === selectedChallenge);
+    const strategicPlanIds = challengeData?.strategic_plan_ids || [];
 
-      if (error) throw error;
+    createPilot.mutate({
+      name_en: pilot.name_en,
+      name_ar: pilot.name_ar,
+      description_en: pilot.description_en,
+      description_ar: pilot.description_ar,
+      challenge_id: selectedChallenge,
+      solution_id: selectedSolution || null,
+      municipality_id: challenge?.municipality_id,
+      duration_months: Number(pilotDuration),
+      target_participants: Number(targetParticipants),
+      success_criteria: pilot.success_criteria,
+      kpis: pilot.kpis,
+      risks: pilot.risks,
+      strategic_plan_ids: strategicPlanIds,
+      is_strategy_derived: strategicPlanIds.length > 0,
+      strategy_derivation_date: strategicPlanIds.length > 0 ? new Date().toISOString() : null,
+      status: submitForApproval ? 'pending' : 'proposed'
+    }, {
+      onSuccess: async (data) => {
+        if (submitForApproval && strategicPlanIds.length > 0) {
+          await createApprovalRequest({
+            entityType: 'pilot',
+            entityId: data.id,
+            entityTitle: pilot.name_en,
+            isStrategyDerived: true,
+            strategicPlanIds: strategicPlanIds,
+            metadata: {
+              challenge_id: selectedChallenge,
+              source: 'cascade_generator'
+            }
+          });
+        }
 
-      // Create approval request if submitting for approval (Phase 4 integration)
-      if (submitForApproval && strategicPlanIds.length > 0) {
-        await createApprovalRequest({
-          entityType: 'pilot',
-          entityId: data.id,
-          entityTitle: pilot.name_en,
-          isStrategyDerived: true,
-          strategicPlanIds: strategicPlanIds,
-          metadata: {
-            challenge_id: selectedChallenge,
-            source: 'cascade_generator'
-          }
-        });
+        const updated = [...generatedPilots];
+        updated[index] = { ...updated[index], saved: true, savedId: data.id, submitted: submitForApproval };
+        setGeneratedPilots(updated);
+
+        toast.success(t({
+          en: submitForApproval ? 'Pilot saved and submitted for approval' : 'Pilot saved successfully',
+          ar: submitForApproval ? 'تم حفظ التجربة وإرسالها للموافقة' : 'تم حفظ التجربة بنجاح'
+        }));
+        onPilotCreated?.(data);
+      },
+      onError: (error) => {
+        console.error('Save error:', error);
+        toast.error(t({ en: 'Failed to save pilot', ar: 'فشل في حفظ التجربة' }));
       }
-
-      const updated = [...generatedPilots];
-      updated[index] = { ...updated[index], saved: true, savedId: data.id, submitted: submitForApproval };
-      setGeneratedPilots(updated);
-      
-      toast.success(t({ 
-        en: submitForApproval ? 'Pilot saved and submitted for approval' : 'Pilot saved successfully', 
-        ar: submitForApproval ? 'تم حفظ التجربة وإرسالها للموافقة' : 'تم حفظ التجربة بنجاح' 
-      }));
-      onPilotCreated?.(data);
-    } catch (error) {
-      console.error('Save error:', error);
-      toast.error(t({ en: 'Failed to save pilot', ar: 'فشل في حفظ التجربة' }));
-    }
+    });
   };
 
   return (
@@ -165,7 +132,7 @@ export default function StrategyToPilotGenerator({ strategicPlanId, strategicPla
             {t({ en: 'Pilot Design Generator', ar: 'مولد تصميم التجارب' })}
           </CardTitle>
           <CardDescription>
-            {t({ 
+            {t({
               en: 'Generate pilot project designs from challenges and solutions',
               ar: 'إنشاء تصميمات المشاريع التجريبية من التحديات والحلول'
             })}
@@ -252,7 +219,7 @@ export default function StrategyToPilotGenerator({ strategicPlanId, strategicPla
             <Textarea
               value={additionalContext}
               onChange={(e) => setAdditionalContext(e.target.value)}
-              placeholder={t({ 
+              placeholder={t({
                 en: 'Any specific requirements, constraints, or focus areas...',
                 ar: 'أي متطلبات محددة أو قيود أو مجالات تركيز...'
               })}
@@ -283,7 +250,7 @@ export default function StrategyToPilotGenerator({ strategicPlanId, strategicPla
             {t({ en: 'Generated Pilot Designs', ar: 'تصميمات التجارب المُنشأة' })}
             <Badge variant="secondary">{generatedPilots.length}</Badge>
           </h3>
-          
+
           <div className="grid grid-cols-1 gap-4">
             {generatedPilots.map((pilot, idx) => (
               <Card key={idx} className={pilot.saved ? 'border-green-500/50 bg-green-50/50' : ''}>

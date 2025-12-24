@@ -1,62 +1,13 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { useLanguage } from '../components/LanguageContext';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import {
-  AlertCircle, CheckCircle2,
-  TestTube, Target, Activity
-} from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
-import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useSolutions } from '@/hooks/useSolutions';
+import { usePilotsList } from '@/hooks/usePilots';
+import { useAllSolutionReviews } from '@/hooks/useSolutionReviews';
 
 function SolutionHealthDashboard() {
   const { language, isRTL, t } = useLanguage();
 
-  /* 
-   * MIGRATION NOTE: Replaced base44.entities with Supabase direct queries
-   * Level 6 Verification: Data Layer Integration
-   */
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions-health'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('solutions')
-        .select('*');
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-health'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*');
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: reviews = [] } = useQuery({
-    queryKey: ['solution-reviews'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('solution_reviews')
-        .select('*');
-      // Note: If table doesn't exist, we fallback to empty array to prevent crash during migration
-      // In a real scenario we'd ensure the table exists or mock it
-      if (error) {
-        console.warn('Reviews fetch error (might be missing table):', error);
-        return [];
-      }
-      return data;
-    }
-  });
+  const { solutions = [] } = useSolutions({ publishedOnly: false, limit: 1000 });
+  const { data: pilots = [] } = usePilotsList();
+  const { data: reviews = [] } = useAllSolutionReviews();
 
   // Calculate health metrics per solution
   const solutionMetrics = solutions.map(solution => {

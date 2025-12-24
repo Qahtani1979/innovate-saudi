@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
@@ -10,11 +9,11 @@ import { createPageUrl } from '../../utils';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { usePilotMutations } from '@/hooks/usePilotMutations';
 
 export default function LabToPilotTransitionWizard({ rdProject }) {
   const { language, t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [pilotDraft, setPilotDraft] = useState(null);
   const { triggerEmail } = useEmailTrigger();
 
@@ -23,29 +22,29 @@ export default function LabToPilotTransitionWizard({ rdProject }) {
     fallbackData: null
   });
 
-  const createPilotMutation = useMutation({
-    mutationFn: async (pilotData) => {
-      const pilot = await base44.entities.Pilot.create(pilotData);
-      return pilot;
-    },
-    onSuccess: async (pilot) => {
-      // Send pilot created email notification using hook
-      await triggerEmail('pilot.created', {
-        entityType: 'pilot',
-        entityId: pilot.id,
-        variables: {
-          pilot_title: pilot.title_en,
-          pilot_code: pilot.code || `PLT-LAB-${pilot.id?.substring(0, 8)}`,
-          rd_project_title: rdProject.title_en,
-          start_date: new Date().toISOString().split('T')[0]
-        }
-      }).catch(err => console.error('Email trigger failed:', err));
+  /* Refactored to useGoldStandard usePilotMutations */
+  const { createPilot } = usePilotMutations();
 
-      queryClient.invalidateQueries(['pilots']);
-      toast.success(t({ en: 'Pilot created', ar: 'أُنشئت التجربة' }));
-      navigate(createPageUrl(`PilotDetail?id=${pilot.id}`));
-    }
-  });
+  const handleCreatePilot = () => {
+    createPilot.mutate({
+      ...pilotDraft,
+      rd_project_id: rdProject.id,
+      sector: rdProject.sector || 'other',
+      stage: 'design',
+      budget: pilotDraft.budget_estimate,
+      trl_start: rdProject.current_trl || rdProject.starting_trl,
+      // Metadata for traceability
+      metadata: {
+        source: 'lab_transition',
+        rd_project_title: rdProject.title_en,
+        original_objectives: rdProject.objectives_en
+      }
+    }, {
+      onSuccess: (pilot) => {
+        navigate(createPageUrl(`PilotDetail?id=${pilot.id}`));
+      }
+    });
+  };
 
   const generatePilotDraft = async () => {
     const { success, data } = await invokeAI({
@@ -99,16 +98,6 @@ Generate pilot proposal:
     }
   };
 
-  const createPilot = () => {
-    createPilotMutation.mutate({
-      ...pilotDraft,
-      rd_project_id: rdProject.id,
-      sector: rdProject.sector || 'other',
-      stage: 'design',
-      budget: pilotDraft.budget_estimate,
-      trl_start: rdProject.current_trl || rdProject.starting_trl
-    });
-  };
 
   return (
     <Card className="border-2 border-teal-300">
@@ -120,7 +109,7 @@ Generate pilot proposal:
       </CardHeader>
       <CardContent className="pt-6">
         <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
-        
+
         {!pilotDraft && (
           <div className="text-center py-8">
             <Rocket className="h-12 w-12 text-teal-300 mx-auto mb-3" />
@@ -189,7 +178,7 @@ Generate pilot proposal:
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={createPilot} disabled={createPilotMutation.isLoading} className="flex-1 bg-gradient-to-r from-teal-600 to-cyan-600">
+              <Button onClick={handleCreatePilot} disabled={createPilot.isPending} className="flex-1 bg-gradient-to-r from-teal-600 to-cyan-600">
                 <Rocket className="h-4 w-4 mr-2" />
                 {t({ en: 'Create Pilot', ar: 'إنشاء التجربة' })}
               </Button>

@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import { useAuditLogger, AUDIT_ACTIONS, ENTITY_TYPES } from './useAuditLogger';
 import { useAccessControl } from '@/hooks/useAccessControl';
+import { useLogActivity } from '@/hooks/useUserActivity';
 
 /**
  * Hook for solution-related mutations: create, update, delete.
@@ -221,6 +222,7 @@ export function useSolutionMutations() {
     const bulkArchiveSolutions = useMutation({
         /** @param {string[]} ids */
         mutationFn: async (ids) => {
+            checkPermission(['admin', 'innovation_manager']);
             const { error } = await supabase
                 .from('solutions')
                 .update({ is_archived: true })
@@ -268,6 +270,47 @@ export function useSolutionMutations() {
     });
 
     /**
+     * Send Feedback to Provider
+     */
+    const sendFeedbackToProvider = useMutation({
+        mutationFn: async ({ pilotId, solution, pilot, data }) => {
+            // Email Trigger
+            await triggerEmail('pilot.feedback_request', {
+                recipient_email: solution?.contact_email || pilot?.created_by,
+                entity_type: 'pilot',
+                entity_id: pilotId,
+                variables: {
+                    pilotTitle: pilot?.title_en,
+                    municipalityId: pilot?.municipality_id,
+                    improvements: data.improvements,
+                    aiSuggestions: data.ai_suggestions ? JSON.stringify(data.ai_suggestions, null, 2) : ''
+                },
+                triggered_by: 'system'
+            });
+
+            // Log Activity
+            await supabase.from('user_activities').insert({
+                entity_type: 'pilot',
+                entity_id: pilotId,
+                activity_type: 'feedback_sent',
+                description: `Solution feedback sent to provider: ${solution?.provider_name || 'Provider'}`,
+                metadata: { improvements: data.improvements },
+                user_id: user?.id
+            });
+
+            return { pilotId };
+        },
+        onSuccess: ({ pilotId }) => {
+            queryClient.invalidateQueries({ queryKey: ['system-activity'] });
+            queryClient.invalidateQueries({ queryKey: ['entity-activities', pilotId] });
+            toast.success('Feedback sent to provider');
+        },
+        onError: (error) => {
+            toast.error(`Failed to send: ${error.message}`);
+        }
+    });
+
+    /**
      * Refresh solutions cache (Gold Standard Pattern)
      */
     const refreshSolutions = () => {
@@ -284,7 +327,8 @@ export function useSolutionMutations() {
         isUpdating: updateSolution.isPending,
         isDeleting: deleteSolution.isPending,
         bulkArchiveSolutions,
-        togglePublishSolution
+        togglePublishSolution,
+        sendFeedbackToProvider
     };
 }
 

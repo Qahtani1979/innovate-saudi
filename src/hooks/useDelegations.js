@@ -1,6 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useAccessControl } from '@/hooks/useAccessControl';
+import { useAuth } from '@/lib/AuthContext';
 
 /**
  * @param {string} userEmail 
@@ -62,10 +63,17 @@ export function useReceivedDelegations(email) {
 
 export function useDelegationMutations() {
     const queryClient = useQueryClient();
+    const { checkPermission, checkEntityAccess } = useAccessControl();
+    const { user } = useAuth();
 
     const createDelegation = useMutation({
         /** @param {any} delegationData */
         mutationFn: async (delegationData) => {
+            // Self-check: User can only create delegation for themselves
+            if (delegationData.delegator_email !== user?.email) {
+                throw new Error("You can only create delegations for yourself.");
+            }
+
             const { error } = await supabase
                 .from('delegation_rules')
                 .insert({ ...(delegationData || {}), is_active: true });
@@ -83,6 +91,9 @@ export function useDelegationMutations() {
     const deleteDelegation = useMutation({
         /** @param {string} id */
         mutationFn: async (id) => {
+            const { data: existing } = await supabase.from('delegation_rules').select('delegator_email').eq('id', id).single();
+            checkEntityAccess(existing, 'delegator_email', 'email');
+
             const { error } = await supabase.from('delegation_rules').delete().eq('id', id);
             if (error) throw error;
         },
@@ -98,6 +109,7 @@ export function useDelegationMutations() {
     const approveDelegation = useMutation({
         /** @param {{ delegation_id: string, action: 'approve' | 'reject', approver_email: string, comments?: string, reason?: string }} params */
         mutationFn: async ({ delegation_id, action, approver_email, comments, reason }) => {
+            checkPermission(['admin', 'program_manager']);
             const updateData = {
                 is_active: action === 'approve',
                 approved_by: approver_email,

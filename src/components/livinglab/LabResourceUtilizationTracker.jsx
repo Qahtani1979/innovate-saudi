@@ -1,35 +1,26 @@
-
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../LanguageContext';
 import { Activity, TrendingUp, Beaker } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
+import { useLivingLab } from '@/hooks/useLivingLab';
+import { useLivingLabBookings } from '@/hooks/useLivingLabBookings';
+
 export default function LabResourceUtilizationTracker({ labId }) {
   const { language, t } = useLanguage();
 
-  const { data: lab } = useQuery({
-    queryKey: ['lab', labId],
-    queryFn: async () => {
-      const labs = await base44.entities.LivingLab.list();
-      return labs.find(l => l.id === labId);
-    }
-  });
+  const { data: lab } = useLivingLab(labId);
+  const { data: bookings = [] } = useLivingLabBookings(labId);
 
-  const { data: bookings = [] } = useQuery({
-    queryKey: ['lab-bookings', labId],
-    queryFn: async () => {
-      const all = await base44.entities.LivingLabResourceBooking.list();
-      return all.filter(b => b.living_lab_id === labId);
-    }
-  });
-
+  // @ts-ignore - equipment is part of the extended LivingLab type
   const totalEquipment = lab?.equipment?.length || 0;
   const totalBookings = bookings.length;
   const activeBookings = bookings.filter(b => b.status === 'active' || b.status === 'confirmed').length;
 
   const equipmentUtilization = {};
+  // @ts-ignore - equipment is part of the extended LivingLab type
   lab?.equipment?.forEach(eq => {
+    // @ts-ignore - resource_name is from legacy booking structure, pending migration
     const eqBookings = bookings.filter(b => b.resource_name === eq.name);
     equipmentUtilization[eq.name] = {
       total: eqBookings.length,
@@ -52,8 +43,8 @@ export default function LabResourceUtilizationTracker({ labId }) {
     { name: 'Cancelled', value: bookings.filter(b => b.status === 'cancelled').length, color: '#ef4444' }
   ].filter(d => d.value > 0);
 
-  const avgUtilization = totalEquipment > 0 
-    ? Math.round((activeBookings / totalEquipment) * 100) 
+  const avgUtilization = totalEquipment > 0
+    ? Math.round((activeBookings / totalEquipment) * 100)
     : 0;
 
   return (
@@ -84,11 +75,10 @@ export default function LabResourceUtilizationTracker({ labId }) {
             <p className="text-xs text-slate-600">{t({ en: 'Active', ar: 'نشط' })}</p>
           </div>
 
-          <div className={`p-3 rounded-lg border text-center ${
-            avgUtilization >= 70 ? 'bg-green-50 border-green-300' :
+          <div className={`p-3 rounded-lg border text-center ${avgUtilization >= 70 ? 'bg-green-50 border-green-300' :
             avgUtilization >= 40 ? 'bg-yellow-50 border-yellow-300' :
-            'bg-red-50 border-red-300'
-          }`}>
+              'bg-red-50 border-red-300'
+            }`}>
             <p className="text-xs text-slate-600 mb-1">{t({ en: 'Utilization', ar: 'الاستخدام' })}</p>
             <p className="text-2xl font-bold">{avgUtilization}%</p>
           </div>
@@ -138,11 +128,10 @@ export default function LabResourceUtilizationTracker({ labId }) {
           )}
         </div>
 
-        <div className={`p-4 rounded-lg border-2 ${
-          avgUtilization >= 70 ? 'bg-green-50 border-green-300' :
+        <div className={`p-4 rounded-lg border-2 ${avgUtilization >= 70 ? 'bg-green-50 border-green-300' :
           avgUtilization >= 40 ? 'bg-yellow-50 border-yellow-300' :
-          'bg-red-50 border-red-300'
-        }`}>
+            'bg-red-50 border-red-300'
+          }`}>
           <h4 className="font-semibold text-slate-900 mb-2">
             {t({ en: 'AI Optimization Insight', ar: 'رؤية التحسين الذكي' })}
           </h4>
@@ -150,8 +139,8 @@ export default function LabResourceUtilizationTracker({ labId }) {
             {avgUtilization >= 70
               ? t({ en: 'Excellent utilization. Lab capacity is well-optimized. Consider expansion if demand increases.', ar: 'استخدام ممتاز. سعة المختبر محسّنة بشكل جيد. ضع في الاعتبار التوسع إذا زاد الطلب.' })
               : avgUtilization >= 40
-              ? t({ en: 'Moderate utilization. Promote underused equipment and consider scheduling optimization.', ar: 'استخدام متوسط. روّج للمعدات قليلة الاستخدام وضع في الاعتبار تحسين الجدولة.' })
-              : t({ en: 'Low utilization detected. Recommend reviewing equipment relevance and marketing lab capabilities.', ar: 'تم اكتشاف استخدام منخفض. نوصي بمراجعة أهمية المعدات والترويج لإمكانيات المختبر.' })
+                ? t({ en: 'Moderate utilization. Promote underused equipment and consider scheduling optimization.', ar: 'استخدام متوسط. روّج للمعدات قليلة الاستخدام وضع في الاعتبار تحسين الجدولة.' })
+                : t({ en: 'Low utilization detected. Recommend reviewing equipment relevance and marketing lab capabilities.', ar: 'تم اكتشاف استخدام منخفض. نوصي بمراجعة أهمية المعدات والترويج لإمكانيات المختبر.' })
             }
           </p>
         </div>

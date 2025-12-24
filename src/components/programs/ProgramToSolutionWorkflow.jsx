@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -7,12 +6,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from '../LanguageContext';
 import { Lightbulb, Loader2, Sparkles } from 'lucide-react';
-import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useAuth } from '@/lib/AuthContext';
+import useSolutionMutations from '@/hooks/useSolutionMutations';
 
 export default function ProgramToSolutionWorkflow({ program, graduateApplication }) {
   const { t } = useLanguage();
@@ -34,6 +33,7 @@ export default function ProgramToSolutionWorkflow({ program, graduateApplication
     showToasts: true,
     fallbackData: null
   });
+  const { createSolution } = useSolutionMutations();
 
   const handleAIGenerate = async () => {
     const response = await invokeAI({
@@ -64,40 +64,22 @@ Generate marketplace-ready solution profile:`,
     }
   };
 
-  const handleSubmit = async () => {
-    setLoading(true);
-    try {
-      const { data: solution, error: solutionError } = await supabase.from('solutions').insert({
+  const handleSubmit = () => {
+    createSolution.mutate({
+      solutionData: {
         ...formData,
         workflow_stage: 'draft',
         sectors: program.focus_areas || [],
         tags: [`program_graduate:${program.id}`]
-      }).select().single();
-      if (solutionError) throw solutionError;
-
-      await supabase.from('challenge_relations').insert({
-        challenge_id: program.id,
-        related_entity_type: 'solution',
-        related_entity_id: solution.id,
-        relation_role: 'derived_from'
-      });
-
-      await supabase.from('system_activities').insert({
-        entity_type: 'program',
-        entity_id: program.id,
-        activity_type: 'solution_created',
-        performed_by: user?.email,
-        timestamp: new Date().toISOString(),
-        metadata: { solution_id: solution.id, graduate: graduateApplication?.applicant_name }
-      });
-
-      toast.success(t({ en: 'Solution created', ar: 'تم إنشاء الحل' }));
-      navigate(createPageUrl(`SolutionDetail?id=${solution.id}`));
-    } catch (error) {
-      toast.error(t({ en: 'Failed to create solution', ar: 'فشل إنشاء الحل' }));
-    } finally {
-      setLoading(false);
-    }
+      },
+      programId: program.id,
+      graduateName: graduateApplication?.applicant_name
+    }, {
+      onSuccess: (solution) => {
+        navigate(createPageUrl(`SolutionDetail?id=${solution.id}`));
+        setOpen(false);
+      }
+    });
   };
 
   return (
@@ -114,7 +96,7 @@ Generate marketplace-ready solution profile:`,
         </DialogHeader>
         <div className="space-y-4">
           <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
-          
+
           <Button onClick={handleAIGenerate} disabled={isLoading || !isAvailable} variant="outline" className="w-full">
             {isLoading ? (
               <>
@@ -132,22 +114,22 @@ Generate marketplace-ready solution profile:`,
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Solution Name (EN)</Label>
-              <Input value={formData.name_en} onChange={(e) => setFormData({...formData, name_en: e.target.value})} />
+              <Input value={formData.name_en} onChange={(e) => setFormData({ ...formData, name_en: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label>اسم الحل (AR)</Label>
-              <Input value={formData.name_ar} onChange={(e) => setFormData({...formData, name_ar: e.target.value})} dir="rtl" />
+              <Input value={formData.name_ar} onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })} dir="rtl" />
             </div>
           </div>
 
           <div className="space-y-2">
             <Label>Description (EN)</Label>
-            <Textarea value={formData.description_en} onChange={(e) => setFormData({...formData, description_en: e.target.value})} rows={4} />
+            <Textarea value={formData.description_en} onChange={(e) => setFormData({ ...formData, description_en: e.target.value })} rows={4} />
           </div>
 
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setOpen(false)}>{t({ en: 'Cancel', ar: 'إلغاء' })}</Button>
-            <Button onClick={handleSubmit} disabled={loading}>
+            <Button onClick={handleSubmit} disabled={createSolution.isPending}>
               {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
               {t({ en: 'Create Solution', ar: 'إنشاء حل' })}
             </Button>

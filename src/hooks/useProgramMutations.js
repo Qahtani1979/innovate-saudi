@@ -2,7 +2,6 @@
  * Program Mutations Hook
  * Implements CRUD operations for Programs with audit logging and notifications
  */
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -71,10 +70,12 @@ export function useProgramMutations() {
                         entity_data: {
                             name: data.name_en,
                             program_type: data.program_type,
-                            start_date: data?.start_date
+                            start_date: /** @type {any} */(data).start_date
                         }
                     });
-                } catch (e) { console.warn('Email trigger failed:', e); }
+                } catch (e) {
+                    console.warn('Email trigger failed:', e);
+                }
             }
 
             await logCrudOperation(AUDIT_ACTIONS.CREATE, ENTITY_TYPES.PROGRAM, data.id, null, programData);
@@ -253,7 +254,7 @@ export function useProgramMutations() {
                         name: data.name_en,
                         program_type: data.program_type,
                         announcement: variables.announcement,
-                        launchDate: data?.launch_date
+                        launchDate: /** @type {any} */(data)?.launch_date
                     }
                 });
             } catch (e) { console.warn('Email trigger failed:', e); }
@@ -432,6 +433,7 @@ export function useProgramMutations() {
     const approveProgram = useMutation({
         /** @param {string} programId */
         mutationFn: async (programId) => {
+            checkPermission(['admin', 'program_manager']);
             const { data, error } = await supabase
                 .from('programs')
                 .update({
@@ -461,6 +463,7 @@ export function useProgramMutations() {
     const rejectProgram = useMutation({
         /** @param {string} programId */
         mutationFn: async (programId) => {
+            checkPermission(['admin', 'program_manager']);
             const { data, error } = await supabase
                 .from('programs')
                 .update({
@@ -488,6 +491,7 @@ export function useProgramMutations() {
     const updateApplicationBatch = useMutation({
         /** @param {any[]} updates */
         mutationFn: async (updates) => {
+            checkPermission(['admin', 'program_manager']);
             const results = await Promise.all(
                 updates.map(update =>
                     supabase
@@ -518,6 +522,7 @@ export function useProgramMutations() {
     const finalizeSelection = useMutation({
         /** @param {{ programId: string, selectedIds: string[], rejectedIds: string[], rejectionMessage: string }} params */
         mutationFn: async ({ programId, selectedIds, rejectedIds, rejectionMessage }) => {
+            checkPermission(['admin', 'program_manager']);
             // 1. Accept selected
             if (selectedIds.length > 0) {
                 const { error: acceptError } = await supabase
@@ -588,6 +593,7 @@ export function useProgramMutations() {
     const completeMidReview = useMutation({
         /** @param {{ programId: string, checklist: any[], notes: string, adjustments: any }} params */
         mutationFn: async ({ programId, checklist, notes, adjustments }) => {
+            checkPermission(['admin', 'program_manager']);
             const { data: program, error } = await supabase
                 .from('programs')
                 .update({

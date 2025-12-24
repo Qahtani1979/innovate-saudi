@@ -82,8 +82,40 @@ export function useKnowledgeDocumentMutations() {
         }
     });
 
+    const createKnowledgeDocument = useMutation({
+        mutationFn: async (documentData) => {
+            const { data, error } = await supabase
+                .from('knowledge_documents')
+                .insert({
+                    ...documentData,
+                    created_by: user?.email,
+                })
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['knowledge-documents'] });
+            toast.success(t({ en: 'Document created', ar: 'تم إنشاء المستند' }));
+
+            logAction({
+                action: 'create',
+                entity_type: 'knowledge_document',
+                entity_id: data.id,
+                details: { title: data.title_en, type: data.category }
+            });
+        },
+        onError: (error) => {
+            console.error('Creation error:', error);
+            toast.error(t({ en: 'Creation failed', ar: 'فشل الإنشاء' }));
+        }
+    });
+
     return {
         uploadDocument,
-        deleteDocument
+        deleteDocument,
+        createKnowledgeDocument
     };
 }

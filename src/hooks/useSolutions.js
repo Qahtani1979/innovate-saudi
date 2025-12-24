@@ -2,11 +2,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-export function useSolutions({ publishedOnly = true, limit = 100 } = {}) {
+export function useSolutions({ publishedOnly = true, limit = 100, searchQuery = '' } = {}) {
     const queryClient = useQueryClient();
 
     const { data: solutions = [], isLoading, error } = useQuery({
-        queryKey: ['solutions', { publishedOnly, limit }],
+        queryKey: ['solutions', { publishedOnly, limit, searchQuery }],
         queryFn: async () => {
             let query = supabase
                 .from('solutions')
@@ -15,6 +15,10 @@ export function useSolutions({ publishedOnly = true, limit = 100 } = {}) {
 
             if (publishedOnly) {
                 query = query.eq('is_published', true);
+            }
+
+            if (searchQuery) {
+                query = query.or(`name_en.ilike.%${searchQuery}%,name_ar.ilike.%${searchQuery}%`);
             }
 
             const { data, error } = await query;
@@ -29,6 +33,24 @@ export function useSolutions({ publishedOnly = true, limit = 100 } = {}) {
         isLoading,
         error
     };
+}
+
+export function useSolution(solutionId) {
+    return useQuery({
+        queryKey: ['solution', solutionId],
+        queryFn: async () => {
+            if (!solutionId) return null;
+            const { data, error } = await supabase
+                .from('solutions')
+                .select('*')
+                .eq('id', solutionId)
+                .single();
+            if (error) throw error;
+            return data;
+        },
+        enabled: !!solutionId,
+        staleTime: 1000 * 60 * 5
+    });
 }
 
 export function useSimilarSolutions({ solutionId, sectors = [], limit = 5 }) {

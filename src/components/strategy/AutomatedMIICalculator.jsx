@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,7 @@ import { useLanguage } from '../LanguageContext';
 import { Calculator, RefreshCw, Loader2, Award, CheckCircle2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMIIData } from '@/hooks/useMIIData';
+import { useStrategyAIGeneration } from '@/hooks/useStrategyAIGeneration';
 
 /**
  * AutomatedMIICalculator - Now uses the calculate-mii edge function
@@ -17,48 +17,47 @@ export default function AutomatedMIICalculator({ municipalityId }) {
   const queryClient = useQueryClient();
   const [calculating, setCalculating] = useState(false);
   const [justCalculated, setJustCalculated] = useState(false);
-  
+
   // Use the centralized MII data hook
-  const { 
-    latestResult, 
-    radarData, 
+  const {
+    latestResult,
+    radarData,
     trend,
     strengths,
     improvementAreas,
     hasData,
-    isLoading 
+    isLoading
   } = useMIIData(municipalityId);
+  const { calculateMII: calculateMIIHook } = useStrategyAIGeneration();
 
-  const calculateMII = async () => {
+  const calculateMII = () => {
     setCalculating(true);
     setJustCalculated(false);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('calculate-mii', {
-        body: { municipality_id: municipalityId }
-      });
-      
-      if (error) throw error;
-      
-      const result = data.results?.[0];
-      if (result) {
-        toast.success(t({ 
-          en: `MII calculated: ${result.overall_score} points`, 
-          ar: `تم حساب المؤشر: ${result.overall_score} نقطة` 
-        }));
-        setJustCalculated(true);
-        
-        // Invalidate queries to refresh data
-        queryClient.invalidateQueries(['mii-latest-result', municipalityId]);
-        queryClient.invalidateQueries(['mii-history', municipalityId]);
-        queryClient.invalidateQueries(['municipality', municipalityId]);
+
+    calculateMIIHook.mutate({ municipality_id: municipalityId }, {
+      onSuccess: (data) => {
+        const result = data.results?.[0];
+        if (result) {
+          toast.success(t({
+            en: `MII calculated: ${result.overall_score} points`,
+            ar: `تم حساب المؤشر: ${result.overall_score} نقطة`
+          }));
+          setJustCalculated(true);
+
+          // Invalidate queries to refresh data
+          queryClient.invalidateQueries(['mii-latest-result', municipalityId]);
+          queryClient.invalidateQueries(['mii-history', municipalityId]);
+          queryClient.invalidateQueries(['municipality', municipalityId]);
+        }
+      },
+      onError: (error) => {
+        console.error('MII calculation failed:', error);
+        toast.error(t({ en: 'Calculation failed', ar: 'فشل الحساب' }));
+      },
+      onSettled: () => {
+        setCalculating(false);
       }
-    } catch (error) {
-      console.error('MII calculation failed:', error);
-      toast.error(t({ en: 'Calculation failed', ar: 'فشل الحساب' }));
-    } finally {
-      setCalculating(false);
-    }
+    });
   };
 
   const TrendIcon = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus;
@@ -72,10 +71,10 @@ export default function AutomatedMIICalculator({ municipalityId }) {
             <Calculator className="h-5 w-5 text-amber-600" />
             {t({ en: 'MII Calculator', ar: 'حاسبة المؤشر' })}
           </CardTitle>
-          <Button 
-            onClick={calculateMII} 
-            disabled={calculating} 
-            size="sm" 
+          <Button
+            onClick={calculateMII}
+            disabled={calculating}
+            size="sm"
             className="bg-amber-600 hover:bg-amber-700 gap-2"
           >
             {calculating ? (
@@ -119,9 +118,9 @@ export default function AutomatedMIICalculator({ municipalityId }) {
               <div className={`flex items-center justify-center gap-1 mt-2 ${trendColor}`}>
                 <TrendIcon className="h-4 w-4" />
                 <span className="text-sm font-medium">
-                  {trend === 'up' ? t({ en: 'Improving', ar: 'تحسن' }) : 
-                   trend === 'down' ? t({ en: 'Declining', ar: 'تراجع' }) : 
-                   t({ en: 'Stable', ar: 'مستقر' })}
+                  {trend === 'up' ? t({ en: 'Improving', ar: 'تحسن' }) :
+                    trend === 'down' ? t({ en: 'Declining', ar: 'تراجع' }) :
+                      t({ en: 'Stable', ar: 'مستقر' })}
                 </span>
               </div>
             </div>

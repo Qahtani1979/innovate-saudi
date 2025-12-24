@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,29 +8,23 @@ import { toast } from 'sonner';
 import { Lightbulb, TrendingUp, Send, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { 
-  SOLUTION_FEEDBACK_SYSTEM_PROMPT, 
-  buildSolutionFeedbackPrompt, 
-  SOLUTION_FEEDBACK_SCHEMA 
+import {
+  SOLUTION_FEEDBACK_SYSTEM_PROMPT,
+  buildSolutionFeedbackPrompt,
+  SOLUTION_FEEDBACK_SCHEMA
 } from '@/lib/ai/prompts/pilots/solutionFeedback';
+import { useSolution } from '@/hooks/useSolutions';
+import { useSolutionMutations } from '@/hooks/useSolutionMutations';
 
 export default function SolutionFeedbackLoop({ pilot }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
 
   const [improvements, setImprovements] = useState('');
   const [suggestions, setSuggestions] = useState(null);
-  
-  const { invokeAI, status, isLoading: aiAnalyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: solution } = useQuery({
-    queryKey: ['solution', pilot?.solution_id],
-    queryFn: async () => {
-      const solutions = await base44.entities.Solution.list();
-      return solutions.find(s => s.id === pilot?.solution_id);
-    },
-    enabled: !!pilot?.solution_id
-  });
+  const { invokeAI, status, isLoading: aiAnalyzing, isAvailable, rateLimitInfo, error } = useAIWithFallback();
+
+  const { data: solution } = useSolution(pilot?.solution_id);
 
   const analyzeImprovements = async () => {
     const result = await invokeAI({
@@ -46,42 +39,25 @@ export default function SolutionFeedbackLoop({ pilot }) {
     }
   };
 
-  const sendMutation = useMutation({
-    mutationFn: async (data) => {
-      // Send feedback via email-trigger-hub
-      const { supabase } = await import('@/integrations/supabase/client');
-      await supabase.functions.invoke('email-trigger-hub', {
-        body: {
-          trigger: 'pilot.feedback_request',
-          recipient_email: solution?.contact_email || pilot.created_by,
-          entity_type: 'pilot',
-          entity_id: pilot.id,
-          variables: {
-            pilotTitle: pilot.title_en,
-            municipalityId: pilot.municipality_id,
-            improvements: data.improvements,
-            aiSuggestions: data.ai_suggestions ? JSON.stringify(data.ai_suggestions, null, 2) : ''
-          },
-          triggered_by: 'system'
-        }
-      });
+  const { sendFeedbackToProvider } = useSolutionMutations();
 
-      // Create system activity
-      await base44.entities.SystemActivity.create({
-        entity_type: 'pilot',
-        entity_id: pilot.id,
-        activity_type: 'feedback_sent',
-        description: `Solution feedback sent to provider: ${solution?.provider_name || 'Provider'}`,
-        metadata: { improvements: data.improvements }
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['system-activity']);
-      setImprovements('');
-      setSuggestions(null);
-      toast.success(t({ en: 'Feedback sent to provider', ar: 'تم إرسال الملاحظات للمزود' }));
-    }
-  });
+  const handleSendFeedback = () => {
+    sendFeedbackToProvider.mutate({
+      pilotId: pilot.id,
+      solutionId: pilot.solution_id,
+      solution,
+      pilot,
+      data: {
+        improvements,
+        ai_suggestions: suggestions
+      }
+    }, {
+      onSuccess: () => {
+        setImprovements('');
+        setSuggestions(null);
+      }
+    });
+  };
 
   if (!pilot.solution_id) {
     return (
@@ -105,8 +81,8 @@ export default function SolutionFeedbackLoop({ pilot }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
-        
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={error} />
+
         <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
           <p className="text-sm text-blue-900">
             <strong>{t({ en: 'Solution:', ar: 'الحل:' })}</strong>{' '}
@@ -182,7 +158,7 @@ export default function SolutionFeedbackLoop({ pilot }) {
             value={improvements}
             onChange={(e) => setImprovements(e.target.value)}
             rows={4}
-            placeholder={t({ 
+            placeholder={t({
               en: 'What improvements should the provider make based on pilot learnings?',
               ar: 'ما التحسينات التي يجب على المزود إجراؤها؟'
             })}
@@ -190,14 +166,11 @@ export default function SolutionFeedbackLoop({ pilot }) {
         </div>
 
         <Button
-          onClick={() => sendMutation.mutate({ 
-            improvements, 
-            ai_suggestions: suggestions 
-          })}
-          disabled={!improvements || sendMutation.isPending}
+          onClick={handleSendFeedback}
+          disabled={!improvements || sendFeedbackToProvider.isPending}
           className="w-full bg-gradient-to-r from-amber-600 to-orange-600"
         >
-          {sendMutation.isPending ? (
+          {sendFeedbackToProvider.isPending ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
           ) : (
             <Send className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />

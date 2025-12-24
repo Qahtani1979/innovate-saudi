@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useKnowledgeDocumentMutations } from '@/hooks/useKnowledgeDocumentMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,7 +11,7 @@ import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function PilotRetrospectiveCapture({ pilot }) {
   const { language, t } = useLanguage();
-  const queryClient = useQueryClient();
+  const { createKnowledgeDocument } = useKnowledgeDocumentMutations();
   const [retrospective, setRetrospective] = useState({
     what_worked: '',
     what_didnt_work: '',
@@ -51,7 +51,7 @@ Create comprehensive report card:
     });
 
     if (result.success) {
-      await base44.entities.KnowledgeDocument.create({
+      await createKnowledgeDocument.mutateAsync({
         title_en: `Pilot Report Card: ${pilot.title_en}`,
         title_ar: `بطاقة تقرير التجربة: ${pilot.title_ar || pilot.title_en}`,
         category: 'pilot_retrospective',
@@ -60,9 +60,6 @@ Create comprehensive report card:
         entity_id: pilot.id,
         tags: [pilot.sector, 'retrospective', 'lessons_learned']
       });
-
-      queryClient.invalidateQueries(['knowledge']);
-      toast.success(t({ en: 'Report card created', ar: 'بطاقة التقرير أُنشئت' }));
     }
   };
 
@@ -76,14 +73,14 @@ Create comprehensive report card:
       </CardHeader>
       <CardContent className="pt-6 space-y-4">
         <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
-        
+
         <div>
           <label className="text-sm font-medium text-slate-700 mb-2 block">
             {t({ en: 'What worked well?', ar: 'ما الذي نجح؟' })}
           </label>
           <Textarea
             value={retrospective.what_worked}
-            onChange={(e) => setRetrospective({...retrospective, what_worked: e.target.value})}
+            onChange={(e) => setRetrospective({ ...retrospective, what_worked: e.target.value })}
             placeholder={t({ en: 'Describe successes...', ar: 'صف النجاحات...' })}
             className="h-20"
           />
@@ -95,7 +92,7 @@ Create comprehensive report card:
           </label>
           <Textarea
             value={retrospective.what_didnt_work}
-            onChange={(e) => setRetrospective({...retrospective, what_didnt_work: e.target.value})}
+            onChange={(e) => setRetrospective({ ...retrospective, what_didnt_work: e.target.value })}
             placeholder={t({ en: 'Describe challenges...', ar: 'صف التحديات...' })}
             className="h-20"
           />
@@ -107,7 +104,7 @@ Create comprehensive report card:
           </label>
           <Textarea
             value={retrospective.unexpected_outcomes}
-            onChange={(e) => setRetrospective({...retrospective, unexpected_outcomes: e.target.value})}
+            onChange={(e) => setRetrospective({ ...retrospective, unexpected_outcomes: e.target.value })}
             placeholder={t({ en: 'Describe surprises...', ar: 'صف المفاجآت...' })}
             className="h-20"
           />
@@ -119,14 +116,14 @@ Create comprehensive report card:
           </label>
           <Textarea
             value={retrospective.recommendations}
-            onChange={(e) => setRetrospective({...retrospective, recommendations: e.target.value})}
+            onChange={(e) => setRetrospective({ ...retrospective, recommendations: e.target.value })}
             placeholder={t({ en: 'Your recommendations...', ar: 'توصياتك...' })}
             className="h-20"
           />
         </div>
 
-        <Button 
-          onClick={generateReportCard} 
+        <Button
+          onClick={generateReportCard}
           disabled={isLoading || !isAvailable || !retrospective.what_worked}
           className="w-full bg-purple-600"
         >

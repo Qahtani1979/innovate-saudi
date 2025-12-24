@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -9,12 +8,12 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
+import { useTaxonomyPublisher } from '@/hooks/useTaxonomyPublisher';
+
 export default function TaxonomyWizard({ onComplete }) {
   const { language, isRTL, t } = useLanguage();
   const [step, setStep] = useState(1);
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
-  
-  const queryClient = useQueryClient();
 
   const [sectors, setSectors] = useState([]);
   const [subsectors, setSubsectors] = useState([]);
@@ -92,7 +91,7 @@ Each item needs: name_ar, name_en, code, description_ar, description_en.`,
       setSectors(result.sectors || []);
       const allSubsectors = [];
       const allServices = [];
-      
+
       result.sectors?.forEach(sector => {
         sector.subsectors?.forEach(subsector => {
           allSubsectors.push({ ...subsector, sector_code: sector.code });
@@ -104,64 +103,16 @@ Each item needs: name_ar, name_en, code, description_ar, description_en.`,
 
       setSubsectors(allSubsectors);
       setServices(allServices);
-      
+
       toast.success(t({ en: 'AI generated complete taxonomy', ar: 'تم إنشاء التصنيف الكامل بالذكاء' }));
       setStep(2);
     }
   };
 
-  const publishTaxonomy = async () => {
-    try {
-      const createdSectors = await Promise.all(
-        sectors.map(s => base44.entities.Sector.create({
-          name_en: s.name_en,
-          name_ar: s.name_ar,
-          code: s.code,
-          description_en: s.description_en,
-          description_ar: s.description_ar
-        }))
-      );
+  const { publish, isPublishing, progress } = useTaxonomyPublisher();
 
-      const subsectorPromises = subsectors.map(async (ss) => {
-        const sector = createdSectors.find(s => s.code === ss.sector_code);
-        if (sector) {
-          return base44.entities.Subsector.create({
-            sector_id: sector.id,
-            name_en: ss.name_en,
-            name_ar: ss.name_ar,
-            code: ss.code
-          });
-        }
-      });
-      const createdSubsectors = await Promise.all(subsectorPromises.filter(Boolean));
-
-      const servicePromises = services.map(async (srv) => {
-        const subsector = createdSubsectors.find(ss => ss.code === srv.subsector_code);
-        if (subsector) {
-          return base44.entities.Service.create({
-            subsector_id: subsector.id,
-            name_en: srv.name_en,
-            name_ar: srv.name_ar,
-            service_code: srv.service_code,
-            description_en: srv.description_en,
-            description_ar: srv.description_ar,
-            service_type: srv.service_type || 'administrative',
-            is_digital: srv.is_digital || false,
-            digitalization_priority: srv.digitalization_priority || 'medium'
-          });
-        }
-      });
-      await Promise.all(servicePromises.filter(Boolean));
-
-      queryClient.invalidateQueries(['sectors']);
-      queryClient.invalidateQueries(['subsectors']);
-      queryClient.invalidateQueries(['services']);
-      
-      toast.success(t({ en: 'Taxonomy published successfully!', ar: 'تم نشر التصنيف بنجاح!' }));
-      onComplete();
-    } catch (error) {
-      toast.error(t({ en: 'Publish failed', ar: 'فشل النشر' }));
-    }
+  const publishTaxonomy = () => {
+    publish(sectors, subsectors, services, onComplete);
   };
 
   return (
@@ -173,11 +124,10 @@ Each item needs: name_ar, name_en, code, description_ar, description_en.`,
             {steps.map((s, idx) => (
               <React.Fragment key={s.num}>
                 <div className="flex flex-col items-center">
-                  <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold ${
-                    step === s.num ? 'bg-blue-600 text-white' :
+                  <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold ${step === s.num ? 'bg-blue-600 text-white' :
                     step > s.num ? 'bg-green-600 text-white' :
-                    'bg-slate-200 text-slate-600'
-                  }`}>
+                      'bg-slate-200 text-slate-600'
+                    }`}>
                     {step > s.num ? <CheckCircle2 className="h-5 w-5" /> : s.num}
                   </div>
                   <p className="text-xs mt-2 text-center">{s.title[language]}</p>
@@ -197,9 +147,9 @@ Each item needs: name_ar, name_en, code, description_ar, description_en.`,
             <CardTitle>{t({ en: 'AI Taxonomy Generation', ar: 'إنشاء التصنيف الذكي' })}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" error={undefined} />
             <p className="text-slate-700 leading-relaxed" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-              {t({ 
+              {t({
                 en: 'AI will generate a complete 3-level taxonomy (Sectors → Subsectors → Services) based on Saudi municipal best practices, Vision 2030, and smart city frameworks. This will include 10-12 sectors, 40-60 subsectors, and 200+ municipal services.',
                 ar: 'سينشئ الذكاء الاصطناعي تصنيفاً كاملاً من 3 مستويات (قطاعات ← قطاعات فرعية ← خدمات) بناءً على أفضل الممارسات البلدية السعودية ورؤية 2030 وأطر المدن الذكية. سيشمل 10-12 قطاعاً و40-60 قطاعاً فرعياً و200+ خدمة بلدية.'
               })}
