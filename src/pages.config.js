@@ -481,14 +481,6 @@ import CitizenRewardsCenter from './pages/CitizenRewardsCenter';
 import CitizenCommunityForum from './pages/CitizenCommunityForum';
 import CitizenLivingLabParticipation from './pages/CitizenLivingLabParticipation';
 
-// Matchmaker Pages
-import { MatchmakerApplications } from "./pages/MatchmakerApplications";
-import { MatchmakerApplicationDetail } from "./pages/MatchmakerApplicationDetail";
-import { MatchmakerApplicationCreate } from "./pages/MatchmakerApplicationCreate";
-import { MatchmakerEvaluationHub } from "./pages/MatchmakerEvaluationHub";
-import { MatchmakerSuccessAnalytics } from "./pages/MatchmakerSuccessAnalytics";
-import { MatchmakerJourney } from "./pages/MatchmakerJourney";
-import { MatchmakerCoverageReport } from "./pages/MatchmakerCoverageReport";
 import ReportConsolidationTracker from './pages/ReportConsolidationTracker';
 import BilingualSystemAudit from './pages/BilingualSystemAudit';
 import EvaluationSystemDeepDive from './pages/EvaluationSystemDeepDive';
