@@ -19,8 +19,6 @@ async function fetchTaxonomyData() {
     visionProgramsResult,
     stakeholderTypesResult,
     riskCategoriesResult,
-    stakeholderTypesResult,
-    riskCategoriesResult,
     governanceRolesResult,
     tagsResult
   ] = await Promise.all([
@@ -108,7 +106,6 @@ async function fetchTaxonomyData() {
   if (visionProgramsResult.error) console.warn('Failed to load vision programs:', visionProgramsResult.error);
   if (stakeholderTypesResult.error) console.warn('Failed to load stakeholder types:', stakeholderTypesResult.error);
   if (riskCategoriesResult.error) console.warn('Failed to load risk categories:', riskCategoriesResult.error);
-  if (riskCategoriesResult.error) console.warn('Failed to load risk categories:', riskCategoriesResult.error);
   if (governanceRolesResult.error) console.warn('Failed to load governance roles:', governanceRolesResult.error);
   if (tagsResult.error) console.warn('Failed to load tags:', tagsResult.error);
 
@@ -125,7 +122,6 @@ async function fetchTaxonomyData() {
   const technologies = technologiesResult.data || [];
   const visionPrograms = visionProgramsResult.data || [];
   const stakeholderTypes = stakeholderTypesResult.data || [];
-  const riskCategories = riskCategoriesResult.data || [];
   const riskCategories = riskCategoriesResult.data || [];
   const governanceRoles = governanceRolesResult.data || [];
   const tags = tagsResult.data || [];
@@ -224,8 +220,6 @@ export function TaxonomyProvider({ children }) {
     strategicThemes: data?.strategicThemes || [],
     technologies: data?.technologies || [],
     visionPrograms: data?.visionPrograms || [],
-    stakeholderTypes: data?.stakeholderTypes || [],
-    riskCategories: data?.riskCategories || [],
     stakeholderTypes: data?.stakeholderTypes || [],
     riskCategories: data?.riskCategories || [],
     governanceRoles: data?.governanceRoles || [],
