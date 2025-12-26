@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
@@ -9,7 +9,7 @@ import { toast } from 'sonner';
  * @param {number} initialVotes
  */
 export function useChallengeVoting(challengeId, initialVotes = 0) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { user } = useAuth();
 
     const { data: userVote, isLoading } = useQuery({
@@ -88,3 +88,4 @@ export function useChallengeVoting(challengeId, initialVotes = 0) {
         toggleVote: () => voteMutation.mutate()
     };
 }
+

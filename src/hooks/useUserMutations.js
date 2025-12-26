@@ -3,14 +3,14 @@
  * Centralized mutations for user management, profiles, and roles.
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { useAuditLogger, AUDIT_ACTIONS, ENTITY_TYPES } from './useAuditLogger';
 
 export function useUserMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { user } = useAuth();
     const { logCrudOperation, logStatusChange } = useAuditLogger();
 
@@ -262,3 +262,4 @@ export function useUserMutations() {
 }
 
 export default useUserMutations;
+

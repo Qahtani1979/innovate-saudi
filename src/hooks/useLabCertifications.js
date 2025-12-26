@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -21,7 +21,7 @@ export function useLabCertifications(livingLabId) {
 }
 
 export function useIssueCertification() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     return useMutation({
         mutationFn: async (data) => {
@@ -44,3 +44,4 @@ export function useIssueCertification() {
         }
     });
 }
+

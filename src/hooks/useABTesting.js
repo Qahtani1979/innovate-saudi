@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useCallback } from 'react';
@@ -11,7 +11,7 @@ import { useCallback } from 'react';
  */
 export function useABTesting() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
 
   // 1. Fetch Active Experiments
   const { data: experiments = [], isLoading: expsLoading } = useQuery({
@@ -146,3 +146,4 @@ export function useABTesting() {
 }
 
 export default useABTesting;
+

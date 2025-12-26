@@ -22,7 +22,7 @@ export default function ChallengeDetailDeepVerification() {
         verification: {
           componentExists: true,
           componentPath: 'components/TrackAssignment.jsx',
-          componentVerified: 'REAL - Calls base44.integrations.Core.InvokeLLM for track recommendation',
+          componentVerified: 'REAL - Calls useAIWithFallback for track recommendation',
           dataSourceVerified: 'challenge.description_en/ar, current_situation_en/ar, desired_outcome_en/ar',
           functionalityWorking: true
         }
@@ -125,7 +125,7 @@ export default function ChallengeDetailDeepVerification() {
         dynamicData: true,
         verification: {
           componentExists: 'N/A - Functions in same file',
-          aiCallVerified: 'base44.integrations.Core.InvokeLLM with comprehensive JSON schema',
+          aiCallVerified: 'useAIWithFallback with comprehensive JSON schema',
           dataSourceVerified: 'State: freshAiInsights, similarChallenges',
           functionalityWorking: true,
           realAI: true,
@@ -140,7 +140,7 @@ export default function ChallengeDetailDeepVerification() {
       implementation: {
         lines: '1224-1259',
         components: [],
-        dataQueries: ['solutions query from base44.entities.Solution.list() (line 58-61)'],
+        dataQueries: ['solutions query from useSolutions hook'],
         uiElements: ['Solution cards with provider, maturity, TRL, match score'],
         aiFeatures: [],
         bilingual: false,
@@ -161,7 +161,7 @@ export default function ChallengeDetailDeepVerification() {
       implementation: {
         lines: '1262-1294',
         components: [],
-        dataQueries: ['pilots query: base44.entities.Pilot.list() filtered by challenge_id (lines 63-70)'],
+        dataQueries: ['pilots query: usePilots hook filtered by challenge_id'],
         uiElements: ['Pilot cards with title, municipality, stage badge'],
         aiFeatures: [],
         bilingual: false,
@@ -309,7 +309,7 @@ export default function ChallengeDetailDeepVerification() {
           dataSourceVerified: 'Saves to challenge.innovation_framing, updates database on generation',
           functionalityWorking: true,
           realAI: true,
-          savesToDB: 'Calls base44.entities.Challenge.update() on generation'
+          savesToDB: 'Calls updateChallenge mutation on generation'
         }
       }
     },
@@ -755,9 +755,8 @@ export default function ChallengeDetailDeepVerification() {
               <div key={tab.number} className="border rounded-xl overflow-hidden">
                 <button
                   onClick={() => setExpandedTab(expandedTab === tab.number ? null : tab.number)}
-                  className={`w-full p-4 flex items-center justify-between transition-colors ${
-                    expandedTab === tab.number ? 'bg-blue-50' : 'bg-white hover:bg-slate-50'
-                  }`}
+                  className={`w-full p-4 flex items-center justify-between transition-colors ${expandedTab === tab.number ? 'bg-blue-50' : 'bg-white hover:bg-slate-50'
+                    }`}
                 >
                   <div className="flex items-center gap-4">
                     <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-500 to-teal-500 flex items-center justify-center text-white font-bold text-lg">
@@ -1043,7 +1042,7 @@ export default function ChallengeDetailDeepVerification() {
           <div className="p-3 bg-white rounded-lg border">
             <p className="font-semibold text-sm text-yellow-900 mb-1">Tab 7: Solutions</p>
             <p className="text-xs text-slate-700">
-              Match scores are CALCULATED (95-idx*3) rather than from ChallengeSolutionMatch entity. 
+              Match scores are CALCULATED (95-idx*3) rather than from ChallengeSolutionMatch entity.
               For real AI matching, users should use the dedicated ChallengeSolutionMatching page.
             </p>
             <Badge className="mt-2 bg-yellow-100 text-yellow-800 text-xs">Impact: Low - Display only</Badge>
@@ -1117,7 +1116,7 @@ export default function ChallengeDetailDeepVerification() {
             <p className="text-xl text-green-800 mb-6">
               All 27 tabs fully implemented, verified, and production-ready
             </p>
-            
+
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 max-w-4xl mx-auto">
               <div className="p-4 bg-white rounded-xl shadow">
                 <p className="text-3xl font-bold text-green-600">{fullyVerified}</p>

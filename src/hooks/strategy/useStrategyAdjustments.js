@@ -3,14 +3,14 @@
  * Centralizes logic for submitting strategy adjustments and creating approval requests.
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 
 export function useStrategyAdjustmentMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { t } = useLanguage();
     const { user } = useAuth();
 
@@ -66,3 +66,4 @@ export function useStrategyAdjustmentMutations() {
 
     return { submitAdjustment };
 }
+

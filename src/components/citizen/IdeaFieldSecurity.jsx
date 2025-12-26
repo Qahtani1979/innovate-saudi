@@ -1,4 +1,4 @@
-import { usePermissions } from '../permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 
 /**
  * Field-level security for CitizenIdea

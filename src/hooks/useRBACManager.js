@@ -8,7 +8,7 @@
  * - Toast notifications
  */
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import rbacService from '@/services/rbac/rbacService';
 import { toast } from 'sonner';
 
@@ -35,7 +35,7 @@ export function useUserRoles(userId, userEmail) {
  * @returns {import('@tanstack/react-query').UseMutationResult<any, Error, AssignRoleParams>}
  */
 export function useAssignRole() {
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
 
   return useMutation({
     mutationFn: (params) => rbacService.assignRole(params),
@@ -61,7 +61,7 @@ export function useAssignRole() {
  * @returns {import('@tanstack/react-query').UseMutationResult<any[], Error, BulkAssignRoleParams>}
  */
 export function useBulkAssignRole() {
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
 
   return useMutation({
     mutationFn: async ({ user_ids, ...rest }) => {
@@ -84,7 +84,7 @@ export function useBulkAssignRole() {
  * Revoke a role from a user
  */
 export function useRevokeRole() {
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
 
   return useMutation({
     mutationFn: (params) => rbacService.revokeRole(params),
@@ -122,7 +122,7 @@ export function useCheckAutoApproval() {
  * @returns {import('@tanstack/react-query').UseMutationResult<any, Error, ApproveRoleRequestParams>}
  */
 export function useApproveRoleRequest() {
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
 
   return useMutation({
     mutationFn: (params) => rbacService.approveRoleRequest(params),
@@ -148,7 +148,7 @@ export function useApproveRoleRequest() {
  * @returns {import('@tanstack/react-query').UseMutationResult<any, Error, RejectRoleRequestParams>}
  */
 export function useRejectRoleRequest() {
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
 
   return useMutation({
     mutationFn: (params) => rbacService.rejectRoleRequest(params),
@@ -175,7 +175,7 @@ export function useValidatePermission() {
  * Approve a delegation
  */
 export function useApproveDelegation() {
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
 
   return useMutation({
     mutationFn: (delegationId) => rbacService.approveDelegation(delegationId),
@@ -194,7 +194,7 @@ export function useApproveDelegation() {
  * Reject a delegation
  */
 export function useRejectDelegation() {
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
 
   return useMutation({
     mutationFn: ({ delegationId, reason }) => rbacService.rejectDelegation(delegationId, reason),
@@ -255,3 +255,4 @@ export default {
   useSendRoleNotification,
   useSecurityAudit
 };
+

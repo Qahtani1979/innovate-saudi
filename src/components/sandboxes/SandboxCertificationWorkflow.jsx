@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 
 export default function SandboxCertificationWorkflow({ sandboxId }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  // const queryClient = useQueryClient(); // Removed unused and undefined
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSolution, setSelectedSolution] = useState(null);
   const [certificationNotes, setCertificationNotes] = useState('');

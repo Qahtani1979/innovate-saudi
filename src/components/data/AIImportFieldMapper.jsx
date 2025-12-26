@@ -1,72 +1,24 @@
-import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { FileText, Sparkles, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
-import { toast } from 'sonner';
-import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import { useEntitySchema } from '@/hooks/useDataImport';
+import { useAIMapping } from '@/hooks/useAIMapping';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AIImportFieldMapper({ csvHeaders, entityName, onMappingComplete }) {
   const { t } = useLanguage();
-  const [mapping, setMapping] = useState({});
-  const [validation, setValidation] = useState(null);
-  const { invokeAI, status, isLoading: generating, isAvailable, rateLimitInfo } = useAIWithFallback();
-  const { data: schema, isLoading: schemaLoading } = useEntitySchema(entityName);
-
-  const analyzeMapping = async () => {
-    if (!schema || generating) return;
-
-    try {
-      const result = await invokeAI({
-        prompt: `Map CSV columns to entity fields:
-
-CSV Headers: ${csvHeaders.join(', ')}
-
-Entity Fields:
-${Object.entries(schema.properties).map(([field, prop]) =>
-          `${field} (${prop.type}): ${prop.description || ''}`
-        ).join('\n')}
-
-Suggest mapping for each CSV column to the best matching entity field.
-If no good match, suggest null.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            mappings: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  csv_column: { type: "string" },
-                  entity_field: { type: "string" },
-                  confidence: { type: "number" },
-                  rationale: { type: "string" }
-                }
-              }
-            }
-          }
-        }
-      });
-
-      if (result.success) {
-        const newMapping = {};
-        result.data.mappings.forEach(m => {
-          if (m.entity_field && m.entity_field !== 'null') {
-            newMapping[m.csv_column] = m.entity_field;
-          }
-        });
-
-        setMapping(newMapping);
-        setValidation(result.data.mappings);
-        toast.success(t({ en: 'Mapping suggested', ar: 'التخطيط مقترح' }));
-      }
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }));
-    }
-  };
+  const {
+    mapping,
+    validation,
+    analyzeMapping,
+    status,
+    generating,
+    isAvailable,
+    rateLimitInfo,
+    schema,
+    schemaLoading
+  } = useAIMapping(entityName, csvHeaders);
 
   return (
     <Card className="border-2 border-blue-300">

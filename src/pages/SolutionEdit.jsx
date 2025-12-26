@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import FileUploader from '../components/FileUploader';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { usePermissions } from '../components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import AIProfileEnhancer from '../components/solutions/AIProfileEnhancer';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';

@@ -1,10 +1,10 @@
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export function useFollowUpMutations(programId) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const updateFollowUp = useMutation({
         mutationFn: async ({ program, followUpData, selectedParticipant }) => {
@@ -53,3 +53,4 @@ export function useFollowUpMutations(programId) {
         updateFollowUp
     };
 }
+

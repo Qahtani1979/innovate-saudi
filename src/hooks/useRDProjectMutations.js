@@ -1,10 +1,10 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/LanguageContext';
 
 export function useRDProjectMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { t } = useLanguage();
 
     const createRDProject = useMutation({
@@ -55,7 +55,7 @@ export function useRDProjectMutations() {
             const { error } = await supabase
                 .from('rd_projects')
                 .update({ is_deleted: true, deleted_date: new Date().toISOString() })
-                .eq('id', id);
+                .eq('id', /** @type {string} */(/** @type {unknown} */ (id)));
 
             if (error) throw error;
         },
@@ -149,14 +149,16 @@ export function useRDProjectMutations() {
         updateRDProject,
         deleteRDProject,
         approveMilestone,
+        addProjectPublication,
         refreshRDProjects  // ✅ Gold Standard
     };
 }
 
 export function useRDProjectInvalidator() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     return {
         invalidateRDProject: (id) => queryClient.invalidateQueries({ queryKey: ['rd-project', id] }),
         invalidateRDProjects: () => queryClient.invalidateQueries({ queryKey: ['rd-projects-with-visibility'] })
     };
 }
+

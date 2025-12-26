@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,47 +7,20 @@ import { useLanguage } from './LanguageContext';
 import { MessageSquare, X, Send, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { createNotification } from './AutoNotification';
+import { useRDMutations } from '@/hooks/useRDMutations';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { buildProposalFeedbackPrompt } from '@/lib/ai/prompts/rd';
 
 export default function ProposalFeedbackWorkflow({ proposal, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  /* removed queryClient */
   const [feedback, setFeedback] = useState('');
-  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo, error } = useAIWithFallback();
 
-  const feedbackMutation = useMutation({
-    mutationFn: async (data) => {
-      const { supabase } = await import('@/integrations/supabase/client');
+  /* removed feedbackMutation */
 
-      const { error } = await supabase
-        .from('rd_proposals')
-        .update({
-          feedback_provided: true,
-          feedback_text: data.feedback,
-          feedback_date: new Date().toISOString()
-        })
-        .eq('id', proposal.id);
-      if (error) throw error;
-
-      await createNotification({
-        title: 'Proposal Feedback Available',
-        body: `Feedback has been provided for your proposal "${proposal.title_en}"`,
-        type: 'info',
-        priority: 'medium',
-        linkUrl: `RDProposalDetail?id=${proposal.id}`,
-        entityType: 'proposal',
-        entityId: proposal.id,
-        recipientEmail: proposal.principal_investigator?.email
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['proposals']);
-      toast.success(t({ en: 'Feedback sent', ar: 'تم إرسال الملاحظات' }));
-      onClose();
-    }
-  });
+  const { provideFeedback } = useRDMutations();
 
   const generateAIFeedback = async () => {
     const reviewScores = proposal.reviewer_scores || [];
@@ -70,7 +42,11 @@ export default function ProposalFeedbackWorkflow({ proposal, onClose }) {
   };
 
   const handleSend = () => {
-    feedbackMutation.mutate({ feedback });
+    provideFeedback.mutate({ proposal, feedback }, {
+      onSuccess: () => {
+        onClose();
+      }
+    });
   };
 
   return (
@@ -90,7 +66,7 @@ export default function ProposalFeedbackWorkflow({ proposal, onClose }) {
           <p className="text-xs text-slate-600 mt-1">{proposal.lead_institution}</p>
         </div>
 
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-3" />
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={error} className="mb-3" />
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
@@ -132,7 +108,7 @@ export default function ProposalFeedbackWorkflow({ proposal, onClose }) {
           </Button>
           <Button
             onClick={handleSend}
-            disabled={!feedback || feedbackMutation.isPending}
+            disabled={!feedback || provideFeedback.isPending}
             className="flex-1 bg-blue-600 hover:bg-blue-700"
           >
             <Send className="h-4 w-4 mr-2" />

@@ -45,7 +45,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from 'sonner';
 import ExportData from '../components/ExportData';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { usePermissions } from '../components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
+import { useInnovationMutations } from '@/hooks/useInnovationMutations';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,7 +13,7 @@ import { buildProposalToRDPrompt, PROPOSAL_TO_RD_SCHEMA } from '@/lib/ai/prompts
 
 export default function ProposalToRDConverter({ proposal, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
   const { invokeAI, status, isLoading: generating, rateLimitInfo, isAvailable } = useAIWithFallback();
   const [rdData, setRdData] = useState({
     title_en: '',
@@ -25,46 +26,27 @@ export default function ProposalToRDConverter({ proposal, onClose, onSuccess }) 
     research_themes: []
   });
 
+  const { createRDProject: createRDMutation } = useInnovationMutations();
+
+  /*
   const createRDMutation = useMutation({
-    mutationFn: async (data) => {
-      const { supabase } = await import('@/integrations/supabase/client');
-
-      const { data: rdProject, error: createError } = await supabase
-        .from('rd_projects')
-        .insert([data])
-        .select()
-        .single();
-      if (createError) throw createError;
-
-      const { error: updateError } = await supabase
-        .from('innovation_proposals')
-        .update({
-          converted_entity_type: 'rd_project',
-          converted_entity_id: rdProject.id
-        })
-        .eq('id', proposal.id);
-      if (updateError) throw updateError;
-
-      const { error: activityError } = await supabase
-        .from('system_activities')
-        .insert([{
-          entity_type: 'innovation_proposal',
-          entity_id: proposal.id,
-          action: 'converted_to_rd_project',
-          description: `Proposal converted to R&D Project: ${rdProject.title_en}`
-        }]);
-      if (activityError) throw activityError;
-
-      return rdProject;
-    },
-    onSuccess: (rdProject) => {
-      queryClient.invalidateQueries({ queryKey: ['innovation-proposals'] });
-      queryClient.invalidateQueries({ queryKey: ['rd-projects'] });
-      toast.success(t({ en: 'R&D Project created', ar: 'تم إنشاء مشروع البحث' }));
-      onSuccess?.(rdProject);
-      onClose?.();
-    }
+    // ... replaced logic ...
   });
+  */
+
+  // Actually, I need to look at the handleSubmit code to see how it calls mutation. 
+  // It calls createRDMutation.mutate({...}). 
+  // useInnovationMutations returns { createRDProject }. 
+  // createRDProject IS the mutation object (useMutation result).
+  // So I can just map it.
+
+  // NOTE: The previous code block includes imports which must be at top level. 
+  // I cannot replace a block in the middle with imports. 
+
+  // I will split this into two replacements.
+  // 1. Add import.
+  // 2. Replace mutation definition.
+
 
   const generateWithAI = async () => {
     if (!isAvailable) return;
@@ -186,3 +168,4 @@ export default function ProposalToRDConverter({ proposal, onClose, onSuccess }) 
     </div>
   );
 }
+

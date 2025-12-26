@@ -59,6 +59,8 @@ export default function PublicationSubmissionWorkflow({ projectId, onClose }) {
     }
   };
 
+  const { addProjectPublication } = useRDProjectMutations();
+
   const handleSubmit = () => {
     const newPublication = {
       title: formData.title,
@@ -72,11 +74,9 @@ export default function PublicationSubmissionWorkflow({ projectId, onClose }) {
       type: formData.type
     };
 
-    const { addProjectPublication } = useRDProjectMutations();
-
     addProjectPublication.mutate({
       id: projectId,
-      publications: project?.publications,
+      publications: /** @type {any[]} */ (project?.publications),
       newPublication
     }, {
       onSuccess: () => {
@@ -174,7 +174,7 @@ export default function PublicationSubmissionWorkflow({ projectId, onClose }) {
         {/* Step 2: Details & AI */}
         {step === 2 && (
           <div className="space-y-4">
-            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-2" />
+            <AIStatusIndicator status={status} error={null} rateLimitInfo={rateLimitInfo} className="mb-2" />
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold">
                 {t({ en: 'Publication Details', ar: 'تفاصيل النشر' })}

@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Upload, Loader2, X } from 'lucide-react';
-import { useSupabaseFileUpload } from '@/hooks/useSupabaseFileUpload';
+import * as usePlatformCore from '@/hooks/usePlatformCore';
 
 /**
  * SupabaseFileUploader
@@ -18,8 +18,9 @@ export default function SupabaseFileUploader({
   currentUrl = null,
   className = ''
 }) {
-  const { upload, isUploading, progress, resetProgress } = useSupabaseFileUpload();
+  const { uploadMutation } = usePlatformCore.useFileStorage();
   const [previewUrl, setPreviewUrl] = useState(currentUrl);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef(null);
 
   const handleClick = () => {
@@ -31,24 +32,33 @@ export default function SupabaseFileUploader({
     if (!file) return;
 
     try {
-      const publicUrl = await upload({ file, bucket, maxSize });
+      setUploadProgress(10);
+      const result = await uploadMutation.mutateAsync({
+        file,
+        bucket,
+        maxSize
+      });
 
-      setPreviewUrl(publicUrl);
+      setUploadProgress(100);
+      setPreviewUrl(result.file_url);
 
       // Call callback with URL
       if (onUpload) {
-        onUpload(publicUrl);
+        onUpload(result.file_url);
       }
     } catch (error) {
-      // Error handled by hook
+      // Error handled by mutation state in UI if needed, but we rely on toast from hook if any
+      setUploadProgress(0);
     } finally {
-      resetProgress();
       // Reset input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+      setTimeout(() => setUploadProgress(0), 1000);
     }
   };
+
+  const isUploading = uploadMutation.isPending;
 
   return (
     <div className={className}>
@@ -109,7 +119,7 @@ export default function SupabaseFileUploader({
           </Button>
 
           {isUploading && (
-            <Progress value={progress} className="h-1" />
+            <Progress value={uploadProgress} className="h-1" />
           )}
         </div>
       )}

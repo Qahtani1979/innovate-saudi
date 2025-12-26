@@ -2,7 +2,7 @@
  * Program Mutations Hook
  * Implements CRUD operations for Programs with audit logging and notifications
  */
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
@@ -13,7 +13,7 @@ import { useAuditLog } from '@/hooks/useAuditLog';
 import { useAccessControl } from '@/hooks/useAccessControl';
 
 export function useProgramMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { user } = useAuth();
     const { logCrudOperation } = useAuditLogger();
     const { triggerEmail } = useEmailTrigger();
@@ -713,3 +713,4 @@ export function useProgramMutations() {
 }
 
 export default useProgramMutations;
+

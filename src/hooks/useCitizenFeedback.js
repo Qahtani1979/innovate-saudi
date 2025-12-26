@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -41,7 +41,7 @@ export function useCitizenFeedback(options = {}) {
  * Hook to submit citizen feedback
  */
 export function useSubmitCitizenFeedback() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     /** @type {import('@tanstack/react-query').UseMutationResult<any, Error, {entityId?: string, entityType?: string, content: string, feedbackType: string, isAnonymous: boolean, sentiment?: string, rating?: number}>} */
     const mutation = useMutation({
@@ -64,3 +64,4 @@ export function useSubmitCitizenFeedback() {
 
     return mutation;
 }
+

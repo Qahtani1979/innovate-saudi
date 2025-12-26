@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { usePilotMutations } from './usePilotMutations';
@@ -9,7 +9,7 @@ import { useSolutionMutations } from './useSolutionMutations';
  * Hook for handling R&D Project conversions/transitions
  */
 export function useRDConversionMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { createPilot } = usePilotMutations();
     const { createPolicy } = usePolicyMutations();
     const { createSolution } = useSolutionMutations();
@@ -175,3 +175,4 @@ export function useRDConversionMutations() {
         transitionToStartup
     };
 }
+

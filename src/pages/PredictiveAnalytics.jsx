@@ -4,20 +4,17 @@ import { useLanguage } from '../components/LanguageContext';
 import { Sparkles, TrendingUp, AlertTriangle, Target } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { usePredictiveInsights } from '@/hooks/useAIInsights';
+import { Skeleton } from '@/components/ui/skeleton';
 
 function PredictiveAnalytics() {
   const { language, isRTL, t } = useLanguage();
 
-  // We need detailed pilot data for charts here, so we use usePilotsWithVisibility
-  // If performance becomes an issue with many pilots, we can optimize the hook or request specific fields.
   const { data: pilots = [] } = usePilotsWithVisibility();
+  const { data: insightsData, isLoading: insightsLoading } = usePredictiveInsights();
 
-  const successForecast = [
-    { month: 'Dec', projected: 72, actual: 68 },
-    { month: 'Jan', projected: 75, actual: null },
-    { month: 'Feb', projected: 78, actual: null },
-    { month: 'Mar', projected: 82, actual: null }
-  ];
+  const successForecast = insightsData?.forecasts || [];
+  const keyInsights = insightsData?.keyInsights || [];
 
   const riskAnalysis = pilots.map(p => ({
     name: p.code || p.title_en?.substring(0, 20),
@@ -82,21 +79,19 @@ function PredictiveAnalytics() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            <div className="p-3 bg-white rounded-lg">
-              <p className="text-sm font-medium text-green-700">
-                ✓ {t({ en: '5 pilots projected to reach completion ahead of schedule', ar: '5 تجارب متوقع أن تكتمل قبل الموعد' })}
-              </p>
-            </div>
-            <div className="p-3 bg-white rounded-lg">
-              <p className="text-sm font-medium text-amber-700">
-                ⚠ {t({ en: '3 pilots showing early warning signals for budget overrun', ar: '3 تجارب تظهر إشارات تحذير مبكرة لتجاوز الميزانية' })}
-              </p>
-            </div>
-            <div className="p-3 bg-white rounded-lg">
-              <p className="text-sm font-medium text-blue-700">
-                → {t({ en: 'Transport sector expected to see 40% increase in challenges Q1 2026', ar: 'من المتوقع أن يشهد قطاع النقل زيادة 40٪ في التحديات في الربع الأول 2026' })}
-              </p>
-            </div>
+            {insightsLoading ? (
+              [1, 2, 3].map(i => <Skeleton key={i} className="h-10 w-full" />)
+            ) : (
+              keyInsights.map((insight) => (
+                <div key={insight.id} className="p-3 bg-white rounded-lg">
+                  <p className={`text-sm font-medium ${insight.type === 'success' ? 'text-green-700' :
+                      insight.type === 'warning' ? 'text-amber-700' : 'text-blue-700'
+                    }`}>
+                    {insight.type === 'success' ? '✓' : insight.type === 'warning' ? '⚠️' : '→'} {t({ en: insight.text, ar: insight.text })}
+                  </p>
+                </div>
+              ))
+            )}
           </div>
         </CardContent>
       </Card>

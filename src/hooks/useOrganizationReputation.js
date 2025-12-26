@@ -1,11 +1,11 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Hook for managing organization reputation logic.
  */
 export function useOrganizationReputation(organizationId) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const { data: reputationData } = useQuery({
         queryKey: ['organization-reputation-factors', organizationId],
@@ -79,3 +79,4 @@ export function useOrganizationReputation(organizationId) {
         updateReputation
     };
 }
+

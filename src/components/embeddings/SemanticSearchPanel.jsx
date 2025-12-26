@@ -7,34 +7,29 @@ import { useLanguage } from '../LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { Search, Sparkles, Loader2, Target } from 'lucide-react';
+import { useSemanticSearch } from '@/hooks/usePlatformCore';
 
 export default function SemanticSearchPanel() {
   const { t, language } = useLanguage();
   const [query, setQuery] = useState('');
   const [entityType, setEntityType] = useState('Challenge');
   const [results, setResults] = useState(null);
-  const [searching, setSearching] = useState(false);
+
+  const { searchMutation, searching } = useSemanticSearch();
 
   const handleSearch = async () => {
     if (!query || query.length < 3) {
       return;
     }
 
-    setSearching(true);
-    try {
-      const result = await base44.functions.invoke('semanticSearch', {
-        query: query,
-        entity_name: entityType,
-        limit: 10,
-        threshold: 0.6
-      });
-
-      setResults(result.data);
-    } catch (error) {
-      console.error('Search error:', error);
-    } finally {
-      setSearching(false);
-    }
+    searchMutation.mutate({ query, entityName: entityType }, {
+      onSuccess: (data) => {
+        setResults(data);
+      },
+      onError: (error) => {
+        console.error('Search error:', error);
+      }
+    });
   };
 
   const entityConfig = {

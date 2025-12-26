@@ -8,9 +8,8 @@ import { Bell, Plus, Trash2, Save, Target, AlertTriangle, TrendingDown, Trending
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { toast } from 'sonner';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import useStrategicKPI from '@/hooks/useStrategicKPI';
+import { useStrategicPlans } from '@/hooks/useStrategicPlans';
 
 /**
  * KPIAlertConfig - Updated with Strategic KPI Thresholds
@@ -18,20 +17,9 @@ import useStrategicKPI from '@/hooks/useStrategicKPI';
  */
 export default function KPIAlertConfig({ kpis = [] }) {
   const { language, isRTL, t } = useLanguage();
-  
+
   // Fetch strategic plans
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans-alerts'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('strategic_plans')
-        .select('id, name_en, name_ar, objectives')
-        .or('is_template.is.null,is_template.eq.false')
-        .or('is_deleted.is.null,is_deleted.eq.false')
-        .order('name_en');
-      return data || [];
-    }
-  });
+  const { data: strategicPlans = [] } = useStrategicPlans();
 
   // Get strategic KPIs
   const { strategicKPIs, isLoading: kpisLoading } = useStrategicKPI();
@@ -55,8 +43,8 @@ export default function KPIAlertConfig({ kpis = [] }) {
   const [selectedStrategicPlan, setSelectedStrategicPlan] = useState('all');
 
   // Filter KPIs by selected strategic plan
-  const filteredKPIs = selectedStrategicPlan === 'all' 
-    ? allKPIs 
+  const filteredKPIs = selectedStrategicPlan === 'all'
+    ? allKPIs
     : allKPIs.filter(kpi => kpi.plan_id === selectedStrategicPlan || !kpi.is_strategic);
 
   const [alerts, setAlerts] = useState([
@@ -119,7 +107,7 @@ export default function KPIAlertConfig({ kpis = [] }) {
     setAlerts(alerts.map(a => {
       if (a.id === id) {
         const updates = { [field]: value };
-        
+
         // If changing KPI, update related fields
         if (field === 'kpi') {
           const selectedKpi = allKPIs.find(k => k.name_en === value);
@@ -128,7 +116,7 @@ export default function KPIAlertConfig({ kpis = [] }) {
             updates.is_strategic = selectedKpi.is_strategic;
             updates.target_value = selectedKpi.target || 100;
             updates.threshold = Math.round((selectedKpi.target || 100) * 0.7);
-            
+
             // Auto-escalate for strategic KPIs
             if (selectedKpi.is_strategic) {
               updates.escalate_on_breach = true;
@@ -136,7 +124,7 @@ export default function KPIAlertConfig({ kpis = [] }) {
             }
           }
         }
-        
+
         return { ...a, ...updates };
       }
       return a;
@@ -152,7 +140,7 @@ export default function KPIAlertConfig({ kpis = [] }) {
         auto_escalate: alert.escalate_on_breach
       } : null
     }));
-    
+
     console.log('Saving alerts with strategic context:', alertData);
     toast.success(t({ en: 'Alert rules saved with strategic thresholds', ar: 'تم حفظ قواعد التنبيه مع العتبات الاستراتيجية' }));
   };
@@ -167,9 +155,9 @@ export default function KPIAlertConfig({ kpis = [] }) {
               {t({ en: 'Strategic KPI Alert Configuration', ar: 'تكوين تنبيهات مؤشرات الأداء الاستراتيجية' })}
             </CardTitle>
             <CardDescription>
-              {t({ 
-                en: 'Configure alerts with strategic KPI thresholds (Phase 6)', 
-                ar: 'تكوين التنبيهات مع عتبات مؤشرات الأداء الاستراتيجية (المرحلة 6)' 
+              {t({
+                en: 'Configure alerts with strategic KPI thresholds (Phase 6)',
+                ar: 'تكوين التنبيهات مع عتبات مؤشرات الأداء الاستراتيجية (المرحلة 6)'
               })}
             </CardDescription>
           </div>
@@ -209,8 +197,8 @@ export default function KPIAlertConfig({ kpis = [] }) {
             <div key={alert.id} className={`p-4 border-2 rounded-lg ${alert.is_strategic ? 'bg-primary/5 border-primary/30' : 'bg-slate-50'}`}>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Switch 
-                    checked={alert.enabled} 
+                  <Switch
+                    checked={alert.enabled}
                     onCheckedChange={(v) => updateAlert(alert.id, 'enabled', v)}
                   />
                   <Badge variant={alert.is_strategic ? 'default' : 'outline'}>{alert.kpi}</Badge>
@@ -225,11 +213,11 @@ export default function KPIAlertConfig({ kpis = [] }) {
                   <Trash2 className="h-4 w-4 text-red-600" />
                 </Button>
               </div>
-              
+
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
                 <div>
                   <label className="text-xs font-medium mb-1 block">{t({ en: 'KPI', ar: 'المؤشر' })}</label>
-                  <Select 
+                  <Select
                     value={alert.kpi}
                     onValueChange={(v) => updateAlert(alert.id, 'kpi', v)}
                   >
@@ -250,7 +238,7 @@ export default function KPIAlertConfig({ kpis = [] }) {
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block">{t({ en: 'Rule Type', ar: 'نوع القاعدة' })}</label>
-                  <Select 
+                  <Select
                     value={alert.rule_type}
                     onValueChange={(v) => updateAlert(alert.id, 'rule_type', v)}
                   >
@@ -273,16 +261,16 @@ export default function KPIAlertConfig({ kpis = [] }) {
                       </span>
                     )}
                   </label>
-                  <Input 
-                    type="number" 
-                    value={alert.threshold} 
+                  <Input
+                    type="number"
+                    value={alert.threshold}
                     onChange={(e) => updateAlert(alert.id, 'threshold', parseInt(e.target.value))}
-                    className="text-sm" 
+                    className="text-sm"
                   />
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block">{t({ en: 'Frequency', ar: 'التكرار' })}</label>
-                  <Select 
+                  <Select
                     value={alert.frequency}
                     onValueChange={(v) => updateAlert(alert.id, 'frequency', v)}
                   >
@@ -318,7 +306,7 @@ export default function KPIAlertConfig({ kpis = [] }) {
                     </div>
                     <div>
                       <label className="text-xs font-medium mb-1 block">{t({ en: 'Escalation Level', ar: 'مستوى التصعيد' })}</label>
-                      <Select 
+                      <Select
                         value={alert.escalation_level}
                         onValueChange={(v) => updateAlert(alert.id, 'escalation_level', v)}
                       >
@@ -339,9 +327,9 @@ export default function KPIAlertConfig({ kpis = [] }) {
                     </div>
                   </div>
                   <div className="text-xs text-amber-600">
-                    {t({ 
-                      en: `Alert will trigger at ${alert.threshold}% of target (${alert.target_value})`, 
-                      ar: `سيتم تشغيل التنبيه عند ${alert.threshold}% من الهدف (${alert.target_value})` 
+                    {t({
+                      en: `Alert will trigger at ${alert.threshold}% of target (${alert.target_value})`,
+                      ar: `سيتم تشغيل التنبيه عند ${alert.threshold}% من الهدف (${alert.target_value})`
                     })}
                   </div>
                 </div>
@@ -349,8 +337,8 @@ export default function KPIAlertConfig({ kpis = [] }) {
 
               <div className="mt-3">
                 <label className="text-xs font-medium mb-1 block">{t({ en: 'Recipients', ar: 'المستلمون' })}</label>
-                <Input 
-                  placeholder="email@example.com" 
+                <Input
+                  placeholder="email@example.com"
                   className="text-sm"
                   value={alert.recipients?.join(', ') || ''}
                   onChange={(e) => updateAlert(alert.id, 'recipients', e.target.value.split(',').map(s => s.trim()))}

@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNotificationSystem } from './useNotificationSystem';
@@ -88,7 +88,7 @@ export function useApprovalWorkflow(entityId, entityType) {
 }
 
 export function useGovernanceMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { notify } = useNotificationSystem();
     const { logAction } = useAuditLogger();
 
@@ -302,3 +302,4 @@ export function useGovernanceMutations() {
         updateChallengeTreatment
     };
 }
+

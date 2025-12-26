@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -21,7 +21,7 @@ export function usePolicy(policyId) {
 }
 
 export function usePolicyMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const createPolicy = useMutation({
         mutationFn: async (policyData) => {
@@ -92,3 +92,4 @@ export function usePolicyMutations() {
 
     return { createPolicy, updatePolicy };
 }
+

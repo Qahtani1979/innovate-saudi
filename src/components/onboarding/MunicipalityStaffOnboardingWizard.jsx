@@ -166,7 +166,7 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
     setIsExtractingCV(true);
 
     try {
-      // Use AI-powered extraction instead of base44
+      // Use AI-powered extraction
       const result = await invokeAI({
         prompt: `Analyze this CV file and extract professional information for a municipality staff member. CV URL: ${fileUrl}
 

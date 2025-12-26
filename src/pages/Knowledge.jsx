@@ -17,7 +17,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useKnowledgeWithVisibility } from '@/hooks/useKnowledgeWithVisibility';
 import { useCaseStudiesWithVisibility } from '@/hooks/useCaseStudiesWithVisibility';
 import { useKnowledgeMutations } from '@/hooks/useKnowledgeMutations';
-import { usePermissions } from '@/components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function KnowledgePage() {

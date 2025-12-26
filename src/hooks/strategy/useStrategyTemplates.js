@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
@@ -7,7 +7,7 @@ import { STRATEGY_TEMPLATE_TYPES } from '@/constants/strategyTemplateTypes';
 
 export function useStrategyTemplates() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
 
   // Fetch all public templates
   const { 
@@ -439,3 +439,4 @@ export function useStrategyTemplates() {
     })
   };
 }
+

@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/LanguageContext';
@@ -25,7 +25,7 @@ export function useEmailTemplates() {
  * Hook for email template mutations
  */
 export function useEmailTemplateMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { t } = useLanguage();
 
     const saveTemplate = useMutation({
@@ -173,3 +173,4 @@ export function useEmailTester() {
 
     return { sendTestEmail };
 }
+

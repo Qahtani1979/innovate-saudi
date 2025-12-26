@@ -9,6 +9,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { useSolutions } from '@/hooks/useSolutions';
 import { useUserActivity, useLogActivity } from '@/hooks/useUserActivity';
+import { useSmartRecommendations } from '@/hooks/useAIInsights';
 
 /**
  * SmartRecommendationEngine
@@ -16,71 +17,19 @@ import { useUserActivity, useLogActivity } from '@/hooks/useUserActivity';
  */
 export default function SmartRecommendationEngine({ challenge, userId, limit = 3 }) {
   const { t } = useLanguage();
-  const [recommendations, setRecommendations] = useState([]);
   const [dismissed, setDismissed] = useState([]);
 
   const { solutions = [] } = useSolutions({ publishedOnly: true, limit: 100 });
   const { activities: userActivity = [] } = useUserActivity(userId, userId);
   const trackInteraction = useLogActivity();
 
-  useEffect(() => {
-    if (solutions.length === 0) return;
-
-    // Calculate personalized recommendations with learning
-    const userViewedSolutions = userActivity
-      .filter(a => a.activity_type === 'view' && a.entity_type === 'solution')
-      .map(a => a.entity_id);
-
-    const userLikedSectors = userActivity
-      .filter(a => a.activity_type === 'express_interest')
-      .map(a => {
-        const sol = solutions.find(s => s.id === a.entity_id);
-        return sol?.sectors || [];
-      })
-      .flat();
-
-    const sectorWeights = {};
-    userLikedSectors.forEach(sector => {
-      sectorWeights[sector] = (sectorWeights[sector] || 0) + 1;
-    });
-
-    const scored = solutions
-      .filter(s => s.is_verified && !dismissed.includes(s.id) && !userViewedSolutions.includes(s.id))
-      .map(solution => {
-        let score = 0;
-
-        // Base quality score
-        score += (solution.average_rating || 0) * 10;
-        score += (solution.success_rate || 0) * 0.5;
-        score += (solution.deployment_count || 0) * 2;
-
-        // User preference learning
-        const solutionSectors = solution.sectors || [];
-        solutionSectors.forEach(sector => {
-          if (sectorWeights[sector]) {
-            score += sectorWeights[sector] * 15; // Heavy weight for user interests
-          }
-        });
-
-        // Challenge alignment (if challenge provided)
-        if (challenge) {
-          if (solution.sectors?.includes(challenge.sector)) score += 30;
-          if (solution.maturity_level === 'proven' || solution.maturity_level === 'market_ready') {
-            score += 20;
-          }
-        }
-
-        // Recency boost
-        const daysSinceCreated = (new Date().getTime() - new Date(solution.created_at || new Date()).getTime()) / (1000 * 60 * 60 * 24);
-        if (daysSinceCreated < 30) score += 10;
-
-        return { ...solution, recommendation_score: score };
-      })
-      .sort((a, b) => b.recommendation_score - a.recommendation_score)
-      .slice(0, limit);
-
-    setRecommendations(scored);
-  }, [solutions, userActivity, challenge, dismissed, limit]);
+  const { recommendations } = useSmartRecommendations({
+    challenge,
+    userId,
+    solutions,
+    userActivity,
+    dismissed
+  });
 
   const handleView = (solutionId, score) => {
     trackInteraction.mutate({

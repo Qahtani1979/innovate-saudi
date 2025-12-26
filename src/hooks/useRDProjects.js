@@ -20,6 +20,7 @@ export function useRDProjects(options = {}) {
 
             if (options.living_lab_id) {
                 if (Array.isArray(options.living_lab_id)) {
+                    // @ts-ignore
                     query = query.in('living_lab_id', options.living_lab_id);
                 } else {
                     query = query.eq('living_lab_id', options.living_lab_id);
@@ -31,5 +32,27 @@ export function useRDProjects(options = {}) {
             return data || [];
         },
         staleTime: 1000 * 60 * 5 // 5 minutes
+    });
+}
+
+/**
+ * Hook to fetch a single R&D Project
+ * @param {string} id - Project ID
+ */
+export function useRDProject(id) {
+    return useQuery({
+        queryKey: ['rd-project', id],
+        queryFn: async () => {
+            if (!id) return null;
+            const { data, error } = await supabase
+                .from('rd_projects')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (error) throw error;
+            return data;
+        },
+        enabled: !!id
     });
 }

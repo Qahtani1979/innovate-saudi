@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -7,7 +7,7 @@ import { toast } from 'sonner';
  * Enables bidirectional Strategy ↔ Programs integration
  */
 export function useStrategicKPI() {
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
 
   // Fetch strategic plans with their KPIs/objectives
   const { data: strategicPlans = [], isLoading: plansLoading } = useQuery({
@@ -234,3 +234,4 @@ export function useStrategicKPI() {
 }
 
 export default useStrategicKPI;
+

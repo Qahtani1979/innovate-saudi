@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -6,7 +6,7 @@ import { toast } from 'sonner';
  * Hook for managing strategic plan challenge links
  */
 export function useStrategicLinks(challengeId = null) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const query = useQuery({
         queryKey: ['strategic-links', challengeId],
@@ -76,3 +76,4 @@ export function useStrategicLinks(challengeId = null) {
         isUpdating: updateLinksMutation.isPending
     };
 }
+

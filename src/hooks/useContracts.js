@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -44,7 +44,7 @@ export function useAllContracts() {
 }
 
 export function useCreateContract() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     return useMutation({
         mutationFn: async (contractData) => {
             const { data, error } = await supabase
@@ -86,7 +86,7 @@ export function useContract(id) {
 }
 
 export function useUpdateContract() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     return useMutation({
         mutationFn: async ({ id, updates }) => {
             const { data, error } = await supabase
@@ -105,3 +105,4 @@ export function useUpdateContract() {
         }
     });
 }
+

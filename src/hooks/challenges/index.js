@@ -7,20 +7,18 @@
 export { useChallengesWithVisibility } from '../useChallengesWithVisibility';
 export { useChallengeMutations } from '../useChallengeMutations';
 export { useChallengeCreateForm } from '../useChallengeCreateForm';
-export { useChallengeStorage } from '../useChallengeStorage';
-
 // Integration Hooks
 export { useChallengeIntegrations } from '../useChallengeIntegrations';
 export { useChallengeNotifications } from '../useChallengeNotifications';
 
 // Realtime & Delegation
-export { 
-  useChallengeRealtime, 
-  useChallengeListRealtime, 
-  useChallengeDetailRealtime 
+export {
+  useChallengeRealtime,
+  useChallengeListRealtime,
+  useChallengeDetailRealtime
 } from '../useChallengeRealtime';
 
-export { 
+export {
   useChallengeDelegation,
-  CHALLENGE_PERMISSIONS 
+  CHALLENGE_PERMISSIONS
 } from '../useChallengeDelegation';

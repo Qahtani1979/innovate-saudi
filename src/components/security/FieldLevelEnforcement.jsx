@@ -1,4 +1,4 @@
-import { usePermissions } from '../permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 
 // Field permission configuration per entity and role
 const FIELD_PERMISSIONS = {

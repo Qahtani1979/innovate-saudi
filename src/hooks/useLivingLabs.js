@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
@@ -34,7 +34,7 @@ export function useMyLivingLabs(userEmail) {
 }
 
 export function useLivingLabMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { triggerEmail } = useEmailTrigger();
 
     const createLab = useMutation({
@@ -172,3 +172,4 @@ export function useLivingLabMutations() {
 
     return { createLab, convertProjectToSolution, accreditLab, routeToLab };
 }
+

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSandboxMutations } from '@/hooks/useSandboxMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -12,7 +12,6 @@ import { toast } from 'sonner';
 
 export default function SandboxInfrastructureReadinessGate({ sandbox, onClose, onApprove }) {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
 
   const readinessChecks = [
     {
@@ -92,28 +91,20 @@ export default function SandboxInfrastructureReadinessGate({ sandbox, onClose, o
   );
   const [inspectorNotes, setInspectorNotes] = useState('');
 
-  const approveMutation = useMutation({
-    mutationFn: async () => {
-      const { supabase } = await import('@/integrations/supabase/client');
+  const { approveInfrastructure } = useSandboxMutations();
 
-      const { error } = await supabase
-        .from('sandboxes')
-        .update({
-          infrastructure_ready: true,
-          infrastructure_readiness_date: new Date().toISOString().split('T')[0],
-          infrastructure_checklist: checklist,
-          infrastructure_notes: inspectorNotes
-        })
-        .eq('id', sandbox.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['sandbox']);
-      toast.success(t({ en: 'Infrastructure approved as ready', ar: 'تمت الموافقة على جاهزية البنية التحتية' }));
-      if (onApprove) onApprove();
-      onClose();
-    }
-  });
+  const handleApprove = () => {
+    approveInfrastructure.mutate({
+      id: sandbox.id,
+      checklist,
+      notes: inspectorNotes
+    }, {
+      onSuccess: () => {
+        if (onApprove) onApprove();
+        onClose();
+      }
+    });
+  };
 
   const allRequiredChecked = readinessChecks
     .filter(item => item.required)
@@ -214,11 +205,11 @@ export default function SandboxInfrastructureReadinessGate({ sandbox, onClose, o
 
         <div className="flex gap-3 pt-4 border-t">
           <Button
-            onClick={() => approveMutation.mutate()}
-            disabled={!allRequiredChecked || approveMutation.isPending}
+            onClick={handleApprove}
+            disabled={!allRequiredChecked || approveInfrastructure.isPending}
             className="flex-1 bg-green-600 hover:bg-green-700"
           >
-            {approveMutation.isPending ? (
+            {approveInfrastructure.isPending ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <CheckCircle2 className="h-4 w-4 mr-2" />

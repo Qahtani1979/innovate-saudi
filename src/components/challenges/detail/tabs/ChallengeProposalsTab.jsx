@@ -6,8 +6,7 @@ import { useLanguage } from '@/components/LanguageContext';
 import { FileText, Loader2 } from 'lucide-react';
 import ProposalSubmissionForm from '@/components/challenges/ProposalSubmissionForm';
 import ChallengeRFPGenerator from '@/components/challenges/ChallengeRFPGenerator';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useChallengeProposals } from '@/hooks/useChallengeLinkedData';
 
 export default function ChallengeProposalsTab({
   challenge,
@@ -17,18 +16,7 @@ export default function ChallengeProposalsTab({
   const { t } = useLanguage();
   const challengeId = challenge?.id;
 
-  const { data: proposals = [], isLoading } = useQuery({
-    queryKey: ['challenge-proposals', challengeId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('challenge_proposals')
-        .select('*')
-        .eq('challenge_id', challengeId)
-        .eq('is_deleted', false);
-      return data || [];
-    },
-    enabled: !!challengeId
-  });
+  const { proposals, isLoading } = useChallengeProposals(challengeId);
 
   if (isLoading) {
     return <div className="p-8 text-center"><Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" /></div>;

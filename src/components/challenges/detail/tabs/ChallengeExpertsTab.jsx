@@ -2,24 +2,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '@/components/LanguageContext';
 import { Award, Star, Loader2 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useChallengeExpertEvaluations } from '@/hooks/useChallengeLinkedData';
 
 export default function ChallengeExpertsTab({ challengeId }) {
   const { t } = useLanguage();
 
-  const { data: expertEvaluations = [], isLoading } = useQuery({
-    queryKey: ['challenge-expert-evaluations', challengeId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('expert_evaluations')
-        .select('*')
-        .eq('entity_type', 'challenge')
-        .eq('entity_id', challengeId);
-      return data || [];
-    },
-    enabled: !!challengeId
-  });
+  const { expertEvaluations, isLoading } = useChallengeExpertEvaluations(challengeId);
 
   if (isLoading) {
     return <div className="text-center py-8"><Loader2 className="h-8 w-8 animate-spin mx-auto text-amber-600" /></div>;

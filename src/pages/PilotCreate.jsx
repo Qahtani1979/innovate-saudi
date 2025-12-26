@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { ArrowLeft, ArrowRight, Save, Loader2, CheckCircle2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
-import { usePermissions } from '@/components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useLanguage } from '@/components/LanguageContext';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';

@@ -1,5 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from "@/integrations/supabase/client";
+import { useMatchmakerAlumni } from '@/hooks/useMatchmakerAlumni';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,32 +8,7 @@ import { GraduationCap, Award, ExternalLink } from 'lucide-react';
 export default function MatchmakerAlumniView() {
     const { t, isRTL } = useLanguage();
 
-    const { data: alumni = [] } = useQuery({
-        queryKey: ['matchmaker-alumni'],
-        queryFn: async () => {
-            // Alumni logic: Providers who have at least one completed partnership or pilot associated with them
-            // This is a complex query, simplified here by fetching partnerships
-            const { data, error } = await supabase
-                .from('organization_partnerships')
-                .select(`
-          provider_id,
-          provider:organizations!provider_id(name_en, name_ar, logo_url, website)
-        `)
-                .eq('status', 'completed'); // or active for current almonds? Alumni usually means graduated/completed.
-
-            if (error) throw error;
-
-            // Deduplicate providers
-            const uniqueDetails = new Map();
-            data?.forEach(item => {
-                if (!uniqueDetails.has(item.provider_id)) {
-                    uniqueDetails.set(item.provider_id, item.provider);
-                }
-            });
-
-            return Array.from(uniqueDetails.values());
-        }
-    });
+    const { data: alumni = [] } = useMatchmakerAlumni();
 
     return (
         <Card className="bg-slate-50 border-slate-200">

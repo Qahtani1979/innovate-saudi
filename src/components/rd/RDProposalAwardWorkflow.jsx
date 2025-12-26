@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useRDProposalMutations } from '@/hooks/useRDProposalMutations';
-import { useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,7 @@ import { useAuth } from '@/lib/AuthContext';
 
 export default function RDProposalAwardWorkflow({ proposal, rdCall, onClose }) {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
   const { user } = useAuth();
   const [awardAmount, setAwardAmount] = useState(proposal.budget_requested || 0);
   const [awardNotes, setAwardNotes] = useState('');
@@ -112,3 +112,4 @@ export default function RDProposalAwardWorkflow({ proposal, rdCall, onClose }) {
     </Card>
   );
 }
+

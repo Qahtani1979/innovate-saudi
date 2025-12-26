@@ -1,8 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function usePlatformInsights() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const { data: announcements = [], isLoading, error, refetch } = useQuery({
         queryKey: ['platform-insights'],
@@ -29,3 +29,4 @@ export function usePlatformInsights() {
 
     return { announcements, isLoading, error, markAsRead, refetch };
 }
+

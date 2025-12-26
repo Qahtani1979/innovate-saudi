@@ -3,7 +3,7 @@
  * Handles logic for approving/rejecting pilot milestones.
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/LanguageContext';
@@ -12,7 +12,7 @@ import { useAuth } from '@/lib/AuthContext';
 export function useMilestoneApproval() {
     const { t } = useLanguage();
     const { user } = useAuth();
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const approveMutation = useMutation({
         mutationFn: async ({ pilot, milestone, milestoneIndex, approved, comments }) => {
@@ -52,3 +52,4 @@ export function useMilestoneApproval() {
 
     return { approveMutation };
 }
+

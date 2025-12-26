@@ -4,17 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+
 import { toast } from 'sonner';
 import { CheckCircle2, X, Sparkles, Send, Loader2, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { useRDMutations } from '@/hooks/useRDMutations';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { buildProposalBriefPrompt, proposalBriefSchema, PROPOSAL_BRIEF_SYSTEM_PROMPT } from '@/lib/ai/prompts/core';
 import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function ProposalSubmissionWizard({ proposal, rdCall, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+
   const [step, setStep] = useState(1);
   const [notes, setNotes] = useState('');
   const [aiBrief, setAiBrief] = useState(null);
@@ -35,33 +36,14 @@ export default function ProposalSubmissionWizard({ proposal, rdCall, onClose }) 
     fallbackData: null
   });
 
-  const submitMutation = useMutation({
-    mutationFn: async () => {
-      const { supabase } = await import('@/integrations/supabase/client');
+  const { submitProposal } = useRDMutations();
 
-      const { error } = await supabase
-        .from('rd_proposals')
-        .update({
-          status: 'submitted',
-          submission_date: new Date().toISOString(),
-          submission_checklist: checklist,
-          submission_notes: notes,
-          ai_submission_brief: aiBrief
-        })
-        .eq('id', proposal.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['rdProposal']);
-      toast.success(t({ en: 'Proposal submitted', ar: 'تم تقديم المقترح' }));
-      onClose();
-    }
-  });
+  /* removed submitMutation */
 
   const generateAIBrief = async () => {
     const { success, data } = await invokeAI({
       prompt: buildProposalBriefPrompt(proposal),
-      systemPrompt: getSystemPrompt(PROPOSAL_BRIEF_SYSTEM_PROMPT),
+      system_prompt: getSystemPrompt(PROPOSAL_BRIEF_SYSTEM_PROMPT),
       response_json_schema: proposalBriefSchema
     });
 
@@ -260,11 +242,21 @@ export default function ProposalSubmissionWizard({ proposal, rdCall, onClose }) 
             </Button>
           ) : (
             <Button
-              onClick={() => submitMutation.mutate()}
-              disabled={submitMutation.isPending}
+              onClick={() => submitProposal.mutate({
+                id: proposal.id,
+                title: proposal.title_en,
+                checklist,
+                notes,
+                aiBrief
+              }, {
+                onSuccess: () => {
+                  onClose();
+                }
+              })}
+              disabled={submitProposal.isPending}
               className="bg-gradient-to-r from-green-600 to-blue-600"
             >
-              {submitMutation.isPending ? (
+              {submitProposal.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {t({ en: 'Submitting...', ar: 'جاري التقديم...' })}

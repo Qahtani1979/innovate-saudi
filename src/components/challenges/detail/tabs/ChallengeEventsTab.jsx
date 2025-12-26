@@ -1,32 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '@/components/LanguageContext';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { Calendar, CheckCircle2, Loader2, Clock } from 'lucide-react';
-import { Badge } from "@/components/ui/badge";
+import { useChallengeLinkedEvents } from '@/hooks/useChallengeLinkedData';
 
 export default function ChallengeEventsTab({ challenge }) {
     const { t } = useLanguage();
     const challengeId = challenge?.id;
 
-    const { data: events = [], isLoading } = useQuery({
-        queryKey: ['challenge-events', challengeId],
-        queryFn: async () => {
-            const { data, error } = await supabase
-                .from('events') // Assuming 'events' table exists and links via challenge_id or related_entity
-                .select('*')
-                .eq('challenge_id', challengeId)
-                .order('event_date', { ascending: true });
-
-            if (error) {
-                // Fallback for demo or if table schema different, returning empty for now if error
-                console.warn("Events fetch error:", error);
-                return [];
-            }
-            return data;
-        },
-        enabled: !!challengeId
-    });
+    const { events, isLoading } = useChallengeLinkedEvents(challengeId);
 
     if (isLoading) {
         return <div className="p-8 text-center text-muted-foreground">Loading events...</div>;

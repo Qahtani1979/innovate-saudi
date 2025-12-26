@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -45,7 +45,7 @@ export function useCaseStudies() {
  * Hook for case study mutations
  */
 export function useCaseStudyMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const updateCaseStudy = useMutation({
         mutationFn: async ({ id, data }) => {
@@ -111,3 +111,4 @@ export function useCaseStudyMutations() {
         deleteCaseStudy
     };
 }
+

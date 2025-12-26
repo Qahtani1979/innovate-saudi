@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSandboxMutations } from '@/hooks/useSandboxMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,6 @@ import AISafetyProtocolGenerator from './AISafetyProtocolGenerator';
 
 export default function SandboxApplicationForm({ sandbox, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [showAIAssistants, setShowAIAssistants] = useState(false);
   const [formData, setFormData] = useState({
     applicant_organization: '',
@@ -27,42 +26,19 @@ export default function SandboxApplicationForm({ sandbox, onSuccess }) {
     requested_exemptions: []
   });
 
-  const applicationMutation = useMutation({
-    mutationFn: async (data) => {
-      const { supabase } = await import('@/integrations/supabase/client');
+  const { submitSandboxApplication } = useSandboxMutations();
 
-      const { data: app, error: createError } = await supabase
-        .from('sandbox_applications')
-        .insert([{
-          ...data,
-          sandbox_id: sandbox.id,
-          status: 'submitted'
-        }])
-        .select()
-        .single();
-      if (createError) throw createError;
-
-      // Create notification for sandbox admin
-      const { error: notifError } = await supabase
-        .from('notifications')
-        .insert([{
-          title: `New Sandbox Application - ${sandbox.name_en}`,
-          body: `${data.applicant_organization} has submitted an application for ${data.project_title}`,
-          notification_type: 'approval',
-          priority: 'high',
-          link_url: `/SandboxDetail?id=${sandbox.id}`,
-          entity_type: 'SandboxApplication',
-          entity_id: app.id,
-          action_required: true
-        }]);
-      if (notifError) throw notifError;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['sandbox-applications']);
-      toast.success(t({ en: 'Application submitted successfully', ar: 'تم إرسال الطلب بنجاح' }));
-      if (onSuccess) onSuccess();
-    }
-  });
+  const handleSubmit = () => {
+    submitSandboxApplication.mutate({
+      data: formData,
+      sandboxId: sandbox.id,
+      sandboxName: sandbox.name_en
+    }, {
+      onSuccess: () => {
+        if (onSuccess) onSuccess();
+      }
+    });
+  };
 
   const toggleExemption = (exemption) => {
     const current = formData.requested_exemptions;
@@ -177,8 +153,8 @@ export default function SandboxApplicationForm({ sandbox, onSuccess }) {
           </div>
 
           <Button
-            onClick={() => applicationMutation.mutate(formData)}
-            disabled={!formData.applicant_organization || !formData.project_title || applicationMutation.isPending}
+            onClick={handleSubmit}
+            disabled={!formData.applicant_organization || !formData.project_title || submitSandboxApplication.isPending}
             className="w-full bg-gradient-to-r from-purple-600 to-blue-600"
           >
             <Send className="h-4 w-4 mr-2" />
@@ -190,17 +166,17 @@ export default function SandboxApplicationForm({ sandbox, onSuccess }) {
       {showAIAssistants && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <AIExemptionSuggester
-            projectDescription={formData.project_description}
+            projectData={formData}
             sandbox={sandbox}
-            onSuggestionsApplied={(exemptions) => {
+            onSelect={(exemptions) => {
               setFormData({ ...formData, requested_exemptions: exemptions });
               toast.success('Exemptions applied to form');
             }}
           />
           <AISafetyProtocolGenerator
-            projectDescription={formData.project_description}
+            projectData={formData}
             sandbox={sandbox}
-            onProtocolGenerated={(protocol) => {
+            onGenerated={(protocol) => {
               setFormData({ ...formData, public_safety_plan: protocol });
               toast.success('Safety protocol applied to form');
             }}

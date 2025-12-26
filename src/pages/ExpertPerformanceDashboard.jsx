@@ -1,4 +1,4 @@
-﻿import { useExperts, useAllExpertAssignments, useAllExpertEvaluations } from '@/hooks/useExpertData';
+import { useExperts, useAllExpertAssignments, useAllExpertEvaluations } from '@/hooks/useExpertData';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

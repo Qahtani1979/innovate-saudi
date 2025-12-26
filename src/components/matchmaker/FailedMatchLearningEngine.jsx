@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from "@/integrations/supabase/client";
+import { useFailedMatches } from '@/hooks/useMatchmakerAnalytics';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +9,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { getFailedMatchLearningPrompt, failedMatchLearningSchema } from '@/lib/ai/prompts/matchmaker';
+import { getFailedMatchLearningPrompt, failedMatchLearningSchema } from '@/lib/ai/prompts/matchmaker/failedMatchLearning';
 import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function FailedMatchLearningEngine() {
@@ -18,18 +17,7 @@ export default function FailedMatchLearningEngine() {
   const [insights, setInsights] = useState(null);
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: failedMatches = [] } = useQuery({
-    queryKey: ['failed-matches'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('matchmaker_applications')
-        .select('*')
-        .in('stage', ['rejected', 'on_hold']);
-
-      if (error) throw error;
-      return data;
-    }
-  });
+  const { data: failedMatches = [] } = useFailedMatches();
 
   const analyzeFailures = async () => {
     const result = await invokeAI({
@@ -69,7 +57,7 @@ export default function FailedMatchLearningEngine() {
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={null} />
 
         {!insights && !isLoading && (
           <div className="text-center py-8">

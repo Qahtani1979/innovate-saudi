@@ -1,4 +1,4 @@
-﻿
+
 import { useChallengesWithVisibility } from '../hooks/useChallengesWithVisibility';
 import { useSolutionsWithVisibility } from '../hooks/useSolutionsWithVisibility';
 import { usePilotsWithVisibility } from '../hooks/usePilotsWithVisibility';

@@ -9,39 +9,38 @@ import { createPageUrl } from '../utils';
 import { useLanguage } from './LanguageContext';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { 
-  buildPeerComparisonPrompt, 
+import {
+  buildPeerComparisonPrompt,
   peerComparisonSchema,
-  PEER_COMPARISON_SYSTEM_PROMPT 
+  PEER_COMPARISON_SYSTEM_PROMPT
 } from '@/lib/ai/prompts/core';
+import { usePeerComparison } from '@/hooks/useAIInsights';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 
 export default function AIPeerComparison({ pilot }) {
-  const { invokeAI, status, isLoading: analyzing, rateLimitInfo, isAvailable } = useAIWithFallback();
-  const [comparison, setComparison] = useState(null);
   const { t, language } = useLanguage();
+  const [comparison, setComparison] = useState(null);
+
+  const { data: allPilots = [] } = usePilotsWithVisibility();
+  const { compareMutation, status, analyzing, rateLimitInfo, isAvailable } = usePeerComparison(pilot);
 
   const analyzePeers = async () => {
     if (!isAvailable) return;
-    
-    try {
-      const allPilots = await base44.entities.Pilot.list();
-      
-      // Find similar pilots
-      const similarPilots = allPilots.filter(p => 
-        p.id !== pilot.id &&
-        (p.sector === pilot.sector || p.challenge_id === pilot.challenge_id) &&
-        (p.stage === 'completed' || p.stage === 'evaluation' || p.stage === 'scaled')
-      ).slice(0, 5);
 
-      const response = await invokeAI({
-        prompt: buildPeerComparisonPrompt(pilot, similarPilots),
-        response_json_schema: peerComparisonSchema,
-        system_prompt: PEER_COMPARISON_SYSTEM_PROMPT
-      });
+    // Find similar pilots locally first to provide as context to AI
+    const similarPilots = allPilots.filter(p =>
+      p.id !== pilot.id &&
+      (p.sector === pilot.sector || p.challenge_id === pilot.challenge_id) &&
+      (p.stage === 'completed' || p.stage === 'evaluation' || p.stage === 'scaled')
+    ).slice(0, 5);
 
-      if (response.success && response.data) {
-        const data = response.data;
-        // Map bilingual fields based on language
+    compareMutation.mutate({
+      similarPilots,
+      promptBuilder: buildPeerComparisonPrompt,
+      schema: peerComparisonSchema,
+      systemPrompt: PEER_COMPARISON_SYSTEM_PROMPT
+    }, {
+      onSuccess: (data) => {
         setComparison({
           summary: language === 'ar' ? data.summary_ar : data.summary_en,
           budget_comparison: {
@@ -63,10 +62,11 @@ export default function AIPeerComparison({ pilot }) {
           peers: similarPilots
         });
         toast.success(t({ en: 'Peer analysis complete', ar: 'اكتمل تحليل الأقران' }));
+      },
+      onError: (error) => {
+        toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }) + ': ' + error.message);
       }
-    } catch (error) {
-      toast.error(t({ en: 'Analysis failed', ar: 'فشل التحليل' }) + ': ' + error.message);
-    }
+    });
   };
 
   const getComparisonIcon = (status) => {
@@ -104,14 +104,14 @@ export default function AIPeerComparison({ pilot }) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+        <AIStatusIndicator status={status} error={null} rateLimitInfo={rateLimitInfo} className="mb-4" />
         {!comparison ? (
           <div className="text-center py-12">
             <Network className="h-16 w-16 text-slate-300 mx-auto mb-4" />
             <p className="text-slate-500 mb-4">
-              {t({ 
-                en: 'Compare this pilot with similar pilots in the platform', 
-                ar: 'قارن هذه التجربة مع تجارب مماثلة في المنصة' 
+              {t({
+                en: 'Compare this pilot with similar pilots in the platform',
+                ar: 'قارن هذه التجربة مع تجارب مماثلة في المنصة'
               })}
             </p>
             <Button onClick={analyzePeers} disabled={analyzing || !isAvailable}>
@@ -136,8 +136,8 @@ export default function AIPeerComparison({ pilot }) {
                   </div>
                   <Badge className={
                     comparison.budget_comparison.status === 'above_average' ? 'bg-green-100 text-green-700' :
-                    comparison.budget_comparison.status === 'below_average' ? 'bg-red-100 text-red-700' :
-                    'bg-slate-100 text-slate-700'
+                      comparison.budget_comparison.status === 'below_average' ? 'bg-red-100 text-red-700' :
+                        'bg-slate-100 text-slate-700'
                   }>
                     {comparison.budget_comparison.status.replace(/_/g, ' ')}
                   </Badge>
@@ -153,8 +153,8 @@ export default function AIPeerComparison({ pilot }) {
                   </div>
                   <Badge className={
                     comparison.timeline_comparison.status === 'faster' ? 'bg-green-100 text-green-700' :
-                    comparison.timeline_comparison.status === 'slower' ? 'bg-red-100 text-red-700' :
-                    'bg-slate-100 text-slate-700'
+                      comparison.timeline_comparison.status === 'slower' ? 'bg-red-100 text-red-700' :
+                        'bg-slate-100 text-slate-700'
                   }>
                     {comparison.timeline_comparison.status}
                   </Badge>
@@ -257,8 +257,8 @@ export default function AIPeerComparison({ pilot }) {
                           </div>
                           <Badge className={
                             peer.stage === 'scaled' ? 'bg-green-100 text-green-700' :
-                            peer.stage === 'completed' ? 'bg-blue-100 text-blue-700' :
-                            'bg-amber-100 text-amber-700'
+                              peer.stage === 'completed' ? 'bg-blue-100 text-blue-700' :
+                                'bg-amber-100 text-amber-700'
                           }>
                             {peer.stage}
                           </Badge>

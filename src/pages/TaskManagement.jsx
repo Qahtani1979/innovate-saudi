@@ -13,7 +13,7 @@ import { createPageUrl } from '../utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
-import { usePermissions } from '@/components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 function TaskManagement() {

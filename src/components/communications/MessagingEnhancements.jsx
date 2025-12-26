@@ -7,22 +7,26 @@ import { useLanguage } from '../LanguageContext';
 import { Paperclip, Send, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCommunicationHub } from '@/hooks/useCommunicationHub';
-import { useSupabaseFileUpload } from '@/hooks/useSupabaseFileUpload';
+import * as usePlatformCore from '@/hooks/usePlatformCore';
 
 export default function MessagingEnhancements({ threadId, onSend }) {
   const { t } = useLanguage();
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState([]);
   const { sendMessage } = useCommunicationHub();
-  const { upload, isUploading } = useSupabaseFileUpload();
+  const { uploadMutation } = usePlatformCore.useFileStorage();
+  const isUploading = uploadMutation.isPending;
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     try {
-      const publicUrl = await upload({ file, bucket: 'communications' });
-      setAttachments(prev => [...prev, { name: file.name, url: publicUrl }]);
+      const result = await uploadMutation.mutateAsync({
+        file,
+        bucket: 'communications'
+      });
+      setAttachments(prev => [...prev, { name: file.name, url: result.file_url }]);
     } catch (error) {
       console.error('File upload failed:', error);
     }
@@ -35,8 +39,7 @@ export default function MessagingEnhancements({ threadId, onSend }) {
     sendMessage.mutate({
       thread_id: threadId,
       content: message,
-      metadata: { attachments },
-      is_read: false
+      metadata: { attachments }
     }, {
       onSuccess: () => {
         setMessage('');

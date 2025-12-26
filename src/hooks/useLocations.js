@@ -1,55 +1,38 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-export function useCities() {
-    return useQuery({
-        queryKey: ['cities'],
-        queryFn: async () => {
-            const { data, error } = await supabase
-                .from('cities')
-                .select('*')
-                .order('name_en');
-            if (error) throw error;
-            return data || [];
-        },
-        staleTime: 1000 * 60 * 60 * 24 // 24 hours
-    });
-}
-
-export function useRegions() {
-    return useQuery({
-        queryKey: ['regions'],
-        queryFn: async () => {
-            const { data, error } = await supabase
-                .from('regions')
-                .select('*')
-                .order('name_en');
-            if (error) throw error;
-            return data || [];
-        },
-        staleTime: 1000 * 60 * 60 * 24 // 24 hours
-    });
-}
-
 export function useMunicipalities() {
     return useQuery({
-        queryKey: ['municipalities'],
+        queryKey: ['municipalities-list'],
         queryFn: async () => {
-            const { data, error } = await supabase
-                .from('municipalities')
-                .select('*')
-                .order('name_en');
+            const { data, error } = await supabase.from('municipalities').select('*');
             if (error) throw error;
             return data || [];
         },
-        staleTime: 1000 * 60 * 60 // 1 hour
+        staleTime: 1000 * 60 * 60
     });
 }
 
-export function useLocations() {
-    return {
-        useCities,
-        useRegions,
-        useMunicipalities
-    };
+export function useRegionsList() {
+    return useQuery({
+        queryKey: ['regions-list'],
+        queryFn: async () => {
+            const { data, error } = await supabase.from('regions').select('*');
+            if (error) throw error;
+            return data || [];
+        },
+        staleTime: 1000 * 60 * 60
+    });
+}
+
+export function useCitiesList() {
+    return useQuery({
+        queryKey: ['cities-list'],
+        queryFn: async () => {
+            const { data, error } = await supabase.from('cities').select('*');
+            if (error) throw error;
+            return data || [];
+        },
+        staleTime: 1000 * 60 * 60
+    });
 }

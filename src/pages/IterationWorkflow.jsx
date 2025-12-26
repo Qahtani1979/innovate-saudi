@@ -1,5 +1,4 @@
-﻿import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Card, CardContent } from "@/components/ui/card";

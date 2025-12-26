@@ -1,4 +1,4 @@
-import { usePermissions } from '@/components/permissions/usePermissions.jsx';
+import { usePermissions } from '@/hooks/usePermissions';
 
 // Storage key for active persona
 const STORAGE_KEY = 'saudi_innovates_active_persona';

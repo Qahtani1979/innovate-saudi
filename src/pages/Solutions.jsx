@@ -34,7 +34,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { usePermissions } from '../components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { usePrompt } from '@/hooks/usePrompt';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';

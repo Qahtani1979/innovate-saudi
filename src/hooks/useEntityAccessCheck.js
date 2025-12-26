@@ -4,7 +4,7 @@
  */
 
 import { useMemo } from 'react';
-import { usePermissions } from '@/components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useVisibilitySystem } from './visibility/useVisibilitySystem';
 
 /**

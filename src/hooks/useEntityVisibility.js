@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { usePermissions } from '@/components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 
 /**
  * Hook for entity visibility filtering based on user's organizational scope.

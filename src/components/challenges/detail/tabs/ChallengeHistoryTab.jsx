@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '@/components/LanguageContext';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useChallengeActivities } from '@/hooks/useChallengeLinkedData';
 import {
     Clock, FileText, Activity, TrendingUp, MessageSquare,
     Lightbulb, TestTube, CheckCircle2, Archive, Users, Target
@@ -13,21 +12,7 @@ export default function ChallengeHistoryTab({ challenge }) {
     const { t, language } = useLanguage();
     const challengeId = challenge?.id;
 
-    const { data: activities = [], isLoading } = useQuery({
-        queryKey: ['challenge-activities', challengeId],
-        queryFn: async () => {
-            const { data, error } = await supabase
-                .from('activity_logs')
-                .select('*')
-                .eq('entity_id', challengeId)
-                .eq('entity_type', 'challenge')
-                .order('timestamp', { ascending: false });
-
-            if (error) throw error;
-            return data;
-        },
-        enabled: !!challengeId
-    });
+    const { activities, isLoading } = useChallengeActivities(challengeId);
 
     if (isLoading) {
         return <div className="p-8 text-center text-muted-foreground">Loading history...</div>;

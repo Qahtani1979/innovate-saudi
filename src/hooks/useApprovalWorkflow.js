@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -19,7 +19,7 @@ export function useApprovalRequests(entityType, entityId) {
 }
 
 export function useApprovalWorkflowMutations(entityType, entityId) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const createApprovalRequest = useMutation({
         mutationFn: async (data) => {
@@ -67,3 +67,4 @@ export function useApprovalWorkflowMutations(entityType, entityId) {
         updateApprovalRequest
     };
 }
+

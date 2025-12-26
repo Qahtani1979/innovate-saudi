@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useImpersonationLogs } from '@/hooks/useAuditLog';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,17 +8,7 @@ import { UserCog } from 'lucide-react';
 export default function ImpersonationAuditLog() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: impersonationLogs = [] } = useQuery({
-    queryKey: ['impersonation-logs'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('access_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100);
-      return (data || []).filter(log => log.action === 'impersonate' || log.metadata?.impersonation);
-    }
-  });
+  const { data: impersonationLogs = [] } = useImpersonationLogs();
 
   return (
     <Card>

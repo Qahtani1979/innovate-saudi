@@ -1,9 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export function useUserFollows(userEmail) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const useFollowers = () => useQuery({
         queryKey: ['user-followers', userEmail],
@@ -103,3 +103,4 @@ export function useEntityFollowersData(entityType, entityId) {
         enabled: !!entityType && !!entityId
     });
 }
+

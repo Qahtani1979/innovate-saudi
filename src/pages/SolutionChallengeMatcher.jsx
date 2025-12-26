@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useMatchingEntities } from '@/hooks/useMatchingEntities';
 import { useProposals } from '@/hooks/useProposals';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

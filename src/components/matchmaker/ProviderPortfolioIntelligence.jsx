@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from "@/integrations/supabase/client";
+import { useProviderMatches } from '@/hooks/useMatchmakerAnalytics';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,19 +20,7 @@ export default function ProviderPortfolioIntelligence({ providerId }) {
   const [insights, setInsights] = useState(null);
   const { invokeAI, status, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: matches = [] } = useQuery({
-    queryKey: ['provider-matches', providerId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('matchmaker_applications')
-        .select('*')
-        .eq('organization_id', providerId);
-
-      if (error) throw error;
-      return data;
-    },
-    initialData: []
-  });
+  const { data: matches = [] } = useProviderMatches(providerId);
 
   const analyzePortfolio = async () => {
     const successBySector = matches.reduce((acc, m) => {
@@ -79,7 +66,7 @@ export default function ProviderPortfolioIntelligence({ providerId }) {
         </div>
       </CardHeader>
       <CardContent className="pt-6 space-y-4">
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={null} />
         <div>
           <h4 className="font-semibold text-sm mb-3">{t({ en: 'Sector Distribution', ar: 'توزيع القطاعات' })}</h4>
           <ResponsiveContainer width="100%" height={150}>

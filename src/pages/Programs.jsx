@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { usePermissions } from '../components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
 import { useProgramMutations } from '@/hooks/useProgramMutations';

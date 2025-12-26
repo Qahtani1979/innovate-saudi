@@ -6,12 +6,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { useLanguage } from '../LanguageContext';
 import { Network, Sparkles, Loader2 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from 'sonner';
-import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { useTopChallenges } from '@/hooks/useChallenges';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { getEnhancedMatchingPrompt, enhancedMatchingSchema } from '@/lib/ai/prompts/matchmaker';
 import { getSystemPrompt } from '@/lib/saudiContext';
@@ -29,19 +26,7 @@ export default function EnhancedMatchingEngine({ application, onMatchComplete })
   const { invokeAI, status, isLoading: matching, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [matches, setMatches] = useState([]);
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-for-matching'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*')
-        .order('overall_score', { ascending: false })
-        .limit(100);
-
-      if (error) throw error;
-      return data;
-    }
-  });
+  const { data: challenges = [] } = useTopChallenges(100);
 
   const runBilateralMatching = async () => {
     const filteredChallenges = challenges.filter(c => {

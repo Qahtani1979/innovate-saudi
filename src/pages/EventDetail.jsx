@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
-import { usePermissions } from '@/components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/lib/AuthContext';
 import { Calendar, MapPin, Users, Clock, Globe, UserPlus, Edit, Bookmark, MessageSquare, Send, Loader2, Award, Info, Sparkles, BarChart3, Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -21,16 +20,17 @@ import {
   useEvent,
   useEventComments,
   useEventBookmarkStatus,
-  useEventMutations
+  useEventMutations,
+  useEventInvalidator
 } from '@/hooks/useEvents';
 
 function EventDetail() {
   const { t, language } = useLanguage();
   const { hasAnyPermission, roles, userEmail } = usePermissions();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(window.location.search);
   const eventId = urlParams.get('id');
+  const { invalidateEvent } = useEventInvalidator();
 
   const [newComment, setNewComment] = useState('');
 
@@ -277,9 +277,8 @@ function EventDetail() {
           )}
         </TabsContent>
 
-        {/* Strategy Tab */}
         <TabsContent value="strategy" className="space-y-6 mt-6">
-          <EventStrategicAlignment event={event} onUpdate={() => queryClient.invalidateQueries(['event', eventId])} />
+          <EventStrategicAlignment event={event} onUpdate={() => invalidateEvent(eventId)} />
         </TabsContent>
 
         {/* AI Insights Tab */}

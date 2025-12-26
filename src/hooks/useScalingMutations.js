@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/LanguageContext';
@@ -10,7 +10,7 @@ import { useEmailTrigger } from './useEmailTrigger';
  * Hook for scaling plan mutations
  */
 export function useScalingMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { t } = useLanguage();
     const { user } = useAuth();
     const { logCrudOperation, logStatusChange } = useAuditLogger();
@@ -252,3 +252,4 @@ export function useScalingMutations() {
 }
 
 export default useScalingMutations;
+

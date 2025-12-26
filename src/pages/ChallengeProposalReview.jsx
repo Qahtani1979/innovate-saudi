@@ -10,7 +10,7 @@ import { createPageUrl } from '../utils';
 import { CheckCircle2, XCircle, FileText, DollarSign, Clock, Rocket } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import ProposalToPilotConverter from '../components/challenges/ProposalToPilotConverter';
-import { usePermissions } from '../components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useProposalsWithVisibility } from '@/hooks/useProposalsWithVisibility';
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 import { useChallengeProposalMutations } from '@/hooks/useChallengeProposalMutations';

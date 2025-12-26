@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { usePermissions } from '@/components/permissions/usePermissions.jsx';
+import { usePermissions } from '@/hooks/usePermissions';
 import { SIDEBAR_MENUS } from '@/config/sidebarMenus';
 
 const { useState, useEffect, useCallback, useMemo } = React;

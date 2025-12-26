@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -6,7 +6,7 @@ import { toast } from 'sonner';
  * Hook for managing entity relations and data fetching for the hub.
  */
 export function useRelationManagement() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     // --- Data Fetching Hooks ---
 
@@ -152,8 +152,19 @@ export function useRelationManagement() {
             return data;
         },
         onSuccess: () => {
-            // Validation/Refetch handled by caller usually because of loop, but good to have here
             queryClient.invalidateQueries({ queryKey: ['all-relations'] });
+        }
+    });
+
+    const createMatches = useMutation({
+        mutationFn: async (matchesData) => {
+            const { data, error } = await supabase.from('challenge_solution_matches').insert(matchesData).select();
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['all-relations'] });
+            toast.success(`Created ${data.length} matches successfully`);
         }
     });
 
@@ -170,8 +181,10 @@ export function useRelationManagement() {
         reviewRelation,
         deleteRelation,
         createMatch,
+        createMatches,
         updateRelation
     };
 }
 
 export default useRelationManagement;
+

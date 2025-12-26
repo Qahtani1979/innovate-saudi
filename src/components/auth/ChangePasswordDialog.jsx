@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from '../LanguageContext';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuthMutations } from '@/hooks/useAuthMutations';
 import { toast } from 'sonner';
 import { Eye, EyeOff, Lock, Shield, CheckCircle2 } from 'lucide-react';
 
@@ -31,6 +31,8 @@ export default function ChangePasswordDialog({ open, onOpenChange }) {
   const isPasswordStrong = Object.values(passwordChecks).filter(Boolean).length >= 4;
   const passwordsMatch = newPassword === confirmPassword && confirmPassword.length > 0;
 
+  const { updatePassword } = useAuthMutations();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -45,21 +47,18 @@ export default function ChangePasswordDialog({ open, onOpenChange }) {
       return;
     }
 
+    // Directly use mutate (async or NOT)
+    // Using mutateAsync allows await if we want to wait, or regular mutate if we rely on callbacks.
+    // Component used try/catch style, so mutateAsync is closer to existing logic.
+
     setIsLoading(true);
 
     try {
-      // Update password using Supabase
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-
-      if (updateError) {
-        throw updateError;
-      }
+      await updatePassword.mutateAsync(newPassword);
 
       toast.success(t({ en: 'Password updated successfully', ar: 'تم تحديث كلمة المرور بنجاح' }));
       onOpenChange(false);
-      
+
       // Reset form
       setCurrentPassword('');
       setNewPassword('');
@@ -207,8 +206,8 @@ export default function ChangePasswordDialog({ open, onOpenChange }) {
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t({ en: 'Cancel', ar: 'إلغاء' })}
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={isLoading || !isPasswordStrong || !passwordsMatch}
               className="bg-primary"
             >

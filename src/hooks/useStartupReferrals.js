@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -21,7 +21,7 @@ export function useStartupReferrals(startupId, userEmail) {
 }
 
 export function useStartupReferralMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const sendReferral = useMutation({
         /**
@@ -50,3 +50,4 @@ export function useStartupReferralMutations() {
 
     return { sendReferral };
 }
+

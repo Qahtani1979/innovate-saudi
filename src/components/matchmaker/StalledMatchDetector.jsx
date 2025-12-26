@@ -1,5 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from "@/integrations/supabase/client";
+import { useStalledMatches } from '@/hooks/useMatchmakerAnalytics';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,28 +10,7 @@ import { createPageUrl } from '../../utils';
 export default function StalledMatchDetector() {
     const { t, isRTL } = useLanguage();
 
-    const { data: stalledMatches = [], isLoading, refetch } = useQuery({
-        queryKey: ['stalled-matches'],
-        queryFn: async () => {
-            // Definition of stalled: Status is 'pending' or 'accepted' AND updated_at > 14 days ago
-            const twoWeeksAgo = new Date();
-            twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-
-            const { data, error } = await supabase
-                .from('challenge_solution_matches')
-                .select(`
-          *,
-          matchmaker_applications(organization_name_en, organization_name_ar),
-          challenges(title_en)
-        `)
-                .in('status', ['pending', 'accepted'])
-                .lt('updated_at', twoWeeksAgo.toISOString());
-
-            if (error) throw error;
-            return data;
-        },
-        initialData: [] // Return empty if error or loading initially to prevent crash
-    });
+    const { data: stalledMatches = [], isLoading, refetch } = useStalledMatches();
 
     if (stalledMatches.length === 0 && !isLoading) return null;
 

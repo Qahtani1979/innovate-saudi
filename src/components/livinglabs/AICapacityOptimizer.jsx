@@ -8,23 +8,23 @@ import { Sparkles, TrendingUp, AlertCircle, CheckCircle2, Loader2 } from 'lucide
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { getSystemPrompt } from '@/lib/saudiContext';
-import { 
-  buildCapacityOptimizerPrompt, 
+import {
+  buildCapacityOptimizerPrompt,
   getCapacityOptimizerSchema,
-  CAPACITY_OPTIMIZER_SYSTEM_PROMPT 
+  CAPACITY_OPTIMIZER_SYSTEM_PROMPT
 } from '@/lib/ai/prompts/livinglab';
+
+import { useLivingLabData } from '@/hooks/useLivingLabData';
 
 export default function AICapacityOptimizer({ livingLab }) {
   const { language, t } = useLanguage();
   const [analysis, setAnalysis] = useState(null);
   const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const generateAnalysis = async () => {
-    const [bookings, projects] = await Promise.all([
-      base44.entities.LivingLabBooking.filter({ living_lab_id: livingLab.id }).catch(() => []),
-      base44.entities.RDProject.filter({ living_lab_id: livingLab.id }).catch(() => [])
-    ]);
+  const { bookings, projects } = useLivingLabData(livingLab?.id);
 
+  const generateAnalysis = async () => {
+    // bookings and projects are already fetched by the hook
     const result = await invokeAI({
       prompt: buildCapacityOptimizerPrompt(livingLab, bookings.length, projects.length),
       response_json_schema: getCapacityOptimizerSchema(),
@@ -58,12 +58,12 @@ export default function AICapacityOptimizer({ livingLab }) {
               <Sparkles className="h-10 w-10 text-purple-600" />
             </div>
             <p className="text-sm text-slate-600 mb-4">
-              {t({ 
+              {t({
                 en: 'AI will analyze lab usage patterns and provide optimization recommendations',
                 ar: 'سيحلل الذكاء أنماط استخدام المختبر ويقدم توصيات التحسين'
               })}
             </p>
-            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+            <AIStatusIndicator status={status} error={null} rateLimitInfo={rateLimitInfo} className="mb-4" />
             <Button onClick={generateAnalysis} disabled={loading || !isAvailable} className="gap-2">
               {loading ? (
                 <>
@@ -88,7 +88,7 @@ export default function AICapacityOptimizer({ livingLab }) {
                 <p className="font-semibold">{t({ en: 'Current Utilization', ar: 'الاستخدام الحالي' })}</p>
                 <Badge className={
                   analysis.utilization_rate >= 80 ? 'bg-green-600' :
-                  analysis.utilization_rate >= 50 ? 'bg-yellow-600' : 'bg-red-600'
+                    analysis.utilization_rate >= 50 ? 'bg-yellow-600' : 'bg-red-600'
                 }>
                   {analysis.utilization_rate}%
                 </Badge>

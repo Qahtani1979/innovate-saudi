@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import RDProjectActivityLog from '../components/rd/RDProjectActivityLog';
 import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowApprovalTab';
-import { usePermissions } from '../components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { usePrompt } from '@/hooks/usePrompt';
 import { RD_PROJECT_DETAIL_PROMPT_TEMPLATE } from '@/lib/ai/prompts/rd/rdProjectDetail';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';

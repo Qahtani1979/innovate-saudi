@@ -1,10 +1,10 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '../components/LanguageContext';
 
 export function useLivingLabConsultations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { t } = useLanguage();
 
     const createConsultation = useMutation({
@@ -56,3 +56,4 @@ export function useLivingLabConsultations() {
         inviteExpert
     };
 }
+

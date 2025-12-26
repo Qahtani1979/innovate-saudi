@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/LanguageContext';
@@ -43,7 +43,7 @@ export function useCampaignTemplates() {
  * Hook for campaign mutations (Create, Delete)
  */
 export function useCampaignMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { t } = useLanguage();
 
     const createCampaign = useMutation({
@@ -90,7 +90,7 @@ export function useCampaignMutations() {
  * Hook for campaign actions (Send, Pause, Resume, Preview)
  */
 export function useCampaignActions() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { t } = useLanguage();
 
     const performAction = useMutation({
@@ -121,3 +121,4 @@ export function useCampaignActions() {
 
     return { performAction };
 }
+

@@ -31,4 +31,37 @@ export function useChallenge(id) {
         },
         enabled: !!id
     });
+
 }
+
+export function useTopChallenges(limit = 100) {
+    return useQuery({
+        queryKey: ['challenges-top', limit],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('challenges')
+                .select('*')
+                .eq('is_deleted', false)
+                .order('overall_score', { ascending: false })
+                .limit(limit);
+            if (error) throw error;
+            return data || [];
+        }
+    });
+}
+
+export function useStrategicChallenges() {
+    return useQuery({
+        queryKey: ['strategic-challenges'],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('challenges')
+                .select('*')
+                .or('priority.eq.tier_1,priority.eq.tier_2')
+                .eq('is_deleted', false);
+            if (error) throw error;
+            return data || [];
+        }
+    });
+}
+

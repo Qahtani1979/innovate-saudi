@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useCollaborationSuggestions } from '@/hooks/useCollaborationSuggestions';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,30 +6,13 @@ import { Users, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { getCollaborationSuggesterPrompt, collaborationSuggesterSchema } from '@/lib/ai/prompts/portfolio';
-import { getSystemPrompt } from '@/lib/saudiContext';
 
 /**
  * AI-powered collaboration suggestions with bilingual output
  */
 export default function AICollaborationSuggester({ entityType, entityId, entityData }) {
-  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
-
-  const { data: suggestions, refetch, isLoading: queryLoading } = useQuery({
-    queryKey: ['collaboration-suggestions', entityType, entityId],
-    queryFn: async () => {
-      const prompt = getCollaborationSuggesterPrompt(entityType, entityData);
-      
-      const result = await invokeAI({
-        prompt,
-        response_json_schema: collaborationSuggesterSchema,
-        system_prompt: getSystemPrompt('FULL', true)
-      });
-      
-      return result.success ? result.data?.suggestions || [] : [];
-    },
-    enabled: false
-  });
+  const { suggestions, suggestInfo } = useCollaborationSuggestions({ entityType, entityId, entityData });
+  const { refetch, isLoading: queryLoading, aiLoading: isLoading, status, isAvailable, rateLimitInfo } = suggestInfo;
 
   const sendCollaborationInvite = async (suggestion) => {
     toast.success('Collaboration invite sent');
@@ -43,9 +26,9 @@ export default function AICollaborationSuggester({ entityType, entityId, entityD
             <Sparkles className="h-4 w-4 text-teal-600" />
             AI Collaboration Suggestions
           </CardTitle>
-          <Button 
-            size="sm" 
-            onClick={() => refetch()} 
+          <Button
+            size="sm"
+            onClick={() => refetch()}
             disabled={isLoading || queryLoading || !isAvailable}
             className="bg-teal-600"
           >

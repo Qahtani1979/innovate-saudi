@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -8,7 +8,7 @@ import { toast } from 'sonner';
  * Handles feedback analysis, pivot management, and baseline recalibration
  */
 export function useStrategyRecalibration(planId) {
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Fetch all lessons learned from related entities
@@ -277,3 +277,4 @@ export function useStrategyRecalibration(planId) {
 }
 
 export default useStrategyRecalibration;
+

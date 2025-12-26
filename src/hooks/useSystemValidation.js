@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
@@ -14,7 +14,7 @@ export { VALIDATION_CATEGORIES };
 
 export function useSystemValidation(systemId) {
   const { user, userEmail } = useAuth();
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
 
   // Fetch validations for a specific system
   const { data: validations, isLoading, refetch: refetchValidations } = useQuery({
@@ -410,3 +410,4 @@ export function useSystemValidation(systemId) {
     categories: VALIDATION_CATEGORIES
   };
 }
+

@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useMediaLibrary } from '@/hooks/useMedia';
 import {
   Dialog,
   DialogContent,
@@ -43,38 +42,11 @@ export default function MediaLibraryPicker({
   const [uploadedUrl, setUploadedUrl] = useState(null);
 
   // Fetch media files from library
-  const { data: mediaFiles = [], isLoading } = useQuery({
-    queryKey: ['media-library-picker', typeFilter, searchQuery, bucketId],
-    queryFn: async () => {
-      let query = supabase
-        .from('media_files')
-        .select('*')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (bucketId) {
-        query = query.eq('bucket_id', bucketId);
-      }
-
-      if (typeFilter !== 'all') {
-        query = query.eq('file_type', typeFilter);
-      }
-
-      if (searchQuery) {
-        query = query.or(`original_filename.ilike.%${searchQuery}%,display_name.ilike.%${searchQuery}%`);
-      }
-
-      // Filter by allowed types
-      if (allowedTypes.length > 0 && typeFilter === 'all') {
-        query = query.in('file_type', allowedTypes);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: open,
+  const { data: mediaFiles = [], isLoading } = useMediaLibrary({
+    typeFilter,
+    searchQuery,
+    bucketId,
+    allowedTypes
   });
 
   const handleFileSelect = (file) => {
@@ -189,8 +161,8 @@ export default function MediaLibraryPicker({
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                   <Image className="h-12 w-12 mb-2" />
                   <p>{t({ en: 'No files found', ar: 'لا توجد ملفات' })}</p>
-                  <Button 
-                    variant="link" 
+                  <Button
+                    variant="link"
                     onClick={() => setActiveTab('upload')}
                     className="mt-2"
                   >
@@ -306,7 +278,7 @@ export default function MediaLibraryPicker({
               <Button variant="outline" onClick={handleClose}>
                 {t({ en: 'Cancel', ar: 'إلغاء' })}
               </Button>
-              <Button 
+              <Button
                 onClick={handleConfirm}
                 disabled={selectedFiles.length === 0 && !uploadedUrl}
               >

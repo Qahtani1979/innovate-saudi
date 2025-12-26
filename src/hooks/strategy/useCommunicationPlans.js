@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useCommunicationPlans(strategicPlanId) {
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
 
   const { data: plans = [], isLoading, error } = useQuery({
     queryKey: ['communication-plans', strategicPlanId],
@@ -82,3 +82,4 @@ export function useCommunicationPlans(strategicPlanId) {
 }
 
 export default useCommunicationPlans;
+

@@ -1,4 +1,4 @@
-﻿import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
+import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
 import { useStrategicLinks } from '@/hooks/useStrategicLinks';
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

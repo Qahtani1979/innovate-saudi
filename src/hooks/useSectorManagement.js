@@ -3,7 +3,7 @@
  * Handles fetching and mutations for Sectors, Subsectors, Services, and Deputyships.
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/LanguageContext';
@@ -11,7 +11,7 @@ import { useTaxonomy } from '@/contexts/TaxonomyContext';
 
 export function useSectorManagement() {
     const { t } = useLanguage();
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { refetch: refetchTaxonomy } = useTaxonomy();
 
     // --- Queries ---
@@ -141,3 +141,4 @@ export function useSectorManagement() {
         deleteMutation
     };
 }
+

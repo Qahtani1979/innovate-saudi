@@ -2,7 +2,6 @@
  * Integrity Tab Component for Data Management Hub
  */
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,18 +9,18 @@ import { toast } from 'sonner';
 import { Database, Loader2, Check, X } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { useSystemIntegrity } from '@/hooks/useSystemData';
 import { buildIntegrityAnalysisPrompt, INTEGRITY_ANALYSIS_SCHEMA } from '@/lib/ai/prompts/dataManagement/integrityAnalysis';
 
-export function IntegrityTab({ 
-  regions, 
-  cities, 
+export function IntegrityTab({
+  regions,
+  cities,
   organizations,
   getOrphanedRecords,
   getDataQualityIssues,
   calculateDataScore
 }) {
   const { language, t } = useLanguage();
-  const queryClient = useQueryClient();
   const { invokeAI } = useAIWithFallback();
   const [aiFixing, setAiFixing] = useState(false);
   const [aiFixResults, setAiFixResults] = useState(null);
@@ -53,52 +52,25 @@ export function IntegrityTab({
     setAiFixing(false);
   };
 
-  const applyFixMutation = useMutation({
-    mutationFn: async ({ type, fix, index }) => {
-      if (type === 'city') {
-        if (fix.action === 'DELETE' || fix.action === 'DELETE_DUPLICATE') {
-          await base44.entities.City.delete(fix.city_id);
-        } else if (fix.action === 'REASSIGN' && fix.target_region_id) {
-          const updates = { region_id: fix.target_region_id };
-          if (fix.estimated_population) updates.population = fix.estimated_population;
-          await base44.entities.City.update(fix.city_id, updates);
-        } else if (fix.action === 'UPDATE_POPULATION' && fix.estimated_population) {
-          await base44.entities.City.update(fix.city_id, { population: fix.estimated_population });
-        }
-      } else if (type === 'org') {
-        if (fix.action === 'DELETE' || fix.action === 'DELETE_DUPLICATE') {
-          await base44.entities.Organization.delete(fix.org_id);
-        } else if (fix.action === 'REASSIGN') {
-          const updates = {};
-          if (fix.target_region_id) updates.region_id = fix.target_region_id;
-          if (fix.target_city_id) updates.city_id = fix.target_city_id;
-          await base44.entities.Organization.update(fix.org_id, updates);
-        } else if (fix.action === 'NULLIFY') {
-          await base44.entities.Organization.update(fix.org_id, { region_id: null, city_id: null });
-        }
-      }
-      return { type, index };
-    },
-    onSuccess: (data) => {
-      setAiFixResults(prev => {
-        if (!prev) return prev;
-        const updated = { ...prev };
-        if (data.type === 'city') {
-          updated.city_fixes = prev.city_fixes.filter((_, i) => i !== data.index);
-        } else {
-          updated.org_fixes = prev.org_fixes.filter((_, i) => i !== data.index);
-        }
-        return updated;
-      });
+  const { applyFixMutation: baseFixMutation } = useSystemIntegrity(t);
 
-      queryClient.invalidateQueries();
-      toast.success(t({ en: 'Fix applied', ar: 'تم تطبيق الإصلاح' }));
-    },
-    onError: (error) => {
-      console.error('Fix error:', error);
-      toast.error(t({ en: 'Fix failed', ar: 'فشل الإصلاح' }));
-    }
-  });
+  const applyFixMutation = {
+    ...baseFixMutation,
+    mutate: (variables) => baseFixMutation.mutate(variables, {
+      onSuccess: (data) => {
+        setAiFixResults(prev => {
+          if (!prev) return prev;
+          const updated = { ...prev };
+          if (data.type === 'city') {
+            updated.city_fixes = prev.city_fixes.filter((_, i) => i !== data.index);
+          } else {
+            updated.org_fixes = prev.org_fixes.filter((_, i) => i !== data.index);
+          }
+          return updated;
+        });
+      }
+    })
+  };
 
   const { orphanedCities, orphanedOrgs } = getOrphanedRecords();
   const dataQualityIssues = getDataQualityIssues();

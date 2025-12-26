@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
@@ -68,7 +68,7 @@ export function useProgramApplication(applicationId) {
  * Hook for fetching and managing program comments
  */
 export function useProgramComments(programId) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const query = useQuery({
         queryKey: ['program-comments', programId],
@@ -190,7 +190,7 @@ export function useApplicationsForPrograms(programIds = []) {
  * Hook for submitting innovation proposals
  */
 export function useSubmitInnovationProposal({ onSuccess } = {}) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { user } = useAuth();
 
     return useMutation({
@@ -221,7 +221,7 @@ export function useSubmitInnovationProposal({ onSuccess } = {}) {
  * Hook for submitting program applications
  */
 export function useSubmitProgramApplication({ onSuccess } = {}) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     return useMutation({
         mutationFn: async (data) => {
@@ -273,3 +273,4 @@ export function useAllProgramApplications(options = {}) {
         }
     });
 }
+

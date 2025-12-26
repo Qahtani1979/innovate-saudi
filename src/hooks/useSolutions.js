@@ -1,9 +1,10 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export function useSolutions({ publishedOnly = true, limit = 100, searchQuery = '' } = {}) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const { data: solutions = [], isLoading, error } = useQuery({
         queryKey: ['solutions', { publishedOnly, limit, searchQuery }],
@@ -33,6 +34,40 @@ export function useSolutions({ publishedOnly = true, limit = 100, searchQuery = 
         isLoading,
         error
     };
+}
+
+export function useMatchedSolutions(municipalityId, challenges = []) {
+    const { language } = { language: 'en' }; // Basic fallback, though usually we strictly rely on data
+
+    return useQuery({
+        queryKey: ['matched-solutions', municipalityId, challenges.length],
+        queryFn: async () => {
+            if (challenges.length === 0) return [];
+
+            const sectors = [...new Set(challenges.map(c => c.sector).filter(Boolean))];
+
+            let query = supabase
+                .from('solutions')
+                .select('*, providers(name_en, name_ar)')
+                .eq('is_published', true)
+                .eq('is_verified', true)
+                .limit(6);
+
+            if (sectors.length > 0) {
+                query = query.in('sector', sectors);
+            }
+
+            const { data, error } = await query;
+            if (error) throw error;
+
+            return data?.map(s => ({
+                ...s,
+                provider_name: s.providers?.name_en // Simplified for data layer
+            })) || [];
+        },
+        enabled: challenges.length > 0,
+        staleTime: 1000 * 60 * 15 // 15 mins
+    });
 }
 
 export function useSolution(solutionId) {
@@ -150,3 +185,4 @@ export function useTrendingSolutions() {
         staleTime: 1000 * 60 * 30 // 30 minutes
     });
 }
+

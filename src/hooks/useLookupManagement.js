@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/LanguageContext';
@@ -41,7 +41,7 @@ export function useLookupData({ tableName, queryKey, sortColumn = 'display_order
 }
 
 export function useLookupMutations({ tableName, queryKey, entityName }) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { t } = useLanguage();
     const label = entityName || { en: 'Item', ar: 'العنصر' };
 
@@ -79,7 +79,7 @@ export function useLookupMutations({ tableName, queryKey, entityName }) {
 }
 
 export function useReviewCustomEntry() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { t } = useLanguage();
 
     return useMutation({
@@ -116,4 +116,5 @@ export function useReviewCustomEntry() {
         onError: () => toast.error(t({ en: 'Failed to review', ar: 'فشل في المراجعة' }))
     });
 }
+
 

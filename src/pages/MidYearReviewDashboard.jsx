@@ -1,4 +1,4 @@
-﻿import { useLanguage } from '../components/LanguageContext';
+import { useLanguage } from '../components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertTriangle, TrendingUp } from 'lucide-react';

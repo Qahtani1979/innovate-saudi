@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -32,7 +32,7 @@ export function useSystemConfig() {
  * Hook to update system defaults
  */
 export function useSystemConfigMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const updateConfig = useMutation({
         mutationFn: async (updates) => {
@@ -58,3 +58,4 @@ export function useSystemConfigMutations() {
 
     return { updateConfig };
 }
+

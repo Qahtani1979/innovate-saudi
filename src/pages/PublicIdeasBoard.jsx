@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { usePublicIdeas, useIdeaVotes, useIdeaVoteMutation } from '@/hooks/useCitizenParticipation';
-import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,16 +28,11 @@ function PublicIdeasBoard() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
   const [viewMode, setViewMode] = useState('grid');
-  const queryClient = useQueryClient();
-
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-      queryClient.invalidateQueries(['public-ideas']);
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [queryClient]);
-
-  const { data: ideas = [], isLoading } = usePublicIdeas({ status: ['submitted', 'under_review', 'approved'], limit: 200 });
+  const { data: ideas = [], isLoading } = usePublicIdeas({
+    status: ['submitted', 'under_review', 'approved'],
+    limit: 200,
+    refetchInterval: 30000
+  });
 
   const { data: userVotes = [] } = useIdeaVotes(user?.id);
   const voteMutation = useIdeaVoteMutation(user?.id, user?.email);

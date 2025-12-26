@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -66,7 +66,7 @@ export function useUserPilotsForReview(solutionId, userEmail) {
  * Create a new review for a solution
  */
 export function useCreateReview() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     return useMutation({
         mutationFn: async ({ solutionId, municipalityId, reviewerEmail, reviewerName, reviewerRole, pilot_id, overall_rating, ratings, review_title, review_text, pros, cons, would_recommend }) => {
@@ -164,3 +164,4 @@ export function useAllSolutionReviews() {
         }
     });
 }
+

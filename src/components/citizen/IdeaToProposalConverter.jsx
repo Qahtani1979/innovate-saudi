@@ -10,13 +10,13 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { IDEA_TO_PROPOSAL_SYSTEM_PROMPT, buildIdeaToProposalPrompt, IDEA_TO_PROPOSAL_SCHEMA } from '@/lib/ai/prompts/citizen';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { useConvertIdeaToProposal } from '@/hooks/useCitizenIdeas';
+import { useCitizenIdeaMutations } from '@/hooks/useCitizenIdeaMutations';
 
 export default function IdeaToProposalConverter({ idea, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const convertToProposal = useConvertIdeaToProposal();
+  const { convertToProposal } = useCitizenIdeaMutations();
 
   const [proposalData, setProposalData] = useState({
     title_en: '',

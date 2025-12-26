@@ -1,11 +1,11 @@
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useEmailTrigger } from './useEmailTrigger';
 
 export function useWaitlist(programId) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { triggerEmail } = useEmailTrigger();
 
     const waitlistQuery = useQuery({
@@ -65,3 +65,4 @@ export function useWaitlist(programId) {
         promoteToParticipant: promoteMutation
     };
 }
+

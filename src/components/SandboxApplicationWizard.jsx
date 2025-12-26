@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSandboxMutations } from '@/hooks/useSandboxMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,6 @@ import AISafetyProtocolGenerator from './AISafetyProtocolGenerator';
 
 export default function SandboxApplicationWizard({ sandbox, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
   const [showAI, setShowAI] = useState(false);
 
@@ -43,43 +42,19 @@ export default function SandboxApplicationWizard({ sandbox, onSuccess }) {
     success_metrics: []
   });
 
-  const applicationMutation = useMutation({
-    mutationFn: async (data) => {
-      const { supabase } = await import('@/integrations/supabase/client');
+  const { submitSandboxApplication } = useSandboxMutations();
 
-      const { data: app, error: createError } = await supabase
-        .from('sandbox_applications')
-        .insert([{
-          ...data,
-          sandbox_id: sandbox.id,
-          status: 'submitted'
-        }])
-        .select()
-        .single();
-      if (createError) throw createError;
-
-      const { error: notifError } = await supabase
-        .from('notifications')
-        .insert([{
-          title: `New Sandbox Application - ${sandbox.name_en}`,
-          body: `${data.applicant_organization} has submitted an application for ${data.project_title}`,
-          notification_type: 'approval',
-          priority: 'high',
-          link_url: `/SandboxApplicationDetail?id=${app.id}`,
-          entity_type: 'SandboxApplication',
-          entity_id: app.id,
-          action_required: true
-        }]);
-      if (notifError) throw notifError;
-
-      return app;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['sandbox-applications']);
-      toast.success(t({ en: 'Application submitted successfully', ar: 'تم إرسال الطلب بنجاح' }));
-      if (onSuccess) onSuccess();
-    }
-  });
+  const handleSubmit = () => {
+    submitSandboxApplication.mutate({
+      data: formData,
+      sandboxId: sandbox.id,
+      sandboxName: sandbox.name_en
+    }, {
+      onSuccess: () => {
+        if (onSuccess) onSuccess();
+      }
+    });
+  };
 
   const steps = [
     { id: 1, title: { en: 'Basic Info', ar: 'المعلومات الأساسية' }, icon: FileText },
@@ -145,8 +120,8 @@ export default function SandboxApplicationWizard({ sandbox, onSuccess }) {
                 <div key={s.id} className="flex items-center">
                   <div className={`flex flex-col items-center ${idx > 0 ? 'ml-4' : ''}`}>
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isComplete ? 'bg-green-600 text-white' :
-                        isActive ? 'bg-blue-600 text-white' :
-                          'bg-slate-200 text-slate-500'
+                      isActive ? 'bg-blue-600 text-white' :
+                        'bg-slate-200 text-slate-500'
                       }`}>
                       <Icon className="h-5 w-5" />
                     </div>
@@ -464,8 +439,8 @@ export default function SandboxApplicationWizard({ sandbox, onSuccess }) {
               </Button>
             ) : (
               <Button
-                onClick={() => applicationMutation.mutate(formData)}
-                disabled={applicationMutation.isPending}
+                onClick={handleSubmit}
+                disabled={submitSandboxApplication.isPending}
                 className="bg-gradient-to-r from-green-600 to-teal-600"
               >
                 <Send className="h-4 w-4 mr-2" />
@@ -480,17 +455,17 @@ export default function SandboxApplicationWizard({ sandbox, onSuccess }) {
       {showAI && step === 4 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <AIExemptionSuggester
-            projectDescription={formData.project_description}
+            projectData={formData}
             sandbox={sandbox}
-            onSuggestionsApplied={(exemptions) => {
+            onSelect={(exemptions) => {
               setFormData({ ...formData, requested_exemptions: exemptions });
               toast.success('Exemptions applied');
             }}
           />
           <AISafetyProtocolGenerator
-            projectDescription={formData.project_description}
+            projectData={formData}
             sandbox={sandbox}
-            onProtocolGenerated={(protocol) => {
+            onGenerated={(protocol) => {
               setFormData({ ...formData, public_safety_plan: protocol });
               toast.success('Safety protocol applied');
             }}

@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useChallengeMatches(options = {}) {
@@ -26,7 +26,7 @@ export function useChallengeMatches(options = {}) {
 }
 
 export function useChallengeMatchingMutations() {
-    const queryClient = useQueryClient(); // Ensure imported likely needs update if not imported
+    const queryClient = useAppQueryClient(); // Ensure imported likely needs update if not imported
 
     const createMatch = useMutation({
         /** @param {any} data */
@@ -64,3 +64,4 @@ export function useChallengeMatchingMutations() {
 
     return { createMatch, createNotification, semanticSearch };
 }
+

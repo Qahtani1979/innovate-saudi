@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +35,6 @@ import { useRelationManagement } from '@/hooks/useRelationManagement';
 
 function RelationManagementHub() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('run');
   const [selectedMatcher, setSelectedMatcher] = useState(null);
   const [isMatching, setIsMatching] = useState(false);
@@ -59,7 +57,8 @@ function RelationManagementHub() {
     useAllRDCalls,
     reviewRelation,
     deleteRelation,
-    createMatch
+    createMatch,
+    createMatches
   } = useRelationManagement();
 
   // Fetch all relations
@@ -188,7 +187,8 @@ function RelationManagementHub() {
       }));
 
       setMatchProgress({ current: 0, total: sourceEntities.length });
-      let matchesCreated = 0;
+
+      const newMatchesToCreate = [];
 
       for (let i = 0; i < sourceEntities.length; i++) {
         const source = sourceEntities[i];
@@ -226,8 +226,15 @@ function RelationManagementHub() {
               r.related_entity_id === relatedEntityId
             );
 
-            if (!existingRelation) {
-              await createMatch.mutateAsync({
+            // Also check if we already queued this match in this run (to avoid duplicates if any logic allows it)
+            const alreadyQueued = newMatchesToCreate.find(m =>
+              m.challenge_id === challengeId &&
+              m.related_entity_type === relatedEntityType &&
+              m.related_entity_id === relatedEntityId
+            );
+
+            if (!existingRelation && !alreadyQueued) {
+              newMatchesToCreate.push({
                 challenge_id: challengeId,
                 related_entity_type: relatedEntityType,
                 related_entity_id: relatedEntityId,
@@ -238,33 +245,29 @@ function RelationManagementHub() {
                 reviewed: false,
                 notes: `AI-generated match (${matchScore}% similarity)`
               });
-
-              matchesCreated++;
-              console.log(`✅ Created match for ${challengeId}`);
-            } else {
-              console.log(`⏭️ Match exists: ${challengeId} → ${relatedEntityId}`);
             }
           }
         }
       }
 
-      await queryClient.invalidateQueries(['all-relations']);
-      await queryClient.refetchQueries(['all-relations']);
+      if (newMatchesToCreate.length > 0) {
+        console.log(`Creating ${newMatchesToCreate.length} matches...`);
+        await createMatches.mutateAsync(newMatchesToCreate);
+        console.log(`✅ Created ${newMatchesToCreate.length} matches`);
 
-      console.log(`🎯 Matching complete: ${matchesCreated} new matches created`);
-
-      if (matchesCreated === 0) {
+        toast.success(t({
+          en: `✅ Created ${newMatchesToCreate.length} new matches! Check Review Suggestions tab →`,
+          ar: `✅ تم إنشاء ${newMatchesToCreate.length} مطابقة جديدة! راجع تبويب الاقتراحات ←`
+        }), { duration: 5000 });
+        setTimeout(() => setActiveTab('review'), 500);
+      } else {
+        console.log('No new matches found.');
         toast.info(t({
           en: '⚠️ No new matches found. All existing or below 70% similarity threshold.',
           ar: '⚠️ لم يتم العثور على مطابقات جديدة. جميعها موجودة أو أقل من 70٪ تشابه.'
         }), { duration: 5000 });
-      } else {
-        toast.success(t({
-          en: `✅ Created ${matchesCreated} new matches! Check Review Suggestions tab →`,
-          ar: `✅ تم إنشاء ${matchesCreated} مطابقة جديدة! راجع تبويب الاقتراحات ←`
-        }), { duration: 5000 });
-        setTimeout(() => setActiveTab('review'), 500);
       }
+
     } catch (error) {
       toast.error(t({
         en: `Error: ${error.message}`,

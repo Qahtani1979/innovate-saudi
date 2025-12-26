@@ -10,7 +10,7 @@ export default function FinalPlatformAnalyticsSystemAssessment() {
     systemName: 'Platform Analytics',
     validationDate: new Date().toISOString().split('T')[0],
     overallStatus: 'VALIDATED',
-    
+
     categories: [
       {
         name: 'Database Schema',
@@ -30,8 +30,8 @@ export default function FinalPlatformAnalyticsSystemAssessment() {
         status: 'verified',
         items: [
           { name: 'UsageAnalytics.jsx', status: '✅', details: 'Real supabase queries: user_profiles, user_roles, pilots, challenges, solutions, system_activities, access_logs' },
-          { name: 'VelocityAnalytics.jsx', status: '✅ FIXED', details: 'Migrated from base44 to supabase - tracks pipeline velocity trends' },
-          { name: 'SystemHealthDashboard.jsx', status: '✅ FIXED', details: 'Migrated from base44 to supabase - monitors platform health, experts, activities' },
+          { name: 'VelocityAnalytics.jsx', status: '✅ FIXED', details: 'Migrated from legacy to supabase - tracks pipeline velocity trends' },
+          { name: 'SystemHealthDashboard.jsx', status: '✅ FIXED', details: 'Migrated from legacy to supabase - monitors platform health, experts, activities' },
           { name: 'ReportsBuilder.jsx', status: '✅', details: 'Custom report configuration with entity selection, date ranges, sections, format options' },
           { name: 'SectorDashboard.jsx', status: '✅', details: 'Sector-level analytics with challenge/pilot/solution breakdowns' },
           { name: 'RegionalDashboard.jsx', status: '✅', details: 'Regional performance analytics by municipality/region' },
@@ -42,7 +42,7 @@ export default function FinalPlatformAnalyticsSystemAssessment() {
         name: 'Analytics Components',
         status: 'verified',
         items: [
-          { name: 'PlatformStatsWidget.jsx', status: '✅ FIXED', details: 'Migrated from base44 to supabase - shows municipalities, challenges, pilots, solutions counts' },
+          { name: 'PlatformStatsWidget.jsx', status: '✅ FIXED', details: 'Migrated from legacy to supabase - shows municipalities, challenges, pilots, solutions counts' },
           { name: 'AdvancedAnalyticsDashboard.jsx', status: '✅', details: 'Cohort analysis, funnel analytics, predictive insights modules' },
           { name: 'PermissionUsageAnalytics.jsx', status: '✅', details: 'Analytics on RBAC permission usage patterns with date filtering' },
           { name: 'ABTestingManager.jsx', status: '✅', details: 'Full A/B test management: experiments, assignments, conversions, variant stats' },
@@ -114,9 +114,9 @@ export default function FinalPlatformAnalyticsSystemAssessment() {
     ],
 
     fixesApplied: [
-      { file: 'PlatformStatsWidget.jsx', issue: 'Using base44 client', fix: 'Migrated to supabase client with proper queries' },
-      { file: 'VelocityAnalytics.jsx', issue: 'Using base44 entities', fix: 'Migrated to supabase with direct table queries' },
-      { file: 'SystemHealthDashboard.jsx', issue: 'Using base44 entities', fix: 'Migrated all queries to supabase, fixed column references (created_at instead of created_date)' }
+      { file: 'PlatformStatsWidget.jsx', issue: 'Using legacy client', fix: 'Migrated to supabase client with proper queries' },
+      { file: 'VelocityAnalytics.jsx', issue: 'Using legacy entities', fix: 'Migrated to supabase with direct table queries' },
+      { file: 'SystemHealthDashboard.jsx', issue: 'Using legacy entities', fix: 'Migrated all queries to supabase, fixed column references (created_at instead of created_date)' }
     ]
   };
 
@@ -220,7 +220,7 @@ export default function FinalPlatformAnalyticsSystemAssessment() {
         </CardHeader>
         <CardContent>
           <pre className="bg-slate-900 text-green-400 p-4 rounded-lg overflow-x-auto text-xs">
-{`┌─────────────────────────────────────────────────────────────────────────────────┐
+            {`┌─────────────────────────────────────────────────────────────────────────────────┐
 │                        PLATFORM ANALYTICS SYSTEM                                │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                 │
@@ -298,9 +298,9 @@ export default function FinalPlatformAnalyticsSystemAssessment() {
           </div>
           <div className="mt-4 p-3 bg-white rounded-lg">
             <p className="text-sm text-slate-700">
-              <strong>Key Validations:</strong> All analytics pages now use supabase client directly. 
-              A/B testing system fully functional with experiments, assignments, and conversions. 
-              Real-time metrics calculated from live data. Platform health monitoring tracks experts, 
+              <strong>Key Validations:</strong> All analytics pages now use supabase client directly.
+              A/B testing system fully functional with experiments, assignments, and conversions.
+              Real-time metrics calculated from live data. Platform health monitoring tracks experts,
               activities, and system status. Full Recharts integration for data visualization.
             </p>
           </div>

@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
@@ -12,7 +12,7 @@ import { useLogActivity } from '@/hooks/useUserActivity';
  * Includes audit logging and email notifications.
  */
 export function useSolutionMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { user } = useAuth();
     const { triggerEmail } = useEmailTrigger();
     const { logCrudOperation } = useAuditLogger();
@@ -402,3 +402,4 @@ export function useSolutionMutations() {
 }
 
 export default useSolutionMutations;
+

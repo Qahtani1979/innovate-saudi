@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { useLanguage } from '../LanguageContext';
 import { usePersonaRouting } from '@/hooks/usePersonaRouting';
-import { usePermissions } from '../permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { SIDEBAR_MENUS } from '@/config/sidebarMenus';
 import { cn } from '@/lib/utils';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';

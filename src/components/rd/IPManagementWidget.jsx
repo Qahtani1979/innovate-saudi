@@ -1,6 +1,5 @@
 import { useState } from 'react';
-// import { supabase } from '@/integrations/supabase/client';
-// import { useMutation, useQueryClient } from '@tanstack/react-query';
+
 import { useRDMutations } from '@/hooks/useRDMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +14,7 @@ import { toast } from 'sonner';
 export default function IPManagementWidget({ project }) {
   const { language, isRTL, t } = useLanguage();
   const { updateProject } = useRDMutations();
-  // const queryClient = useQueryClient();
+
   const [showAddPatent, setShowAddPatent] = useState(false);
   const [showAddLicense, setShowAddLicense] = useState(false);
   const [editingPatent, setEditingPatent] = useState(null);

@@ -38,7 +38,7 @@ import PersonaSidebar from './components/layout/PersonaSidebar';
 import PersonaSwitcher from './components/layout/PersonaSwitcher';
 import UserAvatarMenu from './components/shared/UserAvatarMenu';
 import { Badge } from "@/components/ui/badge";
-import { usePermissions } from './components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { usePersonaRouting } from '@/hooks/usePersonaRouting';
 import { useAuth } from '@/lib/AuthContext';
 import OnboardingWizard from './components/onboarding/OnboardingWizard';

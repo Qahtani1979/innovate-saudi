@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/LanguageContext';
@@ -58,7 +58,7 @@ export function useEmailStats() {
  * Hook for email retry logic
  */
 export function useEmailRetry() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { t } = useLanguage();
 
     const retryEmail = useMutation({
@@ -99,3 +99,4 @@ export function useEmailRetry() {
 
     return { retryEmail };
 }
+

@@ -12,7 +12,7 @@ export default function FinalOnboardingSystemAssessment() {
     system: 'Onboarding System',
     validatedAt: new Date().toISOString(),
     overallStatus: 'VALIDATED',
-    
+
     categories: [
       {
         name: 'Database Schema',
@@ -32,12 +32,12 @@ export default function FinalOnboardingSystemAssessment() {
         name: 'Persona-Specific Onboarding Wizards',
         status: 'verified',
         items: [
-          { name: 'OnboardingWizard.jsx', status: 'fixed', details: '2041 lines - Main wizard with 7 personas, AI suggestions, bilingual support. Fixed: base44 → useAIWithFallback' },
+          { name: 'OnboardingWizard.jsx', status: 'fixed', details: '2041 lines - Main wizard with 7 personas, AI suggestions, bilingual support. Fixed: legacy → useAIWithFallback' },
           { name: 'CitizenOnboardingWizard.jsx', status: 'verified', details: '523 lines - Citizen-specific: location, interests, participation types, notifications' },
-          { name: 'MunicipalityStaffOnboardingWizard.jsx', status: 'fixed', details: '890 lines - Municipality staff: CV import, department, role level. Fixed: base44 → useAIWithFallback' },
+          { name: 'MunicipalityStaffOnboardingWizard.jsx', status: 'fixed', details: '890 lines - Municipality staff: CV import, department, role level. Fixed: legacy → useAIWithFallback' },
           { name: 'StartupOnboardingWizard.jsx', status: 'verified', details: '556 lines - Provider/Startup: company info, sectors, geographic coverage' },
-          { name: 'ResearcherOnboardingWizard.jsx', status: 'fixed', details: '601 lines - Researcher: institution, research areas, academic links. Fixed: base44 → useAIWithFallback' },
-          { name: 'ExpertOnboardingWizard.jsx', status: 'fixed', details: '708 lines - Expert: expertise, certifications, availability. Fixed: base44 → useAIWithFallback' },
+          { name: 'ResearcherOnboardingWizard.jsx', status: 'fixed', details: '601 lines - Researcher: institution, research areas, academic links. Fixed: legacy → useAIWithFallback' },
+          { name: 'ExpertOnboardingWizard.jsx', status: 'fixed', details: '708 lines - Expert: expertise, certifications, availability. Fixed: legacy → useAIWithFallback' },
           { name: 'DeputyshipOnboardingWizard.jsx', status: 'verified', details: '503 lines - MoMAH/Deputyship: sectors, national oversight capabilities' }
         ]
       },
@@ -50,7 +50,7 @@ export default function FinalOnboardingSystemAssessment() {
           { name: 'MunicipalityStaffOnboarding.jsx', status: 'verified', details: 'Page wrapper for MunicipalityStaffOnboardingWizard' },
           { name: 'StartupOnboarding.jsx', status: 'verified', details: 'Page wrapper for StartupOnboardingWizard' },
           { name: 'DeputyshipOnboarding.jsx', status: 'verified', details: 'Page wrapper for DeputyshipOnboardingWizard' },
-          { name: 'ExpertOnboarding.jsx', status: 'fixed', details: 'Standalone expert onboarding page. Fixed: broken base44 reference → useAIWithFallback' }
+          { name: 'ExpertOnboarding.jsx', status: 'fixed', details: 'Standalone expert onboarding page. Fixed: broken legacy reference → useAIWithFallback' }
         ]
       },
       {
@@ -70,8 +70,8 @@ export default function FinalOnboardingSystemAssessment() {
         items: [
           { name: 'OnboardingChecklist.jsx', status: 'verified', details: 'Progress checklist for onboarding steps' },
           { name: 'ProfileCompletenessCoach.jsx', status: 'verified', details: 'AI-powered profile completion coaching' },
-          { name: 'FirstActionRecommender.jsx', status: 'fixed', details: 'Fixed: migrated from base44 to Supabase queries for challenges/RD calls' },
-          { name: 'OnboardingAnalytics.jsx', status: 'fixed', details: 'Fixed: migrated from base44 to Supabase queries for user/challenge/solution data' },
+          { name: 'FirstActionRecommender.jsx', status: 'fixed', details: 'Fixed: migrated from legacy to Supabase queries for challenges/RD calls' },
+          { name: 'OnboardingAnalytics.jsx', status: 'fixed', details: 'Fixed: migrated from legacy to Supabase queries for user/challenge/solution data' },
           { name: 'AIRoleAssigner.jsx', status: 'verified', details: 'AI-assisted role assignment recommendations' },
           { name: 'SmartWelcomeEmail.jsx', status: 'verified', details: 'Persona-specific welcome email generation' },
           { name: 'ProgressiveProfilingPrompt.jsx', status: 'verified', details: 'Progressive profile completion prompts' }
@@ -135,13 +135,13 @@ export default function FinalOnboardingSystemAssessment() {
     ],
 
     fixes: [
-      'OnboardingWizard.jsx: Replaced base44.integrations.Core.ExtractDataFromUploadedFile with useAIWithFallback',
-      'MunicipalityStaffOnboardingWizard.jsx: Migrated CV extraction from base44 to invokeAI',
-      'ResearcherOnboardingWizard.jsx: Migrated CV extraction from base44 to invokeAI',
-      'ExpertOnboardingWizard.jsx: Migrated CV extraction from base44 to invokeAI',
-      'ExpertOnboarding.jsx (PAGE): Fixed broken base44 reference - migrated to useAIWithFallback',
-      'OnboardingAnalytics.jsx: Migrated from base44 to Supabase queries for user/challenge/solution data',
-      'FirstActionRecommender.jsx: Migrated from base44 to Supabase queries for challenges/RD calls',
+      'OnboardingWizard.jsx: Replaced legacy.integrations.Core.ExtractDataFromUploadedFile with useAIWithFallback',
+      'MunicipalityStaffOnboardingWizard.jsx: Migrated CV extraction from legacy to invokeAI',
+      'ResearcherOnboardingWizard.jsx: Migrated CV extraction from legacy to invokeAI',
+      'ExpertOnboardingWizard.jsx: Migrated CV extraction from legacy to invokeAI',
+      'ExpertOnboarding.jsx (PAGE): Fixed broken legacy reference - migrated to useAIWithFallback',
+      'OnboardingAnalytics.jsx: Migrated from legacy to Supabase queries for user/challenge/solution data',
+      'FirstActionRecommender.jsx: Migrated from legacy to Supabase queries for challenges/RD calls',
       'All wizards now use Lovable AI gateway (ai.gateway.lovable.dev) via invoke-llm edge function'
     ],
 
@@ -173,7 +173,7 @@ export default function FinalOnboardingSystemAssessment() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        
+
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-2">
@@ -242,14 +242,14 @@ export default function FinalOnboardingSystemAssessment() {
               {assessment.personas.map((persona) => {
                 const IconComponent = getPersonaIcon(persona.icon);
                 return (
-                  <div 
+                  <div
                     key={persona.id}
                     className={`p-3 rounded-lg border-2 text-center bg-${persona.color}-50 border-${persona.color}-200`}
                   >
                     <IconComponent className={`h-8 w-8 mx-auto mb-2 text-${persona.color}-600`} />
                     <div className="text-xs font-medium capitalize">{persona.id.replace('_', ' ')}</div>
-                    <Badge 
-                      variant="outline" 
+                    <Badge
+                      variant="outline"
                       className={`mt-1 text-[10px] ${persona.requiresApproval ? 'border-amber-300 text-amber-700' : 'border-green-300 text-green-700'}`}
                     >
                       {persona.requiresApproval ? 'Approval' : 'Auto'}
@@ -266,7 +266,7 @@ export default function FinalOnboardingSystemAssessment() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-blue-700">
               <Bot className="h-5 w-5" />
-              Fixes Applied (base44 → Lovable AI)
+              Fixes Applied (legacy → Lovable AI)
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -296,7 +296,7 @@ export default function FinalOnboardingSystemAssessment() {
               <CardContent>
                 <div className="space-y-2">
                   {category.items.map((item, itemIndex) => (
-                    <div 
+                    <div
                       key={itemIndex}
                       className={`p-2 rounded border ${getStatusColor(item.status)}`}
                     >
@@ -323,9 +323,9 @@ export default function FinalOnboardingSystemAssessment() {
             <div className="text-4xl font-bold text-green-700 mb-2">26 Systems Deep Validated</div>
             <p className="text-green-600">
               Core Infrastructure | Authentication | RBAC | User Profiles | Notifications | Email |
-              Challenges | Pilots | Solutions | R&D Projects | Expert System | Contracts | 
-              Regulatory Sandbox | Living Labs | Strategic Planning | MII | Municipality | 
-              Citizen Engagement | Scaling | Academia | AI Features | Platform Analytics | 
+              Challenges | Pilots | Solutions | R&D Projects | Expert System | Contracts |
+              Regulatory Sandbox | Living Labs | Strategic Planning | MII | Municipality |
+              Citizen Engagement | Scaling | Academia | AI Features | Platform Analytics |
               Platform Config | <span className="font-semibold">Onboarding (NEW)</span>
             </p>
           </CardContent>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
+import { usePilotMutations } from '@/hooks/usePilotMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,7 +12,7 @@ import { toast } from 'sonner';
 
 export default function SandboxProjectExitWizard({ pilot, sandbox, onClose }) {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
   const [step, setStep] = useState(1);
 
   const [exitData, setExitData] = useState({
@@ -35,52 +36,23 @@ export default function SandboxProjectExitWizard({ pilot, sandbox, onClose }) {
     exit_notes: ''
   });
 
-  const exitMutation = useMutation({
-    mutationFn: async () => {
-      const { supabase } = await import('@/integrations/supabase/client');
+  const { exitPilotFromSandbox } = usePilotMutations();
 
-      // Update pilot
-      const { error: pilotError } = await supabase
-        .from('pilots')
-        .update({
-          stage: 'completed',
-          sandbox_exit_date: new Date().toISOString().split('T')[0],
-          sandbox_exit_type: exitData.exit_type,
-          sandbox_exit_data: exitData,
-          recommendation: exitData.recommendation
-        })
-        .eq('id', pilot.id);
-      if (pilotError) throw pilotError;
-
-      // Update sandbox capacity
-      const { error: sandboxError } = await supabase
-        .from('sandboxes')
-        .update({
-          current_pilots: (sandbox.current_pilots || 1) - 1,
-          total_completed_projects: (sandbox.total_completed_projects || 0) + 1
-        })
-        .eq('id', sandbox.id);
-      if (sandboxError) throw sandboxError;
-
-      // Create notification
-      const { error: notifError } = await supabase
-        .from('notifications')
-        .insert([{
-          type: 'sandbox_exit',
-          title: `Project Exited Sandbox: ${pilot.title_en}`,
-          message: `${pilot.title_en} has completed its sandbox phase with ${exitData.exit_type}.`,
-          severity: exitData.exit_type === 'successful_completion' ? 'success' : 'warning',
-          link: `/PilotDetail?id=${pilot.id}`
-        }]);
-      if (notifError) throw notifError;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['pilot']);
-      queryClient.invalidateQueries(['sandbox']);
-      toast.success(t({ en: 'Sandbox exit processed', ar: 'تم معالجة الخروج من المنطقة' }));
-      onClose();
-    }
-  });
+  const handleExit = () => {
+    exitPilotFromSandbox.mutate({
+      pilotId: pilot.id,
+      sandboxId: sandbox?.id,
+      exitData: exitData,
+      currentSandboxStats: {
+        current_pilots: sandbox?.current_pilots,
+        total_completed_projects: sandbox?.total_completed_projects
+      }
+    }, {
+      onSuccess: () => {
+        onClose();
+      }
+    });
+  };
 
   const handleNext = () => {
     if (step === 1 && !exitData.exit_type) {
@@ -96,7 +68,7 @@ export default function SandboxProjectExitWizard({ pilot, sandbox, onClose }) {
       toast.error(t({ en: 'Please complete at least 5 checklist items', ar: 'يرجى إكمال 5 عناصر على الأقل' }));
       return;
     }
-    exitMutation.mutate();
+    handleExit();
   };
 
   const exitTypeConfig = {
@@ -322,10 +294,10 @@ export default function SandboxProjectExitWizard({ pilot, sandbox, onClose }) {
           ) : (
             <Button
               onClick={handleSubmit}
-              disabled={exitMutation.isPending}
+              disabled={exitPilotFromSandbox.isPending}
               className="flex-1 bg-green-600 hover:bg-green-700"
             >
-              {exitMutation.isPending ? (
+              {exitPilotFromSandbox.isPending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
                 <CheckCircle2 className="h-4 w-4 mr-2" />
@@ -343,3 +315,4 @@ export default function SandboxProjectExitWizard({ pilot, sandbox, onClose }) {
     </Card>
   );
 }
+

@@ -5,67 +5,44 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Smartphone, Check, AlertCircle, Loader2, Copy } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useMFAStatus } from '@/hooks/useAuthQueries';
+import { useTwoFactorMutations } from '@/hooks/useAuthMutations';
 
 export default function TwoFactorAuth({ user, onUpdate }) {
   const { t } = useLanguage();
   const [step, setStep] = useState('setup'); // setup, verify, enabled
-  const [method, setMethod] = useState('app'); // app or sms
   const [code, setCode] = useState('');
-  const [loading, setLoading] = useState(false);
   const [qrCode, setQrCode] = useState(null);
   const [secret, setSecret] = useState(null);
   const [factorId, setFactorId] = useState(null);
 
+  const { data: mfaStatus, isLoading: isLoadingStatus } = useMFAStatus();
+  const { enrollMFA, verifyMFA, unenrollMFA } = useTwoFactorMutations();
+
+  const loading = enrollMFA.isPending || verifyMFA.isPending || unenrollMFA.isPending || isLoadingStatus;
+
   // Check current MFA status
-  const is2FAEnabled = user?.two_factor_enabled || false;
-
   useEffect(() => {
-    // Check if MFA is already enrolled
-    checkMFAStatus();
-  }, []);
-
-  const checkMFAStatus = async () => {
-    try {
-      const { data, error } = await supabase.auth.mfa.listFactors();
-      if (error) {
-        console.error('Error checking MFA status:', error);
-        return;
-      }
-      
-      const totpFactor = data.totp.find(f => f.factor_type === 'totp' && f.status === 'verified');
-      if (totpFactor) {
-        setStep('enabled');
-        setFactorId(totpFactor.id);
-      }
-    } catch (error) {
-      console.error('MFA status check error:', error);
+    if (mfaStatus?.enabled) {
+      setStep('enabled');
+      setFactorId(mfaStatus.factorId);
     }
-  };
+  }, [mfaStatus]);
 
   const handleEnable2FA = async () => {
-    setLoading(true);
-    try {
-      // Enroll TOTP factor
-      const { data, error } = await supabase.auth.mfa.enroll({
-        factorType: 'totp',
-        friendlyName: 'Authenticator App'
-      });
-
-      if (error) throw error;
-
-      setQrCode(data.totp.qr_code);
-      setSecret(data.totp.secret);
-      setFactorId(data.id);
-      setStep('verify');
-      toast.success(t({ en: 'Scan the QR code with your authenticator app', ar: 'امسح رمز QR بتطبيق المصادقة' }));
-    } catch (error) {
-      console.error('MFA enroll error:', error);
-      toast.error(error.message || t({ en: 'Failed to enable 2FA', ar: 'فشل تفعيل 2FA' }));
-    } finally {
-      setLoading(false);
-    }
+    enrollMFA.mutate(undefined, {
+      onSuccess: (data) => {
+        setQrCode(data.totp.qr_code);
+        setSecret(data.totp.secret);
+        setFactorId(data.id);
+        setStep('verify');
+        toast.success(t({ en: 'Scan the QR code with your authenticator app', ar: 'امسح رمز QR بتطبيق المصادقة' }));
+      },
+      onError: (error) => {
+        toast.error(error.message || t({ en: 'Failed to enable 2FA', ar: 'فشل تفعيل 2FA' }));
+      }
+    });
   };
 
   const handleVerifyCode = async () => {
@@ -74,34 +51,15 @@ export default function TwoFactorAuth({ user, onUpdate }) {
       return;
     }
 
-    setLoading(true);
-    try {
-      // Challenge the factor to verify
-      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
-        factorId: factorId
-      });
-
-      if (challengeError) throw challengeError;
-
-      // Verify the code
-      const { data, error } = await supabase.auth.mfa.verify({
-        factorId: factorId,
-        challengeId: challengeData.id,
-        code: code
-      });
-
-      if (error) throw error;
-
-      // Update user profile to mark 2FA as enabled
-      await onUpdate({ two_factor_enabled: true, two_factor_method: 'app' });
-      setStep('enabled');
-      toast.success(t({ en: '2FA enabled successfully', ar: 'تم تفعيل 2FA بنجاح' }));
-    } catch (error) {
-      console.error('MFA verify error:', error);
-      toast.error(error.message || t({ en: 'Invalid verification code', ar: 'رمز التحقق غير صحيح' }));
-    } finally {
-      setLoading(false);
-    }
+    verifyMFA.mutate({ factorId, code }, {
+      onSuccess: () => {
+        onUpdate({ two_factor_enabled: true, two_factor_method: 'app' });
+        setStep('enabled');
+      },
+      onError: (error) => {
+        toast.error(error.message || t({ en: 'Invalid verification code', ar: 'رمز التحقق غير صحيح' }));
+      }
+    });
   };
 
   const handleDisable2FA = async () => {
@@ -109,22 +67,24 @@ export default function TwoFactorAuth({ user, onUpdate }) {
       return;
     }
 
-    setLoading(true);
-    try {
-      if (factorId) {
-        const { error } = await supabase.auth.mfa.unenroll({ factorId });
-        if (error) throw error;
-      }
+    // Use current factor ID or fetch it if missing (mfaStatus should have it)
+    const currentFactorId = factorId || mfaStatus?.factorId;
 
-      await onUpdate({ two_factor_enabled: false, two_factor_method: null });
+    if (currentFactorId) {
+      unenrollMFA.mutate(currentFactorId, {
+        onSuccess: () => {
+          onUpdate({ two_factor_enabled: false, two_factor_method: null });
+          setStep('setup');
+          setFactorId(null);
+        },
+        onError: (error) => {
+          toast.error(error.message || t({ en: 'Failed to disable 2FA', ar: 'فشل تعطيل 2FA' }));
+        }
+      });
+    } else {
+      // Fallback if no factor ID found but we need to reset UI
+      onUpdate({ two_factor_enabled: false, two_factor_method: null });
       setStep('setup');
-      setFactorId(null);
-      toast.success(t({ en: '2FA disabled', ar: 'تم تعطيل 2FA' }));
-    } catch (error) {
-      console.error('MFA unenroll error:', error);
-      toast.error(error.message || t({ en: 'Failed to disable 2FA', ar: 'فشل تعطيل 2FA' }));
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -135,7 +95,7 @@ export default function TwoFactorAuth({ user, onUpdate }) {
     }
   };
 
-  if (is2FAEnabled || step === 'enabled') {
+  if ((user?.two_factor_enabled || mfaStatus?.enabled) || step === 'enabled') {
     return (
       <Card>
         <CardHeader>
@@ -154,17 +114,17 @@ export default function TwoFactorAuth({ user, onUpdate }) {
               {t({ en: 'Your account is protected with 2FA', ar: 'حسابك محمي بـ 2FA' })}
             </p>
             <p className="text-xs text-green-700 dark:text-green-300 mt-1">
-              {t({ 
-                en: `Method: ${user?.two_factor_method === 'app' ? 'Authenticator App' : 'SMS'}`, 
-                ar: `الطريقة: ${user?.two_factor_method === 'app' ? 'تطبيق المصادقة' : 'رسالة نصية'}` 
+              {t({
+                en: `Method: ${user?.two_factor_method === 'app' || mfaStatus?.enabled ? 'Authenticator App' : 'SMS'}`,
+                ar: `الطريقة: ${user?.two_factor_method === 'app' || mfaStatus?.enabled ? 'تطبيق المصادقة' : 'رسالة نصية'}`
               })}
             </p>
           </div>
 
           <div className="space-y-2">
-            <Button 
-              variant="outline" 
-              className="w-full" 
+            <Button
+              variant="outline"
+              className="w-full"
               onClick={handleDisable2FA}
               disabled={loading}
             >
@@ -215,8 +175,8 @@ export default function TwoFactorAuth({ user, onUpdate }) {
                 <span>1Password</span>
               </div>
 
-              <Button 
-                onClick={handleEnable2FA} 
+              <Button
+                onClick={handleEnable2FA}
                 disabled={loading}
                 className="w-full bg-primary"
               >
@@ -242,7 +202,7 @@ export default function TwoFactorAuth({ user, onUpdate }) {
               <p className="text-sm text-blue-900 dark:text-blue-100 font-medium mb-3">
                 {t({ en: 'Scan QR code with your authenticator app', ar: 'امسح رمز QR بتطبيق المصادقة' })}
               </p>
-              
+
               {qrCode && (
                 <div className="bg-white p-4 rounded-lg inline-block mb-4">
                   <img src={qrCode} alt="QR Code for 2FA" className="h-48 w-48" />
@@ -280,8 +240,8 @@ export default function TwoFactorAuth({ user, onUpdate }) {
               />
             </div>
 
-            <Button 
-              onClick={handleVerifyCode} 
+            <Button
+              onClick={handleVerifyCode}
               disabled={code.length !== 6 || loading}
               className="w-full bg-primary"
             >
@@ -295,7 +255,7 @@ export default function TwoFactorAuth({ user, onUpdate }) {
               )}
             </Button>
 
-            <Button 
+            <Button
               variant="outline"
               onClick={() => {
                 setStep('setup');

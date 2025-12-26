@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
-import { 
+import {
   Database, Server,
   CheckCircle2, AlertCircle, Clock, ChevronDown, ChevronRight
 } from 'lucide-react';
@@ -24,7 +24,7 @@ function InfrastructureRoadmap() {
           name: 'User Entity RLS',
           description: 'Built-in RLS on User entity (Admin=all, User=own record)',
           status: 'complete',
-          implementation: 'Base44 Platform Built-in',
+          implementation: 'Platform Built-in',
           notes: 'Already enforced at platform level'
         },
         {
@@ -404,7 +404,7 @@ function InfrastructureRoadmap() {
   };
 
   const getStatusColor = (status) => {
-    switch(status) {
+    switch (status) {
       case 'complete': return 'bg-green-600';
       case 'partial': return 'bg-blue-600';
       case 'ready': return 'bg-purple-600';
@@ -415,7 +415,7 @@ function InfrastructureRoadmap() {
   };
 
   const getPriorityColor = (priority) => {
-    switch(priority) {
+    switch (priority) {
       case 'critical': return 'border-red-500 bg-red-50';
       case 'high': return 'border-orange-500 bg-orange-50';
       case 'medium': return 'border-blue-500 bg-blue-50';
@@ -782,6 +782,6 @@ function InfrastructureRoadmap() {
   );
 }
 
-export default ProtectedPage(InfrastructureRoadmap, { 
-  requiredPermissions: ['platform_admin', 'security_manage'] 
+export default ProtectedPage(InfrastructureRoadmap, {
+  requiredPermissions: ['platform_admin', 'security_manage']
 });

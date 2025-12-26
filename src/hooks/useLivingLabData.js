@@ -1,46 +1,40 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-/**
- * Hook to fetch living lab bookings
- */
-export function useLivingLabBookings(labId = null) {
-    return useQuery({
-        queryKey: ['lab-bookings', labId],
-        queryFn: async () => {
-            let query = supabase
-                .from('living_lab_bookings')
-                .select('*')
-                .eq('is_deleted', false);
-
-            if (labId) {
-                query = query.eq('living_lab_id', labId);
-            }
-
-            const { data, error } = await query;
-            if (error) throw error;
-            return data || [];
-        },
-        staleTime: 5 * 60 * 1000 // 5 minutes
-    });
-}
-
-/**
- * Hook to fetch pilots associated with living labs
- */
-export function usePilotsForLabs() {
-    return useQuery({
-        queryKey: ['pilots-for-labs'],
+export function useLivingLabData(livingLabId) {
+    const bookingsQuery = useQuery({
+        queryKey: ['living-lab-bookings', livingLabId],
         queryFn: async () => {
             const { data, error } = await supabase
-                .from('pilots')
-                .select('id, living_lab_id')
-                .eq('is_deleted', false);
+                .from('living_lab_bookings')
+                .select('*')
+                .eq('living_lab_id', livingLabId);
             if (error) throw error;
             return data || [];
         },
-        staleTime: 5 * 60 * 1000 // 5 minutes
+        enabled: !!livingLabId
     });
-}
 
-export default { useLivingLabBookings, usePilotsForLabs };
+    const projectsQuery = useQuery({
+        queryKey: ['living-lab-projects', livingLabId],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('rd_projects')
+                .select('*')
+                .eq('living_lab_id', livingLabId);
+            if (error) throw error;
+            return data || [];
+        },
+        enabled: !!livingLabId
+    });
+
+    return {
+        bookings: bookingsQuery.data || [],
+        projects: projectsQuery.data || [],
+        isLoading: bookingsQuery.isLoading || projectsQuery.isLoading,
+        refetch: () => {
+            bookingsQuery.refetch();
+            projectsQuery.refetch();
+        }
+    };
+}

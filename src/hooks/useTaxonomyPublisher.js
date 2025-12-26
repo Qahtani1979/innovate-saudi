@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useTaxonomyMutations } from './useTaxonomyMutations';
-import { useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { toast } from 'sonner';
 
 export function useTaxonomyPublisher() {
     const [isPublishing, setIsPublishing] = useState(false);
     const [progress, setProgress] = useState(0);
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { createSector, createSubsector, createService } = useTaxonomyMutations();
 
     const publish = async (sectors, subsectors, services, onComplete) => {
@@ -93,3 +93,4 @@ export function useTaxonomyPublisher() {
         progress
     };
 }
+

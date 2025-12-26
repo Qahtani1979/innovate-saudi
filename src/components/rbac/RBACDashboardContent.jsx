@@ -11,7 +11,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 import PermissionInheritanceVisualizer from '@/components/access/PermissionInheritanceVisualizer';
 import RolePermissionMatrix from '@/components/access/RolePermissionMatrix';
 import PermissionGate from '@/components/permissions/PermissionGate';
-import { usePermissions } from '@/components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useRoles } from '@/hooks/useRoles';
 import { useAllUserProfiles } from '@/hooks/useUserProfile';
 import { useRolePermissions } from '@/hooks/useRolePermissions';

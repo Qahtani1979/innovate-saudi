@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 
 // I will remove `supabase` import.
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,7 @@ import { createPageUrl } from '../utils';
 import { Award, TrendingUp, AlertCircle, TestTube, Target, Users, ShieldAlert, ArrowUp, ArrowDown, Minus, RefreshCw, CheckCircle2, Loader2 } from 'lucide-react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
-import { usePermissions } from '@/components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useMIIData, useMIIMutation } from '@/hooks/useMIIData';
 import { useLocations } from '@/hooks/useLocations';
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';

@@ -1,6 +1,7 @@
 import React from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useLivingLabs } from '@/hooks/useLivingLabs';
+import { useLivingLabBookings, useLivingLabProjectBookings } from '@/hooks/useLivingLabBookings';
+import { usePilotsList } from '@/hooks/usePilots';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -13,49 +14,10 @@ import { createPageUrl } from '../utils';
 export default function LivingLabDashboard() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: labs = [] } = useQuery({
-    queryKey: ['living-labs'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('living_labs')
-        .select('*');
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: bookings = [] } = useQuery({
-    queryKey: ['lab-bookings'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('living_lab_bookings')
-        .select('*');
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: resourceBookings = [] } = useQuery({
-    queryKey: ['resource-bookings'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('living_lab_resource_bookings')
-        .select('*');
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*');
-      if (error) throw error;
-      return data;
-    }
-  });
+  const { data: labs = [] } = useLivingLabs();
+  const { data: bookings = [] } = useLivingLabProjectBookings();
+  const { data: resourceBookings = [] } = useLivingLabBookings();
+  const { data: pilots = [] } = usePilotsList();
 
   // Calculate metrics
   const activeLabs = labs.filter(l => l.status === 'active').length;

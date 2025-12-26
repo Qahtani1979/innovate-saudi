@@ -19,7 +19,7 @@ import {
 
 export default function SolutionDeprecationWizard({ solution, onComplete }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  // const queryClient = useQueryClient(); // Removed unused and undefined
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
 

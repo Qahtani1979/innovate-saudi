@@ -9,58 +9,69 @@ import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { 
+import {
   CROSS_ENTITY_PROMPTS,
   buildCrossEntityPrompt,
-  CROSS_ENTITY_SCHEMA 
+  CROSS_ENTITY_SCHEMA
 } from '@/lib/ai/prompts/recommendations';
+import { useCrossEntityRecommender } from '@/hooks/useAIInsights';
+import { useSystemEntities } from '@/hooks/useSystemData';
 
 export default function CrossEntityRecommender({ sourceEntity, sourceType, recommendations = ['rdcalls', 'rdprojects', 'pilots', 'challenges'] }) {
   const { language, isRTL, t } = useLanguage();
   const [results, setResults] = useState(null);
-  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+
+  const { data: rdCalls = [] } = useSystemEntities('RDCall');
+  const { data: rdProjects = [] } = useSystemEntities('RDProject');
+  const { data: pilots = [] } = useSystemEntities('Pilot');
+  const { data: challenges = [] } = useSystemEntities('Challenge');
+
+  const { recommendMutation, status, isLoading, isAvailable, rateLimitInfo } = useCrossEntityRecommender();
 
   const handleRecommend = async () => {
-    try {
-      const rdCalls = recommendations.includes('rdcalls') ? await base44.entities.RDCall.filter({ status: 'open' }) : [];
-      const rdProjects = recommendations.includes('rdprojects') ? await base44.entities.RDProject.filter({ is_published: true }) : [];
-      const pilots = recommendations.includes('pilots') ? await base44.entities.Pilot.filter({ stage: 'active' }) : [];
-      const challenges = recommendations.includes('challenges') ? await base44.entities.Challenge.filter({ status: 'approved' }) : [];
+    // Filter available entities based on specified recommendations
+    const availableEntities = {
+      rdCalls: recommendations.includes('rdcalls') ? rdCalls.filter(c => c.status === 'open') : [],
+      rdProjects: recommendations.includes('rdprojects') ? rdProjects.filter(p => p.is_published) : [],
+      pilots: recommendations.includes('pilots') ? pilots.filter(p => p.stage === 'active') : [],
+      challenges: recommendations.includes('challenges') ? challenges.filter(c => c.status === 'approved') : []
+    };
 
-      const availableEntities = { rdCalls, rdProjects, pilots, challenges };
-
-      const result = await invokeAI({
-        systemPrompt: CROSS_ENTITY_PROMPTS.systemPrompt,
-        prompt: buildCrossEntityPrompt(sourceEntity, sourceType, availableEntities),
-        response_json_schema: CROSS_ENTITY_SCHEMA
-      });
-
-      if (result.success) {
+    recommendMutation.mutate({
+      sourceEntity,
+      sourceType,
+      availableEntities,
+      promptBuilder: buildCrossEntityPrompt,
+      schema: CROSS_ENTITY_SCHEMA,
+      systemPrompt: CROSS_ENTITY_PROMPTS.systemPrompt
+    }, {
+      onSuccess: (data) => {
         // Enrich with actual entities
         const enriched = {
-          rdcalls: result.data.rdcall_recommendations?.map(r => ({
+          rdcalls: data.rdcall_recommendations?.map(r => ({
             ...r,
-            entity: rdCalls.find(c => c.id === r.entity_id)
+            entity: availableEntities.rdCalls.find(c => c.id === r.entity_id)
           })).filter(r => r.entity) || [],
-          rdprojects: result.data.rdproject_recommendations?.map(r => ({
+          rdprojects: data.rdproject_recommendations?.map(r => ({
             ...r,
-            entity: rdProjects.find(p => p.id === r.entity_id)
+            entity: availableEntities.rdProjects.find(p => p.id === r.entity_id)
           })).filter(r => r.entity) || [],
-          pilots: result.data.pilot_recommendations?.map(r => ({
+          pilots: data.pilot_recommendations?.map(r => ({
             ...r,
-            entity: pilots.find(p => p.id === r.entity_id)
+            entity: availableEntities.pilots.find(p => p.id === r.entity_id)
           })).filter(r => r.entity) || [],
-          challenges: result.data.challenge_recommendations?.map(r => ({
+          challenges: data.challenge_recommendations?.map(r => ({
             ...r,
-            entity: challenges.find(c => c.id === r.entity_id)
+            entity: availableEntities.challenges.find(c => c.id === r.entity_id)
           })).filter(r => r.entity) || []
         };
 
         setResults(enriched);
+      },
+      onError: (error) => {
+        toast.error(t({ en: 'Failed to generate recommendations', ar: 'فشل توليد التوصيات' }) + ': ' + error.message);
       }
-    } catch (error) {
-      toast.error(t({ en: 'Failed to generate recommendations', ar: 'فشل توليد التوصيات' }));
-    }
+    });
   };
 
   const getEntityIcon = (type) => {
@@ -118,8 +129,8 @@ export default function CrossEntityRecommender({ sourceEntity, sourceType, recom
         </div>
       </CardHeader>
       <CardContent>
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
-        
+        <AIStatusIndicator status={status} error={null} rateLimitInfo={rateLimitInfo} showDetails />
+
         {!results && !isLoading && (
           <div className="text-center py-6">
             <LinkIcon className="h-12 w-12 text-purple-300 mx-auto mb-3" />
@@ -143,7 +154,7 @@ export default function CrossEntityRecommender({ sourceEntity, sourceType, recom
             {Object.entries(results).map(([type, items]) => {
               if (!items || items.length === 0) return null;
               const Icon = getEntityIcon(type);
-              
+
               return (
                 <div key={type}>
                   <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">

@@ -1,15 +1,14 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from '../LanguageContext';
 import { FileText, Plus, ExternalLink, Award, Database, X, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { useRDProject } from '@/hooks/useRDProjects';
+import { useRDProjectMutations } from '@/hooks/useRDProjectMutations';
 
 export default function PublicationManager({ rdProjectId }) {
-  const { language, isRTL, t } = useLanguage();
+  const { isRTL, t } = useLanguage();
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -19,43 +18,24 @@ export default function PublicationManager({ rdProjectId }) {
     url: '',
     type: 'journal'
   });
-  const queryClient = useQueryClient();
 
-  const { data: project } = useQuery({
-    queryKey: ['rd-project', rdProjectId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_projects')
-        .select('id, publications, patents, datasets')
-        .eq('id', rdProjectId)
-        .single();
+  const { data: projectData } = useRDProject(rdProjectId);
+  const { addProjectPublication } = useRDProjectMutations();
 
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!rdProjectId
-  });
+  const project = /** @type {any} */ (projectData);
 
-  const updateMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase
-        .from('rd_projects')
-        .update(data)
-        .eq('id', rdProjectId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['rd-project', rdProjectId]);
-      toast.success(t({ en: 'Publication added', ar: 'تمت الإضافة' }));
+  const handleSubmit = async () => {
+    try {
+      await addProjectPublication.mutateAsync({
+        id: rdProjectId,
+        publications: project?.publications,
+        newPublication: formData
+      });
       setShowForm(false);
       setFormData({ title: '', authors: [], publication: '', year: new Date().getFullYear(), url: '', type: 'journal' });
+    } catch (error) {
+      console.error('Failed to add publication', error);
     }
-  });
-
-  const handleSubmit = () => {
-    const publications = [...(project?.publications || []), formData];
-    updateMutation.mutate({ publications });
   };
 
   const publications = project?.publications || [];
@@ -114,8 +94,8 @@ export default function PublicationManager({ rdProjectId }) {
                 className="flex-1"
               />
             </div>
-            <Button onClick={handleSubmit} disabled={updateMutation.isPending} className="w-full">
-              {updateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t({ en: 'Add Publication', ar: 'إضافة المنشور' })}
+            <Button onClick={handleSubmit} disabled={addProjectPublication.isPending} className="w-full">
+              {addProjectPublication.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t({ en: 'Add Publication', ar: 'إضافة المنشور' })}
             </Button>
           </CardContent>
         </Card>

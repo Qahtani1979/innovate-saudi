@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -456,7 +456,7 @@ export const ENTITY_DEFINITIONS = {
 };
 
 export function useDataImportExport() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const exportHistory = useQuery({
         queryKey: ['export-history'],
@@ -672,3 +672,4 @@ export function useDataImportExport() {
         }
     };
 }
+

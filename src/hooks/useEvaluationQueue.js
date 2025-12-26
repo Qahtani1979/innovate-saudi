@@ -1,9 +1,9 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useState } from 'react';
 
 export function useEvaluationQueue() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const [selectedEntity, setSelectedEntity] = useState(null);
     const [showEvaluationForm, setShowEvaluationForm] = useState(false);
 
@@ -74,3 +74,4 @@ export function useEvaluationQueue() {
         handleEvaluationComplete
     };
 }
+

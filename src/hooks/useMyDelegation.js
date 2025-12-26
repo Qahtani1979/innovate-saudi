@@ -1,9 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export function useMyDelegation(userEmail, t) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const { data: teamMembers = [] } = useQuery({
         queryKey: ['team-members', userEmail],
@@ -100,3 +100,4 @@ export function useMyDelegation(userEmail, t) {
         recallMutation
     };
 }
+

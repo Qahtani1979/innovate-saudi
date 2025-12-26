@@ -20,7 +20,7 @@ export default function NativeMobileApp() {
           <div className="flex items-start gap-2">
             <AlertCircle className="h-4 w-4 text-red-600 mt-0.5" />
             <div className="text-red-800">
-              <p className="font-medium">Not Supported by Base44 Platform</p>
+              <p className="font-medium">Not Supported by Platform</p>
               <p>Platform is React web-based. Native apps require separate development</p>
             </div>
           </div>

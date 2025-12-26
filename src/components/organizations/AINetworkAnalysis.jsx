@@ -35,10 +35,6 @@ export default function AINetworkAnalysis({ organization }) {
 
   const generateAnalysis = async () => {
     // Note: usePilotsList and useRDProjects fetched all, we filter here locally or if we had specific inputs we'd filter there.
-    // Original code:
-    // pilots.filter(p => p.provider_id === organization.id) - this was done in stats calc.
-    // base44.entities.Solution.list().then(all => all.filter(s => s.provider_id === organization.id))
-
     // So we use the hook data directly.
 
     const orgSolutions = solutions.filter(s => s.provider_id === organization.id);

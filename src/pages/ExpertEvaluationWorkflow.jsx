@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useExpertAssignment } from '@/hooks/useExpertData';
 import { useExpertAssignmentMutations } from '@/hooks/useExpertAssignmentMutations';
 import { useEntity } from '@/hooks/useEntityData';
-import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Button } from "@/components/ui/button";
@@ -14,14 +13,12 @@ import { toast } from 'sonner';
 import UnifiedEvaluationForm from '../components/evaluation/UnifiedEvaluationForm';
 import { useAuth } from '@/lib/AuthContext';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
-import { useQuery } from '@tanstack/react-query';
 
 export default function ExpertEvaluationWorkflow() {
   const urlParams = new URLSearchParams(window.location.search);
   const assignmentId = urlParams.get('assignment_id');
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
   const [savingDraft, setSavingDraft] = useState(false);
 

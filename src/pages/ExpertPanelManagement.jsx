@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useExpertPanelMutations } from '@/hooks/useExpertPanelMutations';
 import { useExpertPanels, usePanelChallenges, usePanelPilots, usePanelRDProjects, usePanelScalingPlans } from '@/hooks/useExpertPanelData';
 import { useExperts } from '@/hooks/useExpertData';

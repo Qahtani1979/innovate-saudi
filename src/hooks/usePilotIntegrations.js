@@ -10,13 +10,13 @@
  * - ext-7: Strategic Plans (pilot.strategic_plan_ids)
  */
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuditLogger, AUDIT_ACTIONS, ENTITY_TYPES } from './useAuditLogger';
 
 export function usePilotIntegrations(pilotId) {
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
   const { logAuditEvent } = useAuditLogger();
   
   // ============================================
@@ -466,3 +466,4 @@ export function usePilotIntegrations(pilotId) {
 }
 
 export default usePilotIntegrations;
+

@@ -3,7 +3,7 @@
  * Provides unified logic for soft-delete and archiving operations.
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
@@ -18,7 +18,7 @@ import { useAuditLogger, AUDIT_ACTIONS } from './useAuditLogger';
  */
 
 export function useArchiving() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { user } = useAuth();
     const { logCrudOperation } = useAuditLogger();
 
@@ -129,3 +129,4 @@ export function useArchiving() {
         restore
     };
 }
+

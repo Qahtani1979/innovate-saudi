@@ -1,9 +1,9 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export function useExpertMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const updateExpertProfile = useMutation({
         mutationFn: async ({ id, data }) => {
@@ -57,3 +57,4 @@ export function useExpertMutations() {
         createExpertProfile
     };
 }
+

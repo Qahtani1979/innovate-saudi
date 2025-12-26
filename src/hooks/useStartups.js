@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -6,7 +6,7 @@ import { toast } from 'sonner';
  * Hook to manage startup profiles
  */
 export function useStartups() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     return useQuery({
         queryKey: ['startups'],
@@ -43,7 +43,7 @@ export function useStartup(startupId) {
  * Hook to manage partnerships
  */
 export function usePartnerships(startupId) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const query = useQuery({
         queryKey: ['partnerships', startupId],
@@ -84,3 +84,4 @@ export function usePartnerships(startupId) {
         createPartnership
     };
 }
+

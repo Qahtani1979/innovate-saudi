@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
@@ -75,7 +75,7 @@ export function useUserVotes(entityType) {
 }
 
 export function useCitizenMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { user } = useAuth();
 
     const toggleBookmark = useMutation({
@@ -157,3 +157,4 @@ export function useCitizenMutations() {
 
     return { toggleBookmark, toggleVote, enrollInLab };
 }
+

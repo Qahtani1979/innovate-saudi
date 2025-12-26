@@ -19,12 +19,10 @@ import StrategicPlanSelector from '@/components/strategy/StrategicPlanSelector';
 import { useLivingLabMutations } from '../hooks/useLivingLabs';
 import { useCities } from '../hooks/useLocations';
 import { useOrganizationsWithVisibility } from '../hooks/useOrganizationsWithVisibility';
-import { useQueryClient } from '@tanstack/react-query';
 
 function LivingLabCreate() {
   const navigate = useNavigate();
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
   const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 

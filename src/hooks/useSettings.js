@@ -1,9 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export function useSettings(userId) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     // Fetch settings
     const { data: settings, isLoading, error } = useQuery({
@@ -56,3 +56,4 @@ export function useSettings(userId) {
 
     return { settings, isLoading, error, updateSettings };
 }
+

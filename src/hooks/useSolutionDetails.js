@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useVisibilitySystem } from './visibility/useVisibilitySystem';
@@ -8,7 +8,7 @@ import { useVisibilitySystem } from './visibility/useVisibilitySystem';
  * Uses visibility system for pilots and solution data.
  */
 export function useSolutionDetails(solutionId) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { fetchWithVisibility, isLoading: isVisibilityLoading } = useVisibilitySystem();
 
     const useSolution = () => useQuery({
@@ -133,3 +133,4 @@ export function useSolutionDetails(solutionId) {
         refreshSolution
     };
 }
+

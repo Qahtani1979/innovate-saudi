@@ -8,9 +8,8 @@ import { Layout, Plus, Save, LineChart as LineChartIcon, BarChart3, Gauge, Trash
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LineChart, Line, BarChart, Bar, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import useStrategicKPI from '@/hooks/useStrategicKPI';
+import { useStrategicPlans } from '@/hooks/useStrategicPlans';
 
 /**
  * DashboardBuilder - Updated with Strategic KPI Integration
@@ -23,18 +22,7 @@ export default function DashboardBuilder({ kpis = [] }) {
   const [selectedStrategicPlan, setSelectedStrategicPlan] = useState('all');
 
   // Fetch strategic plans
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans-dashboard'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('strategic_plans')
-        .select('id, name_en, name_ar, status, objectives')
-        .or('is_template.is.null,is_template.eq.false')
-        .or('is_deleted.is.null,is_deleted.eq.false')
-        .order('name_en');
-      return data || [];
-    }
-  });
+  const { data: strategicPlans = [] } = useStrategicPlans();
 
   // Get strategic KPIs from the hook
   const { strategicKPIs, isLoading: kpisLoading } = useStrategicKPI();
@@ -56,8 +44,8 @@ export default function DashboardBuilder({ kpis = [] }) {
   ];
 
   // Filter KPIs by selected strategic plan
-  const filteredKPIs = selectedStrategicPlan === 'all' 
-    ? allKPIs 
+  const filteredKPIs = selectedStrategicPlan === 'all'
+    ? allKPIs
     : allKPIs.filter(kpi => kpi.plan_id === selectedStrategicPlan || !kpi.is_strategic);
 
   const widgetTypes = [
@@ -89,7 +77,7 @@ export default function DashboardBuilder({ kpis = [] }) {
     setWidgets(widgets.map(w => {
       if (w.id === id) {
         const updates = { [field]: value };
-        
+
         // If changing KPI, update related fields
         if (field === 'kpi') {
           const selectedKpi = allKPIs.find(k => k.name_en === value);
@@ -99,7 +87,7 @@ export default function DashboardBuilder({ kpis = [] }) {
             updates.is_strategic = selectedKpi.is_strategic;
           }
         }
-        
+
         return { ...w, ...updates };
       }
       return w;
@@ -111,7 +99,7 @@ export default function DashboardBuilder({ kpis = [] }) {
       toast.error(t({ en: 'Please enter dashboard name', ar: 'الرجاء إدخال اسم اللوحة' }));
       return;
     }
-    
+
     const dashboardData = {
       name: dashboardName,
       strategic_plan_id: selectedStrategicPlan === 'all' ? null : selectedStrategicPlan,
@@ -124,7 +112,7 @@ export default function DashboardBuilder({ kpis = [] }) {
       })),
       created_at: new Date().toISOString()
     };
-    
+
     console.log('Saving dashboard:', dashboardData);
     toast.success(t({ en: 'Dashboard saved with strategic KPI links', ar: 'تم حفظ اللوحة مع روابط مؤشرات الأداء الاستراتيجية' }));
   };
@@ -152,9 +140,9 @@ export default function DashboardBuilder({ kpis = [] }) {
                 {t({ en: 'Strategic Dashboard Builder', ar: 'بناء لوحة المعلومات الاستراتيجية' })}
               </CardTitle>
               <CardDescription>
-                {t({ 
-                  en: 'Build dashboards connected to strategic KPIs (Phase 6)', 
-                  ar: 'بناء لوحات متصلة بمؤشرات الأداء الاستراتيجية (المرحلة 6)' 
+                {t({
+                  en: 'Build dashboards connected to strategic KPIs (Phase 6)',
+                  ar: 'بناء لوحات متصلة بمؤشرات الأداء الاستراتيجية (المرحلة 6)'
                 })}
               </CardDescription>
             </div>
@@ -214,7 +202,7 @@ export default function DashboardBuilder({ kpis = [] }) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {widgets.map((widget) => {
               const kpiData = getKpiData(widget.kpi);
-              
+
               return (
                 <Card key={widget.id} className={`border-2 ${widget.is_strategic ? 'border-primary/30' : 'border-dashed'}`}>
                   <CardHeader className="pb-3">
@@ -234,8 +222,8 @@ export default function DashboardBuilder({ kpis = [] }) {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <Select 
-                      value={widget.kpi} 
+                    <Select
+                      value={widget.kpi}
                       onValueChange={(v) => updateWidget(widget.id, 'kpi', v)}
                     >
                       <SelectTrigger className="text-xs mb-3">
@@ -255,7 +243,7 @@ export default function DashboardBuilder({ kpis = [] }) {
                         ))}
                       </SelectContent>
                     </Select>
-                    
+
                     {widget.type === 'line' && (
                       <ResponsiveContainer width="100%" height={120}>
                         <LineChart data={[
@@ -267,7 +255,7 @@ export default function DashboardBuilder({ kpis = [] }) {
                         </LineChart>
                       </ResponsiveContainer>
                     )}
-                    
+
                     {widget.type === 'bar' && (
                       <ResponsiveContainer width="100%" height={120}>
                         <BarChart data={[
@@ -278,7 +266,7 @@ export default function DashboardBuilder({ kpis = [] }) {
                         </BarChart>
                       </ResponsiveContainer>
                     )}
-                    
+
                     {(widget.type === 'card' || widget.type === 'strategic') && (
                       <div className={`p-4 rounded text-center ${widget.is_strategic ? 'bg-primary/10' : 'bg-blue-50'}`}>
                         <p className={`text-3xl font-bold ${widget.is_strategic ? 'text-primary' : 'text-blue-600'}`}>
@@ -292,12 +280,12 @@ export default function DashboardBuilder({ kpis = [] }) {
                         )}
                       </div>
                     )}
-                    
+
                     {widget.type === 'gauge' && (
                       <div className="p-4 rounded text-center bg-gradient-to-br from-primary/10 to-primary/5">
                         <div className="relative w-24 h-12 mx-auto overflow-hidden">
                           <div className="absolute inset-0 rounded-t-full border-4 border-primary/20"></div>
-                          <div 
+                          <div
                             className="absolute bottom-0 left-1/2 w-1 h-10 bg-primary origin-bottom -translate-x-1/2"
                             style={{ transform: `translateX(-50%) rotate(${(kpiData.progress * 1.8) - 90}deg)` }}
                           ></div>
@@ -310,7 +298,7 @@ export default function DashboardBuilder({ kpis = [] }) {
                 </Card>
               );
             })}
-            
+
             <Button
               variant="outline"
               className="h-full min-h-[200px] border-2 border-dashed flex flex-col items-center justify-center gap-2"

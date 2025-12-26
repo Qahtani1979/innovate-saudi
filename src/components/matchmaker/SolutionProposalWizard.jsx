@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { supabase } from "@/integrations/supabase/client";
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { useMatchmakerProposalMutations } from '@/hooks/useMatchmakerProposalMutations';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,54 +31,25 @@ export default function SolutionProposalWizard({ match, applicationId, challenge
         budget_estimate: ''
     });
 
-    const queryClient = useQueryClient();
 
-    const createProposalMutation = useMutation({
-        mutationFn: async (status = 'draft') => {
-            const { data, error } = await supabase
-                .from('matchmaker_proposals')
-                .insert([
-                    {
-                        match_id: match.id,
-                        application_id: applicationId,
-                        challenge_id: challengeId,
-                        ...formData,
-                        status: status,
-                        submitted_at: status === 'submitted' ? new Date().toISOString() : null
-                    }
-                ])
-                .select()
-                .single();
 
-            if (error) throw error;
+    const { createProposal } = useMatchmakerProposalMutations();
 
-            // If submitted, update the match status as well
-            if (status === 'submitted') {
-                await supabase
-                    .from('challenge_solution_matches')
-                    .update({ status: 'proposal_submitted' })
-                    .eq('id', match.id);
+    const handleCreateProposal = (status) => {
+        createProposal.mutate({
+            matchId: match.id,
+            applicationId,
+            challengeId,
+            formData,
+            status
+        }, {
+            onSuccess: (data) => {
+                if (status === 'submitted' && onComplete) {
+                    onComplete(data);
+                }
             }
-
-            return data;
-        },
-        onSuccess: (data, variables) => {
-            const status = variables; // 'draft' or 'submitted'
-            toast.success(status === 'submitted'
-                ? t({ en: 'Proposal submitted successfully', ar: 'تم تقديم العرض بنجاح' })
-                : t({ en: 'Draft saved', ar: 'تم حفظ المسودة' })
-            );
-
-            queryClient.invalidateQueries(['matchmaker-proposals']);
-            if (status === 'submitted' && onComplete) {
-                onComplete(data);
-            }
-        },
-        onError: (error) => {
-            toast.error(t({ en: 'Failed to save proposal', ar: 'فشل حفظ العرض' }));
-            console.error(error);
-        }
-    });
+        });
+    };
 
     const handleInputChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -234,20 +205,20 @@ export default function SolutionProposalWizard({ match, applicationId, challenge
                 <div className="flex gap-2">
                     <Button
                         variant="outline"
-                        onClick={() => createProposalMutation.mutate('draft')}
-                        disabled={createProposalMutation.isPending}
+                        onClick={() => handleCreateProposal('draft')}
+                        disabled={createProposal.isPending}
                     >
-                        {createProposalMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                        {createProposal.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
                         {t({ en: 'Save Draft', ar: 'حفظ مسودة' })}
                     </Button>
 
                     {currentStep === STEPS.length - 1 ? (
                         <Button
                             className="bg-purple-600 hover:bg-purple-700 text-white"
-                            onClick={() => createProposalMutation.mutate('submitted')}
-                            disabled={createProposalMutation.isPending}
+                            onClick={() => handleCreateProposal('submitted')}
+                            disabled={createProposal.isPending}
                         >
-                            {createProposalMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+                            {createProposal.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
                             {t({ en: 'Submit Proposal', ar: 'إرسال العرض' })}
                         </Button>
                     ) : (

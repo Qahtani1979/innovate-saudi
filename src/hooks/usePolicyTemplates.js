@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -20,7 +20,7 @@ export function usePolicyTemplates() {
 }
 
 export function usePolicyTemplateMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     /**
      * @type {import('@tanstack/react-query').UseMutationResult<void, Error, any>}
@@ -77,3 +77,4 @@ export function usePolicyTemplateMutations() {
 
     return { createTemplate, updateTemplate, deleteTemplate, reorderTemplate };
 }
+

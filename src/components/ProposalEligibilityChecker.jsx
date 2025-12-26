@@ -1,37 +1,25 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from './LanguageContext';
 import { CheckCircle2, X, AlertCircle, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { useRDMutations } from '@/hooks/useRDMutations';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { buildEligibilityCheckPrompt, ELIGIBILITY_CHECK_SCHEMA } from '@/lib/ai/prompts/rd';
 
 export default function ProposalEligibilityChecker({ proposal, rdCall, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  /* removed queryClient */
   const [results, setResults] = useState(null);
-  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo, error } = useAIWithFallback();
 
-  const updateMutation = useMutation({
-    mutationFn: async (data) => {
-      const { supabase } = await import('@/integrations/supabase/client');
+  /* removed updateMutation */
 
-      const { error } = await supabase
-        .from('rd_proposals')
-        .update(data)
-        .eq('id', proposal.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['proposals']);
-      toast.success(t({ en: 'Eligibility check complete', ar: 'فحص الأهلية مكتمل' }));
-      onClose();
-    }
-  });
+  const { updateProposal } = useRDMutations();
 
   const runEligibilityCheck = async () => {
     const prompt = buildEligibilityCheckPrompt({ proposal, rdCall });
@@ -47,11 +35,19 @@ export default function ProposalEligibilityChecker({ proposal, rdCall, onClose }
   };
 
   const handleDecision = (eligible) => {
-    updateMutation.mutate({
-      eligibility_status: eligible ? 'eligible' : 'ineligible',
-      eligibility_check: results,
-      eligibility_date: new Date().toISOString(),
-      status: eligible ? proposal.status : 'rejected'
+    updateProposal.mutate({
+      id: proposal.id,
+      data: {
+        eligibility_status: eligible ? 'eligible' : 'ineligible',
+        eligibility_check: results,
+        eligibility_date: new Date().toISOString(),
+        status: eligible ? proposal.status : 'rejected'
+      }
+    }, {
+      onSuccess: () => {
+        toast.success(t({ en: 'Eligibility check complete', ar: 'فحص الأهلية مكتمل' }));
+        onClose();
+      }
     });
   };
 
@@ -69,7 +65,7 @@ export default function ProposalEligibilityChecker({ proposal, rdCall, onClose }
           <p className="text-xs text-slate-600 mt-1">{proposal.lead_institution}</p>
         </div>
 
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={error} />
 
         {!results && !isLoading && (
           <div className="text-center py-8">
@@ -146,7 +142,7 @@ export default function ProposalEligibilityChecker({ proposal, rdCall, onClose }
                 <Button
                   onClick={() => handleDecision(false)}
                   className="flex-1 bg-red-600 hover:bg-red-700"
-                  disabled={updateMutation.isPending}
+                  disabled={updateProposal.isPending}
                 >
                   {t({ en: 'Reject (Ineligible)', ar: 'رفض (غير مؤهل)' })}
                 </Button>
@@ -155,7 +151,7 @@ export default function ProposalEligibilityChecker({ proposal, rdCall, onClose }
                 <Button
                   onClick={() => handleDecision(true)}
                   className="flex-1 bg-green-600 hover:bg-green-700"
-                  disabled={updateMutation.isPending}
+                  disabled={updateProposal.isPending}
                 >
                   <CheckCircle2 className="h-4 w-4 mr-2" />
                   {t({ en: 'Confirm Eligible', ar: 'تأكيد الأهلية' })}

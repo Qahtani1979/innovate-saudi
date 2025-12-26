@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
-import { usePermissions } from '@/components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 
 import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';

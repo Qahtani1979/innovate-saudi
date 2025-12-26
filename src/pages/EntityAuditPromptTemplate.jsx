@@ -1061,7 +1061,7 @@ Ready: YES/NO`;
         </CardHeader>
         <CardContent>
           <pre className="bg-slate-900 text-green-400 p-4 rounded-lg overflow-x-auto text-xs leading-relaxed font-mono whitespace-pre-wrap">
-{quickPrompt}
+            {quickPrompt}
           </pre>
         </CardContent>
       </Card>
@@ -1081,7 +1081,7 @@ Ready: YES/NO`;
         </CardHeader>
         <CardContent>
           <pre className="bg-slate-900 text-green-400 p-6 rounded-lg overflow-x-auto text-sm leading-relaxed font-mono whitespace-pre-wrap">
-{auditPromptTemplate}
+            {auditPromptTemplate}
           </pre>
         </CardContent>
       </Card>
@@ -1113,7 +1113,7 @@ Ready: YES/NO`;
               <div className="h-6 w-6 bg-purple-100 rounded-full flex items-center justify-center text-xs font-bold text-purple-700">3</div>
               <div>
                 <p className="font-semibold text-purple-900">Run audit with AI assistant</p>
-                <p className="text-sm text-slate-700">Paste into AI chat (Base44 AI, ChatGPT, Claude, etc.)</p>
+                <p className="text-sm text-slate-700">Paste into AI chat (ChatGPT, Claude, etc.)</p>
               </div>
             </div>
             <div className="flex items-start gap-3">

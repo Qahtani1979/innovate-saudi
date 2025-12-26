@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from '../LanguageContext';
 import { Rocket, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
-import { supabase } from "@/integrations/supabase/client";
+
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { usePilotMutations } from '@/hooks/usePilotMutations';
 
 export default function PilotConversionWizard({ application, challenge, onClose }) {
   const { language, isRTL, t } = useLanguage();
@@ -83,74 +84,18 @@ Generate professional MOU/Partnership Agreement in both Arabic and English with:
     }
   };
 
-  const createPilot = async () => {
-    try {
-      // 1. Create Partnership Record
-      const { data: partnership, error: partnershipError } = await supabase
-        .from('organization_partnerships')
-        .insert({
-          provider_id: application.organization_id,
-          partner_id: challenge?.organization_id, // Assuming challenge has org_id of municipality
-          match_id: application.matched_challenges?.[0], // Best effort linking
-          status: 'active',
-          start_date: new Date().toISOString(),
-          agreement_url: pilotData.partnership_agreement_url,
-          total_value: pilotData.budget
-        })
-        .select()
-        .single();
+  const { convertMatchToPilot } = usePilotMutations();
 
-      if (partnershipError) {
-        console.error('Partnership creation failed:', partnershipError);
-        // We continue to create pilot even if partnership tracking fails, but warn
-        toast.warning(t({ en: 'Partnership tracking skipped', ar: 'تم تخطي تتبع الشراكة' }));
+  const handleCreatePilot = () => {
+    convertMatchToPilot.mutate({
+      application,
+      challenge,
+      pilotData
+    }, {
+      onSuccess: (pilot) => {
+        navigate(createPageUrl(`PilotDetail?id=${pilot.id}`));
       }
-
-      // 2. Create Pilot
-      const { data: pilot, error: pilotError } = await supabase
-        .from('pilots')
-        .insert({
-          ...pilotData,
-          challenge_id: challenge?.id,
-          solution_id: application.organization_id,
-          stage: 'design',
-          sector: challenge?.sector,
-          municipality_id: challenge?.municipality_id
-        })
-        .select()
-        .single();
-
-      if (pilotError) throw pilotError;
-
-      const { error: appError } = await supabase
-        .from('matchmaker_applications')
-        .update({
-          conversion_status: 'pilot_created',
-          converted_pilot_id: pilot.id,
-          stage: 'pilot_conversion'
-        })
-        .eq('id', application.id);
-
-      if (appError) throw appError;
-
-      // Send pilot created email notification using hook
-      await triggerEmail('pilot.created', {
-        entityType: 'pilot',
-        entityId: pilot.id,
-        variables: {
-          pilot_title: pilotData.title_en || pilotData.title_ar,
-          pilot_code: pilot.code || `PLT-${pilot.id?.substring(0, 8)}`,
-          organization_name: application.organization_name_en,
-          challenge_title: challenge?.title_en
-        }
-      }).catch(err => console.error('Email trigger failed:', err));
-
-      toast.success(t({ en: 'Pilot & Partnership created successfully!', ar: 'تم إنشاء التجربة والشراكة بنجاح!' }));
-      navigate(createPageUrl(`PilotDetail?id=${pilot.id}`));
-    } catch (error) {
-      console.error(error);
-      toast.error(t({ en: 'Failed to create pilot', ar: 'فشل إنشاء التجربة' }));
-    }
+    });
   };
 
   return (
@@ -271,8 +216,8 @@ Generate professional MOU/Partnership Agreement in both Arabic and English with:
               <Button onClick={() => setStep(2)} variant="outline" className="flex-1">
                 {t({ en: 'Back', ar: 'رجوع' })}
               </Button>
-              <Button onClick={createPilot} className="flex-1 bg-green-600 hover:bg-green-700">
-                <Rocket className="h-4 w-4 mr-2" />
+              <Button onClick={handleCreatePilot} disabled={convertMatchToPilot.isPending} className="flex-1 bg-green-600 hover:bg-green-700">
+                {convertMatchToPilot.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Rocket className="h-4 w-4 mr-2" />}
                 {t({ en: 'Create Pilot', ar: 'إنشاء التجربة' })}
               </Button>
             </div>

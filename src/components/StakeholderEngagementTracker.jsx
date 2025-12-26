@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
+import { usePilotMutations } from '@/hooks/usePilotMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,12 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from './LanguageContext';
-import { Users, Calendar, FileText, Plus } from 'lucide-react';
+import { Users, Calendar, FileText, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function StakeholderEngagementTracker({ pilot }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
   const [showAddEvent, setShowAddEvent] = useState(false);
   const [newEvent, setNewEvent] = useState({
     stakeholder_name: '',
@@ -43,47 +44,45 @@ export default function StakeholderEngagementTracker({ pilot }) {
     ? Math.round(stakeholdersWithScores.reduce((acc, s) => acc + s.engagement_score, 0) / stakeholdersWithScores.length)
     : 0;
 
-  const addEventMutation = useMutation({
-    mutationFn: async () => {
-      // Update pilot with new engagement event
-      const updatedStakeholders = pilot.stakeholders.map(s => {
-        if (s.name === newEvent.stakeholder_name) {
-          return {
-            ...s,
-            engagement_events: [
-              ...(s.engagement_events || []),
-              {
-                type: newEvent.event_type,
-                date: newEvent.date,
-                notes: newEvent.notes,
-                attendees: newEvent.attendees
-              }
-            ]
-          };
-        }
-        return s;
-      });
+  const { updatePilot } = usePilotMutations();
 
-      const { supabase } = await import('@/integrations/supabase/client');
-      const { error } = await supabase
-        .from('pilots')
-        .update({ stakeholders: updatedStakeholders })
-        .eq('id', pilot.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['pilot']);
-      setShowAddEvent(false);
-      setNewEvent({
-        stakeholder_name: '',
-        event_type: 'meeting',
-        date: new Date().toISOString().split('T')[0],
-        notes: '',
-        attendees: 1
-      });
-      toast.success(t({ en: 'Engagement event logged', ar: 'تم تسجيل حدث المشاركة' }));
-    }
-  });
+  const handleAddEvent = () => {
+    // Update pilot with new engagement event
+    const updatedStakeholders = pilot.stakeholders.map(s => {
+      if (s.name === newEvent.stakeholder_name) {
+        return {
+          ...s,
+          engagement_events: [
+            ...(s.engagement_events || []),
+            {
+              type: newEvent.event_type,
+              date: newEvent.date,
+              notes: newEvent.notes,
+              attendees: newEvent.attendees
+            }
+          ]
+        };
+      }
+      return s;
+    });
+
+    updatePilot.mutate({
+      id: pilot.id,
+      data: { stakeholders: updatedStakeholders }
+    }, {
+      onSuccess: () => {
+        setShowAddEvent(false);
+        setNewEvent({
+          stakeholder_name: '',
+          event_type: 'meeting',
+          date: new Date().toISOString().split('T')[0],
+          notes: '',
+          attendees: 1
+        });
+        toast.success(t({ en: 'Engagement event logged', ar: 'تم تسجيل حدث المشاركة' }));
+      }
+    });
+  };
 
   return (
     <Card>
@@ -146,7 +145,8 @@ export default function StakeholderEngagementTracker({ pilot }) {
             />
 
             <div className="flex gap-2">
-              <Button onClick={() => addEventMutation.mutate()} disabled={!newEvent.stakeholder_name} className="bg-purple-600">
+              <Button onClick={handleAddEvent} disabled={!newEvent.stakeholder_name || updatePilot.isPending} className="bg-purple-600">
+                {updatePilot.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 {t({ en: 'Save Event', ar: 'حفظ الحدث' })}
               </Button>
               <Button variant="outline" onClick={() => setShowAddEvent(false)}>
@@ -224,3 +224,4 @@ export default function StakeholderEngagementTracker({ pilot }) {
     </Card>
   );
 }
+

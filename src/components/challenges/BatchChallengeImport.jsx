@@ -7,7 +7,7 @@ import { Upload, FileText, CheckCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useImportChallenges } from '@/hooks/useChallengeMutations';
-import { useSupabaseFileUpload } from '@/hooks/useSupabaseFileUpload';
+import * as usePlatformCore from '@/hooks/usePlatformCore';
 
 export default function BatchChallengeImport() {
   const { language, t } = useLanguage();
@@ -16,7 +16,7 @@ export default function BatchChallengeImport() {
   const [processing, setProcessing] = useState(false);
 
   const importMutation = useImportChallenges();
-  const { upload } = useSupabaseFileUpload();
+  const { uploadMutation } = usePlatformCore.useFileStorage();
 
   // Wrapper to match previous behavior of clearing state on success
   const handleImport = () => {
@@ -37,7 +37,7 @@ export default function BatchChallengeImport() {
 
     try {
       // Use the Gold Standard hook for file uploads
-      await upload({
+      await uploadMutation.mutateAsync({
         file: selectedFile,
         bucket: 'uploads'
       });

@@ -3,14 +3,14 @@
  * Implements CRUD operations for Sandboxes with audit logging and notifications
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { useAuditLogger, AUDIT_ACTIONS, ENTITY_TYPES } from './useAuditLogger';
 
 export function useSandboxMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { user } = useAuth();
     const { logCrudOperation, logStatusChange } = useAuditLogger();
     const approveSandboxApplication = useApproveSandboxApplication();
@@ -192,6 +192,41 @@ export function useSandboxMutations() {
         }
     });
 
+    /**
+     * Launch Sandbox
+     */
+    const launchSandbox = useMutation({
+        mutationFn: async ({ id, checklist, notes, name }) => {
+            const { error: updateError } = await supabase
+                .from('sandboxes')
+                .update({
+                    status: 'active',
+                    launch_date: new Date().toISOString().split('T')[0],
+                    launch_checklist: checklist,
+                    launch_notes: notes
+                })
+                .eq('id', id);
+            if (updateError) throw updateError;
+
+            // Create notification
+            const { error: notifError } = await supabase
+                .from('notifications')
+                .insert([{
+                    type: 'sandbox_launched',
+                    title: `Sandbox Launched: ${name}`,
+                    message: `${name} is now active and accepting applications.`,
+                    severity: 'success',
+                    link: `/SandboxDetail?id=${id}`
+                }]);
+            if (notifError) throw notifError;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['sandboxes'] });
+            queryClient.invalidateQueries({ queryKey: ['notifications'] });
+            toast.success('Sandbox launched successfully!');
+        }
+    });
+
     return {
         createSandbox,
         updateSandbox,
@@ -201,6 +236,7 @@ export function useSandboxMutations() {
         isUpdating: updateSandbox.isPending,
         isDeleting: deleteSandbox.isPending,
         approveSandbox: changeStatus.mutateAsync,
+        launchSandbox, // New method
         approveSandboxApplication: approveSandboxApplication.mutateAsync
     };
 }
@@ -209,7 +245,7 @@ export function useSandboxMutations() {
  * Approve/Reject Sandbox Application
  */
 function useApproveSandboxApplication() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { user } = useAuth();
 
     return useMutation({
@@ -242,3 +278,4 @@ function useApproveSandboxApplication() {
 }
 
 export default useSandboxMutations;
+

@@ -1,9 +1,9 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export function useOrganizationMutations(organizationId, onCreateSuccess) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const createOrganization = useMutation({
         mutationFn: async (data) => {
@@ -122,3 +122,4 @@ export function useOrganizationMutations(organizationId, onCreateSuccess) {
         refreshOrganizations  // ✅ Gold Standard
     };
 }
+

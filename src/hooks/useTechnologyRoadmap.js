@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/LanguageContext';
@@ -68,7 +68,7 @@ export function useTechnologyRoadmapItem(id) {
  * Hook for technology roadmap mutations
  */
 export function useTechnologyRoadmapMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { t } = useLanguage();
     const { user } = useAuth();
     const { logCrudOperation } = useAuditLogger();
@@ -173,3 +173,4 @@ export function useTechnologyRoadmapMutations() {
 }
 
 export default useTechnologyRoadmap;
+

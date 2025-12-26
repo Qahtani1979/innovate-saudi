@@ -1,33 +1,32 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../LanguageContext';
 import { Layers, CheckCircle, RotateCcw } from 'lucide-react';
-import { toast } from 'sonner';
+import { useBulkMutations } from '@/hooks/useBulkMutations';
 
 export default function AdvancedBulkOperations({ selectedRecords, entityType, onComplete }) {
-  const { language, t } = useLanguage();
-  const queryClient = useQueryClient();
+  const { t } = useLanguage();
   const [operation, setOperation] = useState('update_status');
   const [newStatus, setNewStatus] = useState('');
   const [showPreview, setShowPreview] = useState(false);
 
-  const executeBulk = useMutation({
-    mutationFn: async () => {
-      if (operation === 'update_status' && newStatus) {
-        for (const record of selectedRecords) {
-          await base44.entities[entityType].update(record.id, { status: newStatus });
-        }
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries([entityType.toLowerCase()]);
-      toast.success(t({ en: `Updated ${selectedRecords.length} records`, ar: `${selectedRecords.length} سجل محدث` }));
-      if (onComplete) onComplete();
+  const { updateBatch, deleteBatch } = useBulkMutations(entityType);
+  const isPending = updateBatch.isPending || deleteBatch.isPending;
+
+  const handleExecute = () => {
+    const ids = selectedRecords.map(r => r.id);
+
+    if (operation === 'update_status' && newStatus) {
+      updateBatch.mutate(
+        { ids, data: { status: newStatus } },
+        { onSuccess: () => onComplete?.() }
+      );
+    } else if (operation === 'bulk_delete') {
+      deleteBatch.mutate(ids, { onSuccess: () => onComplete?.() });
     }
-  });
+  };
 
   return (
     <Card className="border-2 border-purple-300">
@@ -85,7 +84,7 @@ export default function AdvancedBulkOperations({ selectedRecords, entityType, on
                 <div className="space-y-1">
                   {selectedRecords.slice(0, 5).map((record) => (
                     <div key={record.id} className="text-xs text-slate-700 bg-white p-2 rounded">
-                      {record.code || record.id}: {record.status} → <strong>{newStatus}</strong>
+                      {record.code || record.id}: {record.status} → <strong>{newStatus || 'Deleted'}</strong>
                     </div>
                   ))}
                   {selectedRecords.length > 5 && (
@@ -98,8 +97,8 @@ export default function AdvancedBulkOperations({ selectedRecords, entityType, on
             )}
 
             <Button
-              onClick={() => executeBulk.mutate()}
-              disabled={executeBulk.isLoading || !newStatus}
+              onClick={handleExecute}
+              disabled={isPending || (operation === 'update_status' && !newStatus)}
               className="w-full bg-gradient-to-r from-purple-600 to-pink-600"
             >
               <CheckCircle className="h-4 w-4 mr-2" />

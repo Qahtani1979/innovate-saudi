@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
@@ -28,7 +28,7 @@ export function useMatchEngagements(matchId) {
  * Hook for logging new engagements.
  */
 export function useMatchEngagementMutations(matchId) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { user } = useAuth();
 
     const logEngagement = useMutation({
@@ -62,3 +62,4 @@ export function useMatchEngagementMutations(matchId) {
 
     return { logEngagement };
 }
+

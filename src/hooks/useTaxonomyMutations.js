@@ -1,9 +1,9 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export function useTaxonomyMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     // --- Sectors ---
     const createSector = useMutation({
@@ -153,3 +153,4 @@ export function useTaxonomyMutations() {
         deleteTag
     };
 }
+

@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -6,7 +6,7 @@ import { toast } from 'sonner';
  * Hook for Sandbox mutations
  */
 export function useSandboxMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const createSandbox = useMutation({
         mutationFn: async (/** @type {any} */ sandboxData) => {
@@ -188,3 +188,4 @@ export function useSandboxMonitoringData(sandboxId) {
         enabled: !!sandboxId
     });
 }
+

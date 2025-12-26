@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export function useGapAnalysis(strategicPlanId) {
   const [analysis, setAnalysis] = useState(null);
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
   const { toast } = useToast();
 
   // Fetch latest coverage snapshot
@@ -147,3 +147,4 @@ export function useGapAnalysis(strategicPlanId) {
     canGenerateQueue: !!analysis && !generateQueue.isPending
   };
 }
+

@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useLocations } from '@/hooks/useLocations';
 import { useMIIBenchmarking } from '@/hooks/useMIIData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

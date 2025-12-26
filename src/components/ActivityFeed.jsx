@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useSystemActivities } from '@/hooks/useSystemActivities';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
@@ -9,17 +8,7 @@ import { format } from 'date-fns';
 export default function ActivityFeed({ limit = 10 }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: activities = [] } = useQuery({
-    queryKey: ['system-activities', limit],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('system_activities')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(limit);
-      return data || [];
-    }
-  });
+  const { data: activities = [] } = useSystemActivities({ limit });
 
   const activityConfig = {
     challenge_created: { icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-50' },

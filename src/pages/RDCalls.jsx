@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { usePermissions } from '../components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function RDCallsPage() {

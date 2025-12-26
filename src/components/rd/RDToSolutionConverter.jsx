@@ -15,7 +15,7 @@ import { useRDConversionMutations } from '@/hooks/useRDConversionMutations';
 export default function RDToSolutionConverter({ rdProject, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
   const { transitionToSolution } = useRDConversionMutations();
-  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo, error } = useAIWithFallback();
   const [solutionData, setSolutionData] = useState({
     name_en: rdProject.title_en || '',
     name_ar: rdProject.title_ar || '',
@@ -86,7 +86,7 @@ export default function RDToSolutionConverter({ rdProject, onClose, onSuccess })
         <p className="text-sm text-slate-600 mt-2">
           {t({ en: 'Transform research outputs into a market-ready solution', ar: 'تحويل مخرجات البحث إلى حل جاهز للسوق' })}
         </p>
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails className="mt-2" />
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={error} showDetails className="mt-2" />
       </CardHeader>
       <CardContent className="pt-6 space-y-6">
         {rdProject.trl_current < 7 && (

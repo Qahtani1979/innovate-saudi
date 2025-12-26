@@ -10,7 +10,7 @@ export default function FinalPlatformConfigSystemAssessment() {
     systemName: 'Platform Config',
     validationDate: new Date().toISOString().split('T')[0],
     overallStatus: 'VALIDATED',
-    
+
     categories: [
       {
         name: 'Database Schema',
@@ -27,7 +27,7 @@ export default function FinalPlatformConfigSystemAssessment() {
         status: 'verified',
         items: [
           { name: 'Settings.jsx', status: '✅', details: 'User settings with supabase: user_profiles, user_settings - notifications, appearance, privacy, accessibility' },
-          { name: 'BrandingSettings.jsx', status: '✅ FIXED', details: 'Migrated from base44 to supabase - platform_configs table with branding category' },
+          { name: 'BrandingSettings.jsx', status: '✅ FIXED', details: 'Migrated from legacy to supabase - platform_configs table with branding category' },
           { name: 'SystemDefaultsConfig.jsx', status: '✅ FIXED', details: 'Connected to platform_configs table - SLAs, escalation, business hours, auto-archive' },
           { name: 'FeatureFlagsDashboard.jsx', status: '✅ FIXED', details: 'Connected to platform_configs with feature_flags category - toggle with persistence' },
           { name: 'DataRetentionConfig.jsx', status: '✅', details: 'Data retention policies display (static config reference)' },
@@ -115,7 +115,7 @@ export default function FinalPlatformConfigSystemAssessment() {
     ],
 
     fixesApplied: [
-      { file: 'BrandingSettings.jsx', issue: 'Using base44 client, static local state', fix: 'Migrated to supabase, connected to platform_configs table with save mutation' },
+      { file: 'BrandingSettings.jsx', issue: 'Using legacy client, static local state', fix: 'Migrated to supabase, connected to platform_configs table with save mutation' },
       { file: 'SystemDefaultsConfig.jsx', issue: 'Static local state only', fix: 'Connected to platform_configs with category=system_defaults, added save functionality' },
       { file: 'FeatureFlagsDashboard.jsx', issue: 'Static local state, flags not persisted', fix: 'Connected to platform_configs with category=feature_flags, toggle saves to DB' }
     ]
@@ -221,7 +221,7 @@ export default function FinalPlatformConfigSystemAssessment() {
         </CardHeader>
         <CardContent>
           <pre className="bg-slate-900 text-green-400 p-4 rounded-lg overflow-x-auto text-xs">
-{`┌─────────────────────────────────────────────────────────────────────────────────┐
+            {`┌─────────────────────────────────────────────────────────────────────────────────┐
 │                         PLATFORM CONFIG SYSTEM                                  │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                 │
@@ -295,8 +295,8 @@ export default function FinalPlatformConfigSystemAssessment() {
           </div>
           <div className="mt-4 p-3 bg-white rounded-lg">
             <p className="text-sm text-slate-700">
-              <strong>Key Validations:</strong> All config pages now use supabase client with proper persistence to platform_configs table. 
-              Feature flags save toggle states and rollout percentages. Branding settings persist to database. 
+              <strong>Key Validations:</strong> All config pages now use supabase client with proper persistence to platform_configs table.
+              Feature flags save toggle states and rollout percentages. Branding settings persist to database.
               User settings (26 columns) cover notifications, appearance, privacy, accessibility, and work preferences.
               Security features include 2FA, session management, and login history.
             </p>

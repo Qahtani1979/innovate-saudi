@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '../LanguageContext';
@@ -8,7 +8,7 @@ import { useEmailTrigger } from '@/hooks/useEmailTrigger';
  * Hook to convert a challenge into a program (e.g. Accelerator, Hackathon)
  */
 export function useConvertChallengeToProgram() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { t } = useLanguage();
 
     return useMutation({
@@ -59,7 +59,7 @@ export function useConvertChallengeToProgram() {
  * Hook to convert a challenge into an R&D Call
  */
 export function useConvertChallengeToRDCall() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { t } = useLanguage();
 
     return useMutation({
@@ -105,7 +105,7 @@ export function useConvertChallengeToRDCall() {
  * Hook to convert a challenge proposal into a pilot
  */
 export function useConvertProposalToPilot() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { t } = useLanguage();
     const { triggerEmail } = useEmailTrigger();
 
@@ -188,7 +188,7 @@ export function useConvertProposalToPilot() {
  * Hook to convert a challenge into an R&D Project
  */
 export function useChallengeToRDConversion() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { t } = useLanguage();
 
     return useMutation({
@@ -240,3 +240,4 @@ export function useChallengeToRDConversion() {
         }
     });
 }
+

@@ -32,4 +32,4 @@ export { useOrganizationsWithVisibility } from '@/hooks/useOrganizationsWithVisi
 export { useVisibilityAwareSearch } from '@/hooks/useVisibilityAwareSearch';
 
 // Re-export permissions hook
-export { usePermissions } from '@/components/permissions/usePermissions';
+export { usePermissions } from '@/hooks/usePermissions';

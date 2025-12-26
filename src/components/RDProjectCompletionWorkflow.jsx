@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,62 +7,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from './LanguageContext';
 import { CheckCircle2, X, Award } from 'lucide-react';
 import { toast } from 'sonner';
-import { createNotification } from './AutoNotification';
+import { useRDMutations } from '@/hooks/useRDMutations';
 
 export default function RDProjectCompletionWorkflow({ project, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+
   const [impactSummary, setImpactSummary] = useState('');
   const [lessonsLearned, setLessonsLearned] = useState('');
   const [trlAchieved, setTrlAchieved] = useState(project.trl_current || project.trl_start);
   const [commercializationPotential, setCommercializationPotential] = useState('medium');
 
-  const completeMutation = useMutation({
-    mutationFn: async (data) => {
-      const { supabase } = await import('@/integrations/supabase/client');
-
-      const { error } = await supabase
-        .from('rd_projects')
-        .update({
-          status: 'completed',
-          trl_current: data.trlAchieved,
-          impact_assessment: {
-            ...project.impact_assessment,
-            summary: data.impactSummary
-          },
-          completion_data: {
-            completion_date: new Date().toISOString(),
-            lessons_learned: data.lessonsLearned,
-            commercialization_potential: data.commercializationPotential,
-            final_trl: data.trlAchieved
-          }
-        })
-        .eq('id', project.id);
-      if (error) throw error;
-
-      await createNotification({
-        title: 'R&D Project Completed',
-        body: `Research project "${project.title_en}" has been successfully completed!`,
-        type: 'success',
-        priority: 'high',
-        linkUrl: `RDProjectDetail?id=${project.id}`,
-        entityType: 'rd_project',
-        entityId: project.id
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['rd-project']);
-      toast.success(t({ en: 'Project marked as completed', ar: 'تم وضع علامة المشروع كمكتمل' }));
-      onClose();
-    }
-  });
+  const { completeProject } = useRDMutations();
 
   const handleComplete = () => {
-    completeMutation.mutate({
+    completeProject.mutate({
+      project,
+      trlAchieved,
       impactSummary,
       lessonsLearned,
-      trlAchieved,
       commercializationPotential
+    }, {
+      onSuccess: () => {
+        onClose();
+      }
     });
   };
 
@@ -169,7 +135,7 @@ export default function RDProjectCompletionWorkflow({ project, onClose }) {
           </Button>
           <Button
             onClick={handleComplete}
-            disabled={completeMutation.isPending || !impactSummary}
+            disabled={completeProject.isPending || !impactSummary}
             className="flex-1 bg-green-600 hover:bg-green-700"
           >
             <CheckCircle2 className="h-4 w-4 mr-2" />

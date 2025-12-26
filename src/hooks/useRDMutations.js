@@ -1,18 +1,22 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { createNotification } from '@/components/AutoNotification';
 
 export function useRDProposalMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const submitProposal = useMutation({
-        mutationFn: async (/** @type {{id: any, title: any}} */ { id, title }) => {
+        mutationFn: async (/** @type {{id: any, title: any, checklist: any, notes: string, aiBrief: any}} */ { id, title, checklist, notes, aiBrief }) => {
             // Update status and submission date
             const { error: updateError } = await supabase
                 .from('rd_proposals')
                 .update({
                     status: 'submitted',
-                    submission_date: new Date().toISOString()
+                    submission_date: new Date().toISOString(),
+                    submission_checklist: checklist,
+                    submission_notes: notes,
+                    ai_submission_brief: aiBrief
                 })
                 .eq('id', id);
             if (updateError) throw updateError;
@@ -25,9 +29,6 @@ export function useRDProposalMutations() {
                     entity_id: id,
                     activity_type: 'submitted',
                     description: `Proposal "${title}" submitted for review`,
-                    // performed_by is handled by RLS or trigger usually, but we can pass it if context available. 
-                    // For now relying on default or let component pass it if needed, but the original code passed created_by from proposal object which might be stale.
-                    // Better to let backend handle performed_by or assume auth user.
                     timestamp: new Date().toISOString()
                 });
             if (activityError) console.error('Activity log error:', activityError);
@@ -46,7 +47,7 @@ export function useRDProposalMutations() {
 }
 
 export function useTRLAssessmentMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const updateTRL = useMutation({
         mutationFn: async (/** @type {{id: any, trl: any, assessment: any}} */ { id, trl, assessment }) => {
@@ -69,11 +70,43 @@ export function useTRLAssessmentMutations() {
         }
     });
 
-    return { updateTRL };
+    const advanceTRL = useMutation({
+        mutationFn: async (/** @type {{project: any, newTRL: number, justification: string, evidence: string[], aiValidation: any}} */{ project, newTRL, justification, evidence, aiValidation }) => {
+            const historyEntry = {
+                from: project.trl_current || project.trl_start,
+                to: newTRL,
+                date: new Date().toISOString(),
+                justification: justification,
+                evidence_urls: evidence,
+                ai_validation: aiValidation
+            };
+
+            const { error } = await supabase
+                .from('rd_projects')
+                .update({
+                    trl_current: newTRL, // Cast to int?
+                    trl_advancement_history: [...(project.trl_advancement_history || []), historyEntry]
+                })
+                .eq('id', project.id);
+
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['rd-project'] }); // Singular or plural? RDTRLAdvancement uses 'rd-project' (singular)
+            queryClient.invalidateQueries({ queryKey: ['rd-projects'] });
+            toast.success('TRL advanced successfully');
+        },
+        onError: (error) => {
+            console.error('TRL advancement error:', error);
+            toast.error('Failed to advance TRL');
+        }
+    });
+
+    return { updateTRL, advanceTRL };
 }
 
 export function useRDMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const updateProposal = useMutation({
         mutationFn: async ({ id, data }) => {
@@ -203,11 +236,155 @@ export function useRDMutations() {
         }
     });
 
+
+
+    const kickoffProject = useMutation({
+        mutationFn: async (/** @type {{project: any, kickoffDate: string, notes: string, milestones: any[]}} */ { project, kickoffDate, notes, milestones }) => {
+            const { error } = await supabase
+                .from('rd_projects')
+                .update({
+                    status: 'active',
+                    timeline: {
+                        ...project.timeline,
+                        start_date: kickoffDate,
+                        milestones: milestones
+                    },
+                    kickoff_notes: notes
+                })
+                .eq('id', project.id);
+            if (error) throw error;
+
+            await createNotification({
+                title: 'R&D Project Kicked Off',
+                body: `Research project "${project.title_en}" has officially started!`,
+                type: 'success',
+                priority: 'high',
+                linkUrl: `RDProjectDetail?id=${project.id}`,
+                entityType: 'rd_project',
+                entityId: project.id
+            });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['rd-project'] });
+            toast.success('Project kicked off successfully');
+        },
+        onError: (error) => {
+            console.error('Kickoff error:', error);
+            toast.error('Failed to kick off project');
+        }
+    });
+
+    const completeProject = useMutation({
+        mutationFn: async (/** @type {{project: any, trlAchieved: number, impactSummary: string, lessonsLearned: string, commercializationPotential: string}} */ { project, trlAchieved, impactSummary, lessonsLearned, commercializationPotential }) => {
+            const { error } = await supabase
+                .from('rd_projects')
+                .update({
+                    status: 'completed',
+                    trl_current: trlAchieved,
+                    impact_assessment: {
+                        ...project.impact_assessment,
+                        summary: impactSummary
+                    },
+                    completion_data: {
+                        completion_date: new Date().toISOString(),
+                        lessons_learned: lessonsLearned,
+                        commercialization_potential: commercializationPotential,
+                        final_trl: trlAchieved
+                    }
+                })
+                .eq('id', project.id);
+            if (error) throw error;
+
+            await createNotification({
+                title: 'R&D Project Completed',
+                body: `Research project "${project.title_en}" has been successfully completed!`,
+                type: 'success',
+                priority: 'high',
+                linkUrl: `RDProjectDetail?id=${project.id}`,
+                entityType: 'rd_project',
+                entityId: project.id
+            });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['rd-project'] });
+            toast.success('Project marked as completed');
+        },
+        onError: (error) => {
+            console.error('Completion error:', error);
+            toast.error('Failed to complete project');
+        }
+    });
+
+    const provideFeedback = useMutation({
+        mutationFn: async (/** @type {{proposal: any, feedback: string}} */ { proposal, feedback }) => {
+            const { error } = await supabase
+                .from('rd_proposals')
+                .update({
+                    feedback_provided: true,
+                    feedback_text: feedback,
+                    feedback_date: new Date().toISOString()
+                })
+                .eq('id', proposal.id);
+            if (error) throw error;
+
+            await createNotification({
+                title: 'Proposal Feedback Available',
+                body: `Feedback has been provided for your proposal "${proposal.title_en}"`,
+                type: 'info',
+                priority: 'medium',
+                linkUrl: `RDProposalDetail?id=${proposal.id}`,
+                entityType: 'proposal',
+                entityId: proposal.id,
+                recipients: proposal.created_by ? [proposal.created_by] : []
+            });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['rd-proposal'] });
+            queryClient.invalidateQueries({ queryKey: ['proposals'] });
+            toast.success('Feedback sent');
+        },
+        onError: (error) => {
+            console.error('Feedback error:', error);
+            toast.error('Failed to send feedback');
+        }
+    });
+
+    const validateProjectOutputs = useMutation({
+        mutationFn: async (/** @type {{projectId: any, notes: string, results: any, qualityScore: number}} */ { projectId, notes, results, qualityScore }) => {
+            const { error } = await supabase
+                .from('rd_projects')
+                .update({
+                    output_validation: {
+                        validated: true,
+                        validation_date: new Date().toISOString(),
+                        validator_notes: notes,
+                        validation_results: results,
+                        quality_score: qualityScore
+                    }
+                })
+                .eq('id', projectId);
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['rd-project'] });
+            toast.success('Outputs validated');
+        },
+        onError: (error) => {
+            console.error('Validation error:', error);
+            toast.error('Failed to validate outputs');
+        }
+    });
+
     return {
-        submitProposal: useRDProposalMutations().submitProposal, // Re-exporting for convenience if needed, or just keep separate
+        submitProposal: useRDProposalMutations().submitProposal,
         updateProposal,
         updateProject,
         linkPolicyToProject,
-        unlinkPolicyFromProject
+        unlinkPolicyFromProject,
+        kickoffProject,
+        completeProject,
+        validateProjectOutputs,
+        provideFeedback
     };
 }
+

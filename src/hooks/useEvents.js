@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
@@ -19,7 +19,7 @@ export function useEvents(options = {}) {
     includeUnpublished = false
   } = options;
 
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
   const { user } = useAuth();
   const { triggerEmail } = useEmailTrigger();
   const { logEventActivity, logApprovalActivity } = useAuditLog();
@@ -426,7 +426,7 @@ export function useEventBookmarkStatus(eventId, userEmail) {
  * Hook for Event Mutations (Comments, Bookmarks, Registration)
  */
 export function useEventMutations() {
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
   const { user } = useAuth();
   const { triggerEmail } = useEmailTrigger();
 
@@ -547,4 +547,13 @@ export function useEventMutations() {
   };
 }
 
+export function useEventInvalidator() {
+  const queryClient = useAppQueryClient();
+  return {
+    invalidateEvent: (eventId) => queryClient.invalidateQueries({ queryKey: ['event', eventId] }),
+    invalidateEvents: () => queryClient.invalidateQueries({ queryKey: ['events'] })
+  };
+}
+
 export default useEvents;
+

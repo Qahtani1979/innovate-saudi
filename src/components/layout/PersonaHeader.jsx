@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { usePermissions } from '../permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { usePersonaRouting } from '@/hooks/usePersonaRouting';
 import {
   Shield,

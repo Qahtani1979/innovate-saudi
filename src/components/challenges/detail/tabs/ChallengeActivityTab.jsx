@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '@/components/LanguageContext';
 import { MessageSquare, Send, Loader2 } from 'lucide-react';
 import ChallengeActivityLog from '@/components/challenges/ChallengeActivityLog';
-import { usePermissions } from '@/components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { toast } from 'sonner';
 import { useComments, useCommentMutations } from '@/hooks/useComments';
 import { useAuth } from '@/lib/AuthContext';

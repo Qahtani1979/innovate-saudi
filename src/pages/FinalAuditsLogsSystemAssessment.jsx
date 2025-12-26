@@ -181,6 +181,9 @@ export default function FinalAuditsLogsSystemAssessment() {
         icon={Shield}
         title={{ en: 'Audits & Logs System Assessment', ar: 'تقييم نظام التدقيق والسجلات' }}
         description={{ en: 'Deep validation of audit logging, compliance tracking, and activity monitoring', ar: 'التحقق العميق من تسجيل التدقيق وتتبع الامتثال ومراقبة النشاط' }}
+        subtitle={{ en: 'System Status: Validated', ar: 'حالة النظام: تم التحقق' }}
+        action={null}
+        actions={null}
       />
 
       {/* Summary Stats */}
@@ -505,8 +508,8 @@ export default function FinalAuditsLogsSystemAssessment() {
               <h4 className="font-semibold text-green-800 mb-2">Fixes Applied</h4>
               <ul className="space-y-1 text-sm text-slate-700">
                 <li>• AuditTrail.jsx: Replaced mock data with real access_logs queries</li>
-                <li>• AuditRegistry.jsx: Switched from base44 to supabase client</li>
-                <li>• AuditDetail.jsx: Switched from base44 to supabase client</li>
+                <li>• AuditRegistry.jsx: Switched from legacy to supabase client</li>
+                <li>• AuditDetail.jsx: Switched from legacy to supabase client</li>
                 <li>• AuditRegistry.jsx: Fixed column references (audit_scope, auditor_email, audit_start_date)</li>
                 <li>• AuditDetail.jsx: Fixed column references (auditor_name, auditor_organization, audit_start_date)</li>
               </ul>

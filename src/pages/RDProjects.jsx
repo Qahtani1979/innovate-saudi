@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { usePermissions } from '../components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useRDProjectsWithVisibility } from '@/hooks/useRDProjectsWithVisibility';

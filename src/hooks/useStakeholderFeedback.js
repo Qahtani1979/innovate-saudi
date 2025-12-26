@@ -1,5 +1,5 @@
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -25,7 +25,7 @@ export function useStakeholderFeedback(pilotId) {
  * Hook for stakeholder feedback mutations.
  */
 export function useStakeholderFeedbackMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const submitFeedback = useMutation({
         mutationFn: async ({ pilotId, userEmail, feedback, satisfaction }) => {
@@ -53,3 +53,4 @@ export function useStakeholderFeedbackMutations() {
         submitFeedback
     };
 }
+

@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { eventSyncService } from '@/services/eventSyncService';
 
 /**
@@ -6,7 +6,7 @@ import { eventSyncService } from '@/services/eventSyncService';
  * ✅ GOLD STANDARD COMPLIANT
  */
 export function useEventSync(programId) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     /**
      * Get sync status for program events
@@ -72,3 +72,4 @@ export function useEventSync(programId) {
         updateEventsWithSyncIds: eventSyncService.updateEventsWithSyncIds
     };
 }
+

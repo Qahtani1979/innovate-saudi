@@ -107,7 +107,7 @@ export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
     setIsExtractingCV(true);
 
     try {
-      // Use AI-powered extraction instead of base44
+      // Use AI-powered extraction
       const result = await invokeAI({
         prompt: `Analyze this academic CV and extract researcher information. CV URL: ${fileUrl}
 

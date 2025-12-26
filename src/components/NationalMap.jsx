@@ -1,25 +1,18 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { MapPin } from 'lucide-react';
+import { useSystemEntities } from '@/hooks/useSystemData';
 
 export default function NationalMap() {
   const { language, isRTL, t } = useLanguage();
   const [selectedRegion, setSelectedRegion] = useState(null);
 
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities-map'],
-    queryFn: () => base44.entities.Municipality.list()
-  });
-
-  const { data: regions = [] } = useQuery({
-    queryKey: ['regions-map'],
-    queryFn: () => base44.entities.Region.list()
-  });
+  const { data: municipalities = [] } = useSystemEntities('Municipality');
+  const { data: regions = [] } = useSystemEntities('Region');
 
   const getMIIColor = (score) => {
     if (!score) return 'bg-slate-200';
@@ -34,7 +27,7 @@ export default function NationalMap() {
     const avgMII = regionMunicipalities.length > 0
       ? regionMunicipalities.reduce((sum, m) => sum + (m.mii_score || 0), 0) / regionMunicipalities.length
       : 0;
-    
+
     return {
       ...region,
       municipality_count: regionMunicipalities.length,
@@ -62,11 +55,10 @@ export default function NationalMap() {
               <button
                 key={region.id}
                 onClick={() => setSelectedRegion(region)}
-                className={`w-full p-3 rounded-lg border-2 transition-all text-left ${
-                  selectedRegion?.id === region.id 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-slate-200 hover:border-slate-300'
-                }`}
+                className={`w-full p-3 rounded-lg border-2 transition-all text-left ${selectedRegion?.id === region.id
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-slate-200 hover:border-slate-300'
+                  }`}
               >
                 <div className="flex items-center justify-between">
                   <div>
@@ -113,7 +105,7 @@ export default function NationalMap() {
                             <div className="flex items-center gap-2 mt-1">
                               <Badge variant="outline" className="text-xs">{municipality.city_type}</Badge>
                               <span className="text-xs text-slate-500">
-                                {municipality.active_challenges} {t({ en: 'challenges', ar: 'تحدي' })} • 
+                                {municipality.active_challenges} {t({ en: 'challenges', ar: 'تحدي' })} •
                                 {municipality.active_pilots} {t({ en: 'pilots', ar: 'تجربة' })}
                               </span>
                             </div>

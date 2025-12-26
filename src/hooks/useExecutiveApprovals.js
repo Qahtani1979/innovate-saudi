@@ -1,11 +1,11 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import { useAIWithFallback } from './useAIWithFallback';
 
 export function useExecutiveApprovals() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const [selectedItem, setSelectedItem] = useState(null);
     const [decision, setDecision] = useState('');
     const [comments, setComments] = useState('');
@@ -163,3 +163,4 @@ Provide strategic analysis and recommendation.`;
         aiIsAvailable: isAvailable
     };
 }
+

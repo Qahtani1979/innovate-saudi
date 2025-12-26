@@ -56,23 +56,36 @@ function MunicipalityDashboard() {
   const myMunicipalityId = userProfile?.municipality_id;
 
   React.useEffect(() => {
-    // Get user from auth context instead of base44
+    // Get user from auth context
     if (authUser) {
       setUser({ id: authUser.id, email: authUser.email });
     }
   }, [authUser]);
 
   // Visibility hooks using context automatically
-  const { data: municipalitiesList = [] } = useMunicipalitiesWithVisibility();
+  // Visibility hooks - normalizing data access
+  const { data: municipalitiesData } = useMunicipalitiesWithVisibility();
+  const municipalitiesList = Array.isArray(municipalitiesData) ? municipalitiesData : (municipalitiesData?.data || []);
+
   const myMunicipality = municipalitiesList.find(m => m.id === myMunicipalityId) || municipalitiesList[0];
 
-  const { data: challenges = [] } = useChallengesWithVisibility();
-  const { data: pilots = [] } = usePilotsWithVisibility();
-  const { data: rdProjects = [] } = useRDProjectsWithVisibility();
-  const { data: strategicPlans = [] } = useStrategiesWithVisibility();
-  const { data: regionalPrograms = [] } = useProgramsWithVisibility({ publishedOnly: true });
+  const { data: challengesData } = useChallengesWithVisibility();
+  const challenges = Array.isArray(challengesData) ? challengesData : (challengesData?.data || []);
 
-  const { data: ownedChallenges = [] } = useChallengesWithVisibility(); // Reuse hook, will filter client side if needed or rely on context
+  const { data: pilotsData } = usePilotsWithVisibility();
+  const pilots = Array.isArray(pilotsData) ? pilotsData : (pilotsData?.data || []);
+
+  const { data: rdProjectsData } = useRDProjectsWithVisibility();
+  const rdProjects = Array.isArray(rdProjectsData) ? rdProjectsData : (rdProjectsData?.data || []);
+
+  const { data: strategicPlansData } = useStrategiesWithVisibility();
+  const strategicPlans = Array.isArray(strategicPlansData) ? strategicPlansData : (strategicPlansData?.data || []);
+
+  const { data: programsData } = useProgramsWithVisibility({ publishedOnly: true });
+  const regionalPrograms = Array.isArray(programsData) ? programsData : (programsData?.data || []);
+
+  const { data: ownedChallengesData } = useChallengesWithVisibility();
+  const ownedChallenges = Array.isArray(ownedChallengesData) ? ownedChallengesData : (ownedChallengesData?.data || []);
 
   // Client-side filtering for specific subsets if needed, matching original logic approximation
   // or just accepting the hook's scoped data which is usually better (Org wide vs Personal)
@@ -104,7 +117,7 @@ function MunicipalityDashboard() {
     limit: 10
   });
 
-  const { data: municipalities = [] } = useMunicipalitiesWithVisibility(); // For AI prompt etc.
+  const municipalities = municipalitiesList; // Reuse existing list
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);

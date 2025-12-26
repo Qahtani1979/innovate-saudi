@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
@@ -19,7 +19,7 @@ import { useAuditLogger, AUDIT_ACTIONS, ENTITY_TYPES } from './useAuditLogger';
  * Hook for R&D Call mutations (approve, reject, etc.)
  */
 export function useRDCallMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { user } = useAuth();
     const { logCrudOperation } = useAuditLogger();
 
@@ -378,3 +378,4 @@ export function useRDCallMutations() {
         isAwarding: awardRDCallMutation.isPending
     };
 }
+

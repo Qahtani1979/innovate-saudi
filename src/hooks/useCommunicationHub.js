@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '../components/LanguageContext';
@@ -9,7 +9,7 @@ import { useLanguage } from '../components/LanguageContext';
  */
 export function useCommunicationHub() {
     const { t } = useLanguage();
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     // --- Messages ---
 
@@ -103,3 +103,4 @@ export function useCommunicationHub() {
         allNotifications
     };
 }
+

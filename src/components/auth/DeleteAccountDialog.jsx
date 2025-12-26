@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from '../LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
+import { useAccountMutations } from '@/hooks/useAuthMutations';
 import { toast } from 'sonner';
 import { AlertTriangle, Trash2 } from 'lucide-react';
 
@@ -22,48 +23,33 @@ export default function DeleteAccountDialog({ open, onOpenChange }) {
   const expectedText = 'DELETE';
   const canProceed = confirmText === expectedText && understood;
 
+  const { deleteAccount } = useAccountMutations();
+
   const handleDelete = async () => {
-    setIsLoading(true);
+    if (!user?.id) return;
+
+    // We handle loading state via mutation.isPending usually, but since we also logout/redirect...
+    // simpler to wrap in try/catch or just use mutateAsync
 
     try {
-      // First, soft delete user data in user_profiles
-      if (user?.id) {
-        await supabase
-          .from('user_profiles')
-          .update({ 
-            is_deleted: true,
-            deleted_at: new Date().toISOString(),
-            full_name: '[Deleted User]',
-            phone_number: null,
-            avatar_url: null,
-          })
-          .eq('user_id', user.id);
-
-        // Delete user roles
-        await supabase
-          .from('user_roles')
-          .delete()
-          .eq('user_id', user.id);
-      }
+      await deleteAccount.mutateAsync(user.id);
 
       // Sign out the user
       await logout(false);
-      
-      toast.success(t({ 
-        en: 'Account deleted successfully. You have been logged out.', 
-        ar: 'تم حذف الحساب بنجاح. تم تسجيل خروجك.' 
+
+      // Toast handles in onSuccess but we want custom message + redirect
+      // Actually mutation onSuccess has toast, component has toast. I'll rely on component for specific "logged out" message
+
+      toast.success(t({
+        en: 'Account deleted successfully. You have been logged out.',
+        ar: 'تم حذف الحساب بنجاح. تم تسجيل خروجك.'
       }));
 
       // Redirect to home page
       window.location.href = '/';
     } catch (err) {
-      console.error('Account deletion error:', err);
-      toast.error(t({ 
-        en: 'Failed to delete account. Please contact support.', 
-        ar: 'فشل في حذف الحساب. يرجى الاتصال بالدعم.' 
-      }));
+      // Error handled by mutation onError logic (toast) or here if we want specific overrides
     } finally {
-      setIsLoading(false);
       setShowFinalConfirm(false);
       onOpenChange(false);
     }
@@ -91,9 +77,9 @@ export default function DeleteAccountDialog({ open, onOpenChange }) {
               {t({ en: 'Delete Account', ar: 'حذف الحساب' })}
             </DialogTitle>
             <DialogDescription>
-              {t({ 
-                en: 'This action cannot be undone. All your data will be permanently deleted.', 
-                ar: 'لا يمكن التراجع عن هذا الإجراء. سيتم حذف جميع بياناتك نهائياً.' 
+              {t({
+                en: 'This action cannot be undone. All your data will be permanently deleted.',
+                ar: 'لا يمكن التراجع عن هذا الإجراء. سيتم حذف جميع بياناتك نهائياً.'
               })}
             </DialogDescription>
           </DialogHeader>
@@ -113,9 +99,9 @@ export default function DeleteAccountDialog({ open, onOpenChange }) {
 
             <div className="space-y-2">
               <Label htmlFor="confirmText">
-                {t({ 
-                  en: `Type "${expectedText}" to confirm`, 
-                  ar: `اكتب "${expectedText}" للتأكيد` 
+                {t({
+                  en: `Type "${expectedText}" to confirm`,
+                  ar: `اكتب "${expectedText}" للتأكيد`
                 })}
               </Label>
               <Input
@@ -134,9 +120,9 @@ export default function DeleteAccountDialog({ open, onOpenChange }) {
                 onCheckedChange={setUnderstood}
               />
               <Label htmlFor="understood" className="text-sm leading-tight cursor-pointer">
-                {t({ 
-                  en: 'I understand this action is permanent and cannot be reversed', 
-                  ar: 'أفهم أن هذا الإجراء دائم ولا يمكن التراجع عنه' 
+                {t({
+                  en: 'I understand this action is permanent and cannot be reversed',
+                  ar: 'أفهم أن هذا الإجراء دائم ولا يمكن التراجع عنه'
                 })}
               </Label>
             </div>
@@ -146,7 +132,7 @@ export default function DeleteAccountDialog({ open, onOpenChange }) {
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t({ en: 'Cancel', ar: 'إلغاء' })}
             </Button>
-            <Button 
+            <Button
               variant="destructive"
               onClick={handleProceed}
               disabled={!canProceed || isLoading}
@@ -165,9 +151,9 @@ export default function DeleteAccountDialog({ open, onOpenChange }) {
               {t({ en: 'Final Confirmation', ar: 'التأكيد النهائي' })}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {t({ 
-                en: 'Are you absolutely sure you want to delete your account? This is your last chance to cancel.', 
-                ar: 'هل أنت متأكد تماماً من رغبتك في حذف حسابك؟ هذه فرصتك الأخيرة للإلغاء.' 
+              {t({
+                en: 'Are you absolutely sure you want to delete your account? This is your last chance to cancel.',
+                ar: 'هل أنت متأكد تماماً من رغبتك في حذف حسابك؟ هذه فرصتك الأخيرة للإلغاء.'
               })}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -180,8 +166,8 @@ export default function DeleteAccountDialog({ open, onOpenChange }) {
               disabled={isLoading}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isLoading 
-                ? t({ en: 'Deleting...', ar: 'جاري الحذف...' }) 
+              {isLoading
+                ? t({ en: 'Deleting...', ar: 'جاري الحذف...' })
                 : t({ en: 'Yes, Delete My Account', ar: 'نعم، احذف حسابي' })
               }
             </AlertDialogAction>

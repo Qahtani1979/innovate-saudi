@@ -1,9 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export function useScaling() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const useCompletedPilots = (user) => useQuery({
         queryKey: ['completed-pilots', user?.email, user?.role],
@@ -64,3 +64,4 @@ export function useScaling() {
         invalidateScalingPlans: () => queryClient.invalidateQueries({ queryKey: ['scaling-plans'] })
     };
 }
+

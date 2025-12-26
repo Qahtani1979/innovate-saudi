@@ -4,13 +4,13 @@
  * ext-4 (R&D projects), ext-5 (strategic plans)
  */
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuditLogger, AUDIT_ACTIONS, ENTITY_TYPES } from './useAuditLogger';
 
 export function useChallengeIntegrations(challengeId) {
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
   const { logAuditEvent } = useAuditLogger();
   
   // ============================================
@@ -418,3 +418,4 @@ export function useChallengeIntegrations(challengeId) {
 }
 
 export default useChallengeIntegrations;
+

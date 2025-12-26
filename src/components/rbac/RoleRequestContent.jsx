@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { UserPlus, Clock, CheckCircle, XCircle } from 'lucide-react';
 import RoleRequestDialog from '@/components/access/RoleRequestDialog';
 import RoleRequestApprovalQueue from '@/components/access/RoleRequestApprovalQueue';
-import { usePermissions } from '@/components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useRoles } from '@/hooks/useRoles';
 import { useMyRoleRequests } from '@/hooks/useRoleRequests';
 

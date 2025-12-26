@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
  * Tracks items needing review, rejections, and automation status
  */
 export function useQueueNotifications(strategicPlanId) {
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
   const { toast } = useToast();
 
   // Fetch review items that need attention
@@ -206,3 +206,4 @@ export function useQueueNotifications(strategicPlanId) {
     getRejectionPatterns
   };
 }
+

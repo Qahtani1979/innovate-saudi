@@ -64,7 +64,7 @@ export default function ChallengeDetailProgress() {
       name: 'Solutions',
       status: 'complete',
       implementation: 'Solution cards with provider info + match scores',
-      dataSource: 'solutions query from base44.entities.Solution.list()',
+      dataSource: 'solutions query from useSolutions hook (Supabase)',
       aiFeatures: 'Match scores are calculated (95-idx*3) - not from real ChallengeSolutionMatch',
       notes: 'Shows all solutions (not filtered by match) - scores are illustrative'
     },
@@ -404,9 +404,8 @@ export default function ChallengeDetailProgress() {
             <h3 className="font-semibold text-slate-900 mb-3">Merge Recommendations:</h3>
             <div className="space-y-3">
               {mergeAssessment.recommendations.map((rec, i) => (
-                <div key={i} className={`p-4 rounded-lg border-2 ${
-                  rec.suggestion === 'Keep separate' ? 'border-green-300 bg-green-50' : 'border-amber-300 bg-amber-50'
-                }`}>
+                <div key={i} className={`p-4 rounded-lg border-2 ${rec.suggestion === 'Keep separate' ? 'border-green-300 bg-green-50' : 'border-amber-300 bg-amber-50'
+                  }`}>
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <Badge className={

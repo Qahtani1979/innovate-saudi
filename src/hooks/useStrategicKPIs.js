@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -7,7 +7,7 @@ import { toast } from 'sonner';
  */
 export function useStrategicKPIs(options = {}) {
     const { planIds = [], strategicPlans = [] } = options;
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const query = useQuery({
         queryKey: ['strategic-kpis', planIds],
@@ -81,3 +81,4 @@ export function useStrategicKPIs(options = {}) {
         isRecording: recordContributionMutation.isPending
     };
 }
+

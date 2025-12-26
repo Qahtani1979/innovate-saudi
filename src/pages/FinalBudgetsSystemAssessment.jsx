@@ -130,8 +130,8 @@ export default function FinalBudgetsSystemAssessment() {
 
   const fixesMade = [
     'Fixed BudgetManagement.jsx: Updated column references from budget_name/total_allocated/total_spent to name_en/total_amount/spent_amount',
-    'Fixed BudgetDetail.jsx: Replaced base44 client with Supabase, updated column references',
-    'Fixed BudgetVarianceReport.jsx: Replaced base44 client with Supabase, updated column references',
+    'Fixed BudgetDetail.jsx: Replaced legacy client with Supabase, updated column references',
+    'Fixed BudgetVarianceReport.jsx: Replaced legacy client with Supabase, updated column references',
     'Fixed BudgetAllocationApprovalGate.jsx: Added missing approvalMutation, useAuth, decision state, null-safe allocation handling',
     'Created src/lib/ai/prompts/budget/index.js: Centralized exports for budget AI prompts'
   ];
@@ -192,11 +192,11 @@ export default function FinalBudgetsSystemAssessment() {
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-medium text-slate-900">{item.name || `${item.from} → ${item.to}`}</span>
                     <Badge className={
-                      item.status === 'verified' || item.status === 'active' || item.status === 'complete' 
-                        ? 'bg-green-100 text-green-700' 
+                      item.status === 'verified' || item.status === 'active' || item.status === 'complete'
+                        ? 'bg-green-100 text-green-700'
                         : item.status === 'fixed' || item.status === 'created'
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-slate-100 text-slate-700'
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-slate-100 text-slate-700'
                     }>
                       {item.status}
                     </Badge>
@@ -228,9 +228,9 @@ export default function FinalBudgetsSystemAssessment() {
               {t({ en: 'Budgets System: FULLY VALIDATED', ar: 'نظام الميزانيات: تم التحقق بالكامل' })}
             </h2>
             <p className="text-green-700">
-              {t({ 
-                en: '2 database tables, 6 RLS policies, 1 visibility hook, 4 pages, 3 components, 5 AI prompt files, 12 features, 7 integrations verified', 
-                ar: 'تم التحقق من 2 جدول قاعدة بيانات و6 سياسات RLS و1 خطاف رؤية و4 صفحات و3 مكونات و5 ملفات AI و12 ميزة و7 تكاملات' 
+              {t({
+                en: '2 database tables, 6 RLS policies, 1 visibility hook, 4 pages, 3 components, 5 AI prompt files, 12 features, 7 integrations verified',
+                ar: 'تم التحقق من 2 جدول قاعدة بيانات و6 سياسات RLS و1 خطاف رؤية و4 صفحات و3 مكونات و5 ملفات AI و12 ميزة و7 تكاملات'
               })}
             </p>
             <p className="text-sm text-green-600 mt-2">System #20 of comprehensive deep validation</p>

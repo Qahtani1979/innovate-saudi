@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
@@ -6,7 +6,7 @@ import { useEntityPagination } from '@/hooks/useEntityPagination';
 
 export function useApprovals(userEmail, { challengesPage = 1, pilotsPage = 1, expertsPage = 1 } = {}) {
     const { user } = useAuth();
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const email = userEmail || user?.email;
 
     // 1. Pending Challenge Reviews
@@ -126,3 +126,4 @@ export function useApprovals(userEmail, { challengesPage = 1, pilotsPage = 1, ex
         approveMutation
     };
 }
+

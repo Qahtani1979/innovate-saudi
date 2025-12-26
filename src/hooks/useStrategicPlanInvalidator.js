@@ -1,7 +1,7 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 
 export function useStrategicPlanInvalidator() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const invalidateStrategicPlans = async () => {
         await Promise.all([
@@ -15,3 +15,4 @@ export function useStrategicPlanInvalidator() {
         invalidateStrategicPlans
     };
 }
+

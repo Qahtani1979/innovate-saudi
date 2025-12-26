@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,46 +10,19 @@ import { TrendingUp, X, FileText, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import FileUploader from './FileUploader';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { useTRLAssessmentMutations } from '@/hooks/useRDMutations';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function RDTRLAdvancement({ project, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+
   const [newTRL, setNewTRL] = useState(project.trl_current || project.trl_start);
   const [evidenceUrls, setEvidenceUrls] = useState([]);
   const [justification, setJustification] = useState('');
   const [aiValidation, setAiValidation] = useState(null);
-  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo, error } = useAIWithFallback();
 
-  const advanceMutation = useMutation({
-    mutationFn: async (data) => {
-      const { supabase } = await import('@/integrations/supabase/client');
-
-      const { error } = await supabase
-        .from('rd_projects')
-        .update({
-          trl_current: data.newTRL,
-          trl_advancement_history: [
-            ...(project.trl_advancement_history || []),
-            {
-              from: project.trl_current || project.trl_start,
-              to: data.newTRL,
-              date: new Date().toISOString(),
-              justification: data.justification,
-              evidence_urls: data.evidence,
-              ai_validation: data.aiValidation
-            }
-          ]
-        })
-        .eq('id', project.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['rd-project']);
-      toast.success(t({ en: 'TRL advanced', ar: 'تم تقدم مستوى الجاهزية' }));
-      onClose();
-    }
-  });
+  const { advanceTRL } = useTRLAssessmentMutations();
 
   const runAIValidation = async () => {
     if (!justification || evidenceUrls.length === 0) {
@@ -109,11 +81,16 @@ Return structured validation.`;
   };
 
   const handleAdvance = () => {
-    advanceMutation.mutate({
+    advanceTRL.mutate({
+      project,
       newTRL,
       justification,
       evidence: evidenceUrls,
       aiValidation
+    }, {
+      onSuccess: () => {
+        onClose();
+      }
     });
   };
 
@@ -132,7 +109,7 @@ Return structured validation.`;
         </Button>
       </CardHeader>
       <CardContent className="space-y-6">
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} className="mb-4" />
         <div className="p-4 bg-slate-50 rounded-lg">
           <p className="text-sm font-semibold text-slate-900">{project.title_en}</p>
           <div className="flex items-center gap-4 mt-3">
@@ -180,7 +157,8 @@ Return structured validation.`;
           <Label>{t({ en: 'Upload Evidence', ar: 'رفع الأدلة' })} *</Label>
           <FileUploader
             type="document"
-            label={t({ en: 'Upload TRL evidence (reports, test results, demos)', ar: 'رفع أدلة الجاهزية (تقارير، نتائج، عروض)' })}
+            label={t({ en: 'Upload TRL evidence', ar: 'رفع أدلة الجاهزية' })}
+            description={t({ en: 'Reports, test results, demos', ar: 'تقارير، نتائج، عروض' })}
             maxSize={50}
             onUploadComplete={(url) => setEvidenceUrls([...evidenceUrls, url])}
           />
@@ -254,7 +232,7 @@ Return structured validation.`;
           </Button>
           <Button
             onClick={handleAdvance}
-            disabled={!aiValidation || !aiValidation.advancement_justified || advanceMutation.isPending}
+            disabled={!aiValidation || !aiValidation.advancement_justified || advanceTRL.isPending}
             className="flex-1 bg-green-600 hover:bg-green-700"
           >
             <TrendingUp className="h-4 w-4 mr-2" />

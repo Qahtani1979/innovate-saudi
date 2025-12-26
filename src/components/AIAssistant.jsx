@@ -7,18 +7,26 @@ import { useLanguage } from './LanguageContext';
 import { Sparkles, X, Send, Loader2 } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { 
-  buildPlatformAssistantPrompt, 
+import {
+  buildPlatformAssistantPrompt,
   PLATFORM_ASSISTANT_SYSTEM_PROMPT,
-  QUICK_ACTIONS 
+  QUICK_ACTIONS
 } from '@/lib/ai/prompts/core';
+import { useSystemEntities } from '@/hooks/useSystemData';
 
 export default function AIAssistant({ context = {} }) {
   const [isOpen, setIsOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [messages, setMessages] = useState([]);
   const { language, isRTL, t } = useLanguage();
-  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo, error } = useAIWithFallback();
+
+  const { data: challenges = [] } = useSystemEntities('Challenge');
+  const { data: pilots = [] } = useSystemEntities('Pilot');
+  const { data: solutions = [] } = useSystemEntities('Solution');
+  const { data: rdProjects = [] } = useSystemEntities('RDProject');
+  const { data: programs = [] } = useSystemEntities('Program');
+  const { data: strategicPlans = [] } = useSystemEntities('StrategicPlan');
 
   const quickActions = Object.values(QUICK_ACTIONS).map(action => ({
     label: { en: action.en, ar: action.ar },
@@ -33,21 +41,11 @@ export default function AIAssistant({ context = {} }) {
     setPrompt('');
 
     try {
-      // Semantic search across platform entities including strategic data
-      const [challenges, pilots, solutions, rdProjects, programs, strategicPlans] = await Promise.all([
-        base44.entities.Challenge.list(),
-        base44.entities.Pilot.list(),
-        base44.entities.Solution.list(),
-        base44.entities.RDProject.list(),
-        base44.entities.Program.list(),
-        base44.entities.StrategicPlan.list()
-      ]);
-
       // Calculate strategy-derived metrics
       const strategyDerivedChallenges = challenges.filter(c => c.is_strategy_derived).length;
       const strategyDerivedPilots = pilots.filter(p => p.is_strategy_derived).length;
       const strategyDerivedPrograms = programs.filter(p => p.is_strategy_derived).length;
-      
+
       // Get active strategic plans
       const activeStrategicPlans = strategicPlans.filter(p => p.status === 'approved' || p.status === 'active');
 
@@ -60,18 +58,18 @@ export default function AIAssistant({ context = {} }) {
           total_rd_projects: rdProjects.length,
           total_programs: programs.length,
           recent_items: {
-            challenges: challenges.slice(0, 3).map(c => ({ 
-              code: c.code, 
-              title: c.title_en, 
+            challenges: challenges.slice(0, 3).map(c => ({
+              code: c.code,
+              title: c.title_en,
               sector: c.sector,
               is_strategy_derived: c.is_strategy_derived,
-              strategic_plan_ids: c.strategic_plan_ids 
+              strategic_plan_ids: c.strategic_plan_ids
             })),
-            pilots: pilots.slice(0, 3).map(p => ({ 
-              code: p.code, 
-              title: p.title_en, 
+            pilots: pilots.slice(0, 3).map(p => ({
+              code: p.code,
+              title: p.title_en,
               stage: p.stage,
-              is_strategy_derived: p.is_strategy_derived 
+              is_strategy_derived: p.is_strategy_derived
             })),
             solutions: solutions.slice(0, 3).map(s => ({ name: s.name_en, provider: s.provider_name }))
           }
@@ -83,15 +81,16 @@ export default function AIAssistant({ context = {} }) {
           strategy_derived_challenges: strategyDerivedChallenges,
           strategy_derived_pilots: strategyDerivedPilots,
           strategy_derived_programs: strategyDerivedPrograms,
-          strategy_alignment_percentage: challenges.length > 0 
-            ? Math.round((strategyDerivedChallenges / challenges.length) * 100) 
+          strategy_alignment_percentage: challenges.length > 0
+            ? Math.round((strategyDerivedChallenges / challenges.length) * 100)
             : 0
         }
       };
 
       const response = await invokeAI({
         prompt: buildPlatformAssistantPrompt(platformContext, prompt),
-        system_prompt: PLATFORM_ASSISTANT_SYSTEM_PROMPT
+        system_prompt: PLATFORM_ASSISTANT_SYSTEM_PROMPT,
+        response_json_schema: null
       });
 
       if (response.success && response.data) {
@@ -143,7 +142,12 @@ export default function AIAssistant({ context = {} }) {
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col p-0">
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="px-4 pt-2" />
+        <AIStatusIndicator
+          status={status}
+          error={error}
+          rateLimitInfo={rateLimitInfo}
+          className="px-4 pt-2"
+        />
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 && (
@@ -174,11 +178,10 @@ export default function AIAssistant({ context = {} }) {
               className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[80%] rounded-lg p-3 ${
-                  message.role === 'user'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-100 text-slate-900'
-                }`}
+                className={`max-w-[80%] rounded-lg p-3 ${message.role === 'user'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-100 text-slate-900'
+                  }`}
               >
                 <p className="text-sm whitespace-pre-wrap">{message.content}</p>
               </div>

@@ -1,24 +1,13 @@
-
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { GitBranch, User, Clock, FileText } from 'lucide-react';
+import { useDataLineage } from '@/hooks/useSystemData';
 
 export default function DataLineageTracker({ entityType, entityId }) {
   const { language, t } = useLanguage();
 
-  const { data: activities = [] } = useQuery({
-    queryKey: ['access-log', entityType, entityId],
-    queryFn: async () => {
-      const all = await base44.entities.AccessLog.list();
-      return all
-        .filter(a => a.entity_type === entityType && a.entity_id === entityId)
-        .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))
-        .slice(0, 20);
-    },
-    initialData: []
-  });
+  const { data: activities = [] } = useDataLineage(entityType, entityId);
 
   const getActionColor = (action) => {
     const colors = {
@@ -77,9 +66,9 @@ export default function DataLineageTracker({ entityType, entityId }) {
 
         <div className="pt-4 border-t">
           <p className="text-xs text-slate-500 text-center">
-            {t({ 
-              en: 'Complete audit trail for compliance and accountability', 
-              ar: 'مسار تدقيق كامل للامتثال والمساءلة' 
+            {t({
+              en: 'Complete audit trail for compliance and accountability',
+              ar: 'مسار تدقيق كامل للامتثال والمساءلة'
             })}
           </p>
         </div>

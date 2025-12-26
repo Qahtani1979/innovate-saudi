@@ -3,7 +3,6 @@ import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility
 import { useStrategicLinks } from '@/hooks/useStrategicLinks';
 import { useChallengeMutations } from '@/hooks/useChallengeMutations';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import { useQuery } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

@@ -3,10 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, CheckCircle, Calendar, Clock, Loader2, Shield } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useCheckSchedulingConflicts } from '@/hooks/useCheckSchedulingConflicts';
 
-export function AIConflictDetector({ 
+export function AIConflictDetector({
   proposedDate,
   proposedTime,
   eventId = null, // exclude self when editing
@@ -16,45 +15,8 @@ export function AIConflictDetector({
   const [conflicts, setConflicts] = useState([]);
   const [checking, setChecking] = useState(false);
 
-  // Fetch existing events
-  const { data: existingEvents = [] } = useQuery({
-    queryKey: ['conflict-check-events'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('events')
-        .select('id, title_en, title_ar, start_date, end_date, event_type')
-        .eq('is_deleted', false)
-        .gte('start_date', new Date().toISOString());
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  // Fetch pilots with milestones
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['conflict-check-pilots'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('id, title_en, title_ar, timeline')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  // Fetch programs with sessions
-  const { data: programs = [] } = useQuery({
-    queryKey: ['conflict-check-programs'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('programs')
-        .select('id, name_en, name_ar, timeline')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // Fetch conflict data using custom hook
+  const { events: existingEvents, pilots, programs } = useCheckSchedulingConflicts();
 
   const checkConflicts = () => {
     if (!proposedDate) return;
@@ -66,7 +28,7 @@ export function AIConflictDetector({
     // Check events on same day
     existingEvents.forEach(event => {
       if (event.id === eventId) return; // skip self
-      
+
       const eventDate = new Date(event.start_date);
       if (eventDate.toDateString() === proposedDateObj.toDateString()) {
         foundConflicts.push({
@@ -74,7 +36,7 @@ export function AIConflictDetector({
           severity: 'high',
           title: language === 'ar' ? (event.title_ar || event.title_en) : (event.title_en || event.title_ar),
           time: eventDate.toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit' }),
-          message: t({ 
+          message: t({
             en: 'Another event scheduled at the same time',
             ar: 'فعالية أخرى مجدولة في نفس الوقت'
           })
@@ -85,7 +47,7 @@ export function AIConflictDetector({
     // Check pilot milestones
     pilots.forEach(pilot => {
       if (!pilot.timeline) return;
-      
+
       const milestones = ['pilot_start', 'pilot_end', 'review_date'];
       milestones.forEach(m => {
         if (pilot.timeline[m]) {
@@ -96,7 +58,7 @@ export function AIConflictDetector({
               severity: 'medium',
               title: language === 'ar' ? (pilot.title_ar || pilot.title_en) : (pilot.title_en || pilot.title_ar),
               time: m.replace('_', ' '),
-              message: t({ 
+              message: t({
                 en: 'Pilot milestone on this date',
                 ar: 'معلم تجريبي في هذا التاريخ'
               })
@@ -108,8 +70,10 @@ export function AIConflictDetector({
 
     // Check program sessions
     programs.forEach(program => {
+      // @ts-ignore
       if (!program.timeline?.program_start) return;
-      
+
+      // @ts-ignore
       const startDate = new Date(program.timeline.program_start);
       if (startDate.toDateString() === proposedDateObj.toDateString()) {
         foundConflicts.push({
@@ -117,7 +81,7 @@ export function AIConflictDetector({
           severity: 'medium',
           title: language === 'ar' ? (program.name_ar || program.name_en) : (program.name_en || program.name_ar),
           time: startDate.toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit' }),
-          message: t({ 
+          message: t({
             en: 'Program session scheduled',
             ar: 'جلسة برنامج مجدولة'
           })
@@ -207,7 +171,7 @@ export function AIConflictDetector({
             })}
             <div className="pt-2 border-t mt-3">
               <p className="text-xs text-muted-foreground">
-                {t({ 
+                {t({
                   en: 'Consider choosing a different time to avoid potential attendance conflicts',
                   ar: 'فكر في اختيار وقت مختلف لتجنب تعارضات الحضور المحتملة'
                 })}

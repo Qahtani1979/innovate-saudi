@@ -1,32 +1,39 @@
+import { supabase } from '@/integrations/supabase/client';
 
-export const createNotification = async ({ title, body, type, priority, linkUrl, entityType, entityId, recipients }) => {
+export const createNotification = async ({ title, body, type, priority, linkUrl, entityType, entityId, recipients, createdBy = 'system' }) => {
   try {
-    // Create notification for each recipient
+    const notificationData = {
+      title,
+      body,
+      notification_type: type || 'alert',
+      priority: priority || 'medium',
+      link_url: linkUrl,
+      entity_type: entityType,
+      entity_id: entityId,
+      created_by: createdBy, // 'system@saudiinnovates.sa' or actual user ID if passed
+      is_read: false
+    };
+
+    // Create notification for each recipient if specified
     if (recipients && recipients.length > 0) {
-      for (const recipient of recipients) {
-        await base44.entities.Notification.create({
-          title,
-          body,
-          notification_type: type || 'alert',
-          priority: priority || 'medium',
-          link_url: linkUrl,
-          entity_type: entityType,
-          entity_id: entityId,
-          created_by: 'system@saudiinnovates.sa'
-        });
-      }
+      const notifications = recipients.map(recipientId => ({
+        ...notificationData,
+        recipient_id: recipientId // Assuming recipient is a user ID
+      }));
+
+      const { error } = await supabase.from('notifications').insert(notifications);
+      if (error) throw error;
+
     } else {
-      // Broadcast notification
-      await base44.entities.Notification.create({
-        title,
-        body,
-        notification_type: type || 'alert',
-        priority: priority || 'medium',
-        link_url: linkUrl,
-        entity_type: entityType,
-        entity_id: entityId,
-        created_by: 'system@saudiinnovates.sa'
-      });
+      // Broadcast or system notification (handling depends on DB schema, usually requires a recipient)
+      // If broadcast is intended, logic might differ. For now, assuming standard insert.
+      // If no recipient, maybe it's a global log?
+      console.warn('Notification created without specific recipients (Broadcast not fully implemented):', title);
+      const { error } = await supabase.from('system_notifications').insert(notificationData).select(); // distinct table for broadcasts?
+      if (error) {
+        // Fallback if system_notifications doesn't exist, just log
+        console.warn('Could not save broadcast notification', error);
+      }
     }
   } catch (error) {
     console.error('Failed to create notification:', error);

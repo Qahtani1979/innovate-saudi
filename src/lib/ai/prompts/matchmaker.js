@@ -82,6 +82,77 @@ Output valid JSON.`,
     }
 });
 
+export const getStrategicChallengeMapperPrompt = ({ application, challenges }) => ({
+    system: `You are a Strategic Alignment Expert for Saudi Vision 2030.`,
+    prompt: `Analyze the application and available strategic challenges to find the best matches.
+    
+    APPLICATION:
+    ${JSON.stringify(application, null, 2)}
+    
+    CHALLENGES (Tier 1 & 2):
+    ${JSON.stringify(challenges, null, 2)}
+    
+    Identify which challenges this application addresses directly.`,
+    schema: strategicChallengeMapperSchema
+});
+
+export const strategicChallengeMapperSchema = {
+    type: "object",
+    properties: {
+        matches: {
+            type: "array",
+            items: {
+                type: "object",
+                properties: {
+                    challenge_id: { type: "string" },
+                    challenge_code: { type: "string" },
+                    bonus_points: { type: "integer" },
+                    reason_en: { type: "string" },
+                    reason_ar: { type: "string" }
+                },
+                required: ["challenge_id", "bonus_points", "reason_en"]
+            }
+        }
+    }
+};
+
+export const getEnhancedMatchingPrompt = ({ application, challenges, preferences }) => ({
+    system: "You are an Advanced Matchmaking Engine.",
+    prompt: `Find the best bilateral matches between this application and the provided challenges.
+    
+    Preferences: ${JSON.stringify(preferences)}
+    
+    Application: ${JSON.stringify(application)}
+    
+    Challenges: ${JSON.stringify(challenges)}`,
+    schema: enhancedMatchingSchema
+});
+
+export const enhancedMatchingSchema = {
+    type: "object",
+    properties: {
+        matches: {
+            type: "array",
+            items: {
+                type: "object",
+                properties: {
+                    challenge_code: { type: "string" },
+                    match_score: { type: "integer" },
+                    match_rationale: { type: "string" },
+                    sector_fit: { type: "string" },
+                    capability_fit: { type: "string" },
+                    strategic_fit: { type: "string" }
+                },
+                required: ["challenge_code", "match_score"]
+            }
+        }
+    }
+};
+
 export default {
-    MATCH_SUCCESS_PREDICTOR_PROMPT_TEMPLATE
+    MATCH_SUCCESS_PREDICTOR_PROMPT_TEMPLATE,
+    getStrategicChallengeMapperPrompt,
+    strategicChallengeMapperSchema,
+    getEnhancedMatchingPrompt,
+    enhancedMatchingSchema
 };

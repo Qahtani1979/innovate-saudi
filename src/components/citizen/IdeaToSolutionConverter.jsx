@@ -14,12 +14,13 @@ import {
   buildIdeaToSolutionPrompt,
   IDEA_TO_SOLUTION_SCHEMA
 } from '@/lib/ai/prompts/citizen/ideaToSolution';
-import { useConvertIdeaToSolution } from '@/hooks/useCitizenIdeas';
+import { useCitizenIdeaMutations } from '@/hooks/useCitizenIdeaMutations';
 
 export default function IdeaToSolutionConverter({ idea, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const { invokeAI, isLoading: enhancing, status, error: aiError, rateLimitInfo } = useAIWithFallback();
-  const { mutate: convertToSolution, isPending: isConverting } = useConvertIdeaToSolution();
+  const { convertToSolution } = useCitizenIdeaMutations();
+  const isConverting = convertToSolution.isPending;
 
   const [solutionData, setSolutionData] = useState({
     name_en: idea.title || '',
@@ -58,7 +59,7 @@ export default function IdeaToSolutionConverter({ idea, onClose }) {
   const handleConvert = () => {
     if (!solutionData.name_en) return;
 
-    convertToSolution({ idea, solutionData }, {
+    convertToSolution.mutate({ idea, solutionData }, {
       onSuccess: () => {
         if (onClose) onClose();
       }

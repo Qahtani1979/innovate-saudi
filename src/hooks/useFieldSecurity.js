@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -28,7 +28,7 @@ export function useFieldSecurityRules(entity) {
  * Hook to update field security rules for an entity.
  */
 export function useUpdateFieldSecurityRules() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     return useMutation({
         mutationFn: async ({ entity, rules }) => {
@@ -62,3 +62,4 @@ export function useUpdateFieldSecurityRules() {
         onError: (error) => toast.error(error.message)
     });
 }
+

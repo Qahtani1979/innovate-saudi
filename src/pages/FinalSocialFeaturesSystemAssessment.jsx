@@ -47,12 +47,12 @@ export default function FinalSocialFeaturesSystemAssessment() {
         icon: <MessageSquare className="h-5 w-5 text-blue-600" />,
         status: 'complete',
         items: [
-          { name: 'CommentThread', status: 'fixed', details: 'citizen/CommentThread.jsx - Migrated from base44 to supabase, uses comments table' },
+          { name: 'CommentThread', status: 'fixed', details: 'citizen/CommentThread.jsx - Migrated from legacy to supabase, uses comments table' },
           { name: 'PolicyCommentThread', status: 'verified', details: 'policy/PolicyCommentThread.jsx - Policy-specific comment thread' },
           { name: 'SocialShare (citizen)', status: 'verified', details: 'citizen/SocialShare.jsx - Share to WhatsApp, Twitter, Facebook, LinkedIn with copy link' },
           { name: 'SocialShare (challenges)', status: 'verified', details: 'challenges/SocialShare.jsx - Dropdown menu share component' },
           { name: 'BookmarkButton', status: 'fixed', details: 'ui/BookmarkButton.jsx - Migrated from localStorage to Supabase bookmarks table' },
-          { name: 'ChallengeVoting', status: 'fixed', details: 'challenges/ChallengeVoting.jsx - Migrated from base44 to supabase' },
+          { name: 'ChallengeVoting', status: 'fixed', details: 'challenges/ChallengeVoting.jsx - Migrated from legacy to supabase' },
           { name: 'IdeaVotingBoard', status: 'verified', details: 'citizen/IdeaVotingBoard.jsx - Trending ideas with votes display' },
           { name: 'CitizenFeedbackLoop', status: 'verified', details: 'citizen/CitizenFeedbackLoop.jsx - Feedback collection component' },
           { name: 'PublicFeedbackAggregator', status: 'verified', details: 'citizen/PublicFeedbackAggregator.jsx - Aggregate public feedback' }
@@ -174,11 +174,11 @@ export default function FinalSocialFeaturesSystemAssessment() {
             <ul className="space-y-2 text-sm">
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-blue-600" />
-                <span><strong>CommentThread.jsx</strong> - Migrated from base44 to supabase, fixed column references (commenter_name → user_name, created_date → created_at)</span>
+                <span><strong>CommentThread.jsx</strong> - Migrated from legacy to supabase, fixed column references (commenter_name → user_name, created_date → created_at)</span>
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-blue-600" />
-                <span><strong>ChallengeVoting.jsx</strong> - Replaced base44 entities with direct supabase queries for voting</span>
+                <span><strong>ChallengeVoting.jsx</strong> - Replaced legacy entities with direct supabase queries for voting</span>
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-blue-600" />
@@ -228,7 +228,7 @@ export default function FinalSocialFeaturesSystemAssessment() {
         <Card className="bg-gradient-to-r from-green-600 to-emerald-600 text-white">
           <CardContent className="py-6">
             <pre className="text-xs overflow-x-auto whitespace-pre-wrap font-mono">
-{`
+              {`
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                    SOCIAL FEATURES SYSTEM - VALIDATED ✓                         │
 ├─────────────────────────────────────────────────────────────────────────────────┤
@@ -242,7 +242,7 @@ export default function FinalSocialFeaturesSystemAssessment() {
 │  NOTIFICATIONS: citizen_notifications │ Read/Unread │ Entity linking            │
 │  FOLLOWS: Entity following │ Update notifications                               │
 ├─────────────────────────────────────────────────────────────────────────────────┤
-│  FIXES: CommentThread (base44→supabase) │ ChallengeVoting (base44→supabase)    │
+│  FIXES: CommentThread (legacy→supabase) │ ChallengeVoting (legacy→supabase)    │
 │         BookmarkButton (localStorage→supabase) │ MyBookmarks (localStorage→db)  │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │  RLS: 15 Policies │ User ownership │ Admin override │ Public visibility         │

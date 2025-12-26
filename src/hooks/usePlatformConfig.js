@@ -1,11 +1,11 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Hook to manage platform configurations (branding, feature flags, etc.)
  */
 export function usePlatformConfig(category) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const queryKey = ['platform-config', category];
 
     // Fetch config
@@ -90,3 +90,4 @@ export function usePlatformConfig(category) {
         saveBatchConfig
     };
 }
+

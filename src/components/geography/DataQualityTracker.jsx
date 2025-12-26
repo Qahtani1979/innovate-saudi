@@ -1,28 +1,23 @@
 
-import { useQuery } from '@tanstack/react-query';
+import { useMunicipalities, useRegionsList, useCitiesList } from '@/hooks/useLocations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
-import { Database } from 'lucide-react';
+import { Database, Loader2 } from 'lucide-react';
 
 export default function DataQualityTracker() {
   const { t } = useLanguage();
 
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities-quality'],
-    queryFn: () => base44.entities.Municipality.list()
-  });
+  const { data: municipalities = [], isLoading: loadingMuni } = useMunicipalities();
+  const { data: regions = [], isLoading: loadingRegions } = useRegionsList();
+  const { data: cities = [], isLoading: loadingCities } = useCitiesList();
 
-  const { data: regions = [] } = useQuery({
-    queryKey: ['regions-quality'],
-    queryFn: () => base44.entities.Region.list()
-  });
+  const isLoading = loadingMuni || loadingRegions || loadingCities;
 
-  const { data: cities = [] } = useQuery({
-    queryKey: ['cities-quality'],
-    queryFn: () => base44.entities.City.list()
-  });
+  if (isLoading) {
+    return <div className="p-4 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-blue-600" /></div>;
+  }
 
   const qualityChecks = {
     municipalities: {

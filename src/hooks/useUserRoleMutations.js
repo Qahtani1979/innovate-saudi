@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -6,7 +6,7 @@ import { toast } from 'sonner';
  * Hook to manage user role mutations
  */
 export function useUserRoleMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const addRole = useMutation({
         /**
@@ -91,3 +91,4 @@ export function useUserRoleMutations() {
 
     return { addRole, removeRole, updateRoles };
 }
+

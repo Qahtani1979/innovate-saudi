@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -8,7 +8,7 @@ import { toast } from 'sonner';
  */
 export function useEventRegistrations(options = {}) {
   const { eventId, userId, userEmail } = options;
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
 
   // Fetch registrations for an event
   const {
@@ -269,3 +269,4 @@ export function useUserEventRegistrations(userEmail) {
 }
 
 export default useEventRegistrations;
+

@@ -1,9 +1,9 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export function useInnovationProposalMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const updateProposal = useMutation({
         mutationFn: async ({ id, data }) => {
@@ -77,3 +77,4 @@ export function useInnovationProposalMutations() {
         })
     };
 }
+

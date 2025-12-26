@@ -1,15 +1,15 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '../components/LanguageContext';
 
 /**
  * Standardized hook for Expert Evaluations and Templates
- * Eliminates direct base44/supabase usage in components.
+ * Eliminates direct legacy/supabase usage in components.
  */
 export function useEvaluations(params = {}) {
     const { entityType, entityId, evaluationStage } = params;
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { t } = useLanguage();
 
     // Fetch Evaluation History
@@ -100,3 +100,4 @@ export function useEvaluations(params = {}) {
         submitEvaluation
     };
 }
+

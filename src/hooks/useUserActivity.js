@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -73,7 +73,7 @@ export function useUserActivity(userEmail, userId) {
  * Hook to log user activity
  */
 export function useLogActivity() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     return useMutation({
         mutationFn: async (activityData) => {
@@ -108,3 +108,4 @@ export function useEntityActivity(entityId) {
 }
 
 export default useUserActivity;
+

@@ -1,5 +1,5 @@
 import { useEntityPagination } from '@/hooks/useEntityPagination';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/LanguageContext';
@@ -10,7 +10,7 @@ import { useLanguage } from '@/components/LanguageContext';
  */
 export function useMyBookmarks(userId, page = 1) {
     const { t } = useLanguage();
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     // 1. PAGINATED DATA FETCHING
     const pagination = useEntityPagination({
@@ -70,3 +70,4 @@ export function useMyBookmarks(userId, page = 1) {
         isMutating: removeMutation.isPending || clearAllMutation.isPending
     };
 }
+

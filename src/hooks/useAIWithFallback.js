@@ -44,7 +44,7 @@ export function useAIWithFallback(options = {}) {
   const [error, setError] = useState(null);
   const [rateLimitInfo, setRateLimitInfo] = useState(null);
 
-  const invokeAI = useCallback(async ({ prompt, response_json_schema, system_prompt = '' }) => {
+  const invokeAI = useCallback(async ({ prompt, response_json_schema = null, system_prompt = '' }) => {
     setStatus(AI_STATUS.LOADING);
     setError(null);
 
@@ -61,8 +61,8 @@ export function useAIWithFallback(options = {}) {
       // Check for error in response body (edge function returns 429 with error in body)
       if (result?.error && result?.rate_limit_info) {
         const rateLimitError = new Error(result.error);
-        rateLimitError.status = 429;
-        rateLimitError.rateLimitInfo = result.rate_limit_info;
+        (rateLimitError).status = 429;
+        (rateLimitError).rateLimitInfo = result.rate_limit_info;
         throw rateLimitError;
       }
 

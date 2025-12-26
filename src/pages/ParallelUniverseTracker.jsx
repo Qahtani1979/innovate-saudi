@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useSystemMetrics } from '@/hooks/useSystemMetrics';
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

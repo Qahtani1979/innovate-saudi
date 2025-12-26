@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { useRoleRequestRateLimit, useRoleRequestMutations } from '@/hooks/useRoleRequests';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,7 +37,7 @@ const ROLE_OPTIONS = [
 export default function RoleRequestDialog({ open, onOpenChange, availableRoles, preSelectedRole }) {
   const { t, language } = useLanguage();
   const { user, userProfile } = useAuth();
-  const queryClient = useQueryClient();
+
   const [formData, setFormData] = useState({
     requested_role: preSelectedRole || '',
     justification: ''

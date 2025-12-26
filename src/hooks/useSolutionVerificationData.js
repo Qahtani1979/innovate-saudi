@@ -1,8 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useSolutionVerificationData() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     // 1. Fetch solutions
     const { data: solutions = [], isLoading: solutionsLoading } = useQuery({
@@ -69,3 +69,4 @@ export function useSolutionVerificationData() {
         checkConsensus
     };
 }
+

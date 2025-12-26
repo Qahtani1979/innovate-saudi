@@ -4,10 +4,11 @@ import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Upload, X, Check, Loader2, File, Image, Video, Music, Search, Globe, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { useFileStorage, useImageSearch } from '@/hooks/usePlatformCore';
 
-export default function FileUploader({ 
-  onUploadComplete, 
-  accept = "*/*", 
+export default function FileUploader({
+  onUploadComplete,
+  accept = "*/*",
   maxSize = 50, // MB
   label = "Upload File",
   description,
@@ -16,19 +17,20 @@ export default function FileUploader({
   enableImageSearch = false,
   searchContext = "" // context for AI image search (e.g., challenge title)
 }) {
-  const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [uploadedUrl, setUploadedUrl] = useState(null);
   const [fileName, setFileName] = useState('');
   const [showImageSearch, setShowImageSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searching, setSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState([]);
   const [autoSearched, setAutoSearched] = useState(false);
   const [searchPage, setSearchPage] = useState(1);
+  const [searchResults, setSearchResults] = useState([]);
+
+  const { uploadMutation, uploading } = useFileStorage();
+  const { searchMutation, searching } = useImageSearch();
 
   const getAcceptString = () => {
-    switch(type) {
+    switch (type) {
       case 'image': return 'image/*';
       case 'video': return 'video/*';
       case 'audio': return 'audio/*';
@@ -40,8 +42,8 @@ export default function FileUploader({
   const getIcon = () => {
     if (uploadedUrl) return <Check className="h-5 w-5 text-green-600" />;
     if (uploading) return <Loader2 className="h-5 w-5 animate-spin text-blue-600" />;
-    
-    switch(type) {
+
+    switch (type) {
       case 'image': return <Image className="h-5 w-5 text-slate-400" />;
       case 'video': return <Video className="h-5 w-5 text-slate-400" />;
       case 'audio': return <Music className="h-5 w-5 text-slate-400" />;
@@ -54,34 +56,20 @@ export default function FileUploader({
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate size
-    if (file.size > maxSize * 1024 * 1024) {
-      toast.error(`File size must be less than ${maxSize}MB`);
-      return;
-    }
-
     setFileName(file.name);
-    setUploading(true);
-    setProgress(0);
+    setProgress(10);
 
-    // Simulate progress
-    const progressInterval = setInterval(() => {
-      setProgress(prev => Math.min(prev + 10, 90));
-    }, 200);
-
-    try {
-      const result = await base44.integrations.Core.UploadFile({ file });
-      clearInterval(progressInterval);
-      setProgress(100);
-      setUploadedUrl(result.file_url);
-      onUploadComplete(result.file_url);
-      toast.success('File uploaded successfully');
-    } catch (error) {
-      clearInterval(progressInterval);
-      toast.error('Upload failed: ' + error.message);
-    } finally {
-      setUploading(false);
-    }
+    uploadMutation.mutate({ file, maxSize }, {
+      onSuccess: (result) => {
+        setProgress(100);
+        setUploadedUrl(result.file_url);
+        onUploadComplete(result.file_url);
+      },
+      onError: (error) => {
+        toast.error('Upload failed: ' + error.message);
+        setProgress(0);
+      }
+    });
   };
 
   const handleRemove = () => {
@@ -103,35 +91,28 @@ export default function FileUploader({
 
   const handleImageSearch = async (queryOverride = null, shuffle = false) => {
     const query = queryOverride || searchQuery || searchContext;
-    
+
     if (!query) {
       toast.error('Please enter a search term');
       return;
     }
 
-    setSearching(true);
-    
-    try {
-      // If shuffling, increment page (cycle 1-5 for best quality results)
-      const nextPage = shuffle ? (searchPage % 5) + 1 : searchPage;
-      
-      const response = await base44.functions.invoke('searchImages', { 
-        searchQuery: query,
-        page: nextPage
-      });
+    const nextPage = shuffle ? (searchPage % 5) + 1 : searchPage;
 
-      if (response.data.success && response.data.images?.length > 0) {
-        setSearchResults(response.data.images);
-        setSearchPage(nextPage);
-        toast.success(`Found ${response.data.images.length} fresh images (page ${nextPage})`);
-      } else {
-        toast.error('No more images found. Try a different search term.');
+    searchMutation.mutate({ query, page: nextPage }, {
+      onSuccess: (images) => {
+        if (images.length > 0) {
+          setSearchResults(images);
+          setSearchPage(nextPage);
+          toast.success(`Found ${images.length} fresh images (page ${nextPage})`);
+        } else {
+          toast.error('No more images found. Try a different search term.');
+        }
+      },
+      onError: (error) => {
+        toast.error('Image search failed: ' + error.message);
       }
-    } catch (error) {
-      toast.error('Image search failed: ' + error.message);
-    } finally {
-      setSearching(false);
-    }
+    });
   };
 
   const handleSelectImage = (imageUrl, imageName) => {
@@ -156,7 +137,7 @@ export default function FileUploader({
               className="hidden"
               id={`file-upload-${type}`}
             />
-            <label 
+            <label
               htmlFor={`file-upload-${type}`}
               className="flex flex-col items-center justify-center cursor-pointer"
             >
@@ -187,7 +168,7 @@ export default function FileUploader({
               <div className="relative">
                 <span className="block text-center text-xs text-slate-500">OR</span>
               </div>
-              
+
               {!showImageSearch ? (
                 <Button
                   variant="outline"

@@ -212,8 +212,8 @@ function MasterDevelopmentPrompt() {
 
 ### RBAC IMPLEMENTATION STANDARDS
 
-**Application-Level Security (Base44 Pattern):**
-- NO database-level RLS policies (Base44 uses app-level enforcement)
+**Application-Level Security (Platform Pattern):**
+- NO database-level RLS policies (Platform uses app-level enforcement)
 - Security enforced via permission checks in pages/components
 - Field visibility via conditional rendering based on hasPermission()
 - Query filtering based on user.assigned_roles and role.permissions
@@ -226,7 +226,7 @@ function MasterDevelopmentPrompt() {
 3. Action/Button: ProtectedAction wrapper
 4. Link/Navigation: {hasPermission() && <Link />}
 5. Field/Data: {hasPermission() && <Input />}
-6. Row-Level: base44.entities.filter({ municipality_id })
+6. Row-Level: Platform.entities.filter({ municipality_id })
 7. Tab Visibility: {hasPermission() && <TabsTrigger />}
 
 **Permission Naming Convention:**
@@ -1277,7 +1277,7 @@ Each follows: List → Create → Detail → Edit pattern
 | Approval engines                | /components/approval/*                 |
 | Policy features                 | /components/policy/*                   |
 | Pilot-related operations        | /components/pilots/*                   |
-| Data access & API integration   | /api/base44Client.ts                   |
+| Data access & API integration   | /api/PlatformClient.ts                   |
 | Hooks & shared logic            | /hooks/*                               |
 | Analytics & Insight engines     | /ai/*                                  |
 | Reports & coverage dashboards   | /reporting/*                           |
@@ -1892,7 +1892,7 @@ import { ProtectedAction } from '@/components/permissions/ProtectedAction';
 Conditionally show menu items:
 
 \`\`\`javascript
-import { usePermissions } from './components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 
 const { hasPermission, hasAnyPermission, isAdmin } = usePermissions();
 
@@ -1993,11 +1993,11 @@ Backend automatically filters:
 Frontend MUST respect visibility rules:
 \`\`\`javascript
 // Get user's municipality
-const user = await base44.auth.me();
+const user = await Platform.auth.me();
 const municipality_id = user.municipality_id;
 
 // Filter challenges for own municipality
-const challenges = await base44.entities.Challenge.filter({
+const challenges = await Platform.entities.Challenge.filter({
   municipality_id: municipality_id
 });
 \`\`\`
@@ -2139,14 +2139,14 @@ const handleSave = async () => {
   const policyData = {
     content_ar: arabicContent,
     // AI translates to English
-    content_en: await base44.functions.invoke('translatePolicy', {
+    content_en: await Platform.functions.invoke('translatePolicy', {
       text: arabicContent,
       from: 'ar',
       to: 'en'
     }).data.translation
   };
   
-  await base44.entities.PolicyRecommendation.create(policyData);
+  await Platform.entities.PolicyRecommendation.create(policyData);
 };
 \`\`\`
 
@@ -2179,7 +2179,7 @@ const formatted = format(new Date(), 'PPP', {
 Support both languages in search:
 \`\`\`javascript
 // Semantic search across both fields
-const results = await base44.functions.invoke('semanticSearch', {
+const results = await Platform.functions.invoke('semanticSearch', {
   query: searchQuery, // works in AR or EN
   fields: ['title_ar', 'title_en', 'description_ar', 'description_en']
 });
@@ -2236,7 +2236,7 @@ AI MUST be embedded strategically across the platform. Below is the comprehensiv
   * Recommended treatment tracks
   * Similar international case studies
   * Risk factors
-- Implementation: base44.integrations.Core.InvokeLLM
+- Implementation: Platform.integrations.Core.InvokeLLM
 - Permission: challenge_view_all
 
 **ChallengeDetail → Solutions Tab**
@@ -2289,7 +2289,7 @@ AI MUST be embedded strategically across the platform. Below is the comprehensiv
   * Success probability score
   * Strengths & weaknesses summary
   * Recommendation (continue/pivot/terminate)
-- Implementation: base44.integrations.Core.InvokeLLM
+- Implementation: Platform.integrations.Core.InvokeLLM
 - Permission: pilot_evaluate
 
 **PilotMonitoringDashboard**
@@ -2340,7 +2340,7 @@ AI MUST be embedded strategically across the platform. Below is the comprehensiv
   * Suggested eligibility criteria
   * Expected outputs
   * Budget range
-- Implementation: base44.integrations.Core.InvokeLLM
+- Implementation: Platform.integrations.Core.InvokeLLM
 - Permission: requireAdmin
 
 **RDProjectDetail**
@@ -2405,7 +2405,7 @@ AI MUST be embedded strategically across the platform. Below is the comprehensiv
   * Policy draft (Arabic first)
   * English translation
   * Implementation guidelines
-- Implementation: base44.functions.translatePolicy
+- Implementation: Platform.functions.translatePolicy
 - Permission: policy_create
 
 **PolicyDetail**
@@ -2470,7 +2470,7 @@ AI MUST be embedded strategically across the platform. Below is the comprehensiv
   * Bottleneck detection
   * Flow velocity insights
   * Recommendations for acceleration
-- Implementation: base44.integrations.Core.InvokeLLM
+- Implementation: Platform.integrations.Core.InvokeLLM
 - Permission: requireAdmin
 
 **MII (Municipal Innovation Index)**
@@ -2505,7 +2505,7 @@ AI MUST be embedded strategically across the platform. Below is the comprehensiv
 
 **AI Response Format:**
 \`\`\`javascript
-const response = await base44.integrations.Core.InvokeLLM({
+const response = await Platform.integrations.Core.InvokeLLM({
   prompt: "...",
   response_json_schema: {
     type: "object",
@@ -2683,7 +2683,7 @@ Before submitting any code, AI must mentally verify:
 ✅ Related reports updated
 ✅ Menu links correct
 ✅ Workflow logic sound
-✅ API calls use base44 client
+✅ API calls use Platform client
 ✅ Loading states handled
 ✅ Error states handled
 
@@ -2715,7 +2715,7 @@ LAYER 2: APPLICATION (Hooks)
            |
            v (calls)
            |
-LAYER 3: API (base44)
+LAYER 3: API (Platform)
   - entities, integrations, auth
            |
            v (persists to)
@@ -3019,7 +3019,7 @@ Log whenever sensitive data is accessed:
 \`\`\`javascript
 const viewBudget = async () => {
   // Log the access
-  await base44.entities.AccessLog.create({
+  await Platform.entities.AccessLog.create({
     user_email: currentUser.email,
     action: 'view_sensitive',
     entity_type: 'Pilot',
@@ -3114,7 +3114,7 @@ import ReactMarkdown from 'react-markdown';
 
 ### 28.3 CSRF Protection
 
-All mutations use base44 client which handles CSRF automatically.
+All mutations use Platform client which handles CSRF automatically.
 
 ### 28.4 Rate Limiting
 
@@ -3126,7 +3126,7 @@ AI features and public forms have rate limits:
 Handle rate limit errors:
 \`\`\`javascript
 try {
-  const response = await base44.integrations.Core.InvokeLLM({...});
+  const response = await Platform.integrations.Core.InvokeLLM({...});
 } catch (error) {
   if (error.status === 429) {
     toast.error(t({ 
@@ -3159,7 +3159,7 @@ const handleFileUpload = async (file) => {
   }
   
   // Upload
-  const { file_url } = await base44.integrations.Core.UploadFile({ file });
+  const { file_url } = await Platform.integrations.Core.UploadFile({ file });
 };
 \`\`\`
 
@@ -3175,7 +3175,7 @@ Backend uses parameterized queries. Frontend should never build raw queries.
 
 ### 28.8 Password Security
 
-Password requirements (handled by Base44 auth):
+Password requirements (handled by Platform auth):
 - Min 8 characters
 - At least 1 uppercase, 1 lowercase, 1 number
 - Optional: 2FA for admin accounts
@@ -3214,7 +3214,7 @@ const [visibility, setVisibility] = useState({
 });
 
 // Step 2: AI recommendation
-const aiRecommendation = await base44.integrations.Core.InvokeLLM({
+const aiRecommendation = await Platform.integrations.Core.InvokeLLM({
   prompt: "Should this {entity} be published publicly or kept confidential?",
   response_json_schema: {
     type: "object",
@@ -3229,7 +3229,7 @@ const aiRecommendation = await base44.integrations.Core.InvokeLLM({
 // Step 3: Approval gate (if publishing sensitive content)
 if (requiresApproval) {
   // Create ApprovalRequest
-  await base44.entities.ApprovalRequest.create({
+  await Platform.entities.ApprovalRequest.create({
     entity_type: 'Challenge',
     entity_id: challenge.id,
     gate_name: 'publishing_approval',
@@ -3279,13 +3279,13 @@ const escalate = (entity) => {
   
   if (escalation_level > entity.escalation_level) {
     // Update entity
-    await base44.entities.Challenge.update(entity.id, {
+    await Platform.entities.Challenge.update(entity.id, {
       escalation_level,
       escalation_date: today.toISOString()
     });
     
     // Notify leadership
-    await base44.integrations.Core.SendEmail({
+    await Platform.integrations.Core.SendEmail({
       to: 'leadership@gdisb.gov.sa',
       subject: \`CRITICAL: Challenge \${entity.code} overdue by \${daysOverdue} days\`,
       body: \`Challenge: \${entity.title_en}\\nMunicipality: \${entity.municipality_id}\\nDays Overdue: \${daysOverdue}\\nEscalation: \${escalation_level === 2 ? 'CRITICAL' : 'WARNING'}\`
@@ -3348,7 +3348,7 @@ innovation_framing: {
 
 \`\`\`javascript
 // Step 1: Load strategic plans
-const strategicPlans = await base44.entities.StrategicPlan.filter({
+const strategicPlans = await Platform.entities.StrategicPlan.filter({
   municipality_id: challenge.municipality_id,
   status: 'active'
 });
@@ -3357,7 +3357,7 @@ const strategicPlans = await base44.entities.StrategicPlan.filter({
 const [selectedObjectives, setSelectedObjectives] = useState([]);
 
 // Step 3: AI validates alignment
-const alignmentValidation = await base44.integrations.Core.InvokeLLM({
+const alignmentValidation = await Platform.integrations.Core.InvokeLLM({
   prompt: "Validate alignment between challenge and strategic objectives",
   response_json_schema: {
     type: "object",
@@ -3373,7 +3373,7 @@ const alignmentValidation = await base44.integrations.Core.InvokeLLM({
 
 // Step 4: Create links
 await Promise.all(selectedObjectives.map(obj => 
-  base44.entities.StrategicPlanChallengeLink.create({
+  Platform.entities.StrategicPlanChallengeLink.create({
     strategic_plan_id: obj.plan_id,
     challenge_id: challenge.id,
     alignment_score: alignmentValidation.alignment_score,
@@ -3436,7 +3436,7 @@ Different stages need different evaluation criteria (not just universal 8 scores
 
 \`\`\`javascript
 const determineTestingInfrastructure = async (pilot) => {
-  const analysis = await base44.integrations.Core.InvokeLLM({
+  const analysis = await Platform.integrations.Core.InvokeLLM({
     prompt: "Should this pilot use Sandbox (regulatory) or Living Lab (research)?",
     response_json_schema: {
       type: "object",
@@ -3452,7 +3452,7 @@ const determineTestingInfrastructure = async (pilot) => {
   
   if (analysis.recommendation === "sandbox") {
     // Find available sandbox
-    const sandboxes = await base44.entities.Sandbox.filter({
+    const sandboxes = await Platform.entities.Sandbox.filter({
       sector: pilot.sector,
       status: 'active',
       // capacity available
@@ -3463,7 +3463,7 @@ const determineTestingInfrastructure = async (pilot) => {
   
   if (analysis.recommendation === "livinglab") {
     // Find appropriate lab
-    const labs = await base44.entities.LivingLab.filter({
+    const labs = await Platform.entities.LivingLab.filter({
       capabilities: { $in: [pilot.sector] },
       // availability check
     });
@@ -3497,7 +3497,7 @@ if (!canResolve) {
 }
 
 // On resolution
-await base44.entities.Challenge.update(challenge.id, {
+await Platform.entities.Challenge.update(challenge.id, {
   status: 'resolved',
   lessons_learned: lessons,
   resolution_date: new Date().toISOString()
@@ -3507,7 +3507,7 @@ await base44.entities.Challenge.update(challenge.id, {
 **CrossCitySolutionSharing Component:**
 \`\`\`javascript
 // When challenge resolved, suggest sharing
-const suggestSharing = await base44.integrations.Core.InvokeLLM({
+const suggestSharing = await Platform.integrations.Core.InvokeLLM({
   prompt: "Which other cities would benefit from this solution?",
   response_json_schema: {
     type: "object",
@@ -3530,7 +3530,7 @@ const suggestSharing = await base44.integrations.Core.InvokeLLM({
 
 // Auto-email municipalities
 for (const city of suggestSharing.recommended_cities) {
-  await base44.integrations.Core.SendEmail({
+  await Platform.integrations.Core.SendEmail({
     to: city.contact_email,
     subject: "Solution available for similar challenge",
     body: \`Challenge: \${challenge.title_en}\\nSolution applied: \${solution.name_en}\\nResults: \${resolution.impact_achieved}\`
@@ -3549,9 +3549,9 @@ for (const city of suggestSharing.recommended_cities) {
 const { data: kpiData } = useQuery({
   queryKey: ['pilot-kpis', pilot.id],
   queryFn: async () => {
-    const kpis = await base44.entities.PilotKPI.filter({ pilot_id: pilot.id });
+    const kpis = await Platform.entities.PilotKPI.filter({ pilot_id: pilot.id });
     return Promise.all(kpis.map(async kpi => {
-      const datapoints = await base44.entities.PilotKPIDatapoint.filter({
+      const datapoints = await Platform.entities.PilotKPIDatapoint.filter({
         pilot_kpi_id: kpi.id
       }, '-timestamp', 30); // last 30 datapoints
       
@@ -3572,7 +3572,7 @@ const { data: kpiData } = useQuery({
 
 \`\`\`javascript
 // PerformanceBenchmarking component
-const benchmark = await base44.integrations.Core.InvokeLLM({
+const benchmark = await Platform.integrations.Core.InvokeLLM({
   prompt: "Compare this pilot to similar pilots in peer municipalities",
   add_context_from_internet: true,
   response_json_schema: {
@@ -3609,7 +3609,7 @@ const phases = {
 
 // Approval logic
 if (phase.requires_approval) {
-  const approval = await base44.entities.ApprovalRequest.create({
+  const approval = await Platform.entities.ApprovalRequest.create({
     entity_type: 'Pilot',
     entity_id: pilot.id,
     gate_name: 'budget_approval',
@@ -3619,7 +3619,7 @@ if (phase.requires_approval) {
 }
 
 // Track spending
-await base44.entities.PilotExpense.create({
+await Platform.entities.PilotExpense.create({
   pilot_id: pilot.id,
   amount,
   category: 'equipment',
@@ -3781,11 +3781,11 @@ const handleBulkUpdate = async (selectedIds, updates) => {
   // Execute
   try {
     const results = await Promise.all(
-      selectedIds.map(id => base44.entities.Challenge.update(id, updates))
+      selectedIds.map(id => Platform.entities.Challenge.update(id, updates))
     );
     
     // Log
-    await base44.entities.SystemActivity.create({
+    await Platform.entities.SystemActivity.create({
       activity_type: 'bulk_update',
       entity_type: 'Challenge',
       entity_ids: selectedIds,
@@ -3809,7 +3809,7 @@ const handleBulkUpdate = async (selectedIds, updates) => {
 \`\`\`javascript
 // Auto-trigger after entity creation
 const generateEmbeddings = async (entity_type, entity_id) => {
-  const response = await base44.functions.invoke('generateEmbeddings', {
+  const response = await Platform.functions.invoke('generateEmbeddings', {
     entity_type,
     entity_id
   });
@@ -3822,7 +3822,7 @@ const generateEmbeddings = async (entity_type, entity_id) => {
 
 // Semantic search using embeddings
 const semanticSearch = async (query, entity_type) => {
-  const results = await base44.functions.invoke('semanticSearch', {
+  const results = await Platform.functions.invoke('semanticSearch', {
     query, // natural language
     entity_type,
     top_k: 10
@@ -3913,7 +3913,7 @@ ALL ENTITY CRUD PAGES listed in Section 1A above.`
 | Approval engines              | /components/approval/*           |
 | Policy features               | /components/policy/*             |
 | Pilot operations              | /components/pilots/*             |
-| Data access & API             | /api/base44Client.ts             |
+| Data access & API             | /api/PlatformClient.ts             |
 | Hooks & shared logic          | /hooks/*                         |
 | Analytics & Insights          | /ai/*                            |
 | Reports & coverage            | /reporting/*                     |
@@ -4293,7 +4293,7 @@ Field Masking:
 {isAdmin ? email : maskEmail(email)}
 
 Audit Logging:
-await base44.entities.AccessLog.create({
+await Platform.entities.AccessLog.create({
   action: 'view_sensitive',
   field: 'budget'
 });
@@ -4344,7 +4344,7 @@ LEVEL 5 - Field/Data:
 )}
 
 LEVEL 6 - Row-Level (Data Query):
-const data = await base44.entities.Challenge.filter({
+const data = await Platform.entities.Challenge.filter({
   municipality_id: user.municipality_id  // RLS filter
 });
 
@@ -4730,7 +4730,7 @@ Filter menu items by permission in layout.js navigation sections`
                 <div className="h-8 w-8 bg-green-600 text-white rounded-lg flex items-center justify-center text-xs font-bold">3</div>
                 <p className="font-semibold text-green-900">{t({ en: 'API LAYER', ar: 'طبقة API' })}</p>
               </div>
-              <p className="text-sm text-slate-700">entities, integrations, auth (base44)</p>
+              <p className="text-sm text-slate-700">entities, integrations, auth (Platform)</p>
             </div>
 
             <div className="flex justify-center">
@@ -4798,7 +4798,7 @@ Filter menu items by permission in layout.js navigation sections`
               'Document systemic impact',
               'Maintain workflow integrity',
               'Follow bilingual content strategy',
-              'Use base44 client for API calls',
+              'Use Platform client for API calls',
               'Handle loading states',
               'Handle error states',
               'Test permission scenarios',

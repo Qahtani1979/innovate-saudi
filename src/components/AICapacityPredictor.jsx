@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,45 +7,41 @@ import { Sparkles, TrendingUp, Calendar, AlertTriangle, Loader2, Info } from 'lu
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import useAIWithFallback, { AI_STATUS } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator, { AIOptionalBadge } from '@/components/ai/AIStatusIndicator';
-import { 
-  buildCapacityPredictorPrompt, 
+import {
+  buildCapacityPredictorPrompt,
   capacityPredictorSchema,
-  CAPACITY_PREDICTOR_SYSTEM_PROMPT 
+  CAPACITY_PREDICTOR_SYSTEM_PROMPT
 } from '@/lib/ai/prompts/core';
+import { useCapacityPredictor } from '@/hooks/useAIInsights';
+import { useSystemEntities } from '@/hooks/useSystemData';
 
 export default function AICapacityPredictor({ sandbox }) {
   const { isRTL, t, language } = useLanguage();
   const [prediction, setPrediction] = useState(null);
 
-  const { data: applications = [] } = useQuery({
-    queryKey: ['sandbox-applications'],
-    queryFn: () => base44.entities.SandboxApplication.list()
-  });
-
-  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
-    showToasts: true,
-    fallbackData: null
-  });
+  const { data: applications = [] } = useSystemEntities('SandboxApplication');
+  const { predictMutation, status, error, rateLimitInfo, isLoading, isAvailable } = useCapacityPredictor();
 
   const runPrediction = async () => {
     const historicalData = applications.filter(a => a.sandbox_id === sandbox.id);
-    
-    const { success, data } = await invokeAI({
-      prompt: buildCapacityPredictorPrompt(sandbox, historicalData),
-      response_json_schema: capacityPredictorSchema,
-      system_prompt: CAPACITY_PREDICTOR_SYSTEM_PROMPT
-    });
 
-    if (success && data) {
-      // Map bilingual fields based on language
-      setPrediction({
-        ...data,
-        peak_periods: language === 'ar' ? data.peak_periods_ar : data.peak_periods_en,
-        resource_allocation: language === 'ar' ? data.resource_allocation_ar : data.resource_allocation_en,
-        potential_bottlenecks: language === 'ar' ? data.potential_bottlenecks_ar : data.potential_bottlenecks_en,
-        insights: language === 'ar' ? data.insights_ar : data.insights_en
-      });
-    }
+    predictMutation.mutate({
+      sandbox,
+      historicalData,
+      promptBuilder: buildCapacityPredictorPrompt,
+      schema: capacityPredictorSchema,
+      systemPrompt: CAPACITY_PREDICTOR_SYSTEM_PROMPT
+    }, {
+      onSuccess: (data) => {
+        setPrediction({
+          ...data,
+          peak_periods: language === 'ar' ? data.peak_periods_ar : data.peak_periods_en,
+          resource_allocation: language === 'ar' ? data.resource_allocation_ar : data.resource_allocation_en,
+          potential_bottlenecks: language === 'ar' ? data.potential_bottlenecks_ar : data.potential_bottlenecks_en,
+          insights: language === 'ar' ? data.insights_ar : data.insights_en
+        });
+      }
+    });
   };
 
   const recommendationColors = {
@@ -68,7 +63,7 @@ export default function AICapacityPredictor({ sandbox }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails={true} />
-        
+
         {!prediction ? (
           <div className="text-center py-6 space-y-4">
             <Button
@@ -113,13 +108,13 @@ export default function AICapacityPredictor({ sandbox }) {
                 </Badge>
               </div>
               <p className="text-sm">
-                {prediction.capacity_recommendation === 'increase' && 
+                {prediction.capacity_recommendation === 'increase' &&
                   t({ en: `Recommended capacity: ${prediction.recommended_capacity}`, ar: `السعة الموصى بها: ${prediction.recommended_capacity}` })
                 }
-                {prediction.capacity_recommendation === 'maintain' && 
+                {prediction.capacity_recommendation === 'maintain' &&
                   t({ en: 'Current capacity is adequate', ar: 'السعة الحالية كافية' })
                 }
-                {prediction.capacity_recommendation === 'optimize' && 
+                {prediction.capacity_recommendation === 'optimize' &&
                   t({ en: 'Optimize resource allocation', ar: 'تحسين تخصيص الموارد' })
                 }
               </p>
@@ -140,17 +135,17 @@ export default function AICapacityPredictor({ sandbox }) {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line 
-                      type="monotone" 
-                      dataKey="predicted_demand" 
-                      stroke="#3b82f6" 
+                    <Line
+                      type="monotone"
+                      dataKey="predicted_demand"
+                      stroke="#3b82f6"
                       strokeWidth={2}
                       name={t({ en: 'Predicted Demand', ar: 'الطلب المتوقع' })}
                     />
-                    <Line 
-                      type="monotone" 
-                      dataKey="capacity_available" 
-                      stroke="#10b981" 
+                    <Line
+                      type="monotone"
+                      dataKey="capacity_available"
+                      stroke="#10b981"
                       strokeWidth={2}
                       strokeDasharray="5 5"
                       name={t({ en: 'Available Capacity', ar: 'السعة المتاحة' })}

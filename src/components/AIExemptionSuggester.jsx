@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,57 +7,53 @@ import { Sparkles, Loader2, Plus } from 'lucide-react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { 
-  buildExemptionSuggesterPrompt, 
+import {
+  buildExemptionSuggesterPrompt,
   exemptionSuggesterSchema,
-  EXEMPTION_SUGGESTER_SYSTEM_PROMPT 
+  EXEMPTION_SUGGESTER_SYSTEM_PROMPT
 } from '@/lib/ai/prompts/core';
+import { useExemptionSuggester } from '@/hooks/useAIInsights';
+import { useSystemEntities } from '@/hooks/useSystemData';
 
 export default function AIExemptionSuggester({ projectData, sandbox, onSelect }) {
   const { language, isRTL, t } = useLanguage();
   const [suggestions, setSuggestions] = useState(null);
   const [selected, setSelected] = useState([]);
 
-  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
-    showToasts: true,
-    fallbackData: null
-  });
-
-  const { data: exemptions = [] } = useQuery({
-    queryKey: ['regulatory-exemptions'],
-    queryFn: () => base44.entities.RegulatoryExemption.list()
-  });
+  const { data: exemptions = [] } = useSystemEntities('RegulatoryExemption');
+  const { suggestMutation, status, error, rateLimitInfo, isLoading, isAvailable } = useExemptionSuggester();
 
   const suggestExemptions = async () => {
-    const availableExemptions = exemptions.filter(e => 
+    const availableExemptions = exemptions.filter(e =>
       e.domain === sandbox.domain && e.status === 'active'
     );
 
-    const response = await invokeAI({
-      prompt: buildExemptionSuggesterPrompt(projectData, sandbox, availableExemptions),
-      response_json_schema: exemptionSuggesterSchema,
-      system_prompt: EXEMPTION_SUGGESTER_SYSTEM_PROMPT
+    suggestMutation.mutate({
+      projectData,
+      sandbox,
+      availableExemptions,
+      promptBuilder: buildExemptionSuggesterPrompt,
+      schema: exemptionSuggesterSchema,
+      systemPrompt: EXEMPTION_SUGGESTER_SYSTEM_PROMPT
+    }, {
+      onSuccess: (data) => {
+        setSuggestions({
+          ...data,
+          additional_notes: language === 'ar' ? data.additional_notes_ar : data.additional_notes_en,
+          recommended_exemptions: data.recommended_exemptions?.map(rec => ({
+            ...rec,
+            reasoning: language === 'ar' ? rec.reasoning_ar : rec.reasoning_en,
+            risk_notes: language === 'ar' ? rec.risk_notes_ar : rec.risk_notes_en,
+            compliance_requirements: language === 'ar' ? rec.compliance_requirements_ar : rec.compliance_requirements_en
+          }))
+        });
+      }
     });
-
-    if (response.success && response.data) {
-      const data = response.data;
-      // Map bilingual fields
-      setSuggestions({
-        ...data,
-        additional_notes: language === 'ar' ? data.additional_notes_ar : data.additional_notes_en,
-        recommended_exemptions: data.recommended_exemptions?.map(rec => ({
-          ...rec,
-          reasoning: language === 'ar' ? rec.reasoning_ar : rec.reasoning_en,
-          risk_notes: language === 'ar' ? rec.risk_notes_ar : rec.risk_notes_en,
-          compliance_requirements: language === 'ar' ? rec.compliance_requirements_ar : rec.compliance_requirements_en
-        }))
-      });
-    }
   };
 
   const handleToggle = (exemptionCode) => {
-    setSelected(prev => 
-      prev.includes(exemptionCode) 
+    setSelected(prev =>
+      prev.includes(exemptionCode)
         ? prev.filter(c => c !== exemptionCode)
         : [...prev, exemptionCode]
     );
@@ -87,7 +82,7 @@ export default function AIExemptionSuggester({ projectData, sandbox, onSelect })
       </CardHeader>
       <CardContent className="space-y-4">
         <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
-        
+
         {!suggestions ? (
           <div className="text-center py-6">
             <Button
@@ -147,7 +142,7 @@ export default function AIExemptionSuggester({ projectData, sandbox, onSelect })
                         </div>
                         <p className="font-medium text-slate-900">{exemption.title_en}</p>
                         <p className="text-sm text-slate-600 mt-1">{rec.reasoning}</p>
-                        
+
                         {rec.risk_notes && (
                           <div className="mt-2 p-2 bg-amber-50 rounded text-xs text-amber-800">
                             ⚠ {rec.risk_notes}

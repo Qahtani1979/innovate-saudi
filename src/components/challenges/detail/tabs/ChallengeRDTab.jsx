@@ -4,28 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '@/components/LanguageContext';
 import { createPageUrl } from '@/utils';
 import { Microscope, Loader2 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useChallengeLinkedRD } from '@/hooks/useChallengeLinkedData';
 
 export default function ChallengeRDTab({ challenge }) {
   const { language, t } = useLanguage();
 
-  const { data: relatedRD = [], isLoading } = useQuery({
-    queryKey: ['challenge-rd', challenge?.id],
-    queryFn: async () => {
-      // Return early if no linked IDs
-      if (!challenge?.linked_rd_ids || challenge.linked_rd_ids.length === 0) return [];
-
-      const { data } = await supabase
-        .from('rd_projects')
-        .select('*')
-        .in('id', challenge.linked_rd_ids)
-        .eq('is_deleted', false);
-
-      return data || [];
-    },
-    enabled: !!challenge?.linked_rd_ids?.length
-  });
+  const { relatedRD, isLoading } = useChallengeLinkedRD(challenge, challenge?.id);
 
   if (isLoading) {
     return <div className="text-center py-8"><Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" /></div>;

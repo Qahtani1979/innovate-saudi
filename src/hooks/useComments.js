@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -27,7 +27,7 @@ export function useComments(entityType, entityId) {
  * @param {string} entityId - Optional entity ID for targeted invalidation
  */
 export function useCommentMutations(entityType = null, entityId = null) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { user } = useAuth();
 
     /** @type {import('@tanstack/react-query').UseMutationResult<any, Error, {entity_type: string, entity_id: string, comment_text: string, user_name: string, user_email: string}>} */
@@ -67,3 +67,4 @@ export function useCommentMutations(entityType = null, entityId = null) {
 
     return { addComment, flagComment };
 }
+

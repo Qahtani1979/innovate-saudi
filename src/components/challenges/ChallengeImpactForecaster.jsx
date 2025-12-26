@@ -9,23 +9,25 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { getImpactForecasterPrompt, impactForecasterSchema } from '@/lib/ai/prompts/challenges';
 import { getSystemPrompt } from '@/lib/saudiContext';
+import { useImpactForecaster } from '@/hooks/useAIInsights';
 
 export default function ChallengeImpactForecaster({ challenge }) {
   const { language, t } = useLanguage();
   const [forecast, setForecast] = useState(null);
-  const { invokeAI, status, isLoading: forecasting, rateLimitInfo, isAvailable } = useAIWithFallback();
+  const { forecastMutation, status, forecasting, rateLimitInfo, isAvailable } = useImpactForecaster();
 
   const generateForecast = async () => {
-    const result = await invokeAI({
-      prompt: getImpactForecasterPrompt(challenge),
-      response_json_schema: impactForecasterSchema,
-      system_prompt: getSystemPrompt('municipal')
+    forecastMutation.mutate({
+      promptBuilder: getImpactForecasterPrompt,
+      challenge,
+      schema: impactForecasterSchema,
+      systemPrompt: getSystemPrompt('municipal')
+    }, {
+      onSuccess: (data) => {
+        setForecast(data);
+        toast.success(t({ en: 'Forecast generated', ar: 'التنبؤ مُنشأ' }));
+      }
     });
-
-    if (result.success) {
-      setForecast(result.data);
-      toast.success(t({ en: 'Forecast generated', ar: 'التنبؤ مُنشأ' }));
-    }
   };
 
   return (
@@ -47,7 +49,7 @@ export default function ChallengeImpactForecaster({ challenge }) {
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+        <AIStatusIndicator status={status} error={null} rateLimitInfo={rateLimitInfo} className="mb-4" />
         {!forecast && !forecasting && (
           <div className="text-center py-8">
             <TrendingUp className="h-12 w-12 text-green-300 mx-auto mb-3" />

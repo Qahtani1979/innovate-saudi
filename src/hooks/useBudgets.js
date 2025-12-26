@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -44,7 +44,7 @@ export const useBudget = (budgetId) => {
 };
 
 export const useBudgetMutations = () => {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     // Create budget
     const createBudget = useMutation({
@@ -93,3 +93,4 @@ export const useBudgetMutations = () => {
         updateBudget
     };
 };
+

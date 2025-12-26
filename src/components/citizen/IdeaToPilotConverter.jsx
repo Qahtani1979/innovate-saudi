@@ -15,14 +15,14 @@ import {
   IDEA_TO_PILOT_SCHEMA
 } from '@/lib/ai/prompts/citizen';
 import { useMunicipalities } from '@/hooks/useMunicipalities';
-import { useConvertIdeaToPilot } from '@/hooks/useCitizenIdeas';
+import { useCitizenIdeaMutations } from '@/hooks/useCitizenIdeaMutations';
 
 export default function IdeaToPilotConverter({ idea, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const { invokeAI, status, isLoading: enhancing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { data: municipalities = [] } = useMunicipalities();
-  const convertToPilot = useConvertIdeaToPilot();
+  const { convertToPilot } = useCitizenIdeaMutations();
 
   const [pilotData, setPilotData] = useState({
     title_en: idea.title || '',

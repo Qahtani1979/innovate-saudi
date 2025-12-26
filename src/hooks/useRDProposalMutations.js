@@ -1,5 +1,5 @@
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAccessControl } from '@/hooks/useAccessControl';
@@ -9,7 +9,7 @@ import { useAuth } from '@/lib/AuthContext';
  * Hook for R&D Proposal mutations (create, update, delete)
  */
 export function useRDProposalMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { checkPermission, checkEntityAccess } = useAccessControl();
     const { user } = useAuth();
 
@@ -262,3 +262,4 @@ export function useRDProposalMutations() {
         submitScore
     };
 }
+

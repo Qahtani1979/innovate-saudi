@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -6,7 +6,7 @@ import { toast } from 'sonner';
  * Hook to manage notification preferences for all users (Admin view).
  */
 export function useAllNotificationPreferences(searchTerm = '') {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const preferencesQuery = useQuery({
         queryKey: ['user-notification-preferences', searchTerm],
@@ -74,3 +74,4 @@ export function useAllNotificationPreferences(searchTerm = '') {
         updatePreferences: updatePreferences.mutate
     };
 }
+

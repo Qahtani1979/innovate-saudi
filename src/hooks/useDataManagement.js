@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { useVisibilitySystem } from './visibility/useVisibilitySystem';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -8,7 +8,7 @@ import { toast } from 'sonner';
  * Centralizes fetching, creating, updating, and deleting entities with visibility.
  */
 export function useDataManagement(t) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { fetchWithVisibility, isLoading: isVisibilityLoading } = useVisibilitySystem();
 
     // --- Fetching ---
@@ -160,3 +160,4 @@ export function useDataManagement(t) {
         isLoading
     };
 }
+

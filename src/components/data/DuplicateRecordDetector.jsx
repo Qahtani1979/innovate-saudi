@@ -6,15 +6,20 @@ import { useLanguage } from '../LanguageContext';
 import { Copy, Sparkles, Loader2, Trash2 } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { 
-  buildDuplicateDetectorPrompt, 
-  DUPLICATE_DETECTOR_SYSTEM_PROMPT, 
-  DUPLICATE_DETECTOR_SCHEMA 
+import {
+  buildDuplicateDetectorPrompt,
+  DUPLICATE_DETECTOR_SYSTEM_PROMPT,
+  DUPLICATE_DETECTOR_SCHEMA
 } from '@/lib/ai/prompts/data/duplicateDetector';
+
+import { useSystemEntities } from '@/hooks/useSystemData';
+import { useBulkMutations } from '@/hooks/useBulkMutations';
 
 export default function DuplicateRecordDetector({ entityType }) {
   const { language, t } = useLanguage();
   const [duplicates, setDuplicates] = useState([]);
+  const { data: entities = [] } = useSystemEntities(entityType);
+  const { deleteBatch } = useBulkMutations(entityType);
 
   const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
     showToasts: true,
@@ -22,8 +27,6 @@ export default function DuplicateRecordDetector({ entityType }) {
   });
 
   const scanForDuplicates = async () => {
-    const entities = await base44.entities[entityType].list();
-    
     const response = await invokeAI({
       system_prompt: DUPLICATE_DETECTOR_SYSTEM_PROMPT,
       prompt: buildDuplicateDetectorPrompt({ entities }),
@@ -36,6 +39,20 @@ export default function DuplicateRecordDetector({ entityType }) {
         records: group.record_ids.map(id => entities.find(e => e.id === id)).filter(Boolean)
       }));
       setDuplicates(enrichedDuplicates);
+    }
+  };
+
+  const handleDelete = (id) => {
+    if (confirm(t({ en: 'Are you sure you want to delete this record?', ar: 'هل أنت متأكد أنك تريد حذف هذا السجل؟' }))) {
+      deleteBatch.mutate([id], {
+        onSuccess: () => {
+          // Remove from local state
+          setDuplicates(prev => prev.map(group => ({
+            ...group,
+            records: group.records.filter(r => r.id !== id)
+          })).filter(group => group.records.length > 1)); // Remove group if only 1 or 0 records left
+        }
+      });
     }
   };
 
@@ -59,7 +76,7 @@ export default function DuplicateRecordDetector({ entityType }) {
       </CardHeader>
       <CardContent className="pt-6">
         <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
-        
+
         {!duplicates.length && !isLoading && (
           <div className="text-center py-8">
             <Copy className="h-12 w-12 text-orange-300 mx-auto mb-3" />
@@ -93,7 +110,13 @@ export default function DuplicateRecordDetector({ entityType }) {
                           <Badge variant="outline" className="text-xs font-mono mb-1">{record.code || record.id}</Badge>
                           <p className="font-medium text-slate-900">{record.title_en || record.name_en || record.title}</p>
                         </div>
-                        <Button size="sm" variant="outline" className="text-red-600">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-red-600"
+                          onClick={() => handleDelete(record.id)}
+                          disabled={deleteBatch.isPending}
+                        >
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>

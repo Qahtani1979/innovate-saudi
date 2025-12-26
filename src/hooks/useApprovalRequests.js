@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
@@ -11,7 +11,7 @@ import { useAuditLogger } from './useAuditLogger';
  */
 export function useApprovalRequests() {
     const { user } = useAuth();
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { fetchWithVisibility } = useVisibilitySystem();
     const { logAction } = useAuditLogger();
 
@@ -205,3 +205,4 @@ export const useEntityApprovalHistory = (entityId, entityType) => {
         enabled: !!entityId
     });
 };
+

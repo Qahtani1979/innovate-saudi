@@ -68,7 +68,7 @@ function ExpertOnboarding() {
     setExtracting(true);
 
     try {
-      // Use AI-powered extraction instead of base44
+      // Use AI-powered extraction
       const result = await invokeAI({
         prompt: `Analyze this expert/consultant CV and extract professional information. CV URL: ${fileUrl}
 
@@ -179,6 +179,7 @@ Extract the following in JSON format:
                 onUploadComplete={handleCVUpload}
                 type="document"
                 label={t({ en: 'Upload CV (PDF, DOCX)', ar: 'رفع السيرة الذاتية (PDF, DOCX)' })}
+                description={t({ en: 'Required for verification', ar: 'مطلوب للتحقق' })}
                 maxSize={10}
               />
               {extracting && (

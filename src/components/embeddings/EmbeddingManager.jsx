@@ -4,15 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
-import { Sparkles, Zap, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { Zap, AlertCircle, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { useEmbeddingManager } from '@/hooks/usePlatformCore';
 
 export default function EmbeddingManager({ entities = [] }) {
   const { t } = useLanguage();
-  const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(null);
 
-  console.log('EmbeddingManager entities:', entities);
+  const { embedMutation, generating } = useEmbeddingManager();
 
   const embeddableEntities = [
     { name: 'Challenge', icon: '🎯', color: 'blue' },
@@ -25,31 +25,26 @@ export default function EmbeddingManager({ entities = [] }) {
   ];
 
   const generateEmbeddings = async (entityName, mode) => {
-    setGenerating(true);
     setProgress({ entity: entityName, status: 'processing' });
 
-    try {
-      const result = await base44.functions.invoke('generateEmbeddings', {
-        entity_name: entityName,
-        mode: mode
-      });
+    embedMutation.mutate({ entityName, mode }, {
+      onSuccess: (data) => {
+        setProgress({
+          entity: entityName,
+          status: 'complete',
+          ...data
+        });
 
-      setProgress({
-        entity: entityName,
-        status: 'complete',
-        ...result.data
-      });
-
-      toast.success(t({ 
-        en: `Generated ${result.data.successful} embeddings for ${entityName}`, 
-        ar: `تم توليد ${result.data.successful} تضمينات لـ ${entityName}` 
-      }));
-    } catch (error) {
-      setProgress({ entity: entityName, status: 'error', error: error.message });
-      toast.error(t({ en: 'Embedding generation failed', ar: 'فشل توليد التضمينات' }));
-    } finally {
-      setGenerating(false);
-    }
+        toast.success(t({
+          en: `Generated ${data.successful} embeddings for ${entityName}`,
+          ar: `تم توليد ${data.successful} تضمينات لـ ${entityName}`
+        }));
+      },
+      onError: (error) => {
+        setProgress({ entity: entityName, status: 'error', error: error.message });
+        toast.error(t({ en: 'Embedding generation failed', ar: 'فشل توليد التضمينات' }));
+      }
+    });
   };
 
   return (
@@ -60,9 +55,9 @@ export default function EmbeddingManager({ entities = [] }) {
           {t({ en: '🧠 Vector Embeddings Manager', ar: '🧠 مدير التضمينات المتجهة' })}
         </CardTitle>
         <p className="text-sm text-slate-600 mt-2">
-          {t({ 
-            en: 'Generate AI embeddings for semantic search, duplicate detection, and intelligent matching', 
-            ar: 'توليد تضمينات ذكية للبحث الدلالي واكتشاف التكرار والمطابقة الذكية' 
+          {t({
+            en: 'Generate AI embeddings for semantic search, duplicate detection, and intelligent matching',
+            ar: 'توليد تضمينات ذكية للبحث الدلالي واكتشاف التكرار والمطابقة الذكية'
           })}
         </p>
       </CardHeader>
@@ -125,16 +120,15 @@ export default function EmbeddingManager({ entities = [] }) {
         </div>
 
         {progress && (
-          <div className={`p-4 rounded-lg border-2 ${
-            progress.status === 'complete' ? 'border-green-300 bg-green-50' :
+          <div className={`p-4 rounded-lg border-2 ${progress.status === 'complete' ? 'border-green-300 bg-green-50' :
             progress.status === 'error' ? 'border-red-300 bg-red-50' :
-            'border-blue-300 bg-blue-50'
-          }`}>
+              'border-blue-300 bg-blue-50'
+            }`}>
             <div className="flex items-start gap-3">
               {progress.status === 'complete' && <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />}
               {progress.status === 'error' && <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />}
               {progress.status === 'processing' && <Loader2 className="h-5 w-5 text-blue-600 mt-0.5 animate-spin" />}
-              
+
               <div className="flex-1">
                 <p className="font-semibold text-slate-900">
                   {progress.entity} - {progress.status === 'complete' ? 'Complete' : progress.status === 'error' ? 'Error' : 'Processing...'}

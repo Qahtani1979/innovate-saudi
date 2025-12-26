@@ -1,8 +1,4 @@
-/**
- * Pilot Mutations Hook
- */
-
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
@@ -15,7 +11,7 @@ import { useAccessControl } from '@/hooks/useAccessControl';
  * Includes audit logging and email notifications.
  */
 export function usePilotMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { user } = useAuth();
     const { logCrudOperation, logStatusChange } = useAuditLogger();
     const { triggerEmail } = useEmailTrigger();
@@ -274,6 +270,60 @@ export function usePilotMutations() {
     });
 
     /**
+     * Exit Pilot from Sandbox
+     * Handles complex exit logic: updating pilot, updating sandbox, notifying
+     */
+    const exitPilotFromSandbox = useMutation({
+        /** @param {{ pilotId: string, sandboxId: string, exitData: any, currentSandboxStats: any }} params */
+        mutationFn: async ({ pilotId, sandboxId, exitData, currentSandboxStats }) => {
+            const userEmail = user?.email;
+
+            // 1. Update Pilot
+            const { error: pilotError } = await supabase
+                .from('pilots')
+                .update({
+                    stage: 'completed',
+                    sandbox_exit_date: new Date().toISOString().split('T')[0],
+                    sandbox_exit_type: exitData.exit_type,
+                    sandbox_exit_data: exitData,
+                    recommendation: exitData.recommendation
+                })
+                .eq('id', pilotId);
+            if (pilotError) throw pilotError;
+
+            // 2. Update Sandbox Capacity
+            if (sandboxId) {
+                const { error: sandboxError } = await supabase
+                    .from('sandboxes')
+                    .update({
+                        current_pilots: (currentSandboxStats.current_pilots || 1) - 1,
+                        total_completed_projects: (currentSandboxStats.total_completed_projects || 0) + 1
+                    })
+                    .eq('id', sandboxId);
+                if (sandboxError) throw sandboxError;
+            }
+
+            // 3. Create Notification
+            await supabase.from('notifications').insert([{
+                type: 'sandbox_exit',
+                title: `Project Exited Sandbox`,
+                message: `Project has completed its sandbox phase with ${exitData.exit_type}.`,
+                severity: exitData.exit_type === 'successful_completion' ? 'success' : 'warning',
+                link: `/PilotDetail?id=${pilotId}`,
+                user_email: userEmail // Assuming simple notification, adjust as needed
+            }]);
+        },
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['pilot', variables.pilotId] });
+            queryClient.invalidateQueries({ queryKey: ['pilots'] });
+            if (variables.sandboxId) {
+                queryClient.invalidateQueries({ queryKey: ['sandbox', variables.sandboxId] });
+            }
+            toast.success('Sandbox exit processed successfully');
+        }
+    });
+
+    /**
      * Start Iteration Loop
      */
     const startIteration = useMutation({
@@ -397,11 +447,90 @@ export function usePilotMutations() {
         }
     });
 
+    /**
+     * Convert Match to Pilot
+     * Handles creating partnership, creating pilot, and updating application status.
+     */
+    const convertMatchToPilot = useMutation({
+        mutationFn: async ({ application, challenge, pilotData, partnershipData }) => {
+            // 1. Create Partnership Record
+            const { error: partnershipError } = await supabase
+                .from('organization_partnerships')
+                .insert({
+                    provider_id: application.organization_id,
+                    partner_id: challenge?.organization_id,
+                    match_id: application.matched_challenges?.[0], // Best effort linking
+                    status: 'active',
+                    start_date: new Date().toISOString(),
+                    agreement_url: pilotData.partnership_agreement_url,
+                    total_value: pilotData.budget,
+                    ...partnershipData
+                });
+
+            if (partnershipError) {
+                console.error('Partnership creation failed:', partnershipError);
+                // We typically continue but let's log it.
+            }
+
+            // 2. Create Pilot
+            const { data: pilot, error: pilotError } = await supabase
+                .from('pilots')
+                .insert({
+                    ...pilotData,
+                    challenge_id: challenge?.id,
+                    solution_id: application.organization_id,
+                    stage: 'design',
+                    sector: challenge?.sector,
+                    municipality_id: challenge?.municipality_id
+                })
+                .select()
+                .single();
+
+            if (pilotError) throw pilotError;
+
+            // 3. Update Matchmaker Application
+            const { error: appError } = await supabase
+                .from('matchmaker_applications')
+                .update({
+                    conversion_status: 'pilot_created',
+                    converted_pilot_id: pilot.id,
+                    stage: 'pilot_conversion'
+                })
+                .eq('id', application.id);
+
+            if (appError) throw appError;
+
+            // 4. Send Email
+            await triggerEmail('pilot.created', {
+                entityType: 'pilot',
+                entityId: pilot.id,
+                variables: {
+                    pilot_title: pilotData.title_en || pilotData.title_ar,
+                    pilot_code: pilot.code || `PLT-${pilot.id?.substring(0, 8)}`,
+                    organization_name: application.organization_name_en,
+                    challenge_title: challenge?.title_en
+                }
+            }).catch(err => console.error('Email trigger failed:', err));
+
+            return pilot;
+        },
+        onSuccess: (pilot) => {
+            queryClient.invalidateQueries({ queryKey: ['pilots'] });
+            queryClient.invalidateQueries({ queryKey: ['matchmaker-applications'] });
+            toast.success('Pilot & Partnership created successfully!');
+        },
+        onError: (error) => {
+            console.error('Conversion failed:', error);
+            toast.error('Failed to create pilot');
+        }
+    });
+
     return {
         createPilot,
         updatePilot,
         changeStage,
         deletePilot,
+        exitPilotFromSandbox, // New method
         refreshPilots,  // ✅ Gold Standard: Export refresh method
         isCreating: createPilot.isPending,
         isUpdating: updatePilot.isPending,
@@ -412,33 +541,18 @@ export function usePilotMutations() {
         enrollCitizen,
         approveBudget: approveBudget.mutateAsync,
         isApprovingBudget: approveBudget.isPending,
-        isApprovingBudget: approveBudget.isPending,
         processBudgetApproval,
         saveScalingReadiness: saveScalingReadiness.mutateAsync,
-        isSavingReadiness: saveScalingReadiness.isPending
+        isSavingReadiness: saveScalingReadiness.isPending,
+        convertMatchToPilot
     };
-}
-
-function useBudgetApprovalMutation() {
-    return useMutation({
-        mutationFn: async ({ pilot_id, phase, amount, action, comments }) => {
-            const { error } = await supabase.functions.invoke('budgetApproval', {
-                body: { action, pilot_id, phase, amount, comments }
-            });
-            if (error) throw error;
-        },
-        onSuccess: () => {
-            // Invalidation strategy might need adjustment based on where budget approvals are shown
-            // but 'pilots' covers the main list.
-        }
-    });
 }
 
 /**
  * Bulk Archive Pilots
  */
 function useBulkArchivePilots() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { checkPermission } = useAccessControl();
 
     return useMutation({
@@ -462,7 +576,7 @@ function useBulkArchivePilots() {
  * Bulk Delete Pilots
  */
 function useBulkDeletePilots() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { checkPermission } = useAccessControl();
 
     return useMutation({
@@ -483,3 +597,4 @@ function useBulkDeletePilots() {
 }
 
 export default usePilotMutations;
+

@@ -1,9 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "sonner";
 
 export function useOrganizationPartnerships(organizationId) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const query = useQuery({
         queryKey: ['organization-partnerships', organizationId],
@@ -91,3 +91,4 @@ export function useOrganizationPartnerships(organizationId) {
 }
 
 export default useOrganizationPartnerships;
+

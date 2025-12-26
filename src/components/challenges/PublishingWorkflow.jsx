@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
+import { useChallengeMutations } from "@/hooks/useChallengeMutations";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -14,7 +13,7 @@ import { toast } from 'sonner';
 
 export default function PublishingWorkflow({ challenge, onClose, isCreationMode = false }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+
   const { user } = useAuth();
   const [publishData, setPublishData] = useState({
     is_published: challenge?.is_published || false,
@@ -36,26 +35,20 @@ export default function PublishingWorkflow({ challenge, onClose, isCreationMode 
     );
   }
 
-  const publishMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('challenges')
-        .update({
-          is_published: publishData.is_published,
-          is_confidential: publishData.is_confidential,
-          publishing_approved_by: user?.email,
-          publishing_approved_date: new Date().toISOString()
-        })
-        .eq('id', challenge.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['challenge', challenge.id]);
-      queryClient.invalidateQueries(['challenges']);
-      toast.success(t({ en: 'Publishing status updated', ar: 'تم تحديث حالة النشر' }));
-      if (onClose) onClose();
-    }
-  });
+  const { updatePublishingSettings } = useChallengeMutations();
+
+  const handlePublish = () => {
+    updatePublishingSettings.mutate({
+      id: challenge.id,
+      isPublished: publishData.is_published,
+      isConfidential: publishData.is_confidential,
+      notes: publishData.approval_notes
+    }, {
+      onSuccess: () => {
+        if (onClose) onClose();
+      }
+    });
+  };
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -77,9 +70,9 @@ export default function PublishingWorkflow({ challenge, onClose, isCreationMode 
                 </h4>
               </div>
               <p className="text-sm text-slate-600">
-                {t({ 
-                  en: 'Make this challenge visible in public portal and provider dashboards for solution discovery', 
-                  ar: 'اجعل هذا التحدي مرئياً في البوابة العامة ولوحات مزودي الحلول' 
+                {t({
+                  en: 'Make this challenge visible in public portal and provider dashboards for solution discovery',
+                  ar: 'اجعل هذا التحدي مرئياً في البوابة العامة ولوحات مزودي الحلول'
                 })}
               </p>
             </div>
@@ -99,9 +92,9 @@ export default function PublishingWorkflow({ challenge, onClose, isCreationMode 
                 </h4>
               </div>
               <p className="text-sm text-slate-600">
-                {t({ 
-                  en: 'Restrict access to authorized personnel only - hide from public/provider portals', 
-                  ar: 'تقييد الوصول للمخولين فقط - إخفاء من البوابات العامة' 
+                {t({
+                  en: 'Restrict access to authorized personnel only - hide from public/provider portals',
+                  ar: 'تقييد الوصول للمخولين فقط - إخفاء من البوابات العامة'
                 })}
               </p>
             </div>
@@ -138,7 +131,7 @@ export default function PublishingWorkflow({ challenge, onClose, isCreationMode 
             </p>
             <div className="flex gap-2">
               <Badge className={publishData.is_published ? 'bg-green-600' : 'bg-slate-400'}>
-                {publishData.is_published 
+                {publishData.is_published
                   ? t({ en: 'Published', ar: 'منشور' })
                   : t({ en: 'Draft', ar: 'مسودة' })
                 }
@@ -160,11 +153,11 @@ export default function PublishingWorkflow({ challenge, onClose, isCreationMode 
           {t({ en: 'Cancel', ar: 'إلغاء' })}
         </Button>
         <Button
-          onClick={() => publishMutation.mutate()}
-          disabled={publishMutation.isPending}
+          onClick={handlePublish}
+          disabled={updatePublishingSettings.isPending}
           className="bg-gradient-to-r from-blue-600 to-teal-600"
         >
-          {publishMutation.isPending ? (
+          {updatePublishingSettings.isPending ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               {t({ en: 'Saving...', ar: 'جاري الحفظ...' })}

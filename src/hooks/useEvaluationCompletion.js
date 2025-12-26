@@ -1,11 +1,11 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Hook to handle evaluation completion with consensus checking
  */
 export function useEvaluationCompletion() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const completeEvaluation = useMutation({
         mutationFn: async ({ entityType, entityId }) => {
@@ -30,3 +30,4 @@ export function useEvaluationCompletion() {
 }
 
 export default useEvaluationCompletion;
+

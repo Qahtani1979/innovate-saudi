@@ -4,13 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Network, CheckCircle2 } from 'lucide-react';
-import { useCitizenIdeas } from '@/hooks/useCitizenIdeas';
+import { useCitizenIdeaMutations } from '@/hooks/useCitizenIdeaMutations';
 import { useLanguage } from '../LanguageContext';
 
 export default function MergeDuplicatesDialog({ primaryIdea, duplicateIdeas, onClose }) {
   const { t } = useLanguage();
   const [selectedIds, setSelectedIds] = useState([]);
-  const { mergeIdeas } = useCitizenIdeas();
+  const { mergeIdeas } = useCitizenIdeaMutations();
 
   const handleMerge = () => {
     // Merge all selected ideas into primary

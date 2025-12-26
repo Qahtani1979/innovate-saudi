@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useMatchedSolutions } from '@/hooks/useSolutions';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,45 +13,7 @@ import ExpressInterestButton from '../solutions/ExpressInterestButton';
 export default function QuickSolutionsMarketplace({ municipalityId, challenges = [] }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: matchedSolutions = [] } = useQuery({
-    queryKey: ['matched-solutions', municipalityId],
-    queryFn: async () => {
-      if (challenges.length === 0) return [];
-
-      // This is a simplified "matching" query. In a real scenario, this would likely be an Edge Function or a complex join.
-      // For now, we will fetch solutions that match the sector of the challenges.
-
-      const sectors = [...new Set(challenges.map(c => c.sector).filter(Boolean))];
-
-      if (sectors.length === 0) {
-        // If no sectors, just return top verified solutions
-        const { data } = await supabase
-          .from('solutions')
-          .select('*, providers(name_en, name_ar)')
-          .eq('is_published', true)
-          .eq('is_verified', true)
-          .limit(6);
-        return data?.map(s => ({
-          ...s,
-          provider_name: language === 'ar' ? s.providers?.name_ar : s.providers?.name_en
-        })) || [];
-      }
-
-      const { data } = await supabase
-        .from('solutions')
-        .select('*, providers(name_en, name_ar)')
-        .in('sector', sectors)
-        .eq('is_published', true)
-        .eq('is_verified', true)
-        .limit(6);
-
-      return data?.map(s => ({
-        ...s,
-        provider_name: language === 'ar' ? s.providers?.name_ar : s.providers?.name_en
-      })) || [];
-    },
-    enabled: challenges.length > 0
-  });
+  const { data: matchedSolutions = [] } = useMatchedSolutions(municipalityId, challenges);
 
   if (matchedSolutions.length === 0) return null;
 

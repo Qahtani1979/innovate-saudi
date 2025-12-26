@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -34,7 +34,7 @@ export function useChallengeInterests(challengeId) {
 }
 
 export function useChallengeInterestMutations(challengeId) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const addInterest = useMutation({
         mutationFn: async (relationData) => {
@@ -68,3 +68,4 @@ export function useChallengeInterestMutations(challengeId) {
 
     return { addInterest, removeInterest };
 }
+

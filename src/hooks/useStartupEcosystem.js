@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
@@ -94,7 +94,7 @@ export const useStartupProfile = useStartup;
  */
 
 export function usePartnerships(startupId) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const query = useQuery({
         queryKey: ['partnerships', startupId],
@@ -154,7 +154,7 @@ export function usePartnerships(startupId) {
  */
 
 export function useStartupMentorship(startupId) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { triggerEmail } = useEmailTrigger();
 
     const potentialMentors = useQuery({
@@ -251,7 +251,7 @@ export function useRegions() {
 }
 
 export function useStartupOnboarding() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const submitOnboarding = useMutation({
         /**
@@ -308,3 +308,4 @@ export function useStartupEcosystem(startupId) {
         isLoading: sl || pl || mentorshipHistory.isLoading
     };
 }
+

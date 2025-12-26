@@ -14,12 +14,13 @@ import {
   buildIdeaToRDConverterPrompt,
   IDEA_TO_RD_CONVERTER_SCHEMA
 } from '@/lib/ai/prompts/citizen';
-import { useConvertIdeaToRD } from '@/hooks/useCitizenIdeas';
+import { useCitizenIdeaMutations } from '@/hooks/useCitizenIdeaMutations';
 
 export default function IdeaToRDConverter({ idea, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const { invokeAI, status, isLoading, error: aiError, isAvailable, rateLimitInfo } = useAIWithFallback();
-  const { mutate: convertToRD, isPending: isConverting } = useConvertIdeaToRD();
+  const { convertToRD } = useCitizenIdeaMutations();
+  const isConverting = convertToRD.isPending;
 
   const [rdData, setRdData] = useState({
     title_en: idea.title || '',
@@ -50,7 +51,7 @@ export default function IdeaToRDConverter({ idea, onClose }) {
   };
 
   const handleConvert = () => {
-    convertToRD({ idea, rdData }, {
+    convertToRD.mutate({ idea, rdData }, {
       onSuccess: () => {
         if (onClose) onClose();
       }

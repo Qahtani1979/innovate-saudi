@@ -112,7 +112,7 @@ export default function ExpertOnboardingWizard({ onComplete, onSkip }) {
     setIsExtractingCV(true);
 
     try {
-      // Use AI-powered extraction instead of base44
+      // Use AI-powered extraction
       const result = await invokeAI({
         prompt: `Analyze this expert/consultant CV and extract professional information. CV URL: ${fileUrl}
 

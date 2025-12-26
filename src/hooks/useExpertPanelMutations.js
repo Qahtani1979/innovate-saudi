@@ -1,9 +1,9 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export function useExpertPanelMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const createPanel = useMutation({
         mutationFn: async (data) => {
@@ -33,3 +33,4 @@ export function useExpertPanelMutations() {
         updatePanel
     };
 }
+

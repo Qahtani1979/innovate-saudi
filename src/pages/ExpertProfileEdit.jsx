@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useExpertProfileById } from '@/hooks/useExpertData';
 import { useExpertMutations } from '@/hooks/useExpertMutations';
 import { useNavigate } from 'react-router-dom';

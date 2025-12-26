@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -55,7 +55,7 @@ export function usePilotApprovals(pilotId) {
  * Hook for pilot comments with add mutation
  */
 export function usePilotComments(pilotId) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const query = useQuery({
         queryKey: ['pilot-comments', pilotId],
@@ -170,3 +170,4 @@ export function usePilotsList({ stage, sector, recommendation, searchCode, exclu
 }
 
 export default usePilot;
+

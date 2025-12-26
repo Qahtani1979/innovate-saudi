@@ -3,11 +3,11 @@
  * Handles logic checking and triggering escalation for R&D proposals.
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useProposalEscalation() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const escalateMutation = useMutation({
         mutationFn: async ({ proposal, rdCall, escalationData }) => {
@@ -60,3 +60,4 @@ export function useProposalEscalation() {
 
     return { escalateMutation };
 }
+

@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
@@ -7,7 +7,7 @@ import { toast } from 'sonner';
  * Hook for managing match status updates (accept/reject).
  */
 export function useMatchMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { user } = useAuth();
 
     const updateMatchStatus = useMutation({
@@ -42,3 +42,4 @@ export function useMatchMutations() {
 
     return { updateMatchStatus };
 }
+

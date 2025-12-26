@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -10,7 +10,7 @@ export const entityTypeToTable = {
 };
 
 export function useEntityCloner() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     const cloneEntityMutation = useMutation({
         mutationFn: async ({ entity, entityType, newCode }) => {
@@ -62,3 +62,4 @@ export function useEntityCloner() {
 
     return { cloneEntityMutation };
 }
+

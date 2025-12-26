@@ -3,7 +3,7 @@
  * Implements: del-1 to del-8 (Delegation & Escalation checks)
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
@@ -21,7 +21,7 @@ export const CHALLENGE_PERMISSIONS = {
 
 export function useChallengeDelegation(challengeId = null) {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
   const { logAuditEvent } = useAuditLogger();
 
   // del-1: Check if user has delegated access to this challenge
@@ -327,3 +327,4 @@ export function useChallengeDelegation(challengeId = null) {
 }
 
 export default useChallengeDelegation;
+

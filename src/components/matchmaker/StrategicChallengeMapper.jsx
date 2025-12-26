@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from "@/integrations/supabase/client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +8,7 @@ import { useLanguage } from '../LanguageContext';
 import { Target, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { useStrategicChallenges } from '@/hooks/useChallenges';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { getStrategicChallengeMapperPrompt, strategicChallengeMapperSchema } from '@/lib/ai/prompts/matchmaker';
 import { getSystemPrompt } from '@/lib/saudiContext';
@@ -16,19 +16,9 @@ import { getSystemPrompt } from '@/lib/saudiContext';
 export default function StrategicChallengeMapper({ application, onUpdate }) {
   const { language, isRTL, t } = useLanguage();
   const [selectedChallenges, setSelectedChallenges] = useState(application.strategic_challenges || []);
-  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo, error } = useAIWithFallback();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['strategic-challenges'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*');
-
-      if (error) throw error;
-      return data.filter(c => c.priority === 'tier_1' || c.priority === 'tier_2');
-    }
-  });
+  const { data: challenges = [] } = useStrategicChallenges();
 
   const handleAIMatch = async () => {
     const result = await invokeAI({
@@ -73,7 +63,7 @@ export default function StrategicChallengeMapper({ application, onUpdate }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
 
         <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
           <p className="text-sm text-amber-900">

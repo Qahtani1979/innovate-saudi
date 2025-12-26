@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,19 +10,14 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { buildHistoricalTrendPrompt, historicalTrendSchema, HISTORICAL_TREND_SYSTEM_PROMPT } from '@/lib/ai/prompts/data';
 import { getSystemPrompt } from '@/lib/saudiContext';
+import { useSystemTrends } from '@/hooks/useSystemData';
 
 export default function HistoricalTrendAnalyzer({ entityType, metric }) {
   const { language, t } = useLanguage();
   const [insights, setInsights] = useState(null);
   const { invokeAI, status, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: trends = [] } = useQuery({
-    queryKey: ['trends', entityType, metric],
-    queryFn: async () => {
-      const all = await base44.entities.TrendEntry.list('-created_date', 30);
-      return all.filter(e => e.entity_type === entityType && e.metric_name === metric);
-    }
-  });
+  const { data: trends = [] } = useSystemTrends(entityType, metric);
 
   const chartData = trends.map(t => ({
     date: new Date(t.created_date).toLocaleDateString(),
@@ -33,7 +27,7 @@ export default function HistoricalTrendAnalyzer({ entityType, metric }) {
   const analyzePattern = async () => {
     const result = await invokeAI({
       prompt: buildHistoricalTrendPrompt(metric, trends),
-      systemPrompt: getSystemPrompt(HISTORICAL_TREND_SYSTEM_PROMPT),
+      system_prompt: getSystemPrompt(HISTORICAL_TREND_SYSTEM_PROMPT),
       response_json_schema: historicalTrendSchema
     });
 
@@ -60,7 +54,7 @@ export default function HistoricalTrendAnalyzer({ entityType, metric }) {
             {t({ en: 'Analyze', ar: 'تحليل' })}
           </Button>
         </div>
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mt-2" />
+        <AIStatusIndicator status={status} error={null} rateLimitInfo={rateLimitInfo} className="mt-2" />
       </CardHeader>
       <CardContent className="pt-6">
         {chartData.length > 0 && (

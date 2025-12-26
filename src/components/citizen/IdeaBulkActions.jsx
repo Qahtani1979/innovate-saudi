@@ -3,12 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle2, XCircle, Users, Loader2 } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
-import { useCitizenIdeas } from '@/hooks/useCitizenIdeas';
+import { useCitizenIdeaMutations } from '@/hooks/useCitizenIdeaMutations';
 
 export default function IdeaBulkActions({ selectedIds, onComplete }) {
   const { t } = useLanguage();
   const [action, setAction] = useState('');
-  const { bulkUpdateIdeas } = useCitizenIdeas();
+  const { bulkUpdateIdeas } = useCitizenIdeaMutations();
 
   const handleBulkAction = () => {
     if (!action || selectedIds.length === 0) return;

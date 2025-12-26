@@ -1,4 +1,4 @@
-import { usePermissions } from '../permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 
 // Row-level security rules
 const RLS_RULES = {

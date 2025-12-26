@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/LanguageContext';
@@ -66,7 +66,7 @@ export function useNewsArticle(id) {
  * Hook for news article CRUD operations
  */
 export function useNewsArticleMutations() {
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
 
   /**
    * @param {Object} article
@@ -282,3 +282,4 @@ export function useNewsByCategory(category, limit = 10) {
     enabled: !!category
   });
 }
+

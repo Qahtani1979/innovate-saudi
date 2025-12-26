@@ -1,9 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useImpactStories(options = {}) {
   const { strategicPlanId, entityType, entityId, publishedOnly = false, featuredOnly = false } = options;
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
 
   const { data: stories = [], isLoading, error } = useQuery({
     queryKey: ['impact-stories', strategicPlanId, entityType, entityId, publishedOnly, featuredOnly],
@@ -130,3 +130,4 @@ export function useImpactStories(options = {}) {
 }
 
 export default useImpactStories;
+

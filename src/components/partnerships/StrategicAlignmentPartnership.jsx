@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useStrategicPlans } from '@/hooks/useStrategies';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,28 +10,19 @@ import { createPageUrl } from '../../utils';
 export default function StrategicAlignmentPartnership({ partnership }) {
   const { language, t } = useLanguage();
 
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans-alignment'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('strategic_plans')
-        .select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: strategicPlans = [] } = useStrategicPlans();
 
-  const linkedPlans = strategicPlans.filter(p => 
+  const linkedPlans = strategicPlans.filter(p =>
     partnership?.strategic_plan_ids?.includes(p.id)
   );
 
-  const linkedObjectives = strategicPlans.flatMap(plan => 
-    (plan.objectives || []).filter(obj => 
+  const linkedObjectives = strategicPlans.flatMap(plan =>
+    (plan.objectives || []).filter(obj =>
       partnership?.strategic_objective_ids?.includes(obj.id)
     ).map(obj => ({ ...obj, planName: language === 'ar' && plan.name_ar ? plan.name_ar : plan.name_en }))
   );
 
-  const alignmentScore = partnership?.strategic_objective_ids?.length 
+  const alignmentScore = partnership?.strategic_objective_ids?.length
     ? Math.min(100, (partnership.strategic_objective_ids.length * 25))
     : 0;
 

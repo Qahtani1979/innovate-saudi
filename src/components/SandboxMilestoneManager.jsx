@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
+import { useSandboxMilestones } from '@/hooks/useSandboxMilestones';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,88 +15,24 @@ import { toast } from 'sonner';
 
 export default function SandboxMilestoneManager({ application }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMilestone, setEditingMilestone] = useState(null);
   const [formData, setFormData] = useState({
-    title: '',
+    milestone_name: '',
     description: '',
-    target_date: '',
+    due_date: '',
     deliverables: '',
     status: 'pending'
   });
 
-  const { data: milestones = [] } = useQuery({
-    queryKey: ['sandbox-milestones', application?.id],
-    queryFn: async () => {
-      const { supabase } = await import('@/integrations/supabase/client');
-      const { data, error } = await supabase
-        .from('sandbox_project_milestones')
-        .select('*')
-        .eq('application_id', application?.id)
-        .order('target_date', { ascending: true });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!application
-  });
-
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      const { supabase } = await import('@/integrations/supabase/client');
-      const { error } = await supabase
-        .from('sandbox_project_milestones')
-        .insert([{
-          ...data,
-          application_id: application.id
-        }]);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['sandbox-milestones']);
-      setDialogOpen(false);
-      resetForm();
-      toast.success('Milestone created');
-    }
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }) => {
-      const { supabase } = await import('@/integrations/supabase/client');
-      const { error } = await supabase
-        .from('sandbox_project_milestones')
-        .update(data)
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['sandbox-milestones']);
-      setDialogOpen(false);
-      resetForm();
-      toast.success('Milestone updated');
-    }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      const { supabase } = await import('@/integrations/supabase/client');
-      const { error } = await supabase
-        .from('sandbox_project_milestones')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['sandbox-milestones']);
-      toast.success('Milestone deleted');
-    }
-  });
+  const { milestones, createMilestone, updateMilestone, deleteMilestone } = useSandboxMilestones(application?.id);
 
   const resetForm = () => {
     setFormData({
-      title: '',
+      milestone_name: '',
       description: '',
-      target_date: '',
+      due_date: '',
       deliverables: '',
       status: 'pending'
     });
@@ -105,9 +42,9 @@ export default function SandboxMilestoneManager({ application }) {
   const handleEdit = (milestone) => {
     setEditingMilestone(milestone);
     setFormData({
-      title: milestone.title,
+      milestone_name: milestone.milestone_name,
       description: milestone.description || '',
-      target_date: milestone.target_date,
+      due_date: milestone.due_date,
       deliverables: milestone.deliverables || '',
       status: milestone.status
     });
@@ -116,9 +53,22 @@ export default function SandboxMilestoneManager({ application }) {
 
   const handleSubmit = () => {
     if (editingMilestone) {
-      updateMutation.mutate({ id: editingMilestone.id, data: formData });
+      updateMilestone.mutate(
+        { id: editingMilestone.id, data: formData },
+        {
+          onSuccess: () => {
+            setDialogOpen(false);
+            resetForm();
+          }
+        }
+      );
     } else {
-      createMutation.mutate(formData);
+      createMilestone.mutate(formData, {
+        onSuccess: () => {
+          setDialogOpen(false);
+          resetForm();
+        }
+      });
     }
   };
 
@@ -157,8 +107,8 @@ export default function SandboxMilestoneManager({ application }) {
                 <div>
                   <Label>{t({ en: 'Title', ar: 'العنوان' })}</Label>
                   <Input
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    value={formData.milestone_name}
+                    onChange={(e) => setFormData({ ...formData, milestone_name: e.target.value })}
                     placeholder="Complete safety testing phase"
                   />
                 </div>
@@ -174,8 +124,8 @@ export default function SandboxMilestoneManager({ application }) {
                   <Label>{t({ en: 'Target Date', ar: 'التاريخ المستهدف' })}</Label>
                   <Input
                     type="date"
-                    value={formData.target_date}
-                    onChange={(e) => setFormData({ ...formData, target_date: e.target.value })}
+                    value={formData.due_date}
+                    onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
                   />
                 </div>
                 <div>
@@ -205,7 +155,7 @@ export default function SandboxMilestoneManager({ application }) {
                   <Button variant="outline" onClick={() => setDialogOpen(false)}>
                     {t({ en: 'Cancel', ar: 'إلغاء' })}
                   </Button>
-                  <Button onClick={handleSubmit} disabled={!formData.title}>
+                  <Button onClick={handleSubmit} disabled={!formData.milestone_name}>
                     {t({ en: 'Save', ar: 'حفظ' })}
                   </Button>
                 </div>
@@ -220,7 +170,7 @@ export default function SandboxMilestoneManager({ application }) {
             {milestones.map((milestone) => {
               const config = statusConfig[milestone.status] || statusConfig.pending;
               const Icon = config.icon;
-              const isOverdue = new Date(milestone.target_date) < new Date() && milestone.status !== 'completed';
+              const isOverdue = new Date(milestone.due_date) < new Date() && milestone.status !== 'completed';
 
               return (
                 <div key={milestone.id} className="p-4 border rounded-lg hover:border-blue-300 transition-colors">
@@ -228,7 +178,7 @@ export default function SandboxMilestoneManager({ application }) {
                     <div className="flex items-start gap-3 flex-1">
                       <Icon className={`h-5 w-5 ${config.color} mt-0.5`} />
                       <div className="flex-1">
-                        <h4 className="font-semibold text-slate-900">{milestone.title}</h4>
+                        <h4 className="font-semibold text-slate-900">{milestone.milestone_name}</h4>
                         {milestone.description && (
                           <p className="text-sm text-slate-600 mt-1">{milestone.description}</p>
                         )}
@@ -238,7 +188,7 @@ export default function SandboxMilestoneManager({ application }) {
                           </Badge>
                           <span className={`text-xs ${isOverdue ? 'text-red-600 font-medium' : 'text-slate-500'}`}>
                             <Calendar className="h-3 w-3 inline mr-1" />
-                            {milestone.target_date}
+                            {milestone.due_date}
                           </span>
                         </div>
                         {milestone.deliverables && (
@@ -255,7 +205,7 @@ export default function SandboxMilestoneManager({ application }) {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => deleteMutation.mutate(milestone.id)}
+                        onClick={() => deleteMilestone.mutate(milestone.id)}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -275,3 +225,4 @@ export default function SandboxMilestoneManager({ application }) {
     </Card>
   );
 }
+

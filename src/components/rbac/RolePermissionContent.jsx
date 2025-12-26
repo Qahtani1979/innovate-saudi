@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { useLanguage } from '@/components/LanguageContext';
 import { useRoles } from '@/hooks/useRoles';
 import { useUserProfile, useAllUserProfiles } from '@/hooks/useUserProfile';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
-import { usePermissions } from '@/components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { toast } from 'sonner';
 import PermissionTemplateManager from '@/components/access/PermissionTemplateManager';
 import PermissionUsageAnalytics from '@/components/access/PermissionUsageAnalytics';
@@ -123,7 +123,7 @@ const PERMISSION_CATEGORIES = {
 export default function RolePermissionContent() {
   const { language, t } = useLanguage();
   const { isAdmin, hasPermission } = usePermissions();
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
   const [formData, setFormData] = useState({ name: '', description: '', permissions: [] });
@@ -490,3 +490,4 @@ export default function RolePermissionContent() {
     </div>
   );
 }
+

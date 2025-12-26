@@ -3,7 +3,7 @@ import { useLanguage } from '@/components/LanguageContext';
 import { useActivePlan } from '@/contexts/StrategicPlanContext';
 import { useStrategicPlanInvalidator } from '@/hooks/useStrategicPlanInvalidator';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
-import { usePermissions } from '@/components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useApprovalRequest } from '@/hooks/useApprovalRequest';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';

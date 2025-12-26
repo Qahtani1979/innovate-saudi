@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,39 +8,19 @@ import { useLanguage } from './LanguageContext';
 import { CheckCircle2, X, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { useRDMutations } from '@/hooks/useRDMutations';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function RDOutputValidation({ project, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+
   const [validationResults, setValidationResults] = useState(null);
   const [validatorNotes, setValidatorNotes] = useState('');
   const { invokeAI, status, isLoading: validating, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const validateMutation = useMutation({
-    mutationFn: async (data) => {
-      const { supabase } = await import('@/integrations/supabase/client');
+  const { validateProjectOutputs } = useRDMutations();
 
-      const { error } = await supabase
-        .from('rd_projects')
-        .update({
-          output_validation: {
-            validated: true,
-            validation_date: new Date().toISOString(),
-            validator_notes: data.notes,
-            validation_results: data.results,
-            quality_score: data.quality_score
-          }
-        })
-        .eq('id', project.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['rd-project']);
-      toast.success(t({ en: 'Outputs validated', ar: 'تم التحقق من المخرجات' }));
-      onClose();
-    }
-  });
+  /* removed validateMutation */
 
   const runAIValidation = async () => {
     const prompt = `Validate R&D project outputs:
@@ -97,10 +76,15 @@ Return structured validation.`;
   };
 
   const handleValidate = () => {
-    validateMutation.mutate({
+    validateProjectOutputs.mutate({
+      projectId: project.id,
       notes: validatorNotes,
       results: validationResults,
-      quality_score: validationResults.quality_score
+      qualityScore: validationResults.quality_score
+    }, {
+      onSuccess: () => {
+        onClose();
+      }
     });
   };
 
@@ -217,7 +201,7 @@ Return structured validation.`;
               </Button>
               <Button
                 onClick={handleValidate}
-                disabled={validateMutation.isPending}
+                disabled={validateProjectOutputs.isPending}
                 className="flex-1 bg-purple-600 hover:bg-purple-700"
               >
                 <CheckCircle2 className="h-4 w-4 mr-2" />

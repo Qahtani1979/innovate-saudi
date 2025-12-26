@@ -1,8 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useProposalReviewData() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     // 1. Fetch proposals
     const { data: proposals = [], isLoading: proposalsLoading } = useQuery({
@@ -41,3 +41,4 @@ export function useProposalReviewData() {
         checkConsensus
     };
 }
+

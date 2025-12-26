@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
-import { 
+import {
   Database, Shield, Code, CheckCircle2, Copy, Download,
   ChevronDown, ChevronRight, AlertTriangle
 } from 'lucide-react';
@@ -351,7 +351,7 @@ USING (
       policies: [
         {
           name: 'user_view_own',
-          sql: `-- User entity has built-in RLS from Base44 platform
+          sql: `-- User entity has built-in RLS from platform
 -- Admin can view all, users can view only their own record
 -- No additional policies needed unless custom requirements`
         }
@@ -467,7 +467,7 @@ USING (
     sql += '-- POSTGRESQL RLS IMPLEMENTATION\n';
     sql += '-- Saudi Innovates - National Municipal Innovation Platform\n';
     sql += '-- ========================================\n\n';
-    
+
     sql += '-- STEP 1: CREATE SQL FUNCTIONS\n';
     sql += '-- ========================================\n\n';
     Object.entries(sqlFunctions).forEach(([name, code]) => {
@@ -516,9 +516,9 @@ USING (
           {t({ en: '🔒 RLS Implementation Specification', ar: '🔒 مواصفات تنفيذ RLS' })}
         </h1>
         <p className="text-lg text-white/90">
-          {t({ 
-            en: 'Complete PostgreSQL Row-Level Security policies for all 80 RBAC permissions', 
-            ar: 'سياسات أمان مستوى الصفوف الكاملة لجميع الـ 80 صلاحية RBAC' 
+          {t({
+            en: 'Complete PostgreSQL Row-Level Security policies for all 80 RBAC permissions',
+            ar: 'سياسات أمان مستوى الصفوف الكاملة لجميع الـ 80 صلاحية RBAC'
           })}
         </p>
         <div className="mt-4 flex gap-3">
@@ -641,7 +641,7 @@ USING (
                     </div>
                     {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
                   </button>
-                  
+
                   {isExpanded && (
                     <div className="border-t bg-white p-4 space-y-4">
                       {data.policies.map((policy, idx) => (
@@ -703,6 +703,6 @@ USING (
   );
 }
 
-export default ProtectedPage(RLSImplementationSpec, { 
-  requiredPermissions: ['platform_admin', 'security_manage'] 
+export default ProtectedPage(RLSImplementationSpec, {
+  requiredPermissions: ['platform_admin', 'security_manage']
 });

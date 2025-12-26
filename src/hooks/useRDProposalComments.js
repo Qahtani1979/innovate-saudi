@@ -1,5 +1,5 @@
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -20,7 +20,7 @@ export function useRDProposalComments(rdProposalId) {
 }
 
 export function useAddRDProposalComment() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     return useMutation({
         mutationFn: async ({ rd_proposal_id, comment_text, section = 'general' }) => {
@@ -47,3 +47,4 @@ export function useAddRDProposalComment() {
         },
     });
 }
+

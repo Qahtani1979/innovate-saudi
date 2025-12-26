@@ -7,12 +7,12 @@ import { useLanguage } from '../LanguageContext';
 import { Lightbulb, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
-import { useCitizenIdeas } from '@/hooks/useCitizenIdeas';
+import { useCitizenIdeaMutations } from '@/hooks/useCitizenIdeaMutations';
 
 export default function CitizenIdeaSubmissionForm({ municipalityId }) {
   const { t } = useLanguage();
   const { triggerEmail } = useEmailTrigger();
-  const { submitIdea } = useCitizenIdeas();
+  const { submitIdea } = useCitizenIdeaMutations();
 
   const [ideaData, setIdeaData] = useState({
     title: '',
@@ -35,8 +35,8 @@ export default function CitizenIdeaSubmissionForm({ municipalityId }) {
       onSuccess: async (feedback) => {
         // Trigger email notification for citizen idea submission
         await triggerEmail('citizen.idea_submitted', {
-          entityType: 'citizen_feedback', // Keeping type for email compatibility if needed
-          entityId: feedback.id,
+          entity_type: 'citizen_feedback', // Keeping type for email compatibility if needed
+          entity_id: feedback.id,
           variables: {
             idea_title: ideaData.title,
             municipality_id: municipalityId,

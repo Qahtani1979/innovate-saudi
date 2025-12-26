@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useCitizenIdeas } from '@/hooks/useCitizenIdeas';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -1959,7 +1959,7 @@ function IdeasCoverageReport() {
               <p className="font-semibold text-amber-900 mb-3">âš ï¸ Row-Level Security (RLS) Rules - Application-Level Enforcement</p>
               <div className="p-3 bg-blue-50 rounded-lg border border-blue-300 mb-3">
                 <p className="text-xs text-blue-900">
-                  <strong>Note:</strong> Base44 platform uses application-level security (not database-level RLS). Access control enforced via frontend permission checks (ProtectedAction, ProtectedPage) and API filtering based on user roles/permissions.
+                  <strong>Note:</strong> Legacy platform uses application-level security (not database-level RLS). Access control enforced via frontend permission checks (ProtectedAction, ProtectedPage) and API filtering based on user roles/permissions.
                 </p>
               </div>
 
@@ -2036,7 +2036,7 @@ function IdeasCoverageReport() {
               <p className="font-semibold text-amber-900 mb-3">âš ï¸ Status-Based Access Rules - Requires Page Implementation</p>
               <div className="p-3 bg-blue-50 rounded-lg border border-blue-300 mb-3">
                 <p className="text-xs text-blue-900">
-                  <strong>Implementation Pattern:</strong> Filter data queries based on status and user permissions. Example: <code className="bg-white px-1 py-0.5 rounded">base44.entities.CitizenIdea.filter({'{'}status: {'{'}$in: ['submitted', 'approved']{'}'}{'}'})</code> for public users.
+                  <strong>Implementation Pattern:</strong> Filter data queries based on status and user permissions. Example: <code className="bg-white px-1 py-0.5 rounded">legacy.entities.CitizenIdea.filter({'{'}status: {'{'}$in: ['submitted', 'approved']{'}'}{'}'})</code> for public users.
                 </p>
               </div>
               <div className="space-y-2">
@@ -2078,7 +2078,7 @@ function IdeasCoverageReport() {
                 <p><strong>âœ… Permissions Implemented:</strong> 13 citizen engagement permissions added to RolePermissionManager.PERMISSION_CATEGORIES.citizen</p>
                 <p><strong>âœ… Roles Created:</strong> 4 citizen engagement roles created in database with permissions assigned</p>
                 <p><strong>âœ… Frontend Enforcement Ready:</strong> usePermissions hook + ProtectedAction component available</p>
-                <p className="mt-2 text-blue-800"><strong>â„¹ï¸ Application-Level Security (Base44 Pattern):</strong></p>
+                <p className="mt-2 text-blue-800"><strong>â„¹ï¸ Application-Level Security (Legacy Pattern):</strong></p>
                 <ul className="list-disc list-inside space-y-1 ml-3 text-blue-800">
                   <li>RLS rules enforced at application level via permission checks in pages/components</li>
                   <li>Field-level security via conditional rendering based on user permissions</li>

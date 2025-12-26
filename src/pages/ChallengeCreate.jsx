@@ -16,7 +16,7 @@ import FileUploader from '../components/FileUploader';
 import InnovationFramingGenerator from '../components/challenges/InnovationFramingGenerator';
 import StrategicAlignmentSelector from '../components/challenges/StrategicAlignmentSelector';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { usePermissions } from '../components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';

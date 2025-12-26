@@ -28,7 +28,7 @@ import CompetitiveAnalysisTab from '../components/solutions/CompetitiveAnalysisT
 import DeploymentBadges from '../components/solutions/DeploymentBadges';
 import ProviderScalingCommercial from '../components/scaling/ProviderScalingCommercial';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { usePermissions } from '../components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import AIProfileEnhancer from '../components/solutions/AIProfileEnhancer';
 import CompetitiveAnalysisAI from '../components/solutions/CompetitiveAnalysisAI';
 import PriceComparisonTool from '../components/solutions/PriceComparisonTool';

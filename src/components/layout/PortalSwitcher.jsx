@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { 
+import {
   Shield, Building2, Lightbulb, Microscope, Calendar, Target, Globe, ChevronDown
 } from 'lucide-react';
 import {
@@ -15,16 +14,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { createPageUrl } from '../../utils';
 import { useNavigate } from 'react-router-dom';
+import { useSystemRoles } from '@/hooks/useSystemData';
 
 export default function PortalSwitcher({ user, currentPortal }) {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [activePortal, setActivePortal] = useState(currentPortal || 'home');
 
-  const { data: roles = [] } = useQuery({
-    queryKey: ['roles'],
-    queryFn: () => base44.entities.Role.list()
-  });
+  const { data: roles = [] } = useSystemRoles();
 
   // Map user roles to available portals
   const portals = [
@@ -92,8 +89,8 @@ export default function PortalSwitcher({ user, currentPortal }) {
     .filter(Boolean);
 
   // Filter portals user has access to
-  const availablePortals = portals.filter(portal => 
-    portal.requiredRoles.length === 0 || 
+  const availablePortals = portals.filter(portal =>
+    portal.requiredRoles.length === 0 ||
     portal.requiredRoles.some(role => userRoleNames.includes(role))
   );
 

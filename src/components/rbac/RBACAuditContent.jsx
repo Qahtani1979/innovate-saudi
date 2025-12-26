@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { useAllUserProfiles } from '@/hooks/useUserProfile';
 import { useRoles } from '@/hooks/useRoles';
 import { useSystemPermissions } from '@/hooks/useSystemPermissions';
@@ -21,7 +21,7 @@ import {
 
 export default function RBACAuditContent() {
   const { t, language } = useLanguage();
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(null);
 
@@ -47,7 +47,7 @@ export default function RBACAuditContent() {
 
 function RBACAuditContentInner() {
   const { t, language } = useLanguage();
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(null);
 
@@ -595,3 +595,4 @@ function RBACAuditContentInner() {
     </div>
   );
 }
+

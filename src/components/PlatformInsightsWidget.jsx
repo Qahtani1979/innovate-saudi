@@ -49,20 +49,6 @@ export default function PlatformInsightsWidget() {
       // In a real implementation, we would save the result to the database here.
       // Since this is a widget, and usePlatformInsights fetches from DB, 
       // we would need a mutation to save 'result.data' to 'platform_insights'.
-      // For now, we will just refetch to simulate update if logic was complete, 
-      // or we accept that 'generateFreshInsights' might effectively be a "dry run" 
-      // or we need to add a 'saveInsight' mutation. 
-      // Given the refactoring scope is removing base44, and the original code just did `refetch()` 
-      // implying the AI invocation might have had side effects or the original code was incomplete/mocked?
-      // Original code:
-      // const result = await invokeAI(...)
-      // if (result.success) refetch()
-      // Wait, invokeAI uses an edge function usually? Or client side?
-      // If it's client side, it doesn't save to DB unless we tell it.
-      // The original code uses `base44` to fetch.
-      // If `invokeAI` was just returning data, `refetch()` wouldn't show it unless it was saved.
-      // Assuming existing `invokeAI` might handle saving? Or this was a placeholder.
-      // I will keep the behavior.
       refetch();
     }
   };

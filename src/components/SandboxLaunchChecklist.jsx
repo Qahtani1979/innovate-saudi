@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
+import { useSandboxMutations } from '@/hooks/useSandboxMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -11,7 +12,7 @@ import { toast } from 'sonner';
 
 export default function SandboxLaunchChecklist({ sandbox, onClose }) {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
 
   const checklistItems = [
     {
@@ -81,40 +82,20 @@ export default function SandboxLaunchChecklist({ sandbox, onClose }) {
   );
   const [notes, setNotes] = useState('');
 
-  const launchMutation = useMutation({
-    mutationFn: async () => {
-      const { supabase } = await import('@/integrations/supabase/client');
+  const { launchSandbox } = useSandboxMutations();
 
-      const { error: updateError } = await supabase
-        .from('sandboxes')
-        .update({
-          status: 'active',
-          launch_date: new Date().toISOString().split('T')[0],
-          launch_checklist: checklist,
-          launch_notes: notes
-        })
-        .eq('id', sandbox.id);
-      if (updateError) throw updateError;
-
-      // Create notification
-      const { error: notifError } = await supabase
-        .from('notifications')
-        .insert([{
-          type: 'sandbox_launched',
-          title: `Sandbox Launched: ${sandbox.name_en}`,
-          message: `${sandbox.name_en} is now active and accepting applications.`,
-          severity: 'success',
-          link: `/SandboxDetail?id=${sandbox.id}`
-        }]);
-      if (notifError) throw notifError;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['sandbox']);
-      queryClient.invalidateQueries(['notifications']);
-      toast.success(t({ en: 'Sandbox launched successfully!', ar: 'تم إطلاق المنطقة بنجاح!' }));
-      onClose();
-    }
-  });
+  const handleLaunch = () => {
+    launchSandbox.mutate({
+      id: sandbox.id,
+      checklist,
+      notes,
+      name: sandbox.name_en
+    }, {
+      onSuccess: () => {
+        onClose();
+      }
+    });
+  };
 
   const allRequiredChecked = checklistItems
     .filter(item => item.required)
@@ -211,11 +192,11 @@ export default function SandboxLaunchChecklist({ sandbox, onClose }) {
 
         <div className="flex gap-3 pt-4 border-t">
           <Button
-            onClick={handleSubmit}
-            disabled={!allRequiredChecked || launchMutation.isPending}
+            onClick={handleLaunch}
+            disabled={!allRequiredChecked || launchSandbox.isPending}
             className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
           >
-            {launchMutation.isPending ? (
+            {launchSandbox.isPending ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Rocket className="h-4 w-4 mr-2" />
@@ -230,3 +211,4 @@ export default function SandboxLaunchChecklist({ sandbox, onClose }) {
     </Card>
   );
 }
+

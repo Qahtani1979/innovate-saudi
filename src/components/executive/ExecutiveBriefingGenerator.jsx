@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
@@ -8,36 +7,28 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { getSystemPrompt } from '@/lib/saudiContext';
-import { 
-  buildExecutiveBriefingPrompt, 
-  executiveBriefingSchema, 
-  EXECUTIVE_BRIEFING_SYSTEM_PROMPT 
+import {
+  buildExecutiveBriefingPrompt,
+  executiveBriefingSchema,
+  EXECUTIVE_BRIEFING_SYSTEM_PROMPT
 } from '@/lib/ai/prompts/executive';
+import { useExecutiveBriefing } from '@/hooks/useAIInsights';
+import { useSystemEntities } from '@/hooks/useSystemData';
 
 export default function ExecutiveBriefingGenerator() {
   const { language, isRTL, t } = useLanguage();
-  const { invokeAI, status, isLoading: generating, rateLimitInfo, isAvailable } = useAIWithFallback();
   const [briefing, setBriefing] = useState(null);
   const [period, setPeriod] = useState('monthly');
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-brief'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
+  const { data: challenges = [] } = useSystemEntities('Challenge');
+  const { data: pilots = [] } = useSystemEntities('Pilot');
+  const { data: municipalities = [] } = useSystemEntities('Municipality');
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-brief'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities-brief'],
-    queryFn: () => base44.entities.Municipality.list()
-  });
+  const { generateMutation, status, generating, rateLimitInfo, isAvailable } = useExecutiveBriefing();
 
   const generateBriefing = async () => {
     if (!isAvailable) return;
-    
+
     const ecosystemData = {
       totalChallenges: challenges.length,
       activePilots: pilots.filter(p => p.stage === 'active').length,
@@ -46,16 +37,18 @@ export default function ExecutiveBriefingGenerator() {
       averageMII: municipalities.reduce((sum, m) => sum + (m.mii_score || 0), 0) / (municipalities.length || 1)
     };
 
-    const result = await invokeAI({
-      systemPrompt: getSystemPrompt(EXECUTIVE_BRIEFING_SYSTEM_PROMPT),
-      prompt: buildExecutiveBriefingPrompt(period, ecosystemData),
-      response_json_schema: executiveBriefingSchema
+    generateMutation.mutate({
+      period,
+      ecosystemData,
+      promptBuilder: buildExecutiveBriefingPrompt,
+      schema: executiveBriefingSchema,
+      systemPrompt: getSystemPrompt(EXECUTIVE_BRIEFING_SYSTEM_PROMPT)
+    }, {
+      onSuccess: (data) => {
+        setBriefing(data);
+        toast.success(t({ en: 'Briefing generated', ar: 'تم توليد الموجز' }));
+      }
     });
-
-    if (result.success && result.data) {
-      setBriefing(result.data);
-      toast.success(t({ en: 'Briefing generated', ar: 'تم توليد الموجز' }));
-    }
   };
 
   return (
@@ -81,8 +74,8 @@ export default function ExecutiveBriefingGenerator() {
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
-        
+        <AIStatusIndicator status={status} error={null} rateLimitInfo={rateLimitInfo} />
+
         <Button
           onClick={generateBriefing}
           disabled={generating || !isAvailable}

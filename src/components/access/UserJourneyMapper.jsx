@@ -1,4 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { useRoles } from '@/hooks/useRoles';
+import { useUserActivity } from '@/hooks/useUserActivity';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -7,24 +9,9 @@ import { CheckCircle, Circle, Target, TrendingUp } from 'lucide-react';
 export default function UserJourneyMapper({ userEmail }) {
   const { t } = useLanguage();
 
-  const { data: user } = useQuery({
-    queryKey: ['user-journey', userEmail],
-    queryFn: async () => {
-      const users = await base44.entities.User.list();
-      return users.find(u => u.email === userEmail);
-    }
-  });
-
-  const { data: roles = [] } = useQuery({
-    queryKey: ['roles'],
-    queryFn: () => base44.entities.Role.list()
-  });
-
-  const { data: activities = [] } = useQuery({
-    queryKey: ['user-activities', userEmail],
-    queryFn: () => base44.entities.UserActivity.filter({ user_email: userEmail }),
-    enabled: !!userEmail
-  });
+  const { data: user } = useUserProfile(userEmail);
+  const { data: roles = [] } = useRoles();
+  const { activities } = useUserActivity(userEmail);
 
   // Define journey stages per role
   const journeyStages = {
@@ -86,7 +73,7 @@ export default function UserJourneyMapper({ userEmail }) {
             </span>
           </div>
           <div className="h-2 bg-indigo-200 rounded-full overflow-hidden">
-            <div 
+            <div
               className="h-full bg-indigo-600 transition-all duration-500"
               style={{ width: `${progress}%` }}
             />
@@ -107,7 +94,7 @@ export default function UserJourneyMapper({ userEmail }) {
                   <div className={`w-0.5 h-12 mt-2 ${step.completed ? 'bg-green-600' : 'bg-slate-200'}`} />
                 )}
               </div>
-              
+
               <div className="flex-1 pb-8">
                 <div className="flex items-center gap-2 mb-1">
                   <h4 className={`font-medium ${step.completed ? 'text-slate-900' : 'text-slate-600'}`}>

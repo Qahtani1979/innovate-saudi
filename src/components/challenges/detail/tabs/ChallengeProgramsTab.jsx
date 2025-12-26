@@ -4,28 +4,12 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { useLanguage } from '@/components/LanguageContext';
 import { Calendar, Loader2 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useChallengeLinkedPrograms } from '@/hooks/useChallengeLinkedData';
 
 export default function ChallengeProgramsTab({ challenge }) {
   const { language, t } = useLanguage();
 
-  const { data: linkedPrograms = [], isLoading } = useQuery({
-    queryKey: ['challenge-programs', challenge?.id],
-    queryFn: async () => {
-      // Return early if no linked programs
-      if (!challenge?.linked_program_ids || challenge.linked_program_ids.length === 0) return [];
-
-      const { data } = await supabase
-        .from('programs')
-        .select('*')
-        .in('id', challenge.linked_program_ids)
-        .eq('is_deleted', false);
-
-      return data || [];
-    },
-    enabled: !!challenge?.linked_program_ids?.length
-  });
+  const { linkedPrograms, isLoading } = useChallengeLinkedPrograms(challenge);
 
   if (isLoading) {
     return <div className="text-center py-8"><Loader2 className="h-8 w-8 animate-spin mx-auto text-purple-600" /></div>;
@@ -64,9 +48,12 @@ export default function ChallengeProgramsTab({ challenge }) {
                         </p>
                       )}
                       <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                        {/* @ts-ignore */}
                         {program.timeline?.program_start && (
+                          /* @ts-ignore */
                           <span>📅 {new Date(program.timeline.program_start).toLocaleDateString()}</span>
                         )}
+                        {/* @ts-ignore */}
                         {program.duration_weeks && <span>⏱️ {program.duration_weeks} weeks</span>}
                       </div>
                     </div>

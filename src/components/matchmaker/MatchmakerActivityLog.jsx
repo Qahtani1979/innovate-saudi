@@ -1,5 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from "@/integrations/supabase/client";
+import { useMatchmakerActivities, useExpertEvaluations } from '@/hooks/useMatchmakerLogs';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -8,34 +7,8 @@ import { Activity, CheckCircle2, Clock, User } from 'lucide-react';
 export default function MatchmakerActivityLog({ applicationId }) {
   const { t, language } = useLanguage();
 
-  const { data: activities = [] } = useQuery({
-    queryKey: ['matchmaker-activities', applicationId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('matchmaker_activity_logs')
-        .select('*')
-        .eq('application_id', applicationId)
-        .order('created_at', { ascending: false })
-        .limit(100);
-
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: evaluations = [] } = useQuery({
-    queryKey: ['matchmaker-evaluations', applicationId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('expert_evaluations')
-        .select('*')
-        .eq('entity_id', applicationId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data;
-    }
-  });
+  const { data: activities = [] } = useMatchmakerActivities(applicationId);
+  const { data: evaluations = [] } = useExpertEvaluations(applicationId);
 
   const allEvents = [
     ...activities.map(a => ({ ...a, type: 'activity' })),
@@ -45,7 +18,7 @@ export default function MatchmakerActivityLog({ applicationId }) {
       activity_description: `Evaluation: ${e.evaluation_outcome || 'In Progress'}`,
       created_by: e.evaluator_email
     }))
-  ].sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+  ].sort((a, b) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime());
 
   return (
     <Card>
@@ -83,8 +56,8 @@ export default function MatchmakerActivityLog({ applicationId }) {
                   )}
                   {event.evaluation_outcome && (
                     <Badge className={`mt-2 text-xs ${event.evaluation_outcome === 'approved' ? 'bg-green-600' :
-                        event.evaluation_outcome === 'rejected' ? 'bg-red-600' :
-                          'bg-blue-600'
+                      event.evaluation_outcome === 'rejected' ? 'bg-red-600' :
+                        'bg-blue-600'
                       }`}>
                       {event.evaluation_outcome}
                     </Badge>

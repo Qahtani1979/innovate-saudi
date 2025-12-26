@@ -1,40 +1,38 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { useAuditLogger } from '@/hooks/useAuditLogger';
+import * as usePlatformCore from './usePlatformCore';
 
 /**
  * Hook for knowledge document mutations
  */
 export function useKnowledgeDocumentMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { t } = useLanguage();
     const { user } = useAuth();
     const { logAction } = useAuditLogger();
 
+    const { uploadMutation } = usePlatformCore.useFileStorage();
+
     const uploadDocument = useMutation({
+        /** @param {{file: File, category: string}} args */
         mutationFn: async ({ file, category }) => {
-            // Upload file to Supabase storage
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Date.now()}.${fileExt}`;
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('knowledge-documents')
-                .upload(fileName, file);
-
-            if (uploadError) throw uploadError;
-
-            // Get public URL
-            const { data: { publicUrl } } = supabase.storage
-                .from('knowledge-documents')
-                .getPublicUrl(fileName);
+            // Upload using centralized hook
+            const uploadResult = await uploadMutation.mutateAsync({
+                file,
+                bucket: 'knowledge-documents',
+                folder: category
+            });
 
             // Create knowledge document record
             const { data, error: insertError } = await supabase.from('knowledge_documents').insert([{
                 title_en: file.name,
                 doc_type: category,
-                file_url: publicUrl,
+                file_url: uploadResult.file_url,
+                file_path: uploadResult.file_path, // Store path for easier deletion/management
                 tags: [category],
                 is_public: true,
                 created_by: user?.email
@@ -50,7 +48,9 @@ export function useKnowledgeDocumentMutations() {
             logAction({
                 action: 'create',
                 entity_type: 'knowledge_document',
+                // @ts-ignore
                 entity_id: data.id,
+                // @ts-ignore
                 details: { title: data.title_en, type: data.doc_type }
             });
         },
@@ -61,6 +61,7 @@ export function useKnowledgeDocumentMutations() {
     });
 
     const deleteDocument = useMutation({
+        /** @param {string} id */
         mutationFn: async (id) => {
             const { error } = await supabase.from('knowledge_documents').delete().eq('id', id);
             if (error) throw error;
@@ -87,6 +88,7 @@ export function useKnowledgeDocumentMutations() {
             const { data, error } = await supabase
                 .from('knowledge_documents')
                 .insert({
+                    // @ts-ignore
                     ...documentData,
                     created_by: user?.email,
                 })
@@ -103,7 +105,9 @@ export function useKnowledgeDocumentMutations() {
             logAction({
                 action: 'create',
                 entity_type: 'knowledge_document',
+                // @ts-ignore
                 entity_id: data.id,
+                // @ts-ignore
                 details: { title: data.title_en, type: data.category }
             });
         },
@@ -119,3 +123,4 @@ export function useKnowledgeDocumentMutations() {
         createKnowledgeDocument
     };
 }
+

@@ -4,7 +4,7 @@
  */
 
 import { useCallback } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
@@ -26,7 +26,7 @@ import { toast } from 'sonner';
  */
 
 export function useNotificationSystem() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { user } = useAuth();
 
     /**
@@ -147,3 +147,4 @@ export function useNotificationSystem() {
         isNotifying: notifyMutation.isPending
     };
 }
+

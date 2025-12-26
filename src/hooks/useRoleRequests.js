@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -68,7 +68,7 @@ export function usePendingRoleRequests() {
  */
 
 export function useRoleRequestMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
 
     /** @type {import('@tanstack/react-query').UseMutationResult<void, Error, RoleRequestData>} */
     const requestRole = useMutation({
@@ -120,3 +120,4 @@ export function useRoleRequestMutations() {
 
     return { requestRole, updateRequestStatus };
 }
+

@@ -46,9 +46,6 @@ export default function SimilarPolicyDetector({ policyData, onDismiss }) {
 
     setIsChecking(true);
     try {
-      // used to await base44.entities.PolicyRecommendation.list(); now using allPolicies from hook
-
-
       // Strategy 1: Use embeddings if available (most accurate)
       if (policyData.embedding && policyData.embedding.length > 0) {
         const withEmbeddings = allPolicies.filter(p =>

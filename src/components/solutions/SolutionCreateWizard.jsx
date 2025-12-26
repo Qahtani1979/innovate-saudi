@@ -27,7 +27,7 @@ import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility
 export default function SolutionCreateWizard({ onComplete }) {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  // const queryClient = useQueryClient(); // Removed unused and undefined
   const [currentStep, setCurrentStep] = useState(1);
   const { invokeAI, status: aiStatus, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();
 

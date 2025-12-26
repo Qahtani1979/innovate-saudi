@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useSupabaseFileUpload } from '@/hooks/useSupabaseFileUpload';
+import * as usePlatformCore from '@/hooks/usePlatformCore';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,15 +21,19 @@ export default function ComplianceValidationAI({ solution, onValidationComplete 
   const [uploadedDocs, setUploadedDocs] = useState([]);
   const { invokeAI, status, isLoading: validating, rateLimitInfo, isAvailable } = useAIWithFallback();
 
-  const { uploadFile, isUploading } = useSupabaseFileUpload();
+  const { uploadMutation } = usePlatformCore.useFileStorage();
 
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files);
 
     for (const file of files) {
       try {
-        const publicUrl = await uploadFile(file, 'documents', 'compliance');
-        setUploadedDocs(prev => [...prev, { name: file.name, url: publicUrl }]);
+        const result = await uploadMutation.mutateAsync({
+          file,
+          bucket: 'documents',
+          folder: 'compliance'
+        });
+        setUploadedDocs(prev => [...prev, { name: file.name, url: result.file_url }]);
         toast.success(t({ en: 'Document uploaded', ar: 'تم رفع المستند' }));
       } catch (error) {
         console.error('Upload failed:', error);
@@ -73,7 +77,7 @@ export default function ComplianceValidationAI({ solution, onValidationComplete 
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={null} />
 
         {/* Document Upload */}
         <div className="p-4 bg-slate-50 rounded-lg border-2 border-dashed border-slate-300">

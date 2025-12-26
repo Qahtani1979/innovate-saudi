@@ -4,11 +4,11 @@
  */
 
 import { useEffect, useCallback, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useChallengeRealtime(options = {}) {
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
   const { 
     enabled = true, 
     challengeId = null,
@@ -146,3 +146,4 @@ export function useChallengeDetailRealtime(challengeId, options = {}) {
 }
 
 export default useChallengeRealtime;
+

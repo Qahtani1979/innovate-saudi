@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import { useRequestDemo } from '@/hooks/useSolutionWorkflows';
 
 export default function RequestDemoButton({ solution, challenge = null }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
 
@@ -167,3 +167,4 @@ export default function RequestDemoButton({ solution, challenge = null }) {
     </Dialog>
   );
 }
+

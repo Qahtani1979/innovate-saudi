@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,49 +7,16 @@ import { Label } from "@/components/ui/label";
 import { useLanguage } from './LanguageContext';
 import { Rocket, X, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
-import { createNotification } from './AutoNotification';
+import { useRDMutations } from '@/hooks/useRDMutations';
 
 export default function RDProjectKickoffWorkflow({ project, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+
   const [kickoffDate, setKickoffDate] = useState(new Date().toISOString().split('T')[0]);
   const [projectLead, setProjectLead] = useState(project.principal_investigator?.name || '');
   const [kickoffNotes, setKickoffNotes] = useState('');
 
-  const kickoffMutation = useMutation({
-    mutationFn: async (data) => {
-      const { supabase } = await import('@/integrations/supabase/client');
-
-      const { error } = await supabase
-        .from('rd_projects')
-        .update({
-          status: 'active',
-          timeline: {
-            ...project.timeline,
-            start_date: data.kickoffDate,
-            milestones: data.milestones
-          },
-          kickoff_notes: data.notes
-        })
-        .eq('id', project.id);
-      if (error) throw error;
-
-      await createNotification({
-        title: 'R&D Project Kicked Off',
-        body: `Research project "${project.title_en}" has officially started!`,
-        type: 'success',
-        priority: 'high',
-        linkUrl: `RDProjectDetail?id=${project.id}`,
-        entityType: 'rd_project',
-        entityId: project.id
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['rd-project']);
-      toast.success(t({ en: 'Project kicked off successfully', ar: 'تم بدء المشروع بنجاح' }));
-      onClose();
-    }
-  });
+  const { kickoffProject } = useRDMutations();
 
   const generateMilestones = () => {
     const duration = project.duration_months || 12;
@@ -89,11 +55,15 @@ export default function RDProjectKickoffWorkflow({ project, onClose }) {
 
   const handleKickoff = () => {
     const milestones = generateMilestones();
-    kickoffMutation.mutate({
+    kickoffProject.mutate({
+      project,
       kickoffDate,
-      projectLead,
       notes: kickoffNotes,
       milestones
+    }, {
+      onSuccess: () => {
+        onClose();
+      }
     });
   };
 
@@ -165,7 +135,7 @@ export default function RDProjectKickoffWorkflow({ project, onClose }) {
           </Button>
           <Button
             onClick={handleKickoff}
-            disabled={kickoffMutation.isPending || !kickoffDate}
+            disabled={kickoffProject.isPending || !kickoffDate}
             className="flex-1 bg-blue-600 hover:bg-blue-700"
           >
             <Rocket className="h-4 w-4 mr-2" />

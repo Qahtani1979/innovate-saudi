@@ -42,7 +42,7 @@ import { toast } from 'sonner';
 import ExportData from '../components/ExportData';
 import PilotsAIInsights from '../components/pilots/PilotsAIInsights';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { usePermissions } from '../components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';

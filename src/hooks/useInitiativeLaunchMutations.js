@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/LanguageContext';
@@ -8,7 +8,7 @@ import { useAuditLogger } from '@/hooks/useAuditLogger';
  * Hook for initiative launch mutations (pilots, programs, rd_calls)
  */
 export function useInitiativeLaunchMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { t } = useLanguage();
     const { logAction } = useAuditLogger();
 
@@ -48,3 +48,4 @@ export function useInitiativeLaunchMutations() {
         launchMutation
     };
 }
+

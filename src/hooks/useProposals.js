@@ -1,9 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export function useProposals(options = {}) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { user } = options;
 
     const useUserProposals = () => useQuery({
@@ -37,3 +37,4 @@ export function useProposals(options = {}) {
         useSubmitProposal
     };
 }
+

@@ -1,4 +1,4 @@
-﻿import { useExpertProfileById, useExpertAssignments, useExpertEvaluations } from '@/hooks/useExpertData';
+import { useExpertProfileById, useExpertAssignments, useExpertEvaluations } from '@/hooks/useExpertData';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Button } from "@/components/ui/button";

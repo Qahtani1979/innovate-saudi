@@ -1,44 +1,42 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
 import { Layers, Trash2, Edit, CheckCircle, AlertCircle } from 'lucide-react';
-import { toast } from 'sonner';
+import { useBulkMutations } from '@/hooks/useBulkMutations';
 
 export default function AdvancedBulkOperationsPanel({ entityName, selectedIds, onComplete }) {
-  const { language, t } = useLanguage();
-  const queryClient = useQueryClient();
+  const { t } = useLanguage();
   const [operation, setOperation] = useState(null);
   const [updateData, setUpdateData] = useState({});
   const [showPreview, setShowPreview] = useState(false);
 
-  const executeMutation = useMutation({
-    mutationFn: async ({ op, data }) => {
-      if (op === 'update') {
-        return Promise.all(selectedIds.map(id => 
-          base44.entities[entityName].update(id, data)
-        ));
-      } else if (op === 'delete') {
-        return Promise.all(selectedIds.map(id => 
-          base44.entities[entityName].delete(id)
-        ));
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries([entityName.toLowerCase()]);
-      toast.success(t({ en: 'Operation completed', ar: 'العملية مكتملة' }));
-      onComplete?.();
-    }
-  });
+  const { updateBatch, deleteBatch } = useBulkMutations(entityName);
+  const isPending = updateBatch.isPending || deleteBatch.isPending;
 
   const previewOperation = () => {
     setShowPreview(true);
   };
 
   const executeOperation = () => {
-    executeMutation.mutate({ op: operation, data: updateData });
-    setShowPreview(false);
+    if (operation === 'update') {
+      updateBatch.mutate(
+        { ids: selectedIds, data: updateData },
+        {
+          onComplete: () => {
+            setShowPreview(false);
+            onComplete?.();
+          }
+        }
+      );
+    } else if (operation === 'delete') {
+      deleteBatch.mutate(selectedIds, {
+        onComplete: () => {
+          setShowPreview(false);
+          onComplete?.();
+        }
+      });
+    }
   };
 
   return (
@@ -108,9 +106,9 @@ export default function AdvancedBulkOperationsPanel({ entityName, selectedIds, o
                     {t({ en: 'Warning: Permanent Deletion', ar: 'تحذير: حذف دائم' })}
                   </p>
                   <p className="text-xs text-red-700">
-                    {t({ 
-                      en: 'This will permanently delete all selected items. This action cannot be undone.', 
-                      ar: 'سيؤدي هذا إلى حذف جميع العناصر المحددة بشكل دائم. لا يمكن التراجع عن هذا الإجراء.' 
+                    {t({
+                      en: 'This will permanently delete all selected items. This action cannot be undone.',
+                      ar: 'سيؤدي هذا إلى حذف جميع العناصر المحددة بشكل دائم. لا يمكن التراجع عن هذا الإجراء.'
                     })}
                   </p>
                 </div>
@@ -129,13 +127,13 @@ export default function AdvancedBulkOperationsPanel({ entityName, selectedIds, o
               {t({ en: 'Preview', ar: 'معاينة' })}
             </h4>
             <p className="text-sm text-slate-700">
-              {operation === 'update' 
+              {operation === 'update'
                 ? t({ en: `Update ${selectedIds.length} items with new status: ${updateData.status}`, ar: `تحديث ${selectedIds.length} عنصر بحالة جديدة: ${updateData.status}` })
                 : t({ en: `Delete ${selectedIds.length} items permanently`, ar: `حذف ${selectedIds.length} عنصر بشكل دائم` })
               }
             </p>
             <div className="flex gap-3">
-              <Button onClick={executeOperation} disabled={executeMutation.isPending} className="flex-1">
+              <Button onClick={executeOperation} disabled={isPending} className="flex-1">
                 {t({ en: 'Confirm & Execute', ar: 'تأكيد وتنفيذ' })}
               </Button>
               <Button onClick={() => setShowPreview(false)} variant="outline">

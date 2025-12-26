@@ -1,5 +1,4 @@
 
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,13 +7,13 @@ import { useLanguage } from '../LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 
+import { usePoliciesWithVisibility } from '@/hooks/usePoliciesWithVisibility';
+
 export default function PolicyPipelineWidget() {
   const { language, t } = useLanguage();
 
-  const { data: policies = [] } = useQuery({
-    queryKey: ['policy-pipeline'],
-    queryFn: () => base44.entities.PolicyRecommendation.list('-created_date', 10)
-  });
+  const { data: policiesData } = usePoliciesWithVisibility();
+  const policies = Array.isArray(policiesData) ? policiesData : (policiesData?.data || []);
 
   const policyStats = {
     draft: policies.filter(p => p.status === 'draft').length,
@@ -71,8 +70,8 @@ export default function PolicyPipelineWidget() {
                   <Badge variant="outline" className="text-xs font-mono">{policy.code}</Badge>
                   <Badge className={
                     policy.status === 'approved' ? 'bg-green-100 text-green-700 text-xs' :
-                    policy.status === 'council_review' ? 'bg-purple-100 text-purple-700 text-xs' :
-                    'bg-yellow-100 text-yellow-700 text-xs'
+                      policy.status === 'council_review' ? 'bg-purple-100 text-purple-700 text-xs' :
+                        'bg-yellow-100 text-yellow-700 text-xs'
                   }>{policy.status?.replace(/_/g, ' ')}</Badge>
                 </div>
                 <p className="text-sm font-medium text-slate-900 truncate">

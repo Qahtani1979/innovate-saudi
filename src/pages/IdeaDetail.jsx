@@ -1,4 +1,4 @@
-﻿
+
 import { useIdea, useIdeaMutations } from '@/hooks/useCitizenIdeas';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

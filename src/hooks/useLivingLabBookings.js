@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '../components/LanguageContext';
@@ -21,10 +21,8 @@ export function useMyLabBookings(labIds = []) {
 
 export function useLivingLabBookings(labId = null) {
     return useQuery({
-        queryKey: ['resource-bookings', labId], // Matched query key from component
+        queryKey: ['resource-bookings', labId],
         queryFn: async () => {
-            // If labId is provided, filter by it. Original hook filtered by is_deleted=false? 
-            // Component didn't filter by is_deleted. I'll filter by labId.
             let query = supabase
                 .from('living_lab_resource_bookings')
                 .select('*');
@@ -37,13 +35,26 @@ export function useLivingLabBookings(labId = null) {
             if (error) throw error;
             return data || [];
         },
-        enabled: !!labId,
+        enabled: true,
         staleTime: 5 * 60 * 1000 // 5 minutes
     });
 }
 
+export function useLivingLabProjectBookings() {
+    return useQuery({
+        queryKey: ['lab-bookings'],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('living_lab_bookings')
+                .select('*');
+            if (error) throw error;
+            return data || [];
+        }
+    });
+}
+
 export function useLivingLabBookingMutations(labId) {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { t } = useLanguage();
 
     const createBooking = useMutation({
@@ -127,3 +138,4 @@ export function useLivingLabBookingMutations(labId) {
 
     return { createBooking, updateBookingStatus };
 }
+

@@ -2,7 +2,7 @@
  * Challenge Mutations Hook
  */
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
@@ -23,7 +23,7 @@ import { useAccessControl } from '@/hooks/useAccessControl';
  */
 export function useChallengeFollow(challengeId) {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
   const { notify } = useNotificationSystem();
 
   const { data: follows = [], isLoading } = useQuery({
@@ -70,8 +70,74 @@ export function useChallengeFollow(challengeId) {
   };
 }
 
+/**
+ * Hook for managing challenge interests (Solution Providers)
+ */
+export function useChallengeInterest(challengeId) {
+  const { user } = useAuth();
+  const queryClient = useAppQueryClient();
+  const { t } = useLanguage();
+
+  const { data: interest, isLoading } = useQuery({
+    queryKey: ['challenge-interest', challengeId, user?.email],
+    queryFn: async () => {
+      if (!user?.email || !challengeId) return null;
+      const { data, error } = await supabase
+        .from('challenge_interests')
+        .select('*')
+        .eq('challenge_id', challengeId)
+        .eq('user_email', user.email)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.email && !!challengeId
+  });
+
+  const expressInterest = useMutation({
+    mutationFn: async ({ interestType, notes }) => {
+      const { error } = await supabase
+        .from('challenge_interests')
+        .insert({
+          challenge_id: challengeId,
+          user_email: user?.email,
+          interest_type: interestType,
+          notes,
+          status: 'watching'
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['challenge-interest'] });
+      toast.success(t({ en: 'Interest registered!', ar: 'تم تسجيل الاهتمام!' }));
+    }
+  });
+
+  const withdrawInterest = useMutation({
+    mutationFn: async () => {
+      if (!interest?.id) return;
+      const { error } = await supabase
+        .from('challenge_interests')
+        .update({ status: 'no_longer_interested' })
+        .eq('id', interest.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['challenge-interest'] });
+      toast.success(t({ en: 'Interest withdrawn', ar: 'تم سحب الاهتمام' }));
+    }
+  });
+
+  return {
+    interest,
+    isLoading: isLoading || expressInterest.isPending || withdrawInterest.isPending,
+    expressInterest,
+    withdrawInterest
+  };
+}
+
 export function useEscalateChallenge() {
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
   const { triggerEmail } = useEmailTrigger();
 
   return useMutation({
@@ -105,7 +171,7 @@ export function useEscalateChallenge() {
  * Hook to update challenge tracks (routing)
  */
 export function useUpdateChallengeTracks() {
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
 
   return useMutation({
     mutationFn: async ({ id, tracks }) => {
@@ -133,7 +199,7 @@ export function useUpdateChallengeTracks() {
  * Hook for batch importing challenges
  */
 export function useImportChallenges() {
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
 
   return useMutation({
     mutationFn: async (challenges) => {
@@ -191,7 +257,7 @@ export function useImportChallenges() {
  * }}
  */
 export function useChallengeMutations() {
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
   const { user } = useAuth();
   const { logCrudOperation, logStatusChange } = useAuditLogger();
   const { notifyStatusChange, notifyAssignment } = useChallengeNotifications();
@@ -669,6 +735,56 @@ export function useChallengeMutations() {
         });
         if (error) throw error;
       }
+    }),
+    updatePublishingSettings: useMutation({
+      mutationFn: async ({ id, isPublished, isConfidential, notes }) => {
+        const { data: currentChallenge } = await supabase
+          .from('challenges')
+          .select('status, is_published, is_confidential')
+          .eq('id', id)
+          .single();
+
+        const updates = {
+          is_published: isPublished,
+          is_confidential: isConfidential,
+          publishing_approved_by: user?.email,
+          publishing_approved_date: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        const { error } = await supabase
+          .from('challenges')
+          .update(updates)
+          .eq('id', id);
+
+        if (error) throw error;
+
+        // Log the activity
+        await supabase.from('challenge_activities').insert({
+          challenge_id: id,
+          activity_type: 'publishing_update',
+          description: `Publishing settings updated: Published=${isPublished}, Confidential=${isConfidential}`,
+          details: {
+            notes,
+            previous_state: {
+              is_published: currentChallenge.is_published,
+              is_confidential: currentChallenge.is_confidential
+            },
+            new_state: {
+              is_published: isPublished,
+              is_confidential: isConfidential
+            }
+          },
+          performed_by: user?.email
+        });
+
+        return { id, ...updates };
+      },
+      onSuccess: (data) => {
+        queryClient.invalidateQueries({ queryKey: ['challenge', data.id] });
+        queryClient.invalidateQueries({ queryKey: ['challenges'] });
+        toast.success(t({ en: 'Publishing settings updated', ar: 'تم تحديث إعدادات النشر' }));
+      }
     })
   };
 }
@@ -677,7 +793,7 @@ export function useChallengeMutations() {
  * Hook for merging challenges
  */
 export function useMergeChallenges() {
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
   const { t } = useLanguage();
 
   return useMutation({
@@ -742,7 +858,7 @@ export function useMergeChallenges() {
 }
 
 export function useShareChallenge() {
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
   const { t } = useLanguage();
 
   return useMutation({
@@ -789,7 +905,7 @@ export function useShareChallenge() {
 }
 
 export function useAssignChallengeTracks() {
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
   const { t } = useLanguage();
 
   return useMutation({
@@ -872,7 +988,7 @@ export function useNotifyCitizenResolution() {
  * Hook for linking challenges to R&D Calls
  */
 export function useLinkChallengeToRDCall() {
-  const queryClient = useQueryClient();
+  const queryClient = useAppQueryClient();
   const { t } = useLanguage();
   const { user } = useAuth();
 
@@ -930,3 +1046,4 @@ export function useLinkChallengeToRDCall() {
 }
 
 export default useChallengeMutations;
+

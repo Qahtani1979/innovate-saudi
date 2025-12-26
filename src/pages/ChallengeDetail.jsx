@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { usePrompt } from '@/hooks/usePrompt';
 import { CHALLENGE_DETAIL_PROMPT_TEMPLATE } from '@/lib/ai/prompts/challenges/challengeDetail';
-import { usePermissions } from '@/components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
 import { useSolutionsWithVisibility, usePilotsWithVisibility, useContractsWithVisibility } from '@/hooks/visibility';
 import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';

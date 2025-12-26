@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { usePermissions } from '../components/permissions/usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useBudgetsWithVisibility } from '@/hooks/useBudgetsWithVisibility';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
