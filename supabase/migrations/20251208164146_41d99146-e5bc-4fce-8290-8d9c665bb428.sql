@@ -1,4 +1,4 @@
--- Create final batch of missing tables from Base44 entities (batch 5)
+-- Create final batch of missing tables from legacy entities (batch 5)
 
 -- program_pilot_links table
 CREATE TABLE IF NOT EXISTS public.program_pilot_links (

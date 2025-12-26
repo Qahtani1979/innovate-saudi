@@ -1,4 +1,4 @@
--- Create missing tables from Base44 entities
+-- Create missing tables from legacy entities
 
 -- kpi_references table
 CREATE TABLE IF NOT EXISTS public.kpi_references (

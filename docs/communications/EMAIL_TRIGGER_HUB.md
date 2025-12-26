@@ -486,7 +486,7 @@ All email sending should now go through `email-trigger-hub`. Legacy patterns to 
 ```typescript
 // ❌ LEGACY - Don't use
 await supabase.functions.invoke('send-email', {...});
-await base44.integrations.sendEmail({...});
+await legacy.integrations.sendEmail({...});
 
 // ✅ CURRENT - Use this
 await triggerEmail('trigger.key', options);

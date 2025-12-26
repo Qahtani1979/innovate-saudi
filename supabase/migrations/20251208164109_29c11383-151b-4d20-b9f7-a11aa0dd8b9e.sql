@@ -1,4 +1,4 @@
--- Create remaining missing tables from Base44 entities (batch 4)
+-- Create remaining missing tables from legacy entities (batch 4)
 
 -- citizen_pilot_enrollments table
 CREATE TABLE IF NOT EXISTS public.citizen_pilot_enrollments (

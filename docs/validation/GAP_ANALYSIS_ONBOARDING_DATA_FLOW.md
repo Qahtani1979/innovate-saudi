@@ -97,7 +97,7 @@ This document identifies discrepancies between:
 | `linkedin_url` | Company LinkedIn | ❌ No |
 | `location_region` | Geographic coverage | ❌ No |
 
-**Wizard saves to wrong table:** Saves to `StartupProfile` (base44 entity) instead of `startup_profiles` or `providers` table.
+**Wizard saves to wrong table:** Saves to `StartupProfile` (legacy entity) instead of `startup_profiles` or `providers` table.
 
 **Missing from Wizard:**
 - Contact person details (should be from user_profile)
@@ -249,7 +249,7 @@ This document identifies discrepancies between:
 | Check | Status | Issue |
 |-------|--------|-------|
 | URL validation | ✅ | Validates linkedin.com format |
-| Data extraction | ⚠️ | Depends on base44.integrations |
+| Data extraction | ⚠️ | Depends on legacy.integrations |
 | Raw data storage | ⚠️ | Should save full response to `extracted_data` |
 | Pre-fill form | ✅ | Pre-fills form fields |
 | LinkedIn URL stored | ✅ | Saved to `linkedin_url` |

@@ -1,4 +1,4 @@
--- Create more missing tables from Base44 entities (batch 3)
+-- Create more missing tables from legacy entities (batch 3)
 
 -- team_members table
 CREATE TABLE IF NOT EXISTS public.team_members (

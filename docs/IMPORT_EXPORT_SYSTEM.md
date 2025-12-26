@@ -283,7 +283,7 @@ Alternative to AI Uploader for simpler imports.
 ### AI Extraction Mode
 For PDF/Excel files, uses AI edge function:
 ```javascript
-const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
+const extracted = await legacy.integrations.Core.ExtractDataFromUploadedFile({
   file_url,
   json_schema: entityDef.aiSchema
 });

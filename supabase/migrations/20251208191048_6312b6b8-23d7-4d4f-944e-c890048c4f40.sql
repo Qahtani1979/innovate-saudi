@@ -1,4 +1,4 @@
--- Add missing columns to user_profiles to match Base44 UserProfile schema
+-- Add missing columns to user_profiles to match legacy UserProfile schema
 ALTER TABLE public.user_profiles 
   ADD COLUMN IF NOT EXISTS bio_en text,
   ADD COLUMN IF NOT EXISTS bio_ar text,

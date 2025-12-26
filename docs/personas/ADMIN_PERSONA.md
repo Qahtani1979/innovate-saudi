@@ -161,7 +161,7 @@ Admins have unrestricted access to:
 // Admins see ALL challenges - no filters
 const { data: challenges } = useQuery({
   queryKey: ['all-challenges-admin'],
-  queryFn: () => base44.entities.Challenge.list('-created_date', 500)
+  queryFn: () => legacy.entities.Challenge.list('-created_date', 500)
 });
 
 // All pending approvals across entities
@@ -169,9 +169,9 @@ const { data: pendingApprovals } = useQuery({
   queryKey: ['pending-approvals-admin'],
   queryFn: async () => {
     const [challenges, pilots, programs] = await Promise.all([
-      base44.entities.Challenge.filter({ status: 'submitted' }),
-      base44.entities.PilotApproval.filter({ status: 'pending' }),
-      base44.entities.ProgramApplication.filter({ status: 'submitted' })
+      legacy.entities.Challenge.filter({ status: 'submitted' }),
+      legacy.entities.PilotApproval.filter({ status: 'pending' }),
+      legacy.entities.ProgramApplication.filter({ status: 'submitted' })
     ]);
     return { challenges, pilots, programs };
   }

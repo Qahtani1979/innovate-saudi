@@ -18,8 +18,8 @@
 | IdeasManagement missing municipality_id filter | ✅ Fixed | IdeasManagement.jsx | 2024-12-10 |
 | Challenge missing citizen_origin_idea_id link | ✅ Fixed | IdeasManagement.jsx | 2024-12-10 |
 | Missing notification to idea submitter on conversion | ✅ Fixed | IdeasManagement.jsx | 2024-12-10 |
-| RLS on challenges client-side (base44) | ✅ Fixed | MunicipalityDashboard.jsx - migrated to Supabase | 2024-12-10 |
-| RLS on pilots client-side (base44) | ✅ Fixed | MunicipalityDashboard.jsx - migrated to Supabase | 2024-12-10 |
+| RLS on challenges client-side (legacy) | ✅ Fixed | MunicipalityDashboard.jsx - migrated to Supabase | 2024-12-10 |
+| RLS on pilots client-side (legacy) | ✅ Fixed | MunicipalityDashboard.jsx - migrated to Supabase | 2024-12-10 |
 | Console errors on load | ✅ Fixed | Proper error handling in queries | 2024-12-10 |
 | Unhandled promise rejections | ✅ Fixed | Error handling in Supabase queries | 2024-12-10 |
 
@@ -294,7 +294,7 @@
 ## Resolved Issues (Previously Known)
 
 ### ✅ Server-Side RLS (M3-081, M3-082) - RESOLVED
-- **Original Issue:** Dashboard used `base44` client with client-side filtering
+- **Original Issue:** Dashboard used `legacy` client with client-side filtering
 - **Fix Applied:** Migrated to direct Supabase queries in MunicipalityDashboard.jsx
 - **Result:** Server-side filtering now enforced for challenges, pilots, citizen ideas
 

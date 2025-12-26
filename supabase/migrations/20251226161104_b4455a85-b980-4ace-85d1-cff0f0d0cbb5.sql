@@ -1,6 +1,6 @@
 -- Migration: Add missing fields to rd_proposals and matchmaker_applications
 -- Date: 2025-12-22
--- Description: Adds fields discovered during base44 to Supabase migration
+-- Description: Adds fields discovered during legacy to Supabase migration
 
 -- Add missing fields to rd_proposals table
 ALTER TABLE rd_proposals 

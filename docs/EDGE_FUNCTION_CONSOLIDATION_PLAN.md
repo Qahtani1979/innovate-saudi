@@ -37,7 +37,7 @@
 | `src/hooks/useAutoRoleAssignment.js` | `auto-role-assignment`, `role-request-notification` | ✅ Migrated |
 | `src/components/onboarding/MunicipalityStaffOnboardingWizard.jsx` | `auto-role-assignment`, `role-request-notification` | ✅ Migrated |
 | `src/components/onboarding/OnboardingWizard.jsx` | `role-request-notification` | ✅ Migrated |
-| `src/api/base44Client.js` | mappings updated | ✅ Updated |
+| `src/api/legacyClient.js` | mappings updated | ✅ Updated |
 | `src/components/rbac/DelegationApprovalQueue.jsx` | `approve-delegation` | ✅ **Migrated** |
 | `src/components/access/BackendPermissionValidator.jsx` | `validate-permission` | ✅ **Migrated** |
 
@@ -107,7 +107,7 @@ switch (action) {
 |------|----------|-------|
 | `src/hooks/useAutoRoleAssignment.js` | Lines 35, 127 | `checkAndAssignRole()`, `assignRole()` |
 | `src/components/onboarding/MunicipalityStaffOnboardingWizard.jsx` | Line 273 | check_auto_approve |
-| `src/api/base44Client.js` | Line 271 | autoRoleAssignment mapping |
+| `src/api/legacyClient.js` | Line 271 | autoRoleAssignment mapping |
 
 ---
 
@@ -150,7 +150,7 @@ type: 'submitted' | 'approved' | 'rejected'
 **Frontend Consumers:**
 | File | Location | Usage |
 |------|----------|-------|
-| `src/api/base44Client.js` | Line 249 | validatePermission mapping |
+| `src/api/legacyClient.js` | Line 249 | validatePermission mapping |
 
 ---
 
@@ -165,7 +165,7 @@ type: 'submitted' | 'approved' | 'rejected'
 **Frontend Consumers:**
 | File | Location | Usage |
 |------|----------|-------|
-| `src/api/base44Client.js` | Line 248 | approveDelegation mapping |
+| `src/api/legacyClient.js` | Line 248 | approveDelegation mapping |
 
 ---
 
@@ -180,7 +180,7 @@ type: 'submitted' | 'approved' | 'rejected'
 **Frontend Consumers:**
 | File | Location | Usage |
 |------|----------|-------|
-| `src/api/base44Client.js` | Line 277 | runRBACSecurityAudit mapping |
+| `src/api/legacyClient.js` | Line 277 | runRBACSecurityAudit mapping |
 
 ---
 
@@ -389,7 +389,7 @@ const ACTIONS = {
 | `src/hooks/useAutoRoleAssignment.js` | Calls `auto-role-assignment` | Call rbac-manager |
 | `src/components/onboarding/MunicipalityStaffOnboardingWizard.jsx` | Calls old functions | Call rbac-manager |
 | `src/components/onboarding/OnboardingWizard.jsx` | Calls `role-request-notification` | Call rbac-manager |
-| `src/api/base44Client.js` | Multiple mappings | Single rbacManager mapping |
+| `src/api/legacyClient.js` | Multiple mappings | Single rbacManager mapping |
 
 ### 4.3 New Frontend Service Layer
 
@@ -480,7 +480,7 @@ export const rbacService = {
 - [ ] Update `useAutoRoleAssignment.js`
 - [ ] Update `MunicipalityStaffOnboardingWizard.jsx`
 - [ ] Update `OnboardingWizard.jsx`
-- [ ] Update `base44Client.js`
+- [ ] Update `legacyClient.js`
 
 ### Phase 4: Testing (Day 3-4)
 - [ ] Test: Role request → Admin approval → User gets access

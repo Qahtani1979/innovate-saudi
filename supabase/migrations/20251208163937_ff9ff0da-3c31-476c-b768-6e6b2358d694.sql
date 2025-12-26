@@ -1,4 +1,4 @@
--- Create more missing tables from Base44 entities (batch 2)
+-- Create more missing tables from legacy entities (batch 2)
 
 -- mii_dimensions table
 CREATE TABLE IF NOT EXISTS public.mii_dimensions (

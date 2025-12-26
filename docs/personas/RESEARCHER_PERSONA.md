@@ -143,7 +143,7 @@ WHERE created_by = user.email
 const { data: openRDCalls } = useQuery({
   queryKey: ['open-rd-calls'],
   queryFn: async () => {
-    const all = await base44.entities.RDCall.list();
+    const all = await legacy.entities.RDCall.list();
     return all.filter(c => 
       c.status === 'open' && 
       c.is_published &&

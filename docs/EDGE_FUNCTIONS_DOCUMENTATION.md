@@ -18,7 +18,7 @@ https://wneorgiqyvkkjmqootpe.supabase.co/functions/v1/{function-name}
 ┌─────────────────────────────────────────────────────────────────┐
 │                        Frontend (React)                          │
 │  ┌─────────────────┐    ┌─────────────────┐                     │
-│  │ useAIWithFallback│    │ base44Client.js │                     │
+│  │ useAIWithFallback│    │ legacyClient.js │                     │
 │  │     Hook        │    │ Compatibility   │                     │
 │  └────────┬────────┘    └────────┬────────┘                     │
 │           │                      │                               │
@@ -691,23 +691,23 @@ All functions follow consistent error patterns:
 ### Via Compatibility Layer
 
 ```typescript
-import { base44 } from '@/api/base44Client';
+import { legacy } from '@/api/legacyClient';
 
 // AI calls
-const result = await base44.integrations.Core.InvokeLLM({
+const result = await legacy.integrations.Core.InvokeLLM({
   prompt: "...",
   response_json_schema: {...}
 });
 
 // Email
-await base44.integrations.Core.SendEmail({
+await legacy.integrations.Core.SendEmail({
   to: "user@example.com",
   subject: "...",
   html: "..."
 });
 
 // File upload
-const { file_url } = await base44.integrations.Core.UploadFile({ file });
+const { file_url } = await legacy.integrations.Core.UploadFile({ file });
 ```
 
 ### Via Direct Function Invoke

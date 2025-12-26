@@ -125,7 +125,7 @@ WHERE municipality_id = user.municipality_id
 const { data: myMunicipality } = useQuery({
   queryKey: ['my-municipality', user?.email],
   queryFn: async () => {
-    const all = await base44.entities.Municipality.list();
+    const all = await legacy.entities.Municipality.list();
     return all.find(m => m.contact_email === user?.email);
   }
 });

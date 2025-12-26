@@ -1401,19 +1401,19 @@ export default function PilotConversionWizard({ application, challenge, onClose 
   // Fetch related entities
   const { data: organization } = useQuery({
     queryKey: ['organization', application?.organization_id],
-    queryFn: () => base44.entities.Organization.get(application.organization_id),
+    queryFn: () => legacy.entities.Organization.get(application.organization_id),
     enabled: !!application?.organization_id
   });
   
   const { data: municipality } = useQuery({
     queryKey: ['municipality', challenge?.municipality_id],
-    queryFn: () => base44.entities.Municipality.get(challenge.municipality_id),
+    queryFn: () => legacy.entities.Municipality.get(challenge.municipality_id),
     enabled: !!challenge?.municipality_id
   });
   
   const { data: sector } = useQuery({
     queryKey: ['sector', challenge?.sector_id],
-    queryFn: () => base44.entities.Sector.get(challenge.sector_id),
+    queryFn: () => legacy.entities.Sector.get(challenge.sector_id),
     enabled: !!challenge?.sector_id
   });
 
@@ -1462,21 +1462,21 @@ export default function ScalingCostBenefitAnalyzer({ pilot, targetMunicipalities
   // Fetch pilot KPIs
   const { data: pilotKpis = [] } = useQuery({
     queryKey: ['pilot-kpis', pilot?.id],
-    queryFn: () => base44.entities.PilotKPI.filter({ pilot_id: pilot.id }),
+    queryFn: () => legacy.entities.PilotKPI.filter({ pilot_id: pilot.id }),
     enabled: !!pilot?.id
   });
   
   // Fetch pilot expenses
   const { data: expenses = [] } = useQuery({
     queryKey: ['pilot-expenses', pilot?.id],
-    queryFn: () => base44.entities.PilotExpense.filter({ pilot_id: pilot.id }),
+    queryFn: () => legacy.entities.PilotExpense.filter({ pilot_id: pilot.id }),
     enabled: !!pilot?.id
   });
   
   // Fetch challenge details
   const { data: challenge } = useQuery({
     queryKey: ['challenge', pilot?.challenge_id],
-    queryFn: () => base44.entities.Challenge.get(pilot.challenge_id),
+    queryFn: () => legacy.entities.Challenge.get(pilot.challenge_id),
     enabled: !!pilot?.challenge_id
   });
 
@@ -1522,13 +1522,13 @@ export default function MultiLabCollaborationEngine({ currentLabId }) {
   // Fetch all labs
   const { data: labs = [] } = useQuery({
     queryKey: ['living-labs'],
-    queryFn: () => base44.entities.LivingLab.list()
+    queryFn: () => legacy.entities.LivingLab.list()
   });
   
   // Fetch equipment for current lab
   const { data: equipment = [] } = useQuery({
     queryKey: ['lab-equipment', currentLabId],
-    queryFn: () => base44.entities.LivingLabResource.filter({ living_lab_id: currentLabId }),
+    queryFn: () => legacy.entities.LivingLabResource.filter({ living_lab_id: currentLabId }),
     enabled: !!currentLabId
   });
 
@@ -1576,10 +1576,10 @@ export default function PilotToPolicyWorkflow({ pilot, onClose }) {
   const { data: kpis = [] } = useQuery({
     queryKey: ['pilot-kpis', pilot?.id],
     queryFn: async () => {
-      const kpiList = await base44.entities.PilotKPI.filter({ pilot_id: pilot.id });
+      const kpiList = await legacy.entities.PilotKPI.filter({ pilot_id: pilot.id });
       // Fetch datapoints for each KPI
       const withDatapoints = await Promise.all(kpiList.map(async (kpi) => {
-        const datapoints = await base44.entities.PilotKPIDatapoint.filter({ pilot_kpi_id: kpi.id });
+        const datapoints = await legacy.entities.PilotKPIDatapoint.filter({ pilot_kpi_id: kpi.id });
         return { ...kpi, datapoints };
       }));
       return withDatapoints;
@@ -1590,21 +1590,21 @@ export default function PilotToPolicyWorkflow({ pilot, onClose }) {
   // Fetch stakeholder feedback
   const { data: feedback = [] } = useQuery({
     queryKey: ['stakeholder-feedback', pilot?.id],
-    queryFn: () => base44.entities.StakeholderFeedback.filter({ entity_id: pilot.id, entity_type: 'pilot' }),
+    queryFn: () => legacy.entities.StakeholderFeedback.filter({ entity_id: pilot.id, entity_type: 'pilot' }),
     enabled: !!pilot?.id
   });
   
   // Fetch municipality
   const { data: municipality } = useQuery({
     queryKey: ['municipality', pilot?.municipality_id],
-    queryFn: () => base44.entities.Municipality.get(pilot.municipality_id),
+    queryFn: () => legacy.entities.Municipality.get(pilot.municipality_id),
     enabled: !!pilot?.municipality_id
   });
   
   // Fetch sector
   const { data: sector } = useQuery({
     queryKey: ['sector-by-name', pilot?.sector],
-    queryFn: () => base44.entities.Sector.filter({ name_en: pilot.sector }).then(r => r[0]),
+    queryFn: () => legacy.entities.Sector.filter({ name_en: pilot.sector }).then(r => r[0]),
     enabled: !!pilot?.sector
   });
 
@@ -1650,34 +1650,34 @@ Create a reusable hook for fetching common entity relations:
 ```javascript
 // src/hooks/useEntityRelations.js
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { legacy } from '@/api/legacyClient';
 
 export function useEntityRelations(entityType, entityId, entityData) {
   // Fetch sector
   const { data: sector } = useQuery({
     queryKey: ['sector', entityData?.sector_id],
-    queryFn: () => base44.entities.Sector.get(entityData.sector_id),
+    queryFn: () => legacy.entities.Sector.get(entityData.sector_id),
     enabled: !!entityData?.sector_id
   });
   
   // Fetch municipality
   const { data: municipality } = useQuery({
     queryKey: ['municipality', entityData?.municipality_id],
-    queryFn: () => base44.entities.Municipality.get(entityData.municipality_id),
+    queryFn: () => legacy.entities.Municipality.get(entityData.municipality_id),
     enabled: !!entityData?.municipality_id
   });
   
   // Fetch challenge (for pilots)
   const { data: challenge } = useQuery({
     queryKey: ['challenge', entityData?.challenge_id],
-    queryFn: () => base44.entities.Challenge.get(entityData.challenge_id),
+    queryFn: () => legacy.entities.Challenge.get(entityData.challenge_id),
     enabled: !!entityData?.challenge_id && entityType === 'pilot'
   });
   
   // Fetch solution (for pilots)
   const { data: solution } = useQuery({
     queryKey: ['solution', entityData?.solution_id],
-    queryFn: () => base44.entities.Solution.get(entityData.solution_id),
+    queryFn: () => legacy.entities.Solution.get(entityData.solution_id),
     enabled: !!entityData?.solution_id && entityType === 'pilot'
   });
   
@@ -1688,7 +1688,7 @@ export function useEntityRelations(entityType, entityId, entityData) {
       if (!entityData?.strategic_plan_ids?.length) return [];
       return Promise.all(
         entityData.strategic_plan_ids.map(id => 
-          base44.entities.StrategicPlan.get(id)
+          legacy.entities.StrategicPlan.get(id)
         )
       );
     },
