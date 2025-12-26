@@ -18,6 +18,19 @@ ALTER TABLE matchmaker_applications
   ADD COLUMN IF NOT EXISTS organization_type TEXT,
   ADD COLUMN IF NOT EXISTS sectors TEXT[];
 
+-- Add missing fields to researcher_profiles table
+ALTER TABLE public.researcher_profiles
+ADD COLUMN IF NOT EXISTS full_name_en text,
+ADD COLUMN IF NOT EXISTS full_name_ar text,
+ADD COLUMN IF NOT EXISTS bio_en text,
+ADD COLUMN IF NOT EXISTS bio_ar text,
+ADD COLUMN IF NOT EXISTS institution text,
+ADD COLUMN IF NOT EXISTS academic_title text,
+ADD COLUMN IF NOT EXISTS expertise_keywords text[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS linkedin_url text,
+ADD COLUMN IF NOT EXISTS collaboration_interests text[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS visibility text DEFAULT 'platform';
+
 -- Add comments for documentation
 COMMENT ON COLUMN rd_proposals.title_en IS 'English title of the R&D proposal';
 COMMENT ON COLUMN rd_proposals.title_ar IS 'Arabic title of the R&D proposal';
@@ -30,3 +43,5 @@ COMMENT ON COLUMN rd_proposals.institution_en IS 'English name of the institutio
 
 COMMENT ON COLUMN matchmaker_applications.organization_type IS 'Type of organization (startup, SME, corporate, etc.)';
 COMMENT ON COLUMN matchmaker_applications.sectors IS 'Array of sectors the organization operates in';
+
+COMMENT ON COLUMN public.researcher_profiles.visibility IS 'Visibility setting: public, platform, or private';

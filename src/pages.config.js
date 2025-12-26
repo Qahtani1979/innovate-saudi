@@ -227,7 +227,6 @@ import MyApprovals from './pages/MyApprovals';
 import MyApplications from './pages/MyApplications';
 import MyDeadlines from './pages/MyDeadlines';
 import MyPerformance from './pages/MyPerformance';
-import MyPartnerships from './pages/MyPartnerships';
 import MyPrograms from './pages/MyPrograms';
 import MyLearning from './pages/MyLearning';
 import MyDelegation from './pages/MyDelegation';
@@ -481,14 +480,6 @@ import CitizenRewardsCenter from './pages/CitizenRewardsCenter';
 import CitizenCommunityForum from './pages/CitizenCommunityForum';
 import CitizenLivingLabParticipation from './pages/CitizenLivingLabParticipation';
 
-// Matchmaker Pages
-import { MatchmakerApplications } from "./pages/MatchmakerApplications";
-import { MatchmakerApplicationDetail } from "./pages/MatchmakerApplicationDetail";
-import { MatchmakerApplicationCreate } from "./pages/MatchmakerApplicationCreate";
-import { MatchmakerEvaluationHub } from "./pages/MatchmakerEvaluationHub";
-import { MatchmakerSuccessAnalytics } from "./pages/MatchmakerSuccessAnalytics";
-import { MatchmakerJourney } from "./pages/MatchmakerJourney";
-import { MatchmakerCoverageReport } from "./pages/MatchmakerCoverageReport";
 import ReportConsolidationTracker from './pages/ReportConsolidationTracker';
 import BilingualSystemAudit from './pages/BilingualSystemAudit';
 import EvaluationSystemDeepDive from './pages/EvaluationSystemDeepDive';
@@ -813,7 +804,6 @@ export const PAGES = {
     "MyApplications": MyApplications,
     "MyDeadlines": MyDeadlines,
     "MyPerformance": MyPerformance,
-    "MyPartnerships": MyPartnerships,
     "MyPrograms": MyPrograms,
     "MyLearning": MyLearning,
     "MyDelegation": MyDelegation,

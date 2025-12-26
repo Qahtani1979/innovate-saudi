@@ -5597,8 +5597,10 @@ export type Database = {
           organization_id: string | null
           organization_name_ar: string | null
           organization_name_en: string
+          organization_type: string | null
           proposed_capabilities: string | null
           rejection_reason: string | null
+          sectors: string[] | null
           solution_id: string | null
           status: string | null
           tags: string[] | null
@@ -5625,8 +5627,10 @@ export type Database = {
           organization_id?: string | null
           organization_name_ar?: string | null
           organization_name_en: string
+          organization_type?: string | null
           proposed_capabilities?: string | null
           rejection_reason?: string | null
+          sectors?: string[] | null
           solution_id?: string | null
           status?: string | null
           tags?: string[] | null
@@ -5653,8 +5657,10 @@ export type Database = {
           organization_id?: string | null
           organization_name_ar?: string | null
           organization_name_en?: string
+          organization_type?: string | null
           proposed_capabilities?: string | null
           rejection_reason?: string | null
+          sectors?: string[] | null
           solution_id?: string | null
           status?: string | null
           tags?: string[] | null
@@ -9322,10 +9328,16 @@ export type Database = {
       }
       rd_proposals: {
         Row: {
+          abstract_ar: string | null
+          abstract_en: string | null
+          budget_requested: number | null
           created_at: string | null
+          duration_months: number | null
           evaluation_notes: string | null
           id: string
+          institution_en: string | null
           institution_name: string | null
+          pi_name: string | null
           rd_call_id: string | null
           rd_project_id: string | null
           reviewers: Json | null
@@ -9334,13 +9346,21 @@ export type Database = {
           submitted_at: string | null
           submitter_email: string | null
           submitter_id: string | null
+          title_ar: string | null
+          title_en: string | null
           updated_at: string | null
         }
         Insert: {
+          abstract_ar?: string | null
+          abstract_en?: string | null
+          budget_requested?: number | null
           created_at?: string | null
+          duration_months?: number | null
           evaluation_notes?: string | null
           id?: string
+          institution_en?: string | null
           institution_name?: string | null
+          pi_name?: string | null
           rd_call_id?: string | null
           rd_project_id?: string | null
           reviewers?: Json | null
@@ -9349,13 +9369,21 @@ export type Database = {
           submitted_at?: string | null
           submitter_email?: string | null
           submitter_id?: string | null
+          title_ar?: string | null
+          title_en?: string | null
           updated_at?: string | null
         }
         Update: {
+          abstract_ar?: string | null
+          abstract_en?: string | null
+          budget_requested?: number | null
           created_at?: string | null
+          duration_months?: number | null
           evaluation_notes?: string | null
           id?: string
+          institution_en?: string | null
           institution_name?: string | null
+          pi_name?: string | null
           rd_call_id?: string | null
           rd_project_id?: string | null
           reviewers?: Json | null
@@ -9364,6 +9392,8 @@ export type Database = {
           submitted_at?: string | null
           submitter_email?: string | null
           submitter_id?: string | null
+          title_ar?: string | null
+          title_en?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -9486,14 +9516,23 @@ export type Database = {
       }
       researcher_profiles: {
         Row: {
+          academic_title: string | null
+          bio_ar: string | null
+          bio_en: string | null
           citation_count: number | null
+          collaboration_interests: string[] | null
           created_at: string | null
           department: string | null
+          expertise_keywords: string[] | null
+          full_name_ar: string | null
+          full_name_en: string | null
           google_scholar_url: string | null
           h_index: number | null
           id: string
+          institution: string | null
           is_active: boolean | null
           is_verified: boolean | null
+          linkedin_url: string | null
           name_ar: string | null
           name_en: string
           orcid_id: string | null
@@ -9508,16 +9547,26 @@ export type Database = {
           updated_at: string | null
           user_email: string | null
           user_id: string | null
+          visibility: string | null
         }
         Insert: {
+          academic_title?: string | null
+          bio_ar?: string | null
+          bio_en?: string | null
           citation_count?: number | null
+          collaboration_interests?: string[] | null
           created_at?: string | null
           department?: string | null
+          expertise_keywords?: string[] | null
+          full_name_ar?: string | null
+          full_name_en?: string | null
           google_scholar_url?: string | null
           h_index?: number | null
           id?: string
+          institution?: string | null
           is_active?: boolean | null
           is_verified?: boolean | null
+          linkedin_url?: string | null
           name_ar?: string | null
           name_en: string
           orcid_id?: string | null
@@ -9532,16 +9581,26 @@ export type Database = {
           updated_at?: string | null
           user_email?: string | null
           user_id?: string | null
+          visibility?: string | null
         }
         Update: {
+          academic_title?: string | null
+          bio_ar?: string | null
+          bio_en?: string | null
           citation_count?: number | null
+          collaboration_interests?: string[] | null
           created_at?: string | null
           department?: string | null
+          expertise_keywords?: string[] | null
+          full_name_ar?: string | null
+          full_name_en?: string | null
           google_scholar_url?: string | null
           h_index?: number | null
           id?: string
+          institution?: string | null
           is_active?: boolean | null
           is_verified?: boolean | null
+          linkedin_url?: string | null
           name_ar?: string | null
           name_en?: string
           orcid_id?: string | null
@@ -9556,6 +9615,7 @@ export type Database = {
           updated_at?: string | null
           user_email?: string | null
           user_id?: string | null
+          visibility?: string | null
         }
         Relationships: [
           {
