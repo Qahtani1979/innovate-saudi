@@ -618,6 +618,55 @@ export function useProgramMutations() {
     });
 
     /**
+     * Create Program from Gap Recommendation
+     */
+    const createProgramFromRecommendation = useMutation({
+        /** @param {any} rec */
+        mutationFn: async (rec) => {
+            const programData = {
+                name_en: rec.program_name_en,
+                name_ar: rec.program_name_ar,
+                program_type: rec.program_type,
+                status: 'draft',
+                objectives: rec.objectives,
+                target_outcomes: rec.outcomes?.map(o => ({ description: o, target: 100, current: 0 })),
+                is_gap_derived: true,
+                gap_derivation_date: new Date().toISOString(),
+                priority: rec.priority,
+                duration_months: rec.duration_months,
+                strategic_plan_ids: rec.related_gap?.plan ? [rec.related_gap.plan.id] : []
+            };
+            return await createMutation.mutateAsync(programData);
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['programs'] });
+            toast.success('Program created from recommendation');
+        },
+        onError: (error) => {
+            toast.error(`Failed to create program: ${error.message}`);
+        }
+    });
+
+    /**
+     * Generate AI Lessons Summary (Gold Standard AI Pattern)
+     */
+    const generateLessonsSummary = useMutation({
+        /** @param {{ invokeAI: Function, prompts: any, schema: any }} params */
+        mutationFn: async ({ invokeAI, prompts, schema }) => {
+            const result = await invokeAI({
+                system_prompt: prompts.system,
+                prompt: prompts.user,
+                response_json_schema: schema
+            });
+            if (result.success && result.data) return result.data;
+            throw new Error('AI generation failed');
+        },
+        onSuccess: () => {
+            toast.success('Strategic summary generated');
+        }
+    });
+
+    /**
      * Refresh programs cache (Gold Standard Pattern)
      */
     const refreshPrograms = () => {
@@ -626,23 +675,25 @@ export function useProgramMutations() {
     };
 
     return {
-        // Mutations
-        createProgram: createMutation.mutateAsync,
-        createProgramsBatch: createProgramsBatch.mutateAsync,
-        updateProgram: updateProgram.mutateAsync,
-        deleteProgram: deleteProgram.mutateAsync,
-        openApplications: openApplications.mutateAsync,
-        startProgram: startProgram.mutateAsync,
-        completeProgram: completeProgram.mutateAsync,
-        cancelProgram: cancelProgram.mutateAsync,
-        approveProgram: approveProgram.mutateAsync,
-        rejectProgram: rejectProgram.mutateAsync,
-        updateApplicationBatch: updateApplicationBatch.mutateAsync,
-        finalizeSelection: finalizeSelection.mutateAsync,
-        completeMidReview: completeMidReview.mutateAsync,
-        refreshPrograms,  // ✅ Gold Standard
+        // Mutations (Objects - Standard)
+        createProgram: createMutation,
+        createProgramsBatch: createProgramsBatch,
+        updateProgram: updateProgram,
+        deleteProgram: deleteProgram,
+        openApplications: openApplications,
+        startProgram: startProgram,
+        completeProgram: completeProgram,
+        cancelProgram: cancelProgram,
+        approveProgram: approveProgram,
+        rejectProgram: rejectProgram,
+        updateApplicationBatch: updateApplicationBatch,
+        finalizeSelection: finalizeSelection,
+        completeMidReview: completeMidReview,
+        createProgramFromRecommendation: createProgramFromRecommendation,
+        generateLessonsSummary, // Already an object
+        refreshPrograms,
 
-        // Mutation states
+        // Mutation states (Legacy/Convenience - still keeping these if needed)
         isCreating: createMutation.isPending,
         isBatchCreating: createProgramsBatch.isPending,
         isUpdating: updateProgram.isPending,
@@ -655,7 +706,9 @@ export function useProgramMutations() {
         isRejecting: rejectProgram.isPending,
         isBatchUpdating: updateApplicationBatch.isPending,
         isFinalizing: finalizeSelection.isPending,
-        isReviewing: completeMidReview.isPending
+        isReviewing: completeMidReview.isPending,
+        isCreatingFromRec: createProgramFromRecommendation.isPending,
+        isGeneratingLessonsSummary: generateLessonsSummary.isPending
     };
 }
 

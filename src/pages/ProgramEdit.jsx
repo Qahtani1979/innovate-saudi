@@ -110,10 +110,10 @@ function ProgramEditPage() {
 
   const handleSave = async () => {
     try {
-      // updateProgram handles logging and invalidation
-      await updateProgram({
-        programId,
-        updates: formData
+      // updateProgram.mutateAsync handles logging and invalidation
+      await updateProgram.mutateAsync({
+        id: programId,
+        data: formData
       });
       navigate(createPageUrl(`ProgramDetail?id=${programId}`));
     } catch (error) {

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,7 +14,6 @@ import { useCreatePilotProposal } from '@/hooks/useSolutionWorkflows';
 
 export default function SolutionToPilotWorkflow({ solution, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const { triggerEmail } = useEmailTrigger();
   const { invokeAI, status, isLoading: generating, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [selectedChallengeId, setSelectedChallengeId] = useState('');

@@ -77,6 +77,33 @@ export function useOrganizationMutations(organizationId, onCreateSuccess) {
         }
     });
 
+    const verifyOrganization = useMutation({
+        /** @param {{ id: string, notes: string, verifier: string }} params */
+        mutationFn: async ({ id, notes, verifier }) => {
+            const { error } = await supabase
+                .from('organizations')
+                .update({
+                    is_verified: true,
+                    verification_date: new Date().toISOString().split('T')[0],
+                    verification_notes: notes,
+                    verified_by: verifier
+                })
+                .eq('id', id);
+
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['organizations'] });
+            queryClient.invalidateQueries({ queryKey: ['organization'] });
+            queryClient.invalidateQueries({ queryKey: ['organizations-visibility'] });
+            toast.success('Organization verified successfully');
+        },
+        onError: (error) => {
+            console.error('Error verifying organization:', error);
+            toast.error('Failed to verify organization');
+        }
+    });
+
     /**
      * Refresh organizations cache (Gold Standard Pattern)
      */
@@ -91,6 +118,7 @@ export function useOrganizationMutations(organizationId, onCreateSuccess) {
     return {
         createOrganization,
         updateOrganization,
+        verifyOrganization,
         refreshOrganizations  // ✅ Gold Standard
     };
 }

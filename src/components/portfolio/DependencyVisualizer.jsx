@@ -1,28 +1,23 @@
 import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Network, AlertCircle, ArrowRight } from 'lucide-react';
 
+import { usePilotsList } from '@/hooks/usePilots';
+import { useRDProjects } from '@/hooks/useRDProjects';
+
 export default function DependencyVisualizer() {
   const { language, t } = useLanguage();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list(),
-    initialData: []
-  });
+  const { data: pilots = [] } = usePilotsList();
 
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects'],
-    queryFn: () => base44.entities.RDProject.list(),
-    initialData: []
-  });
+  const { data: rdProjects = [] } = useRDProjects();
 
   const dependencies = useMemo(() => {
     const deps = [];
-    
+
     // Find pilots that depend on R&D
     pilots.forEach(pilot => {
       if (pilot.linked_rd_ids?.length > 0) {
@@ -96,11 +91,10 @@ export default function DependencyVisualizer() {
 
         <div className="space-y-2">
           {dependencies.slice(0, 10).map((dep, i) => (
-            <div key={i} className={`p-3 rounded border ${
-              dep.status === 'conflict' ? 'bg-red-50 border-red-300' :
+            <div key={i} className={`p-3 rounded border ${dep.status === 'conflict' ? 'bg-red-50 border-red-300' :
               dep.status === 'blocked' ? 'bg-yellow-50 border-yellow-300' :
-              'bg-green-50 border-green-300'
-            }`}>
+                'bg-green-50 border-green-300'
+              }`}>
               <div className="flex items-center gap-2 text-sm">
                 <span className="font-medium text-slate-900">{dep.from}</span>
                 <ArrowRight className="h-4 w-4 text-slate-400" />
@@ -112,7 +106,7 @@ export default function DependencyVisualizer() {
                 </Badge>
                 <Badge className={
                   dep.status === 'ready' ? 'bg-green-600' :
-                  dep.status === 'blocked' ? 'bg-yellow-600' : 'bg-red-600'
+                    dep.status === 'blocked' ? 'bg-yellow-600' : 'bg-red-600'
                 }>
                   {dep.status}
                 </Badge>

@@ -1,105 +1,45 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
 import { Key, Copy, Trash, Eye, EyeOff, AlertCircle, Loader2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAPIKeys, useAPIKeyMutations } from '@/hooks/useAPIKeys';
 
 export default function APIKeyManagement() {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
   const [showKeys, setShowKeys] = useState({});
   const [newKeyName, setNewKeyName] = useState('');
 
   // Fetch API keys from platform_configs table
-  const { data: apiKeys = [], isLoading } = useQuery({
-    queryKey: ['api-keys'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('platform_configs')
-        .select('*')
-        .eq('config_type', 'api_key')
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error('Error fetching API keys:', error);
-        return [];
-      }
-      return data || [];
-    }
-  });
-
-  const createKeyMutation = useMutation({
-    mutationFn: async (name) => {
-      // Generate a secure-looking key (in production, this would be server-side)
-      const key = `sk_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-      const maskedKey = `sk_***${key.slice(-8)}`;
-      
-      const { data, error } = await supabase
-        .from('platform_configs')
-        .insert({
-          config_key: `api_key_${Date.now()}`,
-          config_value: {
-            name,
-            key: maskedKey, // In production, store hashed key
-            created: new Date().toISOString(),
-            lastUsed: null
-          },
-          config_type: 'api_key',
-          is_active: true
-        })
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return { ...data, fullKey: key }; // Return full key only on creation
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries(['api-keys']);
-      setNewKeyName('');
-      // Show the full key once
-      toast.success(
-        <div>
-          <p>{t({ en: 'API key created!', ar: 'تم إنشاء مفتاح API!' })}</p>
-          <code className="text-xs bg-slate-800 text-green-400 p-1 rounded block mt-2">
-            {data.fullKey}
-          </code>
-          <p className="text-xs mt-1">{t({ en: 'Copy it now - you won\'t see it again!', ar: 'انسخه الآن - لن تراه مرة أخرى!' })}</p>
-        </div>,
-        { duration: 10000 }
-      );
-    },
-    onError: (error) => {
-      toast.error(t({ en: 'Failed to create API key', ar: 'فشل في إنشاء مفتاح API' }));
-      console.error('Create key error:', error);
-    }
-  });
-
-  const deleteKeyMutation = useMutation({
-    mutationFn: async (id) => {
-      const { error } = await supabase
-        .from('platform_configs')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['api-keys']);
-      toast.success(t({ en: 'API key deleted', ar: 'تم حذف مفتاح API' }));
-    },
-    onError: (error) => {
-      toast.error(t({ en: 'Failed to delete API key', ar: 'فشل في حذف مفتاح API' }));
-      console.error('Delete key error:', error);
-    }
-  });
+  const { data: apiKeys = [], isLoading } = useAPIKeys();
+  const { createKey, deleteKey } = useAPIKeyMutations();
 
   const handleCopy = (key) => {
     navigator.clipboard.writeText(key);
     toast.success(t({ en: 'Copied to clipboard', ar: 'تم النسخ إلى الحافظة' }));
+  };
+
+  const handleCreateKey = () => {
+    createKey.mutate(newKeyName, {
+      onSuccess: (data) => {
+        setNewKeyName('');
+        toast.success(
+          <div>
+            <p>{t({ en: 'API key created!', ar: 'تم إنشاء مفتاح API!' })}</p>
+            <code className="text-xs bg-slate-800 text-green-400 p-1 rounded block mt-2">
+              {data.fullKey}
+            </code>
+            <p className="text-xs mt-1">{t({ en: 'Copy it now - you won\'t see it again!', ar: 'انسخه الآن - لن تراه مرة أخرى!' })}</p>
+          </div>,
+          { duration: 10000 }
+        );
+      },
+      onError: (error) => {
+        toast.error(t({ en: 'Failed to create API key', ar: 'فشل في إنشاء مفتاح API' }));
+        console.error('Create key error:', error);
+      }
+    });
   };
 
   return (
@@ -120,12 +60,12 @@ export default function APIKeyManagement() {
             value={newKeyName}
             onChange={(e) => setNewKeyName(e.target.value)}
           />
-          <Button 
+          <Button
             className="bg-indigo-600"
-            onClick={() => createKeyMutation.mutate(newKeyName)}
-            disabled={!newKeyName.trim() || createKeyMutation.isPending}
+            onClick={handleCreateKey}
+            disabled={!newKeyName.trim() || createKey.isPending}
           >
-            {createKeyMutation.isPending ? (
+            {createKey.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Plus className="h-4 w-4" />
@@ -145,31 +85,31 @@ export default function APIKeyManagement() {
             </div>
           ) : (
             apiKeys.map(keyConfig => {
-              const keyData = keyConfig.config_value;
+              const keyData = keyConfig.config_value || {};
               return (
                 <div key={keyConfig.id} className="p-3 border rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <p className="font-medium text-sm">{keyData?.name || 'Unnamed Key'}</p>
                     <div className="flex gap-1">
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        onClick={() => setShowKeys({...showKeys, [keyConfig.id]: !showKeys[keyConfig.id]})}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setShowKeys({ ...showKeys, [keyConfig.id]: !showKeys[keyConfig.id] })}
                       >
                         {showKeys[keyConfig.id] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                       </Button>
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
+                      <Button
+                        size="sm"
+                        variant="ghost"
                         onClick={() => handleCopy(keyData?.key || '')}
                       >
                         <Copy className="h-3 w-3" />
                       </Button>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="ghost"
-                        onClick={() => deleteKeyMutation.mutate(keyConfig.id)}
-                        disabled={deleteKeyMutation.isPending}
+                        onClick={() => deleteKey.mutate(keyConfig.id)}
+                        disabled={deleteKey.isPending}
                       >
                         <Trash className="h-3 w-3 text-red-600" />
                       </Button>

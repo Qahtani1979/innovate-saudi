@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,26 +12,16 @@ import {
   getFeedbackAggregationSchema,
   getFeedbackAggregationSystemPrompt
 } from '@/lib/ai/prompts/citizen';
-import { supabase } from '@/lib/supabase';
+import { useCitizenFeedback } from '@/hooks/useCitizenFeedback';
 
 export default function PublicFeedbackAggregator({ municipalityId }) {
   const { language, t } = useLanguage();
   const [analysis, setAnalysis] = useState(null);
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: feedback = [] } = useQuery({
-    queryKey: ['public-feedback', municipalityId],
-    queryFn: async () => {
-      let query = supabase.from('citizen_feedback').select('*');
-
-      if (municipalityId) {
-        query = query.eq('challenge_id', municipalityId);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data;
-    }
+  const { data: feedback = [] } = useCitizenFeedback({
+    challengeId: municipalityId,
+    isPublished: true
   });
 
   const aggregateAndAnalyze = async () => {

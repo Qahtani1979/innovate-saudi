@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,11 +6,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from './LanguageContext';
 import { Shield, CheckCircle2, Circle, Loader2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useGovernanceMutations } from '@/hooks/useGovernance';
 
 function ComplianceGateChecklist({ pilot, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const [notes, setNotes] = useState('');
-  const queryClient = useQueryClient();
+  const { passComplianceGate } = useGovernanceMutations();
 
   const complianceChecks = [
     {
@@ -74,28 +74,18 @@ function ComplianceGateChecklist({ pilot, onClose }) {
     complianceChecks.reduce((acc, check) => ({ ...acc, [check.id]: false }), {})
   );
 
-  const passComplianceMutation = useMutation({
-    mutationFn: async () => {
-      await base44.entities.Pilot.update(pilot.id, {
-        compliance_passed: true,
-        compliance_date: new Date().toISOString(),
-        compliance_notes: notes,
-        compliance_checklist: checklist
-      });
-      await base44.entities.SystemActivity.create({
-        activity_type: 'compliance_gate_passed',
-        entity_type: 'Pilot',
-        entity_id: pilot.id,
-        description: `Pilot "${pilot.title_en}" passed compliance gate`,
-        metadata: { checklist, notes }
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['pilot']);
-      toast.success(t({ en: 'Compliance gate passed', ar: 'تم تجاوز بوابة الامتثال' }));
-      if (onClose) onClose();
-    }
-  });
+  const handlePassCompliance = () => {
+    passComplianceGate.mutate({
+      pilotId: pilot.id,
+      pilotTitle: pilot.title_en,
+      checklist,
+      notes
+    }, {
+      onSuccess: () => {
+        if (onClose) onClose();
+      }
+    });
+  };
 
   const allCriticalPassed = complianceChecks
     .filter(c => c.critical)
@@ -141,14 +131,14 @@ function ComplianceGateChecklist({ pilot, onClose }) {
                 {catChecks.map(check => (
                   <div
                     key={check.id}
-                    className={`p-3 border rounded-lg flex items-center justify-between transition-all ${
-                      checklist[check.id] ? 'bg-green-50 border-green-300' : 'bg-white hover:border-blue-300'
-                    }`}
+                    className={`p-3 border rounded-lg flex items-center justify-between transition-all ${checklist[check.id] ? 'bg-green-50 border-green-300' : 'bg-white hover:border-blue-300'
+                      }`}
                   >
                     <div className="flex items-center gap-3 flex-1">
                       <button
                         onClick={() => setChecklist({ ...checklist, [check.id]: !checklist[check.id] })}
                         className="flex-shrink-0"
+                        disabled={passComplianceGate.isPending}
                       >
                         {checklist[check.id] ? (
                           <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -192,6 +182,7 @@ function ComplianceGateChecklist({ pilot, onClose }) {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
+            disabled={passComplianceGate.isPending}
           />
         </div>
 
@@ -200,11 +191,11 @@ function ComplianceGateChecklist({ pilot, onClose }) {
             {t({ en: 'Cancel', ar: 'إلغاء' })}
           </Button>
           <Button
-            onClick={() => passComplianceMutation.mutate()}
-            disabled={!allCriticalPassed || passComplianceMutation.isPending}
+            onClick={handlePassCompliance}
+            disabled={!allCriticalPassed || passComplianceGate.isPending}
             className="flex-1 bg-gradient-to-r from-blue-600 to-teal-600"
           >
-            {passComplianceMutation.isPending ? (
+            {passComplianceGate.isPending ? (
               <Loader2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'} animate-spin`} />
             ) : (
               <Shield className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />

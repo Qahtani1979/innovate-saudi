@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useSectorDemand } from '@/hooks/useMarketIntelligence';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -10,21 +9,7 @@ import { createPageUrl } from '../../utils';
 export default function MarketIntelligenceFeed({ providerSectors }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: recentChallenges = [] } = useQuery({
-    queryKey: ['recent-challenges', providerSectors],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*')
-        .eq('status', 'approved')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return (data || [])
-        .filter(c => providerSectors?.some(s => c.sector === s))
-        .slice(0, 10);
-    },
-    enabled: !!providerSectors
-  });
+  const { data: recentChallenges = [] } = useSectorDemand(providerSectors);
 
   const sectorDemand = recentChallenges.reduce((acc, c) => {
     acc[c.sector] = (acc[c.sector] || 0) + 1;
@@ -33,7 +18,7 @@ export default function MarketIntelligenceFeed({ providerSectors }) {
 
   const avgBudget = recentChallenges
     .filter(c => c.budget_estimate)
-    .reduce((sum, c) => sum + c.budget_estimate, 0) / 
+    .reduce((sum, c) => sum + c.budget_estimate, 0) /
     Math.max(recentChallenges.filter(c => c.budget_estimate).length, 1);
 
   return (

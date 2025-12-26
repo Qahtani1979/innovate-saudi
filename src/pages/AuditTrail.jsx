@@ -1,15 +1,14 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../components/LanguageContext';
-import { FileText, Search, User, Calendar, Activity, Edit2, Trash2, Plus, Eye, RefreshCw } from 'lucide-react';
+import { FileText, Search, User, Calendar, Activity, Edit2, Trash2, Plus, Eye, RefreshCw, Filter, Settings, Shield, Download } from 'lucide-react';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from 'date-fns';
+import { useAuditLogs } from '@/hooks/useAuditHooks';
 
 export default function AuditTrail() {
   const { language, isRTL, t } = useLanguage();
@@ -17,19 +16,7 @@ export default function AuditTrail() {
   const [entityFilter, setEntityFilter] = useState('all');
   const [actionFilter, setActionFilter] = useState('all');
 
-  const { data: auditLogs = [], isLoading, refetch } = useQuery({
-    queryKey: ['audit-trail-logs'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('access_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(200);
-      
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: auditLogs = [], isLoading, refetch } = useAuditLogs();
 
   const actionConfig = {
     create: { icon: Plus, color: 'text-green-600', bg: 'bg-green-100', label: { en: 'Created', ar: 'إنشاء' } },
@@ -51,7 +38,7 @@ export default function AuditTrail() {
   const actionTypes = [...new Set(auditLogs.map(l => l.action).filter(Boolean))];
 
   const filteredLogs = auditLogs.filter(log => {
-    const matchesSearch = !searchTerm || 
+    const matchesSearch = !searchTerm ||
       log.user_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.entity_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.action?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -82,13 +69,10 @@ export default function AuditTrail() {
         icon={FileText}
         title={{ en: 'Audit Trail', ar: 'سجل التدقيق' }}
         description={{ en: 'Complete activity log of all platform changes and actions', ar: 'سجل كامل لجميع التغييرات والإجراءات على المنصة' }}
-        action={
-          <Button variant="outline" onClick={() => refetch()}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            {t({ en: 'Refresh', ar: 'تحديث' })}
-          </Button>
-        }
-      />
+        action={<Button variant="outline" onClick={() => refetch()}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          {t({ en: 'Refresh', ar: 'تحديث' })}
+        </Button>} subtitle={undefined} actions={undefined} />
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

@@ -1,34 +1,20 @@
-/**
- * Ministries Tab Component for Data Management Hub
- */
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Building2 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { EntityTable } from './EntityTable';
+import { useMinistries } from '@/hooks/useMinistries';
 
 export function MinistriesTab({ sectors = [], onEdit, onDelete, onAdd }) {
   const { language, t } = useLanguage();
 
-  const { data: ministries = [], isLoading, error } = useQuery({
-    queryKey: ['ministries-management'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('ministries')
-        .select('*')
-        .eq('is_deleted', false)
-        .order('name_en');
-      if (error) throw error;
-      return data || [];
-    },
-    staleTime: 5 * 60 * 1000
+  const { data: ministries = [], isLoading, error } = useMinistries({
+    includeInactive: true
   });
 
   const columns = [
-    { 
-      key: 'name_en', 
+    {
+      key: 'name_en',
       label: { en: 'Name (EN)', ar: 'الاسم (EN)' },
       render: (item) => (
         <span className="font-medium text-foreground">{item.name_en}</span>

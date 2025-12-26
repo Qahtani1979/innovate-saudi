@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,36 +6,26 @@ import { useLanguage } from '../LanguageContext';
 import { Network, Sparkles, Loader2, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import { 
-  CROSS_JOURNEY_SYSTEM_PROMPT, 
-  buildCrossJourneyPrompt, 
-  CROSS_JOURNEY_SCHEMA 
+import {
+  CROSS_JOURNEY_SYSTEM_PROMPT,
+  buildCrossJourneyPrompt,
+  CROSS_JOURNEY_SCHEMA
 } from '@/lib/ai/prompts/bonus/crossJourney';
+
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsList } from '@/hooks/usePilots';
+import { useSolutions } from '@/hooks/useSolutions';
+import { useRDProjects } from '@/hooks/useRDProjects';
 
 export default function CrossJourneyInsightsDashboard() {
   const { language, t } = useLanguage();
   const [insights, setInsights] = useState(null);
   const { invokeAI, status: aiStatus, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions'],
-    queryFn: () => base44.entities.Solution.list()
-  });
-
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects'],
-    queryFn: () => base44.entities.RDProject.list()
-  });
+  const { data: challenges = [] } = useChallengesWithVisibility({ limit: 1000 });
+  const { data: pilots = [] } = usePilotsList();
+  const { solutions = [] } = useSolutions({ limit: 1000, publishedOnly: false });
+  const { data: rdProjects = [] } = useRDProjects();
 
   const analyzeCrossJourney = async () => {
     const result = await invokeAI({

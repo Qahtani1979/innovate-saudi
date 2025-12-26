@@ -7,11 +7,15 @@ import { useLanguage } from '../LanguageContext';
 import { Bell, Send, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
+import { useAllUserProfiles } from '@/hooks/useUserProfiles';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AutomatedStakeholderNotifier({ entity, entityType }) {
-  const { language, t } = useLanguage();
+  const { t } = useLanguage();
   const [selectedRecipients, setSelectedRecipients] = useState([]);
+  const { data: users = [] } = useAllUserProfiles();
+  const { notify, isNotifying } = useNotificationSystem();
 
   const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
     showToasts: true,
@@ -19,10 +23,10 @@ export default function AutomatedStakeholderNotifier({ entity, entityType }) {
   });
 
   const stakeholderGroups = {
-    challenge: ['municipality_admins', 'program_operators', 'startups'],
-    pilot: ['municipality_admins', 'solution_providers', 'stakeholders', 'program_operators'],
-    rd_project: ['researchers', 'program_operators', 'municipalities'],
-    program: ['participants', 'mentors', 'partners']
+    challenge: ['municipality_admin', 'user', 'startup_user'],
+    pilot: ['municipality_admin', 'user', 'startup_user'],
+    rd_project: ['researcher', 'user', 'municipality_admin'],
+    program: ['user', 'mentor', 'partner']
   };
 
   const sendNotifications = async () => {
@@ -59,18 +63,33 @@ Create:
     });
 
     if (success && data) {
-      // Simulate sending notifications
+      let totalSent = 0;
       for (const notif of data.notifications || []) {
-        await base44.entities.Notification.create({
-          notification_type: 'stakeholder_update',
-          title: notif.subject,
-          message: notif.body,
-          visibility: 'targeted',
-          is_active: true
-        });
+        // Find users in this group
+        const targetedUsers = users.filter(u => u.role === notif.recipient_group || u.persona_type === notif.recipient_group);
+        const emails = targetedUsers.map(u => u.email).filter(Boolean);
+
+        if (emails.length > 0) {
+          await notify({
+            type: 'stakeholder_update',
+            entityType: entityType,
+            entityId: entity.id,
+            recipientEmails: emails,
+            title: notif.subject,
+            message: notif.body,
+            metadata: {
+              action_items: notif.action_items,
+              recipient_group: notif.recipient_group
+            }
+          });
+          totalSent += emails.length;
+        }
       }
 
-      toast.success(t({ en: `Notifications sent to ${selectedRecipients.length} groups`, ar: `الإشعارات أُرسلت لـ ${selectedRecipients.length} مجموعات` }));
+      toast.success(t({
+        en: `Notifications sent to ${totalSent} users across ${data.notifications?.length} groups`,
+        ar: `تنبيهات أُرسلت لـ ${totalSent} مستخدم عبر ${data.notifications?.length} مجموعات`
+      }));
     }
   };
 
@@ -86,7 +105,7 @@ Create:
       </CardHeader>
       <CardContent className="pt-6">
         <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
-        
+
         <div className="space-y-4">
           <div>
             <p className="text-sm font-medium text-slate-700 mb-3">
@@ -113,10 +132,10 @@ Create:
 
           <Button
             onClick={sendNotifications}
-            disabled={isLoading || selectedRecipients.length === 0 || !isAvailable}
+            disabled={isLoading || isNotifying || selectedRecipients.length === 0 || !isAvailable}
             className="w-full bg-gradient-to-r from-blue-600 to-cyan-600"
           >
-            {isLoading ? (
+            {(isLoading || isNotifying) ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Send className="h-4 w-4 mr-2" />

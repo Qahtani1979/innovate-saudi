@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,12 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from './LanguageContext';
 import { Award, X, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { useLivingLabMutations } from '@/hooks/useLivingLab';
 
 export default function LivingLabAccreditationWorkflow({ lab, onClose }) {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
 
   const accreditationCriteria = [
     { id: 'safety_standards', label: { en: 'Safety standards compliance', ar: 'الامتثال لمعايير السلامة' } },
@@ -36,24 +33,22 @@ export default function LivingLabAccreditationWorkflow({ lab, onClose }) {
     audit_notes: ''
   });
 
-  const accreditationMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from('living_labs').update({
-        accreditation_status: 'accredited',
-        accreditation_details: {
-          ...accreditationData,
-          criteria_met: criteria,
-          accreditation_date: new Date().toISOString().split('T')[0]
-        }
-      }).eq('id', lab.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['living-lab']);
-      toast.success(t({ en: 'Accreditation recorded', ar: 'تم تسجيل الاعتماد' }));
-      onClose();
-    }
-  });
+  const { updateLivingLab } = useLivingLabMutations(lab.id);
+
+  const handleCompleteAccreditation = () => {
+    updateLivingLab.mutate({
+      accreditation_status: 'accredited',
+      accreditation_details: {
+        ...accreditationData,
+        criteria_met: criteria,
+        accreditation_date: new Date().toISOString().split('T')[0]
+      }
+    }, {
+      onSuccess: () => {
+        onClose();
+      }
+    });
+  };
 
   const allCriteriaChecked = Object.values(criteria).every(Boolean);
 
@@ -152,11 +147,11 @@ export default function LivingLabAccreditationWorkflow({ lab, onClose }) {
 
         <div className="flex gap-3 pt-4 border-t">
           <Button
-            onClick={() => accreditationMutation.mutate()}
-            disabled={!allCriteriaChecked || !accreditationData.accreditation_body || accreditationMutation.isPending}
+            onClick={handleCompleteAccreditation}
+            disabled={!allCriteriaChecked || !accreditationData.accreditation_body || updateLivingLab.isPending}
             className="flex-1 bg-amber-600 hover:bg-amber-700"
           >
-            {accreditationMutation.isPending ? (
+            {updateLivingLab.isPending ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Award className="h-4 w-4 mr-2" />

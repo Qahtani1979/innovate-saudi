@@ -5,28 +5,35 @@ import { toast } from 'sonner';
 /**
  * Hook to fetch citizen feedback for an entity (challenge or pilot)
  */
-export function useCitizenFeedback({ entityId, entityType } = {}) {
+export function useCitizenFeedback(options = {}) {
+    const {
+        entityId,
+        entityType,
+        feedbackType,
+        challengeId,
+        orderBy = 'created_at',
+        orderDirection = 'desc',
+        isPublished = true
+    } = options;
+
     return useQuery({
-        queryKey: ['citizen-feedback', entityId, entityType],
+        queryKey: ['citizen-feedback', { entityId, entityType, feedbackType, challengeId, orderBy, orderDirection, isPublished }],
         queryFn: async () => {
-            // If no params, maybe return all? Or return empty? 
-            // Existing code fetched all for 'coverage'. Let's support both.
+            // @ts-ignore
             let query = supabase.from('citizen_feedback')
                 .select('*')
-                .order('created_at', { ascending: false });
+                .order(orderBy, { ascending: orderDirection === 'asc' });
 
-            if (entityId) {
-                query = query.eq('entity_id', entityId);
-            }
-            if (entityType) {
-                query = query.eq('entity_type', entityType);
-            }
+            if (entityId) query = query.eq('entity_id', entityId);
+            if (entityType) query = query.eq('entity_type', entityType);
+            if (feedbackType) query = query.eq('feedback_type', feedbackType);
+            if (challengeId) query = query.eq('challenge_id', challengeId);
+            if (isPublished !== undefined) query = query.eq('is_published', isPublished);
 
             const { data, error } = await query;
             if (error) throw error;
             return data || [];
-        },
-        enabled: true
+        }
     });
 }
 
@@ -36,7 +43,8 @@ export function useCitizenFeedback({ entityId, entityType } = {}) {
 export function useSubmitCitizenFeedback() {
     const queryClient = useQueryClient();
 
-    return useMutation({
+    /** @type {import('@tanstack/react-query').UseMutationResult<any, Error, {entityId?: string, entityType?: string, content: string, feedbackType: string, isAnonymous: boolean, sentiment?: string, rating?: number}>} */
+    const mutation = useMutation({
         mutationFn: async ({ entityId, entityType, content, feedbackType, isAnonymous, sentiment, rating }) => {
             const { error } = await supabase.from('citizen_feedback').insert({
                 entity_id: entityId,
@@ -49,11 +57,10 @@ export function useSubmitCitizenFeedback() {
             });
             if (error) throw error;
         },
-        onSuccess: (_, variables) => {
+        onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['citizen-feedback'] });
-            if (variables?.entityId) {
-                queryClient.invalidateQueries({ queryKey: ['citizen-feedback', variables.entityId] });
-            }
         }
     });
+
+    return mutation;
 }

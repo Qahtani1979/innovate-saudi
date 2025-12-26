@@ -2,49 +2,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../LanguageContext';
 import { Award } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useAlumniNetwork } from '@/hooks/useAlumniNetwork';
 
 export default function AlumniImpactTracker({ programId }) {
   const { language, t } = useLanguage();
 
-  const { data: applications = [] } = useQuery({
-    queryKey: ['alumni-impact', programId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('program_applications')
-        .select('*')
-        .eq('program_id', programId)
-        .eq('status', 'accepted');
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!programId
-  });
+  const { applications, solutions, pilots } = useAlumniNetwork(programId);
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('solutions').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('pilots').select('*').eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const totalPilots = applications.reduce((sum, app) => 
+  const totalPilots = applications.reduce((sum, app) =>
     sum + pilots.filter(p => p.created_by === app.applicant_email).length, 0
   );
 
-  const totalSolutions = applications.reduce((sum, app) => 
+  const totalSolutions = applications.reduce((sum, app) =>
     sum + solutions.filter(s => s.created_by === app.applicant_email).length, 0
   );
 

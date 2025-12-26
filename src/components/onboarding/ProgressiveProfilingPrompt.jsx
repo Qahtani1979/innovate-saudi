@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '../LanguageContext';
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { X, Sparkles, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useOnboardingMutations } from '@/hooks/useOnboardingMutations';
 
 const PROFILE_FIELDS = {
   linkedin_url: {
@@ -60,6 +60,8 @@ export default function ProgressiveProfilingPrompt({ onComplete, onDismiss }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
+  const { upsertProfile, saveProgressiveProfiling } = useOnboardingMutations();
+
   useEffect(() => {
     if (!userProfile || dismissed) return;
 
@@ -86,32 +88,35 @@ export default function ProgressiveProfilingPrompt({ onComplete, onDismiss }) {
     setIsSubmitting(true);
     try {
       let valueToSave = inputValue.trim();
-      
+
       // Handle tags/arrays
       if (currentPrompt.type === 'tags') {
         valueToSave = inputValue.split(',').map(s => s.trim()).filter(Boolean);
       }
 
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ [currentPrompt.field]: valueToSave })
-        .eq('user_id', user.id);
-
-      if (error) throw error;
+      await upsertProfile.mutateAsync({
+        table: 'user_profiles',
+        data: {
+          [currentPrompt.field]: valueToSave,
+          user_id: user.id
+        }
+      });
 
       // Log the completion
-      await supabase.from('progressive_profiling_prompts').insert({
-        user_id: user.id,
-        prompt_type: 'field_completion',
-        field_name: currentPrompt.field,
-        is_completed: true,
-        completed_at: new Date().toISOString()
+      await saveProgressiveProfiling.mutateAsync({
+        responseData: {
+          user_id: user.id,
+          prompt_type: 'field_completion',
+          field_name: currentPrompt.field,
+          is_completed: true,
+          completed_at: new Date().toISOString()
+        }
       });
 
       toast.success(t({ en: 'Profile updated!', ar: 'تم تحديث الملف!' }));
       setInputValue('');
       onComplete?.(currentPrompt.field, valueToSave);
-      
+
       // Move to next field
       setCurrentPrompt(null);
     } catch (error) {
@@ -127,15 +132,15 @@ export default function ProgressiveProfilingPrompt({ onComplete, onDismiss }) {
 
     try {
       // Log the dismissal
-      await supabase.from('progressive_profiling_prompts').upsert({
-        user_id: user.id,
-        prompt_type: 'field_completion',
-        field_name: currentPrompt.field,
-        is_completed: false,
-        dismissed_count: 1,
-        last_shown_at: new Date().toISOString()
-      }, {
-        onConflict: 'user_id,field_name'
+      await saveProgressiveProfiling.mutateAsync({
+        responseData: {
+          user_id: user.id,
+          prompt_type: 'field_completion',
+          field_name: currentPrompt.field,
+          is_completed: false,
+          dismissed_count: 1, // Logic for incrementing might be better server side or via dedicated increment RPC, but this matches original intent
+          last_shown_at: new Date().toISOString()
+        }
       });
     } catch (err) {
       console.warn('Failed to log dismissal:', err);
@@ -166,7 +171,7 @@ export default function ProgressiveProfilingPrompt({ onComplete, onDismiss }) {
                   {currentPrompt.impact[language] || currentPrompt.impact.en}
                 </p>
               </div>
-              
+
               <div className="flex gap-2">
                 {currentPrompt.type === 'textarea' ? (
                   <Textarea
@@ -185,8 +190,8 @@ export default function ProgressiveProfilingPrompt({ onComplete, onDismiss }) {
                     className="text-sm"
                   />
                 )}
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   onClick={handleSubmit}
                   disabled={!inputValue.trim() || isSubmitting}
                   className="bg-purple-600 hover:bg-purple-700"
@@ -200,10 +205,10 @@ export default function ProgressiveProfilingPrompt({ onComplete, onDismiss }) {
               </div>
             </div>
           </div>
-          
-          <Button 
-            variant="ghost" 
-            size="icon" 
+
+          <Button
+            variant="ghost"
+            size="icon"
             className="h-6 w-6 text-slate-400 hover:text-slate-600"
             onClick={handleDismiss}
           >

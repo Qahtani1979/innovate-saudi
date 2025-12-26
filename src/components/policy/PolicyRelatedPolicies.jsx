@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { usePoliciesList } from '@/hooks/usePolicies';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -12,10 +11,7 @@ export default function PolicyRelatedPolicies({ policy }) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [relatedPolicies, setRelatedPolicies] = useState([]);
 
-  const { data: allPolicies = [] } = useQuery({
-    queryKey: ['all-policies'],
-    queryFn: () => base44.entities.PolicyRecommendation.list()
-  });
+  const { data: allPolicies = [] } = usePoliciesList();
 
   const findRelated = async () => {
     if (!policy.embedding) {
@@ -88,9 +84,9 @@ export default function PolicyRelatedPolicies({ policy }) {
                 <div className="p-3 border rounded-lg hover:bg-slate-50 transition-colors">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
-                     <p className="text-sm font-medium text-slate-900 mb-1" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                       {language === 'ar' && p.title_ar ? p.title_ar : p.title_en}
-                     </p>
+                      <p className="text-sm font-medium text-slate-900 mb-1" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                        {language === 'ar' && p.title_ar ? p.title_ar : p.title_en}
+                      </p>
                       <div className="flex gap-2">
                         <Badge variant="outline" className="text-xs">
                           {(p.workflow_stage || p.status)?.replace(/_/g, ' ')}

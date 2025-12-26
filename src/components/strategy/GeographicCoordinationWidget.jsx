@@ -1,5 +1,5 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
+import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MapPin, Users } from 'lucide-react';
@@ -11,37 +11,26 @@ import { useLanguage } from '../LanguageContext';
  */
 export default function GeographicCoordinationWidget({ strategicPlanId }) {
   const { t } = useLanguage();
-  
-  const { data: coordination } = useQuery({
-    queryKey: ['geo-coordination', strategicPlanId],
-    queryFn: async () => {
-      // Fetch strategic plan
-      const { data: plan, error: planError } = await supabase
-        .from('strategic_plans')
-        .select('*')
-        .eq('id', strategicPlanId)
-        .maybeSingle();
-      
-      if (planError || !plan) return null;
 
-      const targetMunicipalities = plan.target_municipalities || [];
-      
-      if (targetMunicipalities.length === 0) {
-        return { plan, municipalities: [] };
-      }
+  // Fetch strategic plan
+  const { data: plans } = useStrategiesWithVisibility({ id: strategicPlanId });
+  const plan = plans?.[0];
 
-      // Fetch municipalities
-      const { data: municipalities, error: muniError } = await supabase
-        .from('municipalities')
-        .select('id, name_en, name_ar, region_id')
-        .in('id', targetMunicipalities);
+  // Fetch municipalities - only if we have target IDs
+  const targetIds = plan?.target_municipalities || [];
 
-      if (muniError) return { plan, municipalities: [] };
-
-      return { plan, municipalities: municipalities || [] };
-    },
-    enabled: !!strategicPlanId
+  const { data: municipalities = [] } = useMunicipalitiesWithVisibility({
+    filterIds: targetIds,
+    limit: 100,
+    // Only fetch if we have targets, otherwise passing empty array returns empty immediately
   });
+
+  if (!plan) return null;
+
+  const coordination = {
+    plan,
+    municipalities: municipalities || []
+  };
 
   if (!coordination) return null;
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
@@ -10,20 +10,18 @@ import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { getPortfolioOptimizerPrompt, portfolioOptimizerSchema } from '@/lib/ai/prompts/portfolio';
 import { getSystemPrompt } from '@/lib/saudiContext';
 
+import { usePilotsList } from '@/hooks/usePilots';
+
 export default function PilotPortfolioOptimizer() {
   const { language, t } = useLanguage();
   const { invokeAI, status, isLoading: optimizing, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [recommendations, setRecommendations] = useState(null);
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list(),
-    initialData: []
-  });
+  const { data: pilots = [] } = usePilotsList();
 
   const optimize = async () => {
     const prompt = getPortfolioOptimizerPrompt(pilots);
-    
+
     const result = await invokeAI({
       prompt,
       response_json_schema: portfolioOptimizerSchema,

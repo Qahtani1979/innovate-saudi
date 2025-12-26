@@ -1,82 +1,76 @@
-import { useQuery } from '@tanstack/react-query';
+/**
+ * Hook for User Analytics
+ * Tracks user interactions like searches, views, etc.
+ */
+
+import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/AuthContext';
 
 export function useAnalytics() {
-    const useTrendEntries = (options = {}) => useQuery({
-        queryKey: ['trend-entries', options],
-        queryFn: async () => {
-            let query = supabase.from('trend_entries').select('*');
-            if (options.sector) {
-                query = query.eq('sector', options.sector);
-            }
-            if (options.limit) {
-                query = query.limit(options.limit);
-            }
-            const { data, error } = await query;
+    const { user } = useAuth();
+
+    const trackSearchMutation = useMutation({
+        mutationFn: async ({ query, resultsCount, entityType }) => {
+            const { error } = await supabase.from('user_activities').insert({
+                user_email: user?.email || 'anonymous',
+                activity_type: 'search',
+                activity_description: `Searched: ${query}`,
+                entity_type: entityType || 'mixed',
+                metadata: {
+                    query,
+                    resultsCount,
+                    timestamp: new Date().toISOString()
+                }
+            });
             if (error) throw error;
-            return data || [];
+        },
+        onError: (error) => {
+            console.error('Analytics tracking error:', error);
+            // Silent fail is intentional for analytics
         }
     });
 
-    const useRisks = (options = {}) => useQuery({
-        queryKey: ['risks', options],
-        queryFn: async () => {
-            let query = supabase.from('risks').select('*');
-            if (options.limit) {
-                query = query.limit(options.limit);
-            }
-            const { data, error } = await query;
+    const trackSearch = (query, resultsCount, entityType) => {
+        trackSearchMutation.mutate({ query, resultsCount, entityType });
+    };
+
+    const trackActivityMutation = useMutation({
+        mutationFn: async ({ activityType, activityDescription, entityType, entityId, metadata }) => {
+            const { error } = await supabase.from('user_activities').insert({
+                user_email: user?.email || 'anonymous',
+                user_id: user?.id,
+                activity_type: activityType,
+                activity_description: activityDescription,
+                entity_type: entityType || 'mixed',
+                entity_id: entityId,
+                metadata: {
+                    ...metadata,
+                    timestamp: new Date().toISOString()
+                }
+            });
             if (error) throw error;
-            return data || [];
+        },
+        onError: (error) => {
+            console.error('Analytics tracking error:', error);
         }
     });
 
-    const useUserProfiles = () => useQuery({
-        queryKey: ['user-profiles-analytics'],
-        queryFn: async () => {
-            const { data } = await supabase.from('user_profiles').select('id, user_id, persona_type, created_at, last_login');
-            return data || [];
-        }
-    });
+    const trackActivity = (activityType, activityDescription, entityType, entityId, metadata) => {
+        trackActivityMutation.mutate({ activityType, activityDescription, entityType, entityId, metadata });
+    };
 
-    const useUserRoles = () => useQuery({
-        queryKey: ['user-roles-analytics'],
-        queryFn: async () => {
-            const { data } = await supabase.from('user_roles').select('user_id, role');
-            return data || [];
-        }
-    });
-
-    const useSystemActivities = (limit = 500) => useQuery({
-        queryKey: ['system-activities-analytics', limit],
-        queryFn: async () => {
-            const { data } = await supabase
-                .from('system_activities')
-                .select('id, activity_type, created_at, user_email')
-                .order('created_at', { ascending: false })
-                .limit(limit);
-            return data || [];
-        }
-    });
-
-    const useAccessLogs = (limit = 500) => useQuery({
-        queryKey: ['access-logs-analytics', limit],
-        queryFn: async () => {
-            const { data } = await supabase
-                .from('access_logs')
-                .select('id, action, created_at, user_id')
-                .order('created_at', { ascending: false })
-                .limit(limit);
-            return data || [];
-        }
-    });
+    const trackPageView = (pageName, pageUrl, metadata = {}) => {
+        trackActivity('page_view', `Viewed page: ${pageName}`, 'page', null, {
+            page_name: pageName,
+            page_url: pageUrl,
+            ...metadata
+        });
+    };
 
     return {
-        useTrendEntries,
-        useRisks,
-        useUserProfiles,
-        useUserRoles,
-        useSystemActivities,
-        useAccessLogs
+        trackSearch,
+        trackActivity,
+        trackPageView
     };
 }

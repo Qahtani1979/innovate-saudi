@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,23 +6,17 @@ import { useLanguage } from '../LanguageContext';
 import { Mail, Sparkles, Loader2, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { useCommunicationHub } from '@/hooks/useCommunicationHub';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function UpdateDigestGenerator() {
   const { language, t } = useLanguage();
   const [period, setPeriod] = useState('weekly');
   const [digest, setDigest] = useState(null);
-  const { invokeAI, status, isLoading: generating, rateLimitInfo, isAvailable } = useAIWithFallback();
+  const { invokeAI, status, error, isLoading: generating, rateLimitInfo, isAvailable } = useAIWithFallback();
 
-  const { data: recentActivities = [] } = useQuery({
-    queryKey: ['recent-activities', period],
-    queryFn: async () => {
-      const days = period === 'daily' ? 1 : period === 'weekly' ? 7 : 30;
-      const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-      const all = await base44.entities.SystemActivity.list('-created_date', 100);
-      return all.filter(a => new Date(a.created_date) > cutoff);
-    }
-  });
+  const { activities } = useCommunicationHub();
+  const { data: recentActivities = [] } = activities(period);
 
   const generateDigest = async () => {
     const result = await invokeAI({
@@ -31,9 +24,9 @@ export default function UpdateDigestGenerator() {
 
 PERIOD: ${period}
 ACTIVITIES: ${recentActivities.length} events
-Sample: ${recentActivities.slice(0, 20).map(a => 
-  `${a.activity_type}: ${a.description}`
-).join('\n')}
+Sample: ${recentActivities.slice(0, 20).map(a =>
+        `${a.activity_type}: ${a.description}`
+      ).join('\n')}
 
 Generate digest:
 1. Executive summary (2-3 sentences)
@@ -100,7 +93,8 @@ Professional tone, suitable for email distribution.`,
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+        {/* @ts-ignore */}
+        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
 
         {!digest && !generating && (
           <div className="text-center py-8">

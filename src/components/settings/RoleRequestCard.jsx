@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,10 +9,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
-import { 
-  UserCog, Clock, CheckCircle2, XCircle, AlertCircle, ArrowUpCircle, 
+import {
+  UserCog, Clock, CheckCircle2, XCircle, AlertCircle, ArrowUpCircle,
   Building2, GraduationCap, Briefcase, Microscope, Users, Shield
 } from 'lucide-react';
+import { useUserRoles } from '@/hooks/useRoles';
+import { useMyRoleRequests, useRoleRequestMutations } from '@/hooks/useRoleRequests';
 
 const PERSONA_OPTIONS = [
   { value: 'municipality', label: { en: 'Municipality Staff', ar: 'موظف بلدية' }, icon: Building2, description: { en: 'Work for a municipality and manage local innovation', ar: 'العمل لدى بلدية وإدارة الابتكار المحلي' } },
@@ -29,40 +29,16 @@ const RATE_LIMIT_DAYS = 30;
 export default function RoleRequestCard() {
   const { t, language, isRTL } = useLanguage();
   const { user, userProfile } = useAuth();
-  const queryClient = useQueryClient();
-  
+
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [selectedRole, setSelectedRole] = useState('');
   const [justification, setJustification] = useState('');
 
   // Fetch user's actual roles from user_roles table
-  const { data: userRoles = [] } = useQuery({
-    queryKey: ['user-roles-settings', user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role, municipality_id, organization_id')
-        .eq('user_id', user?.id);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.id
-  });
+  const { data: userRoles = [] } = useUserRoles(user?.id);
 
   // Fetch existing role requests
-  const { data: roleRequests = [], isLoading } = useQuery({
-    queryKey: ['my-role-requests', user?.email],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('role_requests')
-        .select('*')
-        .eq('user_email', user?.email)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
+  const { data: roleRequests = [], isLoading } = useMyRoleRequests(user?.email);
 
   // Check rate limit
   const canSubmitNewRequest = () => {
@@ -73,39 +49,12 @@ export default function RoleRequestCard() {
   };
 
   const hasPendingRequest = roleRequests.some(r => r.status === 'pending');
-  const daysUntilCanRequest = roleRequests.length > 0 
+  const daysUntilCanRequest = roleRequests.length > 0
     ? Math.max(0, RATE_LIMIT_DAYS - Math.floor((Date.now() - new Date(roleRequests[0].created_at).getTime()) / (1000 * 60 * 60 * 24)))
     : 0;
 
   // Submit role request mutation
-  const submitRequestMutation = useMutation({
-    mutationFn: async ({ role, justification }) => {
-      const { data, error } = await supabase
-        .from('role_requests')
-        .insert({
-          user_id: user?.id,
-          user_email: user?.email,
-          requested_role: role,
-          justification,
-          status: 'pending'
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['my-role-requests']);
-      toast.success(t({ en: 'Role request submitted successfully', ar: 'تم إرسال طلب الدور بنجاح' }));
-      setShowRequestDialog(false);
-      setSelectedRole('');
-      setJustification('');
-    },
-    onError: (error) => {
-      console.error('Role request error:', error);
-      toast.error(t({ en: 'Failed to submit request', ar: 'فشل في إرسال الطلب' }));
-    }
-  });
+  const { requestRole } = useRoleRequestMutations();
 
   const handleSubmitRequest = () => {
     if (!selectedRole) {
@@ -116,7 +65,22 @@ export default function RoleRequestCard() {
       toast.error(t({ en: 'Please provide a detailed justification (min 50 characters)', ar: 'يرجى تقديم مبرر مفصل (50 حرف على الأقل)' }));
       return;
     }
-    submitRequestMutation.mutate({ role: selectedRole, justification });
+
+    // Adapt to hook signature
+    requestRole.mutate({
+      user_id: user?.id,
+      user_email: user?.email,
+      requested_role: selectedRole,
+      justification,
+      status: 'pending'
+    }, {
+      onSuccess: () => {
+        // queryClient invalidation is handled by the hook
+        setShowRequestDialog(false);
+        setSelectedRole('');
+        setJustification('');
+      }
+    });
   };
 
   const getStatusBadge = (status) => {
@@ -197,16 +161,16 @@ export default function RoleRequestCard() {
           <Alert>
             <Clock className="h-4 w-4" />
             <AlertDescription>
-              {t({ 
-                en: `You can submit a new request in ${daysUntilCanRequest} days.`, 
-                ar: `يمكنك تقديم طلب جديد خلال ${daysUntilCanRequest} يوم.` 
+              {t({
+                en: `You can submit a new request in ${daysUntilCanRequest} days.`,
+                ar: `يمكنك تقديم طلب جديد خلال ${daysUntilCanRequest} يوم.`
               })}
             </AlertDescription>
           </Alert>
         )}
 
         {/* Request Button */}
-        <Button 
+        <Button
           onClick={() => setShowRequestDialog(true)}
           disabled={hasPendingRequest || !canSubmitNewRequest()}
           className="w-full"
@@ -283,9 +247,9 @@ export default function RoleRequestCard() {
               <Textarea
                 value={justification}
                 onChange={(e) => setJustification(e.target.value)}
-                placeholder={t({ 
-                  en: 'Explain why you need this role (organization, position, purpose)...', 
-                  ar: 'اشرح لماذا تحتاج هذا الدور (المنظمة، المنصب، الغرض)...' 
+                placeholder={t({
+                  en: 'Explain why you need this role (organization, position, purpose)...',
+                  ar: 'اشرح لماذا تحتاج هذا الدور (المنظمة، المنصب، الغرض)...'
                 })}
                 rows={4}
               />
@@ -299,7 +263,7 @@ export default function RoleRequestCard() {
             <Button variant="outline" onClick={() => setShowRequestDialog(false)}>
               {t({ en: 'Cancel', ar: 'إلغاء' })}
             </Button>
-            <Button 
+            <Button
               onClick={handleSubmitRequest}
               disabled={submitRequestMutation.isPending || !selectedRole || justification.length < 50}
             >

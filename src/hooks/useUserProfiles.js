@@ -1,24 +1,11 @@
-/**
- * User Profiles Hook
- * 
- * Fetches user profile data by email address
- */
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-/**
- * Hook to fetch a user profile by email
- * @param {string} email - The email address of the user
- * @param {object} options - Additional query options
- * @returns {object} React Query result with user profile data
- */
-export function useUserProfiles(email, options = {}) {
+export function useUserProfile(email) {
     return useQuery({
-        queryKey: ['user-profile-by-email', email],
+        queryKey: ['user-profile', email],
         queryFn: async () => {
             if (!email) return null;
-
             const { data, error } = await supabase
                 .from('user_profiles')
                 .select('*')
@@ -29,8 +16,7 @@ export function useUserProfiles(email, options = {}) {
             return data;
         },
         enabled: !!email,
-        staleTime: 1000 * 60 * 5, // 5 minutes
-        ...options
+        staleTime: 1000 * 60 * 5 // 5 minutes
     });
 }
 
@@ -38,11 +24,32 @@ export function useAllUserProfiles() {
     return useQuery({
         queryKey: ['all-user-profiles'],
         queryFn: async () => {
-            const { data, error } = await supabase.from('user_profiles').select('user_id, user_email, full_name, created_at');
+            const { data, error } = await supabase
+                .from('user_profiles')
+                .select('*')
+                .order('created_at', { ascending: false });
+
             if (error) throw error;
             return data || [];
-        }
+        },
+        staleTime: 1000 * 60 * 5
     });
 }
+export function useUserProfileById(userId) {
+    return useQuery({
+        queryKey: ['user-profile-by-id', userId],
+        queryFn: async () => {
+            if (!userId) return null;
+            const { data, error } = await supabase
+                .from('user_profiles')
+                .select('user_id, full_name, full_name_en, avatar_url, is_public, verified')
+                .eq('user_id', userId)
+                .maybeSingle();
 
-export default useUserProfiles;
+            if (error) throw error;
+            return data;
+        },
+        enabled: !!userId,
+        staleTime: 1000 * 60 * 5
+    });
+}

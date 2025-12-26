@@ -8,10 +8,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLanguage } from '@/components/LanguageContext';
 import { Mail, Search, RefreshCw, Eye, AlertCircle, CheckCircle2, Clock, XCircle, Send, Loader2, RotateCcw } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { useEmailLogs, useEmailStats, useEmailRetry } from '@/hooks/useEmailLogs';
 
 const STATUS_CONFIG = {
   sent: { icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-100', label: { en: 'Sent', ar: 'مُرسل' } },
@@ -25,7 +24,6 @@ const STATUS_CONFIG = {
 
 export default function EmailLogsViewer() {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedLog, setSelectedLog] = useState(null);
@@ -33,78 +31,18 @@ export default function EmailLogsViewer() {
   const [retrying, setRetrying] = useState(false);
   const pageSize = 20;
 
-  const { data: logs = [], isLoading, refetch } = useQuery({
-    queryKey: ['email-logs', statusFilter, searchTerm, page],
-    queryFn: async () => {
-      let query = supabase
-        .from('email_logs')
-        .select('*, email_templates(name_en, name_ar)')
-        .order('created_at', { ascending: false })
-        .range(page * pageSize, (page + 1) * pageSize - 1);
-      
-      if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
-      }
-      
-      if (searchTerm) {
-        query = query.or(`recipient_email.ilike.%${searchTerm}%,subject.ilike.%${searchTerm}%,template_key.ilike.%${searchTerm}%`);
-      }
-      
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: stats } = useQuery({
-    queryKey: ['email-logs-stats'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('email_logs')
-        .select('status');
-      
-      if (error) throw error;
-      
-      const counts = { total: 0, sent: 0, delivered: 0, failed: 0, opened: 0 };
-      data?.forEach(log => {
-        counts.total++;
-        if (log.status) counts[log.status] = (counts[log.status] || 0) + 1;
-      });
-      return counts;
-    }
-  });
+  const { data: logs = [], isLoading, refetch } = useEmailLogs({ statusFilter, searchTerm, page, pageSize });
+  const { data: stats } = useEmailStats();
+  const { retryEmail } = useEmailRetry();
 
   const handleRetry = async (log) => {
     setRetrying(true);
     try {
-      // Call email-trigger-hub with the original data
-      const { error: invokeError } = await supabase.functions.invoke('email-trigger-hub', {
-        body: {
-          trigger: log.template_key,
-          recipient_email: log.recipient_email,
-          variables: log.variables_used || {},
-          language: log.language || 'en',
-          triggered_by: 'manual_retry'
-        }
-      });
-
-      if (invokeError) throw invokeError;
-
-      // Update retry count
-      await supabase
-        .from('email_logs')
-        .update({ 
-          retry_count: (log.retry_count || 0) + 1,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', log.id);
-
-      toast.success(t({ en: 'Email retry queued successfully', ar: 'تمت إضافة إعادة الإرسال للقائمة' }));
-      refetch();
+      await retryEmail.mutateAsync(log);
       setSelectedLog(null);
+      refetch();
     } catch (error) {
-      console.error('Retry error:', error);
-      toast.error(t({ en: 'Failed to retry email', ar: 'فشل في إعادة إرسال البريد' }));
+      console.error('Retry handled by hook', error);
     } finally {
       setRetrying(false);
     }
@@ -291,29 +229,29 @@ export default function EmailLogsViewer() {
                     <p className="font-medium">{selectedLog.triggered_by || 'system'}</p>
                   </div>
                 </div>
-                
+
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">{t({ en: 'Subject', ar: 'العنوان' })}</p>
                   <p className="font-medium p-2 bg-muted rounded">{selectedLog.subject}</p>
                 </div>
-                
+
                 {selectedLog.body_preview && (
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">{t({ en: 'Body Preview', ar: 'معاينة المحتوى' })}</p>
-                    <div 
+                    <div
                       className="p-3 bg-muted rounded text-sm max-h-48 overflow-auto"
                       dangerouslySetInnerHTML={{ __html: selectedLog.body_preview }}
                     />
                   </div>
                 )}
-                
+
                 {selectedLog.error_message && (
                   <div className="p-3 bg-red-50 border border-red-200 rounded">
                     <p className="text-sm font-medium text-red-800">{t({ en: 'Error', ar: 'خطأ' })}</p>
                     <p className="text-sm text-red-600">{selectedLog.error_message}</p>
                   </div>
                 )}
-                
+
                 {selectedLog.variables_used && Object.keys(selectedLog.variables_used).length > 0 && (
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">{t({ en: 'Variables Used', ar: 'المتغيرات المستخدمة' })}</p>
@@ -326,7 +264,7 @@ export default function EmailLogsViewer() {
                 {/* Retry Button for failed emails */}
                 {(selectedLog.status === 'failed' || selectedLog.status === 'bounced') && (
                   <div className="pt-4 border-t">
-                    <Button 
+                    <Button
                       onClick={() => handleRetry(selectedLog)}
                       disabled={retrying}
                       className="w-full"

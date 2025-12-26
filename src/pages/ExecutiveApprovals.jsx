@@ -1,145 +1,62 @@
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../components/LanguageContext';
 import { CheckCircle2, X, FileText, AlertCircle, DollarSign, Sparkles, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
-import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useExecutiveApprovals } from '@/hooks/useExecutiveApprovals';
 
 export default function ExecutiveApprovals() {
   const { language, isRTL, t } = useLanguage();
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [decision, setDecision] = useState('');
-  const [comments, setComments] = useState('');
-  const [aiBrief, setAiBrief] = useState(null);
-  const { invokeAI, status, isLoading: generatingBrief, isAvailable, rateLimitInfo } = useAIWithFallback();
-  const queryClient = useQueryClient();
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-pending-approval'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*')
-        .or('stage.eq.approval_pending,and(budget.gt.1000000,stage.eq.design)')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: rdCalls = [] } = useQuery({
-    queryKey: ['rd-calls-pending'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_calls')
-        .select('*')
-        .eq('status', 'draft')
-        .gt('budget_total', 5000000)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: sandboxApps = [] } = useQuery({
-    queryKey: ['sandbox-apps-pending'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('sandbox_applications')
-        .select('*')
-        .eq('status', 'pending_approval')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const generateAIBrief = async (item, type) => {
-    const prompt = type === 'pilot' ?
-      `Generate executive decision brief for this pilot:
-Title: ${item.title_en}
-Budget: ${item.budget} SAR
-Municipality: ${item.municipality_id}
-Sector: ${item.sector}
-Objective: ${item.objective_en}
-
-Provide:
-1. Strategic alignment (how it fits national goals)
-2. Risk assessment (high/medium/low with reasons)
-3. Expected impact (quantified if possible)
-4. Budget justification
-5. Recommendation (approve/conditional/defer/reject)` :
-      `Generate executive brief for R&D Call:
-Title: ${item.title_en}
-Budget: ${item.budget_total} SAR
-Theme: ${item.theme_en}
-
-Provide strategic analysis and recommendation.`;
-
-    const result = await invokeAI({
-      prompt,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          strategic_alignment: { type: 'string' },
-          risk_level: { type: 'string' },
-          risk_reasons: { type: 'array', items: { type: 'string' } },
-          expected_impact: { type: 'string' },
-          budget_justification: { type: 'string' },
-          recommendation: { type: 'string' },
-          key_considerations: { type: 'array', items: { type: 'string' } }
-        }
-      }
-    });
-
-    if (result.success) {
-      setAiBrief(result.data);
-    }
-  };
-
-  const approveMutation = useMutation({
-    mutationFn: async ({ id, type, approved, comments }) => {
-      if (type === 'pilot') {
-        const { error } = await supabase
-          .from('pilots')
-          .update({
-            stage: approved ? 'approved' : 'design',
-            approval_notes: comments
-          })
-          .eq('id', id);
-        if (error) throw error;
-      } else if (type === 'rd_call') {
-        const { error } = await supabase
-          .from('rd_calls')
-          .update({
-            status: approved ? 'approved' : 'draft',
-            approval_notes: comments
-          })
-          .eq('id', id);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries();
-      toast.success(t({ en: 'Decision recorded', ar: 'تم تسجيل القرار' }));
-      setSelectedItem(null);
-      setDecision('');
-      setComments('');
-      setAiBrief(null);
-    }
-  });
+  const {
+    pilots,
+    rdCalls,
+    sandboxApps,
+    approveMutation,
+    selectedItem,
+    setSelectedItem,
+    decision,
+    setDecision,
+    comments,
+    setComments,
+    aiBrief,
+    generateAIBrief,
+    generatingBrief,
+    aiStatus,
+    aiRateLimitInfo,
+    aiIsAvailable
+  } = useExecutiveApprovals();
 
   const allPendingItems = [
-    ...pilots.map(p => ({ ...p, type: 'pilot', itemType: 'Pilot' })),
-    ...rdCalls.map(r => ({ ...r, type: 'rd_call', itemType: 'R&D Call' })),
-    ...sandboxApps.map(s => ({ ...s, type: 'sandbox', itemType: 'Sandbox' }))
+    ...pilots.map(p => ({
+      ...p,
+      type: 'pilot',
+      itemType: 'Pilot',
+      displayName_en: p.title_en,
+      displayName_ar: p.title_ar,
+      displayBudget: p.budget,
+      displaySector: p.sector
+    })),
+    ...rdCalls.map(r => ({
+      ...r,
+      type: 'rd_call',
+      itemType: 'R&D Call',
+      displayName_en: r.title_en,
+      displayName_ar: r.title_ar,
+      displayBudget: r.budget_total,
+      displaySector: r.sector
+    })),
+    ...sandboxApps.map(s => ({
+      ...s,
+      type: 'sandbox',
+      itemType: 'Sandbox',
+      displayName_en: s.organization_name || s.title_en || 'Sandbox App',
+      displayName_ar: s.organization_name_ar || s.title_ar || 'طلب منطقة رملية',
+      displayBudget: s.budget_requested || s.budget,
+      displaySector: s.sector
+    }))
   ];
 
   return (
@@ -193,22 +110,16 @@ Provide strategic analysis and recommendation.`;
                     <div className="flex-1">
                       <Badge variant="outline" className="mb-2 text-xs">{item.itemType}</Badge>
                       <h4 className="font-medium text-slate-900 text-sm">
-                        {language === 'ar' && item.title_ar ? item.title_ar : item.title_en}
+                        {language === 'ar' ? (item.displayName_ar || item.title_ar) : (item.displayName_en || item.title_en)}
                       </h4>
                       <div className="flex items-center gap-3 mt-2 text-xs text-slate-600">
-                        {item.budget && (
+                        {item.displayBudget && (
                           <span className="flex items-center gap-1">
                             <DollarSign className="h-3 w-3" />
-                            {(item.budget / 1000000).toFixed(1)}M SAR
+                            {(item.displayBudget / 1000000).toFixed(1)}M SAR
                           </span>
                         )}
-                        {item.budget_total && (
-                          <span className="flex items-center gap-1">
-                            <DollarSign className="h-3 w-3" />
-                            {(item.budget_total / 1000000).toFixed(1)}M SAR
-                          </span>
-                        )}
-                        {item.sector && <span>{item.sector.replace(/_/g, ' ')}</span>}
+                        {item.displaySector && <span>{item.displaySector.replace(/_/g, ' ')}</span>}
                       </div>
                     </div>
                     <AlertCircle className="h-5 w-5 text-amber-600" />
@@ -235,7 +146,7 @@ Provide strategic analysis and recommendation.`;
                     <span>{t({ en: 'Review Item', ar: 'مراجعة العنصر' })}</span>
                     <Button
                       onClick={() => generateAIBrief(selectedItem, selectedItem.type)}
-                      disabled={generatingBrief || !isAvailable}
+                      disabled={generatingBrief || !aiIsAvailable}
                       size="sm"
                       variant="outline"
                     >
@@ -249,14 +160,16 @@ Provide strategic analysis and recommendation.`;
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
+                  <AIStatusIndicator status={aiStatus} rateLimitInfo={aiRateLimitInfo} />
                   <div>
                     <Badge className="mb-2">{selectedItem.itemType}</Badge>
                     <h3 className="font-bold text-lg">
-                      {language === 'ar' && selectedItem.title_ar ? selectedItem.title_ar : selectedItem.title_en}
+                      {language === 'ar' ? (selectedItem.displayName_ar || selectedItem.title_ar) : (selectedItem.displayName_en || selectedItem.title_en)}
                     </h3>
                     <p className="text-sm text-slate-600 mt-2">
-                      {language === 'ar' && selectedItem.description_ar ? selectedItem.description_ar?.substring(0, 200) : selectedItem.description_en?.substring(0, 200)}...
+                      {language === 'ar' && selectedItem.description_ar
+                        ? selectedItem.description_ar.substring(0, 200)
+                        : (selectedItem.description_en || '')?.substring(0, 200)}...
                     </p>
                   </div>
 

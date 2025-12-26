@@ -1,46 +1,29 @@
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { MessageSquare, Award, CheckCircle2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { useCitizenIdeas } from '@/hooks/useCitizenIdeas';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 
 export default function CitizenFeedbackLoop({ citizenEmail }) {
   const { language, t } = useLanguage();
 
-  const { data: ideas = [] } = useQuery({
-    queryKey: ['citizen-ideas', citizenEmail],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('citizen_ideas')
-        .select('*')
-        .eq('citizen_email', citizenEmail);
-      if (error) throw error;
-      return data;
-    },
-    initialData: []
+  const { ideas: ideasQuery } = useCitizenIdeas({
+    citizenEmail,
+    limit: 100
+  });
+  const ideas = ideasQuery.data || [];
+
+  const { data: allChallenges = [] } = useChallengesWithVisibility({
+    limit: 1000 // Get enough to find local matches
   });
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-from-ideas', citizenEmail],
-    queryFn: async () => {
-      const ideaIds = ideas.map(i => i.id);
-      if (ideaIds.length === 0) return [];
-
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*');
-
-      if (error) throw error;
-
-      // Client-side filtering as per original logic (filtering by json/array field might be complex in SQL directly)
-      return data.filter(c =>
-        c.citizen_idea_ids?.some(id => ideaIds.includes(id))
-      );
-    },
-    enabled: ideas.length > 0,
-    initialData: []
-  });
+  // Client-side filtering as per original logic
+  const ideaIds = ideas.map(i => i.id);
+  const challenges = allChallenges.filter(c =>
+    // @ts-ignore - citizen_idea_ids might be custom
+    c.citizen_idea_ids?.some(id => ideaIds.includes(id))
+  );
 
   const convertedIdeas = ideas.filter(i => i.status === 'converted_to_challenge');
   const impactfulIdeas = convertedIdeas.filter(i => {

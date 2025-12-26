@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../LanguageContext';
 import { FileText, Download, Loader2, Calendar, Building2, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
+
+import { usePolicyRecommendations } from '@/hooks/usePolicyRecommendations';
+import { useMunicipalities } from '@/hooks/useMunicipalities';
 
 export default function PolicyReportTemplates() {
   const { language, isRTL, t } = useLanguage();
@@ -14,15 +17,8 @@ export default function PolicyReportTemplates() {
   const [selectedPriority, setSelectedPriority] = useState('all');
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const { data: policies = [] } = useQuery({
-    queryKey: ['policies-for-reports'],
-    queryFn: () => base44.entities.PolicyRecommendation.list()
-  });
-
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities-for-reports'],
-    queryFn: () => base44.entities.Municipality.list()
-  });
+  const { data: policies = [] } = usePolicyRecommendations();
+  const { data: municipalities = [] } = useMunicipalities();
 
   const reportTemplates = [
     {
@@ -98,11 +94,11 @@ ${highPriority.slice(0, 5).map(p => `- ${p.code || p.id}:
   Impact: ${p.impact_score || 'N/A'}`).join('\n')}
 
 REGULATORY FRAMEWORK CHANGES:
-${filteredPolicies.filter(p => p.regulatory_change_needed).map(p => 
-  `- AR: ${p.title_ar || 'N/A'}
+${filteredPolicies.filter(p => p.regulatory_change_needed).map(p =>
+          `- AR: ${p.title_ar || 'N/A'}
   EN: ${p.title_en || 'N/A'}
   Framework: ${p.regulatory_framework || 'Framework TBD'}`
-).join('\n')}
+        ).join('\n')}
         `;
       } else if (selectedTemplate === 'implementation_progress') {
         const adoptionStats = filteredPolicies.map(p => {
@@ -131,13 +127,12 @@ ${s.policy.code || s.policy.id}:
 
 LAGGING MUNICIPALITIES:
 ${municipalities.filter(m => {
-  const adoptedPolicies = filteredPolicies.filter(p => 
-    p.implementation_progress?.municipalities_adopted?.includes(m.id)
-  );
-  return adoptedPolicies.length < filteredPolicies.length * 0.5;
-}).map(m => `- ${m.name_en}: ${
-  filteredPolicies.filter(p => p.implementation_progress?.municipalities_adopted?.includes(m.id)).length
-}/${filteredPolicies.length} policies adopted`).join('\n')}
+          const adoptedPolicies = filteredPolicies.filter(p =>
+            p.implementation_progress?.municipalities_adopted?.includes(m.id)
+          );
+          return adoptedPolicies.length < filteredPolicies.length * 0.5;
+        }).map(m => `- ${m.name_en}: ${filteredPolicies.filter(p => p.implementation_progress?.municipalities_adopted?.includes(m.id)).length
+          }/${filteredPolicies.length} policies adopted`).join('\n')}
         `;
       } else if (selectedTemplate === 'quarterly_review') {
         const thisQuarter = filteredPolicies.filter(p => {
@@ -177,10 +172,10 @@ POLICIES REQUIRING REGULATORY AMENDMENTS: ${needingChanges.length}
 
 BY FRAMEWORK:
 ${Object.entries(needingChanges.reduce((acc, p) => {
-  const fw = p.regulatory_framework || 'Framework TBD';
-  acc[fw] = (acc[fw] || 0) + 1;
-  return acc;
-}, {})).map(([fw, count]) => `${fw}: ${count} policies`).join('\n')}
+          const fw = p.regulatory_framework || 'Framework TBD';
+          acc[fw] = (acc[fw] || 0) + 1;
+          return acc;
+        }, {})).map(([fw, count]) => `${fw}: ${count} policies`).join('\n')}
 
 DETAILED LIST:
 ${needingChanges.map(p => `
@@ -232,11 +227,10 @@ ${p.code || p.id}:
               <div
                 key={template.id}
                 onClick={() => setSelectedTemplate(template.id)}
-                className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                  isSelected 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-slate-200 hover:border-blue-300'
-                }`}
+                className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${isSelected
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-slate-200 hover:border-blue-300'
+                  }`}
               >
                 <div className="flex items-center gap-3 mb-2">
                   <Icon className={`h-5 w-5 ${isSelected ? 'text-blue-600' : 'text-slate-600'}`} />

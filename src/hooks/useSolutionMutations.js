@@ -270,6 +270,73 @@ export function useSolutionMutations() {
     });
 
     /**
+     * Verify a solution (Admin)
+     */
+    const verifySolution = useMutation({
+        mutationFn: async ({ solutionId, verificationData }) => {
+            checkPermission(['admin', 'innovation_manager']);
+
+            const { error: updateError } = await supabase.from('solutions').update({
+                is_verified: true,
+                verification_date: new Date().toISOString().split('T')[0],
+                verification_notes: verificationData.verificationNotes,
+                verification_checklist: verificationData.checklist,
+                ai_verification_recommendation: verificationData.aiRecommendation,
+                workflow_stage: 'verified',
+                updated_at: new Date().toISOString()
+            }).eq('id', solutionId);
+
+            if (updateError) throw updateError;
+
+            // Audit
+            await logCrudOperation('VERIFY', ENTITY_TYPES.SOLUTION, solutionId, null, { verified: true });
+
+            // Notification
+            await supabase.from('notifications').insert({
+                notification_type: 'solution_verified',
+                title: `Solution Verified: ${verificationData.solutionName}`,
+                message: `${verificationData.solutionName} has been verified and is now available in the marketplace.`,
+                severity: 'success',
+                link: `/SolutionDetail?id=${solutionId}`
+            });
+
+            // Auto-enrollment
+            try {
+                await supabase.functions.invoke('autoMatchmakerEnrollment', { body: { solution_id: solutionId } });
+            } catch (error) {
+                console.error('Auto-enrollment failed:', error);
+            }
+
+            return solutionId;
+        },
+        onSuccess: async (solutionId, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['solution', solutionId] });
+            queryClient.invalidateQueries({ queryKey: ['solutions'] });
+
+            // Trigger solution.verified email
+            try {
+                await triggerEmail('solution.verified', {
+                    entityType: 'solution',
+                    entityId: solutionId,
+                    variables: {
+                        solutionName: variables.verificationData.solutionName,
+                        providerName: variables.verificationData.providerName,
+                        verificationDate: new Date().toISOString().split('T')[0],
+                        recommendation: variables.verificationData.aiRecommendation?.recommendation || 'approved'
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to send solution.verified email:', error);
+            }
+
+            toast.success('Solution verified successfully');
+        },
+        onError: (error) => {
+            toast.error(`Verification failed: ${error.message}`);
+        }
+    });
+
+    /**
      * Send Feedback to Provider
      */
     const sendFeedbackToProvider = useMutation({
@@ -327,8 +394,10 @@ export function useSolutionMutations() {
         isUpdating: updateSolution.isPending,
         isDeleting: deleteSolution.isPending,
         bulkArchiveSolutions,
+        bulkDeprecateSolutions, // Added bulkDeprecateSolutions
         togglePublishSolution,
-        sendFeedbackToProvider
+        sendFeedbackToProvider,
+        verifySolution
     };
 }
 

@@ -24,6 +24,25 @@ export function useExpertMutations() {
         mutationFn: async (data) => {
             const { data: result, error } = await supabase.from('expert_profiles').insert(data).select().single();
             if (error) throw error;
+
+            // Trigger notification
+            try {
+                await supabase.functions.invoke('email-trigger-hub', {
+                    body: {
+                        trigger: 'program.application_received',
+                        recipient_email: 'admin@municipality.gov.sa',
+                        entity_type: 'expert',
+                        variables: {
+                            applicantEmail: data.user_email,
+                            applicationType: 'Expert Application'
+                        },
+                        triggered_by: data.user_email
+                    }
+                });
+            } catch (notifyError) {
+                console.error('Failed to send notification:', notifyError);
+            }
+
             return result;
         },
         onSuccess: () => {

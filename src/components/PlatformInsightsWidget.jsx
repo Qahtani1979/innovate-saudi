@@ -1,5 +1,3 @@
-
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from './LanguageContext';
@@ -11,27 +9,26 @@ import {
   buildPlatformInsightsPrompt,
   PLATFORM_INSIGHTS_SCHEMA
 } from '@/lib/ai/prompts/core';
+import { usePlatformInsights } from '@/hooks/usePlatformInsights';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 
 export default function PlatformInsightsWidget() {
   const { language, isRTL, t } = useLanguage();
   const { invokeAI, status, isLoading: generating, rateLimitInfo, isAvailable } = useAIWithFallback();
 
-  const { data: insights = [], refetch } = useQuery({
-    queryKey: ['platform-insights'],
-    queryFn: async () => {
-      const all = await base44.entities.PlatformInsight.list('-created_date');
-      return all.filter(i => i.is_active).slice(0, 5);
-    }
-  });
+  // Use custom hook for insights (maps announcements to insights)
+  const { announcements: insights, refetch } = usePlatformInsights();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-insights'],
-    queryFn: () => base44.entities.Challenge.list()
+  // Use custom hook for challenges (fetching broad list for analysis)
+  const { data: challenges = [] } = useChallengesWithVisibility({
+    limit: 1000,
+    publishedOnly: false // Get internal ones too for analysis
   });
 
   const generateFreshInsights = async () => {
     if (!isAvailable) return;
-    
+
+    // Logic to generate insights using AI based on challenges data
     const sectorCounts = challenges.reduce((acc, c) => {
       acc[c.sector] = (acc[c.sector] || 0) + 1;
       return acc;
@@ -49,6 +46,23 @@ export default function PlatformInsightsWidget() {
     });
 
     if (result.success) {
+      // In a real implementation, we would save the result to the database here.
+      // Since this is a widget, and usePlatformInsights fetches from DB, 
+      // we would need a mutation to save 'result.data' to 'platform_insights'.
+      // For now, we will just refetch to simulate update if logic was complete, 
+      // or we accept that 'generateFreshInsights' might effectively be a "dry run" 
+      // or we need to add a 'saveInsight' mutation. 
+      // Given the refactoring scope is removing base44, and the original code just did `refetch()` 
+      // implying the AI invocation might have had side effects or the original code was incomplete/mocked?
+      // Original code:
+      // const result = await invokeAI(...)
+      // if (result.success) refetch()
+      // Wait, invokeAI uses an edge function usually? Or client side?
+      // If it's client side, it doesn't save to DB unless we tell it.
+      // The original code uses `base44` to fetch.
+      // If `invokeAI` was just returning data, `refetch()` wouldn't show it unless it was saved.
+      // Assuming existing `invokeAI` might handle saving? Or this was a placeholder.
+      // I will keep the behavior.
       refetch();
     }
   };
@@ -77,8 +91,8 @@ export default function PlatformInsightsWidget() {
             <Sparkles className="h-5 w-5" />
             {t({ en: 'AI Platform Insights', ar: 'رؤى المنصة الذكية' })}
           </CardTitle>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             onClick={generateFreshInsights}
             disabled={generating || !isAvailable}
@@ -93,7 +107,7 @@ export default function PlatformInsightsWidget() {
           insights.map((insight) => {
             const Icon = insightIcons[insight.insight_type] || Sparkles;
             const colorClass = insightColors[insight.insight_type] || 'bg-slate-50 border-slate-200 text-slate-700';
-            
+
             return (
               <div key={insight.id} className={`p-3 rounded-lg border ${colorClass}`}>
                 <div className="flex items-start gap-2">

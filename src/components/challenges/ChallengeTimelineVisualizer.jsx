@@ -1,25 +1,15 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Clock, CheckCircle, Circle, AlertCircle } from 'lucide-react';
+import { useChallengeActivities } from '@/hooks/useChallengeActivities';
 
 export default function ChallengeTimelineVisualizer({ challenge }) {
   const { language, t } = useLanguage();
 
-  const { data: activities = [] } = useQuery({
-    queryKey: ['challenge-activities', challenge.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenge_activities')
-        .select('*')
-        .eq('challenge_id', challenge.id)
-        .order('created_at', { ascending: true });
-      if (error) throw error;
-      return data || [];
-    },
-    initialData: []
+  const { data: activities = [] } = useChallengeActivities({
+    challengeId: challenge.id,
+    limit: 20
   });
 
   const events = [
@@ -72,7 +62,7 @@ export default function ChallengeTimelineVisualizer({ challenge }) {
                   </p>
                   {i > 0 && (
                     <Badge variant="outline" className="mt-1 text-xs">
-                      {Math.floor((new Date(event.date) - new Date(events[i-1].date)) / (1000 * 60 * 60 * 24))} days
+                      {Math.floor((new Date(event.date) - new Date(events[i - 1].date)) / (1000 * 60 * 60 * 24))} days
                     </Badge>
                   )}
                 </div>
@@ -87,7 +77,7 @@ export default function ChallengeTimelineVisualizer({ challenge }) {
               {t({ en: 'Recent Activity', ar: 'النشاط الأخير' })}
             </h4>
             <div className="space-y-2">
-              {activities.slice(-5).reverse().map((activity, i) => (
+              {activities.slice(0, 5).map((activity, i) => (
                 <div key={i} className="text-sm p-2 bg-slate-50 rounded">
                   <p className="text-slate-700">{activity.description}</p>
                   <p className="text-xs text-slate-500">

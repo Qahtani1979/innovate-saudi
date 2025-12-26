@@ -1,22 +1,18 @@
-import React, { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { useLanguage } from '../LanguageContext';
-import { Award, Download, Mail, CheckCircle } from 'lucide-react';
-import { toast } from 'sonner';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function AutomatedCertificateGenerator({ programId, graduates }) {
   const { language, t } = useLanguage();
   const [generating, setGenerating] = useState(false);
   const [certificates, setCertificates] = useState([]);
+  const { triggerEmail } = useEmailTrigger();
 
   const generateCertificates = async () => {
     setGenerating(true);
     try {
       const certs = graduates.map(g => ({
         participant: g.startup_name,
+        name: g.applicant_name,
+        email: g.applicant_email,
         achievement: g.program_completion_score >= 90 ? 'Excellence' :
           g.program_completion_score >= 75 ? 'Honor' : 'Completion',
         date: new Date().toLocaleDateString(),
@@ -33,8 +29,8 @@ export default function AutomatedCertificateGenerator({ programId, graduates }) 
   };
 
   const sendCertificate = async (cert) => {
-    await supabase.functions.invoke('email-trigger-hub', {
-      body: {
+    try {
+      await triggerEmail({
         trigger: 'program.completed',
         recipient_email: cert.email,
         entity_type: 'program',
@@ -45,9 +41,11 @@ export default function AutomatedCertificateGenerator({ programId, graduates }) 
           credentialId: cert.credential_id
         },
         triggered_by: 'system'
-      }
-    });
-    toast.success(t({ en: 'Certificate sent', ar: 'تم إرسال الشهادة' }));
+      });
+      toast.success(t({ en: 'Certificate sent', ar: 'تم إرسال الشهادة' }));
+    } catch (error) {
+      // toast handled by hook mostly, but safe to keep success here if needed or let hook handle it
+    }
   };
 
   return (

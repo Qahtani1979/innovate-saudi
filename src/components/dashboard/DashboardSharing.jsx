@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Share2, Copy, Mail } from 'lucide-react';
+import { Share2, Copy, Mail, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 /**
  * Dashboard sharing functionality
@@ -12,6 +12,8 @@ import { supabase } from '@/integrations/supabase/client';
 export default function DashboardSharing({ dashboardConfig, dashboardName }) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
+
+  const { notify, isNotifying } = useNotificationSystem();
 
   const shareUrl = `${window.location.origin}/shared-dashboard/${btoa(JSON.stringify(dashboardConfig))}`;
 
@@ -24,20 +26,27 @@ export default function DashboardSharing({ dashboardConfig, dashboardName }) {
     if (!email) return;
 
     try {
-      await supabase.functions.invoke('email-trigger-hub', {
-        body: {
-          trigger: 'dashboard.shared',
-          recipient_email: email,
-          variables: {
-            dashboardName: dashboardName,
-            shareUrl: shareUrl
-          }
-        }
+      await notify({
+        type: 'dashboard_share',
+        recipientEmails: [email],
+        title: `Dashboard Shared: ${dashboardName || 'Analytics'}`,
+        message: `A dashboard has been shared with you.`,
+        sendEmail: true,
+        emailTemplate: 'dashboard.share', // Ensure this template exists or logic handles it
+        emailVariables: {
+          dashboardName: dashboardName,
+          shareUrl: shareUrl
+        },
+        entityType: 'dashboard',
+        entityId: dashboardName || 'shared_dashboard'
       });
+
       toast.success('Dashboard shared via email');
       setEmail('');
       setOpen(false);
     } catch (error) {
+      // toast handled by hook mostly, but safe to keep generic error
+      console.error(error);
       toast.error('Failed to share dashboard');
     }
   };
@@ -61,7 +70,7 @@ export default function DashboardSharing({ dashboardConfig, dashboardName }) {
                 <Copy className="h-4 w-4" />
               </Button>
             </div>
-            
+
             <div className="flex gap-2">
               <Input
                 type="email"
@@ -69,8 +78,8 @@ export default function DashboardSharing({ dashboardConfig, dashboardName }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
-              <Button size="sm" onClick={shareViaEmail}>
-                <Mail className="h-4 w-4" />
+              <Button size="sm" onClick={shareViaEmail} disabled={isNotifying}>
+                {isNotifying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
               </Button>
             </div>
           </div>

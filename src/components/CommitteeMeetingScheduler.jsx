@@ -1,22 +1,20 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
-import { Calendar, Mail, X, CheckCircle2 } from 'lucide-react';
+import { Calendar, Mail, X, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { useGovernanceMutations } from '@/hooks/useGovernance';
 
 export default function CommitteeMeetingScheduler({ rdCall, proposals, onClose }) {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
-  const { triggerEmail } = useEmailTrigger();
+  const { scheduleCommitteeMeeting } = useGovernanceMutations();
 
   const [meetingData, setMeetingData] = useState({
-    title: `${rdCall?.code} - Final Evaluation Committee Meeting`,
+    title: `${rdCall?.code || ''} - Final Evaluation Committee Meeting`,
     date: '',
     time: '',
     duration_minutes: 120,
@@ -31,60 +29,8 @@ export default function CommitteeMeetingScheduler({ rdCall, proposals, onClose }
     notes: ''
   });
 
-  const createMeetingMutation = useMutation({
-    mutationFn: async (data) => {
-      // Create calendar event (stored as task for now, can be enhanced with calendar integration)
-      await base44.entities.Task.create({
-        title: data.title,
-        description: `${data.agenda}\n\nLocation: ${data.location}\nLink: ${data.meeting_link || 'N/A'}\n\nAttendees: ${data.attendees.join(', ')}`,
-        due_date: data.date,
-        status: 'todo',
-        priority: 'high',
-        tags: ['committee_meeting', 'rd_evaluation', rdCall.code]
-      });
-
-      // Update RD Call with meeting details
-      await base44.entities.RDCall.update(rdCall.id, {
-        evaluation_meeting_scheduled: true,
-        evaluation_meeting_date: data.date,
-        evaluation_meeting_link: data.meeting_link
-      });
-
-      return data;
-    },
-    onSuccess: async (data) => {
-      queryClient.invalidateQueries(['rd-call']);
-      queryClient.invalidateQueries(['tasks']);
-      
-      // Send email notifications to attendees using triggerEmail
-      for (const attendee of data.attendees) {
-        try {
-          await triggerEmail('event.invitation', {
-            entityType: 'rd_call',
-            entityId: rdCall.id,
-            recipientEmail: attendee,
-            variables: {
-              meetingTitle: data.title,
-              meetingDate: data.date,
-              meetingTime: data.time,
-              durationMinutes: data.duration_minutes,
-              location: data.location,
-              meetingLink: data.meeting_link || 'To be provided',
-              agenda: data.agenda
-            }
-          });
-        } catch (error) {
-          console.error('Failed to send meeting invitation to:', attendee, error);
-        }
-      }
-      
-      toast.success(t({ en: 'Meeting scheduled and invitations sent', ar: 'تم جدولة الاجتماع وإرسال الدعوات' }));
-      onClose();
-    }
-  });
-
   const handleAddAttendee = (email) => {
-    if (email && !meetingData.attendees.includes(email)) {
+    if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && !meetingData.attendees.includes(email)) {
       setMeetingData({ ...meetingData, attendees: [...meetingData.attendees, email] });
     }
   };
@@ -105,7 +51,15 @@ export default function CommitteeMeetingScheduler({ rdCall, proposals, onClose }
       toast.error(t({ en: 'Please add at least one attendee', ar: 'يرجى إضافة حضور واحد على الأقل' }));
       return;
     }
-    createMeetingMutation.mutate(meetingData);
+
+    scheduleCommitteeMeeting.mutate({
+      rdCall,
+      meetingData
+    }, {
+      onSuccess: () => {
+        onClose();
+      }
+    });
   };
 
   return (
@@ -137,6 +91,7 @@ export default function CommitteeMeetingScheduler({ rdCall, proposals, onClose }
               value={meetingData.date}
               onChange={(e) => setMeetingData({ ...meetingData, date: e.target.value })}
               min={new Date().toISOString().split('T')[0]}
+              disabled={scheduleCommitteeMeeting.isPending}
             />
           </div>
           <div>
@@ -147,6 +102,7 @@ export default function CommitteeMeetingScheduler({ rdCall, proposals, onClose }
               type="time"
               value={meetingData.time}
               onChange={(e) => setMeetingData({ ...meetingData, time: e.target.value })}
+              disabled={scheduleCommitteeMeeting.isPending}
             />
           </div>
         </div>
@@ -158,9 +114,10 @@ export default function CommitteeMeetingScheduler({ rdCall, proposals, onClose }
           <Input
             type="number"
             value={meetingData.duration_minutes}
-            onChange={(e) => setMeetingData({ ...meetingData, duration_minutes: parseInt(e.target.value) })}
+            onChange={(e) => setMeetingData({ ...meetingData, duration_minutes: parseInt(e.target.value) || 120 })}
             min={30}
             step={15}
+            disabled={scheduleCommitteeMeeting.isPending}
           />
         </div>
 
@@ -172,6 +129,7 @@ export default function CommitteeMeetingScheduler({ rdCall, proposals, onClose }
             placeholder={t({ en: 'Zoom/Teams link or physical location', ar: 'رابط زوم/تيمز أو موقع فعلي' })}
             value={meetingData.meeting_link}
             onChange={(e) => setMeetingData({ ...meetingData, meeting_link: e.target.value })}
+            disabled={scheduleCommitteeMeeting.isPending}
           />
         </div>
 
@@ -183,6 +141,7 @@ export default function CommitteeMeetingScheduler({ rdCall, proposals, onClose }
             value={meetingData.agenda}
             onChange={(e) => setMeetingData({ ...meetingData, agenda: e.target.value })}
             rows={6}
+            disabled={scheduleCommitteeMeeting.isPending}
           />
         </div>
 
@@ -200,14 +159,18 @@ export default function CommitteeMeetingScheduler({ rdCall, proposals, onClose }
                   e.target.value = '';
                 }
               }}
+              disabled={scheduleCommitteeMeeting.isPending}
             />
             <Button
               variant="outline"
               onClick={(e) => {
-                const input = e.target.closest('div').querySelector('input');
-                handleAddAttendee(input.value);
-                input.value = '';
+                const input = e.currentTarget.parentElement.querySelector('input');
+                if (input) {
+                  handleAddAttendee(input.value);
+                  input.value = '';
+                }
               }}
+              disabled={scheduleCommitteeMeeting.isPending}
             >
               {t({ en: 'Add', ar: 'إضافة' })}
             </Button>
@@ -217,7 +180,11 @@ export default function CommitteeMeetingScheduler({ rdCall, proposals, onClose }
               <Badge key={i} className="bg-blue-100 text-blue-700 flex items-center gap-1">
                 <Mail className="h-3 w-3" />
                 {email}
-                <button onClick={() => handleRemoveAttendee(email)} className="ml-1 hover:text-red-600">
+                <button
+                  onClick={() => handleRemoveAttendee(email)}
+                  className="ml-1 hover:text-red-600"
+                  disabled={scheduleCommitteeMeeting.isPending}
+                >
                   <X className="h-3 w-3" />
                 </button>
               </Badge>
@@ -228,10 +195,10 @@ export default function CommitteeMeetingScheduler({ rdCall, proposals, onClose }
         <div className="flex gap-3 pt-4 border-t">
           <Button
             onClick={handleSubmit}
-            disabled={createMeetingMutation.isPending}
+            disabled={scheduleCommitteeMeeting.isPending}
             className="flex-1 bg-green-600 hover:bg-green-700"
           >
-            {createMeetingMutation.isPending ? (
+            {scheduleCommitteeMeeting.isPending ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <CheckCircle2 className="h-4 w-4 mr-2" />

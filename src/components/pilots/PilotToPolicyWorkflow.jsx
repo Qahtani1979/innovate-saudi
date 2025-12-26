@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,11 +12,12 @@ import {
   buildPolicyWorkflowPrompt,
   POLICY_WORKFLOW_SCHEMA
 } from '@/lib/ai/prompts/pilots/policyWorkflow';
+import { usePolicyMutations } from '@/hooks/usePolicyMutations';
 
 export default function PilotToPolicyWorkflow({ pilot, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const { invokeAI, isLoading: aiGenerating, status, error, rateLimitInfo } = useAIWithFallback();
+  const { createPolicy } = usePolicyMutations();
 
   const [formData, setFormData] = useState({
     policy_recommendation_ar: '',
@@ -47,22 +46,8 @@ export default function PilotToPolicyWorkflow({ pilot, onClose }) {
     }
   };
 
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase
-        .from('policy_recommendations')
-        .insert(data);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['policies']);
-      toast.success(t({ en: 'Policy recommendation created', ar: 'تم إنشاء التوصية' }));
-      onClose();
-    }
-  });
-
   const handleSubmit = () => {
-    createMutation.mutate({
+    createPolicy.mutate({
       title_ar: `توصية سياسة من: ${pilot.title_ar || pilot.title_en}`,
       title_en: `Policy Recommendation from: ${pilot.title_en}`,
       recommendation_ar: formData.policy_recommendation_ar,
@@ -76,6 +61,10 @@ export default function PilotToPolicyWorkflow({ pilot, onClose }) {
       workflow_stage: 'draft',
       evidence_type: 'pilot_results',
       priority: 'medium'
+    }, {
+      onSuccess: () => {
+        onClose?.();
+      }
     });
   };
 
@@ -92,7 +81,7 @@ export default function PilotToPolicyWorkflow({ pilot, onClose }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
-        
+
         <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
           <p className="text-sm text-blue-900">
             <strong>{t({ en: 'From Pilot:', ar: 'من التجربة:' })}</strong>{' '}
@@ -146,12 +135,12 @@ export default function PilotToPolicyWorkflow({ pilot, onClose }) {
           </label>
           <Textarea
             value={language === 'ar' ? formData.rationale_ar : formData.rationale_en}
-            onChange={(e) => setFormData({ 
-              ...formData, 
-              [language === 'ar' ? 'rationale_ar' : 'rationale_en']: e.target.value 
+            onChange={(e) => setFormData({
+              ...formData,
+              [language === 'ar' ? 'rationale_ar' : 'rationale_en']: e.target.value
             })}
             rows={3}
-            placeholder={t({ 
+            placeholder={t({
               en: 'Why this policy change, based on pilot evidence?',
               ar: 'لماذا هذا التغيير، بناءً على أدلة التجربة؟'
             })}
@@ -164,10 +153,10 @@ export default function PilotToPolicyWorkflow({ pilot, onClose }) {
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!formData.policy_recommendation_en || createMutation.isPending}
+            disabled={!formData.policy_recommendation_en || createPolicy.isPending}
             className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600"
           >
-            {createMutation.isPending ? (
+            {createPolicy.isPending ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <ArrowRight className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />

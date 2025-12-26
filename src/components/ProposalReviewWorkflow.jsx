@@ -4,19 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { toast } from 'sonner';
 import { CheckCircle2, X, AlertTriangle, ThumbsUp, ThumbsDown, Clock } from 'lucide-react';
+import { useRDProposalMutations } from '@/hooks/useRDProposalMutations';
 
 export default function ProposalReviewWorkflow({ proposal, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
   const [reviewNotes, setReviewNotes] = useState('');
   const [decision, setDecision] = useState(null);
-  
+
   const [checklist, setChecklist] = useState({
     eligibility_verified: false,
     methodology_sound: false,
@@ -28,26 +25,7 @@ export default function ProposalReviewWorkflow({ proposal, onClose }) {
     innovation_level: false
   });
 
-  const reviewMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('rd_proposals')
-        .update({
-          status: decision === 'approve' ? 'under_review' : decision === 'reject' ? 'rejected' : 'revision_requested',
-          review_date: new Date().toISOString(),
-          review_notes: reviewNotes,
-          review_checklist: checklist,
-          reviewer: user?.email
-        })
-        .eq('id', proposal.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['rdProposal']);
-      toast.success(t({ en: 'Review completed', ar: 'اكتملت المراجعة' }));
-      onClose();
-    }
-  });
+  const { reviewProposal } = useRDProposalMutations();
 
   const toggleCheck = (key) => {
     setChecklist(prev => ({ ...prev, [key]: !prev[key] }));
@@ -83,7 +61,7 @@ export default function ProposalReviewWorkflow({ proposal, onClose }) {
         {/* Review Checklist */}
         <div className="space-y-3">
           <h4 className="font-semibold text-slate-900">{t({ en: 'Review Criteria', ar: 'معايير المراجعة' })}</h4>
-          
+
           {[
             { key: 'eligibility_verified', label: { en: 'Eligibility verified', ar: 'التحقق من الأهلية' }, critical: true },
             { key: 'methodology_sound', label: { en: 'Methodology is sound', ar: 'المنهجية سليمة' }, critical: true },
@@ -96,14 +74,12 @@ export default function ProposalReviewWorkflow({ proposal, onClose }) {
           ].map(item => (
             <div
               key={item.key}
-              className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
-                checklist[item.key] ? 'bg-green-50 border-green-300' : 'bg-white border-slate-200'
-              }`}
+              className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all ${checklist[item.key] ? 'bg-green-50 border-green-300' : 'bg-white border-slate-200'
+                }`}
               onClick={() => toggleCheck(item.key)}
             >
-              <div className={`h-5 w-5 rounded border-2 flex items-center justify-center ${
-                checklist[item.key] ? 'bg-green-600 border-green-600' : 'border-slate-300'
-              }`}>
+              <div className={`h-5 w-5 rounded border-2 flex items-center justify-center ${checklist[item.key] ? 'bg-green-600 border-green-600' : 'border-slate-300'
+                }`}>
                 {checklist[item.key] && <CheckCircle2 className="h-4 w-4 text-white" />}
               </div>
               <div className="flex-1">
@@ -125,7 +101,7 @@ export default function ProposalReviewWorkflow({ proposal, onClose }) {
           <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
             <p className="text-sm text-yellow-700">
-              {t({ 
+              {t({
                 en: 'All critical criteria must be met for approval',
                 ar: 'يجب استيفاء جميع المعايير الحرجة للموافقة'
               })}
@@ -141,7 +117,7 @@ export default function ProposalReviewWorkflow({ proposal, onClose }) {
           <Textarea
             value={reviewNotes}
             onChange={(e) => setReviewNotes(e.target.value)}
-            placeholder={t({ 
+            placeholder={t({
               en: 'Provide detailed feedback...',
               ar: 'قدم ملاحظات مفصلة...'
             })}
@@ -186,8 +162,15 @@ export default function ProposalReviewWorkflow({ proposal, onClose }) {
             {t({ en: 'Cancel', ar: 'إلغاء' })}
           </Button>
           <Button
-            onClick={() => reviewMutation.mutate()}
-            disabled={!decision || !reviewNotes || reviewMutation.isPending}
+            onClick={() => reviewProposal.mutate({
+              proposalId: proposal.id,
+              decision,
+              notes: reviewNotes,
+              userEmail: user?.email
+            }, {
+              onSuccess: () => onClose()
+            })}
+            disabled={!decision || !reviewNotes || reviewProposal.isPending}
             className="bg-gradient-to-r from-purple-600 to-blue-600"
           >
             {t({ en: 'Submit Review', ar: 'تقديم المراجعة' })}

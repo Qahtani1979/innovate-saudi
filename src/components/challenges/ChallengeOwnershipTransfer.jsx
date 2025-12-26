@@ -1,52 +1,51 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserPlus, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { useUsersWithVisibility } from '@/hooks/useUsersWithVisibility';
+import { useChallengeMutations } from '@/hooks/useChallengeMutations';
 
 export default function ChallengeOwnershipTransfer({ challenge, onTransferComplete }) {
-  const queryClient = useQueryClient();
   const { user } = useAuth();
   const [newOwnerEmail, setNewOwnerEmail] = useState('');
   const [transferReason, setTransferReason] = useState('');
 
   // Use visibility-aware users hook - only shows users the current user can see
   const { data: users = [], isLoading: usersLoading } = useUsersWithVisibility();
+  const { updateChallenge } = useChallengeMutations();
 
-  const transferMutation = useMutation({
-    mutationFn: async () => {
-      const oldOwner = challenge.challenge_owner_email;
-      
-      const { error } = await supabase
-        .from('challenges')
-        .update({
-          challenge_owner_email: newOwnerEmail,
-          ownership_transfer_history: [
-            ...(challenge.ownership_transfer_history || []),
-            {
-              from: oldOwner,
-              to: newOwnerEmail,
-              reason: transferReason,
-              date: new Date().toISOString(),
-              transferred_by: user?.email || 'unknown'
-            }
-          ]
-        })
-        .eq('id', challenge.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['challenges'] });
-      toast.success('Ownership transferred successfully');
-      onTransferComplete?.();
-    }
-  });
+  const handleTransfer = () => {
+    const oldOwner = challenge.challenge_owner_email;
+
+    updateChallenge.mutate({
+      id: challenge.id,
+      data: {
+        challenge_owner_email: newOwnerEmail,
+        ownership_transfer_history: [
+          ...(challenge.ownership_transfer_history || []),
+          {
+            from: oldOwner,
+            to: newOwnerEmail,
+            reason: transferReason,
+            date: new Date().toISOString(),
+            transferred_by: user?.email || 'unknown'
+          }
+        ]
+      },
+      activityLog: {
+        activity_type: 'ownership_transferred',
+        description: `Ownership transferred from ${oldOwner} to ${newOwnerEmail}`,
+        metadata: { from: oldOwner, to: newOwnerEmail, reason: transferReason }
+      }
+    }, {
+      onSuccess: () => {
+        onTransferComplete?.();
+      }
+    });
+  };
 
   return (
     <Card className="border-2 border-orange-300">
@@ -96,12 +95,12 @@ export default function ChallengeOwnershipTransfer({ challenge, onTransferComple
           />
         </div>
 
-        <Button 
-          onClick={() => transferMutation.mutate()} 
-          disabled={!newOwnerEmail || !transferReason || transferMutation.isPending}
+        <Button
+          onClick={handleTransfer}
+          disabled={!newOwnerEmail || !transferReason || updateChallenge.isPending}
           className="w-full bg-orange-600"
         >
-          {transferMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          {updateChallenge.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
           Transfer Ownership
         </Button>
       </CardContent>

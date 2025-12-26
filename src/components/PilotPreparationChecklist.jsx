@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { useLanguage } from './LanguageContext';
 import { CheckCircle2, Circle, Loader2, Rocket, AlertTriangle } from 'lucide-react';
 import { usePilotMutations } from '@/hooks/usePilotMutations';
-import { supabase } from '@/integrations/supabase/client';
+
 
 export default function PilotPreparationChecklist({ pilot, onClose }) {
   const { language, isRTL, t } = useLanguage();

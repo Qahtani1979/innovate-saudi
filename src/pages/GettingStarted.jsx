@@ -1,6 +1,5 @@
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useOnboardingMutations } from '@/hooks/useOnboardingMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,32 +13,20 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 function GettingStarted() {
   const { language, isRTL, t } = useLanguage();
   const { user, userProfile } = useAuth();
-  const queryClient = useQueryClient();
+  const { upsertProfile } = useOnboardingMutations();
 
-  const updateProgressMutation = useMutation({
-    mutationFn: async (data) => {
-      if (userProfile?.id) {
-        const { error } = await supabase
-          .from('user_profiles')
-          .update(data)
-          .eq('id', userProfile.id);
-        if (error) throw error;
-      } else if (user?.email) {
-        const { error } = await supabase
-          .from('user_profiles')
-          .insert({ ...data, user_email: user.email });
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['user-profile']);
-    }
-  });
+
 
   const completeStep = (step) => {
     const current = userProfile?.onboarding_progress || {};
-    updateProgressMutation.mutate({
-      onboarding_progress: { ...current, [step]: true }
+    upsertProfile.mutate({
+      table: 'user_profiles',
+      data: {
+        id: userProfile?.id,
+        user_email: user?.email,
+        onboarding_progress: { ...current, [step]: true }
+      },
+      matchingColumns: ['user_email'] // Ensure we match on email if id is missing, or just handle upsert logic
     });
   };
 
@@ -143,8 +130,8 @@ function GettingStarted() {
                         </Button>
                       </Link>
                       {!isComplete && (
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           variant="outline"
                           onClick={() => completeStep(step.id)}
                         >

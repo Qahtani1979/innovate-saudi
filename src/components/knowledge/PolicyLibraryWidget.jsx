@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,36 +7,31 @@ import { useLanguage } from '../LanguageContext';
 import { Shield, Search, BookOpen, Loader2, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
+import { usePolicyRecommendations } from '@/hooks/usePolicyRecommendations';
 
 export default function PolicyLibraryWidget() {
   const { language, isRTL, t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStage, setFilterStage] = useState('all');
 
-  const { data: policies = [], isLoading } = useQuery({
-    queryKey: ['knowledge-policies'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('policy_recommendations')
-        .select('*');
-      if (error) throw error;
-      // Only show published/active policies in knowledge hub
-      return (data || []).filter(p => 
-        ['published', 'active', 'implemented'].includes(p.workflow_stage || p.status)
-      );
-    }
-  });
+  // Fetch all policies
+  const { data: allPolicies = [], isLoading } = usePolicyRecommendations();
+
+  // Filter for library view (active ones)
+  const policies = allPolicies.filter(p =>
+    ['published', 'active', 'implemented'].includes(p.workflow_stage || p.status)
+  );
 
   const filteredPolicies = policies.filter(p => {
-    const matchesSearch = !searchQuery || 
+    const matchesSearch = !searchQuery ||
       p.title_ar?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.title_en?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.recommendation_text_ar?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.recommendation_text_en?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesFilter = filterStage === 'all' || 
+
+    const matchesFilter = filterStage === 'all' ||
       (p.workflow_stage || p.status) === filterStage;
-    
+
     return matchesSearch && matchesFilter;
   });
 
@@ -130,8 +123,8 @@ export default function PolicyLibraryWidget() {
                               )}
                             </div>
                             <p className="text-xs text-slate-600 mt-2 line-clamp-2" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                              {language === 'ar' && policy.recommendation_text_ar 
-                                ? policy.recommendation_text_ar 
+                              {language === 'ar' && policy.recommendation_text_ar
+                                ? policy.recommendation_text_ar
                                 : policy.recommendation_text_en}
                             </p>
                           </div>

@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,40 +9,16 @@ import { useLanguage } from './LanguageContext';
 import { Users, BarChart3, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+import { useRDProposalMutations } from '@/hooks/useRDProposalMutations';
 
 export default function RDCallEvaluationPanel({ rdCall, proposals }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
   const [selectedProposal, setSelectedProposal] = useState(null);
   const [scores, setScores] = useState({});
   const [comments, setComments] = useState('');
 
-  const scoreMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase
-        .from('rd_proposals')
-        .update({
-          reviewer_scores: [...(data.existingScores || []), {
-            reviewer: data.reviewer,
-            scores: data.scores,
-            comments: data.comments,
-            total: data.total,
-            date: new Date().toISOString()
-          }],
-          ai_score: data.aiScore
-        })
-        .eq('id', data.proposalId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['proposals'] });
-      toast.success(t({ en: 'Score submitted', ar: 'تم إرسال التقييم' }));
-      setSelectedProposal(null);
-      setScores({});
-      setComments('');
-    }
-  });
+  const { submitScore } = useRDProposalMutations();
 
   const evaluationCriteria = rdCall.evaluation_criteria || [
     { criterion: 'Scientific Merit', weight: 30 },
@@ -67,14 +41,19 @@ export default function RDCallEvaluationPanel({ rdCall, proposals }) {
 
   const handleSubmit = () => {
     const total = calculateTotal();
-    scoreMutation.mutate({
-      proposalId: selectedProposal.id,
-      existingScores: selectedProposal.reviewer_scores,
+    submitScore.mutate({
+      proposal: selectedProposal,
       reviewer: user?.email || 'Anonymous',
       scores,
       comments,
       total,
       aiScore: selectedProposal.ai_score
+    }, {
+      onSuccess: () => {
+        setSelectedProposal(null);
+        setScores({});
+        setComments('');
+      }
     });
   };
 
@@ -99,10 +78,10 @@ export default function RDCallEvaluationPanel({ rdCall, proposals }) {
               ) : (
                 eligibleProposals.map((proposal) => {
                   const reviewCount = proposal.reviewer_scores?.length || 0;
-                  const avgScore = reviewCount > 0 
-                    ? proposal.reviewer_scores.reduce((sum, r) => sum + r.total, 0) / reviewCount 
+                  const avgScore = reviewCount > 0
+                    ? proposal.reviewer_scores.reduce((sum, r) => sum + r.total, 0) / reviewCount
                     : null;
-                  
+
                   return (
                     <div key={proposal.id} className="p-4 border rounded-lg hover:bg-slate-50 cursor-pointer" onClick={() => setSelectedProposal(proposal)}>
                       <div className="flex items-start justify-between">
@@ -201,7 +180,7 @@ export default function RDCallEvaluationPanel({ rdCall, proposals }) {
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={Object.keys(scores).length === 0 || scoreMutation.isPending}
+                disabled={Object.keys(scores).length === 0 || submitScore.isPending}
                 className="flex-1 bg-blue-600 hover:bg-blue-700"
               >
                 <CheckCircle2 className="h-4 w-4 mr-2" />

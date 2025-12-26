@@ -4,27 +4,15 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
 import { Users, FileText } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useProgramApplications } from '@/hooks/useProgramDetails';
 
 export default function CohortManagement({ program, cohort }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: applications = [] } = useQuery({
-    queryKey: ['cohort-participants', program?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('program_applications')
-        .select('*')
-        .eq('program_id', program?.id)
-        .eq('status', 'accepted');
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!program?.id
-  });
+  const { data: applications = [] } = useProgramApplications(program?.id);
+  const acceptedApplications = applications.filter(app => app.status === 'accepted');
 
-  const participants = applications.map(app => ({
+  const participants = acceptedApplications.map(app => ({
     id: app.id,
     name: app.applicant_org_name || app.applicant_name,
     email: app.applicant_email,
@@ -80,8 +68,8 @@ export default function CohortManagement({ program, cohort }) {
                   <p className="font-medium text-sm">{participant.name}</p>
                   <Badge className={
                     participant.status === 'excellent' ? 'bg-green-100 text-green-700' :
-                    participant.status === 'on_track' ? 'bg-blue-100 text-blue-700' :
-                    'bg-yellow-100 text-yellow-700'
+                      participant.status === 'on_track' ? 'bg-blue-100 text-blue-700' :
+                        'bg-yellow-100 text-yellow-700'
                   }>
                     {participant.status.replace('_', ' ')}
                   </Badge>

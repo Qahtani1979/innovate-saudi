@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+// import { supabase } from '@/integrations/supabase/client';
+// import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRDMutations } from '@/hooks/useRDMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +14,8 @@ import { toast } from 'sonner';
 
 export default function IPManagementWidget({ project }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  const { updateProject } = useRDMutations();
+  // const queryClient = useQueryClient();
   const [showAddPatent, setShowAddPatent] = useState(false);
   const [showAddLicense, setShowAddLicense] = useState(false);
   const [editingPatent, setEditingPatent] = useState(null);
@@ -35,45 +37,34 @@ export default function IPManagementWidget({ project }) {
     agreement_url: ''
   });
 
-  const updateProjectMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase
-        .from('rd_projects')
-        .update(data)
-        .eq('id', project.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['rd-project']);
-      toast.success(t({ en: 'Updated', ar: 'تم التحديث' }));
-      setShowAddPatent(false);
-      setShowAddLicense(false);
-      setEditingPatent(null);
-      setPatentData({ title: '', number: '', status: 'filed', filing_date: '', grant_date: '', jurisdiction: 'Saudi Arabia' });
-      setLicenseData({ licensee: '', patent_title: '', license_type: 'exclusive', start_date: '', end_date: '', royalty_rate: 0, agreement_url: '' });
-    }
-  });
+  const handleUpdateSuccess = () => {
+    setShowAddPatent(false);
+    setShowAddLicense(false);
+    setEditingPatent(null);
+    setPatentData({ title: '', number: '', status: 'filed', filing_date: '', grant_date: '', jurisdiction: 'Saudi Arabia' });
+    setLicenseData({ licensee: '', patent_title: '', license_type: 'exclusive', start_date: '', end_date: '', royalty_rate: 0, agreement_url: '' });
+  };
 
   const handleAddPatent = () => {
     const patents = [...(project.patents || []), patentData];
-    updateProjectMutation.mutate({ patents });
+    updateProject.mutate({ id: project.id, data: { patents } }, { onSuccess: handleUpdateSuccess });
   };
 
   const handleUpdatePatent = () => {
-    const patents = project.patents.map((p, i) => 
+    const patents = project.patents.map((p, i) =>
       i === editingPatent ? patentData : p
     );
-    updateProjectMutation.mutate({ patents });
+    updateProject.mutate({ id: project.id, data: { patents } }, { onSuccess: handleUpdateSuccess });
   };
 
   const handleDeletePatent = (index) => {
     const patents = project.patents.filter((_, i) => i !== index);
-    updateProjectMutation.mutate({ patents });
+    updateProject.mutate({ id: project.id, data: { patents } }, { onSuccess: handleUpdateSuccess });
   };
 
   const handleAddLicense = () => {
     const licenses = [...(project.ip_licenses || []), licenseData];
-    updateProjectMutation.mutate({ ip_licenses: licenses });
+    updateProject.mutate({ id: project.id, data: { ip_licenses: licenses } }, { onSuccess: handleUpdateSuccess });
   };
 
   const patents = project.patents || [];
@@ -155,31 +146,31 @@ export default function IPManagementWidget({ project }) {
           <CardContent className="space-y-4">
             <div>
               <Label>{t({ en: 'Patent Title', ar: 'عنوان البراءة' })}</Label>
-              <Input value={patentData.title} onChange={(e) => setPatentData({...patentData, title: e.target.value})} />
+              <Input value={patentData.title} onChange={(e) => setPatentData({ ...patentData, title: e.target.value })} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>{t({ en: 'Patent Number', ar: 'رقم البراءة' })}</Label>
-                <Input value={patentData.number} onChange={(e) => setPatentData({...patentData, number: e.target.value})} />
+                <Input value={patentData.number} onChange={(e) => setPatentData({ ...patentData, number: e.target.value })} />
               </div>
               <div>
                 <Label>{t({ en: 'Jurisdiction', ar: 'النطاق القضائي' })}</Label>
-                <Input value={patentData.jurisdiction} onChange={(e) => setPatentData({...patentData, jurisdiction: e.target.value})} />
+                <Input value={patentData.jurisdiction} onChange={(e) => setPatentData({ ...patentData, jurisdiction: e.target.value })} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>{t({ en: 'Filing Date', ar: 'تاريخ الإيداع' })}</Label>
-                <Input type="date" value={patentData.filing_date} onChange={(e) => setPatentData({...patentData, filing_date: e.target.value})} />
+                <Input type="date" value={patentData.filing_date} onChange={(e) => setPatentData({ ...patentData, filing_date: e.target.value })} />
               </div>
               <div>
                 <Label>{t({ en: 'Grant Date', ar: 'تاريخ المنح' })}</Label>
-                <Input type="date" value={patentData.grant_date} onChange={(e) => setPatentData({...patentData, grant_date: e.target.value})} />
+                <Input type="date" value={patentData.grant_date} onChange={(e) => setPatentData({ ...patentData, grant_date: e.target.value })} />
               </div>
             </div>
             <div>
               <Label>{t({ en: 'Status', ar: 'الحالة' })}</Label>
-              <Select value={patentData.status} onValueChange={(v) => setPatentData({...patentData, status: v})}>
+              <Select value={patentData.status} onValueChange={(v) => setPatentData({ ...patentData, status: v })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -264,16 +255,16 @@ export default function IPManagementWidget({ project }) {
           <CardContent className="space-y-4">
             <div>
               <Label>{t({ en: 'Licensee Organization', ar: 'المنظمة المرخصة' })}</Label>
-              <Input value={licenseData.licensee} onChange={(e) => setLicenseData({...licenseData, licensee: e.target.value})} />
+              <Input value={licenseData.licensee} onChange={(e) => setLicenseData({ ...licenseData, licensee: e.target.value })} />
             </div>
             <div>
               <Label>{t({ en: 'Patent/Technology', ar: 'البراءة/التقنية' })}</Label>
-              <Input value={licenseData.patent_title} onChange={(e) => setLicenseData({...licenseData, patent_title: e.target.value})} />
+              <Input value={licenseData.patent_title} onChange={(e) => setLicenseData({ ...licenseData, patent_title: e.target.value })} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>{t({ en: 'License Type', ar: 'نوع الترخيص' })}</Label>
-                <Select value={licenseData.license_type} onValueChange={(v) => setLicenseData({...licenseData, license_type: v})}>
+                <Select value={licenseData.license_type} onValueChange={(v) => setLicenseData({ ...licenseData, license_type: v })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -286,22 +277,22 @@ export default function IPManagementWidget({ project }) {
               </div>
               <div>
                 <Label>{t({ en: 'Royalty Rate (%)', ar: 'نسبة العائد (%)' })}</Label>
-                <Input type="number" min="0" max="100" value={licenseData.royalty_rate} onChange={(e) => setLicenseData({...licenseData, royalty_rate: parseFloat(e.target.value)})} />
+                <Input type="number" min="0" max="100" value={licenseData.royalty_rate} onChange={(e) => setLicenseData({ ...licenseData, royalty_rate: parseFloat(e.target.value) })} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>{t({ en: 'Start Date', ar: 'تاريخ البداية' })}</Label>
-                <Input type="date" value={licenseData.start_date} onChange={(e) => setLicenseData({...licenseData, start_date: e.target.value})} />
+                <Input type="date" value={licenseData.start_date} onChange={(e) => setLicenseData({ ...licenseData, start_date: e.target.value })} />
               </div>
               <div>
                 <Label>{t({ en: 'End Date', ar: 'تاريخ النهاية' })}</Label>
-                <Input type="date" value={licenseData.end_date} onChange={(e) => setLicenseData({...licenseData, end_date: e.target.value})} />
+                <Input type="date" value={licenseData.end_date} onChange={(e) => setLicenseData({ ...licenseData, end_date: e.target.value })} />
               </div>
             </div>
             <div>
               <Label>{t({ en: 'Agreement URL', ar: 'رابط الاتفاقية' })}</Label>
-              <Input value={licenseData.agreement_url} onChange={(e) => setLicenseData({...licenseData, agreement_url: e.target.value})} placeholder="https://..." />
+              <Input value={licenseData.agreement_url} onChange={(e) => setLicenseData({ ...licenseData, agreement_url: e.target.value })} placeholder="https://..." />
             </div>
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => setShowAddLicense(false)} className="flex-1">

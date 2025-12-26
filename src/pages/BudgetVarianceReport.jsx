@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useBudgets } from '@/hooks/useBudgets';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -10,17 +9,9 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 function BudgetVarianceReport() {
   const { t } = useLanguage();
 
-  const { data: budgets = [], isLoading } = useQuery({
-    queryKey: ['budgets-variance'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('budgets')
-        .select('*')
-        .eq('status', 'active')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
+  const { data: budgets = [], isLoading } = useBudgets({
+    status: 'active',
+    is_deleted: false
   });
 
   const budgetsWithVariance = budgets.map(b => {
@@ -125,7 +116,7 @@ function BudgetVarianceReport() {
         <CardContent>
           <div className="space-y-3">
             {highVariance.map(budget => (
-                <div key={budget.id} className="p-4 border rounded-lg">
+              <div key={budget.id} className="p-4 border rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <p className="font-semibold text-slate-900">{budget.budget_code || budget.name_en}</p>

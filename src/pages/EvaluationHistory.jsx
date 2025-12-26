@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useEvaluationHistory } from '@/hooks/useEvaluationHistory';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,32 +16,16 @@ function EvaluationHistoryPage() {
   const [searchParams] = useSearchParams();
   const entityType = searchParams.get('entity_type') || 'all';
   const entityId = searchParams.get('entity_id');
-  
+
   const [filterEntityType, setFilterEntityType] = useState(entityType);
   const [filterEvaluator, setFilterEvaluator] = useState('all');
   const [filterRecommendation, setFilterRecommendation] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const { data: evaluations = [], isLoading } = useQuery({
-    queryKey: ['all-evaluations-history', filterEntityType, entityId],
-    queryFn: async () => {
-      let query = supabase
-        .from('expert_evaluations')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (filterEntityType && filterEntityType !== 'all') {
-        query = query.eq('entity_type', filterEntityType);
-      }
-      
-      if (entityId) {
-        query = query.eq('entity_id', entityId);
-      }
-
-      const { data, error } = await query.limit(200);
-      if (error) throw error;
-      return data || [];
-    }
+  const { data: evaluations = [], isLoading } = useEvaluationHistory({
+    entityType, // from URL (used as initial state but not directly in query unless filterEntityType matches it? No, original used filterEntityType state)
+    entityId,
+    filterEntityType
   });
 
   const exportHistory = () => {
@@ -75,7 +58,7 @@ function EvaluationHistoryPage() {
   const filtered = evaluations.filter(e => {
     const evaluatorMatch = filterEvaluator === 'all' || e.evaluator_email === filterEvaluator;
     const recMatch = filterRecommendation === 'all' || e.recommendation === filterRecommendation;
-    const searchMatch = !searchQuery || 
+    const searchMatch = !searchQuery ||
       e.feedback_text?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       e.evaluator_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       e.entity_type?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -107,7 +90,7 @@ function EvaluationHistoryPage() {
     approved: evaluations.filter(e => e.recommendation?.includes('approve')).length,
     rejected: evaluations.filter(e => e.recommendation?.includes('reject')).length,
     pending: evaluations.filter(e => e.status === 'pending' || e.status === 'draft').length,
-    avgScore: evaluations.length > 0 
+    avgScore: evaluations.length > 0
       ? Math.round(evaluations.reduce((sum, e) => sum + (e.overall_score || 0), 0) / evaluations.length)
       : 0
   };
@@ -340,10 +323,6 @@ function EvaluationHistoryPage() {
   );
 }
 
-export default function EvaluationHistory() {
-  return (
-    <ProtectedPage requiredPermission="expert_evaluate">
-      <EvaluationHistoryPage />
-    </ProtectedPage>
-  );
-}
+export const EvaluationHistoryPageWithAuth = ProtectedPage(EvaluationHistoryPage, { requiredPermissions: ['expert_evaluate'] });
+
+export default EvaluationHistoryPageWithAuth;

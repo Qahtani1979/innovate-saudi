@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,47 +8,52 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { buildReviewerAssignmentPrompt, REVIEWER_ASSIGNMENT_SCHEMA } from '@/lib/ai/prompts/rd';
+import { useRDProposalsWithVisibility } from '@/hooks/useRDProposalsWithVisibility';
+import { useUsersWithVisibility } from '@/hooks/useUsersWithVisibility';
+import { useRDProposalMutations } from '@/hooks/useRDProposalMutations';
 
 export default function ReviewerAutoAssignment({ rdCall, onClose }) {
   const { t, isRTL } = useLanguage();
   const { invokeAI, status, isLoading: loading, rateLimitInfo, isAvailable } = useAIWithFallback();
   const [assignments, setAssignments] = useState(null);
-  const queryClient = useQueryClient();
+  const { updateRDProposal } = useRDProposalMutations();
 
-  const { data: proposals = [] } = useQuery({
-    queryKey: ['proposals-for-call', rdCall?.id],
-    queryFn: async () => {
-      const all = await base44.entities.RDProposal.list();
-      return all.filter(p => p.rd_call_id === rdCall?.id && p.status === 'under_review');
-    },
-    enabled: !!rdCall?.id
+  const { data: proposals = [] } = useRDProposalsWithVisibility({
+    rdCallId: rdCall?.id,
+    status: 'under_review',
+    hasFullVisibility: true // Admin tool
   });
 
-  const { data: users = [] } = useQuery({
-    queryKey: ['users'],
-    queryFn: () => base44.entities.User.list()
+  const { data: usersData } = useUsersWithVisibility({
+    pageSize: 1000,
+    hasFullVisibility: true // Admin tool
   });
+  const users = usersData?.data || [];
 
-  const updateMutation = useMutation({
-    mutationFn: async (assignmentData) => {
+  const handleConfirmAssignments = async (assignmentData) => {
+    try {
       const updates = assignmentData.map(({ proposalId, reviewers }) =>
-        base44.entities.RDProposal.update(proposalId, { 
-          review_assigned_to: reviewers[0],
-          reviewer_assignments: reviewers 
+        updateRDProposal.mutateAsync({
+          id: proposalId,
+          updates: {
+            review_assigned_to: reviewers[0],
+            reviewer_assignments: reviewers
+          }
         })
       );
-      return Promise.all(updates);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['proposals-for-call']);
+      await Promise.all(updates);
+
       toast.success(t({ en: 'Reviewers assigned successfully', ar: 'تم تعيين المراجعين بنجاح' }));
       onClose();
+    } catch (error) {
+      // Error handled by hook logs
+      console.error(error);
     }
-  });
+  };
 
   const handleAutoAssign = async () => {
     if (!isAvailable) return;
-    
+
     const prompt = buildReviewerAssignmentPrompt({ rdCall, users, proposals });
 
     const result = await invokeAI({
@@ -86,7 +90,7 @@ export default function ReviewerAutoAssignment({ rdCall, onClose }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
-        
+
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-slate-700">
             {t({
@@ -161,7 +165,7 @@ export default function ReviewerAutoAssignment({ rdCall, onClose }) {
 
             <div className="flex gap-3 pt-4 border-t">
               <Button
-                onClick={() => updateMutation.mutate(assignments.assignments)}
+                onClick={() => handleConfirmAssignments(assignments.assignments)}
                 className="flex-1 bg-green-600 hover:bg-green-700"
               >
                 <CheckCircle2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />

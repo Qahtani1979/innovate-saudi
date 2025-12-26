@@ -1,55 +1,19 @@
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
+import { useTrendingSolutions } from '../../hooks/useSolutions';
 import { TrendingUp, Star, Building2, ArrowRight, Zap } from 'lucide-react';
 
 export default function TrendingSolutionsWidget() {
   const { language, isRTL, t } = useLanguage();
   const [currentIndex, setCurrentIndex] = React.useState(0);
 
-  const { data: trendingSolutions = [] } = useQuery({
-    queryKey: ['trending-solutions'],
-    queryFn: async () => {
-      const now = new Date();
-      const last30Days = new Date(now.setDate(now.getDate() - 30));
-
-      const solutions = await base44.entities.Solution.filter({
-        is_published: true,
-        is_verified: true
-      }, '-updated_date', 10);
-
-      const interests = await base44.entities.SolutionInterest.list();
-      const demos = await base44.entities.DemoRequest.list();
-      const reviews = await base44.entities.SolutionReview.list();
-
-      return solutions.map(solution => {
-        const recentInterests = interests.filter(i => 
-          i.solution_id === solution.id && 
-          new Date(i.created_date) > last30Days
-        ).length;
-        const recentDemos = demos.filter(d => 
-          d.solution_id === solution.id && 
-          new Date(d.created_date) > last30Days
-        ).length;
-        const recentReviews = reviews.filter(r => 
-          r.solution_id === solution.id && 
-          new Date(r.created_date) > last30Days
-        ).length;
-
-        return {
-          ...solution,
-          trendingScore: recentInterests * 3 + recentDemos * 5 + recentReviews * 10
-        };
-      })
-      .sort((a, b) => b.trendingScore - a.trendingScore)
-      .slice(0, 5);
-    }
-  });
+  const { data: trendingSolutions = [] } = useTrendingSolutions();
 
   React.useEffect(() => {
     if (trendingSolutions.length === 0) return;
@@ -76,9 +40,8 @@ export default function TrendingSolutionsWidget() {
               <button
                 key={idx}
                 onClick={() => setCurrentIndex(idx)}
-                className={`h-2 w-2 rounded-full transition-all ${
-                  idx === currentIndex ? 'bg-amber-600 w-6' : 'bg-amber-300'
-                }`}
+                className={`h-2 w-2 rounded-full transition-all ${idx === currentIndex ? 'bg-amber-600 w-6' : 'bg-amber-300'
+                  }`}
               />
             ))}
           </div>

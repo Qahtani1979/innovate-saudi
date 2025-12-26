@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { useScaling } from '@/hooks/useScaling';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,7 +21,7 @@ import { useAuth } from '@/lib/AuthContext';
 
 function ScalingWorkflow() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+
   const { user } = useAuth();
   const [scalingPlans, setScalingPlans] = useState({});
   const [showAdvancedWizard, setShowAdvancedWizard] = useState(false);
@@ -35,7 +34,9 @@ function ScalingWorkflow() {
     useCompletedPilots,
     useScaledPilots,
     useScalingPlans,
-    useApproveScaling
+    useScalingPlans,
+    useApproveScaling,
+    invalidateScalingPlans
   } = useScaling();
 
   const { data: completedPilots = [] } = useCompletedPilots(user);
@@ -60,7 +61,7 @@ function ScalingWorkflow() {
               onComplete={() => {
                 setShowAdvancedWizard(false);
                 setSelectedPilotForWizard(null);
-                queryClient.invalidateQueries(['scaling-plans']);
+                invalidateScalingPlans();
               }}
               onCancel={() => {
                 setShowAdvancedWizard(false);
@@ -79,7 +80,7 @@ function ScalingWorkflow() {
               scalingPlan={scalingPlansData.find(p => p.id === selectedPlanId)}
               onApproved={(data) => {
                 setShowIntegrationGate(false);
-                queryClient.invalidateQueries(['scaling-plans']);
+                invalidateScalingPlans();
               }}
               onClose={() => setShowIntegrationGate(false)}
             />
@@ -95,11 +96,11 @@ function ScalingWorkflow() {
               scalingPlan={scalingPlansData.find(p => p.id === selectedPlanId)}
               onApproved={() => {
                 setShowBudgetGate(false);
-                queryClient.invalidateQueries(['scaling-plans']);
+                invalidateScalingPlans();
               }}
               onRejected={() => {
                 setShowBudgetGate(false);
-                queryClient.invalidateQueries(['scaling-plans']);
+                invalidateScalingPlans();
               }}
             />
             <Button variant="outline" onClick={() => setShowBudgetGate(false)} className="w-full mt-4">

@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useMentorships } from '@/hooks/useMentorships';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -12,18 +11,8 @@ function MenteeProgress() {
   const { t } = useLanguage();
   const { user } = useAuth();
 
-  const { data: myMentorships = [], isLoading } = useQuery({
-    queryKey: ['my-mentorships-mentee', user?.email],
-    queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await supabase
-        .from('program_mentorships')
-        .select('*')
-        .eq('mentee_email', user.email);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user
+  const { data: myMentorships = [], isLoading } = useMentorships({
+    menteeEmail: user?.email
   });
 
   const activeMentorship = myMentorships.find(m => m.status === 'active');
@@ -119,11 +108,11 @@ function MenteeProgress() {
                   <span className="text-slate-600">{t({ en: 'Session Progress', ar: 'تقدم الجلسات' })}</span>
                   <span className="font-medium">{activeMentorship.sessions_completed || 0} / {activeMentorship.sessions_planned || 0}</span>
                 </div>
-                <Progress 
-                  value={activeMentorship.sessions_planned > 0 
-                    ? (activeMentorship.sessions_completed / activeMentorship.sessions_planned) * 100 
+                <Progress
+                  value={activeMentorship.sessions_planned > 0
+                    ? (activeMentorship.sessions_completed / activeMentorship.sessions_planned) * 100
                     : 0
-                  } 
+                  }
                 />
               </div>
             </div>

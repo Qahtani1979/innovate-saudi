@@ -9,20 +9,23 @@ export function usePartnershipMutations(onCreateSuccess) {
 
     const createPartnership = useMutation({
         mutationFn: async ({ data, userEmail }) => {
-            const { error } = await supabase
+            const { data: partnership, error } = await supabase
                 .from('partnerships')
                 .insert({
                     ...data,
                     status: 'prospect',
                     created_by: userEmail
-                });
+                })
+                .select() // Ensure we return the created item
+                .single();
             if (error) throw error;
+            return partnership;
         },
-        onSuccess: () => {
+        onSuccess: (newItem) => {
             queryClient.invalidateQueries(['partnerships']);
             queryClient.invalidateQueries(['partnerships-with-visibility']);
             toast.success(t({ en: 'Partnership created successfully', ar: 'تم إنشاء الشراكة بنجاح' }));
-            if (onCreateSuccess) onCreateSuccess();
+            if (onCreateSuccess) onCreateSuccess(newItem);
         },
         onError: (error) => {
             toast.error(t({ en: 'Failed to create partnership', ar: 'فشل في إنشاء الشراكة' }));
@@ -49,6 +52,44 @@ export function usePartnershipMutations(onCreateSuccess) {
         }
     });
 
+    const generateRecommendations = useMutation({
+        mutationFn: async ({ strategicPlanId, capabilityNeeds, partnershipTypes }) => {
+            const { data, error } = await supabase.functions.invoke('strategy-partnership-matcher', {
+                body: {
+                    strategic_plan_id: strategicPlanId,
+                    capability_needs: capabilityNeeds,
+                    partnership_types: partnershipTypes
+                }
+            });
+
+            if (error) throw error;
+            return data?.partner_recommendations || [];
+        },
+        onError: (error) => {
+            console.error('Generation error:', error);
+            toast.error(t({ en: 'Failed to generate recommendations', ar: 'فشل في إنشاء التوصيات' }));
+        }
+    });
+
+    const notifyPartner = useMutation({
+        mutationFn: async ({ organizationId, recipientEmail, details }) => {
+            const { error } = await supabase.functions.invoke('email-trigger-hub', {
+                body: {
+                    trigger: 'partnership.proposal',
+                    recipient_email: recipientEmail, // 'admin@platform.gov.sa' or specific email
+                    entity_type: 'organization',
+                    entity_id: organizationId,
+                    variables: details
+                }
+            });
+            if (error) throw error;
+        },
+        onError: (error) => {
+            console.error('Failed to notify partner:', error);
+            // Silent failure or toast? Often silent for notifications unless critical workflow step
+        }
+    });
+
     /**
      * Refresh partnerships cache (Gold Standard Pattern)
      */
@@ -60,7 +101,9 @@ export function usePartnershipMutations(onCreateSuccess) {
     return {
         createPartnership,
         updatePartnership,
-        refreshPartnerships  // ✅ Gold Standard
+        generateRecommendations,
+        notifyPartner,
+        refreshPartnerships
     };
 }
 

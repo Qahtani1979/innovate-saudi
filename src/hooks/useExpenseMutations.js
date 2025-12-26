@@ -3,11 +3,28 @@
  * Handles CRUD operations for pilot expenses with audit logging
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { useAuditLogger, AUDIT_ACTIONS, ENTITY_TYPES } from './useAuditLogger';
+
+export function usePilotExpenses(pilotId) {
+    return useQuery({
+        queryKey: ['pilot-expenses', pilotId],
+        queryFn: async () => {
+            if (!pilotId) return [];
+            const { data, error } = await supabase
+                .from('pilot_expenses')
+                .select('*')
+                .eq('pilot_id', pilotId)
+                .order('expense_date', { ascending: false });
+            if (error) throw error;
+            return data || [];
+        },
+        enabled: !!pilotId
+    });
+}
 
 export function useExpenseMutations(pilotId) {
     const queryClient = useQueryClient();

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { usePolicyActivities } from '@/hooks/usePolicies';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -7,19 +7,9 @@ import { History, User, Clock } from 'lucide-react';
 export default function PolicyEditHistory({ policyId }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: activities = [] } = useQuery({
-    queryKey: ['policy-activities', policyId],
-    queryFn: async () => {
-      const acts = await base44.entities.SystemActivity.filter({ 
-        entity_type: 'PolicyRecommendation',
-        entity_id: policyId 
-      }, '-created_date', 20);
-      return acts;
-    },
-    enabled: !!policyId
-  });
+  const { data: activities = [] } = usePolicyActivities(policyId);
 
-  const editActivities = activities.filter(a => 
+  const editActivities = activities.filter(a =>
     a.action_type === 'updated' && a.changes
   );
 

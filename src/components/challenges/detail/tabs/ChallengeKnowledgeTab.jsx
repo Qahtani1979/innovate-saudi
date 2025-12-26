@@ -2,28 +2,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '@/components/LanguageContext';
 import { Network, BookOpen, Loader2 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useChallengeInterests } from '@/hooks/useChallengeInterests';
+import { useChallengesWithVisibility } from '@/hooks/visibility';
 
 export default function ChallengeKnowledgeTab({ challenge, challengeId }) {
   const { language, t } = useLanguage();
 
-  const { data: relations = [], isLoading: loadingRelations } = useQuery({
-    queryKey: ['challenge-relations', challengeId],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenge_interests').select('*').eq('challenge_id', challengeId);
-      return data || [];
-    },
-    enabled: !!challengeId
-  });
+  const { data: relationsData = [], isLoading: loadingRelations } = useChallengeInterests(challengeId);
+  // @ts-ignore
+  const relations = Array.isArray(relationsData) ? relationsData : (relationsData?.data || []);
 
-  const { data: allChallenges = [] } = useQuery({
-    queryKey: ['all-challenges'],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false);
-      return data || [];
-    }
-  });
+  const { data: challengesResponse = [] } = useChallengesWithVisibility({ limit: 1000 });
+  // @ts-ignore
+  const allChallenges = Array.isArray(challengesResponse) ? challengesResponse : (challengesResponse?.data || []);
 
   if (loadingRelations) {
     return <div className="text-center py-8"><Loader2 className="h-8 w-8 animate-spin mx-auto text-purple-600" /></div>;
@@ -97,10 +88,10 @@ export default function ChallengeKnowledgeTab({ challenge, challengeId }) {
                         {similar.status}
                       </Badge>
                     </div>
-                    {similar.status === 'resolved' && similar.lessons_learned?.length > 0 && (
+                    {similar.status === 'resolved' && Array.isArray(similar.lessons_learned) && similar.lessons_learned.length > 0 && (
                       <div className="mt-2 p-2 bg-white rounded text-xs">
                         <p className="font-semibold text-teal-700 mb-1">{t({ en: 'Key Lesson:', ar: 'درس رئيسي:' })}</p>
-                        <p className="text-muted-foreground">{similar.lessons_learned[0].lesson}</p>
+                        <p className="text-muted-foreground">{similar.lessons_learned?.[0]?.lesson || ''}</p>
                       </div>
                     )}
                   </div>

@@ -29,6 +29,7 @@ export function useRegulatoryExemptions(options = {}) {
 
             if (sandboxId) query = query.eq('sandbox_id', sandboxId);
             if (options.sandboxIds && options.sandboxIds.length > 0) query = query.in('sandbox_id', options.sandboxIds);
+            if (options.applicationId) query = query.eq('sandbox_application_id', options.applicationId);
             if (status) query = query.eq('status', status);
             if (category) query = query.eq('category', category);
 
@@ -88,6 +89,29 @@ export function useExemptionAuditLogs(exemptionId) {
         },
         enabled: !!exemptionId,
         staleTime: 1000 * 60 * 2, // 2 minutes
+    });
+}
+
+/**
+ * Hook for fetching exemption audit logs for multiple exemptions
+ */
+export function useExemptionAuditLogsList(exemptionIds = []) {
+    return useQuery({
+        queryKey: ['exemption-audit-list', exemptionIds],
+        queryFn: async () => {
+            if (!exemptionIds.length) return [];
+
+            const { data, error } = await supabase
+                .from('exemption_audit_logs')
+                .select('*')
+                .in('exemption_id', exemptionIds)
+                .order('action_date', { ascending: false })
+                .limit(50);
+
+            if (error) throw error;
+            return data || [];
+        },
+        enabled: exemptionIds.length > 0,
     });
 }
 

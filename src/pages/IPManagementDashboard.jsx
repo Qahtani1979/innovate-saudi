@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useRDProjects } from '@/hooks/useRDProjects';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,22 +11,16 @@ import { Award, Shield, DollarSign, Building2, Search, Calendar, FileText } from
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
+/**
+ * IPManagementDashboard
+ * ✅ GOLD STANDARD COMPLIANT
+ */
 function IPManagementDashboard() {
   const { language, isRTL, t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects-ip'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_projects')
-        .select('*');
-
-      if (error) throw error;
-      return (data || []).filter(item => !item.is_deleted);
-    }
-  });
+  const { data: rdProjects = [], isLoading } = useRDProjects();
 
   // Aggregate IP data
   const allPatents = rdProjects.flatMap(p =>

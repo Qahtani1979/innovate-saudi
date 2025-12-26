@@ -1,5 +1,6 @@
 
-import { useQuery } from '@tanstack/react-query';
+import { useSandboxIncidents } from '@/hooks/useSandboxIncidents';
+import { useRegulatoryExemptions } from '@/hooks/useRegulatoryExemptions';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,14 +10,16 @@ import { BookOpen, Share2, Download } from 'lucide-react';
 export default function SandboxKnowledgeExchange({ sandboxId }) {
   const { language, t } = useLanguage();
 
-  const { data: allIncidents = [] } = useQuery({
-    queryKey: ['all-sandbox-incidents'],
-    queryFn: () => base44.entities.SandboxIncident.list()
+  // Fetch all resolved incidents across all sandboxes
+  const { data: allIncidents = [] } = useSandboxIncidents({
+    status: 'resolved',
+    limit: 50
   });
 
-  const { data: allExemptions = [] } = useQuery({
-    queryKey: ['all-exemptions'],
-    queryFn: () => base44.entities.RegulatoryExemption.list()
+  // Fetch all active exemptions across all sandboxes
+  const { data: allExemptions = [] } = useRegulatoryExemptions({
+    status: 'active',
+    limit: 50
   });
 
   const sharedProtocols = allIncidents

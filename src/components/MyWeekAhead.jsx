@@ -1,59 +1,40 @@
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useLanguage } from './LanguageContext';
+import { useLanguage } from '@/components/LanguageContext';
 import { Calendar, AlertTriangle, Clock } from 'lucide-react';
 import { format, addDays, isWithinInterval } from 'date-fns';
+import { useTasks } from '@/hooks/useTasks';
+import { usePilotsList } from '@/hooks/usePilots';
 
 export default function MyWeekAhead() {
-  const { language, isRTL, t } = useLanguage();
+  const { t } = useLanguage();
   const { user } = useAuth();
 
-  const { data: myTasks = [] } = useQuery({
-    queryKey: ['my-tasks-week', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('tasks')
-        .select('*')
-        .or(`assigned_to.eq.${user?.email},created_by.eq.${user?.email}`)
-        .neq('status', 'completed')
-        .not('due_date', 'is', null);
-      return data || [];
-    },
-    enabled: !!user?.email
-  });
+  const { useUserTasks } = useTasks({ user });
+  const { data: myTasks = [] } = useUserTasks();
 
-  const { data: myPilots = [] } = useQuery({
-    queryKey: ['my-pilots-week', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('is_deleted', false)
-        .eq('created_by', user?.email);
-      return data || [];
-    },
-    enabled: !!user?.email
+  const { data: myPilots = [] } = usePilotsList({
+    createdBy: user?.email
   });
 
   const today = new Date();
   const nextWeek = addDays(today, 7);
 
-  const thisWeekTasks = myTasks.filter(t => 
+  // @ts-ignore
+  const thisWeekTasks = myTasks.filter(t =>
     isWithinInterval(new Date(t.due_date), { start: today, end: nextWeek })
   );
 
-  const thisWeekMilestones = myPilots.flatMap(p => 
+  const thisWeekMilestones = myPilots.flatMap(p =>
     (p.milestones || [])
       .filter(m => m.status !== 'completed' && m.due_date)
       .filter(m => isWithinInterval(new Date(m.due_date), { start: today, end: nextWeek }))
       .map(m => ({ ...m, pilot: p }))
   );
 
-  const critical = thisWeekTasks.filter(t => t.priority === 'high').length + 
-                   thisWeekMilestones.filter(m => new Date(m.due_date) < addDays(today, 3)).length;
+  const critical = thisWeekTasks.filter(t => t.priority === 'high').length +
+    thisWeekMilestones.filter(m => new Date(m.due_date) < addDays(today, 3)).length;
 
   return (
     <Card className="border-2 border-blue-300">

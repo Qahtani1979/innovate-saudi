@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { useOnboardingMutations } from '@/hooks/useOnboardingMutations';
+import { useMunicipalities } from '@/hooks/useMunicipalities';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,8 +16,8 @@ import { useAuth } from '@/lib/AuthContext';
 import { createPageUrl } from '@/utils';
 import FileUploader from '../FileUploader';
 import { useDepartments, useSpecializations, submitCustomEntry } from '@/hooks/useLookupData';
-import { 
-  Building2, ArrowRight, ArrowLeft, CheckCircle2, 
+import {
+  Building2, ArrowRight, ArrowLeft, CheckCircle2,
   MapPin, Users, Shield, Loader2, Upload, FileText, Globe, Plus
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -40,14 +40,15 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
   const { invokeAI } = useAIWithFallback();
   const { language, isRTL, t, toggleLanguage } = useLanguage();
   const { user, userProfile, checkAuth } = useAuth();
-  const queryClient = useQueryClient();
+
   const navigate = useNavigate();
-  
+  const { upsertProfile, createRoleRequest } = useOnboardingMutations();
+
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExtractingCV, setIsExtractingCV] = useState(false);
   const [dataImportSource, setDataImportSource] = useState(null);
-  
+
   const [formData, setFormData] = useState({
     cv_url: '',
     municipality_id: '',
@@ -66,29 +67,31 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
     try {
       // Store skip timestamp in session storage (will reset on browser close)
       sessionStorage.setItem('municipality_wizard_skipped', Date.now().toString());
-      
+
       // Update profile to track skip count (optional - for analytics)
       if (user?.id) {
-        await supabase
-          .from('user_profiles')
-          .update({
+        await upsertProfile.mutateAsync({
+          table: 'user_profiles',
+          data: {
             metadata: {
               ...(userProfile?.metadata || {}),
               wizard_skip_count: ((userProfile?.metadata?.wizard_skip_count || 0) + 1),
               last_wizard_skip: new Date().toISOString()
-            }
-          })
-          .eq('user_id', user.id);
+            },
+            updated_at: new Date().toISOString()
+          },
+          matchingColumns: ['user_id']
+        });
       }
-      
-      toast.info(t({ 
-        en: 'You can complete your profile anytime from your dashboard settings.', 
-        ar: 'يمكنك إكمال ملفك الشخصي في أي وقت من إعدادات لوحة التحكم.' 
+
+      toast.info(t({
+        en: 'You can complete your profile anytime from your dashboard settings.',
+        ar: 'يمكنك إكمال ملفك الشخصي في أي وقت من إعدادات لوحة التحكم.'
       }));
-      
+
       // Call parent onSkip if provided
       onSkip?.();
-      
+
       // Navigate to dashboard
       navigate(createPageUrl('MunicipalityDashboard'));
     } catch (error) {
@@ -109,7 +112,7 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
       } else if (extractedData.imported_from_cv || userProfile.cv_url) {
         setDataImportSource('cv');
       }
-      
+
       setFormData(prev => ({
         ...prev,
         cv_url: userProfile.cv_url || prev.cv_url,
@@ -124,23 +127,12 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
   }, [userProfile]);
 
   // Fetch municipalities with approved email domains
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities-list'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('municipalities')
-        .select('id, name_en, name_ar, region_id, approved_email_domains')
-        .eq('is_active', true)
-        .order('name_en');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: municipalities = [] } = useMunicipalities({ includeInactive: false });
 
   // Fetch dynamic departments and specializations
   const { data: departments = [] } = useDepartments();
   const { data: specializations = [] } = useSpecializations();
-  
+
   // Custom entry states
   const [showCustomDepartment, setShowCustomDepartment] = useState(false);
   const [customDepartment, setCustomDepartment] = useState('');
@@ -153,10 +145,10 @@ export default function MunicipalityStaffOnboardingWizard({ onComplete, onSkip }
     const municipality = municipalities.find(m => m.id === municipalityId);
     const approvedDomains = municipality?.approved_email_domains || [];
     if (approvedDomains.length === 0) return false;
-    
+
     const emailDomain = userEmail.split('@')[1]?.toLowerCase();
-    return approvedDomains.some(domain => 
-      emailDomain === domain.toLowerCase() || 
+    return approvedDomains.some(domain =>
+      emailDomain === domain.toLowerCase() ||
       emailDomain?.endsWith('.' + domain.toLowerCase())
     );
   };
@@ -241,12 +233,13 @@ Extract the following in JSON format:
     }
 
     setIsSubmitting(true);
-    
+
     try {
       // Update user profile with both legacy and _en fields for consistency
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .update({
+      await upsertProfile.mutateAsync({
+        table: 'user_profiles',
+        data: {
+          user_id: user.id,
           municipality_id: formData.municipality_id || null,
           department: formData.department || null,
           department_en: formData.department || null,
@@ -258,24 +251,25 @@ Extract the following in JSON format:
           persona_onboarding_completed: true,
           onboarding_completed_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
-
-      if (profileError) throw profileError;
+        }
+      });
 
       // Create municipality staff profile
-      await supabase.from('municipality_staff_profiles').upsert({
-        user_id: user.id,
-        user_email: user.email,
-        municipality_id: formData.municipality_id,
-        department: formData.department,
-        job_title: formData.job_title,
-        employee_id: formData.employee_id,
-        years_of_experience: formData.years_of_experience,
-        specializations: formData.specializations,
-        cv_url: formData.cv_url,
-        is_verified: false
-      }, { onConflict: 'user_id' });
+      await upsertProfile.mutateAsync({
+        table: 'municipality_staff_profiles',
+        data: {
+          user_id: user.id,
+          user_email: user.email,
+          municipality_id: formData.municipality_id,
+          department: formData.department,
+          job_title: formData.job_title,
+          employee_id: formData.employee_id,
+          years_of_experience: formData.years_of_experience,
+          specializations: formData.specializations,
+          cv_url: formData.cv_url,
+          is_verified: false
+        }
+      });
 
       // Handle role assignment via edge function for security
       const isStaffRole = formData.role_level === 'staff';
@@ -285,7 +279,7 @@ Extract the following in JSON format:
         // Auto-approve staff role via unified rbac-manager
         try {
           const { assignRole } = await import('@/services/rbac/rbacService');
-          await assignRole.default ? 
+          await assignRole.default ?
             assignRole.default.assignRole({
               user_id: user.id,
               user_email: user.email,
@@ -298,27 +292,30 @@ Extract the following in JSON format:
               role: 'municipality_staff',
               municipality_id: formData.municipality_id
             });
-          
+
           // Mark staff profile as verified since domain matched
-          await supabase.from('municipality_staff_profiles')
-            .update({ is_verified: true })
-            .eq('user_id', user.id);
-          
+          await upsertProfile.mutateAsync({
+            table: 'municipality_staff_profiles',
+            data: {
+              user_id: user.id,
+              is_verified: true
+            }
+          });
+
           toast.success(t({ en: 'Staff role automatically approved!', ar: 'تم الموافقة على دور الموظف تلقائياً!' }));
         } catch (roleError) {
           console.error('Role assignment error:', roleError);
         }
       } else if (isStaffRole && !isEmailDomainApproved) {
         // Staff role but email domain not approved - submit for review
-        await supabase.from('role_requests').insert({
-          user_id: user.id,
-          user_email: user.email,
-          requested_role: 'municipality_staff',
-          municipality_id: formData.municipality_id || null,
+        await createRoleRequest.mutateAsync({
+          userId: user.id,
+          role: 'municipality_staff',
+          department: formData.department, // Assuming department might be useful context
           justification: formData.justification || t({ en: 'Staff role request', ar: 'طلب دور موظف' }),
-          status: 'pending'
+          municipality_id: formData.municipality_id
         });
-        
+
         // Notify via unified rbac-manager
         try {
           const rbacService = (await import('@/services/rbac/rbacService')).default;
@@ -334,21 +331,20 @@ Extract the following in JSON format:
         } catch (notifErr) {
           console.warn('Notification error:', notifErr);
         }
-        
+
         toast.info(t({ en: 'Staff role request submitted for approval', ar: 'تم تقديم طلب دور الموظف للموافقة' }));
       } else if (!isStaffRole && formData.justification) {
         // Higher roles (coordinator, manager) always require admin approval
         const requestedRole = formData.role_level === 'manager' ? 'municipality_admin' : 'municipality_coordinator';
-        
-        await supabase.from('role_requests').insert({
-          user_id: user.id,
-          user_email: user.email,
-          requested_role: requestedRole,
-          municipality_id: formData.municipality_id || null,
+
+        await createRoleRequest.mutateAsync({
+          userId: user.id,
+          role: requestedRole,
+          department: formData.department,
           justification: formData.justification,
-          status: 'pending'
+          municipality_id: formData.municipality_id
         });
-        
+
         // Notify via unified rbac-manager
         try {
           const rbacService = (await import('@/services/rbac/rbacService')).default;
@@ -365,11 +361,11 @@ Extract the following in JSON format:
         } catch (notifErr) {
           console.warn('Notification error:', notifErr);
         }
-        
+
         toast.info(t({ en: 'Role request submitted for admin approval', ar: 'تم تقديم طلب الدور لموافقة المسؤول' }));
       }
 
-      await queryClient.invalidateQueries(['user-profile']);
+
       if (checkAuth) await checkAuth();
 
       toast.success(t({ en: 'Municipality profile setup complete!', ar: 'تم إعداد ملف البلدية!' }));
@@ -397,7 +393,7 @@ Extract the following in JSON format:
     <div className="fixed inset-0 bg-gradient-to-br from-purple-900/95 via-slate-900/95 to-blue-900/95 backdrop-blur-sm z-50 overflow-y-auto" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="min-h-screen py-8 px-4">
         <div className="max-w-2xl mx-auto space-y-6">
-          
+
           {/* Header with Language Toggle */}
           <div className="text-center text-white">
             <div className="flex items-center justify-between mb-4">
@@ -408,8 +404,8 @@ Extract the following in JSON format:
                   {t({ en: 'Municipality Staff Setup', ar: 'إعداد موظف البلدية' })}
                 </h1>
               </div>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={toggleLanguage}
                 className="text-white/70 hover:text-white hover:bg-white/10 font-medium w-24"
@@ -431,13 +427,12 @@ Extract the following in JSON format:
                   const StepIcon = step.icon;
                   const isActive = currentStep === step.id;
                   const isComplete = currentStep > step.id;
-                  
+
                   return (
                     <React.Fragment key={step.id}>
-                      <Badge className={`px-3 py-2 border-0 ${
-                        isActive ? 'bg-purple-600 text-white' : 
+                      <Badge className={`px-3 py-2 border-0 ${isActive ? 'bg-purple-600 text-white' :
                         isComplete ? 'bg-green-600 text-white' : 'bg-white/10 text-white/60'
-                      }`}>
+                        }`}>
                         <StepIcon className="h-4 w-4 mr-1" />
                         {step.title[language]}
                       </Badge>
@@ -468,7 +463,7 @@ Extract the following in JSON format:
                     <div className="flex items-center gap-2 text-green-800 mb-2">
                       <CheckCircle2 className="h-5 w-5" />
                       <span className="font-medium">
-                        {dataImportSource === 'linkedin' 
+                        {dataImportSource === 'linkedin'
                           ? t({ en: 'Data imported from LinkedIn!', ar: 'تم استيراد البيانات من لينكد إن!' })
                           : t({ en: 'Data imported from CV!', ar: 'تم استيراد البيانات من السيرة الذاتية!' })}
                       </span>
@@ -492,7 +487,7 @@ Extract the following in JSON format:
                     <FileText className="h-10 w-10 text-purple-500 flex-shrink-0" />
                     <div className="flex-1">
                       <h3 className="font-semibold text-purple-900 mb-1">
-                        {dataImportSource 
+                        {dataImportSource
                           ? t({ en: 'Upload Additional CV (Optional)', ar: 'رفع سيرة ذاتية إضافية (اختياري)' })
                           : t({ en: 'Upload CV/Resume', ar: 'رفع السيرة الذاتية' })}
                       </h3>
@@ -613,7 +608,7 @@ Extract the following in JSON format:
                       </SelectItem>
                     </SelectContent>
                   </Select>
-                  
+
                   {/* Custom department input */}
                   {showCustomDepartment && (
                     <div className="mt-2 flex gap-2">
@@ -632,6 +627,7 @@ Extract the following in JSON format:
                               await submitCustomEntry({
                                 entryType: 'department',
                                 nameEn: customDepartment,
+                                nameAr: customDepartment,
                                 userEmail: user?.email,
                                 userId: user?.id
                               });
@@ -718,7 +714,7 @@ Extract the following in JSON format:
                       {t({ en: 'Add Custom', ar: 'إضافة مخصص' })}
                     </Badge>
                   </div>
-                  
+
                   {/* Custom specialization input */}
                   {showCustomSpecialization && (
                     <div className="mt-2 flex gap-2">
@@ -737,12 +733,13 @@ Extract the following in JSON format:
                               await submitCustomEntry({
                                 entryType: 'specialization',
                                 nameEn: customSpecialization,
+                                nameAr: customSpecialization,
                                 userEmail: user?.email,
                                 userId: user?.id
                               });
-                              setFormData({ 
-                                ...formData, 
-                                specializations: [...formData.specializations, customSpecialization] 
+                              setFormData({
+                                ...formData,
+                                specializations: [...formData.specializations, customSpecialization]
                               });
                               setShowCustomSpecialization(false);
                               setCustomSpecialization('');
@@ -788,18 +785,16 @@ Extract the following in JSON format:
                     <div
                       key={role.id}
                       onClick={() => setFormData({ ...formData, role_level: role.id })}
-                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                        formData.role_level === role.id
-                          ? 'border-purple-500 bg-purple-50'
-                          : 'border-border hover:border-purple-300'
-                      }`}
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${formData.role_level === role.id
+                        ? 'border-purple-500 bg-purple-50'
+                        : 'border-border hover:border-purple-300'
+                        }`}
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`h-4 w-4 rounded-full border-2 ${
-                          formData.role_level === role.id
-                            ? 'border-purple-600 bg-purple-600'
-                            : 'border-muted-foreground'
-                        }`}>
+                        <div className={`h-4 w-4 rounded-full border-2 ${formData.role_level === role.id
+                          ? 'border-purple-600 bg-purple-600'
+                          : 'border-muted-foreground'
+                          }`}>
                           {formData.role_level === role.id && (
                             <CheckCircle2 className="h-3 w-3 text-white" />
                           )}
@@ -840,7 +835,7 @@ Extract the following in JSON format:
                   {t({ en: 'Ready to Go!', ar: 'جاهز للانطلاق!' })}
                 </h2>
                 <p className="text-green-700">
-                  {t({ 
+                  {t({
                     en: 'Your municipality profile is configured. Start exploring challenges and innovations!',
                     ar: 'تم تهيئة ملف بلديتك. ابدأ باستكشاف التحديات والابتكارات!'
                   })}

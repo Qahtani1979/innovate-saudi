@@ -1,33 +1,22 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { ThumbsUp, TrendingUp, MapPin } from 'lucide-react';
 import { useVisibilitySystem } from '@/hooks/visibility/useVisibilitySystem';
+import { useCitizenFeedback } from '@/hooks/useCitizenFeedback';
 
 export default function IdeaVotingBoard() {
   const { language, t } = useLanguage();
   const { userMunicipalityId, hasFullVisibility, isNational } = useVisibilitySystem();
 
-  // Apply visibility filtering to citizen feedback
-  const { data: ideas = [] } = useQuery({
-    queryKey: ['citizen-ideas-voting', userMunicipalityId, hasFullVisibility],
-    queryFn: async () => {
-      let query = supabase.from('citizen_feedback')
-        .select('*')
-        .eq('feedback_type', 'suggestion')
-        .eq('is_published', true);
-      
-      // Filter by municipality based on visibility (non-admins see local only)
-      if (!hasFullVisibility && !isNational && userMunicipalityId) {
-        query = query.eq('entity_id', userMunicipalityId);
-      }
-      
-      const { data } = await query.order('rating', { ascending: false });
-      return data || [];
-    }
+  // Use visibility-aware feedback hook for suggestions
+  const { data: ideas = [] } = useCitizenFeedback({
+    feedbackType: 'suggestion',
+    entityId: (!hasFullVisibility && !isNational) ? userMunicipalityId : undefined,
+    orderBy: 'rating',
+    orderDirection: 'desc',
+    isPublished: true
   });
 
   return (
@@ -49,7 +38,7 @@ export default function IdeaVotingBoard() {
                     <span className="text-xs font-bold">{idea.rating || 0}</span>
                   </Button>
                 </div>
-                
+
                 <div className="flex-1">
                   <div className="flex items-start justify-between mb-2">
                     <div>

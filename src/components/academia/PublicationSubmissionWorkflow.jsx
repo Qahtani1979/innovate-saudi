@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,11 +10,17 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
+import { useRDProject } from '@/hooks/useRDProjectsWithVisibility';
+import { useRDProjectMutations } from '@/hooks/useRDProjectMutations';
+
 export default function PublicationSubmissionWorkflow({ projectId, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+
+  const { data: project } = useRDProject(projectId);
+  const { updateRDProject } = useRDProjectMutations();
+
   const [formData, setFormData] = useState({
     title: '',
     authors: '',
@@ -54,33 +59,31 @@ export default function PublicationSubmissionWorkflow({ projectId, onClose }) {
     }
   };
 
-  const submitMutation = useMutation({
-    mutationFn: async (data) => {
-      const project = await base44.entities.RDProject.list().then(projects => 
-        projects.find(p => p.id === projectId)
-      );
+  const handleSubmit = () => {
+    const newPublication = {
+      title: formData.title,
+      authors: formData.authors.split(',').map(a => a.trim()).filter(Boolean),
+      publication: formData.publication,
+      year: formData.year,
+      url: formData.url,
+      doi: formData.doi,
+      abstract: formData.abstract,
+      keywords: formData.keywords,
+      type: formData.type
+    };
 
-      const publications = project.publications || [];
-      publications.push({
-        title: data.title,
-        authors: data.authors.split(',').map(a => a.trim()),
-        publication: data.publication,
-        year: data.year,
-        url: data.url,
-        doi: data.doi,
-        abstract: data.abstract,
-        keywords: data.keywords,
-        type: data.type
-      });
+    const { addProjectPublication } = useRDProjectMutations();
 
-      return base44.entities.RDProject.update(projectId, { publications });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['rd-projects']);
-      toast.success(t({ en: 'Publication submitted', ar: 'تم تقديم النشر' }));
-      if (onClose) onClose();
-    }
-  });
+    addProjectPublication.mutate({
+      id: projectId,
+      publications: project?.publications,
+      newPublication
+    }, {
+      onSuccess: () => {
+        if (onClose) onClose();
+      }
+    });
+  };
 
   return (
     <Card className="w-full">
@@ -209,9 +212,9 @@ export default function PublicationSubmissionWorkflow({ projectId, onClose }) {
               </label>
               <Input
                 value={formData.keywords.join(', ')}
-                onChange={(e) => setFormData({ 
-                  ...formData, 
-                  keywords: e.target.value.split(',').map(k => k.trim()) 
+                onChange={(e) => setFormData({
+                  ...formData,
+                  keywords: e.target.value.split(',').map(k => k.trim())
                 })}
                 placeholder="smart city, IoT, sustainability, ..."
               />
@@ -282,11 +285,11 @@ export default function PublicationSubmissionWorkflow({ projectId, onClose }) {
             </Button>
           ) : (
             <Button
-              onClick={() => submitMutation.mutate(formData)}
-              disabled={submitMutation.isPending}
+              onClick={handleSubmit}
+              disabled={updateRDProject.isPending}
               className="bg-green-600 hover:bg-green-700"
             >
-              {submitMutation.isPending ? (
+              {updateRDProject.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : (
                 <CheckCircle2 className="h-4 w-4 mr-2" />

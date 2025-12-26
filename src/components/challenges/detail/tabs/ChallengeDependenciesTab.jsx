@@ -6,9 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '@/components/LanguageContext';
 import { Network, AlertCircle, Sparkles } from 'lucide-react';
 import { createPageUrl } from '@/utils';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { usePilotsWithVisibility, useContractsWithVisibility, useSolutionsWithVisibility } from '@/hooks/visibility';
+
+import { useChallengeInterests } from '@/hooks/useChallengeInterests';
+import {
+    usePilotsWithVisibility,
+    useSolutionsWithVisibility,
+    useChallengesWithVisibility,
+    useRDProjectsWithVisibility,
+    useProgramsWithVisibility
+} from '@/hooks/visibility';
 
 export default function ChallengeDependenciesTab({ challenge }) {
     const { t } = useLanguage();
@@ -16,49 +22,14 @@ export default function ChallengeDependenciesTab({ challenge }) {
     const [relationManagerOpen, setRelationManagerOpen] = useState(false);
 
     // Fetch Relations
-    const { data: relations = [], isLoading: isLoadingRelations } = useQuery({
-        queryKey: ['challenge-interests', challengeId],
-        queryFn: async () => {
-            const { data } = await supabase.from('challenge_interests').select('*').eq('challenge_id', challengeId);
-            return data || [];
-        },
-        enabled: !!challengeId
-    });
+    const { data: relations = [], isLoading: isLoadingRelations } = useChallengeInterests(challengeId);
 
-    // Fetch Related Entities (Optimized: only fetch if needed or reuse global hooks)
-    // For the mind map, we need names/codes of related entities.
-    // We can fetch them individually or use the global hooks if they are cached.
-    // Using global hooks might be heavy if they fetch ALL.
-    // But given the previous implementation fetched ALL, we'll stick to that for now for compatibility, 
-    // but ideally we should fetch only related IDs.
-
-    const { data: allChallenges = [] } = useQuery({
-        queryKey: ['challenges-all-simple'],
-        queryFn: async () => {
-            const { data } = await supabase.from('challenges').select('id, code, title_en, title_ar');
-            return data || [];
-        }
-    });
-
-    const { data: solutions = [] } = useSolutionsWithVisibility();
-    const { data: pilots = [] } = usePilotsWithVisibility();
-
-    // R&D and Programs
-    const { data: relatedRD = [] } = useQuery({
-        queryKey: ['rd-projects-all-simple'],
-        queryFn: async () => {
-            const { data } = await supabase.from('rd_projects').select('id, code, title_en, title_ar');
-            return data || [];
-        }
-    });
-
-    const { data: linkedPrograms = [] } = useQuery({
-        queryKey: ['programs-all-simple'],
-        queryFn: async () => {
-            const { data } = await supabase.from('programs').select('id, name_en, name_ar');
-            return data || [];
-        }
-    });
+    // Fetch Related Entities (Simplified lists for names/codes)
+    const { data: allChallenges = [] } = useChallengesWithVisibility({ limit: 1000 });
+    const { data: solutions = [] } = useSolutionsWithVisibility({ limit: 1000 });
+    const { data: pilots = [] } = usePilotsWithVisibility({ limit: 1000 });
+    const { data: relatedRD = [] } = useRDProjectsWithVisibility({ limit: 1000 });
+    const { data: linkedPrograms = [] } = useProgramsWithVisibility({ limit: 1000 });
 
     if (isLoadingRelations) {
         return <div className="p-12 text-center">Loading network...</div>;

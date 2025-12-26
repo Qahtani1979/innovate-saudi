@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useRDMutations } from '@/hooks/useRDMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 
 export default function PublicationTracker({ projectId, publications }) {
   const { language, t } = useLanguage();
+  const { updateProject } = useRDMutations();
   const [adding, setAdding] = useState(false);
   const [newPub, setNewPub] = useState({ title: '', journal: '', year: '', doi: '' });
 
@@ -20,22 +21,23 @@ export default function PublicationTracker({ projectId, publications }) {
       return;
     }
 
-    const { error } = await supabase
-      .from('rd_projects')
-      .update({
-        publications: [...(publications || []), {
-          ...newPub,
-          citations: 0,
-          added_date: new Date().toISOString()
-        }]
-      })
-      .eq('id', projectId);
+    const newPublications = [...(publications || []), {
+      ...newPub,
+      citations: 0,
+      added_date: new Date().toISOString()
+    }];
 
-    if (!error) {
-      setNewPub({ title: '', journal: '', year: '', doi: '' });
-      setAdding(false);
-      toast.success(t({ en: 'Publication added', ar: 'تمت إضافة النشر' }));
-    }
+    updateProject.mutate({
+      id: projectId,
+      data: { publications: newPublications }
+    }, {
+      onSuccess: () => {
+        setNewPub({ title: '', journal: '', year: '', doi: '' });
+        setAdding(false);
+        // toast handled by hook mostly, but component had custom message
+        // hook has generic 'Project updated'
+      }
+    });
   };
 
   const yearlyData = publications?.reduce((acc, pub) => {

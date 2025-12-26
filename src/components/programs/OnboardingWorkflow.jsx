@@ -1,17 +1,15 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
 import { Rocket, CheckCircle2, Mail, Users } from 'lucide-react';
-import { toast } from 'sonner';
+
+import { useOnboardingMutation } from '@/hooks/useOnboarding';
 
 export default function OnboardingWorkflow({ participant, program }) {
   const { t, language } = useLanguage();
-  const queryClient = useQueryClient();
   const [checklist, setChecklist] = useState({
     welcome_email_sent: false,
     profile_completed: false,
@@ -21,39 +19,20 @@ export default function OnboardingWorkflow({ participant, program }) {
     cohort_connected: false
   });
 
-  const onboardingMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('program_applications')
-        .update({
-          onboarding_status: 'completed',
-          onboarding_completed_date: new Date().toISOString(),
-          onboarding_checklist: checklist
-        })
-        .eq('id', participant.id);
-      if (error) throw error;
-      await supabase.functions.invoke('email-trigger-hub', {
-        body: {
-          trigger: 'pilot.enrollment_confirmed',
-          recipient_email: participant.applicant_email,
-          entity_type: 'program',
-          entity_id: program.id,
-          variables: {
-            participantName: participant.applicant_name,
-            programName: program.name_en,
-            programStart: program.timeline?.program_start,
-            durationWeeks: program.duration_weeks,
-            cohortSize: program.accepted_count
-          },
-          triggered_by: 'system'
-        }
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['program-applications']);
-      toast.success(t({ en: 'Onboarding completed', ar: 'الإعداد مكتمل' }));
-    }
-  });
+  const { completeOnboarding } = useOnboardingMutation(program.id);
+
+  const handleCompleteOnboarding = () => {
+    completeOnboarding.mutate({
+      participantId: participant.id,
+      checklist,
+      participantEmail: participant.applicant_email,
+      participantName: participant.applicant_name,
+      programName: program.name_en,
+      startDate: program.timeline?.program_start,
+      durationWeeks: program.duration_weeks,
+      cohortSize: program.accepted_count
+    });
+  };
 
   const items = [
     { key: 'welcome_email_sent', label: { en: 'Send welcome email', ar: 'إرسال بريد ترحيبي' }, icon: Mail },
@@ -92,7 +71,7 @@ export default function OnboardingWorkflow({ participant, program }) {
               <div key={item.key} className="flex items-center gap-3 p-3 border rounded-lg">
                 <Checkbox
                   checked={checklist[item.key]}
-                  onCheckedChange={(checked) => setChecklist({...checklist, [item.key]: checked})}
+                  onCheckedChange={(checked) => setChecklist({ ...checklist, [item.key]: checked })}
                 />
                 <Icon className="h-4 w-4 text-slate-400" />
                 <span className="text-sm flex-1">{item.label[language] || item.label.en}</span>
@@ -103,8 +82,8 @@ export default function OnboardingWorkflow({ participant, program }) {
         </div>
 
         <Button
-          onClick={() => onboardingMutation.mutate()}
-          disabled={!allComplete || onboardingMutation.isPending}
+          onClick={handleCompleteOnboarding}
+          disabled={!allComplete || completeOnboarding.isPending}
           className="w-full bg-purple-600"
         >
           <CheckCircle2 className="h-4 w-4 mr-2" />

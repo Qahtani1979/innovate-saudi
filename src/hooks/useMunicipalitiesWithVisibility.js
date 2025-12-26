@@ -11,7 +11,7 @@ import { useVisibilitySystem } from './visibility/useVisibilitySystem';
 import { usePermissions } from '@/components/permissions/usePermissions';
 
 export function useMunicipalitiesWithVisibility(options = {}) {
-  const { includeNational = true, limit = 100 } = options;
+  const { includeNational = true, limit = 100, filterIds = null } = options;
 
   const {
     hasFullVisibility,
@@ -29,64 +29,46 @@ export function useMunicipalitiesWithVisibility(options = {}) {
       isNational,
       userMunicipalityId,
       includeNational,
-      limit
+      limit,
+      filterIds
     }],
     queryFn: async () => {
-      // Admin or full visibility - all municipalities
+      let query = supabase
+        .from('municipalities')
+        .select('*')
+        .order('name_en', { ascending: true })
+        .limit(limit);
+
+      if (filterIds && filterIds.length > 0) {
+        query = query.in('id', filterIds);
+      } else if (filterIds && filterIds.length === 0) {
+        // If strict filter provided but empty, return empty
+        return [];
+      }
+
+      // Apply visibility filters
       if (isAdmin || hasFullVisibility) {
-        const { data, error } = await supabase
-          .from('municipalities')
-          .select('*')
-          .order('name_en', { ascending: true })
-          .limit(limit);
-        
-        if (error) throw error;
-        return data || [];
-      }
-
-      // National deputyship - all municipalities (for oversight)
-      if (isNational) {
-        const { data, error } = await supabase
-          .from('municipalities')
-          .select('*')
-          .order('name_en', { ascending: true })
-          .limit(limit);
-        
-        if (error) throw error;
-        return data || [];
-      }
-
-      // Municipality staff - own municipality + national
-      if (userMunicipalityId) {
-        const municipalityIds = [userMunicipalityId];
-        
+        // No additional filters needed beyond filterIds
+      } else if (isNational) {
+        // National sees all
+      } else if (userMunicipalityId) {
+        // Staff: Own + National
+        const allowedIds = [userMunicipalityId];
         if (includeNational && nationalMunicipalityIds?.length > 0) {
-          municipalityIds.push(...nationalMunicipalityIds);
+          allowedIds.push(...nationalMunicipalityIds);
         }
-
-        const { data, error } = await supabase
-          .from('municipalities')
-          .select('*')
-          .in('id', municipalityIds)
-          .order('name_en', { ascending: true });
-        
-        if (error) throw error;
-        return data || [];
+        query = query.in('id', allowedIds);
+      } else if (includeNational && nationalMunicipalityIds?.length > 0) {
+        // Public/Other: National only
+        query = query.in('id', nationalMunicipalityIds);
+      } else {
+        return []; // No access
       }
 
-      // Public - only national municipalities (if any are public)
-      if (includeNational && nationalMunicipalityIds?.length > 0) {
-        const { data, error } = await supabase
-          .from('municipalities')
-          .select('*')
-          .in('id', nationalMunicipalityIds)
-          .order('name_en', { ascending: true });
-        
-        if (error) throw error;
-        return data || [];
-      }
+      const { data, error } = await query;
 
-      return [];
+      if (error) throw error;
+      return data || [];
     },
     enabled: !visibilityLoading,
     staleTime: 1000 * 60 * 5, // 5 minutes

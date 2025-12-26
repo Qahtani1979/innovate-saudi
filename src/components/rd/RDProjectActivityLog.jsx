@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useRDActivityLog } from '@/hooks/useRDData';
 import { useLanguage } from '../LanguageContext';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,20 +8,7 @@ import { formatDistanceToNow } from 'date-fns';
 export default function RDProjectActivityLog({ rdProjectId }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: activities = [] } = useQuery({
-    queryKey: ['rd-activity', rdProjectId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('system_activities')
-        .select('*')
-        .eq('entity_type', 'rd_project')
-        .eq('entity_id', rdProjectId)
-        .order('created_date', { ascending: false })
-        .limit(50);
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: activities = [] } = useRDActivityLog('rd_project', rdProjectId);
 
   const activityIcons = {
     created: FileText,

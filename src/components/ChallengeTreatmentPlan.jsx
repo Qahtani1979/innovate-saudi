@@ -5,31 +5,28 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from './LanguageContext';
-import { Activity, Plus, X } from 'lucide-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Activity, Plus, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useGovernanceMutations } from '@/hooks/useGovernance';
 
 export default function ChallengeTreatmentPlan({ challenge, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  const { updateChallengeTreatment } = useGovernanceMutations();
 
   const [approach, setApproach] = useState(challenge.treatment_plan?.approach || '');
   const [milestones, setMilestones] = useState(challenge.treatment_plan?.milestones || []);
   const [assignedTo, setAssignedTo] = useState(challenge.treatment_plan?.assigned_to || '');
 
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      await base44.entities.Challenge.update(challenge.id, {
-        status: 'in_treatment',
-        treatment_plan: { approach, milestones, assigned_to: assignedTo }
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['challenge']);
-      toast.success(t({ en: 'Treatment plan saved', ar: 'تم حفظ خطة المعالجة' }));
-      onClose();
-    }
-  });
+  const handleSave = () => {
+    updateChallengeTreatment.mutate({
+      challengeId: challenge.id,
+      treatmentPlan: { approach, milestones, assigned_to: assignedTo }
+    }, {
+      onSuccess: () => {
+        onClose();
+      }
+    });
+  };
 
   const addMilestone = () => {
     setMilestones([...milestones, {
@@ -96,6 +93,7 @@ export default function ChallengeTreatmentPlan({ challenge, onClose }) {
             onChange={(e) => setApproach(e.target.value)}
             placeholder={t({ en: 'Describe how this challenge will be addressed...', ar: 'صف كيف ستتم معالجة هذا التحدي...' })}
             rows={4}
+            disabled={updateChallengeTreatment.isPending}
           />
         </div>
 
@@ -108,6 +106,7 @@ export default function ChallengeTreatmentPlan({ challenge, onClose }) {
             value={assignedTo}
             onChange={(e) => setAssignedTo(e.target.value)}
             placeholder={t({ en: 'user@example.com', ar: 'user@example.com' })}
+            disabled={updateChallengeTreatment.isPending}
           />
         </div>
 
@@ -117,7 +116,12 @@ export default function ChallengeTreatmentPlan({ challenge, onClose }) {
             <label className="text-sm font-medium text-slate-700">
               {t({ en: 'Treatment Milestones', ar: 'معالم المعالجة' })}
             </label>
-            <Button size="sm" variant="outline" onClick={addMilestone}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={addMilestone}
+              disabled={updateChallengeTreatment.isPending}
+            >
               <Plus className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
               {t({ en: 'Add Milestone', ar: 'إضافة معلم' })}
             </Button>
@@ -132,6 +136,7 @@ export default function ChallengeTreatmentPlan({ challenge, onClose }) {
                       value={milestone.name}
                       onChange={(e) => updateMilestone(index, 'name', e.target.value)}
                       placeholder={t({ en: 'Milestone name...', ar: 'اسم المعلم...' })}
+                      disabled={updateChallengeTreatment.isPending}
                     />
                     <div className="grid grid-cols-2 gap-3">
                       <div>
@@ -140,6 +145,7 @@ export default function ChallengeTreatmentPlan({ challenge, onClose }) {
                           type="date"
                           value={milestone.due_date}
                           onChange={(e) => updateMilestone(index, 'due_date', e.target.value)}
+                          disabled={updateChallengeTreatment.isPending}
                         />
                       </div>
                       <div>
@@ -148,6 +154,7 @@ export default function ChallengeTreatmentPlan({ challenge, onClose }) {
                           value={milestone.status}
                           onChange={(e) => updateMilestone(index, 'status', e.target.value)}
                           className="w-full p-2 border rounded text-sm"
+                          disabled={updateChallengeTreatment.isPending}
                         >
                           <option value="pending">{t({ en: 'Pending', ar: 'قيد الانتظار' })}</option>
                           <option value="in_progress">{t({ en: 'In Progress', ar: 'قيد التنفيذ' })}</option>
@@ -156,7 +163,7 @@ export default function ChallengeTreatmentPlan({ challenge, onClose }) {
                       </div>
                     </div>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => removeMilestone(index)}>
+                  <Button variant="ghost" size="icon" onClick={() => removeMilestone(index)} disabled={updateChallengeTreatment.isPending}>
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
@@ -167,14 +174,17 @@ export default function ChallengeTreatmentPlan({ challenge, onClose }) {
 
         {/* Actions */}
         <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={updateChallengeTreatment.isPending}>
             {t({ en: 'Cancel', ar: 'إلغاء' })}
           </Button>
           <Button
-            onClick={() => saveMutation.mutate()}
-            disabled={!approach || saveMutation.isPending}
+            onClick={handleSave}
+            disabled={!approach || updateChallengeTreatment.isPending}
             className="bg-gradient-to-r from-purple-600 to-blue-600"
           >
+            {updateChallengeTreatment.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : null}
             {t({ en: 'Save Treatment Plan', ar: 'حفظ خطة المعالجة' })}
           </Button>
         </div>

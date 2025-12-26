@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useRDActivityLog } from '@/hooks/useRDData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -8,20 +7,7 @@ import { Activity, User, FileText, CheckCircle2, XCircle, Send } from 'lucide-re
 export default function RDProposalActivityLog({ proposalId }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: activities = [] } = useQuery({
-    queryKey: ['rd-proposal-activities', proposalId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('system_activities')
-        .select('*')
-        .eq('entity_type', 'RDProposal')
-        .eq('entity_id', proposalId)
-        .order('timestamp', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!proposalId
-  });
+  const { data: activities = [] } = useRDActivityLog('RDProposal', proposalId);
 
   const activityIcons = {
     created: FileText,

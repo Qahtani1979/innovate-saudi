@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,46 +8,28 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { getSystemPrompt } from '@/lib/saudiContext';
-import { 
-  buildPriorityRecommendationsPrompt, 
-  priorityRecommendationsSchema, 
-  PRIORITY_RECOMMENDATIONS_SYSTEM_PROMPT 
+import {
+  buildPriorityRecommendationsPrompt,
+  priorityRecommendationsSchema,
+  PRIORITY_RECOMMENDATIONS_SYSTEM_PROMPT
 } from '@/lib/ai/prompts/executive';
-import { supabase } from '@/integrations/supabase/client';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsList } from '@/hooks/usePilots';
+import { useMunicipalities } from '@/hooks/useMunicipalities';
 
 export default function PriorityRecommendations() {
   const { language, isRTL, t } = useLanguage();
   const [recommendations, setRecommendations] = useState(null);
-  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo, error } = useAIWithFallback();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-priority'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('challenges').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-priority'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('pilots').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities-priority'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('municipalities').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: challenges = [] } = useChallengesWithVisibility({ limit: 1000 });
+  const { data: pilots = [] } = usePilotsList();
+  const { data: municipalities = [] } = useMunicipalities();
 
   const generateRecommendations = async () => {
+    // Safety check for arrays
+    if (!Array.isArray(challenges) || !Array.isArray(pilots) || !Array.isArray(municipalities)) return;
+
     const tier1Challenges = challenges.filter(c => c.priority === 'tier_1');
     const approvedChallenges = challenges.filter(c => c.status === 'approved');
     const lowMIIMunicipalities = municipalities.filter(m => (m.mii_score || 0) < 50);
@@ -62,7 +43,7 @@ export default function PriorityRecommendations() {
     };
 
     const result = await invokeAI({
-      systemPrompt: getSystemPrompt(PRIORITY_RECOMMENDATIONS_SYSTEM_PROMPT),
+      system_prompt: getSystemPrompt(PRIORITY_RECOMMENDATIONS_SYSTEM_PROMPT),
       prompt: buildPriorityRecommendationsPrompt(stateData),
       response_json_schema: priorityRecommendationsSchema
     });
@@ -96,8 +77,8 @@ export default function PriorityRecommendations() {
         </div>
       </CardHeader>
       <CardContent>
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails className="mb-4" />
-        
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={error} showDetails className="mb-4" />
+
         {isLoading ? (
           <div className="text-center py-12">
             <Loader2 className="h-12 w-12 animate-spin text-purple-600 mx-auto mb-4" />
@@ -132,8 +113,8 @@ export default function PriorityRecommendations() {
                       </Badge>
                       <Badge className={
                         priority.resources_needed === 'high' ? 'bg-red-100 text-red-700' :
-                        priority.resources_needed === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-green-100 text-green-700'
+                          priority.resources_needed === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-green-100 text-green-700'
                       }>
                         {priority.resources_needed} {t({ en: 'resources', ar: 'موارد' })}
                       </Badge>

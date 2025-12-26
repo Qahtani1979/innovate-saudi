@@ -1,149 +1,13 @@
-import { useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { Shield, CheckCircle2, XCircle, AlertTriangle, Loader2, RefreshCw } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { useAutomatedCompliance } from '@/hooks/useAutomatedCompliance';
 
 export default function AutomatedComplianceChecker({ application, sandbox }) {
   const { language, isRTL, t } = useLanguage();
-  const [complianceStatus, setComplianceStatus] = useState(null);
-
-  const { data: exemptions = [] } = useQuery({
-    queryKey: ['regulatory-exemptions'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('regulatory_exemptions').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const checkMutation = useMutation({
-    mutationFn: async () => {
-      const results = [];
-      
-      // Check each requested exemption
-      for (const requestedExemption of application.requested_exemptions || []) {
-        const exemption = exemptions.find(e => 
-          e.title_en === requestedExemption && e.status === 'active'
-        );
-
-        if (!exemption) {
-          results.push({
-            exemption: requestedExemption,
-            status: 'not_found',
-            message: 'Exemption not found in active regulatory library',
-            severity: 'error'
-          });
-          continue;
-        }
-
-        // Check domain compatibility
-        if (exemption.domain !== sandbox.domain && exemption.domain !== 'general') {
-          results.push({
-            exemption: requestedExemption,
-            exemption_code: exemption.exemption_code,
-            status: 'domain_mismatch',
-            message: `Exemption is for ${exemption.domain} domain, but sandbox is ${sandbox.domain}`,
-            severity: 'error'
-          });
-          continue;
-        }
-
-        // Check expiration
-        if (exemption.expiration_date) {
-          const expiryDate = new Date(exemption.expiration_date);
-          const today = new Date();
-          if (expiryDate < today) {
-            results.push({
-              exemption: requestedExemption,
-              exemption_code: exemption.exemption_code,
-              status: 'expired',
-              message: `Exemption expired on ${exemption.expiration_date}`,
-              severity: 'error'
-            });
-            continue;
-          }
-
-          const daysUntilExpiry = Math.floor((expiryDate - today) / (1000 * 60 * 60 * 24));
-          if (daysUntilExpiry < 30) {
-            results.push({
-              exemption: requestedExemption,
-              exemption_code: exemption.exemption_code,
-              status: 'expiring_soon',
-              message: `Exemption expires in ${daysUntilExpiry} days`,
-              severity: 'warning'
-            });
-          }
-        }
-
-        // Check project duration compatibility
-        if (application.duration_months > exemption.duration_months) {
-          results.push({
-            exemption: requestedExemption,
-            exemption_code: exemption.exemption_code,
-            status: 'duration_exceeded',
-            message: `Project duration (${application.duration_months}mo) exceeds exemption maximum (${exemption.duration_months}mo)`,
-            severity: 'warning'
-          });
-        }
-
-        // Check conditions
-        const unmetConditions = [];
-        if (exemption.conditions) {
-          // In real scenario, this would check against application data
-          // For now, we'll do basic checks
-          if (exemption.risk_level === 'high' && !application.risk_assessment) {
-            unmetConditions.push('Risk assessment required for high-risk exemptions');
-          }
-          if (exemption.conditions.some(c => c.includes('insurance')) && 
-              !application.public_safety_plan?.toLowerCase().includes('insurance')) {
-            unmetConditions.push('Insurance coverage requirement not addressed');
-          }
-        }
-
-        if (unmetConditions.length > 0) {
-          results.push({
-            exemption: requestedExemption,
-            exemption_code: exemption.exemption_code,
-            status: 'conditions_unmet',
-            message: 'Some conditions may not be met',
-            details: unmetConditions,
-            severity: 'warning'
-          });
-        }
-
-        // If no issues, mark as compliant
-        if (!results.find(r => r.exemption === requestedExemption)) {
-          results.push({
-            exemption: requestedExemption,
-            exemption_code: exemption.exemption_code,
-            status: 'compliant',
-            message: 'All compliance checks passed',
-            severity: 'success'
-          });
-        }
-      }
-
-      // Calculate overall compliance score
-      const totalChecks = results.length;
-      const passedChecks = results.filter(r => r.severity === 'success').length;
-      const complianceScore = totalChecks > 0 ? Math.round((passedChecks / totalChecks) * 100) : 0;
-
-      return {
-        results,
-        complianceScore,
-        hasErrors: results.some(r => r.severity === 'error'),
-        hasWarnings: results.some(r => r.severity === 'warning'),
-        timestamp: new Date().toISOString()
-      };
-    },
-    onSuccess: (data) => {
-      setComplianceStatus(data);
-    }
-  });
+  const { checkMutation, complianceStatus } = useAutomatedCompliance(application, sandbox);
 
   const severityConfig = {
     success: {
@@ -198,11 +62,10 @@ export default function AutomatedComplianceChecker({ application, sandbox }) {
         ) : (
           <div className="space-y-4">
             {/* Compliance Score */}
-            <div className={`p-4 rounded-lg border-2 ${
-              complianceStatus.complianceScore >= 80 ? 'bg-green-50 border-green-300' :
+            <div className={`p-4 rounded-lg border-2 ${complianceStatus.complianceScore >= 80 ? 'bg-green-50 border-green-300' :
               complianceStatus.complianceScore >= 50 ? 'bg-yellow-50 border-yellow-300' :
-              'bg-red-50 border-red-300'
-            }`}>
+                'bg-red-50 border-red-300'
+              }`}>
               <div className="flex items-center justify-between mb-2">
                 <p className="font-semibold">
                   {t({ en: 'Overall Compliance Score', ar: 'نقاط الامتثال الإجمالية' })}

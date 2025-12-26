@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useAudits } from '@/hooks/useAuditHooks';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,22 +17,10 @@ function AuditRegistry() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  const { data: audits = [], isLoading } = useQuery({
-    queryKey: ['audits-registry'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('audits')
-        .select('*')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: audits = [], isLoading } = useAudits();
 
   const filteredAudits = audits.filter(a => {
-    const matchesSearch = !search || 
+    const matchesSearch = !search ||
       a.audit_scope?.toLowerCase().includes(search.toLowerCase()) ||
       a.audit_code?.toLowerCase().includes(search.toLowerCase()) ||
       a.auditor_email?.toLowerCase().includes(search.toLowerCase());
@@ -235,6 +222,6 @@ function AuditRegistry() {
   );
 }
 
-export default ProtectedPage(AuditRegistry, { 
-  requiredPermissions: ['audit_view_all'] 
+export default ProtectedPage(AuditRegistry, {
+  requiredPermissions: ['audit_view_all']
 });

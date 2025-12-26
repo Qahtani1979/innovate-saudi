@@ -1,10 +1,10 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Handshake, Sparkles } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+import { useOrganizationById, useOrganizations } from '@/hooks/useOrganizations';
+import { usePartnershipMutations } from '@/hooks/usePartnershipMutations';
 
 /**
  * AI-powered partnership orchestration
@@ -12,60 +12,34 @@ import { useAuth } from '@/lib/AuthContext';
  */
 export default function PartnershipOrchestrator({ organizationId }) {
   const { user } = useAuth();
+  const { data: org } = useOrganizationById(organizationId);
+  const { data: allOrganizations = [] } = useOrganizations();
+  const { createPartnership } = usePartnershipMutations();
 
-  const { data: org } = useQuery({
-    queryKey: ['org', organizationId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('organizations')
-        .select('*')
-        .eq('id', organizationId)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organizationId
-  });
+  const suggestions = useMemo(() => {
+    if (!org || !allOrganizations.length) return [];
 
-  const { data: suggestions = [] } = useQuery({
-    queryKey: ['partnership-suggestions', organizationId],
-    queryFn: async () => {
-      if (!org) return [];
-      
-      const { data, error } = await supabase
-        .from('organizations')
-        .select('*')
-        .neq('id', organizationId)
-        .eq('is_active', true);
-      if (error) throw error;
+    return allOrganizations.filter(o => {
+      if (o.id === organizationId || !o.is_active) return false;
 
-      return (data || []).filter(o => {
-        const hasComplementary = org.capabilities?.some(cap => 
-          o.capabilities?.includes(cap)
-        );
-        const sameSector = org.sectors?.some(s => o.sectors?.includes(s));
-        return hasComplementary || sameSector;
-      }).slice(0, 5);
-    },
-    enabled: !!org
-  });
+      const hasComplementary = org.capabilities?.some(cap =>
+        o.capabilities?.includes(cap)
+      );
+      const sameSector = org.sectors?.some(s => o.sectors?.includes(s));
+      return hasComplementary || sameSector;
+    }).slice(0, 5);
+  }, [org, allOrganizations, organizationId]);
 
-  const suggestPartnership = async (partnerId) => {
-    try {
-      const { error } = await supabase
-        .from('partnerships')
-        .insert({
-          organization_a_id: organizationId,
-          organization_b_id: partnerId,
-          partnership_type: 'strategic',
-          status: 'proposed',
-          proposed_by: user?.email
-        });
-      if (error) throw error;
-      toast.success('Partnership proposal sent');
-    } catch (error) {
-      toast.error('Failed to propose partnership');
-    }
+  const suggestPartnership = (partnerId) => {
+    createPartnership.mutate({
+      data: {
+        organization_a_id: organizationId,
+        organization_b_id: partnerId,
+        partnership_type: 'strategic',
+        status: 'proposed'
+      },
+      userEmail: user?.email
+    });
   };
 
   if (suggestions.length === 0) return null;

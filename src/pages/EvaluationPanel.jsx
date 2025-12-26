@@ -1,6 +1,4 @@
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEvaluationQueue } from '@/hooks/useEvaluationQueue';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,55 +13,14 @@ import EvaluationConsensusPanel from '../components/evaluation/EvaluationConsens
 
 function EvaluationPanel() {
   const { language, isRTL, t } = useLanguage();
-  const [selectedEntity, setSelectedEntity] = useState(null);
-  const [showEvaluationForm, setShowEvaluationForm] = useState(false);
-  const queryClient = useQueryClient();
-
-  const { data: proposals = [] } = useQuery({
-    queryKey: ['pending-proposals'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_proposals')
-        .select('*')
-        .in('status', ['submitted', 'under_review']);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['evaluation-pilots'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('stage', 'evaluation');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const handleEvaluate = (entity, type) => {
-    setSelectedEntity({ ...entity, entityType: type });
-    setShowEvaluationForm(true);
-  };
-
-  const handleEvaluationComplete = async () => {
-    setShowEvaluationForm(false);
-
-    if (selectedEntity) {
-      await supabase.functions.invoke('checkConsensus', {
-        body: {
-          entity_type: selectedEntity.entityType,
-          entity_id: selectedEntity.id
-        }
-      });
-    }
-
-    setSelectedEntity(null);
-    queryClient.invalidateQueries({ queryKey: ['pending-proposals'] });
-    queryClient.invalidateQueries({ queryKey: ['evaluation-pilots'] });
-  };
+  const {
+    proposals,
+    pilots,
+    selectedEntity,
+    showEvaluationForm,
+    handleEvaluate, // Exposed from hook
+    handleEvaluationComplete
+  } = useEvaluationQueue();
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -74,6 +31,7 @@ function EvaluationPanel() {
             <UnifiedEvaluationForm
               entityType={selectedEntity.entityType}
               entityId={selectedEntity.id}
+              assignmentId={selectedEntity.assignment_id || selectedEntity.expert_assignments?.[0]?.id}
               onComplete={handleEvaluationComplete}
             />
           </div>
@@ -138,12 +96,12 @@ function EvaluationPanel() {
                 <div className="space-y-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-slate-900 mb-2">{proposal.title_en}</h3>
-                      <p className="text-sm text-slate-600 mb-3">{proposal.abstract_en?.substring(0, 200)}...</p>
+                      <h3 className="text-lg font-semibold text-slate-900 mb-2">{proposal.title_en || proposal.title}</h3>
+                      <p className="text-sm text-slate-600 mb-3">{proposal.abstract_en?.substring(0, 200) || proposal.abstract?.substring(0, 200)}...</p>
                       <div className="flex items-center gap-3 text-sm">
-                        <span className="text-slate-600">{proposal.institution_en}</span>
+                        <span className="text-slate-600">{proposal.institution_name || proposal.institution_en}</span>
                         <Badge className="bg-blue-100 text-blue-700">
-                          {proposal.budget_requested ? `${(proposal.budget_requested / 1000).toFixed(0)}K SAR` : 'TBD'}
+                          {proposal.budget_requested ? `${(Number(proposal.budget_requested) / 1000).toFixed(0)}K SAR` : 'TBD'}
                         </Badge>
                       </div>
                     </div>

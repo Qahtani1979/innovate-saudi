@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,12 +6,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Users, MessageSquare, Plus, Star } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+
+import { usePeerProjects } from '@/hooks/usePeerProjects';
+import { useProgramApplications } from '@/hooks/useProgramDetails';
 
 export default function PeerCollaborationHub({ programId }) {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(null);
@@ -24,87 +23,28 @@ export default function PeerCollaborationHub({ programId }) {
   });
   const [review, setReview] = useState({ rating: 5, feedback: '' });
 
-  const { data: applications = [] } = useQuery({
-    queryKey: ['program-participants', programId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('program_applications')
-        .select('*')
-        .eq('program_id', programId)
-        .eq('status', 'accepted');
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!programId
-  });
+  const { data: applications = [] } = useProgramApplications(programId);
+  const acceptedApplications = applications.filter(app => app.status === 'accepted');
 
-  const { data: program } = useQuery({
-    queryKey: ['program', programId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('programs')
-        .select('*')
-        .eq('id', programId)
-        .eq('is_deleted', false)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!programId
-  });
+  const { projects, createProject, submitReview } = usePeerProjects(programId);
 
-  const projects = program?.peer_projects || [];
+  const handleCreateProject = () => {
+    createProject.mutate(newProject, {
+      onSuccess: () => {
+        setShowProjectForm(false);
+        setNewProject({ title: '', description: '', team_members: [] });
+      }
+    });
+  };
 
-  const createProjectMutation = useMutation({
-    mutationFn: async (projectData) => {
-      const newProjects = [...projects, {
-        ...projectData,
-        id: Date.now().toString(),
-        created_date: new Date().toISOString(),
-        created_by: user?.email || 'anonymous',
-        reviews: []
-      }];
-      const { error } = await supabase
-        .from('programs')
-        .update({ peer_projects: newProjects })
-        .eq('id', programId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['program', programId] });
-      setShowProjectForm(false);
-      setNewProject({ title: '', description: '', team_members: [] });
-      toast.success(t({ en: 'Team project created', ar: 'تم إنشاء مشروع الفريق' }));
-    }
-  });
-
-  const submitReviewMutation = useMutation({
-    mutationFn: async ({ projectId, reviewData }) => {
-      const updatedProjects = projects.map(p => 
-        p.id === projectId ? {
-          ...p,
-          reviews: [...(p.reviews || []), {
-            reviewer_email: user?.email || 'anonymous',
-            rating: reviewData.rating,
-            feedback: reviewData.feedback,
-            review_date: new Date().toISOString()
-          }]
-        } : p
-      );
-
-      const { error } = await supabase
-        .from('programs')
-        .update({ peer_projects: updatedProjects })
-        .eq('id', programId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['program', programId] });
-      setShowReviewForm(null);
-      setReview({ rating: 5, feedback: '' });
-      toast.success(t({ en: 'Peer review submitted', ar: 'تم إرسال تقييم الأقران' }));
-    }
-  });
+  const handleSubmitReview = (projectId) => {
+    submitReview.mutate({ projectId, reviewData: review }, {
+      onSuccess: () => {
+        setShowReviewForm(null);
+        setReview({ rating: 5, feedback: '' });
+      }
+    });
+  };
 
   return (
     <Card>
@@ -126,12 +66,12 @@ export default function PeerCollaborationHub({ programId }) {
             <Input
               placeholder={t({ en: 'Project title', ar: 'عنوان المشروع' })}
               value={newProject.title}
-              onChange={(e) => setNewProject({...newProject, title: e.target.value})}
+              onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
             />
             <Textarea
               placeholder={t({ en: 'Project description and goals', ar: 'وصف المشروع والأهداف' })}
               value={newProject.description}
-              onChange={(e) => setNewProject({...newProject, description: e.target.value})}
+              onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
               rows={3}
             />
             <div className="flex gap-2">
@@ -179,14 +119,14 @@ export default function PeerCollaborationHub({ programId }) {
                       <Star
                         key={r}
                         className={`h-5 w-5 cursor-pointer ${r <= review.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`}
-                        onClick={() => setReview({...review, rating: r})}
+                        onClick={() => setReview({ ...review, rating: r })}
                       />
                     ))}
                   </div>
                   <Textarea
                     placeholder={t({ en: 'Your peer feedback...', ar: 'ملاحظاتك...' })}
                     value={review.feedback}
-                    onChange={(e) => setReview({...review, feedback: e.target.value})}
+                    onChange={(e) => setReview({ ...review, feedback: e.target.value })}
                     rows={2}
                   />
                   <div className="flex gap-2">

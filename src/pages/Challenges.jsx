@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import ChallengeClustering from '../components/challenges/ChallengeClustering';
 import ChallengeToProgramWorkflow from '../components/challenges/ChallengeToProgramWorkflow';
-import { useQueryClient } from '@tanstack/react-query';
+import { useProgramMutations } from '@/hooks/useProgramMutations';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Button } from "@/components/ui/button";
@@ -62,7 +62,7 @@ function Challenges() {
   const [viewMode, setViewMode] = useState('grid');
   const [selectedIds, setSelectedIds] = useState([]);
   const [aiInsights, setAiInsights] = useState(null);
-  const queryClient = useQueryClient();
+  const { refreshPrograms } = useProgramMutations();
   const { language, isRTL, t } = useLanguage();
 
   const { invokeAI, status: aiStatus, isLoading: aiAnalyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
@@ -225,7 +225,6 @@ function Challenges() {
         }
       }
     }
-    queryClient.invalidateQueries(['challenges']);
     setSelectedIds([]);
   };
 
@@ -693,7 +692,7 @@ function Challenges() {
                   // Show program creation workflow
                   return <ChallengeToProgramWorkflow
                     selectedChallenges={clusterChallenges}
-                    onSuccess={() => queryClient.invalidateQueries(['programs'])}
+                    onSuccess={refreshPrograms}
                     onCancel={() => { }}
                   />;
                 }

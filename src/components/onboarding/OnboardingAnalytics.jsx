@@ -1,54 +1,16 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../LanguageContext';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { TrendingUp, Users, CheckCircle, Clock } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+
+import { useOnboardingStats } from '@/hooks/useOnboardingStats';
 
 export default function OnboardingAnalytics() {
   const { language, t } = useLanguage();
 
-  // Fetch user profiles count
-  const { data: users = [] } = useQuery({
-    queryKey: ['user-profiles-analytics'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('id, user_email, onboarding_completed, created_at')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    },
-    initialData: []
-  });
-
-  // Fetch challenges count for activity
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-analytics'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('id, created_by, created_at')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    },
-    initialData: []
-  });
-
-  // Fetch solutions count for activity
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions-analytics'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('solutions')
-        .select('id, created_by, created_at')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    },
-    initialData: []
-  });
+  // Fetch stats using custom hook
+  const { users, challenges, solutions } = useOnboardingStats();
 
   // Calculate onboarding metrics
   const totalUsers = users.length;

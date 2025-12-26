@@ -1,17 +1,16 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
-import { FileText, X, Loader2, Upload } from 'lucide-react';
+import { FileText, X, Loader2, Upload, Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLivingLabMutations } from '@/hooks/useLivingLab';
 
 export default function LivingLabPublicationSubmission({ lab, onClose }) {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
 
   const [publication, setPublication] = useState({
     title: '',
@@ -28,6 +27,8 @@ export default function LivingLabPublicationSubmission({ lab, onClose }) {
     impact_factor: '',
     citation_count: 0
   });
+
+  const { updateLivingLab } = useLivingLabMutations(lab.id);
 
   const addAuthor = () => {
     if (publication.author_input.trim()) {
@@ -49,30 +50,28 @@ export default function LivingLabPublicationSubmission({ lab, onClose }) {
     }
   };
 
-  const submitMutation = useMutation({
-    mutationFn: async () => {
-      const updatedPublications = [
-        ...(lab.publications || []),
-        {
-          ...publication,
-          authors: publication.authors,
-          keywords: publication.keywords,
-          submission_date: new Date().toISOString().split('T')[0],
-          living_lab_id: lab.id
-        }
-      ];
+  const handleSubmit = () => {
+    const updatedPublications = [
+      ...(lab.publications || []),
+      {
+        ...publication,
+        authors: publication.authors,
+        keywords: publication.keywords,
+        submission_date: new Date().toISOString().split('T')[0],
+        living_lab_id: lab.id
+      }
+    ];
 
-      await base44.entities.LivingLab.update(lab.id, {
-        publications: updatedPublications,
-        total_publications: updatedPublications.length
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['living-lab']);
-      toast.success(t({ en: 'Publication submitted', ar: 'تم إرسال المنشور' }));
-      onClose();
-    }
-  });
+    updateLivingLab.mutate({
+      publications: updatedPublications,
+      total_publications: updatedPublications.length
+    }, {
+      onSuccess: () => {
+        toast.success(t({ en: 'Publication submitted', ar: 'تم إرسال المنشور' }));
+        onClose();
+      }
+    });
+  };
 
   return (
     <Card className="w-full" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -230,11 +229,11 @@ export default function LivingLabPublicationSubmission({ lab, onClose }) {
 
         <div className="flex gap-3 pt-4 border-t">
           <Button
-            onClick={() => submitMutation.mutate()}
-            disabled={!publication.title || publication.authors.length === 0 || submitMutation.isPending}
+            onClick={handleSubmit}
+            disabled={!publication.title || publication.authors.length === 0 || updateLivingLab.isPending}
             className="flex-1 bg-purple-600 hover:bg-purple-700"
           >
-            {submitMutation.isPending ? (
+            {updateLivingLab.isPending ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Upload className="h-4 w-4 mr-2" />

@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,10 +9,10 @@ import { Sparkles, Users, Loader2, X, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useLivingLabConsultations } from '@/hooks/useLivingLabConsultations';
 
 export default function LivingLabExpertMatching({ lab, projectNeeds, onClose }) {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
   const { invokeAI, status, isLoading: matching, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [matches, setMatches] = useState(null);
   const [selectedExpert, setSelectedExpert] = useState(null);
@@ -27,6 +25,8 @@ export default function LivingLabExpertMatching({ lab, projectNeeds, onClose }) 
     notes: ''
   });
 
+  const { createConsultation, inviteExpert } = useLivingLabConsultations();
+
   const handleAIMatching = async () => {
     const prompt = `Match research experts with a project need at this Living Lab:
 
@@ -36,8 +36,8 @@ Research Themes: ${lab.research_themes?.join(', ') || 'N/A'}
 Technical Capabilities: ${lab.technical_capabilities?.join(', ') || 'N/A'}
 
 Expert Network (${lab.expert_network?.length || 0}):
-${lab.expert_network?.map((e, i) => 
-  `${i+1}. ${e.name} - ${e.title}
+${lab.expert_network?.map((e, i) =>
+      `${i + 1}. ${e.name} - ${e.title}
    Expertise: ${e.expertise?.join(', ')}
    Organization: ${e.organization}
    Availability: ${e.availability || 'N/A'}
@@ -91,33 +91,27 @@ Return top 3 expert matches with scores and consultation recommendations.`;
     }
   };
 
-  const bookingMutation = useMutation({
-    mutationFn: async () => {
-      await base44.entities.LivingLabBooking.create({
-        living_lab_id: lab.id,
-        booking_type: 'expert_consultation',
-        expert_name: selectedExpert.expertData.name,
-        expert_email: selectedExpert.expertData.email,
-        consultation_date: bookingDetails.consultation_date,
-        consultation_time: bookingDetails.consultation_time,
-        duration_hours: bookingDetails.duration_hours,
-        meeting_type: bookingDetails.meeting_type,
-        topic: bookingDetails.topic,
-        notes: bookingDetails.notes,
-        status: 'pending'
-      });
-
-      // Send email to expert
-      if (selectedExpert.expertData.email) {
-        await supabase.functions.invoke('email-trigger-hub', {
-          body: {
-            trigger: 'panel.invitation',
-            recipient_email: selectedExpert.expertData.email,
-            entity_type: 'livinglab',
-            entity_id: lab.id,
-            variables: {
-              expertName: selectedExpert.expertData.name,
-              labName: lab.name_en,
+  const handleBooking = () => {
+    createConsultation.mutate({
+      living_lab_id: lab.id,
+      booking_type: 'expert_consultation',
+      expert_name: selectedExpert.expertData.name,
+      expert_email: selectedExpert.expertData.email,
+      consultation_date: bookingDetails.consultation_date,
+      consultation_time: bookingDetails.consultation_time,
+      duration_hours: bookingDetails.duration_hours,
+      meeting_type: bookingDetails.meeting_type,
+      topic: bookingDetails.topic,
+      notes: bookingDetails.notes
+    }, {
+      onSuccess: () => {
+        // Send email to expert
+        if (selectedExpert.expertData.email) {
+          inviteExpert.mutate({
+            email: selectedExpert.expertData.email,
+            name: selectedExpert.expertData.name,
+            labName: lab.name_en,
+            details: {
               consultationDate: bookingDetails.consultation_date,
               consultationTime: bookingDetails.consultation_time,
               durationHours: bookingDetails.duration_hours,
@@ -125,16 +119,12 @@ Return top 3 expert matches with scores and consultation recommendations.`;
               topic: bookingDetails.topic,
               notes: bookingDetails.notes
             }
-          }
-        });
+          });
+        }
+        onClose();
       }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['livinglab-bookings']);
-      toast.success(t({ en: 'Consultation booked', ar: 'تم حجز الاستشارة' }));
-      onClose();
-    }
-  });
+    });
+  };
 
   return (
     <Card className="w-full" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -265,11 +255,11 @@ Return top 3 expert matches with scores and consultation recommendations.`;
 
             <div className="flex gap-3 pt-4 border-t">
               <Button
-                onClick={() => bookingMutation.mutate()}
-                disabled={!bookingDetails.consultation_date || !bookingDetails.topic || bookingMutation.isPending}
+                onClick={handleBooking}
+                disabled={!bookingDetails.consultation_date || !bookingDetails.topic || createConsultation.isPending}
                 className="flex-1 bg-green-600 hover:bg-green-700"
               >
-                {bookingMutation.isPending ? (
+                {createConsultation.isPending ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
                   <Calendar className="h-4 w-4 mr-2" />

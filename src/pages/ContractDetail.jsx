@@ -1,5 +1,3 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,25 +5,14 @@ import { useLanguage } from '../components/LanguageContext';
 import { FileText, Calendar, DollarSign, CheckCircle2, AlertCircle, Download } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
+import { useContract } from '@/hooks/useContracts';
 
 function ContractDetail() {
   const { t } = useLanguage();
   const urlParams = new URLSearchParams(window.location.search);
   const contractId = urlParams.get('id');
 
-  const { data: contract, isLoading } = useQuery({
-    queryKey: ['contract', contractId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('contracts')
-        .select('*')
-        .eq('id', contractId)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!contractId
-  });
+  const { data: contract, isLoading } = useContract(contractId);
 
   if (isLoading || !contract) {
     return (

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,10 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { FileText, X, Loader2, Award } from 'lucide-react';
 import { toast } from 'sonner';
+import { useSolutionMutations } from '@/hooks/useSolutionMutations';
 
 export default function SolutionCaseStudyWizard({ solution, onClose }) {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState(1);
 
   const [caseStudy, setCaseStudy] = useState({
@@ -31,26 +30,33 @@ export default function SolutionCaseStudyWizard({ solution, onClose }) {
     contact_person: ''
   });
 
-  const submitMutation = useMutation({
-    mutationFn: async () => {
-      const updatedCaseStudies = [
-        ...(solution.case_studies || []),
-        {
-          ...caseStudy,
-          submission_date: new Date().toISOString().split('T')[0]
-        }
-      ];
+  const { updateSolution } = useSolutionMutations();
 
-      await base44.entities.Solution.update(solution.id, {
-        case_studies: updatedCaseStudies
+  const handleSubmit = async () => {
+    const updatedCaseStudies = [
+      ...(solution.case_studies || []),
+      {
+        ...caseStudy,
+        submission_date: new Date().toISOString().split('T')[0]
+      }
+    ];
+
+    try {
+      await updateSolution.mutateAsync({
+        id: solution.id,
+        data: { case_studies: updatedCaseStudies },
+        activityLog: {
+          type: 'case_study_submitted',
+          description: `Case study submitted: ${caseStudy.title}`,
+          metadata: { title: caseStudy.title }
+        }
       });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['solution']);
-      toast.success(t({ en: 'Case study submitted', ar: 'تم إرسال دراسة الحالة' }));
+
       onClose();
+    } catch (error) {
+      // Error handled by hook
     }
-  });
+  };
 
   return (
     <Card className="w-full" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -218,11 +224,11 @@ export default function SolutionCaseStudyWizard({ solution, onClose }) {
           )}
           {currentStep === 3 && (
             <Button
-              onClick={() => submitMutation.mutate()}
-              disabled={submitMutation.isPending}
+              onClick={handleSubmit}
+              disabled={updateSolution.isPending}
               className="flex-1 bg-green-600 hover:bg-green-700"
             >
-              {submitMutation.isPending ? (
+              {updateSolution.isPending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
                 <Award className="h-4 w-4 mr-2" />

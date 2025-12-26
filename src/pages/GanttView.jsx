@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useMilestones } from '@/hooks/useMilestones';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -11,17 +10,7 @@ function GanttView() {
   const { t } = useLanguage();
   const [entityFilter, setEntityFilter] = useState('all');
 
-  const { data: milestones = [], isLoading } = useQuery({
-    queryKey: ['milestones'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('milestones')
-        .select('*')
-        .order('due_date', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: milestones = [], isLoading } = useMilestones();
 
   const filteredMilestones = milestones.filter(m =>
     entityFilter === 'all' || m.entity_type === entityFilter

@@ -1,4 +1,4 @@
-import { useAllUserProfiles } from '@/hooks/useUserProfiles';
+import { useAllUserProfiles } from '@/hooks/useUserProfile';
 import { useAuth } from '@/lib/AuthContext';
 import { useMyDelegations, useReceivedDelegations, useDelegationMutations } from '@/hooks/useDelegations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

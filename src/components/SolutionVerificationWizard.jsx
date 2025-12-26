@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,11 +11,11 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
-import { supabase } from '@/integrations/supabase/client';
+import { useSolutionMutations } from '@/hooks/useSolutionMutations';
+
 
 export default function SolutionVerificationWizard({ solution, onClose }) {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState(1);
   const { invokeAI, status, isLoading: aiAnalyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
   const { triggerEmail } = useEmailTrigger();
@@ -93,55 +92,24 @@ Provide:
     }
   };
 
-  const verifyMutation = useMutation({
-    mutationFn: async () => {
-      const { error: updateError } = await supabase.from('solutions').update({
-        is_verified: true,
-        verification_date: new Date().toISOString().split('T')[0],
-        verification_notes: verificationNotes,
-        verification_checklist: checklist,
-        ai_verification_recommendation: aiRecommendation,
-        workflow_stage: 'verified'
-      }).eq('id', solution.id);
-      if (updateError) throw updateError;
+  const { verifySolution } = useSolutionMutations();
 
-      await supabase.from('notifications').insert({
-        notification_type: 'solution_verified',
-        title: `Solution Verified: ${solution.name_en}`,
-        message: `${solution.name_en} has been verified and is now available in the marketplace.`,
-        severity: 'success',
-        link: `/SolutionDetail?id=${solution.id}`
-      });
-
-      try {
-        await supabase.functions.invoke('autoMatchmakerEnrollment', { body: { solution_id: solution.id } });
-      } catch (error) {
-        console.error('Auto-enrollment failed:', error);
+  const handleVerify = () => {
+    verifySolution.mutate({
+      solutionId: solution.id,
+      verificationData: {
+        verificationNotes,
+        checklist,
+        aiRecommendation,
+        solutionName: solution.name_en,
+        providerName: solution.provider_name
       }
-    },
-    onSuccess: async () => {
-      queryClient.invalidateQueries(['solution']);
-      
-      // Trigger solution.verified email
-      try {
-        await triggerEmail('solution.verified', {
-          entityType: 'solution',
-          entityId: solution.id,
-          variables: {
-            solutionName: solution.name_en,
-            providerName: solution.provider_name,
-            verificationDate: new Date().toISOString().split('T')[0],
-            recommendation: aiRecommendation?.recommendation || 'approved'
-          }
-        });
-      } catch (error) {
-        console.error('Failed to send solution.verified email:', error);
+    }, {
+      onSuccess: () => {
+        onClose();
       }
-      
-      toast.success(t({ en: 'Solution verified', ar: 'تم التحقق من الحل' }));
-      onClose();
-    }
-  });
+    });
+  };
 
   const steps = [
     { num: 1, title: { en: 'Documentation', ar: 'التوثيق' }, checks: verificationChecks.step1_documentation },
@@ -229,16 +197,15 @@ Provide:
             </Button>
 
             {aiRecommendation && (
-              <div className={`p-4 rounded-lg border-2 ${
-                aiRecommendation.recommendation === 'approve' ? 'bg-green-50 border-green-300' :
+              <div className={`p-4 rounded-lg border-2 ${aiRecommendation.recommendation === 'approve' ? 'bg-green-50 border-green-300' :
                 aiRecommendation.recommendation === 'conditional' ? 'bg-yellow-50 border-yellow-300' :
-                'bg-red-50 border-red-300'
-              }`}>
+                  'bg-red-50 border-red-300'
+                }`}>
                 <div className="flex items-center gap-2 mb-2">
                   <Badge className={
                     aiRecommendation.recommendation === 'approve' ? 'bg-green-600' :
-                    aiRecommendation.recommendation === 'conditional' ? 'bg-yellow-600' :
-                    'bg-red-600'
+                      aiRecommendation.recommendation === 'conditional' ? 'bg-yellow-600' :
+                        'bg-red-600'
                   }>
                     {aiRecommendation.recommendation.toUpperCase()}
                   </Badge>
@@ -283,11 +250,11 @@ Provide:
           )}
           {currentStep === 3 && (
             <Button
-              onClick={() => verifyMutation.mutate()}
-              disabled={totalProgress < 80 || verifyMutation.isPending}
+              onClick={handleVerify}
+              disabled={totalProgress < 80 || verifySolution.isPending}
               className="flex-1 bg-green-600 hover:bg-green-700"
             >
-              {verifyMutation.isPending ? (
+              {verifySolution.isPending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
                 <Shield className="h-4 w-4 mr-2" />

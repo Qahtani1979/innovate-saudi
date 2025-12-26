@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,16 +11,17 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useAuth } from '@/lib/AuthContext';
 import { getSystemPrompt } from '@/lib/saudiContext';
-import { 
-  buildRDCollaborationPrompt, 
+import {
+  buildRDCollaborationPrompt,
   rdCollaborationSchema,
-  RD_COLLABORATION_SYSTEM_PROMPT 
+  RD_COLLABORATION_SYSTEM_PROMPT
 } from '@/lib/ai/prompts/solution';
+import { useCreateRDProject } from '@/hooks/useSolutionWorkflows';
 
 export default function SolutionRDCollaborationProposal({ solution, onClose }) {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+
   const [formData, setFormData] = useState({
     title_en: `R&D Collaboration: ${solution.name_en}`,
     title_ar: '',
@@ -40,19 +39,11 @@ export default function SolutionRDCollaborationProposal({ solution, onClose }) {
   });
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const createRDProject = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase
-        .from('rd_projects')
-        .insert(data);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['rd-projects']);
-      toast.success(t({ en: 'R&D proposal created', ar: 'تم إنشاء المقترح' }));
-      onClose?.();
-    }
-  });
+  const createRDProjectMutation = useCreateRDProject();
+
+  const handleCreateSuccess = () => {
+    onClose?.();
+  };
 
   const enhanceWithAI = async () => {
     const result = await invokeAI({
@@ -65,8 +56,7 @@ export default function SolutionRDCollaborationProposal({ solution, onClose }) {
       setFormData({
         ...formData,
         abstract_en: result.data.abstract_en,
-        abstract_ar: result.data.abstract_ar,
-        methodology_en: result.data.methodology_en
+        abstract_ar: result.data.abstract_ar
       });
       toast.success(t({ en: 'Proposal enhanced', ar: 'تم تحسين المقترح' }));
     }

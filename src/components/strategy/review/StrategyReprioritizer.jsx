@@ -4,10 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { 
+import {
   ArrowUpDown, TrendingUp, Clock, AlertTriangle,
   Users, DollarSign, Save, RotateCcw, Sparkles, Loader2
 } from 'lucide-react';
@@ -16,31 +14,16 @@ import {
   buildReprioritizerPrompt,
   REPRIORITIZER_SCHEMA
 } from '@/lib/ai/prompts/strategy';
+import { useStrategyObjectives, useUpdateObjectivePriorities } from '@/hooks/useStrategyObjectives';
 
 export default function StrategyReprioritizer({ strategicPlanId, strategicPlan, planId, objectives = [], onSave }) {
   const activePlanId = strategicPlanId || planId;
   const { t, language } = useLanguage();
-  const queryClient = useQueryClient();
   const { invokeAI, isLoading: aiLoading } = useAIWithFallback();
   const [aiSuggestion, setAiSuggestion] = useState(null);
-  
-  // Fetch objectives from database
-  const { data: dbObjectives, isLoading } = useQuery({
-    queryKey: ['strategy-objectives-for-reprioritize', activePlanId],
-    queryFn: async () => {
-      if (!activePlanId) return [];
-      
-      const { data, error } = await supabase
-        .from('strategic_objectives')
-        .select('*')
-        .eq('strategic_plan_id', activePlanId)
-        .order('display_order', { ascending: true });
-      
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!activePlanId
-  });
+
+  // Custom Hook for fetching objectives
+  const { data: dbObjectives, isLoading } = useStrategyObjectives({ planId: activePlanId });
 
   const [items, setItems] = useState([]);
   const [originalItems, setOriginalItems] = useState([]);
@@ -80,44 +63,32 @@ export default function StrategyReprioritizer({ strategicPlanId, strategicPlan, 
     }
   }, [dbObjectives, objectives, language]);
 
-  // Save mutation
-  const saveMutation = useMutation({
-    mutationFn: async (updatedItems) => {
-      const updates = updatedItems.map((item, index) => ({
-        id: item.id,
-        display_order: index + 1,
-        updated_at: new Date().toISOString()
-      }));
-      
-      for (const update of updates) {
-        const { error } = await supabase
-          .from('strategic_objectives')
-          .update({ display_order: update.display_order, updated_at: update.updated_at })
-          .eq('id', update.id);
-        if (error) throw error;
+  // Use custom mutation hook
+  const updatePrioritiesMutation = useUpdateObjectivePriorities();
+
+  const handleSave = () => {
+    const updates = items.map((item, index) => ({
+      id: item.id,
+      display_order: index + 1
+    }));
+
+    updatePrioritiesMutation.mutate({ updates, planId: activePlanId }, {
+      onSuccess: () => {
+        setHasChanges(false);
+        onSave?.(items);
       }
-      return updates;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['strategy-objectives-for-reprioritize', activePlanId]);
-      toast.success(t({ en: 'Priorities saved successfully', ar: 'تم حفظ الأولويات بنجاح' }));
-      setHasChanges(false);
-    },
-    onError: (error) => {
-      console.error('Save error:', error);
-      toast.error(t({ en: 'Failed to save priorities', ar: 'فشل في حفظ الأولويات' }));
-    }
-  });
+    });
+  };
 
   const moveItem = (index, direction) => {
     const newItems = [...items];
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    
+
     if (targetIndex < 0 || targetIndex >= newItems.length) return;
-    
+
     [newItems[index], newItems[targetIndex]] = [newItems[targetIndex], newItems[index]];
     newItems.forEach((item, i) => item.priority = i + 1);
-    
+
     setItems(newItems);
     setHasChanges(true);
   };
@@ -148,15 +119,15 @@ export default function StrategyReprioritizer({ strategicPlanId, strategicPlan, 
 
       if (result.success && result.data) {
         setAiSuggestion(result.data);
-        
+
         // Optionally auto-apply the suggested order
         const suggestedOrder = result.data.suggested_order || [];
         if (suggestedOrder.length > 0) {
           const reordered = [...items].sort((a, b) => {
-            const aIndex = suggestedOrder.findIndex(name => 
+            const aIndex = suggestedOrder.findIndex(name =>
               a.name.toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes(a.name.toLowerCase())
             );
-            const bIndex = suggestedOrder.findIndex(name => 
+            const bIndex = suggestedOrder.findIndex(name =>
               b.name.toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes(b.name.toLowerCase())
             );
             if (aIndex === -1) return 1;
@@ -167,7 +138,7 @@ export default function StrategyReprioritizer({ strategicPlanId, strategicPlan, 
           setItems(reordered);
           setHasChanges(true);
         }
-        
+
         toast.success(t({ en: 'AI reprioritization complete', ar: 'اكتملت إعادة الترتيب الذكية' }));
       }
     } catch (error) {
@@ -186,8 +157,8 @@ export default function StrategyReprioritizer({ strategicPlanId, strategicPlan, 
     const percentage = (value / max) * 100;
     return (
       <div className="h-1.5 w-16 bg-muted rounded-full overflow-hidden">
-        <div 
-          className="h-full bg-primary rounded-full" 
+        <div
+          className="h-full bg-primary rounded-full"
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -299,23 +270,23 @@ export default function StrategyReprioritizer({ strategicPlanId, strategicPlan, 
           ) : (
             <div className="space-y-3">
               {items.map((item, index) => (
-                <div 
+                <div
                   key={item.id}
                   className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex flex-col gap-1">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       className="h-6 w-6"
                       onClick={() => moveItem(index, 'up')}
                       disabled={index === 0}
                     >
                       <span className="text-xs">▲</span>
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       className="h-6 w-6"
                       onClick={() => moveItem(index, 'down')}
                       disabled={index === items.length - 1}

@@ -13,7 +13,7 @@ import RolePermissionMatrix from '@/components/access/RolePermissionMatrix';
 import PermissionGate from '@/components/permissions/PermissionGate';
 import { usePermissions } from '@/components/permissions/usePermissions';
 import { useRoles } from '@/hooks/useRoles';
-import { useAllUserProfiles } from '@/hooks/useUserProfiles';
+import { useAllUserProfiles } from '@/hooks/useUserProfile';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { useRBACStatistics, useAccessLogs } from '@/hooks/useRBACStatistics';
 

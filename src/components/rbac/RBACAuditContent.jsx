@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useAllUserProfiles } from '@/hooks/useUserProfiles';
+import { useAllUserProfiles } from '@/hooks/useUserProfile';
 import { useRoles } from '@/hooks/useRoles';
 import { useSystemPermissions } from '@/hooks/useSystemPermissions';
 import { useRolePermissions } from '@/hooks/useRolePermissions';

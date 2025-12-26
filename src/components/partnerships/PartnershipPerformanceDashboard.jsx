@@ -1,26 +1,14 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { TrendingUp, AlertCircle } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
+import { usePartnershipById } from '@/hooks/usePartnerships';
 
 export default function PartnershipPerformanceDashboard({ partnershipId }) {
   const { language, t } = useLanguage();
 
-  const { data: partnership } = useQuery({
-    queryKey: ['partnership', partnershipId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('partnerships')
-        .select('*')
-        .eq('id', partnershipId)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    }
-  });
+  const { data: partnership } = usePartnershipById(partnershipId);
 
   if (!partnership) return null;
 
@@ -28,7 +16,7 @@ export default function PartnershipPerformanceDashboard({ partnershipId }) {
   const totalMilestones = partnership.milestones?.length || 1;
   const milestoneProgress = Math.round((completedMilestones / totalMilestones) * 100);
 
-  const overdueMilestones = partnership.milestones?.filter(m => 
+  const overdueMilestones = partnership.milestones?.filter(m =>
     m.status !== 'completed' && new Date(m.due_date) < new Date()
   ).length || 0;
 
@@ -132,9 +120,9 @@ export default function PartnershipPerformanceDashboard({ partnershipId }) {
                     {t({ en: 'Intervention Recommended', ar: 'التدخل موصى به' })}
                   </p>
                   <p className="text-xs text-red-700">
-                    {t({ 
-                      en: 'Partnership health is below target. Schedule review meeting.', 
-                      ar: 'صحة الشراكة أقل من الهدف. جدول اجتماع مراجعة.' 
+                    {t({
+                      en: 'Partnership health is below target. Schedule review meeting.',
+                      ar: 'صحة الشراكة أقل من الهدف. جدول اجتماع مراجعة.'
                     })}
                   </p>
                 </div>

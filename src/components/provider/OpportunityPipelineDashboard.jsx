@@ -1,5 +1,5 @@
 
-import { useQuery } from '@tanstack/react-query';
+// cleaned up imports
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../LanguageContext';
 import {
@@ -7,66 +7,27 @@ import {
   ArrowRight, Eye, Mail
 } from 'lucide-react';
 
+import {
+  useProviderSolutions,
+  useProviderMatches,
+  useProviderInterests,
+  useProviderDemoRequests,
+  useProviderProposals,
+  useProviderPilots
+} from '@/hooks/useProviderPipeline';
+
 export default function OpportunityPipelineDashboard({ providerId, providerEmail }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['provider-solutions', providerId],
-    queryFn: async () => {
-      const all = await base44.entities.Solution.list();
-      return all.filter(s => s.provider_id === providerId || s.created_by === providerEmail);
-    },
-    enabled: !!providerId || !!providerEmail
-  });
+  const { data: solutions = [] } = useProviderSolutions(providerId, providerEmail);
 
-  const { data: matches = [] } = useQuery({
-    queryKey: ['challenge-matches', providerId],
-    queryFn: async () => {
-      const solutionIds = solutions.map(s => s.id);
-      const allMatches = await base44.entities.ChallengeSolutionMatch.list();
-      return allMatches.filter(m => solutionIds.includes(m.solution_id));
-    },
-    enabled: solutions.length > 0
-  });
+  const solutionIds = solutions.map(s => s.id);
 
-  const { data: interests = [] } = useQuery({
-    queryKey: ['solution-interests', providerId],
-    queryFn: async () => {
-      const solutionIds = solutions.map(s => s.id);
-      const allInterests = await base44.entities.SolutionInterest.list();
-      return allInterests.filter(i => solutionIds.includes(i.solution_id));
-    },
-    enabled: solutions.length > 0
-  });
-
-  const { data: demoRequests = [] } = useQuery({
-    queryKey: ['demo-requests', providerId],
-    queryFn: async () => {
-      const solutionIds = solutions.map(s => s.id);
-      const allDemos = await base44.entities.DemoRequest.list();
-      return allDemos.filter(d => solutionIds.includes(d.solution_id));
-    },
-    enabled: solutions.length > 0
-  });
-
-  const { data: proposals = [] } = useQuery({
-    queryKey: ['challenge-proposals', providerEmail],
-    queryFn: async () => {
-      const all = await base44.entities.ChallengeProposal.list();
-      return all.filter(p => p.proposer_email === providerEmail);
-    },
-    enabled: !!providerEmail
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['solution-pilots', providerId],
-    queryFn: async () => {
-      const solutionIds = solutions.map(s => s.id);
-      const allPilots = await base44.entities.Pilot.list();
-      return allPilots.filter(p => solutionIds.includes(p.solution_id));
-    },
-    enabled: solutions.length > 0
-  });
+  const { data: matches = [] } = useProviderMatches(solutionIds);
+  const { data: interests = [] } = useProviderInterests(solutionIds);
+  const { data: demoRequests = [] } = useProviderDemoRequests(solutionIds);
+  const { data: proposals = [] } = useProviderProposals(providerEmail);
+  const { data: pilots = [] } = useProviderPilots(solutionIds);
 
   const pipeline = {
     discovered: matches.length,
@@ -173,12 +134,12 @@ export default function OpportunityPipelineDashboard({ providerId, providerEmail
   );
 }
 
-function FunnelStage({ icon: Icon, label, count, color, conversionRate, isFirst, isLast }) {
+function FunnelStage({ icon: Icon, label, count, color, conversionRate = undefined, isFirst = false, isLast = false }) {
   const widthPercent = isFirst ? 100 : isLast ? 50 : 75;
-  
+
   return (
     <div className="flex items-center gap-3">
-      <div 
+      <div
         className={`bg-${color}-100 border-2 border-${color}-300 rounded-lg p-3 transition-all`}
         style={{ width: `${widthPercent}%` }}
       >

@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useChallengeMutations } from '@/hooks/useChallengeMutations';
+import { usePilotMutations } from '@/hooks/usePilotMutations';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,90 +19,88 @@ import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function Approvals() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  const { changeStatus: changeChallengeStatus } = useChallengeMutations();
+  const { changeStage: changePilotStage } = usePilotMutations();
   const [comments, setComments] = useState({});
   const [aiBriefs, setAiBriefs] = useState({});
   const { invokeAI, status, isLoading: generatingBrief, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [currentBriefId, setCurrentBriefId] = useState(null);
   const { triggerEmail } = useEmailTrigger();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['pending-challenges'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*')
-        .in('status', ['submitted', 'under_review'])
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
+  const { data: challenges = [] } = useChallengesWithVisibility({
+    status: ['submitted', 'under_review'],
+    limit: 100
   });
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pending-pilots'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('stage', 'approval_pending')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
+  const { data: pilots = [] } = usePilotsWithVisibility({
+    stage: 'approval_pending',
+    limit: 100
   });
 
-  const approveMutation = useMutation({
-    mutationFn: async ({ entity, id, newStatus, action }) => {
-      if (entity === 'Challenge') {
-        const { error } = await supabase
-          .from('challenges')
-          .update({ status: newStatus })
-          .eq('id', id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('pilots')
-          .update({ stage: newStatus })
-          .eq('id', id);
-        if (error) throw error;
+  // Helper to send specific notification emails (preserving original logic)
+  const sendApprovalEmail = async (entity, id, action) => {
+    const triggerKey = action === 'approve'
+      ? (entity === 'Challenge' ? 'challenge.approved' : 'pilot.approved')
+      : (entity === 'Challenge' ? 'challenge.rejected' : 'pilot.rejected');
+
+    await triggerEmail(triggerKey, {
+      entityType: entity.toLowerCase(),
+      entityId: id,
+      variables: {
+        entity_type: entity,
+        action: action
       }
-    },
-    onSuccess: async (result, variables) => {
-      const { entity, id, action } = variables;
-      const triggerKey = action === 'approve'
-        ? (entity === 'Challenge' ? 'challenge.approved' : 'pilot.approved')
-        : (entity === 'Challenge' ? 'challenge.rejected' : 'pilot.rejected');
-
-      // Trigger approval/rejection email
-      await triggerEmail(triggerKey, {
-        entityType: entity.toLowerCase(),
-        entityId: id,
-        variables: {
-          entity_type: entity,
-          action: action
-        }
-      }).catch(err => console.error('Email trigger failed:', err));
-
-      queryClient.invalidateQueries({ queryKey: ['pending-challenges'] });
-      queryClient.invalidateQueries({ queryKey: ['pending-pilots'] });
-      toast.success(t({ en: 'Action completed', ar: 'تم الإجراء' }));
-    }
-  });
-
-  const handleApprove = (entity, id) => {
-    const newStatus = entity === 'Challenge' ? 'approved' : 'approved';
-    approveMutation.mutate({ entity, id, newStatus, action: 'approve' });
+    }).catch(err => console.error('Email trigger failed:', err));
   };
 
-  const handleReject = (entity, id) => {
-    const newStatus = entity === 'Challenge' ? 'draft' : 'design';
-    approveMutation.mutate({ entity, id, newStatus, action: 'reject' });
+  const handleApprove = async (entity, id) => {
+    if (entity === 'Challenge') {
+      changeChallengeStatus.mutate(
+        { id, newStatus: 'approved', notes: comments[id] }, // Changed feedback to notes
+        {
+          onSuccess: () => {
+            sendApprovalEmail('Challenge', id, 'approve');
+            // toast.success handled by hook
+          }
+        }
+      );
+    } else {
+      changePilotStage.mutate(
+        { id, newStage: 'approved', notes: comments[id] },
+        {
+          onSuccess: () => {
+            sendApprovalEmail('Pilot', id, 'approve');
+          }
+        }
+      );
+    }
+  };
+
+  const handleReject = async (entity, id) => {
+    if (entity === 'Challenge') {
+      changeChallengeStatus.mutate(
+        { id, newStatus: 'draft', rejectionReason: comments[id] || 'Returned by reviewer' },
+        {
+          onSuccess: () => {
+            sendApprovalEmail('Challenge', id, 'reject');
+          }
+        }
+      );
+    } else {
+      changePilotStage.mutate(
+        { id, newStage: 'design', notes: comments[id] || 'Returned by reviewer' },
+        {
+          onSuccess: () => {
+            sendApprovalEmail('Pilot', id, 'reject');
+          }
+        }
+      );
+    }
   };
 
   const generateAIBrief = async (entity, id) => {
     setCurrentBriefId(id);
-    const item = entity === 'Challenge' ? challenges.find(c => c.id === id) : pilots.find(p => p.id === id);
+    const item = entity === 'Challenge' ? challengesList.find(c => c.id === id) : pilotsList.find(p => p.id === id);
 
     // Import centralized prompt modules
     const {
@@ -127,7 +127,11 @@ export default function Approvals() {
     setCurrentBriefId(null);
   };
 
-  const totalPending = challenges.length + pilots.length;
+  // Ensure arrays if hooks return paginated objects
+  const challengesList = Array.isArray(challenges) ? challenges : (challenges?.data || []);
+  const pilotsList = Array.isArray(pilots) ? pilots : (pilots?.data || []);
+
+  const totalPending = challengesList.length + pilotsList.length;
 
   return (
     <PageLayout>
@@ -137,8 +141,8 @@ export default function Approvals() {
         description={t({ en: 'Review and approve pending submissions', ar: 'مراجعة والموافقة على الطلبات المعلقة' })}
         stats={[
           { icon: Clock, value: totalPending, label: t({ en: 'Pending', ar: 'معلق' }) },
-          { icon: TestTube, value: challenges.length, label: t({ en: 'Challenges', ar: 'تحديات' }) },
-          { icon: Microscope, value: pilots.length, label: t({ en: 'Pilots', ar: 'تجارب' }) },
+          { icon: TestTube, value: challengesList.length, label: t({ en: 'Challenges', ar: 'تحديات' }) },
+          { icon: Microscope, value: pilotsList.length, label: t({ en: 'Pilots', ar: 'تجارب' }) },
         ]}
       />
 
@@ -148,7 +152,7 @@ export default function Approvals() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-600">{t({ en: 'Pending', ar: 'معلق' })}</p>
-                <p className="text-3xl font-bold text-yellow-600">{challenges.length + pilots.length}</p>
+                <p className="text-3xl font-bold text-yellow-600">{challengesList.length + pilotsList.length}</p>
               </div>
               <Clock className="h-8 w-8 text-yellow-600" />
             </div>
@@ -160,7 +164,7 @@ export default function Approvals() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-600">{t({ en: 'Challenges', ar: 'التحديات' })}</p>
-                <p className="text-3xl font-bold text-red-600">{challenges.length}</p>
+                <p className="text-3xl font-bold text-red-600">{challengesList.length}</p>
               </div>
               <AlertCircle className="h-8 w-8 text-red-600" />
             </div>
@@ -172,7 +176,7 @@ export default function Approvals() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-600">{t({ en: 'Pilots', ar: 'التجارب' })}</p>
-                <p className="text-3xl font-bold text-blue-600">{pilots.length}</p>
+                <p className="text-3xl font-bold text-blue-600">{pilotsList.length}</p>
               </div>
               <TestTube className="h-8 w-8 text-blue-600" />
             </div>
@@ -194,14 +198,14 @@ export default function Approvals() {
 
       <Tabs defaultValue="challenges" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="challenges">{t({ en: 'Challenges', ar: 'التحديات' })} ({challenges.length})</TabsTrigger>
-          <TabsTrigger value="pilots">{t({ en: 'Pilots', ar: 'التجارب' })} ({pilots.length})</TabsTrigger>
+          <TabsTrigger value="challenges">{t({ en: 'Challenges', ar: 'التحديات' })} ({challengesList.length})</TabsTrigger>
+          <TabsTrigger value="pilots">{t({ en: 'Pilots', ar: 'التجارب' })} ({pilotsList.length})</TabsTrigger>
           <TabsTrigger value="completed">{t({ en: 'Completed', ar: 'المكتمل' })}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="challenges">
           <div className="space-y-4">
-            {challenges.map((challenge) => (
+            {challengesList.map((challenge) => (
               <Card key={challenge.id} className="border-l-4 border-l-yellow-500">
                 <CardContent className="pt-6">
                   <div className="space-y-4">
@@ -252,7 +256,7 @@ export default function Approvals() {
                       <Button
                         onClick={() => handleApprove('Challenge', challenge.id)}
                         className="bg-gradient-to-r from-green-600 to-emerald-600 flex-1"
-                        disabled={approveMutation.isPending}
+                        disabled={changeChallengeStatus.isPending}
                       >
                         <CheckCircle2 className="h-4 w-4 mr-2" />
                         {t({ en: 'Approve', ar: 'موافقة' })}
@@ -261,7 +265,7 @@ export default function Approvals() {
                         onClick={() => handleReject('Challenge', challenge.id)}
                         variant="outline"
                         className="border-red-300 text-red-600 hover:bg-red-50 flex-1"
-                        disabled={approveMutation.isPending}
+                        disabled={changeChallengeStatus.isPending}
                       >
                         <XCircle className="h-4 w-4 mr-2" />
                         {t({ en: 'Return', ar: 'إرجاع' })}
@@ -271,7 +275,7 @@ export default function Approvals() {
                 </CardContent>
               </Card>
             ))}
-            {challenges.length === 0 && (
+            {challengesList.length === 0 && (
               <div className="text-center py-12">
                 <CheckCircle2 className="h-12 w-12 text-slate-300 mx-auto mb-4" />
                 <p className="text-slate-500">{t({ en: 'No pending challenges', ar: 'لا توجد تحديات معلقة' })}</p>
@@ -282,7 +286,7 @@ export default function Approvals() {
 
         <TabsContent value="pilots">
           <div className="space-y-4">
-            {pilots.map((pilot) => (
+            {pilotsList.map((pilot) => (
               <Card key={pilot.id} className="border-l-4 border-l-blue-500">
                 <CardContent className="pt-6">
                   <div className="space-y-4">
@@ -351,7 +355,7 @@ export default function Approvals() {
                       <Button
                         onClick={() => handleApprove('Pilot', pilot.id)}
                         className="bg-gradient-to-r from-green-600 to-emerald-600 flex-1"
-                        disabled={approveMutation.isPending}
+                        disabled={changePilotStage.isPending}
                       >
                         <CheckCircle2 className="h-4 w-4 mr-2" />
                         {t({ en: 'Approve Pilot', ar: 'الموافقة على التجربة' })}
@@ -360,7 +364,7 @@ export default function Approvals() {
                         onClick={() => handleReject('Pilot', pilot.id)}
                         variant="outline"
                         className="border-red-300 text-red-600 hover:bg-red-50 flex-1"
-                        disabled={approveMutation.isPending}
+                        disabled={changePilotStage.isPending}
                       >
                         <XCircle className="h-4 w-4 mr-2" />
                         {t({ en: 'Return', ar: 'إرجاع' })}
@@ -370,7 +374,7 @@ export default function Approvals() {
                 </CardContent>
               </Card>
             ))}
-            {pilots.length === 0 && (
+            {pilotsList.length === 0 && (
               <div className="text-center py-12">
                 <CheckCircle2 className="h-12 w-12 text-slate-300 mx-auto mb-4" />
                 <p className="text-slate-500">{t({ en: 'No pending pilots', ar: 'لا توجد تجارب معلقة' })}</p>

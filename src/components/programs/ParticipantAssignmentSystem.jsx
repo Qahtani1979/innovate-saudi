@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,13 +6,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { FileText, Plus, Clock } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+
+import { useProgramAssignments } from '@/hooks/useProgramAssignments';
+import { useProgramApplications } from '@/hooks/useProgramDetails';
 
 export default function ParticipantAssignmentSystem({ programId }) {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [newAssignment, setNewAssignment] = useState({
     title: '',
@@ -23,60 +22,19 @@ export default function ParticipantAssignmentSystem({ programId }) {
     points: 10
   });
 
-  const { data: program } = useQuery({
-    queryKey: ['program', programId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('programs')
-        .select('*')
-        .eq('id', programId)
-        .eq('is_deleted', false)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!programId
-  });
+  const { assignments, createAssignment } = useProgramAssignments(programId);
 
-  const { data: applications = [] } = useQuery({
-    queryKey: ['program-applications', programId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('program_applications')
-        .select('*')
-        .eq('program_id', programId)
-        .eq('status', 'accepted');
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!programId
-  });
+  const { data: applications = [] } = useProgramApplications(programId);
+  const acceptedApplications = applications.filter(app => app.status === 'accepted');
 
-  const assignments = program?.assignments || [];
-
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase
-        .from('programs')
-        .update({
-          assignments: [...assignments, {
-            ...data,
-            id: Date.now().toString(),
-            created_date: new Date().toISOString(),
-            created_by: user?.email,
-            submissions: []
-          }]
-        })
-        .eq('id', programId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['program', programId]);
-      setShowForm(false);
-      setNewAssignment({ title: '', description: '', due_date: '', points: 10 });
-      toast.success(t({ en: 'Assignment created', ar: 'تم إنشاء المهمة' }));
-    }
-  });
+  const handleCreateAssignment = () => {
+    createAssignment.mutate(newAssignment, {
+      onSuccess: () => {
+        setShowForm(false);
+        setNewAssignment({ title: '', description: '', due_date: '', points: 10 });
+      }
+    });
+  };
 
   const getSubmissionCount = (assignmentId) => {
     const assignment = assignments.find(a => a.id === assignmentId);
@@ -103,29 +61,29 @@ export default function ParticipantAssignmentSystem({ programId }) {
             <Input
               placeholder={t({ en: 'Assignment title', ar: 'عنوان المهمة' })}
               value={newAssignment.title}
-              onChange={(e) => setNewAssignment({...newAssignment, title: e.target.value})}
+              onChange={(e) => setNewAssignment({ ...newAssignment, title: e.target.value })}
             />
             <Textarea
               placeholder={t({ en: 'Instructions and requirements', ar: 'التعليمات والمتطلبات' })}
               value={newAssignment.description}
-              onChange={(e) => setNewAssignment({...newAssignment, description: e.target.value})}
+              onChange={(e) => setNewAssignment({ ...newAssignment, description: e.target.value })}
               rows={3}
             />
             <div className="grid grid-cols-2 gap-3">
               <Input
                 type="date"
                 value={newAssignment.due_date}
-                onChange={(e) => setNewAssignment({...newAssignment, due_date: e.target.value})}
+                onChange={(e) => setNewAssignment({ ...newAssignment, due_date: e.target.value })}
               />
               <Input
                 type="number"
                 placeholder={t({ en: 'Points', ar: 'النقاط' })}
                 value={newAssignment.points}
-                onChange={(e) => setNewAssignment({...newAssignment, points: parseInt(e.target.value)})}
+                onChange={(e) => setNewAssignment({ ...newAssignment, points: parseInt(e.target.value) })}
               />
             </div>
             <div className="flex gap-2">
-              <Button 
+              <Button
                 className="flex-1"
                 onClick={() => createMutation.mutate(newAssignment)}
                 disabled={!newAssignment.title || createMutation.isPending}
@@ -159,7 +117,7 @@ export default function ParticipantAssignmentSystem({ programId }) {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-bold text-green-600">
-                      {getSubmissionCount(assignment.id)}/{applications.length}
+                      {getSubmissionCount(assignment.id)}/{acceptedApplications.length}
                     </p>
                     <p className="text-xs text-slate-500">{t({ en: 'submitted', ar: 'مقدم' })}</p>
                   </div>

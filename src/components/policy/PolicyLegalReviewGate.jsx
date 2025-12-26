@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { usePolicyMutations } from '@/hooks/usePolicyMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,8 +12,8 @@ import { Scale, CheckCircle2, XCircle, AlertCircle, Loader2 } from 'lucide-react
 
 export default function PolicyLegalReviewGate({ policy }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { submitLegalReview } = usePolicyMutations();
   const [reviewData, setReviewData] = useState({
     status: 'pending',
     comments: '',
@@ -27,38 +26,13 @@ export default function PolicyLegalReviewGate({ policy }) {
     ]
   });
 
-  const reviewMutation = useMutation({
-    mutationFn: async () => {
-      const allChecked = reviewData.checklist.every(item => item.checked);
-      
-      const { error } = await supabase.from('policy_recommendations').update({
-        legal_review: {
-          reviewer_email: user?.email,
-          review_date: new Date().toISOString(),
-          status: reviewData.status,
-          checklist: reviewData.checklist,
-          comments: reviewData.comments,
-          legal_citations_verified: allChecked
-        },
-        workflow_stage: reviewData.status === 'approved' ? 'public_consultation' : 'draft',
-        approvals: [
-          ...(policy.approvals || []),
-          {
-            stage: 'legal_review',
-            approved_by: user?.email,
-            approved_date: new Date().toISOString(),
-            status: reviewData.status,
-            comments: reviewData.comments
-          }
-        ]
-      }).eq('id', policy.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['policy', policy.id]);
-      toast.success(t({ en: 'Legal review submitted', ar: 'تم تقديم المراجعة القانونية' }));
-    }
-  });
+  const handleSubmitReview = () => {
+    submitLegalReview.mutate({
+      id: policy.id,
+      reviewData,
+      approvals: policy.approvals
+    });
+  };
 
   const existingReview = policy.legal_review;
   const hasReview = existingReview && existingReview.status !== 'pending';
@@ -72,8 +46,8 @@ export default function PolicyLegalReviewGate({ policy }) {
           {hasReview && (
             <Badge className={
               existingReview.status === 'approved' ? 'bg-green-100 text-green-700' :
-              existingReview.status === 'rejected' ? 'bg-red-100 text-red-700' :
-              'bg-yellow-100 text-yellow-700'
+                existingReview.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                  'bg-yellow-100 text-yellow-700'
             }>
               {existingReview.status}
             </Badge>
@@ -145,9 +119,9 @@ export default function PolicyLegalReviewGate({ policy }) {
                 value={reviewData.comments}
                 onChange={(e) => setReviewData({ ...reviewData, comments: e.target.value })}
                 rows={4}
-                placeholder={t({ 
-                  en: 'Legal review notes and recommendations...', 
-                  ar: 'ملاحظات المراجعة القانونية والتوصيات...' 
+                placeholder={t({
+                  en: 'Legal review notes and recommendations...',
+                  ar: 'ملاحظات المراجعة القانونية والتوصيات...'
                 })}
                 dir={isRTL ? 'rtl' : 'ltr'}
               />
@@ -184,11 +158,11 @@ export default function PolicyLegalReviewGate({ policy }) {
             </div>
 
             <Button
-              onClick={() => reviewMutation.mutate()}
-              disabled={reviewMutation.isPending || reviewData.status === 'pending'}
+              onClick={handleSubmitReview}
+              disabled={submitLegalReview.isPending || reviewData.status === 'pending'}
               className="w-full gap-2 bg-blue-600"
             >
-              {reviewMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              {submitLegalReview.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
               {t({ en: 'Submit Legal Review', ar: 'تقديم المراجعة القانونية' })}
             </Button>
           </div>

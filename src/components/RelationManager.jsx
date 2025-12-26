@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,15 +9,16 @@ import { Plus, Edit, Trash2, Loader2, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
+import { useRelationManagement } from '@/hooks/useRelationManagement';
+import { usePolicyRecommendations } from '@/hooks/usePolicyRecommendations';
 
-export default function RelationManager({ 
-  entityType, 
-  entityId, 
-  open, 
-  onClose 
+export default function RelationManager({
+  entityType,
+  entityId,
+  open,
+  onClose
 }) {
   const { language, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [mode, setMode] = useState('list'); // 'list', 'create', 'edit'
   const [selectedRelation, setSelectedRelation] = useState(null);
   const [formData, setFormData] = useState({
@@ -30,88 +30,58 @@ export default function RelationManager({
     bidirectional: false
   });
 
-  // Fetch existing relations
-  const { data: relations = [], isLoading } = useQuery({
-    queryKey: ['relations', entityType, entityId],
-    queryFn: async () => {
-      const allRelations = await base44.entities.ChallengeRelation.list();
-      return allRelations.filter(r => 
-        r.challenge_id === entityId || 
-        (r.bidirectional && r.related_entity_id === entityId)
-      );
-    },
-    enabled: open && !!entityId
-  });
+  const {
+    useAllRelations,
+    useAllChallenges,
+    useAllSolutions,
+    useAllPilots,
+    useAllRDProjects,
+    useAllPrograms,
+    createMatch,
+    reviewRelation, // Not used here directly but available
+    deleteRelation
+  } = useRelationManagement();
 
-  // Fetch entities for selection
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-for-relations'],
-    queryFn: () => base44.entities.Challenge.list(),
-    enabled: open
-  });
+  const { data: allRelations = [] } = useAllRelations();
+  const relations = allRelations.filter(r =>
+    r.challenge_id === entityId ||
+    (r.bidirectional && r.related_entity_id === entityId)
+  );
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions-for-relations'],
-    queryFn: () => base44.entities.Solution.list(),
-    enabled: open
-  });
+  const { data: challenges = [] } = useAllChallenges();
+  const { data: solutions = [] } = useAllSolutions();
+  const { data: pilots = [] } = useAllPilots();
+  const { data: rdProjects = [] } = useAllRDProjects();
+  const { data: programs = [] } = useAllPrograms();
+  const { data: policies = [] } = usePolicyRecommendations(); // Assuming hook name, verified next step if fails.
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-for-relations'],
-    queryFn: () => base44.entities.Pilot.list(),
-    enabled: open
-  });
-
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects-for-relations'],
-    queryFn: () => base44.entities.RDProject.list(),
-    enabled: open
-  });
-
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs-for-relations'],
-    queryFn: () => base44.entities.Program.list(),
-    enabled: open
-  });
-
-  const { data: policies = [] } = useQuery({
-    queryKey: ['policies-for-relations'],
-    queryFn: () => base44.entities.PolicyRecommendation.list(),
-    enabled: open
-  });
-
-  // Create mutation
-  const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.ChallengeRelation.create({
-      challenge_id: entityId,
-      ...data,
-      created_via: 'manual'
-    }),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['relations']);
+  // Create mutation wrapper
+  const handleCreate = async () => {
+    try {
+      await createMatch.mutateAsync({
+        challenge_id: entityId,
+        ...formData,
+        created_via: 'manual'
+      });
       toast.success(t({ en: 'Relation created', ar: 'تم إنشاء العلاقة' }));
       resetForm();
+    } catch (error) {
+      // Handled by hook
     }
-  });
+  };
 
-  // Update mutation
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.ChallengeRelation.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['relations']);
+  const handleUpdate = async () => {
+    try {
+      await updateRelation.mutateAsync({
+        id: selectedRelation.id,
+        data: formData
+      });
       toast.success(t({ en: 'Relation updated', ar: 'تم تحديث العلاقة' }));
       resetForm();
+    } catch (error) {
+      // Handled by hook
     }
-  });
-
-  // Delete mutation
-  const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.ChallengeRelation.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['relations']);
-      toast.success(t({ en: 'Relation deleted', ar: 'تم حذف العلاقة' }));
-    }
-  });
+  };
 
   const resetForm = () => {
     setMode('list');
@@ -123,17 +93,6 @@ export default function RelationManager({
       notes: '',
       strength: 80,
       bidirectional: false
-    });
-  };
-
-  const handleCreate = () => {
-    createMutation.mutate(formData);
-  };
-
-  const handleUpdate = () => {
-    updateMutation.mutate({
-      id: selectedRelation.id,
-      data: formData
     });
   };
 
@@ -290,8 +249,8 @@ export default function RelationManager({
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => deleteMutation.mutate(relation.id)}
-                          disabled={deleteMutation.isPending}
+                          onClick={() => deleteRelation.mutate(relation.id)}
+                          disabled={deleteRelation.isPending}
                         >
                           <Trash2 className="h-4 w-4 text-red-600" />
                         </Button>
@@ -312,7 +271,7 @@ export default function RelationManager({
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">
-                {mode === 'create' 
+                {mode === 'create'
                   ? t({ en: 'Create New Relation', ar: 'إنشاء علاقة جديدة' })
                   : t({ en: 'Edit Relation', ar: 'تعديل العلاقة' })
                 }
@@ -325,9 +284,9 @@ export default function RelationManager({
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>{t({ en: 'Entity Type', ar: 'نوع الكيان' })}</Label>
-                <Select 
+                <Select
                   value={formData.related_entity_type}
-                  onValueChange={(v) => setFormData({...formData, related_entity_type: v, related_entity_id: ''})}
+                  onValueChange={(v) => setFormData({ ...formData, related_entity_type: v, related_entity_id: '' })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select entity type" />
@@ -345,9 +304,9 @@ export default function RelationManager({
               {formData.related_entity_type && (
                 <div className="space-y-2">
                   <Label>{t({ en: 'Select Entity', ar: 'اختر الكيان' })}</Label>
-                  <Select 
+                  <Select
                     value={formData.related_entity_id}
-                    onValueChange={(v) => setFormData({...formData, related_entity_id: v})}
+                    onValueChange={(v) => setFormData({ ...formData, related_entity_id: v })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select entity" />
@@ -365,9 +324,9 @@ export default function RelationManager({
 
               <div className="space-y-2">
                 <Label>{t({ en: 'Relation Role', ar: 'دور العلاقة' })}</Label>
-                <Select 
+                <Select
                   value={formData.relation_role}
-                  onValueChange={(v) => setFormData({...formData, relation_role: v})}
+                  onValueChange={(v) => setFormData({ ...formData, relation_role: v })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select relation role" />
@@ -389,7 +348,7 @@ export default function RelationManager({
                   min="0"
                   max="100"
                   value={formData.strength}
-                  onChange={(e) => setFormData({...formData, strength: parseInt(e.target.value)})}
+                  onChange={(e) => setFormData({ ...formData, strength: parseInt(e.target.value) })}
                 />
               </div>
 
@@ -397,7 +356,7 @@ export default function RelationManager({
                 <Label>{t({ en: 'Notes', ar: 'ملاحظات' })}</Label>
                 <Textarea
                   value={formData.notes}
-                  onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   rows={3}
                 />
               </div>
@@ -406,7 +365,7 @@ export default function RelationManager({
                 <input
                   type="checkbox"
                   checked={formData.bidirectional}
-                  onChange={(e) => setFormData({...formData, bidirectional: e.target.checked})}
+                  onChange={(e) => setFormData({ ...formData, bidirectional: e.target.checked })}
                   className="rounded"
                 />
                 <Label>{t({ en: 'Bidirectional', ar: 'ثنائي الاتجاه' })}</Label>
@@ -417,12 +376,12 @@ export default function RelationManager({
               <Button variant="outline" onClick={resetForm}>
                 {t({ en: 'Cancel', ar: 'إلغاء' })}
               </Button>
-              <Button 
+              <Button
                 onClick={mode === 'create' ? handleCreate : handleUpdate}
-                disabled={createMutation.isPending || updateMutation.isPending}
+                disabled={createMatch.isPending || updateRelation.isPending}
                 className="gap-2"
               >
-                {(createMutation.isPending || updateMutation.isPending) ? (
+                {(createMatch.isPending || updateRelation.isPending) ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <Save className="h-4 w-4" />

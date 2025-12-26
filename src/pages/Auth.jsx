@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,15 +16,15 @@ export default function Auth() {
   const location = useLocation();
   const { language, toggleLanguage, t } = useLanguage();
   const { toast } = useToast();
-  const { isAuthenticated, isLoadingAuth, login, signUp, signInWithGoogle, signInWithMicrosoft, authError } = useAuth();
-  
+  const { isAuthenticated, isLoadingAuth, login, signUp, signInWithGoogle, signInWithMicrosoft, resetPassword, authError } = useAuth();
+
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
-  
+
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-  
+
   // Signup form state
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
@@ -51,7 +50,7 @@ export default function Auth() {
     const params = new URLSearchParams(location.search);
     const error = params.get('error');
     const errorDescription = params.get('error_description');
-    
+
     if (error) {
       toast({
         title: t({ en: 'Authentication Error', ar: 'خطأ في المصادقة' }),
@@ -63,7 +62,7 @@ export default function Auth() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    
+
     if (!loginEmail || !loginPassword) {
       toast({
         title: t({ en: 'Error', ar: 'خطأ' }),
@@ -72,7 +71,7 @@ export default function Auth() {
       });
       return;
     }
-    
+
     setIsLoading(true);
     try {
       await login(loginEmail, loginPassword);
@@ -100,7 +99,7 @@ export default function Auth() {
 
   const handleSignup = async (e) => {
     e.preventDefault();
-    
+
     if (!signupEmail || !signupPassword || !signupConfirmPassword || !fullName) {
       toast({
         title: t({ en: 'Error', ar: 'خطأ' }),
@@ -109,7 +108,7 @@ export default function Auth() {
       });
       return;
     }
-    
+
     if (signupPassword !== signupConfirmPassword) {
       toast({
         title: t({ en: 'Error', ar: 'خطأ' }),
@@ -118,7 +117,7 @@ export default function Auth() {
       });
       return;
     }
-    
+
     if (signupPassword.length < 6) {
       toast({
         title: t({ en: 'Error', ar: 'خطأ' }),
@@ -127,7 +126,7 @@ export default function Auth() {
       });
       return;
     }
-    
+
     setIsLoading(true);
     try {
       await signUp(signupEmail, signupPassword, { full_name: fullName });
@@ -182,13 +181,10 @@ export default function Auth() {
 
   const handleForgotPassword = async () => {
     if (!loginEmail) return;
-    
+
     setIsLoading(true);
     try {
-      const { resetPassword } = useAuth;
-      await supabase.auth.resetPasswordForEmail(loginEmail, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
+      await resetPassword(loginEmail);
       toast({
         title: t({ en: 'Reset Email Sent', ar: 'تم إرسال بريد إعادة التعيين' }),
         description: t({ en: 'Check your email for the password reset link', ar: 'تحقق من بريدك الإلكتروني للحصول على رابط إعادة تعيين كلمة المرور' }),
@@ -239,7 +235,7 @@ export default function Auth() {
           <div className="absolute top-20 left-10 w-72 h-72 bg-white rounded-full blur-3xl" />
           <div className="absolute bottom-20 right-10 w-96 h-96 bg-white rounded-full blur-3xl" />
         </div>
-        
+
         {/* Top Navigation */}
         <div className="relative z-10 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 text-primary-foreground hover:opacity-80 transition-opacity">
@@ -274,9 +270,9 @@ export default function Auth() {
           </div>
 
           <p className="text-lg text-primary-foreground/90 mb-10 max-w-md leading-relaxed">
-            {t({ 
-              en: 'Empowering municipalities to innovate, collaborate, and deliver better services to citizens through smart solutions.', 
-              ar: 'تمكين البلديات من الابتكار والتعاون وتقديم خدمات أفضل للمواطنين من خلال الحلول الذكية.' 
+            {t({
+              en: 'Empowering municipalities to innovate, collaborate, and deliver better services to citizens through smart solutions.',
+              ar: 'تمكين البلديات من الابتكار والتعاون وتقديم خدمات أفضل للمواطنين من خلال الحلول الذكية.'
             })}
           </p>
 
@@ -352,9 +348,9 @@ export default function Auth() {
             <CardContent>
               {/* OAuth Sign-In Buttons */}
               <div className="space-y-3 mb-4">
-                <Button 
-                  variant="outline" 
-                  className="w-full gap-2 h-11" 
+                <Button
+                  variant="outline"
+                  className="w-full gap-2 h-11"
                   onClick={handleGoogleSignIn}
                   disabled={isLoading}
                 >
@@ -366,7 +362,7 @@ export default function Auth() {
                   {t({ en: 'Continue with Google', ar: 'المتابعة مع Google' })}
                 </Button>
               </div>
-              
+
               <div className="relative mb-4">
                 <Separator />
                 <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-3 text-xs text-muted-foreground whitespace-nowrap">
@@ -379,7 +375,7 @@ export default function Auth() {
                   <TabsTrigger value="login">{t({ en: 'Login', ar: 'تسجيل الدخول' })}</TabsTrigger>
                   <TabsTrigger value="signup">{t({ en: 'Sign Up', ar: 'إنشاء حساب' })}</TabsTrigger>
                 </TabsList>
-                
+
                 <TabsContent value="login">
                   <form onSubmit={handleLogin} className="space-y-4">
                     <div className="space-y-2">
@@ -397,7 +393,7 @@ export default function Auth() {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="login-password">{t({ en: 'Password', ar: 'كلمة المرور' })}</Label>
                       <div className="relative">
@@ -413,7 +409,7 @@ export default function Auth() {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="flex justify-end">
                       <Button
                         type="button"
@@ -435,7 +431,7 @@ export default function Auth() {
                         {t({ en: 'Forgot Password?', ar: 'نسيت كلمة المرور؟' })}
                       </Button>
                     </div>
-                    
+
                     <Button type="submit" className="w-full h-11" disabled={isLoading}>
                       {isLoading ? (
                         <>
@@ -448,7 +444,7 @@ export default function Auth() {
                     </Button>
                   </form>
                 </TabsContent>
-                
+
                 <TabsContent value="signup">
                   <form onSubmit={handleSignup} className="space-y-4">
                     <div className="space-y-2">
@@ -466,7 +462,7 @@ export default function Auth() {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="signup-email">{t({ en: 'Email', ar: 'البريد الإلكتروني' })}</Label>
                       <div className="relative">
@@ -482,7 +478,7 @@ export default function Auth() {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="signup-password">{t({ en: 'Password', ar: 'كلمة المرور' })}</Label>
                       <div className="relative">
@@ -498,7 +494,7 @@ export default function Auth() {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="signup-confirm">{t({ en: 'Confirm Password', ar: 'تأكيد كلمة المرور' })}</Label>
                       <div className="relative">
@@ -514,7 +510,7 @@ export default function Auth() {
                         />
                       </div>
                     </div>
-                    
+
                     <Button type="submit" className="w-full h-11" disabled={isLoading}>
                       {isLoading ? (
                         <>
@@ -530,11 +526,11 @@ export default function Auth() {
               </Tabs>
             </CardContent>
           </Card>
-          
+
           <p className="text-center text-sm text-muted-foreground mt-6">
-            {t({ 
-              en: 'By continuing, you agree to our Terms of Service and Privacy Policy.', 
-              ar: 'بالمتابعة، فإنك توافق على شروط الخدمة وسياسة الخصوصية.' 
+            {t({
+              en: 'By continuing, you agree to our Terms of Service and Privacy Policy.',
+              ar: 'بالمتابعة، فإنك توافق على شروط الخدمة وسياسة الخصوصية.'
             })}
           </p>
         </div>

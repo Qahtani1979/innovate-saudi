@@ -1,6 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,54 +6,45 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Target, Zap, AlertTriangle, TrendingUp } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { toast } from 'sonner';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useChallengeMutations } from '@/hooks/useChallengeMutations';
 
 function ExecutiveStrategicChallengeQueue() {
-  const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  const { isRTL, t } = useLanguage();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['strategic-challenges'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*')
-        .order('overall_score', { ascending: false })
-        .limit(100);
-      if (error) throw error;
-      return data || [];
-    }
+  const { data: challenges = [], isLoading } = useChallengesWithVisibility({
+    sortBy: 'overall_score',
+    sortOrder: 'desc',
+    limit: 100,
+    includeDeleted: false
   });
 
-  const fastTrackMutation = useMutation({
-    mutationFn: async (challengeId) => {
-      const { error } = await supabase
-        .from('challenges')
-        .update({
-          priority: 'tier_1',
-          is_featured: true
-        })
-        .eq('id', challengeId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['strategic-challenges']);
-      toast.success(t({ en: 'Challenge fast-tracked!', ar: 'تم تسريع التحدي!' }));
-    }
-  });
+  const { updateChallenge } = useChallengeMutations();
 
+  // Filter for strategic challenges
   const strategicChallenges = challenges.filter(c =>
     c.strategic_plan_ids?.length > 0 ||
     c.priority === 'tier_1' ||
     c.is_featured ||
-    c.overall_score >= 80
+    (c.overall_score || 0) >= 80
   );
 
-  const highImpact = strategicChallenges.filter(c => c.impact_score >= 80);
+  const highImpact = strategicChallenges.filter(c => (c.impact_score || 0) >= 80);
   const needingAttention = strategicChallenges.filter(c =>
     c.status === 'under_review' || (c.status === 'approved' && !c.track)
   );
+
+  const handleFastTrack = (challengeId) => {
+    updateChallenge.mutate({
+      id: challengeId,
+      data: {
+        priority: 'tier_1',
+        is_featured: true
+      },
+      metadata: { action: 'fast_track' }
+    });
+  };
 
   return (
     <PageLayout>
@@ -147,10 +135,10 @@ function ExecutiveStrategicChallengeQueue() {
 
                     <div className="flex gap-4 mt-3 text-xs text-slate-600">
                       <div>
-                        <strong>{t({ en: 'Sector:', ar: 'القطاع:' })}</strong> {challenge.sector?.replace(/_/g, ' ')}
+                        <strong>{t({ en: 'Sector:', ar: 'القطاع:' })}</strong> {challenge.sector?.name_en || challenge.sector_id}
                       </div>
                       <div>
-                        <strong>{t({ en: 'Impact:', ar: 'التأثير:' })}</strong> {challenge.impact_score}/100
+                        <strong>{t({ en: 'Impact:', ar: 'التأثير:' })}</strong> {challenge.impact_score || 0}/100
                       </div>
                       <div>
                         <strong>{t({ en: 'Status:', ar: 'الحالة:' })}</strong> {challenge.status}
@@ -172,8 +160,8 @@ function ExecutiveStrategicChallengeQueue() {
                   {!challenge.is_featured && (
                     <Button
                       size="sm"
-                      onClick={() => fastTrackMutation.mutate(challenge.id)}
-                      disabled={fastTrackMutation.isPending}
+                      onClick={() => handleFastTrack(challenge.id)}
+                      disabled={updateChallenge.isPending}
                       className="bg-purple-600"
                     >
                       <Zap className="h-4 w-4 mr-2" />

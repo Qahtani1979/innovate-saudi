@@ -1,3 +1,4 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -204,14 +205,43 @@ export async function hasExistingApprovalRequest(entityType, entityId) {
   }
 }
 
+// Update an approval request
+export async function updateApprovalRequest(id, data) {
+  const { data: updated, error } = await supabase
+    .from('approval_requests')
+    .update(data)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return updated;
+}
+
 export function useApprovalRequest() {
   return {
     createApprovalRequest,
     createApprovalRequestWithNotification,
     batchCreateApprovalRequests,
     hasExistingApprovalRequest,
+    updateApprovalRequest,
     DEFAULT_SLA_DAYS,
     DEFAULT_GATE_NAMES,
+  };
+}
+
+export function useApprovalMutations() {
+  const queryClient = useQueryClient();
+
+  const updateApproval = useMutation({
+    mutationFn: async ({ id, data }) => updateApprovalRequest(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['approval-requests'] });
+    }
+  });
+
+  return {
+    updateApproval
   };
 }
 

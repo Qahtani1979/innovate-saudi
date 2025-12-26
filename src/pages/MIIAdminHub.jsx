@@ -5,109 +5,27 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { useLanguage } from '@/components/LanguageContext';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useMIIManagement } from '@/hooks/useMIIManagement';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
-import AutomatedMIICalculator from '@/components/strategy/AutomatedMIICalculator';
+import AutomatedMIICalculator from '@/components/mii/AutomatedMIICalculator';
 import {
-  Settings, Calculator, Database, Clock, RefreshCw, TrendingUp, 
+  Settings, Calculator, Database, Clock, RefreshCw, TrendingUp,
   AlertTriangle, CheckCircle, Activity, Layers, Target, BarChart3,
   Zap, Calendar, Shield, FileText
 } from 'lucide-react';
 
 function MIIAdminHub() {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
   const [selectedTab, setSelectedTab] = useState('overview');
 
-  // Fetch MII dimensions
-  const { data: dimensions = [] } = useQuery({
-    queryKey: ['mii-dimensions'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('mii_dimensions')
-        .select('*')
-        .order('display_order');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  // Fetch MII calculation stats
-  const { data: calcStats } = useQuery({
-    queryKey: ['mii-calc-stats'],
-    queryFn: async () => {
-      const { data: results, error } = await supabase
-        .from('mii_results')
-        .select('id, assessment_date, municipality_id, overall_score, created_at')
-        .order('created_at', { ascending: false })
-        .limit(100);
-      
-      if (error) throw error;
-      
-      const uniqueMunicipalities = new Set((results || []).map(r => r.municipality_id)).size;
-      const latestCalc = results?.[0]?.created_at;
-      const avgScore = results?.length > 0 
-        ? (results.reduce((sum, r) => sum + (r.overall_score || 0), 0) / results.length).toFixed(1)
-        : 0;
-      
-      return {
-        totalCalculations: results?.length || 0,
-        uniqueMunicipalities,
-        latestCalculation: latestCalc,
-        averageScore: avgScore
-      };
-    }
-  });
-
-  // Fetch municipalities pending recalculation
-  const { data: pendingRecalc = [] } = useQuery({
-    queryKey: ['mii-pending-recalc'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('municipalities')
-        .select('id, name_en, name_ar, mii_recalc_pending, mii_last_calculated_at')
-        .eq('mii_recalc_pending', true);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  // Recalculate all mutation
-  const recalculateAllMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('calculate-mii', {
-        body: { calculateAll: true }
-      });
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      toast.success(t({ en: 'MII recalculation started for all municipalities', ar: 'بدأت إعادة حساب MII لجميع البلديات' }));
-      queryClient.invalidateQueries({ queryKey: ['mii-calc-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['mii-pending-recalc'] });
-    },
-    onError: (error) => {
-      toast.error(`Error: ${error.message}`);
-    }
-  });
-
-  // Toggle dimension active status
-  const toggleDimensionMutation = useMutation({
-    mutationFn: async ({ id, isActive }) => {
-      const { error } = await supabase
-        .from('mii_dimensions')
-        .update({ is_active: isActive })
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['mii-dimensions'] });
-      toast.success(t({ en: 'Dimension updated', ar: 'تم تحديث البُعد' }));
-    }
-  });
+  const {
+    dimensions: { data: dimensions = [] },
+    calcStats: { data: calcStats },
+    pendingRecalc: { data: pendingRecalc = [] },
+    recalculateAll,
+    toggleDimension
+  } = useMIIManagement();
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
@@ -135,7 +53,7 @@ function MIIAdminHub() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
@@ -147,7 +65,7 @@ function MIIAdminHub() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
@@ -159,7 +77,7 @@ function MIIAdminHub() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
@@ -208,22 +126,22 @@ function MIIAdminHub() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button 
-                  onClick={() => recalculateAllMutation.mutate()}
-                  disabled={recalculateAllMutation.isPending}
+                <Button
+                  onClick={() => recalculateAll.mutate()}
+                  disabled={recalculateAll.isPending}
                   className="w-full gap-2"
                 >
-                  <RefreshCw className={`h-4 w-4 ${recalculateAllMutation.isPending ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`h-4 w-4 ${recalculateAll.isPending ? 'animate-spin' : ''}`} />
                   {t({ en: 'Recalculate All MII Scores', ar: 'إعادة حساب جميع نقاط MII' })}
                 </Button>
-                
+
                 <Button variant="outline" className="w-full gap-2" asChild>
                   <a href="/mii">
                     <BarChart3 className="h-4 w-4" />
                     {t({ en: 'View MII Rankings', ar: 'عرض تصنيفات MII' })}
                   </a>
                 </Button>
-                
+
                 <Button variant="outline" className="w-full gap-2" asChild>
                   <a href="/mii-coverage-report">
                     <FileText className="h-4 w-4" />
@@ -272,9 +190,9 @@ function MIIAdminHub() {
                   {t({ en: 'Municipalities Pending Recalculation', ar: 'البلديات المعلقة لإعادة الحساب' })}
                 </CardTitle>
                 <CardDescription>
-                  {t({ 
-                    en: 'These municipalities have data changes and will be recalculated in the next scheduled run', 
-                    ar: 'هذه البلديات لديها تغييرات في البيانات وسيتم إعادة حسابها في الجولة المجدولة التالية' 
+                  {t({
+                    en: 'These municipalities have data changes and will be recalculated in the next scheduled run',
+                    ar: 'هذه البلديات لديها تغييرات في البيانات وسيتم إعادة حسابها في الجولة المجدولة التالية'
                   })}
                 </CardDescription>
               </CardHeader>
@@ -318,7 +236,7 @@ function MIIAdminHub() {
                       </div>
                       <Switch
                         checked={dim.is_active}
-                        onCheckedChange={(checked) => toggleDimensionMutation.mutate({ id: dim.id, isActive: checked })}
+                        onCheckedChange={(checked) => toggleDimension.mutate({ id: dim.id, isActive: checked })}
                       />
                     </div>
                   </div>

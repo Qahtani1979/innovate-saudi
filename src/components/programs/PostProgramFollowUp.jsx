@@ -3,15 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '../LanguageContext';
 import { TrendingUp, Send, Loader2, X } from 'lucide-react';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+
+import { useProgramApplications } from '@/hooks/useProgramDetails';
+import { useFollowUpMutations } from '@/hooks/useFollowUp';
 
 export default function PostProgramFollowUp({ program }) {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
   const [selectedParticipant, setSelectedParticipant] = useState(null);
   const [followUpData, setFollowUpData] = useState({
     months_after: 3,
@@ -23,55 +23,26 @@ export default function PostProgramFollowUp({ program }) {
     impact_story: ''
   });
 
-  const { data: applications = [] } = useQuery({
-    queryKey: ['program-applications', program.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('program_applications')
-        .select('*')
-        .eq('program_id', program.id)
-        .eq('status', 'accepted');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // Fetch accepted applications
+  const { data: applications = [] } = useProgramApplications(program.id);
+  // Note: Original code filtered by status='accepted', useProgramApplications fetches all?
+  // Checking useProgramDetails hook logic might be needed, but usually it fetches all.
+  // We can filter here.
+  const acceptedApplications = applications.filter(app => app.status === 'accepted');
 
-  const updateMutation = useMutation({
-    mutationFn: async (data) => {
-      // Update program outcomes
-      const { error } = await supabase
-        .from('programs')
-        .update({
-          outcomes: {
-            ...program.outcomes,
-            follow_up_data: data,
-            last_follow_up: new Date().toISOString()
-          }
-        })
-        .eq('id', program.id);
-      if (error) throw error;
+  const { updateFollowUp } = useFollowUpMutations(program.id);
 
-      // Send follow-up email via email-trigger-hub
-      await supabase.functions.invoke('email-trigger-hub', {
-        body: {
-          trigger: 'pilot.feedback_request',
-          recipient_email: selectedParticipant.email,
-          entity_type: 'program',
-          entity_id: program.id,
-          variables: {
-            programName: program.name_en,
-            participantName: selectedParticipant.name
-          },
-          triggered_by: 'system'
-        }
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['program']);
-      toast.success(t({ en: 'Follow-up recorded', ar: 'تم تسجيل المتابعة' }));
-      setSelectedParticipant(null);
-    }
-  });
+  const handleUpdate = () => {
+    updateFollowUp.mutate({
+      program,
+      followUpData,
+      selectedParticipant
+    }, {
+      onSuccess: () => {
+        setSelectedParticipant(null);
+      }
+    });
+  };
 
   return (
     <Card className="border-2 border-blue-300">
@@ -106,14 +77,14 @@ export default function PostProgramFollowUp({ program }) {
         <div>
           <h4 className="font-semibold text-sm mb-3">{t({ en: 'Participant Follow-Up', ar: 'متابعة المشاركين' })}</h4>
           <div className="space-y-2 max-h-64 overflow-y-auto">
-            {applications.map((app) => (
+            {acceptedApplications.map((app) => (
               <div key={app.id} className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex-1">
                   <p className="font-medium text-sm text-slate-900">{app.organization_name}</p>
                   <p className="text-xs text-slate-500">{app.contact_email}</p>
                 </div>
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   variant="outline"
                   onClick={() => setSelectedParticipant(app)}
                 >
@@ -186,12 +157,12 @@ export default function PostProgramFollowUp({ program }) {
               />
             </div>
 
-            <Button 
-              onClick={() => updateMutation.mutate(followUpData)}
-              disabled={updateMutation.isPending}
+            <Button
+              onClick={handleUpdate}
+              disabled={updateFollowUp.isPending}
               className="w-full gap-2"
             >
-              {updateMutation.isPending ? (
+              {updateFollowUp.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <>

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,14 +6,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from './LanguageContext';
-import { Users, Send, Loader2, CheckCircle2, Award } from 'lucide-react';
+import { Users, Send, Loader2, CheckCircle2, Award, AlertCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+import { useGovernanceMutations } from '@/hooks/useGovernance';
 
 export default function CollaborativeReviewPanel({ proposal, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { submitPeerReview } = useGovernanceMutations();
+
   const [myReview, setMyReview] = useState({
     innovation: 0,
     feasibility: 0,
@@ -42,44 +43,42 @@ export default function CollaborativeReviewPanel({ proposal, onClose }) {
     }
   }, [myExistingReview]);
 
-  const submitReviewMutation = useMutation({
-    mutationFn: async () => {
-      const overall = Math.round(
-        (myReview.innovation + myReview.feasibility + myReview.impact + myReview.team + myReview.budget) / 5
-      );
+  const handleSubmit = () => {
+    const overall = Math.round(
+      (myReview.innovation + myReview.feasibility + myReview.impact + myReview.team + myReview.budget) / 5
+    );
 
-      const newReview = {
-        reviewer_email: user.email,
-        innovation: myReview.innovation,
-        feasibility: myReview.feasibility,
-        impact: myReview.impact,
-        team: myReview.team,
-        budget: myReview.budget,
-        overall_score: overall,
-        comments: myReview.comments,
-        recommendation: myReview.recommendation,
-        review_date: new Date().toISOString()
-      };
+    const newReviewRecord = {
+      reviewer_email: user.email,
+      innovation: myReview.innovation,
+      feasibility: myReview.feasibility,
+      impact: myReview.impact,
+      team: myReview.team,
+      budget: myReview.budget,
+      overall_score: overall,
+      comments: myReview.comments,
+      recommendation: myReview.recommendation,
+      review_date: new Date().toISOString()
+    };
 
-      const updatedReviews = existingReviews.filter(r => r.reviewer_email !== user.email);
-      updatedReviews.push(newReview);
+    const updatedReviews = existingReviews.filter(r => r.reviewer_email !== user.email);
+    updatedReviews.push(newReviewRecord);
 
-      const finalScore = Math.round(
-        updatedReviews.reduce((sum, r) => sum + r.overall_score, 0) / updatedReviews.length
-      );
+    const finalScore = Math.round(
+      updatedReviews.reduce((sum, r) => sum + r.overall_score, 0) / updatedReviews.length
+    );
 
-      await base44.entities.RDProposal.update(proposal.id, {
-        reviewer_scores: updatedReviews,
-        final_score: finalScore,
-        status: updatedReviews.length >= 3 ? 'shortlisted' : 'under_review'
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['rd-proposal']);
-      toast.success(t({ en: 'Review submitted', ar: 'تم إرسال المراجعة' }));
-      onClose();
-    }
-  });
+    submitPeerReview.mutate({
+      proposalId: proposal.id,
+      updatedReviews,
+      finalScore,
+      status: updatedReviews.length >= 3 ? 'shortlisted' : 'under_review'
+    }, {
+      onSuccess: () => {
+        onClose();
+      }
+    });
+  };
 
   const criteria = [
     { key: 'innovation', label: { en: 'Innovation & Novelty', ar: 'الابتكار والجدة' }, weight: 25 },
@@ -121,8 +120,8 @@ export default function CollaborativeReviewPanel({ proposal, onClose }) {
                     <Badge variant="outline">{review.overall_score}/100</Badge>
                     <Badge className={
                       review.recommendation === 'accept' ? 'bg-green-100 text-green-700' :
-                      review.recommendation === 'reject' ? 'bg-red-100 text-red-700' :
-                      'bg-yellow-100 text-yellow-700'
+                        review.recommendation === 'reject' ? 'bg-red-100 text-red-700' :
+                          'bg-yellow-100 text-yellow-700'
                     }>
                       {review.recommendation}
                     </Badge>
@@ -152,6 +151,7 @@ export default function CollaborativeReviewPanel({ proposal, onClose }) {
                 value={myReview[criterion.key]}
                 onChange={(e) => setMyReview({ ...myReview, [criterion.key]: parseInt(e.target.value) })}
                 className="w-full"
+                disabled={submitPeerReview.isPending}
               />
             </div>
           ))}
@@ -174,6 +174,7 @@ export default function CollaborativeReviewPanel({ proposal, onClose }) {
               variant={myReview.recommendation === 'accept' ? 'default' : 'outline'}
               onClick={() => setMyReview({ ...myReview, recommendation: 'accept' })}
               className={myReview.recommendation === 'accept' ? 'bg-green-600 hover:bg-green-700' : ''}
+              disabled={submitPeerReview.isPending}
             >
               <CheckCircle2 className="h-4 w-4 mr-2" />
               {t({ en: 'Accept', ar: 'قبول' })}
@@ -182,6 +183,7 @@ export default function CollaborativeReviewPanel({ proposal, onClose }) {
               variant={myReview.recommendation === 'revise' ? 'default' : 'outline'}
               onClick={() => setMyReview({ ...myReview, recommendation: 'revise' })}
               className={myReview.recommendation === 'revise' ? 'bg-amber-600 hover:bg-amber-700' : ''}
+              disabled={submitPeerReview.isPending}
             >
               <AlertCircle className="h-4 w-4 mr-2" />
               {t({ en: 'Revise', ar: 'مراجعة' })}
@@ -190,6 +192,7 @@ export default function CollaborativeReviewPanel({ proposal, onClose }) {
               variant={myReview.recommendation === 'reject' ? 'default' : 'outline'}
               onClick={() => setMyReview({ ...myReview, recommendation: 'reject' })}
               className={myReview.recommendation === 'reject' ? 'bg-red-600 hover:bg-red-700' : ''}
+              disabled={submitPeerReview.isPending}
             >
               <XCircle className="h-4 w-4 mr-2" />
               {t({ en: 'Reject', ar: 'رفض' })}
@@ -205,6 +208,7 @@ export default function CollaborativeReviewPanel({ proposal, onClose }) {
             onChange={(e) => setMyReview({ ...myReview, comments: e.target.value })}
             rows={4}
             placeholder={t({ en: 'Provide detailed feedback...', ar: 'قدم ملاحظات تفصيلية...' })}
+            disabled={submitPeerReview.isPending}
           />
         </div>
 
@@ -213,11 +217,11 @@ export default function CollaborativeReviewPanel({ proposal, onClose }) {
             {t({ en: 'Cancel', ar: 'إلغاء' })}
           </Button>
           <Button
-            onClick={() => submitReviewMutation.mutate()}
-            disabled={!myReview.recommendation || submitReviewMutation.isPending}
+            onClick={handleSubmit}
+            disabled={!myReview.recommendation || submitPeerReview.isPending}
             className="bg-gradient-to-r from-blue-600 to-purple-600"
           >
-            {submitReviewMutation.isPending ? (
+            {submitPeerReview.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 {t({ en: 'Submitting...', ar: 'جاري الإرسال...' })}
@@ -234,9 +238,9 @@ export default function CollaborativeReviewPanel({ proposal, onClose }) {
         {/* AI Quick Assist */}
         <div className="p-3 bg-purple-50 rounded-lg border border-purple-200 text-sm text-purple-900">
           <Award className="h-4 w-4 inline mr-2" />
-          {t({ 
-            en: 'Tip: AI can help generate review comments based on scores', 
-            ar: 'نصيحة: يمكن للذكاء الاصطناعي المساعدة في إنشاء تعليقات المراجعة بناءً على النقاط' 
+          {t({
+            en: 'Tip: AI can help generate review comments based on scores',
+            ar: 'نصيحة: يمكن للذكاء الاصطناعي المساعدة في إنشاء تعليقات المراجعة بناءً على النقاط'
           })}
         </div>
       </CardContent>

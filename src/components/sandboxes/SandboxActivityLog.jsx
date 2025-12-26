@@ -1,53 +1,14 @@
-
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Activity, Shield, Edit, Clock, User, AlertCircle } from 'lucide-react';
 
-import { supabase } from "@/integrations/supabase/client";
+import { useSandboxData } from '@/hooks/useSandboxData';
 
 export default function SandboxActivityLog({ sandboxId }) {
   const { t, language } = useLanguage();
 
-  const { data: activities = [] } = useQuery({
-    queryKey: ['sandbox-activities', sandboxId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('system_activities')
-        .select('*')
-        .eq('entity_id', sandboxId)
-        .eq('entity_type', 'Sandbox')
-        .order('created_at', { ascending: false })
-        .limit(100);
-
-      if (error) {
-        console.warn('System Activities fetch failed', error);
-        return [];
-      }
-      return data;
-    },
-    enabled: !!sandboxId
-  });
-
-  const { data: incidents = [] } = useQuery({
-    queryKey: ['sandbox-incidents', sandboxId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('sandbox_incidents')
-        .select('*')
-        .eq('sandbox_id', sandboxId)
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (error) {
-        console.warn('Sandbox Incidents fetch failed', error);
-        return [];
-      }
-      return data;
-    },
-    enabled: !!sandboxId
-  });
+  const { activities = [], incidents = [] } = useSandboxData(sandboxId);
 
   const allEvents = [
     ...activities.map(a => ({ ...a, type: 'activity' })),

@@ -22,8 +22,9 @@ import { useUserMutations } from '@/hooks/useUserMutations';
 import { useSystemAnalytics } from '@/hooks/useSystemAnalytics';
 import { useTaxonomy } from '@/hooks/useTaxonomy';
 import { useUsersWithVisibility } from '@/hooks/useUsersWithVisibility';
-import { useRoles, useRoleMutations } from '@/hooks/useRoles';
-import { useTeams, useTeamMutations } from '@/hooks/useTeams';
+import { useRoles } from '@/hooks/useRoles';
+import { useRoleMutations } from '@/hooks/useRoleMutations';
+import { useTeams, useTeamMutations } from '@/hooks/useTeamMutations';
 import { useInvitations } from '@/hooks/useInvitations';
 import {
   Users, Shield, UserPlus, Plus, Pencil, Trash2, Search, Loader2, Mail, Settings,

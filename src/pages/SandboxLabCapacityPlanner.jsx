@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/lib/AuthContext';
 import { useSandboxes } from '@/hooks/useSandboxes';
 import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,7 @@ import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function SandboxLabCapacityPlanner() {
   const { language, isRTL, t } = useLanguage();
+  const { user } = useAuth();
   const [aiRecommendations, setAiRecommendations] = useState(null);
   const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
 

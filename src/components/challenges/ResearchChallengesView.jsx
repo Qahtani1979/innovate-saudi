@@ -1,23 +1,14 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Microscope } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 
 export default function ResearchChallengesView() {
-  const { data: rdChallenges = [] } = useQuery({
-    queryKey: ['rd-challenges'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*')
-        .contains('tracks', ['r_and_d']);
-      if (error) throw error;
-      return data || [];
-    }
+  const { data: rdChallenges = [] } = useChallengesWithVisibility({
+    tracks: ['r_and_d']
   });
 
   return (

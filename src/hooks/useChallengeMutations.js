@@ -102,6 +102,34 @@ export function useEscalateChallenge() {
 }
 
 /**
+ * Hook to update challenge tracks (routing)
+ */
+export function useUpdateChallengeTracks() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, tracks }) => {
+      const { error } = await supabase
+        .from('challenges')
+        .update({ tracks })
+        .eq('id', id);
+
+      if (error) throw error;
+      return { id, tracks };
+    },
+    onSuccess: ({ id }) => {
+      queryClient.invalidateQueries({ queryKey: ['challenge', id] });
+      queryClient.invalidateQueries({ queryKey: ['challenge-router', id] });
+      // toast handled in component for specific messaging
+    },
+    onError: (error) => {
+      console.error('Failed to update tracks:', error);
+      toast.error('Failed to route challenge');
+    }
+  });
+}
+
+/**
  * Hook for batch importing challenges
  */
 export function useImportChallenges() {
@@ -238,6 +266,7 @@ export function useChallengeMutations() {
     },
     onSuccess: (challenge) => {
       queryClient.invalidateQueries({ queryKey: ['challenges'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-challenges'] });
       toast.success('Challenge created successfully');
     }
   });
@@ -341,6 +370,7 @@ export function useChallengeMutations() {
         queryClient.invalidateQueries({ queryKey: ['challenge', challenge.id] });
       }
       queryClient.invalidateQueries({ queryKey: ['challenges'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-challenges'] });
     },
     onSuccess: (challenge, variables) => {
       if (variables.data.status) {
@@ -416,6 +446,7 @@ export function useChallengeMutations() {
     },
     onSuccess: (challenge) => {
       queryClient.invalidateQueries({ queryKey: ['challenges'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-challenges'] });
 
       if (challenge) {
         // Notification logic matching Challenges.jsx
@@ -498,6 +529,7 @@ export function useChallengeMutations() {
     onSuccess: (challenge) => {
       notifyStatusChange.mutate({ challenge, oldStatus: 'draft', newStatus: 'submitted' });
       queryClient.invalidateQueries({ queryKey: ['challenges'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-challenges'] });
       toast.success('Challenge submitted for review');
     }
   });
@@ -563,6 +595,7 @@ export function useChallengeMutations() {
         rejectionReason: variables.rejectionReason
       });
       queryClient.invalidateQueries({ queryKey: ['challenges'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-challenges'] });
       toast.success(`Status changed to ${challenge.status}`);
     }
   });
@@ -601,6 +634,7 @@ export function useChallengeMutations() {
   const refreshChallenges = () => {
     queryClient.invalidateQueries({ queryKey: ['challenges'] });
     queryClient.invalidateQueries({ queryKey: ['challenges-with-visibility'] });
+    queryClient.invalidateQueries({ queryKey: ['pending-challenges'] });
   };
 
   return {
@@ -616,6 +650,17 @@ export function useChallengeMutations() {
     isUpdating: updateChallenge.isPending,
     isDeleting: deleteChallenge.isPending,
     isSubmitting: submitForReview.isPending,
+    generateEmbeddings: useMutation({
+      mutationFn: async () => {
+        const { error } = await supabase.functions.invoke('generateEmbeddings', {
+          body: {
+            entity_name: 'Challenge',
+            mode: 'missing'
+          }
+        });
+        if (error) throw error;
+      }
+    }),
     checkConsensus: useMutation({
       /** @param {string} challengeId */
       mutationFn: async (challengeId) => {
@@ -819,6 +864,67 @@ export function useNotifyCitizenResolution() {
     },
     onSuccess: () => {
       toast.success(t({ en: 'Citizen notified successfully!', ar: 'تم إشعار المواطن بنجاح!' }));
+    }
+  });
+}
+
+/**
+ * Hook for linking challenges to R&D Calls
+ */
+export function useLinkChallengeToRDCall() {
+  const queryClient = useQueryClient();
+  const { t } = useLanguage();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({ challengeIds, rdCallId }) => {
+      if (!challengeIds?.length || !rdCallId) throw new Error('Missing required IDs');
+
+      const updates = challengeIds.map(async (challengeId) => {
+        const { data: current, error: fetchError } = await supabase
+          .from('challenges')
+          .select('linked_rd_ids, tracks')
+          .eq('id', challengeId)
+          .single();
+
+        if (fetchError) throw fetchError;
+
+        const currentLinked = current.linked_rd_ids || [];
+        const currentTracks = current.tracks || [];
+
+        // Check if already linked
+        if (currentLinked.includes(rdCallId)) return;
+
+        const updatedLinked = [...currentLinked, rdCallId];
+        const updatedTracks = currentTracks.includes('rd_call')
+          ? currentTracks
+          : [...currentTracks, 'rd_call'];
+
+        const { error: updateError } = await supabase
+          .from('challenges')
+          .update({
+            linked_rd_ids: updatedLinked,
+            tracks: updatedTracks
+          })
+          .eq('id', challengeId);
+
+        if (updateError) throw updateError;
+
+        // Log Activity
+        await supabase.from('challenge_activities').insert({
+          challenge_id: challengeId,
+          activity_type: 'rd_linked',
+          description: 'Linked to R&D Call',
+          metadata: { rd_call_id: rdCallId, linked_by: user?.email }
+        });
+      });
+
+      await Promise.all(updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['challenges'] });
+      queryClient.invalidateQueries({ queryKey: ['challenges-with-visibility'] });
+      toast.success(t({ en: 'Challenges linked successfully', ar: 'تم ربط التحديات بنجاح' }));
     }
   });
 }

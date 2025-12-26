@@ -1,7 +1,5 @@
 import { useState, useMemo } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -20,53 +18,37 @@ import {
   Search
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useRDCallsWithVisibility } from '@/hooks/useRDCallsWithVisibility';
+import { useLinkChallengeToRDCall } from '@/hooks/useChallengeMutations';
 
 function ChallengeRDCallMatcher() {
   const { t, isRTL, language } = useLanguage();
-  const queryClient = useQueryClient();
   const [selectedChallenges, setSelectedChallenges] = useState([]);
   const [selectedRDCall, setSelectedRDCall] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch approved challenges without R&D linkage
-  const { data: challenges = [], isLoading: challengesLoading } = useQuery({
-    queryKey: ['rd-matcher-challenges'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select(`
-          *,
-          municipality:municipalities(id, name_en, name_ar),
-          sector:sectors(id, name_en, name_ar)
-        `)
-        .eq('is_deleted', false)
-        .in('status', ['approved', 'in_treatment'])
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
+  const { data: challenges = [], isLoading: challengesLoading } = useChallengesWithVisibility({
+    status: ['approved', 'in_treatment'],
+    includeDeleted: false,
+    limit: 100 // Adjust limit as needed
   });
 
   // Fetch active R&D calls
-  const { data: rdCalls = [], isLoading: rdCallsLoading } = useQuery({
-    queryKey: ['rd-matcher-calls'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_calls')
-        .select('*')
-        .eq('is_deleted', false)
-        .eq('status', 'open')
-        .order('deadline', { ascending: true });
-      if (error) throw error;
-      return data || [];
-    }
+  const { data: rdCalls = [], isLoading: rdCallsLoading } = useRDCallsWithVisibility({
+    status: 'open',
+    includeDeleted: false
   });
+
+  // Link mutation
+  const linkMutation = useLinkChallengeToRDCall();
 
   // Filter challenges
   const filteredChallenges = useMemo(() => {
     if (!searchQuery) return challenges;
     const query = searchQuery.toLowerCase();
-    return challenges.filter(c => 
+    return challenges.filter(c =>
       c.title_en?.toLowerCase().includes(query) ||
       c.title_ar?.includes(query) ||
       c.code?.toLowerCase().includes(query)
@@ -75,46 +57,15 @@ function ChallengeRDCallMatcher() {
 
   // Challenges needing R&D
   const challengesNeedingRD = useMemo(() => {
-    return filteredChallenges.filter(c => 
-      !c.linked_rd_ids?.length && 
+    return filteredChallenges.filter(c =>
+      !c.linked_rd_ids?.length &&
       (c.tracks?.includes('r_and_d') || c.challenge_type === 'research_needed')
     );
   }, [filteredChallenges]);
 
-  // Link mutation
-  const linkMutation = useMutation({
-    mutationFn: async ({ challengeIds, rdCallId }) => {
-      const updates = challengeIds.map(async (challengeId) => {
-        const challenge = challenges.find(c => c.id === challengeId);
-        const currentRDIds = challenge?.linked_rd_ids || [];
-        
-        const { error } = await supabase
-          .from('challenges')
-          .update({
-            linked_rd_ids: [...currentRDIds, rdCallId],
-            tracks: [...(challenge?.tracks || []), 'r_and_d'].filter((v, i, a) => a.indexOf(v) === i)
-          })
-          .eq('id', challengeId);
-        
-        if (error) throw error;
-      });
-      
-      await Promise.all(updates);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['rd-matcher-challenges']);
-      setSelectedChallenges([]);
-      setSelectedRDCall(null);
-      toast.success(t({ en: 'Challenges linked to R&D Call', ar: 'تم ربط التحديات بدعوة البحث والتطوير' }));
-    },
-    onError: () => {
-      toast.error(t({ en: 'Failed to link challenges', ar: 'فشل في ربط التحديات' }));
-    }
-  });
-
   const handleToggleChallenge = (challengeId) => {
-    setSelectedChallenges(prev => 
-      prev.includes(challengeId) 
+    setSelectedChallenges(prev =>
+      prev.includes(challengeId)
         ? prev.filter(id => id !== challengeId)
         : [...prev, challengeId]
     );
@@ -125,7 +76,16 @@ function ChallengeRDCallMatcher() {
       toast.error(t({ en: 'Select challenges and an R&D call', ar: 'حدد التحديات ودعوة البحث والتطوير' }));
       return;
     }
-    linkMutation.mutate({ challengeIds: selectedChallenges, rdCallId: selectedRDCall });
+
+    linkMutation.mutate({
+      challengeIds: selectedChallenges,
+      rdCallId: selectedRDCall
+    }, {
+      onSuccess: () => {
+        setSelectedChallenges([]);
+        setSelectedRDCall(null);
+      }
+    });
   };
 
   return (
@@ -216,11 +176,10 @@ function ChallengeRDCallMatcher() {
               ) : (
                 <div className="space-y-3 max-h-[500px] overflow-y-auto">
                   {challengesNeedingRD.map((challenge) => (
-                    <div 
-                      key={challenge.id} 
-                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                        selectedChallenges.includes(challenge.id) ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'
-                      }`}
+                    <div
+                      key={challenge.id}
+                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${selectedChallenges.includes(challenge.id) ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'
+                        }`}
                       onClick={() => handleToggleChallenge(challenge.id)}
                     >
                       <div className="flex items-start gap-3">
@@ -276,17 +235,15 @@ function ChallengeRDCallMatcher() {
               ) : (
                 <div className="space-y-3 max-h-[500px] overflow-y-auto">
                   {rdCalls.map((call) => (
-                    <div 
-                      key={call.id} 
-                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                        selectedRDCall === call.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'
-                      }`}
+                    <div
+                      key={call.id}
+                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${selectedRDCall === call.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'
+                        }`}
                       onClick={() => setSelectedRDCall(call.id)}
                     >
                       <div className="flex items-start gap-3">
-                        <div className={`w-4 h-4 rounded-full border-2 ${
-                          selectedRDCall === call.id ? 'border-primary bg-primary' : 'border-muted-foreground'
-                        }`} />
+                        <div className={`w-4 h-4 rounded-full border-2 ${selectedRDCall === call.id ? 'border-primary bg-primary' : 'border-muted-foreground'
+                          }`} />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             <Badge variant="outline">{call.code}</Badge>
@@ -324,8 +281,8 @@ function ChallengeRDCallMatcher() {
                     </p>
                   </div>
                 </div>
-                <Button 
-                  onClick={handleLink} 
+                <Button
+                  onClick={handleLink}
                   disabled={linkMutation.isPending}
                   className="bg-gradient-to-r from-purple-600 to-pink-600"
                 >

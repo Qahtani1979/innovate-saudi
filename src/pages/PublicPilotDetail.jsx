@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { usePublicPilot } from '@/hooks/usePublicPilot';
 import { usePilotEnrollments } from '@/hooks/useCitizenParticipation';
 import { useCitizenFeedbackMutation } from '@/hooks/useCitizenFeedback';
@@ -22,7 +21,6 @@ function PublicPilotDetail() {
   const { language, isRTL, t } = useLanguage();
   const urlParams = new URLSearchParams(window.location.search);
   const pilotId = urlParams.get('id');
-  const queryClient = useQueryClient();
   const { user } = useAuth();
 
   const [feedback, setFeedback] = useState('');

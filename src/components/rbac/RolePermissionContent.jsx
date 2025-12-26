@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '@/components/LanguageContext';
 import { useRoles } from '@/hooks/useRoles';
-import { useUserProfiles } from '@/hooks/useUserProfiles';
+import { useUserProfile, useAllUserProfiles } from '@/hooks/useUserProfile';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { usePermissions } from '@/components/permissions/usePermissions';
 import { toast } from 'sonner';
@@ -134,7 +134,7 @@ export default function RolePermissionContent() {
 
   // Use hooks for data fetching
   const { data: roles = [], isLoading: rolesLoading } = useRoles();
-  const { data: users = [] } = useUserProfiles();
+  const { data: users = [] } = useAllUserProfiles();
   const { data: rolePermissionsData = [] } = useRolePermissions();
 
   // We can't easily fetch user roles count in a consolidated way without a new hook, 

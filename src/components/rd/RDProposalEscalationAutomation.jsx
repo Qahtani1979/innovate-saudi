@@ -1,56 +1,9 @@
 import { useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useProposalEscalation } from '@/hooks/useEscalationAutomation';
 import { AlertCircle } from 'lucide-react';
 
 export default function RDProposalEscalationAutomation({ proposal, rdCall }) {
-  const queryClient = useQueryClient();
-
-  const escalateMutation = useMutation({
-    mutationFn: async (escalationData) => {
-      // Update proposal with escalation
-      const { error: updateError } = await supabase
-        .from('rd_proposals')
-        .update(escalationData)
-        .eq('id', proposal.id);
-      if (updateError) throw updateError;
-
-      // Create notification
-      const { error: notifError } = await supabase
-        .from('notifications')
-        .insert({
-          user_email: rdCall?.organizer_email || 'admin@platform.com',
-          title: `🚨 R&D Proposal Escalation: ${proposal.title_en}`,
-          message: `Proposal ${proposal.proposal_code} has been escalated (Level ${escalationData.escalation_level})`,
-          type: 'escalation',
-          entity_type: 'RDProposal',
-          entity_id: proposal.id,
-          priority: 'high'
-        });
-      if (notifError) console.error('Notification error:', notifError);
-
-      // Send email notification via email-trigger-hub
-      if (rdCall?.organizer_email) {
-        await supabase.functions.invoke('email-trigger-hub', {
-          body: {
-            trigger: 'challenge.escalated',
-            recipient_email: rdCall.organizer_email,
-            entity_type: 'rd_proposal',
-            entity_id: proposal.id,
-            variables: {
-              proposalTitle: proposal.title_en,
-              proposalCode: proposal.proposal_code,
-              escalationLevel: escalationData.escalation_level
-            },
-            triggered_by: 'system'
-          }
-        });
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['rd-proposal']);
-    }
-  });
+  const { escalateMutation } = useProposalEscalation();
 
   useEffect(() => {
     if (!proposal || !rdCall) return;
@@ -74,16 +27,24 @@ export default function RDProposalEscalationAutomation({ proposal, rdCall }) {
         if (daysUntilDeadline < 0 && proposal.escalation_level !== 2) {
           // Critical: Overdue
           escalateMutation.mutate({
-            escalation_level: 2,
-            escalation_date: now.toISOString(),
-            escalation_reason: 'Review deadline passed'
+            proposal,
+            rdCall,
+            escalationData: {
+              escalation_level: 2,
+              escalation_date: now.toISOString(),
+              escalation_reason: 'Review deadline passed'
+            }
           });
         } else if (daysUntilDeadline < 3 && daysUntilDeadline >= 0 && proposal.escalation_level !== 1) {
           // Warning: 3 days to deadline
           escalateMutation.mutate({
-            escalation_level: 1,
-            escalation_date: now.toISOString(),
-            escalation_reason: 'Review deadline approaching (3 days)'
+            proposal,
+            rdCall,
+            escalationData: {
+              escalation_level: 1,
+              escalation_date: now.toISOString(),
+              escalation_reason: 'Review deadline approaching (3 days)'
+            }
           });
         }
       }
@@ -96,9 +57,13 @@ export default function RDProposalEscalationAutomation({ proposal, rdCall }) {
         // Escalate if review taking too long (>7 days without decision)
         if (daysSinceReviewStart > 7 && proposal.escalation_level !== 1) {
           escalateMutation.mutate({
-            escalation_level: 1,
-            escalation_date: now.toISOString(),
-            escalation_reason: 'Review stalled for 7+ days'
+            proposal,
+            rdCall,
+            escalationData: {
+              escalation_level: 1,
+              escalation_date: now.toISOString(),
+              escalation_reason: 'Review stalled for 7+ days'
+            }
           });
         }
       }

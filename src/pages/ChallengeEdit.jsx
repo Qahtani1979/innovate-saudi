@@ -41,7 +41,10 @@ function ChallengeEdit() {
   const { data: subsectors = [] } = useSubsectors();
   const { data: services = [] } = useServices();
 
-  const { updateChallenge } = useChallengeMutations();
+  const {
+    updateChallenge,
+    generateEmbeddings
+  } = useChallengeMutations();
 
   const [formData, setFormData] = useState(null);
   const [originalData, setOriginalData] = useState(null);
@@ -120,15 +123,7 @@ function ChallengeEdit() {
     }, {
       onSuccess: () => {
         // Auto-generate embedding if content changed
-        // Note: keeping supabase direct call here for edge function invocation is fine as it's not a DB query
-        import('@/integrations/supabase/client').then(({ supabase }) => {
-          supabase.functions.invoke('generateEmbeddings', {
-            body: {
-              entity_name: 'Challenge',
-              mode: 'missing'
-            }
-          }).catch(err => console.error('Embedding generation failed:', err));
-        });
+        generateEmbeddings.mutate();
 
         // Clear auto-save
         localStorage.removeItem(`challenge_edit_${challengeId}`);

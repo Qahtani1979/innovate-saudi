@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,25 +8,18 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { buildPolicyConflictPrompt, POLICY_CONFLICT_SCHEMA } from '@/lib/ai/prompts/policy/conflictDetector';
-import { supabase } from '@/integrations/supabase/client';
+import { usePoliciesList } from '@/hooks/usePolicies';
 
 export default function PolicyConflictDetector({ policy }) {
   const { language, isRTL, t } = useLanguage();
   const [conflicts, setConflicts] = useState(null);
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: allPolicies = [] } = useQuery({
-    queryKey: ['all-policies'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('policy_recommendations').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: allPolicies = [] } = usePoliciesList();
 
   const detectConflicts = async () => {
-    const activePolicies = allPolicies.filter(p => 
-      p.id !== policy.id && 
+    const activePolicies = allPolicies.filter(p =>
+      p.id !== policy.id &&
       ['published', 'active', 'council_approval', 'ministry_approval'].includes(p.workflow_stage || p.status)
     );
 
@@ -39,9 +31,9 @@ export default function PolicyConflictDetector({ policy }) {
     if (result.success) {
       setConflicts(result.data);
       if (result.data.has_conflicts && result.data.direct_conflicts?.length > 0) {
-        toast.warning(t({ 
-          en: `Found ${result.data.direct_conflicts.length} potential conflicts`, 
-          ar: `تم العثور على ${result.data.direct_conflicts.length} تعارضات محتملة` 
+        toast.warning(t({
+          en: `Found ${result.data.direct_conflicts.length} potential conflicts`,
+          ar: `تم العثور على ${result.data.direct_conflicts.length} تعارضات محتملة`
         }));
       } else {
         toast.success(t({ en: 'No conflicts detected', ar: 'لم يتم اكتشاف تعارضات' }));
@@ -92,17 +84,16 @@ export default function PolicyConflictDetector({ policy }) {
                 </p>
                 <div className="space-y-2">
                   {conflicts.direct_conflicts.map((conflict, idx) => (
-                    <div key={idx} className={`p-3 border-l-4 rounded-r-lg ${
-                      conflict.severity === 'high' ? 'bg-red-50 border-red-500' :
-                      conflict.severity === 'medium' ? 'bg-orange-50 border-orange-500' :
-                      'bg-yellow-50 border-yellow-500'
-                    }`}>
+                    <div key={idx} className={`p-3 border-l-4 rounded-r-lg ${conflict.severity === 'high' ? 'bg-red-50 border-red-500' :
+                        conflict.severity === 'medium' ? 'bg-orange-50 border-orange-500' :
+                          'bg-yellow-50 border-yellow-500'
+                      }`}>
                       <div className="flex items-start justify-between mb-1">
                         <p className="text-sm font-medium text-slate-900">{conflict.policy_title}</p>
                         <Badge className={
                           conflict.severity === 'high' ? 'bg-red-600' :
-                          conflict.severity === 'medium' ? 'bg-orange-600' :
-                          'bg-yellow-600'
+                            conflict.severity === 'medium' ? 'bg-orange-600' :
+                              'bg-yellow-600'
                         }>{conflict.severity}</Badge>
                       </div>
                       <p className="text-xs text-slate-700 mb-1">

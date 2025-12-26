@@ -30,7 +30,7 @@ import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility
 import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
 import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
-import { useUserProfiles } from '@/hooks/useUserProfiles';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { useExpertAssignments } from '@/hooks/useExpertAssignments';
 
 function Home() {

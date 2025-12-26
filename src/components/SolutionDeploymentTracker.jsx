@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,10 +6,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from './LanguageContext';
 import { TrendingUp, Plus, X, CheckCircle2, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
+import { useSolutionMutations } from '@/hooks/useSolutionMutations';
 
 export default function SolutionDeploymentTracker({ solution, onClose }) {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
+  const { updateSolution } = useSolutionMutations();
 
   const [deployments, setDeployments] = useState(solution?.deployments || []);
   const [newDeployment, setNewDeployment] = useState({
@@ -22,22 +22,28 @@ export default function SolutionDeploymentTracker({ solution, onClose }) {
     kpis_achieved: ''
   });
 
-  const addDeploymentMutation = useMutation({
-    mutationFn: async () => {
-      const updatedDeployments = [...deployments, {
-        ...newDeployment,
-        recorded_date: new Date().toISOString().split('T')[0]
-      }];
-      
-      await base44.entities.Solution.update(solution.id, {
-        deployments: updatedDeployments,
-        deployment_count: updatedDeployments.filter(d => d.status !== 'terminated').length
+  const handleAddDeployment = async () => {
+    const updatedDeployments = [...deployments, {
+      ...newDeployment,
+      recorded_date: new Date().toISOString().split('T')[0]
+    }];
+
+    try {
+      await updateSolution.mutateAsync({
+        id: solution.id,
+        data: {
+          deployments: updatedDeployments,
+          deployment_count: updatedDeployments.filter(d => d.status !== 'terminated').length
+        },
+        activityLog: {
+          type: 'deployment_added',
+          description: `New deployment added at ${newDeployment.organization}`,
+          metadata: { organization: newDeployment.organization }
+        }
       });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['solution']);
+
       toast.success(t({ en: 'Deployment added', ar: 'تمت إضافة النشر' }));
-      setDeployments([...deployments, newDeployment]);
+      setDeployments(updatedDeployments);
       setNewDeployment({
         organization: '',
         location: '',
@@ -46,19 +52,28 @@ export default function SolutionDeploymentTracker({ solution, onClose }) {
         results: '',
         kpis_achieved: ''
       });
+    } catch (error) {
+      // Error handled by hook
     }
-  });
+  };
 
   const updateDeploymentStatus = async (index, newStatus) => {
     const updated = [...deployments];
     updated[index] = { ...updated[index], status: newStatus };
-    await base44.entities.Solution.update(solution.id, { 
-      deployments: updated,
-      deployment_count: updated.filter(d => d.status !== 'terminated').length
-    });
-    setDeployments(updated);
-    queryClient.invalidateQueries(['solution']);
-    toast.success(t({ en: 'Status updated', ar: 'تم تحديث الحالة' }));
+
+    try {
+      await updateSolution.mutateAsync({
+        id: solution.id,
+        data: {
+          deployments: updated,
+          deployment_count: updated.filter(d => d.status !== 'terminated').length
+        }
+      });
+      setDeployments(updated);
+      toast.success(t({ en: 'Status updated', ar: 'تم تحديث الحالة' }));
+    } catch (error) {
+      // Error handled by hook
+    }
   };
 
   return (
@@ -87,11 +102,10 @@ export default function SolutionDeploymentTracker({ solution, onClose }) {
               {t({ en: 'Active Deployments', ar: 'عمليات النشر النشطة' })}
             </p>
             {deployments.map((dep, i) => (
-              <div key={i} className={`p-3 border rounded-lg ${
-                dep.status === 'active' ? 'bg-green-50 border-green-300' :
+              <div key={i} className={`p-3 border rounded-lg ${dep.status === 'active' ? 'bg-green-50 border-green-300' :
                 dep.status === 'completed' ? 'bg-blue-50 border-blue-300' :
-                'bg-slate-50'
-              }`}>
+                  'bg-slate-50'
+                }`}>
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
                     <p className="font-medium text-sm text-slate-900">{dep.organization}</p>
@@ -173,8 +187,8 @@ export default function SolutionDeploymentTracker({ solution, onClose }) {
           </div>
 
           <Button
-            onClick={() => addDeploymentMutation.mutate()}
-            disabled={!newDeployment.organization || !newDeployment.start_date || addDeploymentMutation.isPending}
+            onClick={handleAddDeployment}
+            disabled={!newDeployment.organization || !newDeployment.start_date || updateSolution.isPending}
             className="w-full bg-green-600 hover:bg-green-700"
           >
             <Plus className="h-4 w-4 mr-2" />

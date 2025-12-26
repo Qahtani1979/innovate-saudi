@@ -6,46 +6,24 @@ import { Activity, TrendingUp, Target, TestTube, Microscope } from 'lucide-react
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 
+import { useOrganizationActivity } from '@/hooks/useOrganizationActivity';
+
 export default function OrganizationActivityDashboard({ organizationId }) {
   const { t, isRTL } = useLanguage();
-  const [organization, setOrganization] = useState(null);
-  const [challenges, setChallenges] = useState([]);
-  const [solutions, setSolutions] = useState([]);
-  const [pilots, setPilots] = useState([]);
-  const [rdProjects, setRdProjects] = useState([]);
-  const [programs, setPrograms] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadActivityData();
-  }, [organizationId]);
+  const { data: activityData, isLoading } = useOrganizationActivity(organizationId);
 
-  const loadActivityData = async () => {
-    try {
-      const org = await base44.entities.Organization.filter({ id: organizationId });
-      setOrganization(org[0]);
+  const {
+    organization,
+    challenges = [],
+    solutions = [],
+    pilots = [],
+    rdProjects = [],
+    programs = []
+  } = activityData || {};
 
-      // Load related entities
-      const [chals, sols, plts, rds, progs] = await Promise.all([
-        base44.entities.Challenge.list().then(all => all.filter(c => c.created_by === org[0]?.created_by)),
-        base44.entities.Solution.list().then(all => all.filter(s => s.provider_id === organizationId)),
-        base44.entities.Pilot.list().then(all => all.filter(p => 
-          p.team?.some(t => t.organization === org[0]?.name_en)
-        )),
-        base44.entities.RDProject.list().then(all => all.filter(r => r.institution_en === org[0]?.name_en)),
-        base44.entities.Program.list().then(all => all.filter(p => p.operator_organization_id === organizationId))
-      ]);
-
-      setChallenges(chals);
-      setSolutions(sols);
-      setPilots(plts);
-      setRdProjects(rds);
-      setPrograms(progs);
-    } catch (error) {
-      console.error('Failed to load activity:', error);
-    }
-    setLoading(false);
-  };
+  const loading = isLoading;
+  // loadActivityData function removed as it is now handled by the hook
 
   if (loading) {
     return <div className="text-center py-8">{t({ en: 'Loading...', ar: 'جاري التحميل...' })}</div>;
@@ -111,7 +89,7 @@ export default function OrganizationActivityDashboard({ organizationId }) {
                   <TrendingUp className="h-5 w-5 text-yellow-600" />
                   <div className="flex-1">
                     <p className="font-medium text-sm">{isRTL ? sol.name_ar : sol.name_en}</p>
-                    <p className="text-xs text-slate-500">Solution • {new Date(sol.created_date).toLocaleDateString()}</p>
+                    <p className="text-xs text-slate-500">Solution • {new Date(sol.created_at).toLocaleDateString()}</p>
                   </div>
                   <Badge className={sol.is_verified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}>
                     {sol.is_verified ? 'Verified' : 'Pending'}
@@ -139,7 +117,7 @@ export default function OrganizationActivityDashboard({ organizationId }) {
                     <p className="font-medium text-sm">{isRTL ? rd.title_ar : rd.title_en}</p>
                     <p className="text-xs text-slate-500">R&D • TRL {rd.trl_current}</p>
                   </div>
-                  <Badge>{rd.status}</Badge>
+                  <Badge>{rd['status'] || 'Active'}</Badge>
                 </div>
               </Link>
             ))}

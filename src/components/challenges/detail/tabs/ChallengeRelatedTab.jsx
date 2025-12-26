@@ -5,28 +5,19 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { useLanguage } from '@/components/LanguageContext';
 import { Network, Sparkles, Loader2 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useChallengeInterests } from '@/hooks/useChallengeInterests';
+import { useChallengesWithVisibility } from '@/hooks/visibility';
 
 export default function ChallengeRelatedTab({ challengeId, challenge }) {
   const { language, t } = useLanguage();
 
-  const { data: relations = [], isLoading: isLoadingRelations } = useQuery({
-    queryKey: ['challenge-relations', challengeId],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenge_interests').select('*').eq('challenge_id', challengeId);
-      return data || [];
-    },
-    enabled: !!challengeId
-  });
+  const { data: relationsData = [], isLoading: isLoadingRelations } = useChallengeInterests(challengeId);
+  // @ts-ignore
+  const relations = Array.isArray(relationsData) ? relationsData : (relationsData?.data || []);
 
-  const { data: allChallenges = [], isLoading: isLoadingChallenges } = useQuery({
-    queryKey: ['all-challenges'],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false);
-      return data || [];
-    }
-  });
+  const { data: challengesResponse = [], isLoading: isLoadingChallenges } = useChallengesWithVisibility({ limit: 1000 });
+  // @ts-ignore
+  const allChallenges = Array.isArray(challengesResponse) ? challengesResponse : (challengesResponse?.data || []);
 
   const isLoading = isLoadingRelations || isLoadingChallenges;
   const similarRelations = relations.filter(r => r.relation_role === 'similar_to');

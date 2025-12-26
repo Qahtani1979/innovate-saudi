@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,12 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from './LanguageContext';
 import { Calendar, Clock, Package, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+import { useLivingLabBookings, useLivingLabBookingMutations } from '@/hooks/useLivingLabBookings';
 
 export default function LivingLabResourceBooking({ lab }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
   const [formData, setFormData] = useState({
     resource_type: 'equipment',
@@ -28,89 +25,8 @@ export default function LivingLabResourceBooking({ lab }) {
     requester_email: ''
   });
 
-  const { data: resourceBookings = [] } = useQuery({
-    queryKey: ['resource-bookings', lab.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('living_lab_resource_bookings')
-        .select('*')
-        .eq('living_lab_id', lab.id);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const bookingMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: booking, error } = await supabase
-        .from('living_lab_resource_bookings')
-        .insert({
-          ...data,
-          living_lab_id: lab.id,
-          status: 'pending'
-        })
-        .select()
-        .single();
-      if (error) throw error;
-
-      // Create notification for lab admin
-      await supabase.from('notifications').insert({
-        title: `New Resource Booking Request - ${lab.name_en}`,
-        body: `${data.requester_name} has requested ${data.resource_name} from ${new Date(data.start_datetime).toLocaleString()} to ${new Date(data.end_datetime).toLocaleString()}`,
-        notification_type: 'approval',
-        priority: 'medium',
-        link_url: `/LivingLabDetail?id=${lab.id}`,
-        entity_type: 'LivingLabResourceBooking',
-        entity_id: booking.id,
-        action_required: true
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['resource-bookings'] });
-      toast.success(t({ en: 'Booking request submitted', ar: 'تم إرسال طلب الحجز' }));
-      setFormData({
-        resource_type: 'equipment',
-        resource_name: '',
-        quantity_requested: 1,
-        start_datetime: '',
-        end_datetime: '',
-        purpose: '',
-        requester_name: '',
-        requester_email: ''
-      });
-    }
-  });
-
-  const approvalMutation = useMutation({
-    mutationFn: async ({ id, approved }) => {
-      const booking = resourceBookings.find(b => b.id === id);
-      const { error } = await supabase
-        .from('living_lab_resource_bookings')
-        .update({
-          status: approved ? 'approved' : 'rejected',
-          approved_by: user?.email,
-          approval_date: new Date().toISOString(),
-          notification_sent: true
-        })
-        .eq('id', id);
-      if (error) throw error;
-
-      // Notify requester
-      await supabase.from('notifications').insert({
-        title: approved ? 'Resource Booking Approved' : 'Resource Booking Rejected',
-        body: `Your booking request for ${booking?.resource_name} has been ${approved ? 'approved' : 'rejected'}.`,
-        notification_type: 'alert',
-        priority: approved ? 'medium' : 'high',
-        link_url: `/LivingLabDetail?id=${lab.id}`,
-        entity_type: 'LivingLabResourceBooking',
-        entity_id: id
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['resource-bookings'] });
-      toast.success(t({ en: 'Booking updated', ar: 'تم تحديث الحجز' }));
-    }
-  });
+  const { data: resourceBookings = [] } = useLivingLabBookings(lab.id);
+  const { createBooking, updateBookingStatus } = useLivingLabBookingMutations(lab.id);
 
   const availableResources = [
     ...(lab.equipment_inventory?.map(eq => ({ name: eq.name, type: 'equipment', available: eq.status === 'available' })) || []),
@@ -119,6 +35,36 @@ export default function LivingLabResourceBooking({ lab }) {
 
   const pendingBookings = resourceBookings.filter(b => b.status === 'pending');
   const activeBookings = resourceBookings.filter(b => b.status === 'approved' || b.status === 'active');
+
+  const handleSubmit = () => {
+    createBooking.mutate({
+      ...formData,
+      living_lab_id: lab.id
+    }, {
+      onSuccess: () => {
+        setFormData({
+          resource_type: 'equipment',
+          resource_name: '',
+          quantity_requested: 1,
+          start_datetime: '',
+          end_datetime: '',
+          purpose: '',
+          requester_name: '',
+          requester_email: ''
+        });
+      }
+    });
+  };
+
+  const handleApproval = (id, approved, booking) => {
+    updateBookingStatus.mutate({
+      id,
+      status: approved ? 'approved' : 'rejected',
+      approved_by: user?.email,
+      resource_name: booking.resource_name,
+      lab_id: lab.id
+    });
+  };
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -136,7 +82,7 @@ export default function LivingLabResourceBooking({ lab }) {
               <Label>{t({ en: 'Resource Type', ar: 'نوع المورد' })}</Label>
               <Select
                 value={formData.resource_type}
-                onValueChange={(value) => setFormData({...formData, resource_type: value, resource_name: ''})}
+                onValueChange={(value) => setFormData({ ...formData, resource_type: value, resource_name: '' })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -153,7 +99,7 @@ export default function LivingLabResourceBooking({ lab }) {
               <Label>{t({ en: 'Resource', ar: 'المورد' })}</Label>
               <Select
                 value={formData.resource_name}
-                onValueChange={(value) => setFormData({...formData, resource_name: value})}
+                onValueChange={(value) => setFormData({ ...formData, resource_name: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={t({ en: 'Select resource', ar: 'اختر المورد' })} />
@@ -178,7 +124,7 @@ export default function LivingLabResourceBooking({ lab }) {
                 type="number"
                 min="1"
                 value={formData.quantity_requested}
-                onChange={(e) => setFormData({...formData, quantity_requested: parseInt(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, quantity_requested: parseInt(e.target.value) })}
               />
             </div>
 
@@ -187,7 +133,7 @@ export default function LivingLabResourceBooking({ lab }) {
               <Input
                 type="datetime-local"
                 value={formData.start_datetime}
-                onChange={(e) => setFormData({...formData, start_datetime: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, start_datetime: e.target.value })}
               />
             </div>
 
@@ -196,7 +142,7 @@ export default function LivingLabResourceBooking({ lab }) {
               <Input
                 type="datetime-local"
                 value={formData.end_datetime}
-                onChange={(e) => setFormData({...formData, end_datetime: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, end_datetime: e.target.value })}
               />
             </div>
           </div>
@@ -206,7 +152,7 @@ export default function LivingLabResourceBooking({ lab }) {
               <Label>{t({ en: 'Your Name', ar: 'الاسم' })}</Label>
               <Input
                 value={formData.requester_name}
-                onChange={(e) => setFormData({...formData, requester_name: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, requester_name: e.target.value })}
               />
             </div>
 
@@ -215,7 +161,7 @@ export default function LivingLabResourceBooking({ lab }) {
               <Input
                 type="email"
                 value={formData.requester_email}
-                onChange={(e) => setFormData({...formData, requester_email: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, requester_email: e.target.value })}
               />
             </div>
           </div>
@@ -224,16 +170,17 @@ export default function LivingLabResourceBooking({ lab }) {
             <Label>{t({ en: 'Purpose', ar: 'الغرض' })}</Label>
             <Textarea
               value={formData.purpose}
-              onChange={(e) => setFormData({...formData, purpose: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
               rows={2}
             />
           </div>
 
           <Button
-            onClick={() => bookingMutation.mutate(formData)}
-            disabled={!formData.resource_name || !formData.start_datetime || bookingMutation.isPending}
+            onClick={handleSubmit}
+            disabled={!formData.resource_name || !formData.start_datetime || createBooking.isPending}
             className="w-full bg-purple-600 hover:bg-purple-700"
           >
+            {createBooking.isPending && <Clock className="mr-2 h-4 w-4 animate-spin" />}
             {t({ en: 'Submit Booking Request', ar: 'إرسال طلب الحجز' })}
           </Button>
         </CardContent>
@@ -270,19 +217,19 @@ export default function LivingLabResourceBooking({ lab }) {
                   </div>
                   <div className="flex gap-2">
                     <Button
-                      onClick={() => approvalMutation.mutate({ id: booking.id, approved: true })}
+                      onClick={() => handleApproval(booking.id, true, booking)}
                       size="sm"
                       className="bg-green-600 hover:bg-green-700"
-                      disabled={approvalMutation.isPending}
+                      disabled={updateBookingStatus.isPending}
                     >
                       <CheckCircle2 className="h-4 w-4" />
                     </Button>
                     <Button
-                      onClick={() => approvalMutation.mutate({ id: booking.id, approved: false })}
+                      onClick={() => handleApproval(booking.id, false, booking)}
                       size="sm"
                       variant="outline"
                       className="border-red-300 text-red-600"
-                      disabled={approvalMutation.isPending}
+                      disabled={updateBookingStatus.isPending}
                     >
                       <XCircle className="h-4 w-4" />
                     </Button>

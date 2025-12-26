@@ -1,127 +1,103 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-/**
- * Hook to fetch a single organization by ID.
- */
-export function useOrganization(orgId) {
+export function useOrganizations() {
     return useQuery({
-        queryKey: ['organization', orgId],
+        queryKey: ['organizations'],
         queryFn: async () => {
             const { data, error } = await supabase
                 .from('organizations')
-                .select('*')
-                .eq('id', orgId)
-                .maybeSingle();
-
-            if (error) throw error;
-            return data;
-        },
-        enabled: !!orgId,
-        staleTime: 5 * 60 * 1000
-    });
-}
-
-/**
- * Hook to fetch solutions provided by an organization.
- * Uses provider_id instead of name matching for better reliability.
- */
-export function useOrganizationSolutions(orgId) {
-    return useQuery({
-        queryKey: ['solutions-by-org', orgId],
-        queryFn: async () => {
-            // Try to fetch by provider_id first (more reliable)
-            const { data, error } = await supabase
-                .from('solutions')
-                .select('*')
-                .eq('provider_id', orgId);
-
-            if (error) throw error;
+                .select('id, name_en, name_ar');
+            if (error) return [];
             return data || [];
         },
-        enabled: !!orgId,
-        staleTime: 5 * 60 * 1000
+        staleTime: 5 * 60 * 1000 // 5 minutes
     });
 }
 
-/**
- * Hook to fetch pilots related to an organization's solutions.
- * Uses inner join on solution to filter by provider_id.
- */
-export function useOrganizationPilots(orgId) {
-    return useQuery({
-        queryKey: ['pilots-by-org', orgId],
-        queryFn: async () => {
-            const { data, error } = await supabase
-                .from('pilots')
-                .select('*, solution:solutions!inner(provider_id)')
-                .eq('solution.provider_id', orgId);
-
-            if (error) throw error;
-            return data || [];
-        },
-        enabled: !!orgId,
-        staleTime: 5 * 60 * 1000
-    });
-}
-
-/**
- * Hook to fetch a simple list of organizations for dropdowns/selection.
- */
-export function useOrganizationsList(limit = 100) {
-    return useQuery({
-        queryKey: ['organizations-list', limit],
-        queryFn: async () => {
-            const { data, error } = await supabase
-                .from('organizations')
-                .select('id, name_en, name_ar')
-                .eq('is_deleted', false)
-                .limit(limit);
-            if (error) throw error;
-            return data || [];
-        },
-        staleTime: 10 * 60 * 1000 // 10 minutes
-    });
-}
-
-export default useOrganization;
-
-
-/**
- * Hook to fetch an organization by its owner email.
- */
 export function useOrganizationByOwner(email) {
     return useQuery({
-        queryKey: ['organization-by-owner', email],
+        queryKey: ['organization', 'owner', email],
         queryFn: async () => {
             if (!email) return null;
             const { data, error } = await supabase
                 .from('organizations')
                 .select('*')
-                .or(`created_by.eq.${email},contact_email.eq.${email}`)
-                .maybeSingle();
+                .eq('owner_email', email)
+                .single();
 
-            if (error) throw error;
-            return data;
+            if (error && error.code !== 'PGRST116') {
+                console.error('Error fetching organization by owner:', error);
+            }
+            return data || null;
         },
         enabled: !!email,
         staleTime: 5 * 60 * 1000
     });
 }
-export function useOrganizationLeaderboard() {
+
+export function useOrganizationById(id) {
     return useQuery({
-        queryKey: ['org-leaderboard'],
+        queryKey: ['organization', id],
         queryFn: async () => {
+            if (!id) return null;
             const { data, error } = await supabase
                 .from('organizations')
                 .select('*')
-                .eq('is_deleted', false)
-                .gt('reputation_score', 0)
-                .order('reputation_score', { ascending: false });
+                .eq('id', id)
+                .single();
+            if (error) throw error;
+            return data;
+        },
+        enabled: !!id
+    });
+}
+
+export function useOrganizationPartnerships(organizationId) {
+    return useQuery({
+        queryKey: ['org-partnerships-full', organizationId],
+        queryFn: async () => {
+            if (!organizationId) return { partnerships: [], collaborations: [] };
+
+            const { data: partnerships, error: pError } = await supabase
+                .from('partnerships')
+                .select('*')
+                .or(`organization_a_id.eq.${organizationId},organization_b_id.eq.${organizationId}`);
+
+            if (pError) throw pError;
+
+            const { data: collaborations, error: cError } = await supabase
+                .from('pilot_collaborations')
+                .select('*')
+                .or(`organization_a_id.eq.${organizationId},organization_b_id.eq.${organizationId}`);
+
+            if (cError) throw cError;
+
+            return {
+                partnerships: partnerships || [],
+                collaborations: collaborations || []
+            };
+        },
+        enabled: !!organizationId
+    });
+}
+
+export function useOrganizationActivities(organizationId) {
+    return useQuery({
+        queryKey: ['org-activities', organizationId],
+        queryFn: async () => {
+            if (!organizationId) return [];
+            const { data, error } = await supabase
+                .from('system_activities')
+                .select('*')
+                .eq('entity_id', organizationId)
+                .eq('entity_type', 'Organization')
+                .order('created_at', { ascending: false })
+                .limit(100);
 
             if (error) throw error;
             return data || [];
         },
-        staleTime: 60 * 60 * 1000 // 1 hour
+        enabled: !!organizationId
     });
 }

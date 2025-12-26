@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { usePublicSolutions, usePublicSuccessfulDeployments } from '@/hooks/usePublicData';
+import { useSolutions } from '@/hooks/useSolutions';
+import { usePublicSuccessfulDeployments } from '@/hooks/usePublicData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +17,7 @@ export default function PublicSolutionsMarketplace() {
   const [selectedSector, setSelectedSector] = useState('all');
   const [selectedMaturity, setSelectedMaturity] = useState('all');
 
-  const { data: solutions = [] } = usePublicSolutions();
+  const { solutions = [] } = useSolutions({ publishedOnly: true });
   const { data: successfulDeployments = [] } = usePublicSuccessfulDeployments();
 
   const sectors = [...new Set(solutions.flatMap(s => s.sectors || []))];
@@ -262,23 +263,25 @@ export default function PublicSolutionsMarketplace() {
               )}
 
               {solution.deployment_count > 0 && (
-                <div className="flex items-center gap-2 text-sm text-green-700">
-                  <TrendingUp className="h-4 w-4" />
-                  <span>{solution.deployment_count} {t({ en: 'deployments', ar: 'عمليات نشر' })}</span>
+                <div className="flex items-center text-xs text-slate-500">
+                  <TrendingUp className="h-4 w-4 mr-1 ml-0.5" />
+                  {/* @ts-ignore */}
+                  <span>{solution['deployment_count'] || 0} {t('deployments')}</span>
                 </div>
               )}
 
-              {solution.ratings?.average > 0 && (
+              {/* @ts-ignore */}
+              {(solution.ratings && !Array.isArray(solution.ratings) && solution.ratings['average'] > 0) && (
                 <div className="flex items-center gap-2">
                   <div className="flex">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Star
                         key={star}
-                        className={`h-4 w-4 ${star <= solution.ratings.average ? 'text-amber-500 fill-amber-500' : 'text-slate-300'}`}
+                        className={`h-4 w-4 ${star <= (solution.ratings?.['average'] || 0) ? 'text-amber-500 fill-amber-500' : 'text-slate-300'}`}
                       />
                     ))}
                   </div>
-                  <span className="text-xs text-slate-600">({solution.ratings.count})</span>
+                  <span className="text-xs text-slate-600">({solution.ratings?.['count'] || 0})</span>
                 </div>
               )}
             </CardContent>

@@ -11,7 +11,11 @@ export function useRDProjects(options = {}) {
         queryFn: async () => {
             let query = supabase
                 .from('rd_projects')
-                .select('*')
+                .select(`
+                    *,
+                    patents(*),
+                    ip_licenses(*)
+                `)
                 .eq('is_deleted', false);
 
             if (options.living_lab_id) {

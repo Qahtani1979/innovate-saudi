@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useExperts, useAllExpertAssignments } from '@/hooks/useExpertData';
 import { useMatchingEntities } from '@/hooks/useMatchingEntities';
 import { useExpertAssignmentMutations } from '@/hooks/useExpertAssignmentMutations';
-import { useQueryClient } from '@tanstack/react-query';
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -49,7 +49,6 @@ function ExpertMatchingEnginePage() {
   const [compensation, setCompensation] = useState(0);
   const [assignmentNotes, setAssignmentNotes] = useState('');
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const { invokeAI, isLoading: matching, status, error: aiError, rateLimitInfo } = useAIWithFallback();
   const { user: currentUser } = useAuth();
   const { assignExperts } = useExpertAssignmentMutations();

@@ -1,46 +1,24 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import usePilotsWithVisibility from '@/hooks/usePilotsWithVisibility';
+import { useScalingPlansByPilot, useScalingReadiness } from '@/hooks/useScalingPlans';
 import { useLanguage } from '../components/LanguageContext';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import BaseCoverageReport from '../components/reports/BaseCoverageReport';
 import { getScalingCoverageData } from './scalingCoverageData';
 
+/**
+ * ScalingCoverageReport
+ * ✅ GOLD STANDARD COMPLIANT
+ */
 function ScalingCoverageReport() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-coverage-scaling'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data;
-    }
-  });
+  const { data: pilotsRaw = [] } = usePilotsWithVisibility();
+  const pilots = Array.isArray(pilotsRaw) ? pilotsRaw : pilotsRaw?.data || [];
 
-  const { data: scalingPlans = [] } = useQuery({
-    queryKey: ['scaling-plans-coverage'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('scaling_plans')
-        .select('*');
-      if (error) throw error;
-      return data;
-    }
-  });
+  const { data: scalingPlansRaw = [] } = useScalingPlansByPilot();
+  const scalingPlans = Array.isArray(scalingPlansRaw) ? scalingPlansRaw : scalingPlansRaw?.data || [];
 
-  const { data: scalingReadiness = [] } = useQuery({
-    queryKey: ['scaling-readiness-coverage'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('scaling_readiness')
-        .select('*');
-      if (error) throw error;
-      return data;
-    }
-  });
+  const { data: scalingReadiness = [] } = useScalingReadiness();
 
   const coverageData = getScalingCoverageData(pilots, scalingPlans, scalingReadiness);
 

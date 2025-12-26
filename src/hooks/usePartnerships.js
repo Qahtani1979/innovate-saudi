@@ -15,3 +15,20 @@ export function usePartnerships() {
         }
     });
 }
+
+export function usePartnershipById(id) {
+    return useQuery({
+        queryKey: ['partnership', id],
+        queryFn: async () => {
+            if (!id) return null;
+            const { data, error } = await supabase
+                .from('partnerships')
+                .select('*')
+                .eq('id', id)
+                .single();
+            if (error) throw error;
+            return data;
+        },
+        enabled: !!id
+    });
+}

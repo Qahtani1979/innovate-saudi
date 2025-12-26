@@ -1,6 +1,4 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,31 +10,25 @@ import { useLanguage } from '@/components/LanguageContext';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { getSystemPrompt } from '@/lib/saudiContext';
 import {
   buildGapProgramRecommenderPrompt,
   gapProgramRecommenderSchema,
   GAP_PROGRAM_RECOMMENDER_SYSTEM_PROMPT
 } from '@/lib/ai/prompts/strategy';
 
-import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
-import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
-import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useStrategiesWithVisibility, useStrategyMutations } from '@/hooks/useStrategyMutations';
+import { useProgramsWithVisibility } from '@/hooks/useProgramMutations';
+import { useChallengesWithVisibility } from '@/hooks/useChallengeMutations';
 import { useSectors } from '@/hooks/useSectors';
 import { useProgramMutations } from '@/hooks/useProgramMutations';
 
 export default function StrategicGapProgramRecommender({ strategicPlanId, onProgramCreated }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [recommendations, setRecommendations] = useState([]);
-  const [selectedRecs, setSelectedRecs] = useState([]);
   const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  // ... (inside component)
-
   const { data: strategicPlans = [] } = useStrategiesWithVisibility({
-    status: 'all',
-    includeTemplates: false
+    status: 'all'
   });
 
   const { data: programs = [] } = useProgramsWithVisibility({
@@ -52,39 +44,71 @@ export default function StrategicGapProgramRecommender({ strategicPlanId, onProg
 
   const { data: sectors = [] } = useSectors();
 
-  // ... (calculateGaps is unchanged) ...
+  const gaps = useMemo(() => {
+    const list = [];
 
-  const { createProgram } = useProgramMutations();
+    // 1. Objectives with no programs
+    strategicPlans.filter(p => !strategicPlanId || p.id === strategicPlanId).forEach(plan => {
+      (plan.objectives || []).forEach(obj => {
+        const hasProgram = programs.some(prog =>
+          (prog.objectives || []).some(progObj => progObj.id === obj.id)
+        );
+        if (!hasProgram) {
+          list.push({
+            id: `obj-${obj.id}`,
+            type: 'uncovered_objective',
+            title: { en: obj.title_en, ar: obj.title_ar },
+            description: { en: 'Objective has no supporting programs', ar: 'الهدف ليس لديه برامج داعمة' },
+            severity: 'high',
+            plan: plan,
+            objective: obj
+          });
+        }
+      });
+    });
 
-  const createProgramMutation = useMutation({
-    mutationFn: async (rec) => {
-      const programData = {
-        name_en: rec.program_name_en,
-        name_ar: rec.program_name_ar,
-        program_type: rec.program_type,
-        status: 'draft',
-        objectives: rec.objectives,
-        target_outcomes: rec.outcomes?.map(o => ({ description: o, target: 100, current: 0 })),
-        is_gap_derived: true,
-        gap_derivation_date: new Date().toISOString(),
-        priority: rec.priority,
-        duration_months: rec.duration_months,
-        strategic_plan_ids: rec.related_gap?.plan ? [rec.related_gap.plan.id] : []
-      };
+    // 2. Unaddressed Challenges
+    challenges.filter(c => c.status === 'open').forEach(challenge => {
+      const hasProgram = programs.some(prog =>
+        (prog.related_challenges || []).includes(challenge.id)
+      );
+      if (!hasProgram) {
+        list.push({
+          id: `challenge-${challenge.id}`,
+          type: 'unaddressed_challenge',
+          title: { en: challenge.title_en, ar: challenge.title_ar },
+          description: { en: 'Open challenge with no planned intervention', ar: 'تحدي مفتوح بدون تدخل مخطط' },
+          severity: 'medium',
+          challenge: challenge
+        });
+      }
+    });
 
-      // Use the centralized mutation hook
-      return await createProgram.mutateAsync(programData);
-    },
-    onSuccess: () => {
-      // Hook handles invalidation, but we might need extra local handling
-      toast.success(t({ en: 'Program created from recommendation', ar: 'تم إنشاء البرنامج من التوصية' }));
-      onProgramCreated?.();
-    },
-    onError: (error) => {
-      console.error('Program creation error:', error);
-      // Hook handles toast error, but we can keep this for specificity if needed
+    return list;
+  }, [strategicPlans, programs, challenges, strategicPlanId]);
+
+  const { createProgramFromRecommendation, isCreatingFromRec } = useProgramMutations();
+  const { generateGapRecommendations } = useStrategyMutations();
+
+  const handleGenerateRecommendations = async () => {
+    try {
+      const data = await generateGapRecommendations.mutateAsync({
+        gaps,
+        strategicPlans,
+        sectors,
+        invokeAI,
+        prompts: { buildGapProgramRecommenderPrompt, GAP_PROGRAM_RECOMMENDER_SYSTEM_PROMPT },
+        schemas: { gapProgramRecommenderSchema }
+      });
+      setRecommendations(data || []);
+      toast.success(t({
+        en: `Generated ${data?.length || 0} program recommendations`,
+        ar: `تم توليد ${data?.length || 0} توصية برامج`
+      }));
+    } catch (error) {
+      console.error('Recommendation generation failed:', error);
     }
-  });
+  };
 
   const severityColors = {
     high: 'bg-red-100 text-red-800 border-red-200',
@@ -114,12 +138,12 @@ export default function StrategicGapProgramRecommender({ strategicPlanId, onProg
         </p>
       </CardHeader>
       <CardContent className="space-y-6 pt-6">
-        <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} />
+        <AIStatusIndicator status={aiStatus} error={generateGapRecommendations.error} rateLimitInfo={rateLimitInfo} />
 
         {/* Gap Summary */}
         <div className="grid grid-cols-4 gap-3">
           <div className="p-3 bg-slate-50 rounded-lg text-center">
-            <p className="text-2xl font-bold text-slate-700">{gaps.length}</p>
+            <p className="text-2xl font-bold text-slate-700">{gaps?.length || 0}</p>
             <p className="text-xs text-slate-600">{t({ en: 'Total Gaps', ar: 'إجمالي الفجوات' })}</p>
           </div>
           <div className="p-3 bg-red-50 rounded-lg text-center">
@@ -147,7 +171,7 @@ export default function StrategicGapProgramRecommender({ strategicPlanId, onProg
           </TabsList>
 
           <TabsContent value="gaps" className="space-y-3 mt-4">
-            {gaps.length === 0 ? (
+            {(!gaps || gaps.length === 0) ? (
               <div className="text-center py-8">
                 <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-3" />
                 <p className="text-green-700 font-medium">
@@ -185,11 +209,11 @@ export default function StrategicGapProgramRecommender({ strategicPlanId, onProg
 
             {gaps.length > 0 && (
               <Button
-                onClick={() => generateRecommendationsMutation.mutate()}
-                disabled={generateRecommendationsMutation.isPending || aiLoading}
+                onClick={handleGenerateRecommendations}
+                disabled={generateGapRecommendations.isPending || aiLoading}
                 className="w-full mt-4"
               >
-                {generateRecommendationsMutation.isPending ? (
+                {generateGapRecommendations.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     {t({ en: 'Analyzing gaps...', ar: 'جاري تحليل الفجوات...' })}
@@ -238,10 +262,10 @@ export default function StrategicGapProgramRecommender({ strategicPlanId, onProg
                     </div>
                     <Button
                       size="sm"
-                      onClick={() => createProgramMutation.mutate(rec)}
-                      disabled={createProgramMutation.isPending}
+                      onClick={() => createProgramFromRecommendation.mutate(rec)}
+                      disabled={isCreatingFromRec}
                     >
-                      {createProgramMutation.isPending ? (
+                      {isCreatingFromRec ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <>

@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useCitizenIdeas } from '@/hooks/useCitizenIdeas';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,23 +15,16 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
+/**
+ * IdeasAnalytics
+ * ✅ GOLD STANDARD COMPLIANT
+ */
 function IdeasAnalytics() {
   const { language, isRTL, t } = useLanguage();
   const { invokeAI, status, isLoading: generatingInsights, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [aiInsights, setAiInsights] = useState(null);
 
-  const { data: ideas = [], isLoading } = useQuery({
-    queryKey: ['ideas-analytics'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('citizen_ideas')
-        .select('*')
-        .order('created_date', { ascending: false })
-        .limit(500);
-      if (error) throw error;
-      return data;
-    }
-  });
+  const { ideas: { data: ideas = [], isLoading } } = useCitizenIdeas();
 
   const categoryData = Object.entries(
     ideas.reduce((acc, idea) => {
@@ -50,7 +42,7 @@ function IdeasAnalytics() {
 
   const monthlyData = Object.entries(
     ideas.reduce((acc, idea) => {
-      const month = new Date(idea.created_date).toLocaleDateString('en', { month: 'short', year: 'numeric' });
+      const month = new Date(idea.created_at).toLocaleDateString('en', { month: 'short', year: 'numeric' });
       acc[month] = (acc[month] || 0) + 1;
       return acc;
     }, {})
@@ -60,10 +52,10 @@ function IdeasAnalytics() {
 
   const stats = {
     total: ideas.length,
-    thisMonth: ideas.filter(i => new Date(i.created_date) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length,
+    thisMonth: ideas.filter(i => new Date(i.created_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length,
     converted: ideas.filter(i => i.status === 'converted_to_challenge').length,
     conversionRate: ideas.length > 0 ? ((ideas.filter(i => i.status === 'converted_to_challenge').length / ideas.length) * 100).toFixed(1) : 0,
-    avgVotes: ideas.length > 0 ? (ideas.reduce((sum, i) => sum + (i.vote_count || 0), 0) / ideas.length).toFixed(1) : 0,
+    avgVotes: ideas.length > 0 ? (ideas.reduce((sum, i) => sum + (i.votes_count || 0), 0) / ideas.length).toFixed(1) : 0,
     topCategory: categoryData.length > 0 ? categoryData.reduce((a, b) => a.value > b.value ? a : b).name : 'N/A'
   };
 
@@ -71,7 +63,7 @@ function IdeasAnalytics() {
     const topIdeas = ideas.slice(0, 10);
     const prompt = `Analyze these citizen ideas and provide strategic insights:
 
-${topIdeas.map(i => `- ${i.title} (Category: ${i.category}, Votes: ${i.vote_count || 0})`).join('\n')}
+${topIdeas.map(i => `- ${i.title} (Category: ${i.category}, Votes: ${i.votes_count || 0})`).join('\n')}
 
 Provide:
 1. Top 3 emerging themes from citizen input

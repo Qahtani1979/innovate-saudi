@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,32 +9,23 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useContractsWithVisibility } from '@/hooks/useContractsWithVisibility';
+import { useOrganizations } from '@/hooks/useOrganizations';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function ContractManagement() {
   const { t } = useLanguage();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const queryClient = useQueryClient();
 
   // Use visibility-aware hook
   const { data: contracts = [], isLoading } = useContractsWithVisibility({
     status: statusFilter !== 'all' ? statusFilter : undefined
   });
 
-  const { data: organizations = [] } = useQuery({
-    queryKey: ['organizations'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('organizations')
-        .select('id, name_en, name_ar');
-      if (error) return [];
-      return data || [];
-    }
-  });
+  const { data: organizations = [] } = useOrganizations();
 
   const filteredContracts = contracts.filter(c => {
-    const matchesSearch = !search || 
+    const matchesSearch = !search ||
       c.contract_number?.toLowerCase().includes(search.toLowerCase()) ||
       c.party_a_name?.toLowerCase().includes(search.toLowerCase()) ||
       c.party_b_name?.toLowerCase().includes(search.toLowerCase());
@@ -248,6 +237,6 @@ function ContractManagement() {
   );
 }
 
-export default ProtectedPage(ContractManagement, { 
-  requiredPermissions: ['contract_view_all'] 
+export default ProtectedPage(ContractManagement, {
+  requiredPermissions: ['contract_view_all']
 });

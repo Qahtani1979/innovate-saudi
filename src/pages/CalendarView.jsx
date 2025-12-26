@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,70 +10,27 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
 import { usePermissions } from '@/components/permissions/usePermissions';
 
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
+import { useEventsWithVisibility } from '@/hooks/useEventsWithVisibility';
+import { useExpertAssignments } from '@/hooks/useExpertAssignments';
+
 function CalendarView({ embedded = false }) {
   const { language, isRTL, t } = useLanguage();
   const { user } = useAuth();
   const { hasAnyPermission, roles } = usePermissions();
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  const canCreateEvents = hasAnyPermission(['event_create', 'admin']) || 
+  const canCreateEvents = hasAnyPermission(['event_create', 'admin']) ||
     roles?.some(r => ['admin', 'super_admin', 'municipality_admin', 'gdibs_internal', 'event_manager'].includes(r));
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // Use visibility-aware hooks
+  const { data: pilots = [] } = usePilotsWithVisibility();
+  const { data: programs = [] } = useProgramsWithVisibility();
+  const { data: dbEvents = [] } = useEventsWithVisibility({ upcoming: false });
 
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('programs')
-        .select('*')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  // NEW: Fetch events from events table
-  const { data: dbEvents = [] } = useQuery({
-    queryKey: ['calendar-events'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .eq('is_deleted', false)
-        .eq('is_published', true)
-        .order('start_date', { ascending: true });
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: expertAssignments = [] } = useQuery({
-    queryKey: ['expert-assignments-calendar', user?.email],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('expert_assignments')
-        .select('*')
-        .eq('expert_email', user?.email)
-        .not('due_date', 'is', null)
-        .order('due_date', { ascending: true });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user
-  });
+  const { useAssignments } = useExpertAssignments(user?.email);
+  const { data: expertAssignments = [] } = useAssignments();
 
   const calendarItems = [
     // Events from events table (NEW)
@@ -182,8 +137,8 @@ function CalendarView({ embedded = false }) {
               const dayItems = calendarItems.filter(e => {
                 const eventDate = new Date(e.date);
                 return eventDate.getDate() === day &&
-                       eventDate.getMonth() === currentDate.getMonth() &&
-                       eventDate.getFullYear() === currentDate.getFullYear();
+                  eventDate.getMonth() === currentDate.getMonth() &&
+                  eventDate.getFullYear() === currentDate.getFullYear();
               });
 
               return (
@@ -193,10 +148,10 @@ function CalendarView({ embedded = false }) {
                     {dayItems.slice(0, 2).map((item, j) => {
                       const Icon = item.icon;
                       const colorClass = item.type === 'event' ? 'bg-green-100 text-green-700' :
-                        item.type === 'pilot' ? 'bg-blue-100 text-blue-700' : 
-                        item.type === 'program' ? 'bg-purple-100 text-purple-700' :
-                        'bg-amber-100 text-amber-700';
-                      
+                        item.type === 'pilot' ? 'bg-blue-100 text-blue-700' :
+                          item.type === 'program' ? 'bg-purple-100 text-purple-700' :
+                            'bg-amber-100 text-amber-700';
+
                       const content = (
                         <div className={`text-xs p-1 rounded cursor-pointer hover:opacity-80 ${colorClass}`}>
                           <Icon className="h-3 w-3 inline mr-1" />
@@ -234,9 +189,9 @@ function CalendarView({ embedded = false }) {
                 .map((item) => {
                   const Icon = item.icon;
                   const colorClass = item.type === 'event' ? 'text-green-600' :
-                    item.type === 'pilot' ? 'text-blue-600' : 
-                    item.type === 'program' ? 'text-purple-600' : 'text-amber-600';
-                  
+                    item.type === 'pilot' ? 'text-blue-600' :
+                      item.type === 'program' ? 'text-purple-600' : 'text-amber-600';
+
                   const content = (
                     <div className="p-3 border rounded-lg hover:bg-slate-50 transition-colors">
                       <div className="flex items-center gap-3">
@@ -244,8 +199,8 @@ function CalendarView({ embedded = false }) {
                         <div className="flex-1">
                           <p className="font-medium text-sm">{item.title}</p>
                           <p className="text-xs text-slate-600">
-                            {new Date(item.date).toLocaleDateString(language, { 
-                              month: 'short', 
+                            {new Date(item.date).toLocaleDateString(language, {
+                              month: 'short',
                               day: 'numeric',
                               year: 'numeric'
                             })}
@@ -255,7 +210,7 @@ function CalendarView({ embedded = false }) {
                       </div>
                     </div>
                   );
-                  
+
                   return item.link ? (
                     <Link key={item.id} to={item.link}>{content}</Link>
                   ) : (

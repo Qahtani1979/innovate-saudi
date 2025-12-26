@@ -28,6 +28,7 @@ export function useRDProjectMutations() {
     });
 
     const updateRDProject = useMutation({
+        /** @param {{ id: string, [key: string]: any }} params */
         mutationFn: async ({ id, ...updates }) => {
             const { data, error } = await supabase
                 .from('rd_projects')
@@ -67,6 +68,74 @@ export function useRDProjectMutations() {
         }
     });
 
+    const approveMilestone = useMutation({
+        /** @param {{ project: any, milestoneName: string, approver: string, notes: string, evidence: any[] }} params */
+        mutationFn: async ({ project, milestoneName, approver, notes, evidence }) => {
+            const updatedMilestones = project?.timeline?.milestones?.map(m =>
+                m.name === milestoneName
+                    ? {
+                        ...m,
+                        status: 'completed',
+                        completed_date: new Date().toISOString(),
+                        approval_status: 'approved',
+                        approved_by: approver,
+                        approval_date: new Date().toISOString(),
+                        approval_comments: notes,
+                        evidence_urls: evidence
+                    }
+                    : m
+            ) || [];
+
+            const { data, error } = await supabase
+                .from('rd_projects')
+                .update({
+                    timeline: {
+                        ...project.timeline,
+                        milestones: updatedMilestones
+                    }
+                })
+                .eq('id', project.id)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['rd-projects-with-visibility'] });
+            queryClient.invalidateQueries({ queryKey: ['rd-project', data.id] });
+            toast.success(t({ en: 'Milestone approved', ar: 'تمت الموافقة على المعلم' }));
+        },
+        onError: (error) => {
+            toast.error(t({ en: 'Failed to approve milestone', ar: 'فشل الموافقة على المعلم' }));
+        }
+    });
+
+    const addProjectPublication = useMutation({
+        /** @param {{ id: string, publications: any[], newPublication: any }} params */
+        mutationFn: async ({ id, publications, newPublication }) => {
+            const { data, error } = await supabase
+                .from('rd_projects')
+                .update({
+                    publications: [...(publications || []), newPublication]
+                })
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['rd-projects-with-visibility'] });
+            queryClient.invalidateQueries({ queryKey: ['rd-project', data.id] });
+            toast.success(t({ en: 'Publication added successfully', ar: 'تم إضافة النشر بنجاح' }));
+        },
+        onError: (error) => {
+            toast.error(t({ en: 'Failed to add publication', ar: 'فشل إضافة النشر' }) + ': ' + error.message);
+        }
+    });
+
     /**
      * Refresh R&D projects cache (Gold Standard Pattern)
      */
@@ -79,6 +148,7 @@ export function useRDProjectMutations() {
         createRDProject,
         updateRDProject,
         deleteRDProject,
+        approveMilestone,
         refreshRDProjects  // ✅ Gold Standard
     };
 }

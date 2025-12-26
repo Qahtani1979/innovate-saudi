@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-// CV extraction uses local AI via invokeAI hook
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,8 +15,8 @@ import { useAuth } from '@/lib/AuthContext';
 import { createPageUrl } from '@/utils';
 import FileUploader from '../FileUploader';
 import { useAutoRoleAssignment } from '@/hooks/useAutoRoleAssignment';
-import { 
-  CheckCircle2, ArrowRight, ArrowLeft, Sparkles, 
+import {
+  CheckCircle2, ArrowRight, ArrowLeft, Sparkles,
   Building2, Lightbulb, FlaskConical, Users, Eye,
   Rocket, Target, BookOpen, X, Loader2,
   User, Briefcase, GraduationCap, Wand2, RefreshCw,
@@ -25,37 +24,19 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import { 
-  buildTranslationPrompt, 
-  TRANSLATION_SCHEMA, 
-  buildLinkedInImportPrompt, 
+import {
+  buildTranslationPrompt,
+  TRANSLATION_SCHEMA,
+  buildLinkedInImportPrompt,
   LINKEDIN_IMPORT_SCHEMA,
   buildProfileSuggestionsPrompt,
   PROFILE_SUGGESTIONS_SCHEMA
 } from '@/lib/ai/prompts/onboarding';
+import { useSectors } from '@/hooks/useSectors';
+import { useRegions, useCities as useRegionCities } from '@/hooks/useRegions';
+import { useOnboardingMutations } from '@/hooks/useOnboardingMutations';
 
-// Send welcome email via trigger hub
-const sendWelcomeEmail = async (userId, userEmail, userName, persona, language) => {
-  try {
-    const { data, error } = await supabase.functions.invoke('email-trigger-hub', {
-      body: { 
-        trigger: 'auth.signup',
-        recipient_email: userEmail,
-        recipient_user_id: userId,
-        variables: { 
-          userName, 
-          persona, 
-          language,
-          loginUrl: `${window.location.origin}/auth`
-        }
-      }
-    });
-    if (error) console.warn('Welcome email failed:', error);
-    else console.log('Welcome email sent:', data);
-  } catch (err) {
-    console.warn('Failed to send welcome email:', err);
-  }
-};
+// Email logic moved to mutation
 
 // Send role request notification via unified rbac-manager
 const sendRoleRequestNotification = async (type, requestData) => {
@@ -180,7 +161,7 @@ const AIDisclaimer = ({ language }) => (
   <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
     <Bot className="h-4 w-4 mt-0.5 flex-shrink-0" />
     <span>
-      {language === 'ar' 
+      {language === 'ar'
         ? 'يتم إنشاء هذا المحتوى بواسطة الذكاء الاصطناعي ويجب مراجعته للتأكد من دقته.'
         : 'This content is AI-generated and should be reviewed for accuracy.'}
     </span>
@@ -192,7 +173,7 @@ const ApprovalNotice = ({ language, roleName }) => (
   <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
     <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
     <span>
-      {language === 'ar' 
+      {language === 'ar'
         ? `سيتطلب دور "${roleName}" موافقة المسؤول. ستتلقى إشعاراً بالبريد الإلكتروني عند المراجعة.`
         : `The "${roleName}" role requires admin approval. You'll receive an email notification once reviewed.`}
     </span>
@@ -202,56 +183,68 @@ const ApprovalNotice = ({ language, roleName }) => (
 export default function OnboardingWizard({ onComplete, onSkip }) {
   const { language, isRTL, t, toggleLanguage } = useLanguage();
   const { user, userProfile, checkAuth, userRoles } = useAuth();
-  const queryClient = useQueryClient();
+
   const navigate = useNavigate();
   const { checkAndAssignRole, assignRole } = useAutoRoleAssignment();
-  
+  const { upsertProfile, sendOnboardingEmail } = useOnboardingMutations();
+
   const { invokeAI, status: aiStatus, isLoading: isGeneratingAI, isAvailable, rateLimitInfo } = useAIWithFallback();
-  
-  // Fetch sectors from database for dynamic expertise areas
-  const { data: sectors = [] } = useQuery({
-    queryKey: ['sectors-active'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('sectors')
-        .select('id, name_en, name_ar, code, icon')
-        .eq('is_active', true)
-        .order('name_en');
-      if (error) throw error;
-      return data || [];
-    },
-    staleTime: 1000 * 60 * 30,
-  });
 
-  // Fetch regions from database
-  const { data: regions = [] } = useQuery({
-    queryKey: ['regions-active'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('regions')
-        .select('id, name_en, name_ar, code')
-        .eq('is_active', true)
-        .order('name_en');
-      if (error) throw error;
-      return data || [];
-    },
-    staleTime: 1000 * 60 * 30,
-  });
 
-  // Fetch cities from database
-  const { data: cities = [] } = useQuery({
-    queryKey: ['cities-active'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('cities')
-        .select('id, name_en, name_ar, region_id')
-        .eq('is_active', true)
-        .order('name_en');
-      if (error) throw error;
-      return data || [];
-    },
-    staleTime: 1000 * 60 * 30,
-  });
+
+
+  // Fetch sectors
+  const { data: sectors = [] } = useSectors();
+
+  // Fetch regions
+  const { data: regions = [] } = useRegions();
+
+  // Fetch cities based on selected region
+  const selectedRegionId = React.useMemo(() => {
+    // Current form data region id
+    // We access formData later, but hooks must be top level.
+    // We can just fetch all or rely on the fact that useRegionCities re-fetches when regionId changes.
+    // However, hooks cannot conditionalize on state inside `useQuery` easily if we pass variable.
+    // Let's defer formData usage or just assume we use the hook with parameters.
+    return null; // Initial state, will update when we pass regionId dynamically if hook supported it.
+    // Actually useRegionCities takes options.
+  }, []);
+
+  // We need current region ID state for the hook if we want to filter at hook level
+  // But formData is defined BELOW. 
+  // Custom hooks should arguably be at the top.
+  // I will move formData definition UP or use a separate state variable for regionId that syncs with formData.
+  // OR simpler: useRegionCities({ regionId: formData.region_id }) calls.
+  // But formData is state.
+
+  // Let's keep formData here and assume I can pass variables to hook.
+  // But wait, the hook call must be valid.
+  // I can't access `formData` before it's defined.
+
+  // I'll define hooks after formData or use default props. 
+  // React Hooks must be top level. `formData` is state. 
+  // So I can declare hooks, but I need to pass `formData.region_id` to `useRegionCities`.
+  // This means I MUST declare `formData` BEFORE calling `useRegionCities`.
+
+  // BUT the original code defined state first, then queries. 
+  // Let's modify the order in this chunk if needed, or just replace the queries section.
+  // Currently file line 257 defines `currentStep` and `formData`.
+  // I should remove the queries here and put them AFTER formData definition?
+  // No, queries were BEFORE `formData` in original code (lines 212-254).
+  // But `formData` (line 265) was used in `filteredCities` (line 311).
+  // The original `cities` query (lines 242-253) fetched ALL active cities (no filter in query).
+  // Then `filteredCities` (line 311) filtered them in memory.
+
+  // So I should fetch ALL cities if I want to maintain behavior, OR fetch by region if I want optimization.
+  // useRegionCities supports `regionId` filter. If `regionId` is undefined, does it fetch all?
+  // Looking at useRegions.js: `if (regionId) query = query.eq...`
+  // So if no regionId, it fetches all limited by limit (200).
+  // The original component fetched all active cities.
+  // I'll use `useRegionCities({ limit: 1000 })` to fetch all and let client filter, 
+  // OR even better, use the hook efficiently.
+
+  // I'll stick to fetching all for now to minimize refactoring risk of moving state.
+  const { data: cities = [] } = useRegionCities({ limit: 1000 });
 
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -261,7 +254,7 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
   const [aiSuggestions, setAiSuggestions] = useState(null);
   const [customExpertise, setCustomExpertise] = useState('');
   const [isValidatingCustomExpertise, setIsValidatingCustomExpertise] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     // Bilingual fields
     full_name_en: '',
@@ -303,12 +296,12 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
     // Avatar
     avatar_url: ''
   });
-  
+
   const [isTranslating, setIsTranslating] = useState({});
   const [validationErrors, setValidationErrors] = useState({});
 
   // Filter cities based on selected region
-  const filteredCities = formData.region_id 
+  const filteredCities = formData.region_id
     ? cities.filter(city => city.region_id === formData.region_id)
     : cities;
 
@@ -364,7 +357,7 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
 
   const handleFieldChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    
+
     // Validate on change for specific fields
     if (['national_id', 'mobile_number', 'date_of_birth', 'linkedin_url'].includes(field)) {
       const error = validateField(field, value);
@@ -382,12 +375,12 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
   useEffect(() => {
     if (userProfile || user) {
       const profileLang = userProfile?.preferred_language;
-      
+
       // Sync language context with stored profile preference
       if (profileLang && profileLang !== language) {
         toggleLanguage();
       }
-      
+
       setFormData(prev => ({
         ...prev,
         full_name_en: userProfile?.full_name_en || userProfile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || '',
@@ -428,18 +421,18 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
   // Auto-translate function
   const autoTranslate = async (field, sourceText, sourceLang) => {
     if (!sourceText?.trim()) return;
-    
+
     const targetLang = sourceLang === 'en' ? 'ar' : 'en';
     const targetField = field.replace(`_${sourceLang}`, `_${targetLang}`);
-    
+
     setIsTranslating(prev => ({ ...prev, [targetField]: true }));
-    
+
     try {
       const result = await invokeAI({
         prompt: buildTranslationPrompt(sourceText, sourceLang),
         response_json_schema: TRANSLATION_SCHEMA
       });
-      
+
       if (result.success && result.data?.translation) {
         setFormData(prev => ({ ...prev, [targetField]: result.data.translation }));
         toast.success(t({ en: 'Translation complete', ar: 'اكتملت الترجمة' }));
@@ -554,13 +547,13 @@ Note: This is a file URL reference. Please analyze what information can be infer
           }
         }
       });
-      
+
       const extracted = result.success ? { status: 'success', output: result.data } : { status: 'error' };
 
       if (extracted.status === 'success' && extracted.output) {
         const output = extracted.output;
         const isArabicCV = output.detected_language === 'ar';
-        
+
         setFormData(prev => ({
           ...prev,
           // Bilingual fields - use detected language appropriately
@@ -586,15 +579,15 @@ Note: This is a file URL reference. Please analyze what information can be infer
           location_city: output.location_city || prev.location_city,
           location_region: output.location_region || prev.location_region,
         }));
-        
+
         const missingTranslations = [];
         if (output.full_name_en && !output.full_name_ar) missingTranslations.push('name');
         if (output.job_title_en && !output.job_title_ar) missingTranslations.push('job title');
-        
+
         if (missingTranslations.length > 0) {
-          toast.success(t({ 
-            en: `CV data extracted! Use translate buttons to add ${isArabicCV ? 'English' : 'Arabic'} versions.`, 
-            ar: `تم استخراج البيانات! استخدم أزرار الترجمة لإضافة النسخة ${isArabicCV ? 'الإنجليزية' : 'العربية'}.` 
+          toast.success(t({
+            en: `CV data extracted! Use translate buttons to add ${isArabicCV ? 'English' : 'Arabic'} versions.`,
+            ar: `تم استخراج البيانات! استخدم أزرار الترجمة لإضافة النسخة ${isArabicCV ? 'الإنجليزية' : 'العربية'}.`
           }));
         } else {
           toast.success(t({ en: 'CV data extracted successfully!', ar: 'تم استخراج بيانات السيرة بنجاح!' }));
@@ -631,7 +624,7 @@ Note: This is a file URL reference. Please analyze what information can be infer
           full_name_ar: result.data.full_name_ar || prev.full_name_ar,
           job_title_en: result.data.job_title_en || prev.job_title_en,
           job_title_ar: result.data.job_title_ar || prev.job_title_ar,
-          expertise_areas: result.data.expertise_areas?.length > 0 
+          expertise_areas: result.data.expertise_areas?.length > 0
             ? [...new Set([...prev.expertise_areas, ...result.data.expertise_areas])].slice(0, 5)
             : prev.expertise_areas,
           bio_en: result.data.bio_en || prev.bio_en,
@@ -654,7 +647,7 @@ Note: This is a file URL reference. Please analyze what information can be infer
     const hasBioInput = formData.bio_en || formData.bio_ar;
     const hasCV = !!formData.cv_url;
     const hasLinkedIn = !!formData.linkedin_url;
-    
+
     // Allow AI generation if we have ANY input
     if (!hasNameInput && !hasTitleInput && !hasBioInput && !hasCV && !hasLinkedIn) {
       toast.error(t({ en: 'Please fill in some profile information first', ar: 'يرجى ملء بعض معلومات الملف الشخصي أولاً' }));
@@ -669,7 +662,7 @@ Note: This is a file URL reference. Please analyze what information can be infer
         prompt: buildProfileSuggestionsPrompt(formData, availableSectors),
         response_json_schema: PROFILE_SUGGESTIONS_SCHEMA
       });
-      
+
       if (result.success && result.data) {
         setAiSuggestions(result.data);
         toast.success(t({ en: 'AI suggestions generated! Review and apply them.', ar: 'تم إنشاء الاقتراحات الذكية! راجعها وطبقها.' }));
@@ -683,7 +676,7 @@ Note: This is a file URL reference. Please analyze what information can be infer
   // Apply all AI suggestions at once
   const applyAllAISuggestions = () => {
     if (!aiSuggestions) return;
-    
+
     setFormData(prev => ({
       ...prev,
       // Only apply if current value is empty
@@ -706,7 +699,7 @@ Note: This is a file URL reference. Please analyze what information can be infer
       expertise_areas: aiSuggestions.suggested_expertise || prev.expertise_areas,
       selectedPersona: aiSuggestions.recommended_persona || prev.selectedPersona,
     }));
-    
+
     toast.success(t({ en: 'All suggestions applied!', ar: 'تم تطبيق جميع الاقتراحات!' }));
   };
 
@@ -759,11 +752,11 @@ Note: This is a file URL reference. Please analyze what information can be infer
     }
 
     setIsSubmitting(true);
-    
+
     try {
       // If specialized wizard needed, mark basic onboarding complete but redirect to specialized wizard
       const redirectToSpecialized = needsSpecializedWizard(formData.selectedPersona);
-      
+
       const updatePayload = {
         // Bilingual fields
         full_name: formData.full_name_en || formData.full_name_ar || null,
@@ -822,22 +815,18 @@ Note: This is a file URL reference. Please analyze what information can be infer
 
       console.log('Updating profile with:', updatePayload);
 
-      const { data: updateData, error: updateError } = await supabase
-        .from('user_profiles')
-        .update(updatePayload)
-        .eq('user_id', user.id)
-        .select('*');
-      
-      if (updateError) {
-        console.error('Profile update error:', updateError);
-        throw updateError;
-      }
+      console.log('Updating profile with:', updatePayload);
+
+      const updateData = await upsertProfile.mutateAsync({
+        table: 'user_profiles',
+        data: { user_id: user.id, ...updatePayload }
+      });
 
       console.log('Profile updated successfully:', updateData);
 
       // Handle role assignment based on persona type
       const selectedPersona = formData.selectedPersona;
-      
+
       if (selectedPersona === 'viewer') {
         // Viewer is always auto-approved - assign directly
         await assignRole({
@@ -852,11 +841,13 @@ Note: This is a file URL reference. Please analyze what information can be infer
         const roleResult = await checkAndAssignRole({
           userId: user.id,
           userEmail: user.email,
-          personaType: selectedPersona,
-          justification: `Onboarding completed as ${selectedPersona}`,
+          personaType: formData.persona_type,
+          municipalityId: formData.municipality_id || null, // Pass if available
+          organizationId: formData.organization_id || null, // Pass if available
+          justification: 'Onboarding completed via Wizard',
           language
         });
-        
+
         if (roleResult.autoApproved) {
           toast.success(t({ en: 'Role automatically approved!', ar: 'تمت الموافقة على الدور تلقائياً!' }));
         } else {
@@ -873,17 +864,17 @@ Note: This is a file URL reference. Please analyze what information can be infer
           justification: `Stage 1 onboarding completed, proceeding to ${selectedPersona} setup`,
           language
         });
-        
+
         if (roleResult.autoApproved) {
           console.log(`Role ${selectedPersona} auto-approved in stage 1`);
         } else {
           console.log(`Role request created for ${selectedPersona}, pending stage 2 completion or admin approval`);
         }
       }
-      
+
       // Invalidate queries and refresh auth
-      await queryClient.invalidateQueries(['user-profile']);
-      
+
+
       if (checkAuth) {
         await checkAuth();
       }
@@ -897,6 +888,19 @@ Note: This is a file URL reference. Please analyze what information can be infer
           navigate(createPageUrl(specializedPage));
         }, 300);
       } else {
+        // Send welcome email
+        sendOnboardingEmail.mutate({ // Fire and forget
+          trigger: 'auth.signup',
+          email: user.email,
+          recipient_user_id: user.id,
+          variables: {
+            userName: formData.full_name_en || user.email.split('@')[0],
+            persona: formData.selectedPersona,
+            language,
+            loginUrl: `${window.location.origin}/auth`
+          }
+        });
+
         toast.success(t({ en: 'Welcome aboard! Your profile is set up.', ar: 'مرحباً بك! تم إعداد ملفك الشخصي.' }));
         const landingPage = getLandingPage();
         console.log('Navigating to:', landingPage);
@@ -905,7 +909,7 @@ Note: This is a file URL reference. Please analyze what information can be infer
           navigate(createPageUrl(landingPage));
         }, 300);
       }
-      
+
     } catch (error) {
       console.error('Onboarding error:', error);
       toast.error(t({ en: 'Failed to save profile. Please try again.', ar: 'فشل في حفظ الملف الشخصي. يرجى المحاولة مرة أخرى.' }));
@@ -918,9 +922,9 @@ Note: This is a file URL reference. Please analyze what information can be infer
     // Skip just dismisses the onboarding for this session
     // It does NOT mark onboarding_completed as true
     // User will see onboarding again on next login until they complete it
-    
+
     onSkip?.();
-    
+
     // Only navigate if we're on the dedicated onboarding page
     const isOnOnboardingPage = window.location.pathname.toLowerCase().includes('/onboarding');
     if (isOnOnboardingPage) {
@@ -965,7 +969,7 @@ Note: This is a file URL reference. Please analyze what information can be infer
     <div className="fixed inset-0 bg-gradient-to-br from-purple-900/95 via-slate-900/95 to-blue-900/95 backdrop-blur-sm z-50 overflow-y-auto" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="min-h-screen py-8 px-4">
         <div className="max-w-3xl mx-auto space-y-6">
-          
+
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="text-white">
@@ -979,8 +983,8 @@ Note: This is a file URL reference. Please analyze what information can be infer
             </div>
             <div className="flex items-center gap-2">
               {/* Language Toggle */}
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={toggleLanguage}
                 className="text-white/70 hover:text-white hover:bg-white/10 font-medium"
@@ -988,8 +992,8 @@ Note: This is a file URL reference. Please analyze what information can be infer
                 <Globe className="h-4 w-4 mr-1" />
                 {language === 'en' ? 'عربي' : 'English'}
               </Button>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={handleSkip}
                 disabled={isSubmitting}
@@ -1009,10 +1013,10 @@ Note: This is a file URL reference. Please analyze what information can be infer
                   const StepIcon = step.icon;
                   const isActive = currentStep === step.id;
                   const isComplete = currentStep > step.id;
-                  
+
                   return (
                     <React.Fragment key={step.id}>
-                      <Badge 
+                      <Badge
                         className={`
                           px-3 py-2 text-sm transition-all cursor-default border-0
                           ${isActive ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg scale-105' : ''}
@@ -1048,7 +1052,7 @@ Note: This is a file URL reference. Please analyze what information can be infer
                     {t({ en: 'Welcome to Saudi Innovates!', ar: 'مرحباً في الابتكار السعودي!' })}
                   </h2>
                   <p className="text-muted-foreground max-w-xl mx-auto text-lg">
-                    {t({ 
+                    {t({
                       en: "Let's personalize your experience with AI-powered suggestions. Upload your CV or LinkedIn for smart profile building.",
                       ar: 'دعنا نخصص تجربتك باستخدام الاقتراحات الذكية. ارفع سيرتك الذاتية أو LinkedIn لبناء ملف ذكي.'
                     })}
@@ -1189,7 +1193,7 @@ Note: This is a file URL reference. Please analyze what information can be infer
                   {t({ en: 'Your Profile', ar: 'ملفك الشخصي' })}
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  {formData.cv_url || formData.linkedin_url 
+                  {formData.cv_url || formData.linkedin_url
                     ? t({ en: 'Review and edit the imported data. Fields are bilingual.', ar: 'راجع وحرر البيانات المستوردة. الحقول ثنائية اللغة.' })
                     : t({ en: 'Tell us about yourself in both languages', ar: 'أخبرنا عن نفسك باللغتين' })
                   }
@@ -1215,13 +1219,14 @@ Note: This is a file URL reference. Please analyze what information can be infer
                       {t({ en: 'Optional - Add a profile picture', ar: 'اختياري - أضف صورة شخصية' })}
                     </p>
                     <FileUploader
-                      onUpload={(url) => setFormData({ ...formData, avatar_url: url })}
+                      onUploadComplete={(url) => setFormData({ ...formData, avatar_url: url })}
+                      description={t({ en: 'Upload a professional profile picture', ar: 'ارفع صورة شخصية مهنية' })}
                       accept="image/*"
                       bucket="avatars"
                       trigger={
                         <Button type="button" variant="outline" size="sm">
                           <Upload className="h-4 w-4 mr-2" />
-                          {formData.avatar_url 
+                          {formData.avatar_url
                             ? t({ en: 'Change Photo', ar: 'تغيير الصورة' })
                             : t({ en: 'Upload Photo', ar: 'رفع صورة' })
                           }
@@ -1282,7 +1287,7 @@ Note: This is a file URL reference. Please analyze what information can be infer
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Job Title - Bilingual */}
                 <div className="space-y-2">
                   <Label>{t({ en: 'Job Title', ar: 'المسمى الوظيفي' })}</Label>
@@ -1377,7 +1382,7 @@ Note: This is a file URL reference. Please analyze what information can be infer
                     />
                   </div>
                 </div>
-                
+
                 {/* Bio - Bilingual */}
                 <div className="space-y-2">
                   <Label>{t({ en: 'Short Bio', ar: 'نبذة قصيرة' })}</Label>
@@ -1433,47 +1438,47 @@ Note: This is a file URL reference. Please analyze what information can be infer
                   <h3 className="font-semibold mb-4 text-blue-900">
                     {t({ en: 'Additional Information (Optional)', ar: 'معلومات إضافية (اختياري)' })}
                   </h3>
-                  
-                {/* Mobile Number with Country Code */}
-                <div className="space-y-2 mb-4">
-                  <Label>{t({ en: 'Mobile Number', ar: 'رقم الجوال' })}</Label>
-                  <div className="flex gap-2">
-                    <select
-                      value={formData.mobile_country_code}
-                      onChange={(e) => handleFieldChange('mobile_country_code', e.target.value)}
-                      className="w-28 h-10 px-2 border border-input rounded-md bg-background text-sm"
-                    >
-                      <option value="+966">🇸🇦 +966</option>
-                      <option value="+971">🇦🇪 +971</option>
-                      <option value="+973">🇧🇭 +973</option>
-                      <option value="+965">🇰🇼 +965</option>
-                      <option value="+968">🇴🇲 +968</option>
-                      <option value="+974">🇶🇦 +974</option>
-                      <option value="+20">🇪🇬 +20</option>
-                      <option value="+962">🇯🇴 +962</option>
-                      <option value="+961">🇱🇧 +961</option>
-                      <option value="+1">🇺🇸 +1</option>
-                      <option value="+44">🇬🇧 +44</option>
-                      <option value="+91">🇮🇳 +91</option>
-                      <option value="+92">🇵🇰 +92</option>
-                      <option value="+63">🇵🇭 +63</option>
-                      <option value="+62">🇮🇩 +62</option>
-                      <option value="+60">🇲🇾 +60</option>
-                    </select>
-                    <Input
-                      value={formData.mobile_number}
-                      onChange={(e) => handleFieldChange('mobile_number', formatMobileNumber(e.target.value))}
-                      placeholder="5XXXXXXXX"
-                      className={`flex-1 ${validationErrors.mobile_number ? 'border-red-500' : ''}`}
-                      maxLength={15}
-                    />
-                  </div>
-                  {validationErrors.mobile_number && (
-                    <p className="text-xs text-red-500">{validationErrors.mobile_number}</p>
-                  )}
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  {/* Mobile Number with Country Code */}
+                  <div className="space-y-2 mb-4">
+                    <Label>{t({ en: 'Mobile Number', ar: 'رقم الجوال' })}</Label>
+                    <div className="flex gap-2">
+                      <select
+                        value={formData.mobile_country_code}
+                        onChange={(e) => handleFieldChange('mobile_country_code', e.target.value)}
+                        className="w-28 h-10 px-2 border border-input rounded-md bg-background text-sm"
+                      >
+                        <option value="+966">🇸🇦 +966</option>
+                        <option value="+971">🇦🇪 +971</option>
+                        <option value="+973">🇧🇭 +973</option>
+                        <option value="+965">🇰🇼 +965</option>
+                        <option value="+968">🇴🇲 +968</option>
+                        <option value="+974">🇶🇦 +974</option>
+                        <option value="+20">🇪🇬 +20</option>
+                        <option value="+962">🇯🇴 +962</option>
+                        <option value="+961">🇱🇧 +961</option>
+                        <option value="+1">🇺🇸 +1</option>
+                        <option value="+44">🇬🇧 +44</option>
+                        <option value="+91">🇮🇳 +91</option>
+                        <option value="+92">🇵🇰 +92</option>
+                        <option value="+63">🇵🇭 +63</option>
+                        <option value="+62">🇮🇩 +62</option>
+                        <option value="+60">🇲🇾 +60</option>
+                      </select>
+                      <Input
+                        value={formData.mobile_number}
+                        onChange={(e) => handleFieldChange('mobile_number', formatMobileNumber(e.target.value))}
+                        placeholder="5XXXXXXXX"
+                        className={`flex-1 ${validationErrors.mobile_number ? 'border-red-500' : ''}`}
+                        maxLength={15}
+                      />
+                    </div>
+                    {validationErrors.mobile_number && (
+                      <p className="text-xs text-red-500">{validationErrors.mobile_number}</p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div className="space-y-2">
                       <Label>{t({ en: 'National ID / Iqama', ar: 'الهوية الوطنية / الإقامة' })}</Label>
                       <Input
@@ -1548,8 +1553,8 @@ Note: This is a file URL reference. Please analyze what information can be infer
                         onChange={(e) => {
                           const regionId = e.target.value;
                           const selectedRegion = regions?.find(r => r.id === regionId);
-                          setFormData({ 
-                            ...formData, 
+                          setFormData({
+                            ...formData,
                             region_id: regionId,
                             location_region: selectedRegion ? (language === 'ar' ? selectedRegion.name_ar : selectedRegion.name_en) : '',
                             city_id: '', // Reset city when region changes
@@ -1574,8 +1579,8 @@ Note: This is a file URL reference. Please analyze what information can be infer
                         onChange={(e) => {
                           const cityId = e.target.value;
                           const selectedCity = cities?.find(c => c.id === cityId);
-                          setFormData({ 
-                            ...formData, 
+                          setFormData({
+                            ...formData,
                             city_id: cityId,
                             location_city: selectedCity ? (language === 'ar' ? selectedCity.name_ar : selectedCity.name_en) : ''
                           });
@@ -1647,7 +1652,7 @@ Note: This is a file URL reference. Please analyze what information can be infer
               <CardContent className="space-y-5">
                 {/* AI Disclaimer */}
                 <AIDisclaimer language={language} />
-                
+
                 {!aiSuggestions && (
                   <div className="text-center py-8">
                     <div className="mb-6">
@@ -1675,7 +1680,7 @@ Note: This is a file URL reference. Please analyze what information can be infer
                   <div className="space-y-4">
                     {/* Apply All Button */}
                     <div className="flex justify-end">
-                      <Button 
+                      <Button
                         onClick={applyAllAISuggestions}
                         className="bg-gradient-to-r from-purple-600 to-pink-600"
                       >
@@ -1734,13 +1739,13 @@ Note: This is a file URL reference. Please analyze what information can be infer
                         </div>
                       </div>
                     )}
-                    
+
                     {/* Improved Bio */}
                     <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-sm font-semibold text-purple-800">{t({ en: 'Suggested Bio', ar: 'السيرة المقترحة' })}</p>
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           variant="outline"
                           onClick={() => applyAISuggestion('bio', language === 'ar' ? aiSuggestions.improved_bio_ar : aiSuggestions.improved_bio_en)}
                           className="text-xs"
@@ -1758,8 +1763,8 @@ Note: This is a file URL reference. Please analyze what information can be infer
                     <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-sm font-semibold text-blue-800">{t({ en: 'Recommended Role', ar: 'الدور الموصى به' })}</p>
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           variant="outline"
                           onClick={() => applyAISuggestion('persona', aiSuggestions.recommended_persona)}
                           className="text-xs"
@@ -1780,8 +1785,8 @@ Note: This is a file URL reference. Please analyze what information can be infer
                     <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-sm font-semibold text-green-800">{t({ en: 'Suggested Expertise', ar: 'الخبرات المقترحة' })}</p>
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           variant="outline"
                           onClick={() => applyAISuggestion('expertise', aiSuggestions.suggested_expertise)}
                           className="text-xs"
@@ -1844,15 +1849,15 @@ Note: This is a file URL reference. Please analyze what information can be infer
                   {PERSONAS.map((persona) => {
                     const Icon = persona.icon;
                     const isSelected = formData.selectedPersona === persona.id;
-                    
+
                     return (
                       <div
                         key={persona.id}
                         onClick={() => setFormData({ ...formData, selectedPersona: persona.id })}
                         className={`
                           p-4 rounded-xl border-2 cursor-pointer transition-all
-                          ${isSelected 
-                            ? `${persona.borderColor} ${persona.bgColor} ring-2 ring-offset-2 ring-purple-400` 
+                          ${isSelected
+                            ? `${persona.borderColor} ${persona.bgColor} ring-2 ring-offset-2 ring-purple-400`
                             : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                           }
                         `}
@@ -1872,7 +1877,7 @@ Note: This is a file URL reference. Please analyze what information can be infer
                   })}
                 </div>
 
-          {/* Expertise Selection - Dynamic from Database */}
+                {/* Expertise Selection - Dynamic from Database */}
                 <div className="pt-4 border-t">
                   <Label className="text-base font-medium mb-3 block">
                     {t({ en: 'Select Your Expertise Areas', ar: 'اختر مجالات خبرتك' })}
@@ -1940,12 +1945,12 @@ Note: This is a file URL reference. Please analyze what information can be infer
                     {t({ en: "You're All Set!", ar: 'أنت جاهز!' })}
                   </h2>
                   <p className="text-muted-foreground max-w-md mx-auto">
-                    {t({ 
+                    {t({
                       en: "Your profile is ready. Let's explore innovation opportunities!",
                       ar: 'ملفك الشخصي جاهز. دعنا نستكشف فرص الابتكار!'
                     })}
                   </p>
-                  
+
                   {/* Profile Summary */}
                   <div className="p-4 bg-white rounded-lg border text-left max-w-md mx-auto">
                     <h3 className="font-semibold mb-3">{t({ en: 'Your Profile Summary', ar: 'ملخص ملفك' })}</h3>
@@ -1989,7 +1994,7 @@ Note: This is a file URL reference. Please analyze what information can be infer
                       {(formData.cv_url || formData.linkedin_url) && (
                         <p className="text-green-600 flex items-center gap-1 mt-2">
                           <CheckCircle2 className="h-4 w-4" />
-                          {t({ en: 'Profile imported from', ar: 'تم استيراد الملف من' })} 
+                          {t({ en: 'Profile imported from', ar: 'تم استيراد الملف من' })}
                           {formData.cv_url && ' CV'}
                           {formData.cv_url && formData.linkedin_url && ' & '}
                           {formData.linkedin_url && ' LinkedIn'}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useRDCallsWithVisibility } from '@/hooks/useRDCallsWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,10 +10,10 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { 
-  buildFirstActionPrompt, 
-  FIRST_ACTION_SYSTEM_PROMPT, 
-  FIRST_ACTION_SCHEMA 
+import {
+  buildFirstActionPrompt,
+  FIRST_ACTION_SYSTEM_PROMPT,
+  FIRST_ACTION_SCHEMA
 } from '@/lib/ai/prompts/onboarding/firstAction';
 
 export default function FirstActionRecommender({ user }) {
@@ -25,43 +25,21 @@ export default function FirstActionRecommender({ user }) {
     fallbackData: null
   });
 
-  // Fetch open challenges for recommendations
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-open-first-action'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('id, title_en, title_ar, status, created_at')
-        .eq('status', 'approved')
-        .eq('is_deleted', false)
-        .eq('is_published', true)
-        .order('created_at', { ascending: false })
-        .limit(5);
-      if (error) throw error;
-      return data || [];
-    },
-    initialData: []
+  // Fetch approved/published challenges
+  const { data: challenges = [] } = useChallengesWithVisibility({
+    status: 'approved',
+    limit: 5,
+    publishedOnly: true
   });
 
-  // Fetch R&D calls for recommendations
-  const { data: rdCalls = [] } = useQuery({
-    queryKey: ['rd-calls-open-first-action'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_calls')
-        .select('id, title_en, title_ar, status, created_at')
-        .eq('status', 'published')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false })
-        .limit(3);
-      if (error) throw error;
-      return data || [];
-    },
-    initialData: []
+  // Fetch published R&D calls
+  const { data: rdCalls = [] } = useRDCallsWithVisibility({
+    status: 'published',
+    limit: 5
   });
 
   const userRole = user?.role || 'citizen';
-  
+
   const getRecommendations = async () => {
     const { success, data } = await invokeAI({
       system_prompt: FIRST_ACTION_SYSTEM_PROMPT,
@@ -118,7 +96,7 @@ export default function FirstActionRecommender({ user }) {
   };
 
   const quickActions = roleBasedQuickActions[userRole] || roleBasedQuickActions.citizen || [];
-  
+
   // Helper to safely create page URLs
   const safePageUrl = (page) => page ? createPageUrl(page) : '/citizen-dashboard';
 
@@ -132,7 +110,7 @@ export default function FirstActionRecommender({ user }) {
       </CardHeader>
       <CardContent className="pt-6 space-y-4">
         <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
-        
+
         {!recommendations ? (
           <div>
             <div className="text-center py-6 mb-4">

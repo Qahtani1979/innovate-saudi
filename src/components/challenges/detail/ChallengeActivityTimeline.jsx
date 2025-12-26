@@ -1,23 +1,19 @@
-/**
- * Challenge Activity Timeline
- * Implements: dc-3 (activity history shown)
- */
-
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useLanguage } from '@/components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  Clock, Edit, Eye, MessageSquare, UserPlus, 
+import {
+  Clock, Edit, Eye, MessageSquare, UserPlus,
   CheckCircle, XCircle, Send, Archive, Star,
   FileUp, Link, AlertTriangle, RefreshCw
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { useChallengeActivities } from '@/hooks/useChallengeActivities';
+import { useAuditLogs } from '@/hooks/useAuditLogs';
+import { useComments } from '@/hooks/useComments';
 
 // Activity type configurations
 const ACTIVITY_TYPES = {
@@ -41,19 +37,19 @@ const ACTIVITY_TYPES = {
 function ActivityItem({ activity, language }) {
   const config = ACTIVITY_TYPES[activity.activity_type] || ACTIVITY_TYPES.updated;
   const Icon = config.icon;
-  
+
   const timeAgo = formatDistanceToNow(new Date(activity.created_at), {
     addSuffix: true,
     locale: language === 'ar' ? ar : undefined
   });
-  
+
   const fullDate = format(new Date(activity.created_at), 'PPpp', {
     locale: language === 'ar' ? ar : undefined
   });
-  
+
   // Parse metadata for additional context
   const metadata = activity.metadata || {};
-  
+
   return (
     <div className="flex gap-4 py-4 border-b last:border-0">
       {/* Icon */}
@@ -62,7 +58,7 @@ function ActivityItem({ activity, language }) {
           <Icon className="h-4 w-4" />
         </div>
       </div>
-      
+
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
@@ -80,12 +76,12 @@ function ActivityItem({ activity, language }) {
             {timeAgo}
           </Badge>
         </div>
-        
+
         {/* User info */}
         <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
           <span>{activity.user_email || (language === 'ar' ? 'نظام' : 'System')}</span>
         </div>
-        
+
         {/* Metadata details */}
         {metadata.old_status && metadata.new_status && (
           <div className="flex items-center gap-2 mt-2">
@@ -98,7 +94,7 @@ function ActivityItem({ activity, language }) {
             </Badge>
           </div>
         )}
-        
+
         {metadata.change_type && (
           <div className="text-xs text-muted-foreground mt-1">
             {metadata.change_type === 'ownership_transfer' && (
@@ -120,67 +116,29 @@ function ActivityItem({ activity, language }) {
 
 export function ChallengeActivityTimeline({ challengeId }) {
   const { language } = useLanguage();
-  
+
   // Fetch activities from challenge_activities table
-  const { data: activities, isLoading: activitiesLoading } = useQuery({
-    queryKey: ['challenge-activities', challengeId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenge_activities')
-        .select('*')
-        .eq('challenge_id', challengeId)
-        .order('created_at', { ascending: false })
-        .limit(50);
-      
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!challengeId
+  const { data: activities, isLoading: activitiesLoading } = useChallengeActivities({
+    challengeId,
+    limit: 50
   });
-  
+
   // Fetch audit logs for this challenge
-  const { data: auditLogs, isLoading: auditLoading } = useQuery({
-    queryKey: ['challenge-audit-logs', challengeId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('access_logs')
-        .select('*')
-        .eq('entity_type', 'challenge')
-        .eq('entity_id', challengeId)
-        .order('created_at', { ascending: false })
-        .limit(50);
-      
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!challengeId
+  const { data: auditLogs, isLoading: auditLoading } = useAuditLogs({
+    entityType: 'challenge',
+    entityId: challengeId,
+    limit: 50
   });
-  
+
   // Fetch comments
-  const { data: comments, isLoading: commentsLoading } = useQuery({
-    queryKey: ['challenge-comments', challengeId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('comments')
-        .select('*')
-        .eq('entity_type', 'challenge')
-        .eq('entity_id', challengeId)
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false })
-        .limit(20);
-      
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!challengeId
-  });
-  
+  const { data: comments, isLoading: commentsLoading } = useComments('challenge', challengeId);
+
   const isLoading = activitiesLoading || auditLoading || commentsLoading;
-  
+
   // Merge and sort all activities
   const allActivities = React.useMemo(() => {
     const merged = [];
-    
+
     // Add challenge activities
     activities?.forEach(a => {
       merged.push({
@@ -192,18 +150,18 @@ export function ChallengeActivityTimeline({ challengeId }) {
         metadata: a.metadata
       });
     });
-    
+
     // Add audit logs (convert to activity format)
     auditLogs?.forEach(log => {
       const activityType = log.action === 'permission_change' ? 'permission_change' :
-                          log.action === 'update' ? 'updated' :
-                          log.action === 'create' ? 'created' :
-                          log.action === 'delete' ? 'archived' : 'updated';
-      
+        log.action === 'update' ? 'updated' :
+          log.action === 'create' ? 'created' :
+            log.action === 'delete' ? 'archived' : 'updated';
+
       merged.push({
         id: `audit-${log.id}`,
         activity_type: activityType,
-        description: log.metadata?.changes ? 
+        description: log.metadata?.changes ?
           Object.keys(log.metadata.changes).join(', ') + ' updated' : null,
         user_email: log.user_email,
         created_at: log.created_at,
@@ -214,7 +172,7 @@ export function ChallengeActivityTimeline({ challengeId }) {
         }
       });
     });
-    
+
     // Add comments
     comments?.forEach(c => {
       merged.push({
@@ -226,13 +184,13 @@ export function ChallengeActivityTimeline({ challengeId }) {
         metadata: { comment_id: c.id }
       });
     });
-    
+
     // Sort by date descending
-    return merged.sort((a, b) => 
+    return merged.sort((a, b) =>
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
   }, [activities, auditLogs, comments]);
-  
+
   if (isLoading) {
     return (
       <Card>
@@ -256,7 +214,7 @@ export function ChallengeActivityTimeline({ challengeId }) {
       </Card>
     );
   }
-  
+
   return (
     <Card>
       <CardHeader>
@@ -277,9 +235,9 @@ export function ChallengeActivityTimeline({ challengeId }) {
           <ScrollArea className="h-[400px] pr-4">
             <div className="space-y-1">
               {allActivities.map(activity => (
-                <ActivityItem 
-                  key={activity.id} 
-                  activity={activity} 
+                <ActivityItem
+                  key={activity.id}
+                  activity={activity}
                   language={language}
                 />
               ))}

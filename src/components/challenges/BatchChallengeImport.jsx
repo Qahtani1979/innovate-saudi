@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,15 +7,16 @@ import { Upload, FileText, CheckCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useImportChallenges } from '@/hooks/useChallengeMutations';
+import { useSupabaseFileUpload } from '@/hooks/useSupabaseFileUpload';
 
 export default function BatchChallengeImport() {
   const { language, t } = useLanguage();
-  // queryClient removed as it's not used directly anymore (hook handles invalidation)
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [processing, setProcessing] = useState(false);
 
   const importMutation = useImportChallenges();
+  const { upload } = useSupabaseFileUpload();
 
   // Wrapper to match previous behavior of clearing state on success
   const handleImport = () => {
@@ -36,21 +36,16 @@ export default function BatchChallengeImport() {
     setProcessing(true);
 
     try {
-      // Upload file to storage (Keep direct storage call for now, or move to a storage hook? 
-      // Storage calls are often bespoke. We'll leave it but arguably it should be useStorage)
-      // The instruction is to remove supabase.from, which refers to DB. Storage is supabase.storage.
-      // We will leave the storage call for now as it's separate from component layer DB access standardization.
-      const fileName = `imports/${Date.now()}-${selectedFile.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from('uploads')
-        .upload(fileName, selectedFile);
-      if (uploadError) throw uploadError;
+      // Use the Gold Standard hook for file uploads
+      await upload({
+        file: selectedFile,
+        bucket: 'uploads'
+      });
 
       // For now, show a placeholder - real parsing would use an edge function
       toast.info(t({ en: 'File uploaded. Manual parsing needed for now.', ar: 'تم تحميل الملف. يلزم التحليل اليدوي حاليًا.' }));
       setProcessing(false);
     } catch (error) {
-      toast.error(t({ en: 'File processing failed', ar: 'فشلت معالجة الملف' }));
       setProcessing(false);
     }
   };

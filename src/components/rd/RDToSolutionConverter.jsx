@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '../LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,10 +10,11 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { RD_SOLUTION_CONVERTER_SYSTEM_PROMPT, buildRDSolutionConverterPrompt, RD_SOLUTION_CONVERTER_SCHEMA } from '@/lib/ai/prompts/rd';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useRDConversionMutations } from '@/hooks/useRDConversionMutations';
 
 export default function RDToSolutionConverter({ rdProject, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  const { transitionToSolution } = useRDConversionMutations();
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [solutionData, setSolutionData] = useState({
     name_en: rdProject.title_en || '',
@@ -60,54 +59,21 @@ export default function RDToSolutionConverter({ rdProject, onClose, onSuccess })
     }
   };
 
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: solution, error: solutionError } = await supabase
-        .from('solutions')
-        .insert(data)
-        .select()
-        .single();
-      if (solutionError) throw solutionError;
-      
-      const { error: updateError } = await supabase
-        .from('rd_projects')
-        .update({
-          commercialization_notes: `Commercialized as Solution ${solution.id}`,
-          commercialization_solution_id: solution.id
-        })
-        .eq('id', rdProject.id);
-      if (updateError) console.error('Update error:', updateError);
+  // useMutation block removed
 
-      await supabase
-        .from('system_activities')
-        .insert({
-          activity_type: 'rd_commercialized',
-          entity_type: 'rd_project',
-          entity_id: rdProject.id,
-          description_en: `R&D project commercialized as Solution: ${solution.name_en}`,
-          metadata: { solution_id: solution.id }
-        });
-
-      return solution;
-    },
-    onSuccess: (solution) => {
-      queryClient.invalidateQueries({ queryKey: ['rd-projects'] });
-      queryClient.invalidateQueries({ queryKey: ['solutions'] });
-      toast.success(t({ en: 'Solution created successfully!', ar: 'تم إنشاء الحل بنجاح!' }));
-      onSuccess?.(solution);
-      onClose?.();
-    },
-    onError: (error) => {
-      toast.error(t({ en: 'Failed to create solution', ar: 'فشل إنشاء الحل' }));
-    }
-  });
-
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!solutionData.name_en || !solutionData.provider_name) {
       toast.error(t({ en: 'Name and provider required', ar: 'الاسم والمزود مطلوبان' }));
       return;
     }
-    createMutation.mutate(solutionData);
+
+    try {
+      const solution = await transitionToSolution.mutateAsync({ solutionData, rdProject });
+      onSuccess?.(solution);
+      onClose?.();
+    } catch (error) {
+      // Error handled by hook
+    }
   };
 
   return (
@@ -131,7 +97,7 @@ export default function RDToSolutionConverter({ rdProject, onClose, onSuccess })
                 {t({ en: 'TRL Warning', ar: 'تحذير مستوى النضج' })}
               </p>
               <p className="text-xs text-amber-700 mt-1">
-                {t({ 
+                {t({
                   en: `Current TRL is ${rdProject.trl_current}. Recommended TRL ≥ 7 for commercialization.`,
                   ar: `مستوى النضج الحالي ${rdProject.trl_current}. الموصى به ≥ 7 للتسويق.`
                 })}
@@ -269,10 +235,10 @@ export default function RDToSolutionConverter({ rdProject, onClose, onSuccess })
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={createMutation.isPending}
+            disabled={transitionToSolution.isPending}
             className="bg-gradient-to-r from-green-600 to-blue-600"
           >
-            {createMutation.isPending ? (
+            {transitionToSolution.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 {t({ en: 'Creating...', ar: 'جاري الإنشاء...' })}

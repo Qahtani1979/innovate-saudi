@@ -1,32 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle, TrendingUp, BarChart3, Lightbulb, TestTube, Users } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useChallengeMetrics } from '@/hooks/useChallengeMetrics';
 
 export default function ChallengeMetrics({ challenge, t }) {
-    const { data: solutionsCount = 0 } = useQuery({
-        queryKey: ['challenge-solutions-count', challenge.id],
-        queryFn: async () => {
-            const { count } = await supabase
-                .from('solutions')
-                .select('*', { count: 'exact', head: true })
-                .eq('challenge_id', challenge.id)
-                .eq('is_deleted', false); // assuming logical delete
-            return count || 0;
-        }
-    });
-
-    const { data: pilotsCount = 0 } = useQuery({
-        queryKey: ['challenge-pilots-count', challenge.id],
-        queryFn: async () => {
-            const { count } = await supabase
-                .from('pilots')
-                .select('*', { count: 'exact', head: true })
-                .eq('challenge_id', challenge.id)
-                .eq('is_deleted', false);
-            return count || 0;
-        }
-    });
+    const { solutionsCount, pilotsCount } = useChallengeMetrics(challenge.id);
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4">

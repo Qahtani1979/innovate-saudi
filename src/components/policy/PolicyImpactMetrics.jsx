@@ -1,5 +1,5 @@
 
-import { useQuery } from '@tanstack/react-query';
+import { useMunicipalitiesList } from '@/hooks/usePolicies';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -9,10 +9,7 @@ import { TrendingUp, Users, Building2, CheckCircle2, Clock, Target } from 'lucid
 export default function PolicyImpactMetrics({ policy }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities'],
-    queryFn: () => base44.entities.Municipality.list()
-  });
+  const { data: municipalities = [] } = useMunicipalitiesList();
 
   const adoptedCount = policy.implementation_progress?.municipalities_adopted?.length || 0;
   const totalMunicipalities = municipalities.length || 1;
@@ -86,9 +83,9 @@ export default function PolicyImpactMetrics({ policy }) {
               {policy.success_metrics.map((metric, idx) => (
                 <div key={idx} className="p-3 bg-slate-50 rounded-lg border">
                   <div className="flex items-center justify-between mb-1">
-                   <p className="text-sm font-medium text-slate-900" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                     {language === 'ar' && metric.metric_ar ? metric.metric_ar : metric.metric_en}
-                   </p>
+                    <p className="text-sm font-medium text-slate-900" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                      {language === 'ar' && metric.metric_ar ? metric.metric_ar : metric.metric_en}
+                    </p>
                     <Badge variant="outline" className="text-xs">
                       Target: {metric.target} {metric.unit}
                     </Badge>

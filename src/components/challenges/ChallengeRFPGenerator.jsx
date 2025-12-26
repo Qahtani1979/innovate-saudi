@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useChallengeMutations } from '@/hooks/useChallengeMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,20 +9,21 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { getSystemPrompt } from '@/lib/saudiContext';
-import { 
-  buildRFPGeneratorPrompt, 
-  rfpGeneratorSchema, 
-  RFP_GENERATOR_SYSTEM_PROMPT 
+import {
+  buildRFPGeneratorPrompt,
+  rfpGeneratorSchema,
+  RFP_GENERATOR_SYSTEM_PROMPT
 } from '@/lib/ai/prompts/challenges';
 
 export default function ChallengeRFPGenerator({ challenge, onComplete }) {
   const { invokeAI, status, isLoading: isGenerating, rateLimitInfo, isAvailable } = useAIWithFallback();
   const [rfpData, setRfpData] = useState(null);
   const [customRequirements, setCustomRequirements] = useState('');
+  const { updateChallenge } = useChallengeMutations();
 
   const generateRFP = async () => {
     if (!isAvailable) return;
-    
+
     const aiResponse = await invokeAI({
       systemPrompt: getSystemPrompt(RFP_GENERATOR_SYSTEM_PROMPT),
       prompt: buildRFPGeneratorPrompt(challenge, customRequirements),
@@ -36,23 +37,28 @@ export default function ChallengeRFPGenerator({ challenge, onComplete }) {
   };
 
   const publishRFP = async () => {
-    try {
-      const { error } = await supabase
-        .from('challenges')
-        .update({
-          rfp_published: true,
-          rfp_data: rfpData,
-          rfp_published_date: new Date().toISOString(),
-          status: 'rfp_open'
-        })
-        .eq('id', challenge.id);
-      if (error) throw error;
-
-      toast.success('RFP published - providers can now submit proposals');
-      onComplete?.();
-    } catch (error) {
-      toast.error('Publishing failed: ' + error.message);
-    }
+    updateChallenge.mutate({
+      id: challenge.id,
+      data: {
+        rfp_published: true,
+        rfp_data: rfpData,
+        rfp_published_date: new Date().toISOString(),
+        status: 'rfp_open'
+      },
+      activityLog: {
+        activity_type: 'rfp_published',
+        description: 'RFP published for challenge',
+        metadata: { rfp_code: rfpData.rfp_code }
+      }
+    }, {
+      onSuccess: () => {
+        toast.success('RFP published - providers can now submit proposals');
+        onComplete?.();
+      },
+      onError: (error) => {
+        toast.error('Publishing failed: ' + error.message);
+      }
+    });
   };
 
   return (
@@ -65,7 +71,7 @@ export default function ChallengeRFPGenerator({ challenge, onComplete }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
-        
+
         {!rfpData ? (
           <>
             <p className="text-sm text-slate-600">
@@ -85,8 +91,8 @@ export default function ChallengeRFPGenerator({ challenge, onComplete }) {
               />
             </div>
 
-            <Button 
-              onClick={generateRFP} 
+            <Button
+              onClick={generateRFP}
               disabled={isGenerating || !isAvailable}
               className="w-full bg-blue-600"
             >

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,10 +9,10 @@ import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
 import { toast } from 'sonner';
 import { MessageSquare, Calendar, Users, ExternalLink, Loader2, CheckCircle2 } from 'lucide-react';
+import { usePolicyMutations } from '@/hooks/usePolicyMutations';
 
 export default function PolicyPublicConsultationManager({ policy }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [configuring, setConfiguring] = useState(false);
   const [consultationData, setConsultationData] = useState({
     required: true,
@@ -22,52 +21,58 @@ export default function PolicyPublicConsultationManager({ policy }) {
     summary: ''
   });
 
+  const { updatePolicy } = usePolicyMutations();
+
   const consultation = policy.public_consultation || {};
   const hasConsultation = consultation.start_date;
 
-  const startMutation = useMutation({
-    mutationFn: async () => {
-      const startDate = new Date(consultationData.start_date);
-      const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + consultationData.duration_days);
+  const handleStartConsultation = async () => {
+    const startDate = new Date(consultationData.start_date);
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + consultationData.duration_days);
 
-      return await base44.entities.PolicyRecommendation.update(policy.id, {
-        public_consultation: {
-          required: true,
-          start_date: startDate.toISOString().split('T')[0],
-          end_date: endDate.toISOString().split('T')[0],
-          duration_days: consultationData.duration_days,
-          feedback_count: 0,
-          summary: consultationData.summary,
-          public_url: `${window.location.origin}/public/policy-consultation?id=${policy.id}`
-        },
-        workflow_stage: 'public_consultation'
+    try {
+      await updatePolicy.mutateAsync({
+        id: policy.id,
+        data: {
+          public_consultation: {
+            required: true,
+            start_date: startDate.toISOString().split('T')[0],
+            end_date: endDate.toISOString().split('T')[0],
+            duration_days: consultationData.duration_days,
+            feedback_count: 0,
+            summary: consultationData.summary,
+            public_url: `${window.location.origin}/public/policy-consultation?id=${policy.id}`
+          },
+          workflow_stage: 'public_consultation'
+        }
       });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['policy', policy.id]);
       toast.success(t({ en: 'Public consultation started', ar: 'بدأت الاستشارة العامة' }));
       setConfiguring(false);
+    } catch (error) {
+      // Error handled by mutation
     }
-  });
+  };
 
-  const completeMutation = useMutation({
-    mutationFn: async () => {
-      return await base44.entities.PolicyRecommendation.update(policy.id, {
-        public_consultation: {
-          ...consultation,
-          summary: consultationData.summary
-        },
-        workflow_stage: 'council_approval'
+  const handleCompleteConsultation = async () => {
+    try {
+      await updatePolicy.mutateAsync({
+        id: policy.id,
+        data: {
+          public_consultation: {
+            ...consultation,
+            summary: consultationData.summary
+          },
+          workflow_stage: 'council_approval'
+        }
       });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['policy', policy.id]);
       toast.success(t({ en: 'Consultation completed', ar: 'اكتملت الاستشارة' }));
+    } catch (error) {
+      // Error handled by mutation
     }
-  });
+  };
 
-  const daysElapsed = hasConsultation && consultation.start_date 
+  const daysElapsed = hasConsultation && consultation.start_date
     ? Math.floor((new Date() - new Date(consultation.start_date)) / (1000 * 60 * 60 * 24))
     : 0;
 
@@ -137,11 +142,11 @@ export default function PolicyPublicConsultationManager({ policy }) {
 
             <div className="flex gap-2">
               <Button
-                onClick={() => startMutation.mutate()}
-                disabled={!consultationData.start_date || startMutation.isPending}
+                onClick={handleStartConsultation}
+                disabled={!consultationData.start_date || updatePolicy.isPending}
                 className="flex-1 gap-2 bg-purple-600"
               >
-                {startMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                {updatePolicy.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                 {t({ en: 'Start Consultation', ar: 'بدء الاستشارة' })}
               </Button>
               <Button variant="outline" onClick={() => setConfiguring(false)}>
@@ -205,19 +210,19 @@ export default function PolicyPublicConsultationManager({ policy }) {
                     value={consultationData.summary}
                     onChange={(e) => setConsultationData({ ...consultationData, summary: e.target.value })}
                     rows={4}
-                    placeholder={t({ 
-                      en: 'Summarize public feedback and key recommendations...', 
-                      ar: 'لخص التعليقات العامة والتوصيات الرئيسية...' 
+                    placeholder={t({
+                      en: 'Summarize public feedback and key recommendations...',
+                      ar: 'لخص التعليقات العامة والتوصيات الرئيسية...'
                     })}
                     dir={isRTL ? 'rtl' : 'ltr'}
                   />
                 </div>
                 <Button
-                  onClick={() => completeMutation.mutate()}
-                  disabled={completeMutation.isPending}
+                  onClick={handleCompleteConsultation}
+                  disabled={updatePolicy.isPending}
                   className="w-full gap-2 bg-green-600"
                 >
-                  {completeMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {updatePolicy.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                   {t({ en: 'Complete Consultation & Move to Council Approval', ar: 'إنهاء الاستشارة والانتقال لموافقة المجلس' })}
                 </Button>
               </div>

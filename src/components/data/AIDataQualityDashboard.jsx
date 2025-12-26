@@ -1,57 +1,28 @@
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../LanguageContext';
 import { Database, AlertCircle, TrendingUp } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
-import { supabase } from '@/integrations/supabase/client';
+import { useDataQualityMetrics } from '@/hooks/useDataQualityMetrics';
 
 export default function AIDataQualityDashboard() {
   const { language, t } = useLanguage();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('challenges').select('*');
-      if (error) throw error;
-      return data || [];
-    },
-    initialData: []
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('pilots').select('*');
-      if (error) throw error;
-      return data || [];
-    },
-    initialData: []
-  });
-
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('solutions').select('*');
-      if (error) throw error;
-      return data || [];
-    },
-    initialData: []
-  });
+  const { challenges, pilots, solutions } = useDataQualityMetrics();
 
   const calculateCompleteness = (entity, requiredFields, optionalFields) => {
     const allFields = [...requiredFields, ...optionalFields];
     const filledFields = allFields.filter(field => {
       const value = entity[field];
-      return value !== null && value !== undefined && value !== '' && 
-             (!Array.isArray(value) || value.length > 0);
+      return value !== null && value !== undefined && value !== '' &&
+        (!Array.isArray(value) || value.length > 0);
     });
     return Math.round((filledFields.length / allFields.length) * 100);
   };
 
   const challengeRequiredFields = ['title_en', 'municipality_id', 'sector'];
   const challengeOptionalFields = ['description_en', 'root_cause_en', 'kpis', 'stakeholders', 'data_evidence'];
-  
-  const challengeScores = challenges.map(c => 
+
+  const challengeScores = challenges.map(c =>
     calculateCompleteness(c, challengeRequiredFields, challengeOptionalFields)
   );
   const avgChallengeCompleteness = challengeScores.length > 0
@@ -60,8 +31,8 @@ export default function AIDataQualityDashboard() {
 
   const pilotRequiredFields = ['title_en', 'challenge_id', 'municipality_id'];
   const pilotOptionalFields = ['description_en', 'kpis', 'team', 'milestones', 'budget'];
-  
-  const pilotScores = pilots.map(p => 
+
+  const pilotScores = pilots.map(p =>
     calculateCompleteness(p, pilotRequiredFields, pilotOptionalFields)
   );
   const avgPilotCompleteness = pilotScores.length > 0
@@ -70,8 +41,8 @@ export default function AIDataQualityDashboard() {
 
   const solutionRequiredFields = ['name_en', 'provider_name'];
   const solutionOptionalFields = ['description_en', 'features', 'case_studies', 'pricing_details'];
-  
-  const solutionScores = solutions.map(s => 
+
+  const solutionScores = solutions.map(s =>
     calculateCompleteness(s, solutionRequiredFields, solutionOptionalFields)
   );
   const avgSolutionCompleteness = solutionScores.length > 0
@@ -151,9 +122,9 @@ export default function AIDataQualityDashboard() {
                     {t({ en: 'Quality Improvement Needed', ar: 'تحسين الجودة مطلوب' })}
                   </p>
                   <p className="text-xs text-amber-700">
-                    {t({ 
-                      en: 'Some entities are missing important fields. Complete profiles improve matching and insights.', 
-                      ar: 'بعض الكيانات تفتقد حقول مهمة. الملفات الكاملة تحسن المطابقة والرؤى.' 
+                    {t({
+                      en: 'Some entities are missing important fields. Complete profiles improve matching and insights.',
+                      ar: 'بعض الكيانات تفتقد حقول مهمة. الملفات الكاملة تحسن المطابقة والرؤى.'
                     })}
                   </p>
                 </div>

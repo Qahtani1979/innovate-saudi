@@ -1,5 +1,5 @@
 
-import { useQuery } from '@tanstack/react-query';
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,17 +8,12 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Building2, Rocket, Microscope, Target, AlertCircle, TestTube, FileText, Lightbulb } from 'lucide-react';
 
+import { useUserProfile } from '@/hooks/useUserProfiles';
+
 export default function PersonaDashboardWidget({ user }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: userProfile } = useQuery({
-    queryKey: ['user-profile-persona', user?.email],
-    queryFn: async () => {
-      const profiles = await base44.entities.UserProfile.filter({ user_email: user?.email });
-      return profiles[0] || null;
-    },
-    enabled: !!user
-  });
+  const { data: userProfile } = useUserProfile(user?.email);
 
   const isMunicipality = userProfile?.organization_type === 'municipality';
   const isStartup = userProfile?.organization_type === 'startup';

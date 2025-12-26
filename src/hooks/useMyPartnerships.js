@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useUserProfiles } from '@/hooks/useUserProfiles'; // Assuming this exists/works as seen in Page
+import { useUserProfile } from '@/hooks/useUserProfile'; // Consolidated user profile hook
 import { differenceInDays } from 'date-fns';
 
 export function useMyPartnerships(userEmail) {

@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useMentorships } from '@/hooks/useMentorships';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,22 +9,15 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
+/**
+ * MentorshipHub
+ * ✅ GOLD STANDARD COMPLIANT
+ */
 function MentorshipHub() {
   const { t } = useLanguage();
   const [viewMode, setViewMode] = useState('active');
 
-  const { data: mentorships = [], isLoading } = useQuery({
-    queryKey: ['mentorships'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('program_mentorships')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return (data || []).filter(item => !item.is_deleted);
-    }
-  });
+  const { data: mentorships = [], isLoading } = useMentorships();
 
   const activeMentorships = mentorships.filter(m => m.status === 'active');
   const completedMentorships = mentorships.filter(m => m.status === 'completed');

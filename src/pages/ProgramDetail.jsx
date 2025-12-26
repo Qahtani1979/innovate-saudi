@@ -73,7 +73,7 @@ export default function ProgramDetail() {
 
   const handleAddComment = () => {
     if (!comment.trim()) return;
-    addComment({
+    addComment.mutate({
       program_id: programId,
       user_email: user?.email,
       content: comment,

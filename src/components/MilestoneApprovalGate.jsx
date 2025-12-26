@@ -1,55 +1,23 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { Flag, CheckCircle2, XCircle, Loader2, FileText } from 'lucide-react';
-import { toast } from 'sonner';
-import { useAuth } from '@/lib/AuthContext';
+import { useMilestoneApproval } from '@/hooks/useMilestoneGate';
 
 function MilestoneApprovalGate({ pilot, milestone, milestoneIndex, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const [decision, setDecision] = useState('');
   const [comments, setComments] = useState('');
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const { approveMutation } = useMilestoneApproval();
 
-  const approveMutation = useMutation({
-    mutationFn: async (approved) => {
-      const updatedMilestones = [...(pilot.milestones || [])];
-      updatedMilestones[milestoneIndex] = {
-        ...milestone,
-        approval_status: approved ? 'approved' : 'rejected',
-        approved_by: user?.email,
-        approval_date: new Date().toISOString(),
-        approval_comments: comments
-      };
-      
-      const { error } = await supabase.from('pilots').update({
-        milestones: updatedMilestones
-      }).eq('id', pilot.id);
-      if (error) throw error;
-
-      await supabase.from('system_activities').insert({
-        activity_type: 'milestone_approval',
-        entity_type: 'Pilot',
-        entity_id: pilot.id,
-        description: `Milestone "${milestone.name}" ${approved ? 'approved' : 'rejected'}`,
-        metadata: { milestone_index: milestoneIndex, decision: approved ? 'approved' : 'rejected', comments }
-      });
-    },
-    onSuccess: (_, approved) => {
-      queryClient.invalidateQueries(['pilot']);
-      toast.success(t({
-        en: approved ? 'Milestone approved' : 'Milestone rejected',
-        ar: approved ? 'تمت الموافقة على المعلم' : 'تم رفض المعلم'
-      }));
-      if (onClose) onClose();
-    }
-  });
+  const handleDecision = (approved) => {
+    approveMutation.mutate({ pilot, milestone, milestoneIndex, approved, comments }, {
+      onSuccess: () => onClose?.()
+    });
+  };
 
   const requiresApproval = milestone.requires_approval !== false;
 
@@ -87,8 +55,8 @@ function MilestoneApprovalGate({ pilot, milestone, milestoneIndex, onClose }) {
             </div>
             <Badge className={
               milestone.status === 'completed' ? 'bg-green-100 text-green-700' :
-              milestone.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
-              'bg-slate-100 text-slate-700'
+                milestone.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                  'bg-slate-100 text-slate-700'
             }>
               {milestone.status}
             </Badge>
@@ -153,7 +121,7 @@ function MilestoneApprovalGate({ pilot, milestone, milestoneIndex, onClose }) {
             {t({ en: 'Cancel', ar: 'إلغاء' })}
           </Button>
           <Button
-            onClick={() => approveMutation.mutate(false)}
+            onClick={() => handleDecision(false)}
             disabled={approveMutation.isPending}
             className="flex-1 bg-red-600 hover:bg-red-700"
           >
@@ -165,7 +133,7 @@ function MilestoneApprovalGate({ pilot, milestone, milestoneIndex, onClose }) {
             {t({ en: 'Reject', ar: 'رفض' })}
           </Button>
           <Button
-            onClick={() => approveMutation.mutate(true)}
+            onClick={() => handleDecision(true)}
             disabled={approveMutation.isPending}
             className="flex-1 bg-green-600 hover:bg-green-700"
           >

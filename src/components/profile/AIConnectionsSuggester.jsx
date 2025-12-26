@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,8 @@ import { Sparkles, User, Mail, Loader2 } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { buildConnectionsSuggesterPrompt, CONNECTIONS_SUGGESTER_SCHEMA } from '@/lib/ai/prompts/profiles';
+
+import { useAllUserProfiles } from '@/hooks/useUserProfiles';
 
 export default function AIConnectionsSuggester({ currentUser }) {
   const { t, language } = useLanguage();
@@ -31,14 +33,11 @@ export default function AIConnectionsSuggester({ currentUser }) {
     );
   }
 
-  const { data: allUsers = [] } = useQuery({
-    queryKey: ['all-users'],
-    queryFn: () => base44.entities.User.list()
-  });
+  const { data: allUsers = [] } = useAllUserProfiles();
 
   const generateSuggestions = async () => {
     const otherUsers = allUsers.filter(u => u.email !== currentUser.email);
-    
+
     const result = await invokeAI({
       prompt: buildConnectionsSuggesterPrompt(currentUser, otherUsers),
       response_json_schema: CONNECTIONS_SUGGESTER_SCHEMA
@@ -57,7 +56,7 @@ export default function AIConnectionsSuggester({ currentUser }) {
             <Sparkles className="h-5 w-5 text-purple-600" />
             {t({ en: 'AI Connection Suggestions', ar: 'اقتراحات الاتصال الذكية' })}
           </div>
-          <Button 
+          <Button
             onClick={generateSuggestions}
             disabled={isLoading || !isAvailable || !currentUser.skills?.length}
             className="bg-gradient-to-r from-purple-600 to-pink-600"
@@ -111,8 +110,8 @@ export default function AIConnectionsSuggester({ currentUser }) {
                           </div>
                           <Badge className={
                             connection.connection_strength >= 80 ? 'bg-green-600' :
-                            connection.connection_strength >= 60 ? 'bg-blue-600' :
-                            'bg-slate-600'
+                              connection.connection_strength >= 60 ? 'bg-blue-600' :
+                                'bg-slate-600'
                           }>
                             {connection.connection_strength}% match
                           </Badge>

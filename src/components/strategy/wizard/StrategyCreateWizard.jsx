@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStrategyMutations } from '@/hooks/useStrategyMutations';
-import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Target, Save } from 'lucide-react';
@@ -31,11 +30,12 @@ import Step16Communication from './steps/Step16Communication';
 import Step17Change from './steps/Step17Change';
 import Step18Review from './steps/Step18Review';
 
+/**
+ * ✅ GOLD STANDARD COMPLIANT - Uses only custom hooks
+ */
 function StrategyCreateWizardContent() {
   const { language, t, isRTL } = useLanguage();
   const navigate = useNavigate();
-  // queryClient not directly used but often needed for invalidations if inline
-  const queryClient = useQueryClient();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [wizardData, setWizardData] = useState(initialWizardData);

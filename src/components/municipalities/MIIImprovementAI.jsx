@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from '@/lib/supabase';
 import { useLanguage } from '../LanguageContext';
 import { Sparkles, TrendingUp, Target, CheckCircle2, Loader2 } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { useMunicipalAnalysis } from '@/hooks/useMunicipalAnalysis';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import {
   MII_IMPROVEMENT_SYSTEM_PROMPT,
@@ -14,41 +14,15 @@ import {
 } from '@/lib/ai/prompts/municipalities/miiImprovement';
 
 export default function MIIImprovementAI({ municipality }) {
-  const { t, isRTL } = useLanguage();
+  const { t } = useLanguage();
   const [recommendations, setRecommendations] = useState(null);
-  const { invokeAI, status, isLoading: loading, rateLimitInfo, isAvailable } = useAIWithFallback();
+  const { invokeAI, status, isLoading: generating, rateLimitInfo, isAvailable } = useAIWithFallback();
+  const { benchmarks, metrics, isLoading: dataLoading } = useMunicipalAnalysis(municipality?.id);
 
   const generateRecommendations = async () => {
-    if (!isAvailable) return;
+    if (!isAvailable || generating) return;
 
     try {
-      // Fetch challenges for this municipality
-      const { data: challenges = [], error: challengesError } = await supabase
-        .from('challenges')
-        .select('*')
-        .eq('municipality_id', municipality.id);
-
-      if (challengesError) console.error('Challenges fetch error:', challengesError);
-
-      // Fetch pilots for this municipality
-      const { data: pilots = [], error: pilotsError } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('municipality_id', municipality.id);
-
-      if (pilotsError) console.error('Pilots fetch error:', pilotsError);
-
-      // Fetch all municipalities for benchmarking
-      const { data: allMunicipalities = [], error: municipalitiesError } = await supabase
-        .from('municipalities')
-        .select('*');
-
-      if (municipalitiesError) console.error('Municipalities fetch error:', municipalitiesError);
-
-      const nationalAvg = allMunicipalities.length > 0
-        ? (allMunicipalities.reduce((sum, m) => sum + (m.mii_score || 0), 0) / allMunicipalities.length).toFixed(1)
-        : '0';
-
       const result = await invokeAI({
         system_prompt: MII_IMPROVEMENT_SYSTEM_PROMPT,
         prompt: buildMIIImprovementPrompt({
@@ -58,20 +32,19 @@ export default function MIIImprovementAI({ municipality }) {
             population: municipality.population
           },
           metrics: [
-            { category: 'Active Challenges', score: challenges.length, regional_avg: 'N/A' },
+            { category: 'Active Challenges', score: metrics.data?.challengesCount || 0, regional_avg: 'N/A' },
             { category: 'Active Pilots', score: municipality.active_pilots || 0, regional_avg: 'N/A' },
             { category: 'Completed Pilots', score: municipality.completed_pilots || 0, regional_avg: 'N/A' }
           ],
           benchmarks: {
-            total_municipalities: allMunicipalities.length,
-            national_average_mii: nationalAvg
+            total_municipalities: benchmarks.data?.total_municipalities || 0,
+            national_average_mii: benchmarks.data?.national_average_mii || '0'
           }
         }),
         response_json_schema: MII_IMPROVEMENT_SCHEMA
       });
 
       if (result.success && result.data) {
-        // Map response to expected format
         setRecommendations({
           improvement_actions: result.data.strategic_initiatives?.map(s => ({
             action: s.initiative,
@@ -123,8 +96,12 @@ export default function MIIImprovementAI({ municipality }) {
                 })}
               </p>
             </div>
-            <Button onClick={generateRecommendations} disabled={loading || !isAvailable} className="gap-2">
-              {loading ? (
+            <Button
+              onClick={generateRecommendations}
+              disabled={generating || dataLoading || !isAvailable}
+              className="gap-2 bg-purple-600 hover:bg-purple-700"
+            >
+              {(generating || dataLoading) ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
                   {t({ en: 'AI Analyzing...', ar: 'الذكاء يحلل...' })}
@@ -141,7 +118,6 @@ export default function MIIImprovementAI({ municipality }) {
 
         {recommendations && (
           <div className="space-y-4">
-            {/* Improvement Potential */}
             <div className="p-4 bg-gradient-to-br from-green-50 to-white border-2 border-green-300 rounded-lg">
               <div className="flex items-center justify-between mb-2">
                 <p className="font-semibold">{t({ en: 'Improvement Potential', ar: 'إمكانية التحسين' })}</p>
@@ -162,7 +138,6 @@ export default function MIIImprovementAI({ municipality }) {
               </div>
             </div>
 
-            {/* Quick Wins */}
             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
               <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
                 <Target className="h-4 w-4 text-blue-600" />
@@ -178,7 +153,6 @@ export default function MIIImprovementAI({ municipality }) {
               </ul>
             </div>
 
-            {/* Improvement Actions */}
             <div>
               <h4 className="font-semibold text-sm mb-3">{t({ en: 'Prioritized Improvement Actions', ar: 'إجراءات التحسين ذات الأولوية' })}</h4>
               <div className="space-y-2">
@@ -212,7 +186,6 @@ export default function MIIImprovementAI({ municipality }) {
               </div>
             </div>
 
-            {/* Dimension Gaps */}
             <div>
               <h4 className="font-semibold text-sm mb-3">{t({ en: 'Dimension Analysis', ar: 'تحليل الأبعاد' })}</h4>
               <div className="space-y-2">
@@ -227,7 +200,6 @@ export default function MIIImprovementAI({ municipality }) {
               </div>
             </div>
 
-            {/* Benchmark */}
             <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
               <h4 className="font-semibold text-sm mb-2">{t({ en: 'Benchmark Analysis', ar: 'تحليل المقارنة' })}</h4>
               <p className="text-sm text-slate-700">{recommendations.benchmark_insights}</p>

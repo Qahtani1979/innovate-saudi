@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSolutionMutations } from '@/hooks/useSolutionMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,23 +20,9 @@ export default function TRLAssessmentTool({ solution, onAssessmentComplete }) {
   const { t } = useLanguage();
   const [assessment, setAssessment] = useState(null);
   const [evidence, setEvidence] = useState('');
-  const queryClient = useQueryClient();
   const { invokeAI, isLoading: assessing, status, error, rateLimitInfo } = useAIWithFallback();
 
-  const updateSolution = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase
-        .from('solutions')
-        .update(data)
-        .eq('id', solution.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['solution']);
-      toast.success(t({ en: 'TRL updated', ar: 'تم تحديث المستوى' }));
-      onAssessmentComplete?.();
-    }
-  });
+  const { updateSolution } = useSolutionMutations();
 
   const assessTRL = async () => {
     const result = await invokeAI({
@@ -54,19 +39,22 @@ export default function TRLAssessmentTool({ solution, onAssessmentComplete }) {
 
   const saveTRL = () => {
     updateSolution.mutate({
-      trl: assessment.assessed_trl,
-      trl_assessment: {
-        level: assessment.assessed_trl,
-        evidence: assessment.assessment_reasoning,
-        assessed_by: 'AI Assessment Tool',
-        assessed_date: new Date().toISOString(),
-        ai_confidence: assessment.confidence_score
+      id: solution.id,
+      updates: {
+        trl: assessment.assessed_trl,
+        trl_assessment: {
+          level: assessment.assessed_trl,
+          evidence: assessment.assessment_reasoning,
+          assessed_by: 'AI Assessment Tool',
+          assessed_date: new Date().toISOString(),
+          ai_confidence: assessment.confidence_score
+        }
       }
     });
   };
 
   const trlColor = assessment?.assessed_trl >= 7 ? 'green' :
-                   assessment?.assessed_trl >= 4 ? 'blue' : 'amber';
+    assessment?.assessed_trl >= 4 ? 'blue' : 'amber';
 
   return (
     <Card className="border-2 border-purple-200">
@@ -83,7 +71,7 @@ export default function TRLAssessmentTool({ solution, onAssessmentComplete }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
-        
+
         <div>
           <label className="text-sm font-medium text-slate-700 mb-2 block">
             {t({ en: 'Additional Evidence (optional)', ar: 'أدلة إضافية' })}
@@ -91,9 +79,9 @@ export default function TRLAssessmentTool({ solution, onAssessmentComplete }) {
           <Textarea
             value={evidence}
             onChange={(e) => setEvidence(e.target.value)}
-            placeholder={t({ 
-              en: 'Provide deployment evidence, test results, validation data...', 
-              ar: 'قدم أدلة النشر، نتائج الاختبار، بيانات التحقق...' 
+            placeholder={t({
+              en: 'Provide deployment evidence, test results, validation data...',
+              ar: 'قدم أدلة النشر، نتائج الاختبار، بيانات التحقق...'
             })}
             rows={3}
             className="text-sm"
@@ -138,8 +126,8 @@ export default function TRLAssessmentTool({ solution, onAssessmentComplete }) {
                   <Progress value={(assessment.assessed_trl / 9) * 100} className="h-3" />
                   <p className="text-xs text-slate-600 mt-1">
                     {assessment.readiness_for_pilot === 'ready' ? '✅ Ready for pilot' :
-                     assessment.readiness_for_pilot === 'nearly_ready' ? '⚠️ Nearly ready' :
-                     '❌ Not ready yet'}
+                      assessment.readiness_for_pilot === 'nearly_ready' ? '⚠️ Nearly ready' :
+                        '❌ Not ready yet'}
                   </p>
                 </div>
               </div>

@@ -1,17 +1,14 @@
 
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
 import { MapPin, CheckCircle2, Clock, Loader2 } from 'lucide-react';
+import { useMunicipalitiesList } from '@/hooks/usePolicies';
 
 export default function PolicyAdoptionMap({ policy }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: municipalities = [], isLoading } = useQuery({
-    queryKey: ['municipalities'],
-    queryFn: () => base44.entities.Municipality.list()
-  });
+  const { data: municipalities = [], isLoading } = useMunicipalitiesList();
 
   if (isLoading) {
     return (
@@ -26,8 +23,8 @@ export default function PolicyAdoptionMap({ policy }) {
   const adoptedIds = policy.implementation_progress?.municipalities_adopted || [];
   const adoptedMunicipalities = municipalities.filter(m => adoptedIds.includes(m.id));
   const pendingMunicipalities = municipalities.filter(m => !adoptedIds.includes(m.id));
-  
-  const adoptionRate = municipalities.length > 0 
+
+  const adoptionRate = municipalities.length > 0
     ? (adoptedIds.length / municipalities.length * 100).toFixed(0)
     : 0;
 
@@ -68,7 +65,7 @@ export default function PolicyAdoptionMap({ policy }) {
                 <div key={m.id} className="p-2 bg-green-50 border border-green-200 rounded flex items-center gap-2">
                   <CheckCircle2 className="h-3 w-3 text-green-600 flex-shrink-0" />
                   <span className="text-xs text-slate-900" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                   {language === 'ar' && m.name_ar ? m.name_ar : m.name_en}
+                    {language === 'ar' && m.name_ar ? m.name_ar : m.name_en}
                   </span>
                 </div>
               ))}
@@ -90,7 +87,7 @@ export default function PolicyAdoptionMap({ policy }) {
                 <div key={m.id} className="p-2 bg-slate-50 border border-slate-200 rounded flex items-center gap-2">
                   <Clock className="h-3 w-3 text-slate-400 flex-shrink-0" />
                   <span className="text-xs text-slate-700" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                   {language === 'ar' && m.name_ar ? m.name_ar : m.name_en}
+                    {language === 'ar' && m.name_ar ? m.name_ar : m.name_en}
                   </span>
                 </div>
               ))}

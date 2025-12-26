@@ -1,63 +1,14 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Clock, UserPlus } from 'lucide-react';
-import { toast } from 'sonner';
+import { useWaitlist } from '@/hooks/useWaitlist';
 
 export default function WaitlistManager({ programId }) {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
-
-  const { data: waitlistApps = [] } = useQuery({
-    queryKey: ['waitlist-applications', programId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('program_applications')
-        .select('*')
-        .eq('program_id', programId)
-        .eq('status', 'waitlisted')
-        .order('ai_score', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!programId
-  });
-
-  const promoteMutation = useMutation({
-    mutationFn: async (appId) => {
-      const app = waitlistApps.find(a => a.id === appId);
-      
-      const { error } = await supabase
-        .from('program_applications')
-        .update({
-          status: 'accepted',
-          waitlist_promoted_date: new Date().toISOString()
-        })
-        .eq('id', appId);
-      if (error) throw error;
-
-      await supabase.functions.invoke('email-trigger-hub', {
-        body: {
-          trigger: 'program.application_status',
-          recipient_email: app.applicant_email,
-          entity_type: 'program',
-          entity_id: programId,
-          variables: {
-            userName: app.applicant_name,
-            status: 'waitlist_promoted'
-          }
-        }
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['waitlist-applications']);
-      queryClient.invalidateQueries(['program-applications']);
-      toast.success(t({ en: 'Participant promoted from waitlist', ar: 'تمت ترقية المشارك من قائمة الانتظار' }));
-    }
-  });
+  const { waitlist: waitlistApps, promoteToParticipant } = useWaitlist(programId);
 
   return (
     <Card>
@@ -87,8 +38,8 @@ export default function WaitlistManager({ programId }) {
                 </div>
                 <Button
                   size="sm"
-                  onClick={() => promoteMutation.mutate(app.id)}
-                  disabled={promoteMutation.isPending}
+                  onClick={() => promoteToParticipant.mutate(app.id)}
+                  disabled={promoteToParticipant.isPending}
                 >
                   <UserPlus className="h-4 w-4 mr-1" />
                   {t({ en: 'Promote', ar: 'ترقية' })}

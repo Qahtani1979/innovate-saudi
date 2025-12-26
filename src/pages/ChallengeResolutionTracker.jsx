@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useChallengeResolutionTracker } from '@/hooks/useChallengeResolutionTracker';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,23 +29,7 @@ function ChallengeResolutionTracker() {
   const [statusFilter, setStatusFilter] = useState('all');
 
   // Fetch challenges with resolution data
-  const { data: challenges = [], isLoading } = useQuery({
-    queryKey: ['resolution-tracker-challenges'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select(`
-          *,
-          municipality:municipalities(id, name_en, name_ar),
-          sector:sectors(id, name_en, name_ar)
-        `)
-        .eq('is_deleted', false)
-        .in('status', ['approved', 'in_treatment', 'resolved', 'archived'])
-        .order('updated_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: challenges = [], isLoading } = useChallengeResolutionTracker();
 
   // Calculate resolution metrics
   const metrics = useMemo(() => {
@@ -55,14 +38,14 @@ function ChallengeResolutionTracker() {
     const resolved = challenges.filter(c => c.status === 'resolved').length;
     const archived = challenges.filter(c => c.status === 'archived').length;
     const total = challenges.length;
-    
+
     const withPilots = challenges.filter(c => c.linked_pilot_ids?.length > 0).length;
     const withRD = challenges.filter(c => c.linked_rd_ids?.length > 0).length;
     const quickFix = challenges.filter(c => c.tracks?.includes('quick_fix')).length;
-    
+
     const resolutionRate = total > 0 ? Math.round(((resolved + archived) / total) * 100) : 0;
     const avgDaysToResolve = resolved > 0 ? 45 : 0; // Would calculate from actual dates
-    
+
     return {
       approved,
       inTreatment,
@@ -107,6 +90,9 @@ function ChallengeResolutionTracker() {
         icon={Target}
         title={{ en: 'Challenge Resolution Tracker', ar: 'متتبع حل التحديات' }}
         description={{ en: 'Track challenge resolution progress and outcomes', ar: 'تتبع تقدم حل التحديات والنتائج' }}
+        subtitle=""
+        action={null}
+        actions={null}
       />
 
       <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -265,12 +251,12 @@ function ChallengeResolutionTracker() {
                         <p className="text-sm text-muted-foreground mt-1">
                           {challenge.municipality?.[language === 'ar' ? 'name_ar' : 'name_en']} • {challenge.sector?.[language === 'ar' ? 'name_ar' : 'name_en']}
                         </p>
-                        {challenge.treatment_plan && (
+                        {challenge.treatment_plan && typeof challenge.treatment_plan === 'object' && !Array.isArray(challenge.treatment_plan) && (
                           <div className="mt-2">
                             <div className="flex items-center gap-2 text-sm">
                               <span className="text-muted-foreground">{t({ en: 'Progress:', ar: 'التقدم:' })}</span>
-                              <Progress value={challenge.treatment_plan?.progress || 0} className="flex-1 h-2" />
-                              <span>{challenge.treatment_plan?.progress || 0}%</span>
+                              <Progress value={(challenge.treatment_plan as any).progress || 0} className="flex-1 h-2" />
+                              <span>{(challenge.treatment_plan as any).progress || 0}%</span>
                             </div>
                           </div>
                         )}

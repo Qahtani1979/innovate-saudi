@@ -12,14 +12,13 @@ import { useToast } from '@/hooks/use-toast';
 import { useEnvironmentalFactors } from '@/hooks/strategy/useEnvironmentalFactors';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { ENVIRONMENTAL_SCAN_SYSTEM_PROMPT, buildEnvironmentalScanPrompt, ENVIRONMENTAL_SCAN_SCHEMA } from '@/lib/ai/prompts/strategy/preplanning';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { 
-  Globe, 
-  Plus, 
-  Trash2, 
-  Edit2, 
-  Save, 
+import { useGlobalTrends, usePolicyDocuments } from '@/hooks/strategy/useStrategyTrends';
+import {
+  Globe,
+  Plus,
+  Trash2,
+  Edit2,
+  Save,
   Download,
   TrendingUp,
   TrendingDown,
@@ -39,16 +38,16 @@ const EnvironmentalScanWidget = ({ strategicPlanId, onSave }) => {
   const { t, isRTL } = useLanguage();
   const { toast } = useToast();
   const { invokeAI, isLoading: aiLoading } = useAIWithFallback();
-  
+
   // Database integration hook
-  const { 
-    factors: dbFactors, 
-    loading: dbLoading, 
-    saving: dbSaving, 
+  const {
+    factors: dbFactors,
+    loading: dbLoading,
+    saving: dbSaving,
     saveFactor: saveToDb,
-    deleteFactor: deleteFromDb 
+    deleteFactor: deleteFromDb
   } = useEnvironmentalFactors(strategicPlanId);
-  
+
   const pestleCategories = [
     { id: 'political', label: { en: 'Political', ar: 'سياسي' }, icon: Building2, color: 'bg-red-500' },
     { id: 'economic', label: { en: 'Economic', ar: 'اقتصادي' }, icon: DollarSign, color: 'bg-green-500' },
@@ -74,34 +73,10 @@ const EnvironmentalScanWidget = ({ strategicPlanId, onSave }) => {
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Fetch global trends for AI context
-  const { data: globalTrends = [] } = useQuery({
-    queryKey: ['global-trends-for-scan'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('global_trends')
-        .select('id, trend_name_en, trend_name_ar, category, impact_level, description_en')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(20);
-      if (error) return [];
-      return data || [];
-    }
-  });
+  const { data: globalTrends = [] } = useGlobalTrends(20);
 
   // Fetch policy documents for legal/political factors
-  const { data: policyDocs = [] } = useQuery({
-    queryKey: ['policy-docs-for-scan'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('policy_documents')
-        .select('id, title_en, policy_type, status')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false })
-        .limit(10);
-      if (error) return [];
-      return data || [];
-    }
-  });
+  const { data: policyDocs = [] } = usePolicyDocuments(10);
 
   const [formData, setFormData] = useState({
     category: 'political',
@@ -169,7 +144,7 @@ const EnvironmentalScanWidget = ({ strategicPlanId, onSave }) => {
 
   const handleAIGenerate = async () => {
     setIsGenerating(true);
-    
+
     try {
       const result = await invokeAI({
         system_prompt: ENVIRONMENTAL_SCAN_SYSTEM_PROMPT,
@@ -179,7 +154,7 @@ const EnvironmentalScanWidget = ({ strategicPlanId, onSave }) => {
 
       if (result.success && result.data?.factors) {
         const aiFactors = result.data.factors;
-        
+
         // Save each factor to database
         for (const factor of aiFactors) {
           const newFactor = {
@@ -195,13 +170,13 @@ const EnvironmentalScanWidget = ({ strategicPlanId, onSave }) => {
             source: 'AI Analysis',
             date_identified: new Date().toISOString().split('T')[0]
           };
-          
+
           const saved = await saveToDb(newFactor);
           if (saved) {
             setFactors(prev => [...prev, saved]);
           }
         }
-        
+
         toast({
           title: t({ en: 'AI Analysis Complete', ar: 'اكتمل تحليل الذكاء الاصطناعي' }),
           description: t({ en: `${aiFactors.length} environmental factors identified across all PESTLE categories.`, ar: `تم تحديد ${aiFactors.length} عوامل بيئية عبر جميع فئات PESTLE.` })
@@ -227,7 +202,7 @@ const EnvironmentalScanWidget = ({ strategicPlanId, onSave }) => {
 
   const filteredFactors = factors.filter(f => {
     const matchesCategory = selectedCategory === 'all' || f.category === selectedCategory;
-    const matchesSearch = searchTerm === '' || 
+    const matchesSearch = searchTerm === '' ||
       f.title_en.toLowerCase().includes(searchTerm.toLowerCase()) ||
       f.title_ar.includes(searchTerm);
     return matchesCategory && matchesSearch;
@@ -253,14 +228,14 @@ const EnvironmentalScanWidget = ({ strategicPlanId, onSave }) => {
         byCategory: getCategoryStats()
       }
     };
-    
+
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `environmental-scan-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
-    
+
     toast({
       title: t({ en: 'Export Complete', ar: 'اكتمل التصدير' }),
       description: t({ en: 'Environmental scan exported.', ar: 'تم تصدير المسح البيئي.' })
@@ -279,7 +254,7 @@ const EnvironmentalScanWidget = ({ strategicPlanId, onSave }) => {
                 {t({ en: 'Environmental Scan (PESTLE)', ar: 'المسح البيئي (PESTLE)' })}
               </CardTitle>
               <CardDescription>
-                {t({ 
+                {t({
                   en: 'Analyze Political, Economic, Social, Technological, Legal, and Environmental factors',
                   ar: 'تحليل العوامل السياسية والاقتصادية والاجتماعية والتقنية والقانونية والبيئية'
                 })}
@@ -308,8 +283,8 @@ const EnvironmentalScanWidget = ({ strategicPlanId, onSave }) => {
         {getCategoryStats().map(cat => {
           const Icon = cat.icon;
           return (
-            <Card 
-              key={cat.id} 
+            <Card
+              key={cat.id}
               className={`cursor-pointer transition-all ${selectedCategory === cat.id ? 'ring-2 ring-primary' : ''}`}
               onClick={() => setSelectedCategory(selectedCategory === cat.id ? 'all' : cat.id)}
             >
@@ -357,7 +332,7 @@ const EnvironmentalScanWidget = ({ strategicPlanId, onSave }) => {
         {filteredFactors.map(factor => {
           const category = pestleCategories.find(c => c.id === factor.category);
           const Icon = category?.icon || Globe;
-          
+
           return (
             <Card key={factor.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-4">
@@ -365,7 +340,7 @@ const EnvironmentalScanWidget = ({ strategicPlanId, onSave }) => {
                   <div className={`w-10 h-10 rounded-full ${category?.color || 'bg-gray-500'} flex items-center justify-center flex-shrink-0`}>
                     <Icon className="h-5 w-5 text-white" />
                   </div>
-                  
+
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <h4 className="font-medium">{isRTL ? factor.title_ar : factor.title_en}</h4>
@@ -378,8 +353,8 @@ const EnvironmentalScanWidget = ({ strategicPlanId, onSave }) => {
                       </Badge>
                       <Badge variant="outline">
                         {factor.impact_level === 'high' ? t({ en: 'High Impact', ar: 'تأثير عالي' }) :
-                         factor.impact_level === 'medium' ? t({ en: 'Medium Impact', ar: 'تأثير متوسط' }) :
-                         t({ en: 'Low Impact', ar: 'تأثير منخفض' })}
+                          factor.impact_level === 'medium' ? t({ en: 'Medium Impact', ar: 'تأثير متوسط' }) :
+                            t({ en: 'Low Impact', ar: 'تأثير منخفض' })}
                       </Badge>
                       {factor.trend === 'increasing' && <TrendingUp className="h-4 w-4 text-green-500" />}
                       {factor.trend === 'decreasing' && <TrendingDown className="h-4 w-4 text-red-500" />}
@@ -392,7 +367,7 @@ const EnvironmentalScanWidget = ({ strategicPlanId, onSave }) => {
                       <span>{t({ en: 'Identified:', ar: 'تاريخ التحديد:' })} {factor.date_identified}</span>
                     </div>
                   </div>
-                  
+
                   <div className="flex gap-1">
                     <Button variant="ghost" size="icon" onClick={() => handleEditFactor(factor)}>
                       <Edit2 className="h-4 w-4" />
@@ -413,13 +388,13 @@ const EnvironmentalScanWidget = ({ strategicPlanId, onSave }) => {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {editingFactor 
+              {editingFactor
                 ? t({ en: 'Edit Environmental Factor', ar: 'تعديل العامل البيئي' })
                 : t({ en: 'Add Environmental Factor', ar: 'إضافة عامل بيئي' })
               }
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -448,7 +423,7 @@ const EnvironmentalScanWidget = ({ strategicPlanId, onSave }) => {
                 </Select>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t({ en: 'Title (English)', ar: 'العنوان (إنجليزي)' })}</Label>
@@ -466,7 +441,7 @@ const EnvironmentalScanWidget = ({ strategicPlanId, onSave }) => {
                 />
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <Label>{t({ en: 'Description (English)', ar: 'الوصف (إنجليزي)' })}</Label>
               <Textarea
@@ -475,7 +450,7 @@ const EnvironmentalScanWidget = ({ strategicPlanId, onSave }) => {
                 rows={2}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label>{t({ en: 'Description (Arabic)', ar: 'الوصف (عربي)' })}</Label>
               <Textarea
@@ -485,7 +460,7 @@ const EnvironmentalScanWidget = ({ strategicPlanId, onSave }) => {
                 rows={2}
               />
             </div>
-            
+
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>{t({ en: 'Impact Level', ar: 'مستوى التأثير' })}</Label>
@@ -522,7 +497,7 @@ const EnvironmentalScanWidget = ({ strategicPlanId, onSave }) => {
               </div>
             </div>
           </div>
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               {t({ en: 'Cancel', ar: 'إلغاء' })}

@@ -6,52 +6,38 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Users, Save, Plus, Trash2, Target, AlertTriangle, CheckCircle } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
 import { toast } from 'sonner';
 
 /**
  * ApprovalMatrixEditor - Updated with Strategic Approval Chains
- * Gap Fix: Phase 4 specifies strategic approval chains but this component didn't implement them
- * 
- * Per Integration Matrix F.8:
- * "Gate 1: initial_review, Gate 2: budget_approval, Gate 3: legal_review, Gate 4: executive_approval"
+ * Enhancement: Strategic approval chains per Phase 4 specification
+ * ✅ GOLD STANDARD COMPLIANT
  */
 export default function ApprovalMatrixEditor() {
   const { language, isRTL, t } = useLanguage();
-  
-  // Fetch strategic plans for strategic approval chains
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans-approval-matrix'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('strategic_plans')
-        .select('id, name_en, name_ar, status')
-        .or('is_template.is.null,is_template.eq.false')
-        .or('is_deleted.is.null,is_deleted.eq.false')
-        .order('name_en');
-      return data || [];
-    }
-  });
+
+  // Fetch strategic plans for strategic approval chains using Gold Standard hook
+  const { data: strategicPlans = [] } = useStrategiesWithVisibility();
 
   const [matrix, setMatrix] = useState([
-    { 
-      role: 'Municipality Admin', 
-      threshold: 100000, 
+    {
+      role: 'Municipality Admin',
+      threshold: 100000,
       sequential: false,
       strategic_priority: 'normal',
       strategy_derived_priority: false
     },
-    { 
-      role: 'Program Director', 
-      threshold: 500000, 
+    {
+      role: 'Program Director',
+      threshold: 500000,
       sequential: true,
       strategic_priority: 'high',
       strategy_derived_priority: true
     },
-    { 
-      role: 'Executive', 
-      threshold: 1000000, 
+    {
+      role: 'Executive',
+      threshold: 1000000,
       sequential: true,
       strategic_priority: 'critical',
       strategy_derived_priority: true
@@ -104,9 +90,9 @@ export default function ApprovalMatrixEditor() {
   ];
 
   const addRule = () => {
-    setMatrix([...matrix, { 
-      role: '', 
-      threshold: 0, 
+    setMatrix([...matrix, {
+      role: '',
+      threshold: 0,
       sequential: false,
       strategic_priority: 'normal',
       strategy_derived_priority: false
@@ -143,9 +129,9 @@ export default function ApprovalMatrixEditor() {
             {t({ en: 'Approval Matrix Editor', ar: 'محرر مصفوفة الموافقات' })}
           </CardTitle>
           <CardDescription>
-            {t({ 
-              en: 'Configure approval thresholds with strategic priority escalation', 
-              ar: 'تكوين عتبات الموافقة مع تصعيد الأولوية الاستراتيجية' 
+            {t({
+              en: 'Configure approval thresholds with strategic priority escalation',
+              ar: 'تكوين عتبات الموافقة مع تصعيد الأولوية الاستراتيجية'
             })}
           </CardDescription>
         </CardHeader>
@@ -249,9 +235,9 @@ export default function ApprovalMatrixEditor() {
                   <div className="mt-2 flex items-center gap-2 p-2 bg-amber-50 rounded border border-amber-200">
                     <AlertTriangle className="h-4 w-4 text-amber-600" />
                     <span className="text-xs text-amber-700">
-                      {t({ 
-                        en: 'Strategy-derived entities will trigger priority escalation in approval workflow', 
-                        ar: 'الكيانات المشتقة استراتيجيًا ستؤدي إلى تصعيد الأولوية في سير الموافقة' 
+                      {t({
+                        en: 'Strategy-derived entities will trigger priority escalation in approval workflow',
+                        ar: 'الكيانات المشتقة استراتيجيًا ستؤدي إلى تصعيد الأولوية في سير الموافقة'
                       })}
                     </span>
                   </div>
@@ -277,9 +263,9 @@ export default function ApprovalMatrixEditor() {
                 {t({ en: 'Strategic Approval Chains', ar: 'سلاسل الموافقة الاستراتيجية' })}
               </CardTitle>
               <CardDescription>
-                {t({ 
-                  en: 'Gate-based approval workflow for strategy-derived entities (Phase 4)', 
-                  ar: 'سير عمل الموافقة المبني على البوابات للكيانات المشتقة استراتيجيًا (المرحلة 4)' 
+                {t({
+                  en: 'Gate-based approval workflow for strategy-derived entities (Phase 4)',
+                  ar: 'سير عمل الموافقة المبني على البوابات للكيانات المشتقة استراتيجيًا (المرحلة 4)'
                 })}
               </CardDescription>
             </div>

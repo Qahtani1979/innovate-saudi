@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-export function useRDProposal(id) {
+export function useRDProposal(id, options = {}) {
     const queryClient = useQueryClient();
 
     const query = useQuery({
@@ -17,7 +17,8 @@ export function useRDProposal(id) {
             if (error) throw error;
             return data;
         },
-        enabled: !!id
+        enabled: !!id,
+        ...options
     });
 
     const updateMutation = useMutation({

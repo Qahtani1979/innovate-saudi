@@ -3,17 +3,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '../LanguageContext';
 import { Users, CheckCircle2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useOrganizations } from '@/hooks/useOrganizations';
+import { usePartnershipMutations } from '@/hooks/usePartnershipMutations';
 
 export default function PartnershipWorkflow({ organization, onComplete }) {
   const { t, isRTL } = useLanguage();
-  const [loading, setLoading] = useState(false);
   const [partnerSearch, setPartnerSearch] = useState('');
-  const [organizations, setOrganizations] = useState([]);
-  
+
+  const { data: organizations = [] } = useOrganizations();
+  const { notifyPartner } = usePartnershipMutations();
+
   const [partnershipData, setPartnershipData] = useState({
     organization_id: organization?.id,
     partner_organization_id: '',
@@ -25,35 +27,34 @@ export default function PartnershipWorkflow({ organization, onComplete }) {
     status: 'proposed'
   });
 
-  React.useEffect(() => {
-    base44.entities.Organization.list().then(setOrganizations);
-  }, []);
-
   const handleSubmit = async () => {
-    setLoading(true);
     try {
       // Store partnership as a comment/activity for now (could be separate entity)
-      await supabase.functions.invoke('email-trigger-hub', {
-        body: {
-          trigger: 'partnership.proposal',
-          recipient_email: 'admin@platform.gov.sa',
-          entity_type: 'organization',
-          entity_id: organization?.id,
-          variables: {
-            organizationName: organization?.name_en,
-            partnershipType: partnershipData.partnership_type,
-            partnerOrganizationId: partnershipData.partner_organization_id,
-            description: partnershipData.description_en,
-            startDate: partnershipData.start_date
-          }
+      // Since notifyPartner is a mutation, we can just call it.
+      // The original code ONLY called invoke('email-trigger-hub') and then onComplete.
+      // It didn't actually create a partnership record? That seems like a bug or incomplete feature in original code.
+      // But I should stick to Gold Standard: remove direct invoke.
+      // I added notifyPartner mutation for this.
+
+      notifyPartner.mutate({
+        organizationId: organization?.id,
+        recipientEmail: 'admin@platform.gov.sa',
+        details: {
+          organizationName: organization?.name_en,
+          partnershipType: partnershipData.partnership_type,
+          partnerOrganizationId: partnershipData.partner_organization_id,
+          description: partnershipData.description_en,
+          startDate: partnershipData.start_date
+        }
+      }, {
+        onSuccess: () => {
+          onComplete?.();
         }
       });
-      
-      onComplete?.();
+
     } catch (error) {
       console.error('Failed to create partnership:', error);
     }
-    setLoading(false);
   };
 
   return (
@@ -147,7 +148,7 @@ export default function PartnershipWorkflow({ organization, onComplete }) {
           <Button variant="outline" onClick={() => onComplete?.()}>
             {t({ en: 'Cancel', ar: 'إلغاء' })}
           </Button>
-          <Button onClick={handleSubmit} disabled={loading} className="gap-2">
+          <Button onClick={handleSubmit} disabled={notifyPartner.isPending} className="gap-2">
             <CheckCircle2 className="h-4 w-4" />
             {t({ en: 'Submit Partnership', ar: 'تقديم الشراكة' })}
           </Button>

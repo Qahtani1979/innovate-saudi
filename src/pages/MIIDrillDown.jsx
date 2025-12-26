@@ -1,9 +1,5 @@
 ﻿import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query'; // Keep useQueryClient if used elsewhere, or remove if unused. It IS used in MIIDrillDown for manual invalidation but now hook handles it.
-// Actually `queryClient` is used in line 23. But I removed manual invalidation.
-// Let's check line 23 usage. `const queryClient = useQueryClient();`.
-// If I remove manual invalidation, I might not need it unless used elsewhere.
-// But I'll leave the import for now to avoid breaking if used elsewhere (it's not used elsewhere in my view).
+
 // I will remove `supabase` import.
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +23,7 @@ import { toast } from 'sonner';
 
 export default function MIIDrillDown() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+
   const [isRecalculating, setIsRecalculating] = useState(false);
   const urlParams = new URLSearchParams(window.location.search);
   const urlMunicipalityId = urlParams.get('id');

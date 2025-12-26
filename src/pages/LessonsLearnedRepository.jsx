@@ -13,6 +13,7 @@ import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { usePermissions } from '@/components/permissions/usePermissions';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useLessonsLearned } from '@/hooks/useLessonsLearned';
 
 function LessonsLearnedRepository() {
   const { language, isRTL, t } = useLanguage();

@@ -1,30 +1,20 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, Loader2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../LanguageContext';
-import { supabase } from '@/lib/supabase';
+import { useCitizenIdeas } from '@/hooks/useCitizenIdeas';
 
 export default function ExportIdeasData() {
   const { t } = useLanguage();
   const [format, setFormat] = useState('csv');
   const [exporting, setExporting] = useState(false);
 
-  const { data: ideas = [] } = useQuery({
-    queryKey: ['citizen-ideas-export'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('citizen_ideas')
-        .select('*')
-        .order('created_date', { ascending: false })
-        .limit(1000);
-
-      if (error) throw error;
-      return data;
-    }
+  const { ideas: ideasQuery } = useCitizenIdeas({
+    limit: 1000
   });
+  const ideas = ideasQuery.data || [];
 
   const handleExport = async () => {
     setExporting(true);
@@ -36,9 +26,12 @@ export default function ExportIdeasData() {
           i.title,
           i.category,
           i.status,
-          i.vote_count || 0,
-          i.submitter_name || 'Anonymous',
-          new Date(i.created_date).toLocaleDateString(),
+          // @ts-ignore
+          i.votes_count || 0,
+          // @ts-ignore
+          i.user_email || 'Anonymous',
+          // @ts-ignore
+          new Date(i.created_at || i.created_date).toLocaleDateString(),
           i.municipality_id || ''
         ]);
 

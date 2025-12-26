@@ -2,11 +2,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { TrendingUp, Calendar, Rocket, Target } from 'lucide-react';
+import { TrendingUp, Calendar, Rocket, Target, Building2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useSolutions } from '@/hooks/useSolutions';
 import { usePilotsList } from '@/hooks/usePilots';
-import { useStartup } from '@/hooks/useStartups';
+import { useStartup } from '@/hooks/useStartupEcosystem';
 
 export default function StartupJourneyAnalytics({ startupId }) {
   const { t } = useLanguage();
@@ -22,16 +22,18 @@ export default function StartupJourneyAnalytics({ startupId }) {
   // Derive unique municipalities (clients) from pilots
   const uniqueMunicipalities = new Set(pilots.map(p => p.municipality_id).filter(Boolean));
 
-  const registrationDate = startup?.created_date ? new Date(startup.created_date) : null;
+  const registrationDate = startup?.created_at ? new Date(startup.created_at) : null;
   const daysSinceRegistration = registrationDate
+    // @ts-ignore
     ? Math.floor((new Date() - registrationDate) / (1000 * 60 * 60 * 24))
     : 0;
 
   const milestones = [
-    { event: 'Registration', date: startup?.created_date, icon: Rocket },
-    { event: 'First Solution', date: solutions[0]?.created_date, icon: Target },
+    { event: 'Registration', date: startup?.created_at, icon: Rocket },
+    { event: 'First Solution', date: providerSolutions[0]?.created_at, icon: Target },
+    // @ts-ignore
     { event: 'Verification', date: startup?.verification_date, icon: Badge },
-    { event: 'First Pilot', date: pilots[0]?.created_date, icon: TrendingUp }
+    { event: 'First Pilot', date: pilots[0]?.created_at, icon: TrendingUp }
   ].filter(m => m.date);
 
   const growthData = [
@@ -59,7 +61,7 @@ export default function StartupJourneyAnalytics({ startupId }) {
           </div>
           <div className="p-3 bg-green-50 rounded-lg text-center">
             <Target className="h-6 w-6 text-green-600 mx-auto mb-1" />
-            <p className="text-2xl font-bold text-green-600">{solutions.length}</p>
+            <p className="text-2xl font-bold text-green-600">{providerSolutions.length}</p>
             <p className="text-xs text-slate-600">{t({ en: 'Solutions', ar: 'الحلول' })}</p>
           </div>
           <div className="p-3 bg-purple-50 rounded-lg text-center">

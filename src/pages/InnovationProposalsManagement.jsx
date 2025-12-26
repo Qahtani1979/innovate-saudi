@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -195,7 +195,7 @@ function InnovationProposalsManagement() {
                     {proposal.budget_estimate ? `${(proposal.budget_estimate / 1000).toFixed(0)}K SAR` : '-'}
                   </TableCell>
                   <TableCell className="text-sm text-slate-600">
-                    {new Date(proposal.created_date).toLocaleDateString()}
+                    {new Date(proposal.created_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">

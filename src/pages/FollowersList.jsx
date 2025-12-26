@@ -1,5 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useEntityFollowersData } from '@/hooks/useUserFollows';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -12,19 +11,7 @@ function FollowersList() {
   const entityType = urlParams.get('entity_type');
   const entityId = urlParams.get('entity_id');
 
-  const { data: followers = [], isLoading } = useQuery({
-    queryKey: ['followers', entityType, entityId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('user_follows')
-        .select('*')
-        .eq('followed_entity_type', entityType)
-        .eq('followed_entity_id', entityId);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!entityType && !!entityId
-  });
+  const { data: followers = [], isLoading } = useEntityFollowersData(entityType, entityId);
 
   const stats = {
     total: followers.length,

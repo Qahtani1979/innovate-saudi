@@ -3,22 +3,26 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { GraduationCap, Users, Award } from 'lucide-react';
-import { useStartupProfile } from '@/hooks/useStartupProfiles';
-import { usePotentialMentors, useStartupMentorshipMutations } from '@/hooks/useStartupMentorship';
+import { useStartupProfile, useStartupMentorship } from '@/hooks/useStartupEcosystem';
 
-export default function StartupMentorshipMatcher({ startupId }) {
+export default function StartupMentorshipMatcher({ startupId, onClose }) {
   const { t } = useLanguage();
 
   const { data: startup } = useStartupProfile(startupId);
-  const { data: potentialMentors = [] } = usePotentialMentors(startupId, startup);
-  const { requestMentorship } = useStartupMentorshipMutations();
+  const { potentialMentors, requestMentorship } = useStartupMentorship(startupId);
+  const mentors = potentialMentors.data || [];
 
   const handleRequestMentorship = (mentor) => {
     requestMentorship.mutate({
       mentorId: mentor.id,
-      mentor,
-      startup,
-      startupId
+      // @ts-ignore
+      mentorEmail: mentor.contact_email,
+      // @ts-ignore
+      menteeEmail: startup?.contact_email,
+      // @ts-ignore
+      startupName: startup?.company_name_en,
+      // @ts-ignore
+      sectors: startup?.sectors
     });
   };
 
@@ -43,12 +47,12 @@ export default function StartupMentorshipMatcher({ startupId }) {
           </p>
         </div>
 
-        {potentialMentors.length > 0 ? (
+        {mentors.length > 0 ? (
           <div className="space-y-3">
             <p className="text-sm font-medium text-slate-700">
               {t({ en: 'Suggested Mentors (AI-Matched)', ar: 'الموجهون المقترحون' })}
             </p>
-            {potentialMentors.map(mentor => (
+            {mentors.map(mentor => (
               <div key={mentor.id} className="p-3 border rounded-lg hover:bg-slate-50">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -56,19 +60,16 @@ export default function StartupMentorshipMatcher({ startupId }) {
                     <div className="flex gap-2 mt-2">
                       <Badge className="bg-green-100 text-green-700 text-xs">
                         <Award className="h-3 w-3 mr-1" />
-                        {mentor.pilot_success_rate}% Success
+                        {mentor.performance_score || mentor.success_rate || 0}% Success
                       </Badge>
                       <Badge className="bg-blue-100 text-blue-700 text-xs">
-                        {mentor.municipal_clients_count} Clients
+                        {mentor.total_pilots_participated || 0} Clients
                       </Badge>
                     </div>
-                    <p className="text-xs text-slate-600 mt-1">
-                      {mentor.sectors?.join(', ')}
-                    </p>
                   </div>
                   <Button
                     size="sm"
-                    onClick={() => requestMentorshipMutation.mutate(mentor.id)}
+                    onClick={() => handleRequestMentorship(mentor)}
                   >
                     {t({ en: 'Request', ar: 'طلب' })}
                   </Button>

@@ -1,5 +1,5 @@
 
-import { useQuery } from '@tanstack/react-query';
+// cleaned up imports
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,17 +8,12 @@ import { FileText, Clock, CheckCircle2, XCircle, Loader2, Eye } from 'lucide-rea
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 
+import { useProviderProposals } from '@/hooks/useProviderPipeline';
+
 export default function ProposalWorkflowTracker({ providerId, providerEmail }) {
   const { t } = useLanguage();
 
-  const { data: proposals = [], isLoading } = useQuery({
-    queryKey: ['provider-proposals', providerId],
-    queryFn: async () => {
-      const all = await base44.entities.ChallengeProposal.list();
-      return all.filter(p => p.provider_id === providerId || p.submitted_by === providerEmail);
-    },
-    enabled: !!providerId || !!providerEmail
-  });
+  const { data: proposals = [], isLoading } = useProviderProposals(providerEmail, providerId);
 
   const stats = {
     total: proposals.length,
@@ -89,7 +84,7 @@ export default function ProposalWorkflowTracker({ providerId, providerEmail }) {
                       <div className="flex items-center gap-2 mb-1">
                         <Icon className={`h-4 w-4 text-${config.color}-600 ${proposal.status === 'under_review' ? 'animate-spin' : ''}`} />
                         <p className="font-medium text-sm text-slate-900">
-                          {proposal.proposal_title || 'Untitled Proposal'}
+                          {proposal.proposed_solution || 'Untitled Proposal'}
                         </p>
                       </div>
                       <p className="text-xs text-slate-500">
@@ -99,9 +94,9 @@ export default function ProposalWorkflowTracker({ providerId, providerEmail }) {
                         <Badge className={`bg-${config.color}-100 text-${config.color}-700 text-xs`}>
                           {config.label}
                         </Badge>
-                        {proposal.submitted_date && (
+                        {proposal.created_at && (
                           <span className="text-xs text-slate-500">
-                            {new Date(proposal.submitted_date).toLocaleDateString()}
+                            {new Date(proposal.created_at).toLocaleDateString()}
                           </span>
                         )}
                       </div>

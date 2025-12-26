@@ -61,3 +61,47 @@ export function useCreateContract() {
         }
     });
 }
+
+export function useContract(id) {
+    return useQuery({
+        queryKey: ['contract', id],
+        queryFn: async () => {
+            if (!id) return null;
+            const { data, error } = await supabase
+                .from('contracts')
+                .select(`
+                    *,
+                    municipality:municipalities(id, name_en, name_ar),
+                    provider:providers(id, name_en, name_ar),
+                    pilot:pilots(id, name_en, name_ar),
+                    solution:solutions(id, name_en, name_ar)
+                `)
+                .eq('id', id)
+                .single();
+            if (error) throw error;
+            return data;
+        },
+        enabled: !!id
+    });
+}
+
+export function useUpdateContract() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, updates }) => {
+            const { data, error } = await supabase
+                .from('contracts')
+                .update(updates)
+                .eq('id', id)
+                .select()
+                .single();
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries(['contracts']);
+            queryClient.invalidateQueries(['all-contracts']);
+            queryClient.invalidateQueries(['contract', data.id]);
+        }
+    });
+}

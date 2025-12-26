@@ -6,33 +6,63 @@ import { useLanguage } from '../LanguageContext';
 import { Sparkles, Network, Users, Target, TrendingUp, Loader2 } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { 
+import {
   NETWORK_ANALYSIS_SYSTEM_PROMPT,
   createNetworkAnalysisPrompt,
-  NETWORK_ANALYSIS_SCHEMA 
+  NETWORK_ANALYSIS_SCHEMA
 } from '@/lib/ai/prompts/organizations';
+
+import { useOrganizations } from '@/hooks/useOrganizations';
+import { useSolutions } from '@/hooks/useSolutions';
+import { usePilotsList } from '@/hooks/usePilots';
+import { useRDProjects } from '@/hooks/useRDProjects';
 
 export default function AINetworkAnalysis({ organization }) {
   const { t, isRTL, language } = useLanguage();
   const [analysis, setAnalysis] = useState(null);
 
-  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
+  const { invokeAI, status, error, rateLimitInfo, isLoading: aiLoading, isAvailable } = useAIWithFallback({
     showToasts: true,
     fallbackData: null
   });
 
+  // Fetch data using hooks
+  const { data: orgs = [] } = useOrganizations();
+  // useSolutions returns { solutions, isLoading... }
+  const { solutions = [] } = useSolutions({ publishedOnly: false, limit: 1000 });
+  const { data: pilots = [] } = usePilotsList();
+  const { data: rdProjects = [] } = useRDProjects();
+
   const generateAnalysis = async () => {
-    const [orgs, solutions, pilots, rdProjects] = await Promise.all([
-      base44.entities.Organization.list(),
-      base44.entities.Solution.list().then(all => all.filter(s => s.provider_id === organization.id)),
-      base44.entities.Pilot.list(),
-      base44.entities.RDProject.list()
-    ]);
+    // Note: usePilotsList and useRDProjects fetched all, we filter here locally or if we had specific inputs we'd filter there.
+    // Original code:
+    // pilots.filter(p => p.provider_id === organization.id) - this was done in stats calc.
+    // base44.entities.Solution.list().then(all => all.filter(s => s.provider_id === organization.id))
+
+    // So we use the hook data directly.
+
+    const orgSolutions = solutions.filter(s => s.provider_id === organization.id);
+    const orgPilots = pilots.filter(p => p.provider_id === organization.id);
+    // rdProjects? Original code fetched them but didn't seem to use them explicitly in 'stats' object, 
+    // maybe used in prompt creation? 'createNetworkAnalysisPrompt' takes (organization, stats).
+    // Let's assume prompt builder might need more or just the stats.
+    // Checking prompt builder usage: createNetworkAnalysisPrompt(organization, stats)
+    // The lists (orgs, solutions, pilots, rdProjects) were awaited but only `stats` passed to prompt?
+    // Wait, the original code: 
+    // const [orgs, solutions, pilots, rdProjects] = await Promise.all(...)
+    // createNetworkAnalysisPrompt(organization, stats)
+    // It seems the lists themselves weren't passed to the prompt builder?
+    // Let's check 'stats' object construction: 
+    // partnerCount: organization.partners?.length
+    // pilotCount: pilots.filter...
+    // solutionCount: solutions.length (this was filtered solutions)
+
+    // So if prompt only needs stats, we are good.
 
     const stats = {
       partnerCount: organization.partners?.length || 0,
-      pilotCount: pilots.filter(p => p.provider_id === organization.id).length,
-      solutionCount: solutions.length
+      pilotCount: orgPilots.length,
+      solutionCount: orgSolutions.length
     };
 
     const result = await invokeAI({
@@ -46,6 +76,8 @@ export default function AINetworkAnalysis({ organization }) {
     }
   };
 
+  const isLoading = aiLoading; // Align loading state
+
   return (
     <Card className="border-2 border-purple-300">
       <CardHeader>
@@ -56,7 +88,7 @@ export default function AINetworkAnalysis({ organization }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
-        
+
         {!analysis && (
           <div className="text-center py-8">
             <Button onClick={generateAnalysis} disabled={isLoading || !isAvailable} className="gap-2">
@@ -85,7 +117,7 @@ export default function AINetworkAnalysis({ organization }) {
               </div>
               <p className="text-xs text-slate-600 mb-2">{analysis.network_tier}</p>
               <div className="h-2 bg-purple-200 rounded-full overflow-hidden">
-                <div 
+                <div
                   className="h-full bg-purple-600 rounded-full"
                   style={{ width: `${analysis.centrality_score}%` }}
                 />

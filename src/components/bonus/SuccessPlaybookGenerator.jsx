@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,39 +10,34 @@ import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { buildSuccessPlaybookPrompt, successPlaybookSchema, SUCCESS_PLAYBOOK_SYSTEM_PROMPT } from '@/lib/ai/prompts/bonus';
 import { getSystemPrompt } from '@/lib/saudiContext';
 
+import { usePilotsList } from '@/hooks/usePilots';
+import { useKnowledgeDocumentMutations } from '@/hooks/useKnowledgeDocumentMutations';
+
 export default function SuccessPlaybookGenerator({ pilot }) {
   const { language, t } = useLanguage();
   const [playbook, setPlaybook] = useState(null);
   const { invokeAI, isLoading: generating, status, error, rateLimitInfo } = useAIWithFallback();
 
-  const { data: similarPilots = [] } = useQuery({
-    queryKey: ['similar-pilots', pilot.sector],
-    queryFn: async () => {
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => 
-        p.sector === pilot.sector && 
-        p.stage === 'completed' && 
-        p.recommendation === 'scale'
-      );
-    },
-    initialData: []
-  });
+  const { data: allPilots = [] } = usePilotsList({ stage: 'completed', sector: pilot.sector, recommendation: 'scale' });
+  const similarPilots = allPilots;
+
+  const { createKnowledgeDocument } = useKnowledgeDocumentMutations();
 
   const generatePlaybook = async () => {
     const result = await invokeAI({
       prompt: buildSuccessPlaybookPrompt(pilot, similarPilots),
-      systemPrompt: getSystemPrompt(SUCCESS_PLAYBOOK_SYSTEM_PROMPT),
+      system_prompt: getSystemPrompt(SUCCESS_PLAYBOOK_SYSTEM_PROMPT),
       response_json_schema: successPlaybookSchema
     });
 
     if (result.success && result.data) {
       setPlaybook(result.data);
-      
+
       // Save to knowledge base
       try {
-        await base44.entities.KnowledgeDocument.create({
-          title: `Success Playbook: ${pilot.title_en}`,
-          type: 'playbook',
+        await createKnowledgeDocument.mutateAsync({
+          title_en: `Success Playbook: ${pilot.title_en}`,
+          category: 'playbook', // Assuming this maps to doc_type
           content: JSON.stringify(result.data),
           tags: ['playbook', 'replication', pilot.sector],
           source_entity_type: 'pilot',
@@ -77,7 +71,7 @@ export default function SuccessPlaybookGenerator({ pilot }) {
       </CardHeader>
       <CardContent className="pt-6">
         <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} className="mb-4" />
-        
+
         {!playbook && !generating && (
           <div className="text-center py-8">
             <BookOpen className="h-12 w-12 text-green-300 mx-auto mb-3" />

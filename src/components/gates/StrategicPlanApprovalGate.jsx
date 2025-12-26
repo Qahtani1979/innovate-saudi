@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,29 +13,26 @@ import {
   buildStrategicApprovalPrompt,
   STRATEGIC_APPROVAL_SCHEMA
 } from '@/lib/ai/prompts/gates';
+import { useGovernanceMutations } from '@/hooks/useGovernance';
 
 export default function StrategicPlanApprovalGate({ plan, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const [decision, setDecision] = useState('');
   const [comments, setComments] = useState('');
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const { invokeAI, status, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
-  const queryClient = useQueryClient();
+  const { submitStrategicReview } = useGovernanceMutations();
 
-  const approvalMutation = useMutation({
-    mutationFn: async () => {
-      await base44.entities.StrategicPlan.update(plan.id, {
-        status: decision === 'approve' ? 'approved' : 'draft',
-        approval_date: decision === 'approve' ? new Date().toISOString() : null,
-        review_notes: comments
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['strategic-plans']);
-      toast.success(t({ en: 'Decision recorded', ar: 'تم تسجيل القرار' }));
-      onClose();
-    }
-  });
+  const handleDecision = (decisionType) => {
+    submitStrategicReview.mutate({
+      planId: plan.id,
+      status: decisionType === 'approve' ? 'approved' : 'draft',
+      reviewNotes: comments
+    }, {
+      onSuccess: () => {
+        onClose();
+      }
+    });
+  };
 
   const generateAIBrief = async () => {
     const result = await invokeAI({
@@ -149,21 +145,26 @@ export default function StrategicPlanApprovalGate({ plan, onClose }) {
             onChange={(e) => setComments(e.target.value)}
             rows={4}
             placeholder={t({ en: 'Review comments...', ar: 'تعليقات المراجعة...' })}
+            disabled={submitStrategicReview.isPending}
           />
         </div>
 
         <div className="flex items-center gap-3">
           <Button
-            onClick={() => { setDecision('approve'); approvalMutation.mutate(); }}
-            disabled={approvalMutation.isPending}
+            onClick={() => handleDecision('approve')}
+            disabled={submitStrategicReview.isPending}
             className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600"
           >
-            <CheckCircle2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+            {submitStrategicReview.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <CheckCircle2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+            )}
             {t({ en: 'Approve Plan', ar: 'الموافقة على الخطة' })}
           </Button>
           <Button
-            onClick={() => { setDecision('revise'); approvalMutation.mutate(); }}
-            disabled={approvalMutation.isPending}
+            onClick={() => handleDecision('revise')}
+            disabled={submitStrategicReview.isPending}
             variant="outline"
             className="flex-1 border-yellow-600 text-yellow-600"
           >

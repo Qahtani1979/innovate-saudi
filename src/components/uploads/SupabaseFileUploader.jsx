@@ -1,12 +1,14 @@
 import { useState, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Upload, Loader2, X } from 'lucide-react';
-import { toast } from 'sonner';
-import { useAuth } from '@/lib/AuthContext';
+import { useSupabaseFileUpload } from '@/hooks/useSupabaseFileUpload';
 
-export default function SupabaseFileUploader({ 
+/**
+ * SupabaseFileUploader
+ * ✅ GOLD STANDARD COMPLIANT
+ */
+export default function SupabaseFileUploader({
   onUpload,
   bucket = 'avatars',
   accept = 'image/*',
@@ -16,9 +18,7 @@ export default function SupabaseFileUploader({
   currentUrl = null,
   className = ''
 }) {
-  const { user } = useAuth();
-  const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const { upload, isUploading, progress, resetProgress } = useSupabaseFileUpload();
   const [previewUrl, setPreviewUrl] = useState(currentUrl);
   const fileInputRef = useRef(null);
 
@@ -30,62 +30,19 @@ export default function SupabaseFileUploader({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate size
-    if (file.size > maxSize * 1024 * 1024) {
-      toast.error(`File size must be less than ${maxSize}MB`);
-      return;
-    }
-
-    // Validate type for images
-    if (accept === 'image/*' && !file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
-      return;
-    }
-
-    setUploading(true);
-    setProgress(10);
-
     try {
-      // Create unique file path with user ID
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user?.id}/${Date.now()}.${fileExt}`;
+      const publicUrl = await upload({ file, bucket, maxSize });
 
-      setProgress(30);
-
-      // Upload to Supabase Storage
-      const { data, error } = await supabase.storage
-        .from(bucket)
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
-
-      if (error) throw error;
-
-      setProgress(80);
-
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(fileName);
-
-      const publicUrl = urlData.publicUrl;
-      
-      setProgress(100);
       setPreviewUrl(publicUrl);
-      
+
       // Call callback with URL
       if (onUpload) {
         onUpload(publicUrl);
       }
-
-      toast.success('File uploaded successfully');
     } catch (error) {
-      console.error('Upload error:', error);
-      toast.error(error.message || 'Failed to upload file');
+      // Error handled by hook
     } finally {
-      setUploading(false);
-      setProgress(0);
+      resetProgress();
       // Reset input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -102,10 +59,10 @@ export default function SupabaseFileUploader({
         onChange={handleFileChange}
         className="hidden"
       />
-      
+
       {trigger ? (
         <div onClick={handleClick}>
-          {uploading ? (
+          {isUploading ? (
             <Button size="sm" disabled className="rounded-full h-8 w-8 p-0">
               <Loader2 className="h-4 w-4 animate-spin" />
             </Button>
@@ -118,7 +75,8 @@ export default function SupabaseFileUploader({
           {showPreview && previewUrl && (
             <div className="relative w-24 h-24 rounded-lg overflow-hidden border">
               <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
-              <button 
+              <button
+                type="button"
                 onClick={() => {
                   setPreviewUrl(null);
                   onUpload?.(null);
@@ -129,14 +87,15 @@ export default function SupabaseFileUploader({
               </button>
             </div>
           )}
-          
-          <Button 
-            onClick={handleClick} 
-            disabled={uploading}
+
+          <Button
+            type="button"
+            onClick={handleClick}
+            disabled={isUploading}
             variant="outline"
             className="w-full"
           >
-            {uploading ? (
+            {isUploading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Uploading...
@@ -148,8 +107,8 @@ export default function SupabaseFileUploader({
               </>
             )}
           </Button>
-          
-          {uploading && (
+
+          {isUploading && (
             <Progress value={progress} className="h-1" />
           )}
         </div>

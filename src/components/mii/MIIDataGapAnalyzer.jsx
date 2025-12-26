@@ -1,5 +1,5 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useMunicipality } from '@/hooks/useMunicipalities';
+import { useMIIIndicators } from '@/hooks/useMIIData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -9,24 +9,8 @@ import { Progress } from "@/components/ui/progress";
 export default function MIIDataGapAnalyzer({ municipalityId }) {
   const { language, t } = useLanguage();
 
-  const { data: municipality } = useQuery({
-    queryKey: ['municipality', municipalityId],
-    queryFn: async () => {
-      const { data } = await supabase.from('municipalities').select('*').eq('id', municipalityId).single();
-      return data;
-    }
-  });
-
-  const { data: dimensions = [] } = useQuery({
-    queryKey: ['mii-dimensions'],
-    queryFn: async () => {
-      const { data } = await supabase.from('mii_indicators').select('*');
-      // Map old structure to new if needed, or just use as is if schema matches
-      // Assuming mii_indicators has data_sources JSONB
-      return data || [];
-    },
-    initialData: []
-  });
+  const { data: municipality } = useMunicipality(municipalityId);
+  const { data: dimensions = [] } = useMIIIndicators();
 
   const dataGaps = dimensions.map(dim => {
     const sources = dim.data_source_config?.sources || []; // Assuming JSON B structure

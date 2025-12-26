@@ -1,39 +1,35 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Microscope, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 export default function RDCallRequestForm({ challenge }) {
-  const queryClient = useQueryClient();
+  const { notify, isNotifying } = useNotificationSystem();
   const [requestData, setRequestData] = useState({
     justification: '',
     research_areas_suggested: '',
     expected_outcomes: ''
   });
 
-  const requestMutation = useMutation({
-    mutationFn: async () => {
-      // Create notification for admin to create R&D call
-      const { error } = await supabase.from('notifications').insert({
-        user_email: 'admin@platform.gov.sa', // Admin email
-        notification_type: 'rd_call_request',
+  const handleSubmit = async () => {
+    try {
+      await notify({
+        type: 'rd_call_request',
+        entityType: 'challenge',
+        entityId: challenge.id,
+        recipientEmails: ['admin@platform.gov.sa'],
         title: `R&D Call Request for Challenge: ${challenge.code}`,
         message: `Researcher requests R&D call for challenge "${challenge.title_en}". Justification: ${requestData.justification}`,
-        entity_type: 'challenge',
-        entity_id: challenge.id,
         metadata: requestData
       });
-      if (error) throw error;
-    },
-    onSuccess: () => {
       toast.success('R&D call request submitted - admin will review');
-      queryClient.invalidateQueries(['notifications']);
+    } catch (err) {
+      toast.error('Failed to submit request');
     }
-  });
+  };
 
   return (
     <Card className="border-2 border-blue-300">
@@ -73,11 +69,11 @@ export default function RDCallRequestForm({ challenge }) {
         </div>
 
         <Button
-          onClick={() => requestMutation.mutate()}
-          disabled={!requestData.justification || requestMutation.isPending}
+          onClick={handleSubmit}
+          disabled={!requestData.justification || isNotifying}
           className="w-full bg-blue-600"
         >
-          {requestMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          {isNotifying && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
           Submit R&D Call Request
         </Button>
       </CardContent>

@@ -4,9 +4,8 @@
  */
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useChallenge } from '@/hooks/useChallengesWithVisibility';
+import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { usePermissions } from '@/components/permissions/usePermissions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,8 +13,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  Calendar, Building2, Target, Users, 
+import {
+  Calendar, Building2, Target, Users,
   FileText, Link2, Clock, AlertCircle, Lightbulb,
   BarChart3
 } from 'lucide-react';
@@ -50,35 +49,16 @@ export function ChallengeDetailView({ challengeId, onClose, onUpdate }) {
   const { user } = useAuth();
   const { isAdmin, hasPermission } = usePermissions();
   const [activeTab, setActiveTab] = useState('overview');
-  
+
   // Fetch challenge details
-  const { data: challenge, isLoading, error, refetch } = useQuery({
-    queryKey: ['challenge-detail', challengeId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select(`
-          *,
-          municipalities:municipality_id(id, name_en, name_ar, logo_url),
-          sectors:sector_id(id, name_en, name_ar, icon),
-          regions:region_id(id, name_en, name_ar)
-        `)
-        .eq('id', challengeId)
-        .eq('is_deleted', false)
-        .maybeSingle();
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!challengeId
-  });
-  
+  const { data: challenge, isLoading, error, refetch } = useChallenge(challengeId);
+
   // Check if user can edit
-  const canEdit = isAdmin || 
+  const canEdit = isAdmin ||
     challenge?.challenge_owner_email === user?.email ||
     challenge?.review_assigned_to === user?.email ||
     hasPermission('challenges.edit');
-  
+
   // Loading state
   if (isLoading) {
     return (
@@ -90,7 +70,7 @@ export function ChallengeDetailView({ challengeId, onClose, onUpdate }) {
       </div>
     );
   }
-  
+
   // Error state
   if (error || !challenge) {
     return (
@@ -100,19 +80,19 @@ export function ChallengeDetailView({ challengeId, onClose, onUpdate }) {
           {language === 'ar' ? 'لم يتم العثور على التحدي' : 'Challenge Not Found'}
         </h3>
         <p className="text-muted-foreground mt-2">
-          {language === 'ar' 
-            ? 'التحدي المطلوب غير موجود أو ليس لديك صلاحية للوصول إليه' 
+          {language === 'ar'
+            ? 'التحدي المطلوب غير موجود أو ليس لديك صلاحية للوصول إليه'
             : 'The requested challenge does not exist or you do not have permission to access it'}
         </p>
       </div>
     );
   }
-  
+
   const title = language === 'ar' ? challenge.title_ar : challenge.title_en;
   const description = language === 'ar' ? challenge.description_ar : challenge.description_en;
-  const municipality = challenge.municipalities;
-  const sector = challenge.sectors;
-  
+  const municipality = challenge.municipality;
+  const sector = challenge.sector;
+
   return (
     <div className={`space-y-6 ${isRTL ? 'rtl' : 'ltr'}`}>
       {/* Header Section */}
@@ -147,10 +127,10 @@ export function ChallengeDetailView({ challengeId, onClose, onUpdate }) {
               </p>
             )}
           </div>
-          
+
           {/* Actions (dc-4) */}
-          <ChallengeActions 
-            challenge={challenge} 
+          <ChallengeActions
+            challenge={challenge}
             canEdit={canEdit}
             onUpdate={() => {
               refetch();
@@ -158,7 +138,7 @@ export function ChallengeDetailView({ challengeId, onClose, onUpdate }) {
             }}
           />
         </div>
-        
+
         {/* Meta Information */}
         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
           {municipality && (
@@ -176,8 +156,8 @@ export function ChallengeDetailView({ challengeId, onClose, onUpdate }) {
           <div className="flex items-center gap-1">
             <Calendar className="h-4 w-4" />
             <span>
-              {format(new Date(challenge.created_at), 'PPP', { 
-                locale: language === 'ar' ? ar : undefined 
+              {format(new Date(challenge.created_at), 'PPP', {
+                locale: language === 'ar' ? ar : undefined
               })}
             </span>
           </div>
@@ -189,9 +169,9 @@ export function ChallengeDetailView({ challengeId, onClose, onUpdate }) {
           )}
         </div>
       </div>
-      
+
       <Separator />
-      
+
       {/* Tabbed Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="w-full justify-start overflow-x-auto">
@@ -218,7 +198,7 @@ export function ChallengeDetailView({ challengeId, onClose, onUpdate }) {
             </TabsTrigger>
           )}
         </TabsList>
-        
+
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-4 mt-4">
           {/* Description */}
@@ -234,7 +214,7 @@ export function ChallengeDetailView({ challengeId, onClose, onUpdate }) {
               </CardContent>
             </Card>
           )}
-          
+
           {/* Problem Statement */}
           {(challenge.problem_statement_en || challenge.problem_statement_ar) && (
             <Card>
@@ -250,7 +230,7 @@ export function ChallengeDetailView({ challengeId, onClose, onUpdate }) {
               </CardContent>
             </Card>
           )}
-          
+
           {/* Current Situation & Desired Outcome */}
           <div className="grid md:grid-cols-2 gap-4">
             {(challenge.current_situation_en || challenge.current_situation_ar) && (
@@ -267,7 +247,7 @@ export function ChallengeDetailView({ challengeId, onClose, onUpdate }) {
                 </CardContent>
               </Card>
             )}
-            
+
             {(challenge.desired_outcome_en || challenge.desired_outcome_ar) && (
               <Card>
                 <CardHeader>
@@ -284,7 +264,7 @@ export function ChallengeDetailView({ challengeId, onClose, onUpdate }) {
             )}
           </div>
         </TabsContent>
-        
+
         {/* Details Tab */}
         <TabsContent value="details" className="space-y-4 mt-4">
           <div className="grid md:grid-cols-2 gap-4">
@@ -303,7 +283,7 @@ export function ChallengeDetailView({ challengeId, onClose, onUpdate }) {
                 </CardContent>
               </Card>
             )}
-            
+
             {/* Budget & Timeline */}
             <Card>
               <CardHeader>
@@ -346,7 +326,7 @@ export function ChallengeDetailView({ challengeId, onClose, onUpdate }) {
               </CardContent>
             </Card>
           </div>
-          
+
           {/* Tags & Keywords */}
           {(challenge.tags?.length > 0 || challenge.keywords?.length > 0) && (
             <Card>
@@ -367,7 +347,7 @@ export function ChallengeDetailView({ challengeId, onClose, onUpdate }) {
               </CardContent>
             </Card>
           )}
-          
+
           {/* Affected Population */}
           {challenge.affected_population_size && (
             <Card>
@@ -392,17 +372,17 @@ export function ChallengeDetailView({ challengeId, onClose, onUpdate }) {
             </Card>
           )}
         </TabsContent>
-        
+
         {/* Related Entities Tab (dc-2) */}
         <TabsContent value="related" className="mt-4">
           <ChallengeRelatedEntities challengeId={challengeId} challenge={challenge} />
         </TabsContent>
-        
+
         {/* Activity Tab (dc-3) */}
         <TabsContent value="activity" className="mt-4">
           <ChallengeActivityTimeline challengeId={challengeId} />
         </TabsContent>
-        
+
         {/* Analytics Tab */}
         {canEdit && (
           <TabsContent value="analytics" className="mt-4">

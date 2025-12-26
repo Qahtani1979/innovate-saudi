@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,35 +12,25 @@ import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { getPortfolioHealthPrompt, portfolioHealthSchema } from '@/lib/ai/prompts/portfolio';
 import { getSystemPrompt } from '@/lib/saudiContext';
 
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsList } from '@/hooks/usePilots';
+import { usePrograms } from '@/hooks/usePrograms';
+import { useRDProjects } from '@/hooks/useRDProjects';
+
 export default function PortfolioHealthMonitor() {
   const { language, t } = useLanguage();
   const [healthReport, setHealthReport] = useState(null);
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs'],
-    queryFn: () => base44.entities.Program.list()
-  });
-
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects'],
-    queryFn: () => base44.entities.RDProject.list()
-  });
+  const { data: challenges = [] } = useChallengesWithVisibility({ limit: 1000 }); // Fetch all for analysis
+  const { data: pilots = [] } = usePilotsList();
+  const { programs = [] } = usePrograms(); // usePrograms returns { programs } object
+  const { data: rdProjects = [] } = useRDProjects();
 
   const analyzeHealth = async () => {
     const portfolioData = { challenges, pilots, programs, rdProjects };
     const prompt = getPortfolioHealthPrompt(portfolioData);
-    
+
     const result = await invokeAI({
       prompt,
       response_json_schema: portfolioHealthSchema,
@@ -128,21 +118,20 @@ export default function PortfolioHealthMonitor() {
 
         {healthReport && (
           <div className="space-y-4">
-            <div className={`p-4 rounded-lg border-2 ${
-              healthReport.overall_health === 'excellent' ? 'bg-green-50 border-green-300' :
+            <div className={`p-4 rounded-lg border-2 ${healthReport.overall_health === 'excellent' ? 'bg-green-50 border-green-300' :
               healthReport.overall_health === 'good' ? 'bg-blue-50 border-blue-300' :
-              healthReport.overall_health === 'fair' ? 'bg-yellow-50 border-yellow-300' :
-              'bg-red-50 border-red-300'
-            }`}>
+                healthReport.overall_health === 'fair' ? 'bg-yellow-50 border-yellow-300' :
+                  'bg-red-50 border-red-300'
+              }`}>
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-bold text-lg">
                   {t({ en: 'Overall Health', ar: 'الصحة الإجمالية' })}
                 </h4>
                 <Badge className={
                   healthReport.overall_health === 'excellent' ? 'bg-green-600' :
-                  healthReport.overall_health === 'good' ? 'bg-blue-600' :
-                  healthReport.overall_health === 'fair' ? 'bg-yellow-600' :
-                  'bg-red-600'
+                    healthReport.overall_health === 'good' ? 'bg-blue-600' :
+                      healthReport.overall_health === 'fair' ? 'bg-yellow-600' :
+                        'bg-red-600'
                 }>
                   {healthReport.overall_health?.toUpperCase()}
                 </Badge>

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import { useQueryClient } from '@tanstack/react-query';
+
 import { useAutoRoleAssignment } from '@/hooks/useAutoRoleAssignment';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,11 +16,12 @@ import { useLanguage } from '../LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { createPageUrl } from '@/utils';
 import FileUploader from '../FileUploader';
-import { 
-  FlaskConical, ArrowRight, ArrowLeft, CheckCircle2, 
+import {
+  FlaskConical, ArrowRight, ArrowLeft, CheckCircle2,
   GraduationCap, BookOpen, Link2, Loader2, Upload, FileText, Globe
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useOnboardingMutations } from '@/hooks/useOnboardingMutations';
 
 const STEPS = [
   { id: 1, title: { en: 'CV Import', ar: 'استيراد السيرة' }, icon: Upload },
@@ -55,14 +56,15 @@ export default function ResearcherOnboardingWizard({ onComplete, onSkip }) {
   const { invokeAI } = useAIWithFallback();
   const { language, isRTL, t, toggleLanguage } = useLanguage();
   const { user, userProfile, checkAuth } = useAuth();
-  const queryClient = useQueryClient();
+
   const navigate = useNavigate();
   const { checkAndAssignRole } = useAutoRoleAssignment();
-  
+  const { upsertProfile } = useOnboardingMutations();
+
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExtractingCV, setIsExtractingCV] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     cv_url: '',
     institution: '',
@@ -188,12 +190,14 @@ Extract the following in JSON format:
     }
 
     setIsSubmitting(true);
-    
+
     try {
       // Update user profile
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .update({
+      await upsertProfile.mutateAsync({
+        table: 'user_profiles',
+        matchingColumns: ['user_id'],
+        data: {
+          user_id: user.id, // Ensure PK is present for valid upsert logic/update
           organization: formData.institution || null,
           department: formData.department || null,
           job_title: formData.academic_title || null,
@@ -211,25 +215,27 @@ Extract the following in JSON format:
             collaboration_types: formData.collaboration_types
           },
           updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
-
-      if (profileError) throw profileError;
+        }
+      });
 
       // Create researcher profile entry
-      await supabase.from('researcher_profiles').upsert({
-        user_id: user.id,
-        user_email: user.email,
-        institution: formData.institution,
-        department: formData.department,
-        academic_title: formData.academic_title,
-        research_areas: formData.research_areas,
-        collaboration_interests: formData.collaboration_types,
-        orcid_id: formData.orcid_id,
-        google_scholar_url: formData.google_scholar_url,
-        cv_url: formData.cv_url,
-        is_verified: false
-      }, { onConflict: 'user_id' });
+      await upsertProfile.mutateAsync({
+        table: 'researcher_profiles',
+        matchingColumns: ['user_id'],
+        data: {
+          user_id: user.id,
+          user_email: user.email,
+          institution: formData.institution,
+          department: formData.department,
+          academic_title: formData.academic_title,
+          research_areas: formData.research_areas,
+          collaboration_interests: formData.collaboration_types,
+          orcid_id: formData.orcid_id,
+          google_scholar_url: formData.google_scholar_url,
+          cv_url: formData.cv_url,
+          is_verified: false
+        }
+      });
 
       // Auto-assign role or create pending request
       const roleResult = await checkAndAssignRole({
@@ -240,7 +246,7 @@ Extract the following in JSON format:
         language
       });
 
-      await queryClient.invalidateQueries(['user-profile']);
+
       if (checkAuth) await checkAuth();
 
       if (roleResult.autoApproved) {
@@ -272,7 +278,7 @@ Extract the following in JSON format:
     <div className="fixed inset-0 bg-gradient-to-br from-green-900/95 via-slate-900/95 to-teal-900/95 backdrop-blur-sm z-50 overflow-y-auto" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="min-h-screen py-8 px-4">
         <div className="max-w-2xl mx-auto space-y-6">
-          
+
           {/* Header with Language Toggle */}
           <div className="text-center text-white">
             <div className="flex items-center justify-between mb-4">
@@ -283,8 +289,8 @@ Extract the following in JSON format:
                   {t({ en: 'Researcher Profile Setup', ar: 'إعداد ملف الباحث' })}
                 </h1>
               </div>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={toggleLanguage}
                 className="text-white/70 hover:text-white hover:bg-white/10 font-medium w-24"
@@ -306,13 +312,12 @@ Extract the following in JSON format:
                   const StepIcon = step.icon;
                   const isActive = currentStep === step.id;
                   const isComplete = currentStep > step.id;
-                  
+
                   return (
                     <React.Fragment key={step.id}>
-                      <Badge className={`px-3 py-2 border-0 ${
-                        isActive ? 'bg-green-600 text-white' : 
+                      <Badge className={`px-3 py-2 border-0 ${isActive ? 'bg-green-600 text-white' :
                         isComplete ? 'bg-emerald-600 text-white' : 'bg-white/10 text-white/60'
-                      }`}>
+                        }`}>
                         <StepIcon className="h-4 w-4 mr-1" />
                         {step.title[language]}
                       </Badge>
@@ -444,11 +449,10 @@ Extract the following in JSON format:
                       <div
                         key={area.en}
                         onClick={() => toggleResearchArea(area.en)}
-                        className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                          formData.research_areas.includes(area.en)
-                            ? 'border-green-500 bg-green-50'
-                            : 'border-border hover:border-green-300'
-                        }`}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all ${formData.research_areas.includes(area.en)
+                          ? 'border-green-500 bg-green-50'
+                          : 'border-border hover:border-green-300'
+                          }`}
                       >
                         <div className="flex items-center gap-2">
                           <Checkbox checked={formData.research_areas.includes(area.en)} />
@@ -468,11 +472,10 @@ Extract the following in JSON format:
                       <div
                         key={type.id}
                         onClick={() => toggleCollabType(type.id)}
-                        className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                          formData.collaboration_types.includes(type.id)
-                            ? 'border-green-500 bg-green-50'
-                            : 'border-border hover:border-green-300'
-                        }`}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all ${formData.collaboration_types.includes(type.id)
+                          ? 'border-green-500 bg-green-50'
+                          : 'border-border hover:border-green-300'
+                          }`}
                       >
                         <div className="flex items-center gap-2">
                           <Checkbox checked={formData.collaboration_types.includes(type.id)} />
@@ -548,7 +551,7 @@ Extract the following in JSON format:
                   {t({ en: 'Research Profile Ready!', ar: 'ملف البحث جاهز!' })}
                 </h2>
                 <p className="text-emerald-700">
-                  {t({ 
+                  {t({
                     en: 'Start exploring R&D opportunities and connect with municipalities!',
                     ar: 'ابدأ باستكشاف فرص البحث والتطوير والتواصل مع البلديات!'
                   })}

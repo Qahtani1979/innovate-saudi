@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useAudit } from '@/hooks/useAuditHooks';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -12,20 +11,7 @@ function AuditDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const auditId = urlParams.get('id');
 
-  const { data: audit, isLoading } = useQuery({
-    queryKey: ['audit-detail', auditId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('audits')
-        .select('*')
-        .eq('id', auditId)
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!auditId
-  });
+  const { data: audit, isLoading } = useAudit(auditId);
 
   if (isLoading || !audit) {
     return (

@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useSolutionReviews } from '@/hooks/useSolutionReviews';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -8,21 +7,7 @@ import { Quote, Star, Building2, ThumbsUp } from 'lucide-react';
 export default function ClientTestimonialsShowcase({ solutionId }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: reviews = [] } = useQuery({
-    queryKey: ['solution-reviews-testimonials', solutionId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('solution_reviews')
-        .select('*')
-        .eq('solution_id', solutionId)
-        .gte('overall_rating', 4)
-        .not('review_text', 'is', null)
-        .order('overall_rating', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!solutionId
-  });
+  const { data: reviews = [] } = useSolutionReviews(solutionId);
 
   const featuredReviews = reviews.slice(0, 6);
   const avgRating = reviews.length > 0

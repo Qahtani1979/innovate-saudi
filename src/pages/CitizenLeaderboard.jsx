@@ -1,5 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useCitizenLeaderboard } from '@/hooks/useCitizenLeaderboard';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
@@ -9,20 +8,7 @@ import { CitizenPageLayout, CitizenPageHeader } from '@/components/citizen/Citiz
 
 function CitizenLeaderboard() {
   const { language, isRTL, t } = useLanguage();
-
-  const { data: topContributors = [] } = useQuery({
-    queryKey: ['citizen-leaderboard'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('citizen_points')
-        .select('*')
-        .eq('is_active', true)
-        .order('total_points', { ascending: false })
-        .limit(50);
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: topContributors = [], isLoading } = useCitizenLeaderboard({ limit: 50 });
 
   const getRankIcon = (rank) => {
     if (rank === 1) return <Crown className="h-6 w-6 text-yellow-500" />;
@@ -48,6 +34,9 @@ function CitizenLeaderboard() {
         icon={Trophy}
         title={{ en: 'Top Contributors Leaderboard', ar: 'قائمة أفضل المساهمين' }}
         subtitle={{ en: 'Recognizing our most engaged citizens', ar: 'تقدير المواطنين الأكثر مشاركة' }}
+        description={{ en: 'See who is leading the way in civic innovation', ar: 'انظر من يقود الطريق في الابتكار المدني' }}
+        action={null}
+        actions={null}
       />
 
       {/* Top 3 Podium */}
@@ -58,8 +47,8 @@ function CitizenLeaderboard() {
 
           return (
             <Card key={contributor.id} className={`${heights[rank]} border - 2 ${rank === 1 ? 'border-yellow-400 bg-gradient-to-br from-yellow-50 to-amber-50' :
-                rank === 2 ? 'border-gray-400 bg-gradient-to-br from-gray-50 to-slate-50' :
-                  'border-amber-600 bg-gradient-to-br from-amber-50 to-orange-50'
+              rank === 2 ? 'border-gray-400 bg-gradient-to-br from-gray-50 to-slate-50' :
+                'border-amber-600 bg-gradient-to-br from-amber-50 to-orange-50'
               } ${rank === 2 ? 'order-first md:order-none' : ''} `}>
               <CardContent className="pt-6 text-center flex flex-col items-center justify-between h-full">
                 <div className="flex flex-col items-center">
@@ -68,13 +57,13 @@ function CitizenLeaderboard() {
                 </div>
                 <div className="w-full">
                   <p className="font-semibold text-slate-900 mb-1">
-                    {contributor.citizen_identifier.split('@')[0]}
+                    {contributor.user_email?.split('@')[0] || 'Citizen'}
                   </p>
                   <Badge className={getLevelColor(contributor.level)}>
-                    {contributor.level}
+                    {contributor.level || 'Bronze'}
                   </Badge>
                   <p className="text-2xl font-bold text-purple-600 mt-2">
-                    {contributor.total_points}
+                    {contributor.points || 0}
                   </p>
                   <p className="text-xs text-slate-500">{t({ en: 'points', ar: 'نقطة' })}</p>
                 </div>
@@ -107,21 +96,16 @@ function CitizenLeaderboard() {
                   </div>
                   <div className="flex-1">
                     <p className="font-medium text-slate-900">
-                      {contributor.citizen_identifier.split('@')[0]}
+                      {contributor.user_email?.split('@')[0] || 'Citizen'}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       <Badge className={getLevelColor(contributor.level)} variant="outline">
-                        {contributor.level}
+                        {contributor.level || 'Bronze'}
                       </Badge>
-                      {contributor.badges_earned?.slice(0, 3).map((badge, i) => (
-                        <Badge key={i} variant="outline" className="text-xs">
-                          {badge}
-                        </Badge>
-                      ))}
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-xl font-bold text-purple-600">{contributor.total_points}</p>
+                    <p className="text-xl font-bold text-purple-600">{contributor.points || 0}</p>
                     <p className="text-xs text-slate-500">{t({ en: 'points', ar: 'نقطة' })}</p>
                   </div>
                 </div>

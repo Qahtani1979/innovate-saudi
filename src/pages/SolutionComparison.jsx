@@ -1,10 +1,10 @@
 ﻿import React, { useState } from 'react';
-import { useMatchingEntities } from '@/hooks/useMatchingEntities';
+import { useSolutions } from '@/hooks/useSolutions';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
-import { CheckCircle2, XCircle, Target, Plus, X } from 'lucide-react';
+import { CheckCircle2, XCircle, Target, Plus, X, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
@@ -13,8 +13,7 @@ function SolutionComparison() {
   const { language, isRTL, t } = useLanguage();
   const [selectedSolutions, setSelectedSolutions] = useState([]);
 
-  const { useSolutions } = useMatchingEntities();
-  const { data: solutions = [] } = useSolutions();
+  const { solutions = [] } = useSolutions({ publishedOnly: true });
 
   const urlParams = new URLSearchParams(window.location.search);
   const preselected = urlParams.get('ids')?.split(',') || [];

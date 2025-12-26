@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useScalingMutations } from '@/hooks/useScalingMutations';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../LanguageContext';
@@ -16,7 +15,6 @@ import {
 
 export default function ScalingToProgramConverter({ scalingPlan, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [programData, setProgramData] = useState({
     name_en: '',
     name_ar: '',
@@ -26,50 +24,8 @@ export default function ScalingToProgramConverter({ scalingPlan, onClose, onSucc
   });
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const createProgramMutation = useMutation({
-    mutationFn: async (data) => {
-      // Create program
-      const { data: program, error: programError } = await supabase
-        .from('programs')
-        .insert([data])
-        .select()
-        .single();
-
-      if (programError) throw programError;
-
-      // Update scaling plan with institutionalization info
-      const { error: scalingError } = await supabase
-        .from('scaling_plans')
-        .update({
-          institutionalization_program_id: program.id,
-          institutionalization_date: new Date().toISOString()
-        })
-        .eq('id', scalingPlan.id);
-
-      if (scalingError) throw scalingError;
-
-      // Log system activity
-      const { error: activityError } = await supabase
-        .from('system_activities')
-        .insert([{
-          entity_type: 'scaling_plan',
-          entity_id: scalingPlan.id,
-          action: 'institutionalized_as_program',
-          description: `Scaling knowledge institutionalized: ${program.name_en}`
-        }]);
-
-      if (activityError) throw activityError;
-
-      return program;
-    },
-    onSuccess: (program) => {
-      queryClient.invalidateQueries({ queryKey: ['scaling-plans'] });
-      queryClient.invalidateQueries({ queryKey: ['programs'] });
-      toast.success(t({ en: 'Training program created', ar: 'تم إنشاء البرنامج التدريبي' }));
-      onSuccess?.(program);
-      onClose?.();
-    }
-  });
+  /* Refactored to use Gold Standard Hooks */
+  const { institutionalizeScalingPlan } = useScalingMutations();
 
   const generateWithAI = async () => {
     const result = await invokeAI({
@@ -90,18 +46,26 @@ export default function ScalingToProgramConverter({ scalingPlan, onClose, onSucc
       return;
     }
 
-    createProgramMutation.mutate({
-      ...programData,
-      program_type: 'training',
-      focus_areas: [scalingPlan.sector],
-      target_participants: {
-        type: ['municipalities'],
-        min_participants: 10,
-        max_participants: 50
-      },
-      duration_weeks: 12,
-      status: 'planning',
-      tags: ['knowledge_transfer', 'scaling', 'best_practices']
+    institutionalizeScalingPlan.mutate({
+      scalingPlanId: scalingPlan.id,
+      programData: {
+        ...programData,
+        program_type: 'training',
+        focus_areas: [scalingPlan.sector],
+        target_participants: {
+          type: ['municipalities'],
+          min_participants: 10,
+          max_participants: 50
+        },
+        duration_weeks: 12,
+        status: 'planning',
+        tags: ['knowledge_transfer', 'scaling', 'best_practices']
+      }
+    }, {
+      onSuccess: (program) => {
+        onSuccess?.(program);
+        onClose?.();
+      }
     });
   };
 
@@ -179,10 +143,10 @@ export default function ScalingToProgramConverter({ scalingPlan, onClose, onSucc
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={createProgramMutation.isPending || !programData.name_en}
+              disabled={institutionalizeScalingPlan.isPending || !programData.name_en}
               className="flex-1 bg-gradient-to-r from-orange-600 to-amber-600"
             >
-              {createProgramMutation.isPending ? (
+              {institutionalizeScalingPlan.isPending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
                 <CheckCircle2 className="h-4 w-4 mr-2" />

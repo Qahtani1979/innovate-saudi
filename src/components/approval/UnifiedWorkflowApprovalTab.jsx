@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,6 +13,7 @@ import { useAuth } from '@/lib/AuthContext';
 import RequesterAI from './RequesterAI';
 import ReviewerAI from './ReviewerAI';
 import ProgramExpertEvaluation from '../programs/ProgramExpertEvaluation';
+import { useApprovalRequests, useApprovalWorkflowMutations } from '@/hooks/useApprovalWorkflow';
 
 /**
  * UnifiedWorkflowApprovalTab - Single tab replacing separate Workflow + Approvals tabs
@@ -26,61 +25,20 @@ export default function UnifiedWorkflowApprovalTab({
   entityData
 }) {
   const { t, language, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
   const [selectedGate, setSelectedGate] = useState(null);
   const [showSelfCheck, setShowSelfCheck] = useState(false);
 
   // Fetch approval requests for this entity
-  const { data: approvalRequests = [] } = useQuery({
-    queryKey: ['approval-requests', entityType, entityId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('approval_requests')
-        .select('*')
-        .eq('entity_type', entityType)
-        .eq('entity_id', entityId);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!entityId
-  });
+  const { data: approvalRequests = [] } = useApprovalRequests(entityType, entityId);
+  const { createApprovalRequest, updateApprovalRequest } = useApprovalWorkflowMutations(entityType, entityId);
 
   // Simplified gate configuration - no external dependencies
   const gates = [];
 
-  // Create approval request mutation
-  const createApprovalMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: result, error } = await supabase
-        .from('approval_requests')
-        .insert(data)
-        .select()
-        .single();
-      if (error) throw error;
-      return result;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['approval-requests', entityType, entityId]);
-    }
-  });
-
-  // Update approval request mutation
-  const updateApprovalMutation = useMutation({
-    mutationFn: async ({ id, data }) => {
-      const { data: result, error } = await supabase
-        .from('approval_requests')
-        .update(data)
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw error;
-      return result;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['approval-requests', entityType, entityId]);
-    }
-  });
+  // Alias mutations to match existing code
+  const createApprovalMutation = createApprovalRequest;
+  const updateApprovalMutation = updateApprovalRequest;
 
   // Get approval request for a specific gate
   const getApprovalForGate = (gateName) => {

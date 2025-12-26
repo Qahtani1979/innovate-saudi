@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -9,10 +8,11 @@ import { Progress } from "@/components/ui/progress";
 import { useLanguage } from './LanguageContext';
 import { Rocket, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLivingLabMutations } from '@/hooks/useLivingLab';
 
 export default function LivingLabLaunchChecklist({ lab, onClose }) {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
+  const { launchLab } = useLivingLabMutations(lab?.id);
 
   const launchChecks = [
     { id: 'infrastructure_ready', label: { en: 'Infrastructure and equipment operational', ar: 'البنية التحتية والمعدات جاهزة' }, required: true },
@@ -32,29 +32,17 @@ export default function LivingLabLaunchChecklist({ lab, onClose }) {
   );
   const [launchNotes, setLaunchNotes] = useState('');
 
-  const launchMutation = useMutation({
-    mutationFn: async () => {
-      await base44.entities.LivingLab.update(lab.id, {
-        status: 'operational',
-        launch_date: new Date().toISOString().split('T')[0],
-        launch_checklist: checklist,
-        launch_notes: launchNotes
-      });
-
-      await base44.entities.Notification.create({
-        type: 'livinglab_launched',
-        title: `Living Lab Launched: ${lab.name_en}`,
-        message: `${lab.name_en} is now operational and accepting research projects.`,
-        severity: 'success',
-        link: `/LivingLabDetail?id=${lab.id}`
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['living-lab']);
-      toast.success(t({ en: 'Living Lab launched successfully', ar: 'تم إطلاق المختبر بنجاح' }));
-      onClose();
-    }
-  });
+  const handleLaunch = () => {
+    launchLab.mutate({
+      lab,
+      checklist,
+      notes: launchNotes
+    }, {
+      onSuccess: () => {
+        onClose();
+      }
+    });
+  };
 
   const allRequiredChecked = launchChecks
     .filter(c => c.required)
@@ -75,10 +63,10 @@ export default function LivingLabLaunchChecklist({ lab, onClose }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="p-4 bg-teal-50 border border-teal-200 rounded-lg">
-          <p className="text-sm font-medium text-teal-900">{lab?.name_en}</p>
+          <p className="text-sm font-medium text-teal-900">{isRTL ? lab?.name_ar : lab?.name_en}</p>
           <p className="text-xs text-slate-600 mt-1">{lab?.type}</p>
           <div className="flex items-center justify-between mt-3">
-            <p className="text-xs text-teal-900">Launch Readiness</p>
+            <p className="text-xs text-teal-900">{t({ en: 'Launch Readiness', ar: 'جاهزية الإطلاق' })}</p>
             <Badge className="bg-teal-600 text-white">
               {Object.values(checklist).filter(Boolean).length}/{launchChecks.length}
             </Badge>
@@ -90,14 +78,17 @@ export default function LivingLabLaunchChecklist({ lab, onClose }) {
           {launchChecks.map((check) => (
             <div key={check.id} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-slate-50">
               <Checkbox
+                id={check.id}
                 checked={checklist[check.id]}
                 onCheckedChange={(checked) => setChecklist({ ...checklist, [check.id]: checked })}
                 className="mt-0.5"
               />
               <div className="flex-1">
-                <p className="text-sm text-slate-900">{check.label[isRTL ? 'ar' : 'en']}</p>
+                <label htmlFor={check.id} className="text-sm text-slate-900 cursor-pointer">
+                  {check.label[isRTL ? 'ar' : 'en']}
+                </label>
                 {check.required && (
-                  <Badge className="bg-red-100 text-red-700 text-xs mt-1">
+                  <Badge className="bg-red-100 text-red-700 text-xs mt-1 block w-fit">
                     {t({ en: 'Required', ar: 'مطلوب' })}
                   </Badge>
                 )}
@@ -120,12 +111,12 @@ export default function LivingLabLaunchChecklist({ lab, onClose }) {
 
         <div className="flex gap-3 pt-4 border-t">
           <Button
-            onClick={() => launchMutation.mutate()}
-            disabled={!allRequiredChecked || launchMutation.isPending}
+            onClick={handleLaunch}
+            disabled={!allRequiredChecked || launchLab.isPending}
             className="flex-1 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700"
           >
-            {launchMutation.isPending ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            {launchLab.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : (
               <Rocket className="h-4 w-4 mr-2" />
             )}

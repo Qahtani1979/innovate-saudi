@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useLivingLab, useLivingLabProjects, useLivingLabSandboxes, useLivingLabEvaluations } from '@/hooks/useLivingLab';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +30,10 @@ import AICapacityOptimizer from '../components/livinglabs/AICapacityOptimizer';
 import LabSolutionCertificationWorkflow from '../components/livinglab/LabSolutionCertificationWorkflow';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
 
+/**
+ * LivingLabDetail
+ * ✅ GOLD STANDARD COMPLIANT
+ */
 export default function LivingLabDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const labId = urlParams.get('id');
@@ -44,66 +47,10 @@ export default function LivingLabDetail() {
   const [showInfrastructure, setShowInfrastructure] = useState(false);
   const [showCapacityOptimizer, setShowCapacityOptimizer] = useState(false);
 
-  /** @type {{ data: import('@/types/supa_ext').LivingLab | null, isLoading: boolean }} */
-  const { data: lab, isLoading } = useQuery({
-    queryKey: ['living-lab', labId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('living_labs')
-        .select('*')
-        .eq('id', labId)
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!labId
-  });
-
-  const { data: projects = [] } = useQuery({
-    queryKey: ['rd-projects', labId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_projects')
-        .select('*')
-        .eq('living_lab_id', labId);
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!labId
-  });
-
-  const { data: sandboxes = [] } = useQuery({
-    queryKey: ['sandboxes-linked', labId],
-    queryFn: async () => {
-      // @ts-ignore
-      const { data, error } = await supabase
-        .from('sandboxes')
-        .select('*')
-        .eq('living_lab_id', labId);
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!labId
-  });
-
-  /** @type {{ data: import('@/types/supa_ext').ExpertEvaluation[] }} */
-  const { data: expertEvaluations = [] } = useQuery({
-    queryKey: ['lab-expert-evaluations', labId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('expert_evaluations')
-        .select('*')
-        .eq('entity_id', labId)
-        .in('entity_type', ['livinglab_project', 'lab_output', 'LivingLab']);
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!labId
-  });
+  const { data: lab, isLoading } = useLivingLab(labId);
+  const { data: projects = [] } = useLivingLabProjects(labId);
+  const { data: sandboxes = [] } = useLivingLabSandboxes(labId);
+  const { data: expertEvaluations = [] } = useLivingLabEvaluations(labId);
 
   if (isLoading || !lab) {
     return (

@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 export function usePlatformInsights() {
     const queryClient = useQueryClient();
 
-    const { data: announcements = [], isLoading, error } = useQuery({
+    const { data: announcements = [], isLoading, error, refetch } = useQuery({
         queryKey: ['platform-insights'],
         queryFn: async () => {
             const { data, error } = await supabase
@@ -27,5 +27,5 @@ export function usePlatformInsights() {
         }
     });
 
-    return { announcements, isLoading, error, markAsRead };
+    return { announcements, isLoading, error, markAsRead, refetch };
 }

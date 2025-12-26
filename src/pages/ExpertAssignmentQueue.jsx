@@ -1,8 +1,6 @@
 import { useState } from 'react';
-import { useExpertAssignments } from '@/hooks/useExpertData';
+import { useExpertAssignmentsWithDetails } from '@/hooks/useExpertData';
 import { useExpertAssignmentMutations } from '@/hooks/useExpertAssignmentMutations';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client'; // Kept for details fetching
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Button } from "@/components/ui/button";
@@ -31,36 +29,10 @@ function ExpertAssignmentQueue() {
   const [activeTab, setActiveTab] = useState('pending');
   const { user } = useAuth();
 
-  const { data: assignments = [], isLoading } = useExpertAssignments(user?.email);
-
-  // Fetch entity details for each assignment
-  const { data: assignmentDetails = [] } = useQuery({
-    queryKey: ['assignment-details', assignments],
-    queryFn: async () => {
-      if (!assignments || assignments.length === 0) return [];
-      const details = await Promise.all(
-        assignments.map(async (a) => {
-          try {
-            let entity;
-            const { data, error } = await supabase
-              .from(a.entity_type === 'rd_proposal' ? 'rd_proposals' : `${a.entity_type}s`)
-              .select('*')
-              .eq('id', a.entity_id)
-              .single();
-
-            if (!error) {
-              entity = data;
-            }
-            return { ...a, entity };
-          } catch {
-            return { ...a, entity: null };
-          }
-        })
-      );
-      return details;
-    },
-    enabled: assignments.length > 0
-  });
+  const { data: assignmentDetails = [], isLoading } = useExpertAssignmentsWithDetails(user?.email);
+  // Derive assignments for stats total if needed, or just use assignmentDetails length.
+  // The original code used `assignments.length` for total. assignmentDetails has the same length.
+  const assignments = assignmentDetails;
 
   const { acceptAssignment, declineAssignment } = useExpertAssignmentMutations();
 

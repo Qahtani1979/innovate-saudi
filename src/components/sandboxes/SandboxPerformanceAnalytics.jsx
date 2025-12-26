@@ -1,46 +1,15 @@
 
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../LanguageContext';
 import { BarChart3, TrendingUp, Clock, AlertCircle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-import { supabase } from "@/integrations/supabase/client";
+import { useSandboxData } from '@/hooks/useSandboxData';
 
 export default function SandboxPerformanceAnalytics({ sandboxId }) {
   const { language, t } = useLanguage();
 
-  const { data: applications = [] } = useQuery({
-    queryKey: ['sandbox-apps', sandboxId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('sandbox_applications')
-        .select('*')
-        .eq('sandbox_id', sandboxId);
-
-      if (error) {
-        console.warn('Apps fetch failed', error);
-        return [];
-      }
-      return data;
-    }
-  });
-
-  const { data: incidents = [] } = useQuery({
-    queryKey: ['sandbox-incidents', sandboxId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('sandbox_incidents')
-        .select('*')
-        .eq('sandbox_id', sandboxId);
-
-      if (error) {
-        console.warn('Incidents fetch failed', error);
-        return [];
-      }
-      return data;
-    }
-  });
+  const { applications = [], incidents = [] } = useSandboxData(sandboxId);
 
   const successRate = applications.length > 0
     ? (applications.filter(a => a.status === 'completed' && a.outcome === 'successful').length / applications.filter(a => a.status === 'completed').length) * 100

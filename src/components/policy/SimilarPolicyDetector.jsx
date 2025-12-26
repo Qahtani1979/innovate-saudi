@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,11 +8,13 @@ import { AlertTriangle, ExternalLink, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import { 
-  SIMILAR_POLICY_SYSTEM_PROMPT, 
-  buildSimilarPolicyPrompt, 
-  SIMILAR_POLICY_SCHEMA 
+import {
+  SIMILAR_POLICY_SYSTEM_PROMPT,
+  buildSimilarPolicyPrompt,
+  SIMILAR_POLICY_SCHEMA
 } from '@/lib/ai/prompts/policy/similarPolicy';
+
+import { usePolicyRecommendations } from '@/hooks/usePolicyRecommendations';
 
 export default function SimilarPolicyDetector({ policyData, onDismiss }) {
   const { language, isRTL, t } = useLanguage();
@@ -19,9 +22,13 @@ export default function SimilarPolicyDetector({ policyData, onDismiss }) {
   const [isChecking, setIsChecking] = useState(false);
   const { invokeAI } = useAIWithFallback({ showToasts: false });
 
+  const { data: allPolicies = [] } = usePolicyRecommendations();
+
   useEffect(() => {
-    checkSimilarPolicies();
-  }, [policyData.title_ar, policyData.recommendation_text_ar]);
+    if (allPolicies.length > 0) {
+      checkSimilarPolicies();
+    }
+  }, [policyData.title_ar, policyData.recommendation_text_ar, allPolicies]);
 
   const cosineSimilarity = (a, b) => {
     if (!a || !b || a.length !== b.length) return 0;
@@ -39,21 +46,22 @@ export default function SimilarPolicyDetector({ policyData, onDismiss }) {
 
     setIsChecking(true);
     try {
-      const allPolicies = await base44.entities.PolicyRecommendation.list();
-      
+      // used to await base44.entities.PolicyRecommendation.list(); now using allPolicies from hook
+
+
       // Strategy 1: Use embeddings if available (most accurate)
       if (policyData.embedding && policyData.embedding.length > 0) {
-        const withEmbeddings = allPolicies.filter(p => 
+        const withEmbeddings = allPolicies.filter(p =>
           p.embedding && p.embedding.length > 0 && p.id !== policyData.id
         );
-        
+
         const scored = withEmbeddings.map(p => ({
           policy: p,
           score: Math.round(cosineSimilarity(policyData.embedding, p.embedding) * 100)
         }))
-        .filter(s => s.score >= 70)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 3);
+          .filter(s => s.score >= 70)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3);
 
         if (scored.length > 0) {
           setSimilarPolicies(scored.map(s => ({ ...s.policy, similarity_score: s.score })));
@@ -121,12 +129,12 @@ export default function SimilarPolicyDetector({ policyData, onDismiss }) {
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-xs text-orange-900">
-          {t({ 
+          {t({
             en: 'These existing policies may be related. Review them to avoid duplication.',
             ar: 'قد تكون هذه السياسات الحالية ذات صلة. راجعها لتجنب التكرار.'
           })}
         </p>
-        
+
         <div className="space-y-2">
           {similarPolicies.map(policy => (
             <div key={policy.id} className="p-3 bg-white border border-orange-200 rounded-lg">
@@ -149,8 +157,8 @@ export default function SimilarPolicyDetector({ policyData, onDismiss }) {
                     {language === 'ar' && policy.title_ar ? policy.title_ar : policy.title_en}
                   </p>
                   <p className="text-xs text-slate-600 line-clamp-2 mt-1" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                    {language === 'ar' && policy.recommendation_text_ar 
-                      ? policy.recommendation_text_ar 
+                    {language === 'ar' && policy.recommendation_text_ar
+                      ? policy.recommendation_text_ar
                       : policy.recommendation_text_en}
                   </p>
                   {policy.similarity_reason && (

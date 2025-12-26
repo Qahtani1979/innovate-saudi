@@ -1,5 +1,5 @@
 
-import { useQuery } from '@tanstack/react-query';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,24 +8,12 @@ import { Shield, Plus, Loader2, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 
+import { usePolicyRecommendations } from '@/hooks/usePolicyRecommendations';
+
 export default function PolicyTabWidget({ entityType, entityId }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: policies = [], isLoading } = useQuery({
-    queryKey: ['entity-policies', entityType, entityId],
-    queryFn: async () => {
-      const allPolicies = await base44.entities.PolicyRecommendation.list();
-      const fieldMap = {
-        pilot: 'pilot_id',
-        rd_project: 'rd_project_id',
-        program: 'program_id',
-        challenge: 'challenge_id'
-      };
-      const field = fieldMap[entityType];
-      return allPolicies.filter(p => p[field] === entityId);
-    },
-    enabled: !!entityId
-  });
+  const { data: policies = [], isLoading } = usePolicyRecommendations({ entityType, entityId });
 
   const getCreateUrl = () => {
     const params = new URLSearchParams();
@@ -68,9 +56,9 @@ export default function PolicyTabWidget({ entityType, entityId }) {
           <div className="text-center py-8">
             <Shield className="h-12 w-12 text-slate-300 mx-auto mb-3" />
             <p className="text-slate-500 text-sm mb-4">
-              {t({ 
-                en: `No policy recommendations yet for this ${entityType}`, 
-                ar: `لا توجد توصيات سياسية بعد لهذا ${entityType}` 
+              {t({
+                en: `No policy recommendations yet for this ${entityType}`,
+                ar: `لا توجد توصيات سياسية بعد لهذا ${entityType}`
               })}
             </p>
             <Link to={createPageUrl(getCreateUrl())}>
@@ -99,7 +87,7 @@ export default function PolicyTabWidget({ entityType, entityId }) {
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
                         <p className="text-sm font-medium text-slate-900" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                         {language === 'ar' && policy.title_ar ? policy.title_ar : policy.title_en}
+                          {language === 'ar' && policy.title_ar ? policy.title_ar : policy.title_en}
                         </p>
                         <div className="flex gap-2 mt-1">
                           <Badge className={statusColors[(policy.workflow_stage || policy.status)] || 'bg-slate-100'}>
@@ -124,8 +112,8 @@ export default function PolicyTabWidget({ entityType, entityId }) {
                       )}
                     </div>
                     <p className="text-xs text-slate-600 line-clamp-2 mt-2" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                      {language === 'ar' && policy.recommendation_text_ar 
-                        ? policy.recommendation_text_ar 
+                      {language === 'ar' && policy.recommendation_text_ar
+                        ? policy.recommendation_text_ar
                         : policy.recommendation_text_en}
                     </p>
                   </div>

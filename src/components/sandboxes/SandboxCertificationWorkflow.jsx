@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSolutions } from '@/hooks/useSolutions';
+import { useSandboxCertifications, useSandboxCertificationMutations } from '@/hooks/useSandboxCertifications';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,48 +17,30 @@ export default function SandboxCertificationWorkflow({ sandboxId }) {
   const [selectedSolution, setSelectedSolution] = useState(null);
   const [certificationNotes, setCertificationNotes] = useState('');
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions-search', searchQuery],
-    queryFn: async () => {
-      if (!searchQuery || searchQuery.length < 2) return [];
-      return base44.entities.Solution.filter({
-        $or: [
-          { name_en: { $regex: searchQuery, $options: 'i' } },
-          { name_ar: { $regex: searchQuery, $options: 'i' } }
-        ]
-      }, '-created_date', 10);
-    },
-    enabled: searchQuery.length >= 2
+  const { solutions = [] } = useSolutions({
+    searchQuery: searchQuery.length >= 2 ? searchQuery : undefined,
+    limit: 10
   });
 
-  const { data: existingCerts = [] } = useQuery({
-    queryKey: ['sandbox-certifications', sandboxId],
-    queryFn: () => base44.entities.SandboxCertification.filter({ sandbox_id: sandboxId })
-  });
-
-  const certifyMutation = useMutation({
-    mutationFn: async (data) => {
-      return base44.entities.SandboxCertification.create(data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sandbox-certifications'] });
-      toast.success(t({ en: 'Solution certified!', ar: 'تم اعتماد الحل!' }));
-      setSelectedSolution(null);
-      setCertificationNotes('');
-      setSearchQuery('');
-    }
-  });
+  const { data: existingCerts = [] } = useSandboxCertifications(sandboxId);
+  const { createCertification } = useSandboxCertificationMutations();
 
   const handleCertify = () => {
     if (!selectedSolution) return;
 
-    certifyMutation.mutate({
+    createCertification.mutate({
       sandbox_id: sandboxId,
       solution_id: selectedSolution.id,
       certification_type: 'regulatory_sandbox_tested',
       certification_date: new Date().toISOString(),
       certification_notes: certificationNotes,
       status: 'active'
+    }, {
+      onSuccess: () => {
+        setSelectedSolution(null);
+        setCertificationNotes('');
+        setSearchQuery('');
+      }
     });
   };
 
@@ -126,7 +109,7 @@ export default function SandboxCertificationWorkflow({ sandboxId }) {
 
               <Button
                 onClick={handleCertify}
-                disabled={certifyMutation.isPending}
+                disabled={createCertification.isPending}
                 className="w-full mt-3 bg-gradient-to-r from-purple-600 to-indigo-600"
               >
                 <Award className="h-4 w-4 mr-2" />

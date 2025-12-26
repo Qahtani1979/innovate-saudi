@@ -18,7 +18,7 @@ import { toast } from 'sonner';
 
 function ServiceQualityDashboard() {
   const { t, language } = useLanguage();
-  const queryClient = useQueryClient();
+
   const [selectedService, setSelectedService] = useState(null);
   const [ratingData, setRatingData] = useState({ rating: 5, comment: '' });
 

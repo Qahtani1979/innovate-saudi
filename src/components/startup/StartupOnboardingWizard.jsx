@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
-import { useRegions, useStartupOnboardingMutations } from '../../hooks/useStartupOnboarding';
+import { useRegions, useStartupOnboarding } from '../../hooks/useStartupEcosystem';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,7 +60,6 @@ const STAGES = [
 export default function StartupOnboardingWizard({ onComplete, onSkip }) {
   const { language, isRTL, t } = useLanguage();
   const { user, userProfile, checkAuth } = useAuth();
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -83,7 +81,7 @@ export default function StartupOnboardingWizard({ onComplete, onSkip }) {
   });
 
   // Fetch regions for geographic coverage
-  const { submitOnboarding } = useStartupOnboardingMutations();
+  const { submitOnboarding } = useStartupOnboarding();
 
   // Fetch regions for geographic coverage
   const { data: regions = [] } = useRegions();

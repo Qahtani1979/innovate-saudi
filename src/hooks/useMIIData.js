@@ -202,17 +202,16 @@ export function useMIIMutation() {
       return data;
     },
     onSuccess: (_, municipalityId) => {
-      queryClient.invalidateQueries(['municipality', municipalityId]);
-      queryClient.invalidateQueries(['mii-latest-result', municipalityId]);
       queryClient.invalidateQueries(['mii-history', municipalityId]);
     }
   });
 }
-export function useAllMIIResults() {
+
+export function useMIIIndicators() {
   return useQuery({
-    queryKey: ['all-mii-results-raw'],
+    queryKey: ['mii-indicators'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('mii_results').select('*');
+      const { data, error } = await supabase.from('mii_indicators').select('*');
       if (error) throw error;
       return data || [];
     }

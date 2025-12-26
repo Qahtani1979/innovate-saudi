@@ -9,15 +9,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useLanguage } from '@/components/LanguageContext';
-import { 
-  Send, Plus, Eye, Pause, XCircle, Play, Users, Mail, Calendar, 
+import {
+  Send, Plus, Eye, Pause, XCircle, Play, Users, Mail, Calendar,
   Loader2, CheckCircle2, Clock, Megaphone, RefreshCw, Trash2, Sparkles, ChevronDown
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import CampaignAIHelpers from './CampaignAIHelpers';
+import { useEmailCampaigns, useCampaignTemplates, useCampaignMutations, useCampaignActions } from '@/hooks/useEmailCampaigns';
 
 const STATUS_CONFIG = {
   draft: { icon: Clock, color: 'text-slate-600', bg: 'bg-slate-100', label: { en: 'Draft', ar: 'مسودة' } },
@@ -37,17 +36,16 @@ const AUDIENCE_TYPES = [
 
 export default function CampaignManager() {
   const { t, language } = useLanguage();
-  const queryClient = useQueryClient();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [previewEmail, setPreviewEmail] = useState('');
   const [showAIHelpers, setShowAIHelpers] = useState(false);
-  
+
   // AI-generated content for campaigns
   const [aiGeneratedSubject, setAiGeneratedSubject] = useState('');
   const [aiGeneratedBody, setAiGeneratedBody] = useState('');
-  
+
   const [newCampaign, setNewCampaign] = useState({
     name: '',
     description: '',
@@ -57,129 +55,42 @@ export default function CampaignManager() {
     campaign_variables: {},
     scheduled_at: null,
   });
-  
+
   const [customEmails, setCustomEmails] = useState('');
-  
+
   // Handlers for AI-generated content
   const handleUseAISubject = (subject) => {
-    setNewCampaign(prev => ({ 
-      ...prev, 
-      campaign_variables: { 
-        ...prev.campaign_variables, 
-        subject: subject 
-      } 
+    setNewCampaign(prev => ({
+      ...prev,
+      campaign_variables: {
+        ...prev.campaign_variables,
+        subject: subject
+      }
     }));
     toast.success(t({ en: 'Subject applied to campaign', ar: 'تم تطبيق العنوان على الحملة' }));
   };
-  
+
   const handleUseAIBody = (body) => {
-    setNewCampaign(prev => ({ 
-      ...prev, 
-      campaign_variables: { 
-        ...prev.campaign_variables, 
+    setNewCampaign(prev => ({
+      ...prev,
+      campaign_variables: {
+        ...prev.campaign_variables,
         body: body,
-        content: body 
-      } 
+        content: body
+      }
     }));
     toast.success(t({ en: 'Content applied to campaign', ar: 'تم تطبيق المحتوى على الحملة' }));
   };
 
   // Fetch campaigns
-  const { data: campaigns = [], isLoading, refetch } = useQuery({
-    queryKey: ['email-campaigns'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('email_campaigns')
-        .select('*, email_templates(template_key, name_en, name_ar, category)')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: campaigns = [], isLoading, refetch } = useEmailCampaigns();
 
-  // Fetch templates for selection - ONLY campaign category
-  const { data: templates = [] } = useQuery({
-    queryKey: ['email-templates-for-campaigns'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('email_templates')
-        .select('id, template_key, name_en, name_ar, category, variables')
-        .eq('is_active', true)
-        .eq('category', 'campaign') // Only show campaign templates
-        .order('name_en', { ascending: true });
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // Fetch templates for selection
+  const { data: templates = [] } = useCampaignTemplates();
 
-  // Create campaign mutation
-  const createMutation = useMutation({
-    mutationFn: async (campaign) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data, error } = await supabase
-        .from('email_campaigns')
-        .insert({
-          ...campaign,
-          created_by: user?.email
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['email-campaigns'] });
-      setShowCreateDialog(false);
-      resetForm();
-      toast.success(t({ en: 'Campaign created', ar: 'تم إنشاء الحملة' }));
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    }
-  });
-
-  // Campaign action mutation
-  const actionMutation = useMutation({
-    mutationFn: async ({ campaignId, action, previewEmail }) => {
-      const { data, error } = await supabase.functions.invoke('campaign-sender', {
-        body: { campaign_id: campaignId, action, preview_email: previewEmail }
-      });
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['email-campaigns'] });
-      if (variables.action === 'preview') {
-        toast.success(t({ en: 'Preview sent', ar: 'تم إرسال المعاينة' }));
-      } else if (variables.action === 'send') {
-        toast.success(t({ 
-          en: `Campaign sent: ${data.summary?.sent || 0} emails`, 
-          ar: `تم إرسال الحملة: ${data.summary?.sent || 0} رسالة` 
-        }));
-      } else {
-        toast.success(t({ en: 'Campaign updated', ar: 'تم تحديث الحملة' }));
-      }
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    }
-  });
-
-  // Delete campaign mutation
-  const deleteMutation = useMutation({
-    mutationFn: async (campaignId) => {
-      const { error } = await supabase
-        .from('email_campaigns')
-        .delete()
-        .eq('id', campaignId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['email-campaigns'] });
-      setShowDetailsDialog(false);
-      toast.success(t({ en: 'Campaign deleted', ar: 'تم حذف الحملة' }));
-    }
-  });
+  // Mutations
+  const { createCampaign, deleteCampaign } = useCampaignMutations();
+  const { performAction } = useCampaignActions();
 
   const resetForm = () => {
     setNewCampaign({
@@ -199,7 +110,7 @@ export default function CampaignManager() {
       toast.error(t({ en: 'Name and template are required', ar: 'الاسم والقالب مطلوبان' }));
       return;
     }
-    
+
     const audienceFilter = { ...newCampaign.audience_filter };
     if (newCampaign.audience_type === 'custom' && customEmails) {
       audienceFilter.custom_emails = customEmails
@@ -207,15 +118,20 @@ export default function CampaignManager() {
         .map(e => e.trim())
         .filter(e => e.includes('@'));
     }
-    
-    createMutation.mutate({
+
+    createCampaign.mutate({
       ...newCampaign,
       audience_filter: audienceFilter
+    }, {
+      onSuccess: () => {
+        setShowCreateDialog(false);
+        resetForm();
+      }
     });
   };
 
   const handleAction = (campaignId, action) => {
-    actionMutation.mutate({ campaignId, action, previewEmail });
+    performAction.mutate({ campaignId, action, previewEmail });
   };
 
   const StatusBadge = ({ status }) => {
@@ -279,7 +195,7 @@ export default function CampaignManager() {
           </Button>
         </CollapsibleTrigger>
         <CollapsibleContent className="mt-4">
-          <CampaignAIHelpers 
+          <CampaignAIHelpers
             onUseSubject={handleUseAISubject}
             onUseBody={handleUseAIBody}
             campaignContext={{
@@ -378,7 +294,7 @@ export default function CampaignManager() {
               {t({ en: 'Send bulk emails to a targeted audience', ar: 'إرسال رسائل جماعية لجمهور مستهدف' })}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium">{t({ en: 'Campaign Name', ar: 'اسم الحملة' })} *</label>
@@ -388,7 +304,7 @@ export default function CampaignManager() {
                 placeholder={t({ en: 'e.g., December Newsletter', ar: 'مثال: نشرة ديسمبر' })}
               />
             </div>
-            
+
             <div>
               <label className="text-sm font-medium">{t({ en: 'Description', ar: 'الوصف' })}</label>
               <Textarea
@@ -397,7 +313,7 @@ export default function CampaignManager() {
                 rows={2}
               />
             </div>
-            
+
             <div>
               <label className="text-sm font-medium">{t({ en: 'Email Template', ar: 'قالب البريد' })} *</label>
               <Select
@@ -419,7 +335,7 @@ export default function CampaignManager() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <label className="text-sm font-medium">{t({ en: 'Audience', ar: 'الجمهور' })}</label>
               <Select
@@ -438,7 +354,7 @@ export default function CampaignManager() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             {newCampaign.audience_type === 'custom' && (
               <div>
                 <label className="text-sm font-medium">{t({ en: 'Email Addresses', ar: 'عناوين البريد' })}</label>
@@ -454,13 +370,13 @@ export default function CampaignManager() {
               </div>
             )}
           </div>
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
               {t({ en: 'Cancel', ar: 'إلغاء' })}
             </Button>
-            <Button onClick={handleCreate} disabled={createMutation.isPending}>
-              {createMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            <Button onClick={handleCreate} disabled={createCampaign.isPending}>
+              {createCampaign.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {t({ en: 'Create Campaign', ar: 'إنشاء الحملة' })}
             </Button>
           </DialogFooter>
@@ -476,7 +392,7 @@ export default function CampaignManager() {
               {selectedCampaign?.description || t({ en: 'Campaign details and actions', ar: 'تفاصيل وإجراءات الحملة' })}
             </DialogDescription>
           </DialogHeader>
-          
+
           {selectedCampaign && (
             <div className="space-y-4">
               {/* Status and Stats */}
@@ -486,7 +402,7 @@ export default function CampaignManager() {
                   {t({ en: 'Created', ar: 'أنشئت' })} {format(new Date(selectedCampaign.created_at), 'MMM d, yyyy HH:mm')}
                 </span>
               </div>
-              
+
               {/* Stats Grid */}
               <div className="grid grid-cols-4 gap-4">
                 <div className="p-3 bg-muted rounded-lg text-center">
@@ -506,7 +422,7 @@ export default function CampaignManager() {
                   <p className="text-xs text-muted-foreground">{t({ en: 'Opened', ar: 'مفتوح' })}</p>
                 </div>
               </div>
-              
+
               {/* Template Info */}
               <div className="p-3 bg-muted/50 rounded-lg">
                 <p className="text-sm font-medium">{t({ en: 'Template', ar: 'القالب' })}</p>
@@ -514,7 +430,7 @@ export default function CampaignManager() {
                   {selectedCampaign.email_templates?.name_en || selectedCampaign.email_templates?.template_key}
                 </p>
               </div>
-              
+
               {/* Preview Send */}
               {selectedCampaign.status === 'draft' && (
                 <div className="flex items-center gap-2">
@@ -527,7 +443,7 @@ export default function CampaignManager() {
                   <Button
                     variant="outline"
                     onClick={() => handleAction(selectedCampaign.id, 'preview')}
-                    disabled={!previewEmail || actionMutation.isPending}
+                    disabled={!previewEmail || performAction.isPending}
                   >
                     <Eye className="h-4 w-4 mr-2" />
                     {t({ en: 'Preview', ar: 'معاينة' })}
@@ -536,15 +452,15 @@ export default function CampaignManager() {
               )}
             </div>
           )}
-          
+
           <DialogFooter className="flex-col sm:flex-row gap-2">
             {selectedCampaign?.status === 'draft' && (
               <>
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => deleteMutation.mutate(selectedCampaign.id)}
-                  disabled={deleteMutation.isPending}
+                  onClick={() => deleteCampaign.mutate(selectedCampaign.id, { onSuccess: () => setShowDetailsDialog(false) })}
+                  disabled={deleteCampaign.isPending}
                 >
                   <Trash2 className="h-4 w-4 mr-1" />
                   {t({ en: 'Delete', ar: 'حذف' })}
@@ -552,10 +468,10 @@ export default function CampaignManager() {
                 <div className="flex-1" />
                 <Button
                   onClick={() => handleAction(selectedCampaign.id, 'send')}
-                  disabled={actionMutation.isPending}
+                  disabled={performAction.isPending}
                   className="bg-green-600 hover:bg-green-700"
                 >
-                  {actionMutation.isPending ? (
+                  {performAction.isPending ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   ) : (
                     <Send className="h-4 w-4 mr-2" />
@@ -568,7 +484,7 @@ export default function CampaignManager() {
               <Button
                 variant="outline"
                 onClick={() => handleAction(selectedCampaign.id, 'pause')}
-                disabled={actionMutation.isPending}
+                disabled={performAction.isPending}
               >
                 <Pause className="h-4 w-4 mr-2" />
                 {t({ en: 'Pause', ar: 'إيقاف' })}
@@ -577,7 +493,7 @@ export default function CampaignManager() {
             {selectedCampaign?.status === 'paused' && (
               <Button
                 onClick={() => handleAction(selectedCampaign.id, 'send')}
-                disabled={actionMutation.isPending}
+                disabled={performAction.isPending}
               >
                 <Play className="h-4 w-4 mr-2" />
                 {t({ en: 'Resume', ar: 'استئناف' })}

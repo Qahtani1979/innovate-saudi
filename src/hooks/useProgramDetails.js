@@ -98,7 +98,7 @@ export function useProgramComments(programId) {
     return {
         comments: query.data || [],
         isLoading: query.isLoading,
-        addComment: mutation.mutate
+        addComment: mutation
     };
 }
 

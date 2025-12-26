@@ -104,7 +104,7 @@ For each theme provide:
     });
 
     return {
-        generateThemes: generateThemes.mutateAsync,
+        generateThemes,
         isGenerating: generateThemes.isPending || aiLoading,
         themes: generateThemes.data || []
     };

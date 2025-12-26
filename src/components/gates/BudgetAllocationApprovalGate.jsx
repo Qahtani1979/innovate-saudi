@@ -5,42 +5,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
 import { DollarSign, CheckCircle2, XCircle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { toast } from 'sonner';
-import { useMutation } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/lib/AuthContext';
+import { useBudgetAllocationApproval } from '@/hooks/useBudgetGates';
 
 export default function BudgetAllocationApprovalGate({ allocation, onApprove, onReject, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const [comments, setComments] = useState('');
   const [decision, setDecision] = useState('');
-  const { user } = useAuth();
 
-  const approvalMutation = useMutation({
-    mutationFn: async () => {
-      // Log the approval decision
-      const { error } = await supabase.from('system_activities').insert({
-        activity_type: decision === 'approve' ? 'budget_allocation_approved' : 'budget_allocation_rejected',
-        entity_type: 'Budget',
-        description: `Budget allocation ${decision === 'approve' ? 'approved' : 'rejected'}`,
-        metadata: { allocation, comments, decision }
-      });
-      if (error) throw error;
-      return { success: true };
-    },
-    onSuccess: () => {
-      if (decision === 'approve') {
-        onApprove?.({ comments });
-        toast.success(t({ en: 'Budget allocation approved', ar: 'تمت الموافقة على توزيع الميزانية' }));
-      } else {
-        onReject?.({ comments });
-        toast.success(t({ en: 'Revision requested', ar: 'تم طلب التنقيح' }));
+
+  const { approvalMutation } = useBudgetAllocationApproval();
+
+  // Wrap mutation call to match expected signature if needed, or update call sites.
+  // The hook's mutation expects { allocation, decision, comments }
+  const handleDecision = (decisionType) => {
+    setDecision(decisionType);
+    approvalMutation.mutate({ allocation, decision: decisionType, comments }, {
+      onSuccess: () => {
+        if (decisionType === 'approve') onApprove?.({ comments });
+        else onReject?.({ comments });
       }
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    }
-  });
+    });
+  };
 
   const categories = [
     { id: 'pilots', name_en: 'Pilot Programs', color: '#3b82f6' },
@@ -151,7 +136,7 @@ export default function BudgetAllocationApprovalGate({ allocation, onApprove, on
         {/* Actions */}
         <div className="flex items-center gap-3">
           <Button
-            onClick={() => { setDecision('approve'); approvalMutation.mutate(); }}
+            onClick={() => handleDecision('approve')}
             disabled={!validationChecks.every(c => c.passed) || approvalMutation.isPending}
             className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600"
           >
@@ -159,7 +144,7 @@ export default function BudgetAllocationApprovalGate({ allocation, onApprove, on
             {t({ en: 'Approve Budget', ar: 'الموافقة على الميزانية' })}
           </Button>
           <Button
-            onClick={() => { setDecision('reject'); approvalMutation.mutate(); }}
+            onClick={() => handleDecision('reject')}
             variant="outline"
             className="flex-1 border-red-600 text-red-600"
           >

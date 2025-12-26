@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from "@/integrations/supabase/client";
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMatchEngagements, useMatchEngagementMutations } from '@/hooks/useMatchmakerEngagements';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,57 +22,25 @@ export default function EngagementScheduler({ matchId }) {
         sentiment: 'positive'
     });
 
-    const queryClient = useQueryClient();
-
     // Fetch existing engagements
-    const { data: engagements = [] } = useQuery({
-        queryKey: ['match-engagements', matchId],
-        queryFn: async () => {
-            const { data, error } = await supabase
-                .from('matchmaker_engagements')
-                .select('*')
-                .eq('match_id', matchId)
-                .order('date_occurred', { ascending: false });
+    const { data: engagements = [] } = useMatchEngagements(matchId);
 
-            if (error) throw error;
-            return data;
-        },
-        enabled: !!matchId
-    });
+    const { logEngagement } = useMatchEngagementMutations(matchId);
 
-    const logEngagementMutation = useMutation({
-        mutationFn: async () => {
-            const { data, error } = await supabase
-                .from('matchmaker_engagements')
-                .insert([
-                    {
-                        match_id: matchId,
-                        ...logData,
-                        logged_by: (await supabase.auth.getUser()).data.user?.id
-                    }
-                ])
-                .select()
-                .single();
-
-            if (error) throw error;
-            return data;
-        },
-        onSuccess: () => {
-            toast.success(t({ en: 'Engagement logged', ar: 'تم تسجيل التفاعل' }));
-            setLogData({
-                engagement_type: 'meeting',
-                date_occurred: new Date().toISOString().split('T')[0],
-                notes: '',
-                outcomes: '',
-                next_steps: '',
-                sentiment: 'positive'
-            });
-            queryClient.invalidateQueries(['match-engagements']);
-        },
-        onError: (error) => {
-            toast.error(t({ en: 'Failed to log engagement', ar: 'فشل تسجيل التفاعل' }));
-        }
-    });
+    const handleLogEngagement = () => {
+        logEngagement.mutate(logData, {
+            onSuccess: () => {
+                setLogData({
+                    engagement_type: 'meeting',
+                    date_occurred: new Date().toISOString().split('T')[0],
+                    notes: '',
+                    outcomes: '',
+                    next_steps: '',
+                    sentiment: 'positive'
+                });
+            }
+        });
+    };
 
     const getTypeIcon = (type) => {
         switch (type) {
@@ -165,10 +132,10 @@ export default function EngagementScheduler({ matchId }) {
 
                         <Button
                             className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                            onClick={() => logEngagementMutation.mutate()}
-                            disabled={logEngagementMutation.isPending}
+                            onClick={handleLogEngagement}
+                            disabled={logEngagement.isPending}
                         >
-                            {logEngagementMutation.isPending ? t({ en: 'Saving...', ar: 'جاري الحفظ...' }) : t({ en: 'Log Engagement', ar: 'تسجيل التفاعل' })}
+                            {logEngagement.isPending ? t({ en: 'Saving...', ar: 'جاري الحفظ...' }) : t({ en: 'Log Engagement', ar: 'تسجيل التفاعل' })}
                         </Button>
                     </TabsContent>
 

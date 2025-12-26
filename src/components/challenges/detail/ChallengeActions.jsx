@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { usePermissions } from '@/components/permissions/usePermissions';
 import { Button } from '@/components/ui/button';
@@ -25,8 +25,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { 
-  Edit, MoreVertical, Send, CheckCircle, XCircle, 
+import {
+  Edit, MoreVertical, Send, CheckCircle, XCircle,
   Eye, EyeOff, Archive, Trash2, Copy, Star, StarOff
 } from 'lucide-react';
 import { useChallengeMutations } from '@/hooks/useChallengeMutations';
@@ -37,10 +37,10 @@ export function ChallengeActions({ challenge, canEdit, onUpdate }) {
   const { user } = useAuth();
   const { isAdmin, hasPermission, isMunicipalityStaff, isDeputyship } = usePermissions();
   const mutations = useChallengeMutations();
-  
+
   const [confirmAction, setConfirmAction] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Determine available actions based on role and challenge state
   const isOwner = challenge.challenge_owner_email === user?.email;
   const isReviewer = challenge.review_assigned_to === user?.email;
@@ -50,7 +50,7 @@ export function ChallengeActions({ challenge, canEdit, onUpdate }) {
   const isApproved = challenge.status === 'approved';
   const isPublished = challenge.is_published;
   const isArchived = challenge.status === 'archived' || challenge.is_archived;
-  
+
   // Action handlers
   const handleAction = async (action) => {
     setIsLoading(true);
@@ -60,69 +60,69 @@ export function ChallengeActions({ challenge, canEdit, onUpdate }) {
           await mutations.submitChallenge.mutateAsync(challenge.id);
           toast.success(language === 'ar' ? 'تم تقديم التحدي للمراجعة' : 'Challenge submitted for review');
           break;
-          
+
         case 'approve':
-          await mutations.updateStatus.mutateAsync({ 
-            id: challenge.id, 
+          await mutations.updateStatus.mutateAsync({
+            id: challenge.id,
             status: 'approved',
             notes: 'Approved by reviewer'
           });
           toast.success(language === 'ar' ? 'تمت الموافقة على التحدي' : 'Challenge approved');
           break;
-          
+
         case 'reject':
-          await mutations.updateStatus.mutateAsync({ 
-            id: challenge.id, 
+          await mutations.updateStatus.mutateAsync({
+            id: challenge.id,
             status: 'rejected',
             notes: 'Rejected by reviewer'
           });
           toast.success(language === 'ar' ? 'تم رفض التحدي' : 'Challenge rejected');
           break;
-          
+
         case 'publish':
-          await mutations.updateChallenge.mutateAsync({ 
-            id: challenge.id, 
+          await mutations.updateChallenge.mutateAsync({
+            id: challenge.id,
             is_published: true,
             status: 'published'
           });
           toast.success(language === 'ar' ? 'تم نشر التحدي' : 'Challenge published');
           break;
-          
+
         case 'unpublish':
-          await mutations.updateChallenge.mutateAsync({ 
-            id: challenge.id, 
-            is_published: false 
+          await mutations.updateChallenge.mutateAsync({
+            id: challenge.id,
+            is_published: false
           });
           toast.success(language === 'ar' ? 'تم إلغاء نشر التحدي' : 'Challenge unpublished');
           break;
-          
+
         case 'archive':
-          await mutations.updateStatus.mutateAsync({ 
-            id: challenge.id, 
+          await mutations.updateStatus.mutateAsync({
+            id: challenge.id,
             status: 'archived'
           });
           toast.success(language === 'ar' ? 'تمت أرشفة التحدي' : 'Challenge archived');
           break;
-          
+
         case 'delete':
           await mutations.deleteChallenge.mutateAsync(challenge.id);
           toast.success(language === 'ar' ? 'تم حذف التحدي' : 'Challenge deleted');
           break;
-          
+
         case 'feature':
-          await mutations.updateChallenge.mutateAsync({ 
-            id: challenge.id, 
-            is_featured: !challenge.is_featured 
+          await mutations.updateChallenge.mutateAsync({
+            id: challenge.id,
+            is_featured: !challenge.is_featured
           });
-          toast.success(challenge.is_featured 
+          toast.success(challenge.is_featured
             ? (language === 'ar' ? 'تم إزالة التمييز' : 'Removed from featured')
             : (language === 'ar' ? 'تم تمييز التحدي' : 'Challenge featured'));
           break;
-          
+
         default:
           break;
       }
-      
+
       onUpdate?.();
     } catch (error) {
       console.error('Action failed:', error);
@@ -132,19 +132,19 @@ export function ChallengeActions({ challenge, canEdit, onUpdate }) {
       setConfirmAction(null);
     }
   };
-  
+
   // Copy link to clipboard
   const handleCopyLink = () => {
     const url = `${window.location.origin}/challenges/${challenge.id}`;
     navigator.clipboard.writeText(url);
     toast.success(language === 'ar' ? 'تم نسخ الرابط' : 'Link copied');
   };
-  
+
   // Actions list based on permissions
   const primaryActions = [];
   const secondaryActions = [];
   const dangerActions = [];
-  
+
   // Edit button (primary)
   if (canEdit && !isArchived) {
     primaryActions.push({
@@ -154,7 +154,7 @@ export function ChallengeActions({ challenge, canEdit, onUpdate }) {
       onClick: () => window.location.href = `/challenges/${challenge.id}/edit`
     });
   }
-  
+
   // Submit for review (owner only, draft only)
   if ((isOwner || isAdmin) && isDraft) {
     primaryActions.push({
@@ -164,7 +164,7 @@ export function ChallengeActions({ challenge, canEdit, onUpdate }) {
       onClick: () => setConfirmAction('submit')
     });
   }
-  
+
   // Review actions (reviewer or admin, submitted/under_review only)
   if ((isReviewer || isAdmin || isDeputyship) && (isSubmitted || isUnderReview)) {
     primaryActions.push({
@@ -182,7 +182,7 @@ export function ChallengeActions({ challenge, canEdit, onUpdate }) {
       onClick: () => setConfirmAction('reject')
     });
   }
-  
+
   // Publish/Unpublish (admin or deputyship, approved only)
   if ((isAdmin || isDeputyship || hasPermission('challenges.publish')) && (isApproved || isPublished)) {
     if (!isPublished) {
@@ -201,19 +201,19 @@ export function ChallengeActions({ challenge, canEdit, onUpdate }) {
       });
     }
   }
-  
+
   // Feature toggle (admin only)
   if (isAdmin) {
     secondaryActions.push({
       key: 'feature',
-      label: challenge.is_featured 
+      label: challenge.is_featured
         ? (language === 'ar' ? 'إزالة التمييز' : 'Remove Featured')
         : (language === 'ar' ? 'تمييز' : 'Feature'),
       icon: challenge.is_featured ? StarOff : Star,
       onClick: () => handleAction('feature')
     });
   }
-  
+
   // Share/Copy link
   secondaryActions.push({
     key: 'copy',
@@ -221,7 +221,7 @@ export function ChallengeActions({ challenge, canEdit, onUpdate }) {
     icon: Copy,
     onClick: handleCopyLink
   });
-  
+
   // Archive (admin or owner)
   if ((isAdmin || isOwner) && !isArchived) {
     dangerActions.push({
@@ -231,7 +231,7 @@ export function ChallengeActions({ challenge, canEdit, onUpdate }) {
       onClick: () => setConfirmAction('archive')
     });
   }
-  
+
   // Delete (admin only)
   if (isAdmin) {
     dangerActions.push({
@@ -241,12 +241,12 @@ export function ChallengeActions({ challenge, canEdit, onUpdate }) {
       onClick: () => setConfirmAction('delete')
     });
   }
-  
+
   // No actions available
   if (primaryActions.length === 0 && secondaryActions.length === 0 && dangerActions.length === 0) {
     return null;
   }
-  
+
   return (
     <>
       <div className="flex items-center gap-2 flex-wrap">
@@ -263,7 +263,7 @@ export function ChallengeActions({ challenge, canEdit, onUpdate }) {
             {action.label}
           </Button>
         ))}
-        
+
         {/* More actions dropdown */}
         {(primaryActions.length > 2 || secondaryActions.length > 0 || dangerActions.length > 0) && (
           <DropdownMenu>
@@ -280,11 +280,11 @@ export function ChallengeActions({ challenge, canEdit, onUpdate }) {
                   {action.label}
                 </DropdownMenuItem>
               ))}
-              
+
               {primaryActions.length > 2 && secondaryActions.length > 0 && (
                 <DropdownMenuSeparator />
               )}
-              
+
               {/* Secondary actions */}
               {secondaryActions.map(action => (
                 <DropdownMenuItem key={action.key} onClick={action.onClick}>
@@ -292,13 +292,13 @@ export function ChallengeActions({ challenge, canEdit, onUpdate }) {
                   {action.label}
                 </DropdownMenuItem>
               ))}
-              
+
               {dangerActions.length > 0 && <DropdownMenuSeparator />}
-              
+
               {/* Danger actions */}
               {dangerActions.map(action => (
-                <DropdownMenuItem 
-                  key={action.key} 
+                <DropdownMenuItem
+                  key={action.key}
                   onClick={action.onClick}
                   className="text-destructive focus:text-destructive"
                 >
@@ -310,7 +310,7 @@ export function ChallengeActions({ challenge, canEdit, onUpdate }) {
           </DropdownMenu>
         )}
       </div>
-      
+
       {/* Confirmation Dialog */}
       <AlertDialog open={!!confirmAction} onOpenChange={() => setConfirmAction(null)}>
         <AlertDialogContent>
@@ -319,7 +319,7 @@ export function ChallengeActions({ challenge, canEdit, onUpdate }) {
               {language === 'ar' ? 'تأكيد الإجراء' : 'Confirm Action'}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {confirmAction === 'submit' && (language === 'ar' 
+              {confirmAction === 'submit' && (language === 'ar'
                 ? 'هل تريد تقديم هذا التحدي للمراجعة؟ لن تتمكن من تعديله بعد التقديم.'
                 : 'Do you want to submit this challenge for review? You won\'t be able to edit it after submission.')}
               {confirmAction === 'approve' && (language === 'ar'
@@ -351,7 +351,7 @@ export function ChallengeActions({ challenge, canEdit, onUpdate }) {
               disabled={isLoading}
               className={confirmAction === 'delete' ? 'bg-destructive hover:bg-destructive/90' : ''}
             >
-              {isLoading 
+              {isLoading
                 ? (language === 'ar' ? 'جاري...' : 'Processing...')
                 : (language === 'ar' ? 'تأكيد' : 'Confirm')}
             </AlertDialogAction>

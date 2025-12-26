@@ -1,17 +1,15 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
-import { Calendar, Plus, X, CheckCircle2 } from 'lucide-react';
+import { Calendar, Plus, X, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { useLivingLabMutations } from '@/hooks/useLivingLab';
 
 export default function LivingLabEventManager({ lab, onClose }) {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
 
   const [events, setEvents] = useState(lab?.events || []);
   const [newEvent, setNewEvent] = useState({
@@ -30,47 +28,49 @@ export default function LivingLabEventManager({ lab, onClose }) {
     topics: []
   });
 
-  const addEventMutation = useMutation({
-    mutationFn: async () => {
-      const updatedEvents = [...events, {
-        ...newEvent,
-        created_date: new Date().toISOString()
-      }];
-      const { error } = await supabase.from('living_labs').update({ events: updatedEvents }).eq('id', lab.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['living-lab']);
-      toast.success(t({ en: 'Event added', ar: 'تمت إضافة الفعالية' }));
-      setEvents([...events, newEvent]);
-      setNewEvent({
-        name_en: '',
-        name_ar: '',
-        description_en: '',
-        description_ar: '',
-        event_type: 'workshop',
-        date: '',
-        time: '',
-        duration_hours: 3,
-        location: lab?.location || '',
-        capacity: 30,
-        registration_url: '',
-        speaker: '',
-        topics: []
-      });
-    }
-  });
+  const { updateLivingLab } = useLivingLabMutations(lab.id);
 
-  const deleteEvent = async (index) => {
+  const handleAddEvent = () => {
+    const updatedEvents = [...events, {
+      ...newEvent,
+      created_date: new Date().toISOString()
+    }];
+
+    updateLivingLab.mutate({ events: updatedEvents }, {
+      onSuccess: () => {
+        toast.success(t({ en: 'Event added', ar: 'تمت إضافة الفعالية' }));
+        setEvents(updatedEvents);
+        setNewEvent({
+          name_en: '',
+          name_ar: '',
+          description_en: '',
+          description_ar: '',
+          event_type: 'workshop',
+          date: '',
+          time: '',
+          duration_hours: 3,
+          location: lab?.location || '',
+          capacity: 30,
+          registration_url: '',
+          speaker: '',
+          topics: []
+        });
+      }
+    });
+  };
+
+  const handleDeleteEvent = (index) => {
     const updated = events.filter((_, i) => i !== index);
-    const { error } = await supabase.from('living_labs').update({ events: updated }).eq('id', lab.id);
-    if (error) {
-      toast.error(t({ en: 'Failed to remove event', ar: 'فشل إزالة الفعالية' }));
-      return;
-    }
-    setEvents(updated);
-    queryClient.invalidateQueries(['living-lab']);
-    toast.success(t({ en: 'Event removed', ar: 'تم إزالة الفعالية' }));
+
+    updateLivingLab.mutate({ events: updated }, {
+      onSuccess: () => {
+        toast.success(t({ en: 'Event removed', ar: 'تم إزالة الفعالية' }));
+        setEvents(updated);
+      },
+      onError: () => {
+        toast.error(t({ en: 'Failed to remove event', ar: 'فشل إزالة الفعالية' }));
+      }
+    });
   };
 
   return (
@@ -108,7 +108,7 @@ export default function LivingLabEventManager({ lab, onClose }) {
                     <p className="text-xs text-slate-600 mt-1">Speaker: {event.speaker}</p>
                   )}
                 </div>
-                <Button size="sm" variant="ghost" onClick={() => deleteEvent(i)}>
+                <Button size="sm" variant="ghost" onClick={() => handleDeleteEvent(i)} disabled={updateLivingLab.isPending}>
                   <X className="h-4 w-4 text-red-600" />
                 </Button>
               </div>
@@ -206,11 +206,15 @@ export default function LivingLabEventManager({ lab, onClose }) {
           </div>
 
           <Button
-            onClick={() => addEventMutation.mutate()}
-            disabled={!newEvent.name_en || !newEvent.date || addEventMutation.isPending}
+            onClick={handleAddEvent}
+            disabled={!newEvent.name_en || !newEvent.date || updateLivingLab.isPending}
             className="w-full bg-teal-600 hover:bg-teal-700"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            {updateLivingLab.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4 mr-2" />
+            )}
             {t({ en: 'Add Event', ar: 'إضافة فعالية' })}
           </Button>
         </div>

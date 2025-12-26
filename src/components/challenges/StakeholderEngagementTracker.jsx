@@ -1,41 +1,32 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useLanguage } from '../LanguageContext';
+import { useLanguage } from '@/components/LanguageContext';
 import { Users, Eye, MessageSquare, Paperclip, Bell } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
+import { useChallengeActivities } from '@/hooks/useChallengeActivities';
 
 export default function StakeholderEngagementTracker({ challenge }) {
   const { language, t } = useLanguage();
 
-  const { data: activities = [] } = useQuery({
-    queryKey: ['challenge-activities', challenge.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenge_activities')
-        .select('*')
-        .eq('challenge_id', challenge.id);
-      if (error) throw error;
-      return data || [];
-    },
-    initialData: []
+  const { data: activities = [] } = useChallengeActivities({
+    challengeId: challenge.id,
+    limit: 100
   });
 
   const stakeholders = challenge.stakeholders || [];
-  
+
   const engagement = stakeholders.map(sh => {
     const views = activities.filter(a => a.user_email === sh.email && a.activity_type === 'view').length;
     const comments = activities.filter(a => a.user_email === sh.email && a.activity_type === 'comment').length;
     const attachments = activities.filter(a => a.user_email === sh.email && a.activity_type === 'attachment').length;
-    const lastActive = activities.filter(a => a.user_email === sh.email).sort((a, b) => 
-      new Date(b.created_date) - new Date(a.created_date)
-    )[0]?.created_date;
+    const lastActive = activities.filter(a => a.user_email === sh.email).sort((a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )[0]?.created_at;
 
     const score = Math.min((views * 5 + comments * 15 + attachments * 10), 100);
-    const daysSinceActive = lastActive ? 
-      Math.floor((new Date() - new Date(lastActive)) / (1000 * 60 * 60 * 24)) : 999;
+    const daysSinceActive = lastActive ?
+      Math.floor((new Date().getTime() - new Date(lastActive).getTime()) / (1000 * 60 * 60 * 24)) : 999;
 
     return {
       ...sh,
@@ -48,7 +39,7 @@ export default function StakeholderEngagementTracker({ challenge }) {
     };
   }).sort((a, b) => b.score - a.score);
 
-  const avgEngagement = engagement.length > 0 ? 
+  const avgEngagement = engagement.length > 0 ?
     Math.round(engagement.reduce((sum, e) => sum + e.score, 0) / engagement.length) : 0;
 
   const lowEngagers = engagement.filter(e => e.daysSinceActive > 14);
@@ -62,8 +53,8 @@ export default function StakeholderEngagementTracker({ challenge }) {
             {t({ en: 'Stakeholder Engagement', ar: 'مشاركة أصحاب المصلحة' })}
           </CardTitle>
           <Badge className={
-            avgEngagement >= 60 ? 'bg-green-600' : 
-            avgEngagement >= 30 ? 'bg-yellow-600' : 'bg-red-600'
+            avgEngagement >= 60 ? 'bg-green-600' :
+              avgEngagement >= 30 ? 'bg-yellow-600' : 'bg-red-600'
           }>
             {avgEngagement}/100
           </Badge>
@@ -92,7 +83,7 @@ export default function StakeholderEngagementTracker({ challenge }) {
                   </div>
                   <Badge className={
                     sh.status === 'active' ? 'bg-green-600' :
-                    sh.status === 'moderate' ? 'bg-yellow-600' : 'bg-red-600'
+                      sh.status === 'moderate' ? 'bg-yellow-600' : 'bg-red-600'
                   }>
                     {sh.score}
                   </Badge>
@@ -125,9 +116,9 @@ export default function StakeholderEngagementTracker({ challenge }) {
               {t({ en: 'Engagement Alerts', ar: 'تنبيهات المشاركة' })}
             </h4>
             <p className="text-sm text-slate-700 mb-2">
-              {t({ 
-                en: `${lowEngagers.length} stakeholders inactive for >14 days`, 
-                ar: `${lowEngagers.length} من أصحاب المصلحة غير نشطين لـ >14 يوم` 
+              {t({
+                en: `${lowEngagers.length} stakeholders inactive for >14 days`,
+                ar: `${lowEngagers.length} من أصحاب المصلحة غير نشطين لـ >14 يوم`
               })}
             </p>
             <Button size="sm" variant="outline" className="w-full">

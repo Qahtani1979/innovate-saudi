@@ -1,69 +1,42 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
 import { Users, Save, MessageSquare, History } from 'lucide-react';
-import { toast } from 'sonner';
+import { useRDProposal } from '@/hooks/useRDProposal';
+import { useRDProposalComments, useAddRDProposalComment } from '@/hooks/useRDProposalComments';
 
 export default function CollaborativeProposalEditor({ proposalId }) {
   const { language, t } = useLanguage();
-  const [proposal, setProposal] = useState(null);
   const [editSection, setEditSection] = useState(null);
   const [content, setContent] = useState('');
-  const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
 
-  useEffect(() => {
-    loadProposal();
-    loadComments();
-    const interval = setInterval(loadProposal, 10000);
-    return () => clearInterval(interval);
-  }, [proposalId]);
+  // Hooks
+  const { data: proposal, updateProposal } = useRDProposal(proposalId, { refetchInterval: 10000 });
+  const { data: comments = [] } = useRDProposalComments(proposalId);
+  const addCommentMutation = useAddRDProposalComment();
 
-  const loadProposal = async () => {
-    const { data, error } = await supabase
-      .from('rd_proposals')
-      .select('*')
-      .eq('id', proposalId)
-      .maybeSingle();
-    if (!error && data) setProposal(data);
+  const saveSection = () => {
+    updateProposal({ [editSection]: content }, {
+      onSuccess: () => {
+        setEditSection(null);
+      }
+    });
   };
 
-  const loadComments = async () => {
-    const { data, error } = await supabase
-      .from('rd_proposal_comments')
-      .select('*')
-      .eq('rd_proposal_id', proposalId);
-    if (!error) setComments(data || []);
-  };
-
-  const saveSection = async () => {
-    const { error } = await supabase
-      .from('rd_proposals')
-      .update({ [editSection]: content })
-      .eq('id', proposalId);
-    if (!error) {
-      toast.success(t({ en: 'Section saved', ar: 'تم حفظ القسم' }));
-      setEditSection(null);
-      loadProposal();
-    }
-  };
-
-  const addComment = async () => {
-    const { error } = await supabase
-      .from('rd_proposal_comments')
-      .insert({
-        rd_proposal_id: proposalId,
-        comment_text: newComment,
-        section: editSection || 'general'
-      });
-    if (!error) {
-      setNewComment('');
-      loadComments();
-    }
+  const addComment = () => {
+    addCommentMutation.mutate({
+      rd_proposal_id: proposalId,
+      comment_text: newComment,
+      section: editSection || 'general'
+    }, {
+      onSuccess: () => {
+        setNewComment('');
+      }
+    });
   };
 
   const sections = [
@@ -107,7 +80,7 @@ export default function CollaborativeProposalEditor({ proposalId }) {
                 </Button>
               )}
             </div>
-            
+
             {editSection === section.key ? (
               <Textarea
                 value={content}
@@ -137,7 +110,7 @@ export default function CollaborativeProposalEditor({ proposalId }) {
                     onChange={(e) => setNewComment(e.target.value)}
                     className="flex-1 text-sm border rounded px-3 py-2"
                   />
-                  <Button size="sm" onClick={addComment} disabled={!newComment}>
+                  <Button size="sm" onClick={addComment} disabled={!newComment || addCommentMutation.isPending}>
                     {t({ en: 'Comment', ar: 'تعليق' })}
                   </Button>
                 </div>

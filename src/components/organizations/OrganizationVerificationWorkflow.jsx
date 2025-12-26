@@ -1,19 +1,16 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from '../LanguageContext';
 import { CheckCircle2, Building2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+import { useOrganizationMutations } from '@/hooks/useOrganizationMutations';
 
 export default function OrganizationVerificationWorkflow({ organization, onClose }) {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   const [checks, setChecks] = useState({
     identity_verified: false,
     registration_valid: false,
@@ -22,25 +19,19 @@ export default function OrganizationVerificationWorkflow({ organization, onClose
   });
   const [notes, setNotes] = useState('');
 
-  const verifyMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('organizations')
-        .update({
-          is_verified: true,
-          verification_date: new Date().toISOString().split('T')[0],
-          verification_notes: notes,
-          verified_by: user?.email
-        })
-        .eq('id', organization.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['organization']);
-      toast.success(t({ en: 'Organization verified', ar: 'تم التحقق من الجهة' }));
-      onClose?.();
-    }
-  });
+  const { verifyOrganization } = useOrganizationMutations();
+
+  const handleVerify = () => {
+    verifyOrganization.mutate({
+      id: organization.id,
+      notes,
+      verifier: user?.email
+    }, {
+      onSuccess: () => {
+        if (onClose) onClose();
+      }
+    });
+  };
 
   return (
     <Card className="border-2 border-blue-400">
@@ -71,8 +62,8 @@ export default function OrganizationVerificationWorkflow({ organization, onClose
         <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t({ en: 'Verification notes...', ar: 'ملاحظات التحقق...' })} rows={3} />
 
         <Button
-          onClick={() => verifyMutation.mutate()}
-          disabled={!Object.values(checks).every(v => v) || verifyMutation.isPending}
+          onClick={handleVerify}
+          disabled={!Object.values(checks).every(v => v) || verifyOrganization.isPending}
           className="w-full bg-blue-600"
         >
           <CheckCircle2 className="h-4 w-4 mr-2" />

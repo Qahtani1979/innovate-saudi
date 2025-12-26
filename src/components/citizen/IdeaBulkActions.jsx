@@ -1,46 +1,32 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle2, XCircle, Users, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useLanguage } from '../LanguageContext';
-import { supabase } from '@/lib/supabase';
+import { useCitizenIdeas } from '@/hooks/useCitizenIdeas';
 
 export default function IdeaBulkActions({ selectedIds, onComplete }) {
   const { t } = useLanguage();
   const [action, setAction] = useState('');
-  const queryClient = useQueryClient();
-
-  const bulkUpdateMutation = useMutation({
-    mutationFn: async ({ action, ids }) => {
-      const updates = {
-        approve: { status: 'approved' },
-        reject: { status: 'rejected' },
-        review: { status: 'under_review' }
-      };
-
-      const promises = ids.map(async (id) => {
-        const { error } = await supabase
-          .from('citizen_ideas')
-          .update(updates[action])
-          .eq('id', id);
-
-        if (error) throw error;
-      });
-
-      return await Promise.all(promises);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['citizen-ideas']);
-      toast.success(t({ en: `${selectedIds.length} ideas updated`, ar: `تم تحديث ${selectedIds.length} أفكار` }));
-      if (onComplete) onComplete();
-    }
-  });
+  const { bulkUpdateIdeas } = useCitizenIdeas();
 
   const handleBulkAction = () => {
     if (!action || selectedIds.length === 0) return;
-    bulkUpdateMutation.mutate({ action, ids: selectedIds });
+
+    const updatesMap = {
+      approve: { status: 'approved' },
+      reject: { status: 'rejected' },
+      review: { status: 'under_review' }
+    };
+
+    bulkUpdateIdeas.mutate({
+      ids: selectedIds,
+      updates: updatesMap[action]
+    }, {
+      onSuccess: () => {
+        if (onComplete) onComplete();
+      }
+    });
   };
 
   if (selectedIds.length === 0) return null;
@@ -60,19 +46,19 @@ export default function IdeaBulkActions({ selectedIds, onComplete }) {
           <SelectItem value="approve">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-green-600" />
-              Approve All
+              {t({ en: 'Approve All', ar: 'الموافقة على الكل' })}
             </div>
           </SelectItem>
           <SelectItem value="reject">
             <div className="flex items-center gap-2">
               <XCircle className="h-4 w-4 text-red-600" />
-              Reject All
+              {t({ en: 'Reject All', ar: 'رفض الكل' })}
             </div>
           </SelectItem>
           <SelectItem value="review">
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-yellow-600" />
-              Mark for Review
+              {t({ en: 'Mark for Review', ar: 'وضع علامة للمراجعة' })}
             </div>
           </SelectItem>
         </SelectContent>
@@ -80,10 +66,10 @@ export default function IdeaBulkActions({ selectedIds, onComplete }) {
 
       <Button
         onClick={handleBulkAction}
-        disabled={!action || bulkUpdateMutation.isPending}
+        disabled={!action || bulkUpdateIdeas.isPending}
         className="bg-blue-600"
       >
-        {bulkUpdateMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+        {bulkUpdateIdeas.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
         {t({ en: 'Apply', ar: 'تطبيق' })}
       </Button>
     </div>

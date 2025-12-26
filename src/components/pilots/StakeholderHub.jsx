@@ -1,19 +1,16 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useStakeholderFeedback, useStakeholderFeedbackMutations } from '@/hooks/useStakeholderFeedback';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Users, MessageSquare, Send, Star } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
 
 export default function StakeholderHub({ pilot }) {
   const { language, t } = useLanguage();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
   const [feedback, setFeedback] = useState('');
   const [satisfaction, setSatisfaction] = useState(5);
@@ -26,36 +23,22 @@ export default function StakeholderHub({ pilot }) {
   });
 
   // Fetch stakeholder feedback for this specific pilot
-  const { data: stakeholderFeedback = [] } = useQuery({
-    queryKey: ['stakeholder-feedback', pilot.id],
-    queryFn: async () => {
-      const { data } = await supabase.from('stakeholder_feedback').select('*').eq('pilot_id', pilot.id);
-      return data || [];
-    },
-    enabled: !!pilot?.id && accessCheck.canAccess,
-    initialData: []
-  });
+  const { data: stakeholderFeedback = [] } = useStakeholderFeedback(pilot.id);
+  const { submitFeedback } = useStakeholderFeedbackMutations();
 
-  const submitFeedbackMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase.from('stakeholder_feedback').insert({
-        pilot_id: pilot.id,
-        stakeholder_email: user?.email,
-        stakeholder_role: 'stakeholder',
-        feedback_type: 'progress_update',
-        satisfaction_score: data.satisfaction,
-        comments: data.feedback,
-        sentiment: data.satisfaction >= 4 ? 'positive' : data.satisfaction >= 3 ? 'neutral' : 'negative'
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['stakeholder-feedback']);
-      setFeedback('');
-      setSatisfaction(5);
-      toast.success(t({ en: 'Feedback submitted', ar: 'الملاحظات قُدمت' }));
-    }
-  });
+  const handleSubmit = () => {
+    submitFeedback.mutate({
+      pilotId: pilot.id,
+      userEmail: user?.email,
+      feedback,
+      satisfaction
+    }, {
+      onSuccess: () => {
+        setFeedback('');
+        setSatisfaction(5);
+      }
+    });
+  };
 
   const avgSatisfaction = stakeholderFeedback.length > 0
     ? (stakeholderFeedback.reduce((sum, f) => sum + (f.satisfaction_score || 0), 0) / stakeholderFeedback.length).toFixed(1)
@@ -101,7 +84,7 @@ export default function StakeholderHub({ pilot }) {
           <h4 className="font-semibold text-sm text-slate-700">
             {t({ en: 'Submit Feedback', ar: 'إرسال الملاحظات' })}
           </h4>
-          
+
           <div>
             <label className="text-xs text-slate-600 mb-1 block">
               {t({ en: 'Satisfaction (1-5)', ar: 'الرضا (1-5)' })}
@@ -126,9 +109,9 @@ export default function StakeholderHub({ pilot }) {
             rows={3}
           />
 
-          <Button 
-            onClick={() => submitFeedbackMutation.mutate({ feedback, satisfaction })}
-            disabled={!feedback || submitFeedbackMutation.isPending}
+          <Button
+            onClick={handleSubmit}
+            disabled={!feedback || submitFeedback.isPending}
             className="w-full bg-indigo-600"
           >
             <Send className="h-4 w-4 mr-2" />
@@ -141,7 +124,7 @@ export default function StakeholderHub({ pilot }) {
             <div className="flex items-center justify-between mb-1">
               <Badge className={
                 item.sentiment === 'positive' ? 'bg-green-600' :
-                item.sentiment === 'neutral' ? 'bg-yellow-600' : 'bg-red-600'
+                  item.sentiment === 'neutral' ? 'bg-yellow-600' : 'bg-red-600'
               }>
                 {item.satisfaction_score}/5
               </Badge>

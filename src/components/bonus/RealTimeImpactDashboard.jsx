@@ -1,30 +1,24 @@
 
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Activity, TrendingUp, Users, DollarSign } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { usePilotsList } from '@/hooks/usePilots';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 
 export default function RealTimeImpactDashboard() {
   const { language, t } = useLanguage();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
-  });
+  const { data: pilots = [] } = usePilotsList();
+  const { data: challenges = [] } = useChallengesWithVisibility({ limit: 1000 });
 
   // Calculate real-time metrics
   const activePilots = pilots.filter(p => p.stage === 'active').length;
-  const citizensImpacted = pilots.reduce((sum, p) => 
+  const citizensImpacted = pilots.reduce((sum, p) =>
     sum + (p.target_population?.size || 0), 0
   );
-  const costSavings = pilots.filter(p => p.stage === 'completed').reduce((sum, p) => 
+  const costSavings = pilots.filter(p => p.stage === 'completed').reduce((sum, p) =>
     sum + (p.budget * 0.2), 0
   ); // Mock 20% savings
 
@@ -98,9 +92,9 @@ export default function RealTimeImpactDashboard() {
 
       <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border-2 border-blue-300">
         <p className="text-sm text-slate-700">
-          {t({ 
-            en: '🔄 Dashboard updates in real-time as pilots progress and challenges are resolved', 
-            ar: '🔄 لوحة التحكم تتحدث في الوقت الفعلي مع تقدم التجارب وحل التحديات' 
+          {t({
+            en: '🔄 Dashboard updates in real-time as pilots progress and challenges are resolved',
+            ar: '🔄 لوحة التحكم تتحدث في الوقت الفعلي مع تقدم التجارب وحل التحديات'
           })}
         </p>
       </div>

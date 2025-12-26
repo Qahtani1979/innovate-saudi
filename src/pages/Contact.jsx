@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useContactMutations } from '@/hooks/useContactMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,44 +20,16 @@ function Contact() {
     message: ''
   });
 
-  const submitMutation = useMutation({
-    mutationFn: async (data) => {
-      // Send contact form email via trigger hub
-      await supabase.functions.invoke('email-trigger-hub', {
-        body: {
-          trigger: 'contact.form',
-          recipient_email: 'platform@saudimih.sa',
-          variables: {
-            senderName: data.name,
-            senderEmail: data.email,
-            senderOrganization: data.organization,
-            subject: data.subject,
-            message: data.message
-          }
-        }
-      });
-
-      // Send confirmation to user
-      await supabase.functions.invoke('email-trigger-hub', {
-        body: {
-          trigger: 'contact.form_confirmation',
-          recipient_email: data.email,
-          variables: {
-            userName: data.name,
-            subject: data.subject
-          }
-        }
-      });
-    },
-    onSuccess: () => {
-      setSubmitted(true);
-      toast.success(t({ en: 'Message sent successfully', ar: 'تم إرسال الرسالة بنجاح' }));
-    }
-  });
+  const { submitContactForm } = useContactMutations();
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    submitMutation.mutate(formData);
+    submitContactForm.mutate(formData, {
+      onSuccess: () => {
+        setSubmitted(true);
+        toast.success(t({ en: 'Message sent successfully', ar: 'تم إرسال الرسالة بنجاح' }));
+      }
+    });
   };
 
   return (
@@ -110,9 +81,9 @@ function Contact() {
                     {t({ en: 'Address', ar: 'العنوان' })}
                   </p>
                   <p className="text-sm text-slate-600">
-                    {t({ 
-                      en: 'Ministry of Municipalities and Housing\nRiyadh, Saudi Arabia', 
-                      ar: 'وزارة البلديات والإسكان\nالرياض، المملكة العربية السعودية' 
+                    {t({
+                      en: 'Ministry of Municipalities and Housing\nRiyadh, Saudi Arabia',
+                      ar: 'وزارة البلديات والإسكان\nالرياض، المملكة العربية السعودية'
                     })}
                   </p>
                 </div>
@@ -126,9 +97,9 @@ function Contact() {
                 {t({ en: 'Business Hours', ar: 'ساعات العمل' })}
               </h3>
               <p className="text-sm text-slate-700">
-                {t({ 
-                  en: 'Sunday - Thursday: 8:00 AM - 4:00 PM', 
-                  ar: 'الأحد - الخميس: 8:00 ص - 4:00 م' 
+                {t({
+                  en: 'Sunday - Thursday: 8:00 AM - 4:00 PM',
+                  ar: 'الأحد - الخميس: 8:00 ص - 4:00 م'
                 })}
               </p>
             </CardContent>
@@ -150,9 +121,9 @@ function Contact() {
                   {t({ en: 'Message Sent!', ar: 'تم إرسال الرسالة!' })}
                 </h3>
                 <p className="text-slate-600 mb-6">
-                  {t({ 
-                    en: 'Thank you for contacting us. We will get back to you within 2 business days.', 
-                    ar: 'شكراً لتواصلك معنا. سنرد عليك خلال يومي عمل.' 
+                  {t({
+                    en: 'Thank you for contacting us. We will get back to you within 2 business days.',
+                    ar: 'شكراً لتواصلك معنا. سنرد عليك خلال يومي عمل.'
                   })}
                 </p>
                 <Button onClick={() => setSubmitted(false)}>
@@ -225,11 +196,11 @@ function Contact() {
 
                 <Button
                   type="submit"
-                  disabled={submitMutation.isPending}
+                  disabled={submitContactForm.isPending}
                   className="w-full bg-gradient-to-r from-blue-600 to-purple-600"
                   size="lg"
                 >
-                  {submitMutation.isPending ? (
+                  {submitContactForm.isPending ? (
                     <span className="flex items-center gap-2">
                       <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       {t({ en: 'Sending...', ar: 'جاري الإرسال...' })}

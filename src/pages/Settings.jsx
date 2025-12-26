@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 import { useUserMutations } from '@/hooks/useUserMutations';
 import { useSettings } from '@/hooks/useSettings';
-import { useProfileData } from '@/hooks/useProfileData';
+import { useCurrentUserProfile } from '@/hooks/useUserProfile';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,7 +30,7 @@ function Settings() {
   const { updateUserProfile } = useUserMutations();
   const { settings: userSettings, updateSettings } = useSettings(authUser?.id);
 
-  const { profile } = useProfileData();
+  const { profile } = useCurrentUserProfile();
 
   const [localProfile, setLocalProfile] = useState({});
   const [notifications, setNotifications] = useState({

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { usePolicyMutations } from '@/hooks/usePolicyMutations';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../LanguageContext';
@@ -7,22 +7,16 @@ import { Shield, FileText, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { getPolicyFeedbackPrompt, policyFeedbackSchema } from '@/lib/ai/prompts/sandbox';
+import { getPolicyFeedbackPrompt, policyFeedbackSchema } from '@/lib/ai/prompts/sandbox/policyFeedback';
 import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function SandboxPolicyFeedbackWorkflow({ sandbox }) {
   const { t } = useLanguage();
   const [policyDraft, setPolicyDraft] = useState(null);
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
-  const queryClient = useQueryClient();
 
-  const createPolicyMutation = useMutation({
-    mutationFn: (data) => base44.entities.PolicyRecommendation.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['policies'] });
-      toast.success(t({ en: 'Policy recommendation created', ar: 'تم إنشاء توصية السياسة' }));
-    }
-  });
+  const { createPolicy: createPolicyMutation } = usePolicyMutations();
+
 
   const generatePolicyRecommendation = async () => {
     const response = await invokeAI({
@@ -63,18 +57,18 @@ export default function SandboxPolicyFeedbackWorkflow({ sandbox }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
-        
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={null} className="mb-4" />
+
         {!policyDraft ? (
           <div className="text-center p-6">
             <p className="text-sm text-slate-600 mb-4">
-              {t({ 
+              {t({
                 en: 'Generate policy recommendation from sandbox regulatory learnings',
                 ar: 'توليد توصية سياسة من تعلمات الصندوق التنظيمية'
               })}
             </p>
-            <Button 
-              onClick={generatePolicyRecommendation} 
+            <Button
+              onClick={generatePolicyRecommendation}
               disabled={isLoading || !isAvailable}
               className="bg-purple-600"
             >
@@ -98,7 +92,7 @@ export default function SandboxPolicyFeedbackWorkflow({ sandbox }) {
                 {policyDraft.title_en} / {policyDraft.title_ar}
               </h4>
               <p className="text-sm text-slate-700 mb-3">{policyDraft.problem_statement_en}</p>
-              
+
               <div className="space-y-2">
                 <div>
                   <p className="text-xs font-semibold text-slate-700 mb-1">Proposed Changes:</p>
@@ -108,7 +102,7 @@ export default function SandboxPolicyFeedbackWorkflow({ sandbox }) {
                     ))}
                   </ul>
                 </div>
-                
+
                 <div>
                   <p className="text-xs font-semibold text-slate-700 mb-1">Expected Impact:</p>
                   <p className="text-xs text-slate-600">{policyDraft.expected_impact_en}</p>

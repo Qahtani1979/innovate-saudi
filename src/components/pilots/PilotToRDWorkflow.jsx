@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '../LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,10 +10,10 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { buildPilotToRDPrompt, PILOT_TO_RD_SCHEMA } from '@/lib/ai/prompts/pilots/pilotToRD';
+import { useCreateRDProject } from '@/hooks/useSolutionWorkflows';
 
 export default function PilotToRDWorkflow({ pilot, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const { invokeAI, status, isLoading: aiGenerating, rateLimitInfo, isAvailable } = useAIWithFallback();
   const [rdData, setRdData] = useState({
     title_en: `Research Follow-up: ${pilot.title_en || ''}`,
@@ -57,44 +55,7 @@ export default function PilotToRDWorkflow({ pilot, onClose, onSuccess }) {
     }
   };
 
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: rdProject, error: rdError } = await supabase
-        .from('rd_projects')
-        .insert(data)
-        .select()
-        .single();
-      if (rdError) throw rdError;
-      
-      // Update pilot with R&D link
-      const { error: pilotError } = await supabase
-        .from('pilots')
-        .update({ linked_rd_ids: [...(pilot.linked_rd_ids || []), rdProject.id] })
-        .eq('id', pilot.id);
-      if (pilotError) throw pilotError;
-
-      // Create relation
-      if (pilot.challenge_id) {
-        await supabase
-          .from('challenge_relations')
-          .insert({
-            challenge_id: pilot.challenge_id,
-            related_entity_type: 'rd_project',
-            related_entity_id: rdProject.id,
-            relation_role: 'informed_by'
-          });
-      }
-
-      return rdProject;
-    },
-    onSuccess: (rdProject) => {
-      queryClient.invalidateQueries({ queryKey: ['pilots'] });
-      queryClient.invalidateQueries({ queryKey: ['rd-projects'] });
-      toast.success(t({ en: 'R&D project created!', ar: 'تم إنشاء المشروع البحثي!' }));
-      onSuccess?.(rdProject);
-      onClose?.();
-    }
-  });
+  const createMutation = useCreateRDProject();
 
   return (
     <Card className="max-w-4xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -239,7 +200,12 @@ export default function PilotToRDWorkflow({ pilot, onClose, onSuccess }) {
             {t({ en: 'Cancel', ar: 'إلغاء' })}
           </Button>
           <Button
-            onClick={() => createMutation.mutate(rdData)}
+            onClick={() => createMutation.mutate(rdData, {
+              onSuccess: (newItem) => {
+                onSuccess?.(newItem);
+                onClose?.();
+              }
+            })}
             disabled={createMutation.isPending}
             className="bg-gradient-to-r from-purple-600 to-indigo-600"
           >

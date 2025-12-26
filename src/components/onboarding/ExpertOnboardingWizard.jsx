@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import { useQueryClient } from '@tanstack/react-query';
+
 import { useAutoRoleAssignment } from '@/hooks/useAutoRoleAssignment';
+import { useOnboardingMutations } from '@/hooks/useOnboardingMutations';
+import { useExpertProfile } from '@/hooks/useExperts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,9 +15,9 @@ import { useLanguage } from '../LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { createPageUrl } from '@/utils';
 import FileUploader from '../FileUploader';
-import { 
-  Award, ArrowRight, ArrowLeft, CheckCircle2, 
-  GraduationCap, Briefcase, Clock, Upload, FileText, 
+import {
+  Award, ArrowRight, ArrowLeft, CheckCircle2,
+  GraduationCap, Briefcase, Clock, Upload, FileText,
   Loader2, Globe, Star, Plus, X
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -57,14 +57,16 @@ export default function ExpertOnboardingWizard({ onComplete, onSkip }) {
   const { invokeAI } = useAIWithFallback();
   const { language, isRTL, t, toggleLanguage } = useLanguage();
   const { user, userProfile, checkAuth } = useAuth();
-  const queryClient = useQueryClient();
+
   const navigate = useNavigate();
   const { checkAndAssignRole } = useAutoRoleAssignment();
-  
+  const { upsertProfile } = useOnboardingMutations();
+  const { data: existingExpert } = useExpertProfile(user?.id);
+
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExtractingCV, setIsExtractingCV] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     full_name: '',
     job_title: '',
@@ -210,9 +212,11 @@ Extract the following in JSON format:
 
     try {
       // Update user profile
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .update({
+      await upsertProfile.mutateAsync({
+        table: 'user_profiles',
+        matchingColumns: ['user_id'],
+        data: {
+          user_id: user.id,
           full_name: formData.full_name,
           full_name_en: formData.full_name,
           job_title: formData.job_title,
@@ -228,22 +232,15 @@ Extract the following in JSON format:
           persona_onboarding_completed: true,
           onboarding_completed_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
-
-      if (profileError) throw profileError;
+        }
+      });
 
       // Create expert profile if doesn't exist
-      const { data: existingExpert } = await supabase
-        .from('expert_profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
       if (!existingExpert) {
-        await supabase
-          .from('expert_profiles')
-          .insert({
+        await upsertProfile.mutateAsync({
+          table: 'expert_profiles',
+          matchingColumns: ['user_id'],
+          data: {
             user_id: user.id,
             user_email: user.email,
             full_name: formData.full_name,
@@ -262,7 +259,8 @@ Extract the following in JSON format:
             portfolio_url: formData.portfolio_url,
             status: 'pending_verification',
             is_available: true
-          });
+          }
+        });
       }
 
       // Auto-assign role or create pending request
@@ -274,9 +272,9 @@ Extract the following in JSON format:
         language
       });
 
-      await queryClient.invalidateQueries(['user-profile']);
+
       if (checkAuth) await checkAuth();
-      
+
       if (roleResult.autoApproved) {
         toast.success(t({ en: 'Expert role approved!', ar: 'تمت الموافقة على دور الخبير!' }));
       } else {
@@ -295,13 +293,15 @@ Extract the following in JSON format:
 
   const handleSkip = async () => {
     try {
-      await supabase
-        .from('user_profiles')
-        .update({
+      await upsertProfile.mutateAsync({
+        table: 'user_profiles',
+        matchingColumns: ['user_id'],
+        data: {
+          user_id: user.id,
           onboarding_completed: true,
           onboarding_completed_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
+        }
+      });
 
       await checkAuth();
       onSkip?.();
@@ -326,7 +326,7 @@ Extract the following in JSON format:
     <div className="fixed inset-0 bg-gradient-to-br from-amber-900/95 via-slate-900/95 to-orange-900/95 backdrop-blur-sm z-50 overflow-y-auto" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="min-h-screen py-8 px-4">
         <div className="max-w-2xl mx-auto space-y-6">
-          
+
           {/* Header with Language Toggle */}
           <div className="text-center text-white">
             <div className="flex items-center justify-between mb-4">
@@ -337,8 +337,8 @@ Extract the following in JSON format:
                   {t({ en: 'Expert Profile Setup', ar: 'إعداد ملف الخبير' })}
                 </h1>
               </div>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={toggleLanguage}
                 className="text-white/70 hover:text-white hover:bg-white/10 font-medium w-24"
@@ -360,13 +360,12 @@ Extract the following in JSON format:
                   const StepIcon = step.icon;
                   const isActive = currentStep === step.id;
                   const isComplete = currentStep > step.id;
-                  
+
                   return (
                     <React.Fragment key={step.id}>
-                      <Badge className={`px-3 py-2 border-0 ${
-                        isActive ? 'bg-amber-600 text-white' : 
+                      <Badge className={`px-3 py-2 border-0 ${isActive ? 'bg-amber-600 text-white' :
                         isComplete ? 'bg-orange-600 text-white' : 'bg-white/10 text-white/60'
-                      }`}>
+                        }`}>
                         <StepIcon className="h-4 w-4 mr-1" />
                         {step.title[language]}
                       </Badge>
@@ -520,11 +519,10 @@ Extract the following in JSON format:
                       <button
                         key={area.en}
                         onClick={() => toggleExpertise(area.en)}
-                        className={`p-3 rounded-lg border text-sm text-start transition-all ${
-                          formData.expertise_areas.includes(area.en)
-                            ? 'bg-amber-100 border-amber-500 text-amber-900'
-                            : 'border-border hover:border-amber-300'
-                        }`}
+                        className={`p-3 rounded-lg border text-sm text-start transition-all ${formData.expertise_areas.includes(area.en)
+                          ? 'bg-amber-100 border-amber-500 text-amber-900'
+                          : 'border-border hover:border-amber-300'
+                          }`}
                       >
                         {language === 'ar' ? area.ar : area.en}
                       </button>
@@ -598,11 +596,10 @@ Extract the following in JSON format:
                       <div
                         key={type.id}
                         onClick={() => toggleEngagementType(type.id)}
-                        className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                          formData.preferred_engagement_types.includes(type.id)
-                            ? 'border-amber-500 bg-amber-50'
-                            : 'border-border hover:border-amber-300'
-                        }`}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all ${formData.preferred_engagement_types.includes(type.id)
+                          ? 'border-amber-500 bg-amber-50'
+                          : 'border-border hover:border-amber-300'
+                          }`}
                       >
                         <div className="flex items-center gap-2">
                           <Star className={`h-4 w-4 ${formData.preferred_engagement_types.includes(type.id) ? 'text-amber-600' : 'text-muted-foreground'}`} />

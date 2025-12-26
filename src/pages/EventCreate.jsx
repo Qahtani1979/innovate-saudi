@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,20 +12,22 @@ import { useLanguage } from '@/components/LanguageContext';
 import { usePermissions } from '@/components/permissions/usePermissions';
 import { useAuth } from '@/lib/AuthContext';
 import { useEvents } from '@/hooks/useEvents';
+import { usePrograms } from '@/hooks/usePrograms';
+import { useMunicipalities } from '@/hooks/useMunicipalities';
 import { EVENT_TYPES } from '@/components/events/EventFilters';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 import MediaFieldWithPicker from '@/components/media/MediaFieldWithPicker';
 import { AIConflictDetector } from '@/components/ai/AIConflictDetector';
 import { AIEventOptimizer } from '@/components/ai/AIEventOptimizer';
 import StrategicPlanSelector from '@/components/strategy/StrategicPlanSelector';
-import { 
-  Calendar, 
-  MapPin, 
-  Video, 
-  Users, 
-  Clock, 
-  ArrowLeft, 
-  Save, 
+import {
+  Calendar,
+  MapPin,
+  Video,
+  Users,
+  Clock,
+  ArrowLeft,
+  Save,
   Send,
   Loader2
 } from 'lucide-react';
@@ -68,29 +68,11 @@ function EventCreate() {
     strategic_objective_ids: []
   });
 
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs-select'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('programs')
-        .select('id, name_en, name_ar')
-        .eq('is_deleted', false)
-        .order('name_en');
-      return data || [];
-    }
-  });
 
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities-select'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('municipalities')
-        .select('id, name_en, name_ar')
-        .eq('is_active', true)
-        .order('name_en');
-      return data || [];
-    }
-  });
+  // ... inside component
+
+  const { data: programs = [] } = usePrograms({ status: 'active' });
+  const { data: municipalities = [] } = useMunicipalities({ includeInactive: false });
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -115,19 +97,19 @@ function EventCreate() {
       };
 
       const result = await createEvent(eventData);
-      
+
       if (publish) {
-        toast.success(t({ 
+        toast.success(t({
           en: 'Event submitted for approval! It will be visible once approved.',
           ar: 'تم إرسال الفعالية للموافقة! ستكون مرئية بعد الموافقة.'
         }));
       } else {
-        toast.success(t({ 
+        toast.success(t({
           en: 'Event saved as draft',
           ar: 'تم حفظ الفعالية كمسودة'
         }));
       }
-      
+
       navigate(createPageUrl('EventDetail') + `?id=${result.id}`);
     } catch (error) {
       console.error('Error creating event:', error);
@@ -265,7 +247,7 @@ function EventCreate() {
               />
 
               {/* AI Event Optimizer */}
-              <AIEventOptimizer 
+              <AIEventOptimizer
                 eventData={formData}
                 compact={true}
                 onApplySuggestion={(field, value) => {
@@ -329,7 +311,7 @@ function EventCreate() {
                   proposedTime={formData.start_date?.split('T')[1] || '10:00'}
                   onConflictsFound={(conflicts) => {
                     if (conflicts.length > 0) {
-                      toast.warning(t({ 
+                      toast.warning(t({
                         en: `${conflicts.length} potential conflicts detected`,
                         ar: `تم اكتشاف ${conflicts.length} تعارضات محتملة`
                       }));
@@ -474,7 +456,7 @@ function EventCreate() {
   );
 }
 
-export default ProtectedPage(EventCreate, { 
+export default ProtectedPage(EventCreate, {
   requiredPermissions: ['event_create'],
   requiredRoles: ['admin', 'super_admin', 'municipality_admin', 'gdibs_internal', 'event_manager'],
   requireAllPermissions: false

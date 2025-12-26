@@ -1,6 +1,4 @@
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useComments, useCommentMutations } from '@/hooks/useComments';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,42 +9,30 @@ import { useAuth } from '@/lib/AuthContext';
 
 export default function PolicyCommentThread({ policyId }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [newComment, setNewComment] = useState('');
   const { user } = useAuth();
 
-  // Fetch comments from comments table
-  const { data: comments = [], isLoading } = useQuery({
-    queryKey: ['policy-comments', policyId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('comments')
-        .select('*')
-        .eq('entity_type', 'policy')
-        .eq('entity_id', policyId)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: comments = [], isLoading } = useComments('policy', policyId);
+  const { addComment } = useCommentMutations();
 
-  const addCommentMutation = useMutation({
-    mutationFn: async (commentText) => {
-      const { error } = await supabase.from('comments').insert({
-        entity_type: 'policy',
-        entity_id: policyId,
-        comment_text: commentText,
-        user_email: user?.email || 'anonymous',
-        is_internal: false
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['policy-comments'] });
-      setNewComment('');
-      toast.success(t({ en: 'Comment added', ar: 'تمت إضافة التعليق' }));
-    }
-  });
+  const handleAddComment = () => {
+    addComment.mutate({
+      entity_type: 'policy',
+      entity_id: policyId,
+      comment_text: newComment,
+      user_email: user?.email || 'anonymous',
+      is_internal: false
+    }, {
+      onSuccess: () => {
+        setNewComment('');
+        toast.success(t({ en: 'Comment added', ar: 'تمت إضافة التعليق' }));
+      },
+      onError: (error) => {
+        toast.error(t({ en: 'Failed to add comment', ar: 'فشل إضافة التعليق' }));
+        console.error(error);
+      }
+    });
+  };
 
   return (
     <Card>
@@ -68,12 +54,12 @@ export default function PolicyCommentThread({ policyId }) {
           />
           <div className="flex justify-end">
             <Button
-              onClick={() => addCommentMutation.mutate(newComment)}
-              disabled={!newComment.trim() || addCommentMutation.isPending}
+              onClick={handleAddComment}
+              disabled={!newComment.trim() || addComment.isPending}
               className="gap-2"
               size="sm"
             >
-              {addCommentMutation.isPending ? (
+              {addComment.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Send className="h-4 w-4" />

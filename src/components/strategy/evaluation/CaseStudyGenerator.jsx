@@ -8,23 +8,24 @@ import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { supabase } from '@/integrations/supabase/client';
+import { useCaseStudyMutations } from '@/hooks/useCaseStudies';
 import { toast } from 'sonner';
 import {
   BookOpen, Sparkles, Download, Save, RefreshCw,
   Target, Lightbulb, CheckCircle2, AlertTriangle, TrendingUp
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { 
+import {
   CASE_STUDY_PROMPTS,
   buildCaseStudyPrompt,
-  CASE_STUDY_SCHEMA 
+  CASE_STUDY_SCHEMA
 } from '@/lib/ai/prompts/strategy';
 
 export default function CaseStudyGenerator({ entity, entityType }) {
   const { t, language } = useLanguage();
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
-  
+  const { createCaseStudy } = useCaseStudyMutations();
+
   const [caseStudy, setCaseStudy] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [editedContent, setEditedContent] = useState({});
@@ -49,66 +50,28 @@ export default function CaseStudyGenerator({ entity, entityType }) {
   const saveCaseStudy = async () => {
     setIsSaving(true);
     try {
-      const { error } = await supabase
-        .from('case_studies')
-        .insert({
-          entity_type: entityType,
-          entity_id: entity.id,
-          title_en: editedContent.title_en,
-          title_ar: editedContent.title_ar,
-          description_en: editedContent.executive_summary_en,
-          description_ar: editedContent.executive_summary_ar,
-          challenge_description: editedContent.challenge_description_en,
-          solution_description: editedContent.solution_approach_en,
-          implementation_details: editedContent.implementation_en,
-          results_achieved: editedContent.results_en,
-          lessons_learned: editedContent.lessons_learned_en?.join('\n'),
-          tags: editedContent.tags,
-          is_published: false,
-          sector_id: entity.sector_id,
-          municipality_id: entity.municipality_id
-        });
-
-      if (error) throw error;
-      toast.success(t({ en: 'Case study saved successfully', ar: 'تم حفظ دراسة الحالة بنجاح' }));
+      await createCaseStudy.mutateAsync({
+        entity_type: entityType,
+        entity_id: entity.id,
+        title_en: editedContent.title_en,
+        title_ar: editedContent.title_ar,
+        description_en: editedContent.executive_summary_en,
+        description_ar: editedContent.executive_summary_ar,
+        challenge_description: editedContent.challenge_description_en,
+        solution_description: editedContent.solution_approach_en,
+        implementation_details: editedContent.implementation_en,
+        results_achieved: editedContent.results_en,
+        lessons_learned: editedContent.lessons_learned_en?.join('\n'),
+        tags: editedContent.tags,
+        is_published: false,
+        sector_id: entity.sector_id,
+        municipality_id: entity.municipality_id
+      });
+      // Success toast is handled by the hook
       setEditMode(false);
     } catch (error) {
       console.error('Save error:', error);
-      toast.error(t({ en: 'Failed to save case study', ar: 'فشل في حفظ دراسة الحالة' }));
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const saveCaseStudy = async () => {
-    setIsSaving(true);
-    try {
-      const { error } = await supabase
-        .from('case_studies')
-        .insert({
-          entity_type: entityType,
-          entity_id: entity.id,
-          title_en: editedContent.title_en,
-          title_ar: editedContent.title_ar,
-          description_en: editedContent.executive_summary_en,
-          description_ar: editedContent.executive_summary_ar,
-          challenge_description: editedContent.challenge_description_en,
-          solution_description: editedContent.solution_approach_en,
-          implementation_details: editedContent.implementation_en,
-          results_achieved: editedContent.results_en,
-          lessons_learned: editedContent.lessons_learned_en?.join('\n'),
-          tags: editedContent.tags,
-          is_published: false,
-          sector_id: entity.sector_id,
-          municipality_id: entity.municipality_id
-        });
-
-      if (error) throw error;
-      toast.success(t({ en: 'Case study saved successfully', ar: 'تم حفظ دراسة الحالة بنجاح' }));
-      setEditMode(false);
-    } catch (error) {
-      console.error('Save error:', error);
-      toast.error(t({ en: 'Failed to save case study', ar: 'فشل في حفظ دراسة الحالة' }));
+      // Error toast is handled by the hook
     } finally {
       setIsSaving(false);
     }
@@ -243,13 +206,13 @@ Tags: ${caseStudy.tags?.join(', ')}
           <div className="text-center py-12">
             <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground mb-4">
-              {t({ 
-                en: 'Generate a comprehensive case study from this entity for knowledge sharing', 
-                ar: 'أنشئ دراسة حالة شاملة من هذا الكيان لمشاركة المعرفة' 
+              {t({
+                en: 'Generate a comprehensive case study from this entity for knowledge sharing',
+                ar: 'أنشئ دراسة حالة شاملة من هذا الكيان لمشاركة المعرفة'
               })}
             </p>
-            <Button 
-              onClick={generateCaseStudy} 
+            <Button
+              onClick={generateCaseStudy}
               disabled={isLoading || !isAvailable}
               className="bg-gradient-to-r from-primary to-purple-600"
             >
@@ -344,7 +307,7 @@ Tags: ${caseStudy.tags?.join(', ')}
               </Button>
               <Button onClick={saveCaseStudy} disabled={isSaving}>
                 <Save className="h-4 w-4 mr-2" />
-                {isSaving 
+                {isSaving
                   ? t({ en: 'Saving...', ar: 'جاري الحفظ...' })
                   : t({ en: 'Save to Library', ar: 'حفظ في المكتبة' })
                 }

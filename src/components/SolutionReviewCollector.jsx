@@ -1,57 +1,39 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from './LanguageContext';
 import { Star, X, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useCreateReview } from '@/hooks/useSolutionReviews';
 
 export default function SolutionReviewCollector({ solution, onClose }) {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
   const [reviewerName, setReviewerName] = useState('');
   const [reviewerOrg, setReviewerOrg] = useState('');
 
-  const reviewMutation = useMutation({
-    mutationFn: async () => {
-      // Update ratings object
-      const currentRatings = solution.ratings || { average: 0, count: 0, breakdown: {} };
-      const newCount = currentRatings.count + 1;
-      const newTotal = (currentRatings.average * currentRatings.count) + rating;
-      const newAverage = newTotal / newCount;
+  const createReview = useCreateReview();
 
-      const breakdown = currentRatings.breakdown || {};
-      breakdown[`${rating}_star`] = (breakdown[`${rating}_star`] || 0) + 1;
-
-      // Create review comment
-      await base44.entities.SolutionComment.create({
-        solution_id: solution.id,
-        comment_text: `⭐ ${rating}/5 - ${reviewText}`,
-        reviewer_name: reviewerName,
-        reviewer_org: reviewerOrg,
-        rating: rating,
-        is_review: true
+  const handleSubmit = async () => {
+    try {
+      await createReview.mutateAsync({
+        solutionId: solution.id,
+        overall_rating: rating,
+        review_text: reviewText,
+        reviewerName: reviewerName,
+        reviewerRole: reviewerOrg, // Using organization field for role/org
+        municipalityId: null, // Optional
+        is_public: true
       });
 
-      await base44.entities.Solution.update(solution.id, {
-        ratings: {
-          average: parseFloat(newAverage.toFixed(2)),
-          count: newCount,
-          breakdown: breakdown
-        }
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['solution']);
-      queryClient.invalidateQueries(['solution-comments']);
-      toast.success(t({ en: 'Review submitted', ar: 'تم إرسال المراجعة' }));
       onClose();
+    } catch (error) {
+      // Error handled by hook
     }
-  });
+  };
 
   return (
     <Card className="w-full" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -84,9 +66,8 @@ export default function SolutionReviewCollector({ solution, onClose }) {
                 className="transition-transform hover:scale-110"
               >
                 <Star
-                  className={`h-10 w-10 ${
-                    star <= (hoverRating || rating) ? 'fill-amber-400 text-amber-400' : 'text-slate-300'
-                  }`}
+                  className={`h-10 w-10 ${star <= (hoverRating || rating) ? 'fill-amber-400 text-amber-400' : 'text-slate-300'
+                    }`}
                 />
               </button>
             ))}
@@ -137,20 +118,20 @@ export default function SolutionReviewCollector({ solution, onClose }) {
             value={reviewText}
             onChange={(e) => setReviewText(e.target.value)}
             rows={4}
-            placeholder={t({ 
-              en: 'Share your experience with this solution...', 
-              ar: 'شارك تجربتك مع هذا الحل...' 
+            placeholder={t({
+              en: 'Share your experience with this solution...',
+              ar: 'شارك تجربتك مع هذا الحل...'
             })}
           />
         </div>
 
         <div className="flex gap-3 pt-4 border-t">
           <Button
-            onClick={() => reviewMutation.mutate()}
-            disabled={rating === 0 || !reviewText || !reviewerName || reviewMutation.isPending}
+            onClick={handleSubmit}
+            disabled={rating === 0 || !reviewText || !reviewerName || createReview.isPending}
             className="flex-1 bg-amber-600 hover:bg-amber-700"
           >
-            {reviewMutation.isPending ? (
+            {createReview.isPending ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <CheckCircle2 className="h-4 w-4 mr-2" />

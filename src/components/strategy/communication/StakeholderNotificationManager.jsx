@@ -9,11 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { useLanguage } from '@/components/LanguageContext';
 import { useCommunicationNotifications } from '@/hooks/strategy/useCommunicationNotifications';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { 
-  Bell, Mail, MessageSquare, Smartphone, Send, Clock, 
-  CheckCircle2, XCircle, AlertTriangle, Users, Loader2, 
+import { useEmailTemplates } from '@/hooks/useEmailTemplates';
+import { useRecipientSelection } from '@/hooks/strategy/useRecipientSelection';
+import {
+  Bell, Mail, MessageSquare, Smartphone, Send, Clock,
+  CheckCircle2, XCircle, AlertTriangle, Users, Loader2,
   Calendar, BarChart3, UserCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -41,14 +41,14 @@ const AUDIENCE_SEGMENTS = [
 
 export default function StakeholderNotificationManager({ communicationPlanId, strategicPlanId }) {
   const { t, language } = useLanguage();
-  const { 
-    notifications, 
-    createNotification, 
+  const {
+    notifications,
+    createNotification,
     scheduleNotification,
     cancelNotification,
     getNotificationStats,
-    isLoading, 
-    isCreating 
+    isLoading,
+    isCreating
   } = useCommunicationNotifications(communicationPlanId);
 
   const [activeTab, setActiveTab] = useState('create');
@@ -66,18 +66,8 @@ export default function StakeholderNotificationManager({ communicationPlanId, st
   });
 
   // Fetch email templates for integration
-  const { data: emailTemplates = [] } = useQuery({
-    queryKey: ['email-templates-for-notifications'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('email_templates')
-        .select('id, template_key, name_en, name_ar, category, subject_en, subject_ar, body_en, body_ar')
-        .eq('is_active', true)
-        .order('category', { ascending: true });
-      if (error) return [];
-      return data || [];
-    }
-  });
+  // Fetch email templates for integration
+  const { data: emailTemplates = [] } = useEmailTemplates();
 
   // Apply template when selected
   const handleTemplateSelect = (templateId) => {
@@ -95,66 +85,10 @@ export default function StakeholderNotificationManager({ communicationPlanId, st
   };
 
   // Fetch real user profiles for recipient selection
-  const { data: availableRecipients = [], isLoading: recipientsLoading } = useQuery({
-    queryKey: ['available-recipients', notificationData.audience_segment],
-    queryFn: async () => {
-      if (notificationData.recipient_type !== 'audience_segment' || !notificationData.audience_segment) {
-        return [];
-      }
-
-      let query = supabase
-        .from('user_profiles')
-        .select('id, user_email, first_name, last_name, persona_type')
-        .not('user_email', 'is', null)
-        .limit(100);
-
-      // Filter by persona type based on segment
-      if (notificationData.audience_segment === 'municipality_staff') {
-        query = query.in('persona_type', ['municipality_staff', 'municipality_admin', 'municipality_coordinator']);
-      } else if (notificationData.audience_segment === 'partners') {
-        query = query.in('persona_type', ['provider', 'partner']);
-      } else if (notificationData.audience_segment === 'leadership') {
-        query = query.in('persona_type', ['deputyship_admin', 'admin']);
-      } else if (notificationData.audience_segment === 'citizens') {
-        // Fetch from citizen_profiles for citizens
-        const { data: citizenData } = await supabase
-          .from('citizen_profiles')
-          .select('id, user_email')
-          .not('user_email', 'is', null)
-          .limit(100);
-        return citizenData || [];
-      }
-
-      const { data, error } = await query;
-      if (error) {
-        console.error('Error fetching recipients:', error);
-        return [];
-      }
-      return data || [];
-    },
-    enabled: notificationData.recipient_type === 'audience_segment' && !!notificationData.audience_segment
-  });
-
-  // Get recipient count based on selection
-  const { data: recipientCount = 0 } = useQuery({
-    queryKey: ['recipient-count', notificationData.recipient_type, notificationData.audience_segment],
-    queryFn: async () => {
-      if (notificationData.recipient_type === 'all') {
-        const { count } = await supabase
-          .from('user_profiles')
-          .select('id', { count: 'exact', head: true })
-          .not('user_email', 'is', null);
-        return count || 0;
-      }
-      if (notificationData.recipient_type === 'audience_segment' && notificationData.audience_segment) {
-        return availableRecipients.length;
-      }
-      if (notificationData.recipient_type === 'individual') {
-        return notificationData.recipient_emails.split(',').filter(e => e.trim()).length;
-      }
-      return 0;
-    }
-  });
+  const { recipients: availableRecipients = [], isLoading: recipientsLoading, recipientCount } = useRecipientSelection(
+    notificationData.recipient_type === 'all' ? 'all' : notificationData.recipient_type, // normalized type logic handled in hook if needed 
+    notificationData.audience_segment
+  );
 
   const stats = getNotificationStats();
 
@@ -166,7 +100,7 @@ export default function StakeholderNotificationManager({ communicationPlanId, st
 
     try {
       const emails = notificationData.recipient_emails.split(',').map(e => e.trim()).filter(Boolean);
-      
+
       await createNotification({
         communication_plan_id: communicationPlanId,
         notification_type: notificationData.notification_type,
@@ -180,9 +114,9 @@ export default function StakeholderNotificationManager({ communicationPlanId, st
         status: notificationData.scheduled_at ? 'scheduled' : 'pending'
       });
 
-      toast.success(t({ 
-        en: notificationData.scheduled_at ? 'Notification scheduled' : 'Notification created', 
-        ar: notificationData.scheduled_at ? 'تم جدولة الإشعار' : 'تم إنشاء الإشعار' 
+      toast.success(t({
+        en: notificationData.scheduled_at ? 'Notification scheduled' : 'Notification created',
+        ar: notificationData.scheduled_at ? 'تم جدولة الإشعار' : 'تم إنشاء الإشعار'
       }));
 
       setNotificationData({
@@ -473,7 +407,7 @@ export default function StakeholderNotificationManager({ communicationPlanId, st
               </Button>
               <Button onClick={handleSendNotification} disabled={isCreating}>
                 {isCreating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
-                {notificationData.scheduled_at 
+                {notificationData.scheduled_at
                   ? t({ en: 'Schedule', ar: 'جدولة' })
                   : t({ en: 'Send Now', ar: 'إرسال الآن' })
                 }
@@ -515,8 +449,8 @@ export default function StakeholderNotificationManager({ communicationPlanId, st
                         </div>
                       </div>
                       {notification.status === 'scheduled' && (
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="sm"
                           onClick={() => cancelNotification(notification.id)}
                         >

@@ -10,7 +10,7 @@ import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useStrategyOwnership } from '@/hooks/strategy';
 import { useStrategyAIGeneration } from '@/hooks/useStrategyAIGeneration';
-import { useUserProfiles } from '@/hooks/useUserProfiles';
+import { useUserProfile, useAllUserProfiles } from '@/hooks/useUserProfile';
 import {
   Users,
   UserCog,
@@ -54,7 +54,7 @@ const StrategyOwnershipAssigner = ({ strategicPlanId, strategicPlan, objectives 
   const { generateOwnership } = useStrategyAIGeneration();
 
   // Fetch real users from the platform for assignment selection
-  const { data: platformUsers = [] } = useUserProfiles();
+  const { data: platformUsers = [] } = useAllUserProfiles();
 
   // Transform user profiles to assignment format
   const availableUsers = platformUsers.length > 0 ? platformUsers.map(u => ({

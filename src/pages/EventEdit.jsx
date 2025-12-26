@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,19 +13,21 @@ import { useLanguage } from '@/components/LanguageContext';
 import { usePermissions } from '@/components/permissions/usePermissions';
 import { useAuth } from '@/lib/AuthContext';
 import { useEvents } from '@/hooks/useEvents';
+import { usePrograms } from '@/hooks/usePrograms';
+import { useMunicipalities } from '@/hooks/useMunicipalities';
 import { EVENT_TYPES, EVENT_STATUSES } from '@/components/events/EventFilters';
 import { EventCancelDialog, EventAttendeeList } from '@/components/events';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 import MediaFieldWithPicker from '@/components/media/MediaFieldWithPicker';
 import { useMediaIntegration } from '@/hooks/useMediaIntegration';
-import { 
-  Calendar, 
-  MapPin, 
-  Video, 
-  Users, 
-  Clock, 
-  ArrowLeft, 
-  Save, 
+import {
+  Calendar,
+  MapPin,
+  Video,
+  Users,
+  Clock,
+  ArrowLeft,
+  Save,
   Trash2,
   Loader2,
   AlertTriangle
@@ -51,7 +51,7 @@ function EventEdit() {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [formData, setFormData] = useState(null);
 
-  const canManage = hasAnyPermission(['event_manage', 'admin']) || 
+  const canManage = hasAnyPermission(['event_manage', 'admin']) ||
     (event?.created_by === user?.email);
 
   // Initialize form when event loads
@@ -80,29 +80,11 @@ function EventEdit() {
     }
   }, [event, formData]);
 
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs-select'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('programs')
-        .select('id, name_en, name_ar')
-        .eq('is_deleted', false)
-        .order('name_en');
-      return data || [];
-    }
-  });
 
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities-select'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('municipalities')
-        .select('id, name_en, name_ar')
-        .eq('is_active', true)
-        .order('name_en');
-      return data || [];
-    }
-  });
+  // ... inside component
+
+  const { data: programs = [] } = usePrograms({ status: 'active' });
+  const { data: municipalities = [] } = useMunicipalities({ includeInactive: false });
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -190,8 +172,8 @@ function EventEdit() {
         </div>
         <div className="flex items-center gap-2">
           {event.status !== 'cancelled' && (
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="text-destructive border-destructive hover:bg-destructive/10"
               onClick={() => setShowCancelDialog(true)}
             >
@@ -494,7 +476,7 @@ function EventEdit() {
   );
 }
 
-export default ProtectedPage(EventEdit, { 
+export default ProtectedPage(EventEdit, {
   requiredPermissions: ['event_edit'],
   requiredRoles: ['admin', 'super_admin', 'municipality_admin', 'gdibs_internal', 'event_manager'],
   requireAllPermissions: false

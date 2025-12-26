@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,23 +14,27 @@ import {
   PREFLIGHT_RISK_SCHEMA
 } from '@/lib/ai/prompts/pilots';
 import { getSystemPrompt } from '@/lib/saudiContext';
+import { usePilotsList } from '@/hooks/usePilots';
 
 export default function PreFlightRiskSimulator({ pilot }) {
   const { language, isRTL, t } = useLanguage();
   const [riskAssessment, setRiskAssessment] = useState(null);
   const [mitigationPlans, setMitigationPlans] = useState({});
-  const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo, error } = useAIWithFallback();
+
+  // Use hook to fetch all pilots for comparison
+  const { data: allPilots = [], isLoading: pilotsLoading } = usePilotsList();
+  const loading = aiLoading || pilotsLoading;
 
   useEffect(() => {
-    if (pilot) {
+    if (pilot && allPilots.length > 0) {
       simulateRisks();
     }
-  }, [pilot?.id]);
+  }, [pilot?.id, allPilots.length]);
 
   const simulateRisks = async () => {
     try {
-      const { data: allPilots, error } = await supabase.from('pilots').select('*');
-      if (error) throw error;
+      if (pilotsLoading) return;
 
       const budgetMin = (pilot.budget || 0) * 0.7;
       const budgetMax = (pilot.budget || 0) * 1.3;
@@ -181,7 +184,7 @@ export default function PreFlightRiskSimulator({ pilot }) {
         <p className="text-sm text-slate-600 mt-2">
           {t({ en: 'Based on', ar: 'بناءً على' })} {similarPilots} {t({ en: 'similar pilots', ar: 'تجربة مماثلة' })}
         </p>
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails className="mt-2" />
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={error} showDetails className="mt-2" />
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

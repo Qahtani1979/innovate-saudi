@@ -1,7 +1,5 @@
 import { useState } from 'react';
 
-import { useAuth } from '@/lib/AuthContext';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
@@ -11,6 +9,7 @@ import {
   Lightbulb, TrendingUp, Star, TestTube, XCircle, CheckCircle2, BarChart3, Briefcase
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 import { useOrganizationByOwner } from '@/hooks/useOrganizations';
 import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
 import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
@@ -24,8 +23,7 @@ import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 export default function ProviderPortfolioDashboard() {
   const { language, isRTL, t } = useLanguage();
-  const [selectedSolutions, setSelectedSolutions] = useState([]);
-  const queryClient = useQueryClient();
+
   const { user } = useAuth();
 
   const { data: myOrg } = useOrganizationByOwner(user?.email);
@@ -34,8 +32,11 @@ export default function ProviderPortfolioDashboard() {
     limit: 1000
   });
 
+  // Handle potential paginated response structure for 'solutions'
+  const normalizedSolutions = Array.isArray(solutions) ? solutions : (solutions.data || []);
+
   // Filter solutions to show only provider's solutions
-  const mySolutions = solutions.filter(s =>
+  const mySolutions = normalizedSolutions.filter(s =>
     s?.['created_by'] === user?.email ||
     (myOrg && s?.['provider_id'] === myOrg.id)
   );
@@ -51,6 +52,8 @@ export default function ProviderPortfolioDashboard() {
 
   const { data: reviews = [] } = useSolutionsReviews(mySolutions.map(s => s.id));
 
+  const [selectedSolutions, setSelectedSolutions] = useState([]);
+
   const toggleSelection = (solutionId) => {
     setSelectedSolutions(prev =>
       prev.includes(solutionId)
@@ -59,29 +62,18 @@ export default function ProviderPortfolioDashboard() {
     );
   };
 
-  const { updateSolution } = useSolutionMutations();
+  const { updateSolution, bulkDeprecateSolutions } = useSolutionMutations();
 
-  const bulkDeprecateMutation = useMutation({
-    /** @param {string[]} solutionIds */
-    mutationFn: async (solutionIds) => {
-      for (const id of solutionIds) {
-        await updateSolution.mutateAsync({
-          id,
-          data: {
-            workflow_stage: 'deprecated',
-            is_published: false,
-            is_archived: true
-          },
-          changedFields: ['workflow_stage', 'is_published', 'is_archived']
-        });
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['solutions-with-visibility'] });
-      setSelectedSolutions([]);
-      toast.success(t({ en: 'Solutions deprecated', ar: 'تم إيقاف الحلول' }));
+  // Clean up selection when bulk deprecation is successful (handled via useEffect or callback if hook allows)
+  // Or better, passing a callback to mutate
+
+  const handleBulkDeprecate = () => {
+    if (confirm(t({ en: 'Deprecate selected solutions?', ar: 'إيقاف الحلول المحددة؟' }))) {
+      bulkDeprecateSolutions.mutate(selectedSolutions, {
+        onSuccess: () => setSelectedSolutions([])
+      });
     }
-  });
+  };
 
   const portfolioStats = {
     total: mySolutions.length,
@@ -207,11 +199,7 @@ export default function ProviderPortfolioDashboard() {
                 <Button
                   size="sm"
                   variant="destructive"
-                  onClick={() => {
-                    if (confirm(t({ en: 'Deprecate selected solutions?', ar: 'إيقاف الحلول المحددة؟' }))) {
-                      bulkDeprecateMutation.mutate(selectedSolutions);
-                    }
-                  }}
+                  onClick={handleBulkDeprecate}
                 >
                   <XCircle className="h-4 w-4 mr-2" />
                   {t({ en: 'Bulk Deprecate', ar: 'إيقاف جماعي' })}

@@ -50,8 +50,8 @@ export function useScaling() {
             if (error) throw error;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(['completed-pilots']);
-            queryClient.invalidateQueries(['scaled-pilots']);
+            queryClient.invalidateQueries({ queryKey: ['completed-pilots'] });
+            queryClient.invalidateQueries({ queryKey: ['scaled-pilots'] });
             toast.success('Pilot approved for scaling');
         }
     });
@@ -60,6 +60,7 @@ export function useScaling() {
         useCompletedPilots,
         useScaledPilots,
         useScalingPlans,
-        useApproveScaling
+        useApproveScaling,
+        invalidateScalingPlans: () => queryClient.invalidateQueries({ queryKey: ['scaling-plans'] })
     };
 }

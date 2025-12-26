@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,8 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '../LanguageContext';
 import { DollarSign, TrendingDown, TrendingUp, AlertCircle, Plus } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { supabase } from '@/integrations/supabase/client';
-import { useExpenseMutations } from '@/hooks/useExpenseMutations';
+import { useExpenseMutations, usePilotExpenses } from '@/hooks/useExpenseMutations';
 
 export default function CostTracker({ pilotId, budget }) {
   const { language, isRTL, t } = useLanguage();
@@ -19,18 +17,7 @@ export default function CostTracker({ pilotId, budget }) {
     description: ''
   });
 
-  const { data: expenses = [] } = useQuery({
-    queryKey: ['pilot-expenses', pilotId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilot_expenses')
-        .select('*')
-        .eq('pilot_id', pilotId)
-        .order('expense_date', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: expenses = [] } = usePilotExpenses(pilotId);
 
   const { createExpense, isCreating } = useExpenseMutations(pilotId);
 

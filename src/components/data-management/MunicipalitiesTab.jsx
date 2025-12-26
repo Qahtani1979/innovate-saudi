@@ -1,8 +1,3 @@
-/**
- * Municipalities Tab Component for Data Management Hub
- */
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Landmark } from 'lucide-react';
@@ -10,31 +5,22 @@ import { useLanguage } from '@/components/LanguageContext';
 import { EntityTable } from './EntityTable';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { useMunicipalities } from '@/hooks/useMunicipalities';
 
 export function MunicipalitiesTab({ regions, onEdit, onDelete, onAdd }) {
   const { language, t } = useLanguage();
 
-  const { data: municipalities = [], isLoading, error } = useQuery({
-    queryKey: ['municipalities-management'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('municipalities')
-        .select('*')
-        .eq('is_deleted', false)
-        .order('name_en');
-      if (error) throw error;
-      return data || [];
-    },
-    staleTime: 5 * 60 * 1000
+  const { data: municipalities = [], isLoading, error } = useMunicipalities({
+    includeInactive: true
   });
 
   const columns = [
-    { 
-      key: 'name_en', 
+    {
+      key: 'name_en',
       label: { en: 'Name (EN)', ar: 'الاسم (EN)' },
       render: (item) => (
-        <Link 
-          to={createPageUrl(`MunicipalityProfile?id=${item.id}`)} 
+        <Link
+          to={createPageUrl(`MunicipalityProfile?id=${item.id}`)}
           className="text-blue-600 hover:underline font-medium"
         >
           {item.name_en}
@@ -59,8 +45,8 @@ export function MunicipalitiesTab({ regions, onEdit, onDelete, onAdd }) {
         </Badge>
       )
     },
-    { 
-      key: 'population', 
+    {
+      key: 'population',
       label: { en: 'Population', ar: 'السكان' },
       render: (item) => item.population ? `${(item.population / 1000).toFixed(0)}K` : '-'
     },
@@ -70,8 +56,8 @@ export function MunicipalitiesTab({ regions, onEdit, onDelete, onAdd }) {
       render: (item) => {
         if (!item.mii_score) return '-';
         const color = item.mii_score >= 80 ? 'bg-green-100 text-green-700' :
-                      item.mii_score >= 60 ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-red-100 text-red-700';
+          item.mii_score >= 60 ? 'bg-yellow-100 text-yellow-700' :
+            'bg-red-100 text-red-700';
         return <Badge className={color}>{item.mii_score}%</Badge>;
       }
     },

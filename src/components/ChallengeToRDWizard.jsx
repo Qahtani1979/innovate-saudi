@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from './LanguageContext';
 import { Microscope, Sparkles, Loader2, X } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
@@ -13,12 +12,8 @@ import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { createPageUrl } from '../utils';
 import { useChallengeMutations } from '@/hooks/useChallengeMutations';
 import { useRDProjectMutations } from '@/hooks/useRDProjectMutations';
-import { supabase } from '@/integrations/supabase/client';
-import {
-  CHALLENGE_TO_RD_PROMPTS,
-  buildRDScopePrompt,
-  RD_SCOPE_SCHEMA
-} from '@/lib/ai/prompts/challenges';
+import { useRDCalls } from '@/hooks/useRDCalls';
+import { useChallengeToRDConversion } from '@/hooks/useChallengeConversionMutations';
 
 export default function ChallengeToRDWizard({ challenge, onClose }) {
   const { language, isRTL, t } = useLanguage();
@@ -30,45 +25,28 @@ export default function ChallengeToRDWizard({ challenge, onClose }) {
   const [aiScope, setAiScope] = useState(null);
 
   const { invokeAI, status, isLoading: generatingScope, isAvailable, rateLimitInfo } = useAIWithFallback();
-  const { updateChallenge } = useChallengeMutations();
-  const { createRDProject } = useRDProjectMutations();
-
-  const { data: rdCalls = [] } = useQuery({
-    queryKey: ['rd-calls'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('rd_calls').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: rdCalls = [] } = useRDCalls();
+  const challengeToRD = useChallengeToRDConversion();
 
   const [selectedCall, setSelectedCall] = useState('');
 
-  const handleCreateRD = () => {
-    createRDProject.mutate({
-      title_en: rdTitle,
-      abstract_en: challenge.description_en,
-      challenge_ids: [challenge.id],
-      rd_call_id: selectedCall || null,
-      research_area: challenge.sector,
-      status: 'proposal',
-      trl_start: 1,
-      trl_target: 4
-    }, {
-      onSuccess: async (rdProject) => {
-        // Update challenge
-        await updateChallenge.mutateAsync({
-          id: challenge.id,
-          data: {
-            linked_rd_ids: [...(challenge.linked_rd_ids || []), rdProject.id],
-            track: 'r_and_d'
-          }
-        });
+  const handleCreateRD = async () => {
+    try {
+      const rdProject = await challengeToRD.mutateAsync({
+        challenge,
+        rdData: {
+          title: rdTitle,
+          researchQuestions,
+          expectedOutputs
+        },
+        selectedCallId: selectedCall
+      });
 
-        toast.success(t({ en: 'R&D project created', ar: 'تم إنشاء مشروع البحث' }));
-        navigate(createPageUrl(`RDProjectDetail?id=${rdProject.id}`));
-      }
-    });
+      navigate(createPageUrl(`RDProjectDetail?id=${rdProject.id}`));
+      if (onClose) onClose();
+    } catch (err) {
+      // error handled in hook
+    }
   };
 
   const generateScope = async () => {

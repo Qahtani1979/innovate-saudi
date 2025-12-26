@@ -5,19 +5,18 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { useLanguage } from '@/components/LanguageContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Sparkles, Handshake, Loader2, CheckCircle2, Plus, Building2, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
-import { useApprovalRequest } from '@/hooks/useApprovalRequest';
+import { usePartnershipMutations } from '@/hooks/usePartnershipMutations';
 
 export default function StrategyToPartnershipGenerator({ strategicPlanId, strategicPlan, onPartnershipCreated }) {
   const { t, isRTL } = useLanguage();
-  const { createApprovalRequest } = useApprovalRequest();
   const [capabilityNeeds, setCapabilityNeeds] = useState('');
   const [partnershipTypes, setPartnershipTypes] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
-  const [isGenerating, setIsGenerating] = useState(false);
+
+  const { createPartnership, generateRecommendations } = usePartnershipMutations();
 
   // Use the passed strategicPlanId from context
   const selectedPlanId = strategicPlanId;
@@ -31,70 +30,54 @@ export default function StrategyToPartnershipGenerator({ strategicPlanId, strate
   ];
 
   const handleTypeToggle = (type) => {
-    setPartnershipTypes(prev => 
-      prev.includes(type) 
+    setPartnershipTypes(prev =>
+      prev.includes(type)
         ? prev.filter(t => t !== type)
         : [...prev, type]
     );
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = () => {
     if (!selectedPlanId) {
       toast.error(t({ en: 'Please select a strategic plan', ar: 'الرجاء اختيار خطة استراتيجية' }));
       return;
     }
 
-    setIsGenerating(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('strategy-partnership-matcher', {
-        body: {
-          strategic_plan_id: selectedPlanId,
-          capability_needs: capabilityNeeds.split(',').map(s => s.trim()).filter(Boolean),
-          partnership_types: partnershipTypes
-        }
-      });
-
-      if (error) throw error;
-      setRecommendations(data?.partner_recommendations || []);
-      toast.success(t({ en: 'Partner recommendations generated', ar: 'تم إنشاء توصيات الشركاء' }));
-    } catch (error) {
-      console.error('Generation error:', error);
-      toast.error(t({ en: 'Failed to generate recommendations', ar: 'فشل في إنشاء التوصيات' }));
-    } finally {
-      setIsGenerating(false);
-    }
+    generateRecommendations.mutate({
+      strategicPlanId: selectedPlanId,
+      capabilityNeeds: capabilityNeeds.split(',').map(s => s.trim()).filter(Boolean),
+      partnershipTypes
+    }, {
+      onSuccess: (data) => {
+        setRecommendations(data);
+        toast.success(t({ en: 'Partner recommendations generated', ar: 'تم إنشاء توصيات الشركاء' }));
+      }
+    });
   };
 
-  const handleCreatePartnership = async (rec, index) => {
-    try {
-      const { data, error } = await supabase
-        .from('partnerships')
-        .insert({
-          title_en: `Partnership with ${rec.organization_name}`,
-          title_ar: `شراكة مع ${rec.organization_name}`,
-          description_en: rec.strategic_alignment,
-          organization_id: rec.organization_id,
-          partnership_type: rec.recommended_partnership_type,
-          strategic_plan_ids: [selectedPlanId],
-          is_strategy_derived: true,
-          strategy_derivation_date: new Date().toISOString(),
-          status: 'proposed'
-        })
-        .select()
-        .single();
+  const handleCreatePartnership = (rec, index) => {
+    createPartnership.mutate({
+      data: {
+        title_en: `Partnership with ${rec.organization_name}`,
+        title_ar: `شراكة مع ${rec.organization_name}`,
+        description_en: rec.strategic_alignment,
+        organization_id: rec.organization_id,
+        partnership_type: rec.recommended_partnership_type,
+        strategic_plan_ids: [selectedPlanId],
+        is_strategy_derived: true,
+        strategy_derivation_date: new Date().toISOString()
+      }
+    }, {
+      onSuccess: (newPartnership) => {
+        const updated = [...recommendations];
+        updated[index] = { ...updated[index], saved: true, savedId: newPartnership.id };
+        setRecommendations(updated);
 
-      if (error) throw error;
-
-      const updated = [...recommendations];
-      updated[index] = { ...updated[index], saved: true, savedId: data.id };
-      setRecommendations(updated);
-      
-      toast.success(t({ en: 'Partnership created successfully', ar: 'تم إنشاء الشراكة بنجاح' }));
-      onPartnershipCreated?.(data);
-    } catch (error) {
-      console.error('Save error:', error);
-      toast.error(t({ en: 'Failed to create partnership', ar: 'فشل في إنشاء الشراكة' }));
-    }
+        if (onPartnershipCreated) {
+          onPartnershipCreated(newPartnership);
+        }
+      }
+    });
   };
 
   return (
@@ -106,7 +89,7 @@ export default function StrategyToPartnershipGenerator({ strategicPlanId, strate
             {t({ en: 'Partnership Matcher', ar: 'مُطابق الشراكات' })}
           </CardTitle>
           <CardDescription>
-            {t({ 
+            {t({
               en: 'Find strategic partners aligned with your objectives',
               ar: 'ابحث عن شركاء استراتيجيين متوافقين مع أهدافك'
             })}
@@ -142,7 +125,7 @@ export default function StrategyToPartnershipGenerator({ strategicPlanId, strate
             <Textarea
               value={capabilityNeeds}
               onChange={(e) => setCapabilityNeeds(e.target.value)}
-              placeholder={t({ 
+              placeholder={t({
                 en: 'e.g., AI/ML expertise, IoT infrastructure, Data analytics, Research capacity...',
                 ar: 'مثال: خبرة الذكاء الاصطناعي، بنية إنترنت الأشياء، تحليل البيانات، القدرة البحثية...'
               })}
@@ -150,8 +133,8 @@ export default function StrategyToPartnershipGenerator({ strategicPlanId, strate
             />
           </div>
 
-          <Button onClick={handleGenerate} disabled={isGenerating || !selectedPlanId} className="w-full">
-            {isGenerating ? (
+          <Button onClick={handleGenerate} disabled={generateRecommendations.isPending || !selectedPlanId} className="w-full">
+            {generateRecommendations.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 {t({ en: 'Finding Partners...', ar: 'جاري البحث عن شركاء...' })}
@@ -173,7 +156,7 @@ export default function StrategyToPartnershipGenerator({ strategicPlanId, strate
             {t({ en: 'Partner Recommendations', ar: 'توصيات الشركاء' })}
             <Badge variant="secondary">{recommendations.length}</Badge>
           </h3>
-          
+
           <div className="grid grid-cols-1 gap-4">
             {recommendations.map((rec, idx) => (
               <Card key={idx} className={rec.saved ? 'border-green-500/50 bg-green-50/50' : ''}>
@@ -198,7 +181,7 @@ export default function StrategyToPartnershipGenerator({ strategicPlanId, strate
                         {t({ en: 'Created', ar: 'تم الإنشاء' })}
                       </Badge>
                     ) : (
-                      <Button size="sm" onClick={() => handleCreatePartnership(rec, idx)}>
+                      <Button size="sm" onClick={() => handleCreatePartnership(rec, idx)} disabled={createPartnership.isPending}>
                         <Plus className="h-3 w-3 mr-1" />
                         {t({ en: 'Create', ar: 'إنشاء' })}
                       </Button>

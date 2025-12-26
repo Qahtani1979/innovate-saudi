@@ -194,12 +194,60 @@ export function useScalingMutations() {
         },
     });
 
+    const institutionalizeScalingPlan = useMutation({
+        mutationFn: async ({ scalingPlanId, programData }) => {
+            // Create program
+            const { data: program, error: programError } = await supabase
+                .from('programs')
+                .insert([programData])
+                .select()
+                .single();
+
+            if (programError) throw programError;
+
+            // Update scaling plan
+            const { error: scalingError } = await supabase
+                .from('scaling_plans')
+                .update({
+                    institutionalization_program_id: program.id,
+                    institutionalization_date: new Date().toISOString()
+                })
+                .eq('id', scalingPlanId);
+
+            if (scalingError) throw scalingError;
+
+            // Log system activity
+            const { error: activityError } = await supabase
+                .from('system_activities')
+                .insert([{
+                    entity_type: 'scaling_plan',
+                    entity_id: scalingPlanId,
+                    action: 'institutionalized_as_program',
+                    description: `Scaling knowledge institutionalized: ${program.name_en}`
+                }]);
+
+            if (activityError) throw activityError;
+
+            return program;
+        },
+        onSuccess: (program) => {
+            queryClient.invalidateQueries({ queryKey: ['scaling-plans'] });
+            queryClient.invalidateQueries({ queryKey: ['programs'] });
+            toast.success(t({ en: 'Training program created', ar: 'تم إنشاء البرنامج التدريبي' }));
+        },
+        onError: (error) => {
+            toast.error(t({ en: 'Failed to create program', ar: 'فشل إنشاء البرنامج' }));
+            console.error('Institutionalize scaling plan error:', error);
+        }
+    });
+
     return {
         createScalingPlan,
         updateScalingPlan,
         deleteScalingPlan,
         approveScalingPlan,
         executeScalingPlan,
+        institutionalizeScalingPlan,
     };
 }
 

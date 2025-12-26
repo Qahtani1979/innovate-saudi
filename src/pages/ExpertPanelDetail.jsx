@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -125,10 +123,10 @@ function ExpertPanelDetail() {
             </CardHeader>
             <CardContent>
               <Link to={createPageUrl(`${panel.entity_type === 'challenge' ? 'ChallengeDetail' :
-                  panel.entity_type === 'pilot' ? 'PilotDetail' :
-                    panel.entity_type === 'rd_project' ? 'RDProjectDetail' :
-                      panel.entity_type === 'scaling_plan' ? 'ScalingPlanDetail' :
-                        'ChallengeDetail'
+                panel.entity_type === 'pilot' ? 'PilotDetail' :
+                  panel.entity_type === 'rd_project' ? 'RDProjectDetail' :
+                    panel.entity_type === 'scaling_plan' ? 'ScalingPlanDetail' :
+                      'ChallengeDetail'
                 }?id=${panel.entity_id}`)}>
                 <Button variant="outline" className="w-full">
                   <Eye className="h-4 w-4 mr-2" />

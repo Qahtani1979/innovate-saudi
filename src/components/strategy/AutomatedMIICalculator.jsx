@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
@@ -11,10 +10,11 @@ import { useStrategyAIGeneration } from '@/hooks/useStrategyAIGeneration';
 /**
  * AutomatedMIICalculator - Now uses the calculate-mii edge function
  * instead of AI-based calculation for consistent, reliable results.
+ * 
+ * ✅ GOLD STANDARD COMPLIANT - Uses only custom hooks
  */
 export default function AutomatedMIICalculator({ municipalityId }) {
   const { language, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [calculating, setCalculating] = useState(false);
   const [justCalculated, setJustCalculated] = useState(false);
 
@@ -43,11 +43,7 @@ export default function AutomatedMIICalculator({ municipalityId }) {
             ar: `تم حساب المؤشر: ${result.overall_score} نقطة`
           }));
           setJustCalculated(true);
-
-          // Invalidate queries to refresh data
-          queryClient.invalidateQueries(['mii-latest-result', municipalityId]);
-          queryClient.invalidateQueries(['mii-history', municipalityId]);
-          queryClient.invalidateQueries(['municipality', municipalityId]);
+          // Cache invalidation now handled by the hook automatically
         }
       },
       onError: (error) => {

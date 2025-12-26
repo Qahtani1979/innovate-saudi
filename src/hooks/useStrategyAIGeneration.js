@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -6,6 +6,7 @@ import { toast } from 'sonner';
  * Hook for AI-powered strategy generation Edge Functions
  */
 export function useStrategyAIGeneration() {
+    const queryClient = useQueryClient();
 
     /**
      * Generate strategic objectives with AI
@@ -289,12 +290,22 @@ export function useStrategyAIGeneration() {
 
     /**
      * Calculate MII (Municipal Innovation Index)
+     * Automatically invalidates related queries on success
      */
     const calculateMII = useMutation({
         mutationFn: async (body) => {
             const { data, error } = await supabase.functions.invoke('calculate-mii', { body });
             if (error) throw error;
             return data;
+        },
+        onSuccess: (data, variables) => {
+            // Automatically invalidate MII-related queries
+            const municipalityId = variables.municipality_id;
+            if (municipalityId) {
+                queryClient.invalidateQueries(['mii-latest-result', municipalityId]);
+                queryClient.invalidateQueries(['mii-history', municipalityId]);
+                queryClient.invalidateQueries(['municipality', municipalityId]);
+            }
         }
     });
 

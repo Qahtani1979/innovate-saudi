@@ -1,5 +1,4 @@
-import { supabase } from '@/lib/supabase';
-import { useQuery } from '@tanstack/react-query';
+import { useForumThreads } from '@/hooks/useForumThreads';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '@/components/LanguageContext';
@@ -8,18 +7,7 @@ import { Loader2, MessageCircle, Users } from 'lucide-react';
 export default function CitizenCommunityForum() {
     const { t } = useLanguage();
 
-    const { data: threads = [], isLoading } = useQuery({
-        queryKey: ['forum-threads'],
-        queryFn: async () => {
-            const { data, error } = await supabase
-                .from('forum_threads')
-                .select('*')
-                .order('last_activity', { ascending: false })
-                .limit(20);
-            if (error) throw error;
-            return data;
-        }
-    });
+    const { data: threads = [], isLoading } = useForumThreads({ limit: 20 });
 
     return (
         <div className="container mx-auto p-6 space-y-6">

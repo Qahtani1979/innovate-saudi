@@ -7,14 +7,20 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
+import { useMunicipalities } from '@/hooks/useMunicipalities';
+
 export default function PeerMunicipalityLearningHub({ municipalityId, scalingPlan }) {
   const { language, t } = useLanguage();
   const [peerMatches, setPeerMatches] = useState([]);
-  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo, error } = useAIWithFallback();
+
+  const { data: municipalities = [], isLoading: muniLoading } = useMunicipalities();
+  const isLoading = aiLoading || muniLoading;
 
   const findPeers = async () => {
     try {
-      const municipalities = await base44.entities.Municipality.list();
+      if (!municipalities.length) return;
+
       const currentMuni = municipalities.find(m => m.id === municipalityId);
 
       const result = await invokeAI({
@@ -27,9 +33,9 @@ CURRENT MUNICIPALITY: ${currentMuni?.name_en}
 - Scaling Plan: ${scalingPlan?.solution_name}
 
 OTHER MUNICIPALITIES (EARLY ADOPTERS):
-${municipalities.filter(m => m.id !== municipalityId && m.mii_score >= (currentMuni?.mii_score || 0)).slice(0, 15).map(m => 
-  `- ${m.name_en}: Pop ${m.population}, MII ${m.mii_score}, Pilots ${m.active_pilots}`
-).join('\n')}
+${municipalities.filter(m => m.id !== municipalityId && m.mii_score >= (currentMuni?.mii_score || 0)).slice(0, 15).map(m =>
+          `- ${m.name_en}: Pop ${m.population}, MII ${m.mii_score}, Pilots ${m.active_pilots}`
+        ).join('\n')}
 
 Find top 5 peer municipalities that:
 1. Have similar context (size, region)
@@ -84,8 +90,8 @@ Find top 5 peer municipalities that:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
-        
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={error} showDetails />
+
         {!peerMatches.length && !isLoading && (
           <div className="text-center py-8">
             <Users className="h-12 w-12 text-indigo-300 mx-auto mb-3" />

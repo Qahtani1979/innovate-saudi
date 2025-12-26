@@ -1,5 +1,5 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+
+import { usePlatformStatistics } from '@/hooks/usePlatformStatistics';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
@@ -10,37 +10,13 @@ import { Building2, AlertCircle, TestTube, Lightbulb, TrendingUp } from 'lucide-
 export default function PlatformStatsWidget() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities-count'],
-    queryFn: async () => {
-      const { data } = await supabase.from('municipalities').select('id');
-      return data || [];
-    }
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges-count'],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('id, created_at').eq('is_deleted', false);
-      return data || [];
-    }
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-count'],
-    queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('id').eq('is_deleted', false);
-      return data || [];
-    }
-  });
-
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions-count'],
-    queryFn: async () => {
-      const { data } = await supabase.from('solutions').select('id').eq('is_deleted', false);
-      return data || [];
-    }
-  });
+  const {
+    municipalities,
+    challenges,
+    pilots,
+    solutions,
+    isLoading
+  } = usePlatformStatistics();
 
   const thisMonth = new Date().getMonth();
   const thisYear = new Date().getFullYear();
@@ -50,32 +26,32 @@ export default function PlatformStatsWidget() {
   }).length;
 
   const stats = [
-    { 
-      label: { en: 'Municipalities', ar: 'البلديات' }, 
-      value: municipalities.length, 
-      icon: Building2, 
+    {
+      label: { en: 'Municipalities', ar: 'البلديات' },
+      value: municipalities.length,
+      icon: Building2,
       color: 'text-blue-600',
       link: 'Organizations'
     },
-    { 
-      label: { en: 'Challenges', ar: 'التحديات' }, 
-      value: challenges.length, 
-      icon: AlertCircle, 
+    {
+      label: { en: 'Challenges', ar: 'التحديات' },
+      value: challenges.length,
+      icon: AlertCircle,
       color: 'text-red-600',
       change: challengesThisMonth,
       link: 'Challenges'
     },
-    { 
-      label: { en: 'Pilots', ar: 'التجارب' }, 
-      value: pilots.length, 
-      icon: TestTube, 
+    {
+      label: { en: 'Pilots', ar: 'التجارب' },
+      value: pilots.length,
+      icon: TestTube,
       color: 'text-purple-600',
       link: 'Pilots'
     },
-    { 
-      label: { en: 'Solutions', ar: 'الحلول' }, 
-      value: solutions.length, 
-      icon: Lightbulb, 
+    {
+      label: { en: 'Solutions', ar: 'الحلول' },
+      value: solutions.length,
+      icon: Lightbulb,
       color: 'text-amber-600',
       link: 'Solutions'
     },

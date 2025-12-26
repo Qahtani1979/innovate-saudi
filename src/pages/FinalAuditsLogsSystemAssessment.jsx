@@ -1,10 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { 
-  Shield, 
-  CheckCircle2, 
-  Database, 
+import {
+  Shield,
+  CheckCircle2,
+  Database,
   FileText,
   Activity,
   Lock,
@@ -150,9 +150,9 @@ export default function FinalAuditsLogsSystemAssessment() {
 
   const entityLoggers = [
     {
-      name: 'pilotAuditLogger',
-      path: 'src/lib/api/pilotAuditLogger.js',
-      description: 'Pilot-specific audit logging',
+      name: 'usePilotAuditLogger',
+      path: 'src/hooks/usePilotAuditLogger.js',
+      description: 'Pilot-specific audit logging hook',
       features: ['logPilotAction', 'logBulkOperation', 'logDataExport', 'logStageChange'],
       status: 'complete'
     }

@@ -4,14 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { BookOpen, Clock, Award, CheckCircle2, Calendar } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { useTrainingMutations } from '@/hooks/useTrainingMutations';
 
 export default function MunicipalityTrainingEnrollment({ municipalityId }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [selectedProgram, setSelectedProgram] = useState(null);
+
+  const { enrollMunicipality } = useTrainingMutations();
 
   const trainingPrograms = [
     {
@@ -52,27 +51,13 @@ export default function MunicipalityTrainingEnrollment({ municipalityId }) {
     }
   ];
 
-  const enrollMutation = useMutation({
-    mutationFn: async (programId) => {
-      const { data, error } = await supabase.functions.invoke('municipality-training-enroll', {
-        body: {
-          municipalityId,
-          programId,
-          enrollmentDate: new Date().toISOString()
-        }
-      });
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['municipality', municipalityId] });
-      toast.success(t({ en: 'Enrolled successfully!', ar: 'تم التسجيل بنجاح!' }));
-      setSelectedProgram(null);
-    },
-    onError: () => {
-      toast.error(t({ en: 'Enrollment failed', ar: 'فشل التسجيل' }));
-    }
-  });
+  const handleEnroll = (programId) => {
+    enrollMunicipality.mutate({ municipalityId, programId }, {
+      onSuccess: () => {
+        setSelectedProgram(null);
+      }
+    });
+  };
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -109,8 +94,8 @@ export default function MunicipalityTrainingEnrollment({ municipalityId }) {
                     </div>
 
                     <Button
-                      onClick={() => enrollMutation.mutate(program.id)}
-                      disabled={enrollMutation.isPending}
+                      onClick={() => handleEnroll(program.id)}
+                      disabled={enrollMunicipality.isPending}
                       className="w-full"
                     >
                       <Calendar className="h-4 w-4 mr-2" />

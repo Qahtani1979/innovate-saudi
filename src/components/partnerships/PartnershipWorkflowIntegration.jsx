@@ -1,17 +1,15 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
 import { Handshake, Users } from 'lucide-react';
-import { toast } from 'sonner';
+import { usePartnerships } from '@/hooks/usePartnerships';
+import { usePartnershipMutations } from '@/hooks/usePartnershipMutations';
 
 export default function PartnershipWorkflowIntegration({ organizationId }) {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
   const [proposalData, setProposalData] = useState({
     partnership_type: 'strategic',
@@ -19,20 +17,17 @@ export default function PartnershipWorkflowIntegration({ organizationId }) {
     proposed_activities: []
   });
 
-  const { data: myPartnerships = [] } = useQuery({
-    queryKey: ['my-partnerships', organizationId],
-    queryFn: async () => {
-      const { data } = await supabase.from('partnerships').select('*');
-      return (data || []).filter(p => 
-        p.organization_a_id === organizationId || 
-        p.organization_b_id === organizationId
-      );
-    }
-  });
+  const { data: partnerships = [] } = usePartnerships();
+  const { createPartnership } = usePartnershipMutations();
 
-  const proposeMutation = useMutation({
-    mutationFn: async (targetOrgId) => {
-      const { data, error } = await supabase.from('partnerships').insert({
+  const myPartnerships = partnerships.filter(p =>
+    p.organization_a_id === organizationId ||
+    p.organization_b_id === organizationId
+  );
+
+  const handlePropose = (targetOrgId) => {
+    createPartnership.mutate({
+      data: {
         organization_a_id: organizationId,
         organization_b_id: targetOrgId,
         partnership_type: proposalData.partnership_type,
@@ -40,16 +35,13 @@ export default function PartnershipWorkflowIntegration({ organizationId }) {
         proposal_text: proposalData.proposal_text,
         proposed_by: user?.email,
         proposed_date: new Date().toISOString()
-      }).select().single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['my-partnerships'] });
-      toast.success(t({ en: 'Partnership proposal sent', ar: 'تم إرسال مقترح الشراكة' }));
-      setProposalData({ partnership_type: 'strategic', proposal_text: '', proposed_activities: [] });
-    }
-  });
+      }
+    }, {
+      onSuccess: () => {
+        setProposalData({ partnership_type: 'strategic', proposal_text: '', proposed_activities: [] });
+      }
+    });
+  };
 
   const activePartnerships = myPartnerships.filter(p => p.status === 'active');
   const pendingPartnerships = myPartnerships.filter(p => p.status === 'proposed');
@@ -91,7 +83,7 @@ export default function PartnershipWorkflowIntegration({ organizationId }) {
           </div>
         )}
 
-        <Button className="w-full bg-blue-600">
+        <Button className="w-full bg-blue-600" onClick={() => {/* Handle propose capability */ }}>
           <Users className="h-4 w-4 mr-2" />
           {t({ en: 'Propose Partnership', ar: 'اقترح شراكة' })}
         </Button>

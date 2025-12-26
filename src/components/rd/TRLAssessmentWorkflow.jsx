@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTRLAssessmentMutations } from '@/hooks/useRDMutations';
 import { useLanguage } from '../LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +14,7 @@ import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function TRLAssessmentWorkflow({ rdProject, onUpdate }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  const { updateTRL } = useTRLAssessmentMutations();
   const [evidence, setEvidence] = useState('');
   const [assessment, setAssessment] = useState(null);
   const { invokeAI, status, isLoading: aiAssessing, isAvailable, rateLimitInfo } = useAIWithFallback();
@@ -40,30 +39,22 @@ export default function TRLAssessmentWorkflow({ rdProject, onUpdate }) {
     }
   };
 
-  const updateMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('rd_projects')
-        .update({
-          trl_current: assessment.assessed_trl,
-          trl_assessment: {
-            level: assessment.assessed_trl,
-            evidence: evidence,
-            assessed_by: 'AI',
-            assessed_date: new Date().toISOString(),
-            ai_confidence: assessment.confidence,
-            justification: assessment.justification
-          }
-        })
-        .eq('id', rdProject.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['rd-projects'] });
-      toast.success(t({ en: 'TRL updated!', ar: 'تم تحديث مستوى النضج!' }));
-      onUpdate?.();
-    }
-  });
+  const handleUpdate = () => {
+    updateTRL.mutate({
+      id: rdProject.id,
+      trl: assessment.assessed_trl,
+      assessment: {
+        level: assessment.assessed_trl,
+        evidence: evidence,
+        assessed_by: 'AI',
+        assessed_date: new Date().toISOString(),
+        ai_confidence: assessment.confidence,
+        justification: assessment.justification
+      }
+    }, {
+      onSuccess: () => onUpdate?.()
+    });
+  };
 
   return (
     <Card dir={isRTL ? 'rtl' : 'ltr'}>
@@ -170,11 +161,11 @@ export default function TRLAssessmentWorkflow({ rdProject, onUpdate }) {
             )}
 
             <Button
-              onClick={() => updateMutation.mutate()}
-              disabled={updateMutation.isPending}
+              onClick={handleUpdate}
+              disabled={updateTRL.isPending}
               className="w-full bg-gradient-to-r from-green-600 to-blue-600"
             >
-              {updateMutation.isPending ? (
+              {updateTRL.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {t({ en: 'Updating...', ar: 'جاري التحديث...' })}

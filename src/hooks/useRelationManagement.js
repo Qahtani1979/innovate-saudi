@@ -73,6 +73,15 @@ export function useRelationManagement() {
         }
     });
 
+    const useAllPolicies = () => useQuery({
+        queryKey: ['policies-relations'],
+        queryFn: async () => {
+            const { data, error } = await supabase.from('policy_recommendations').select('*');
+            if (error) throw error;
+            return data || [];
+        }
+    });
+
     // --- Mutations ---
 
     const reviewRelation = useMutation({
@@ -104,6 +113,23 @@ export function useRelationManagement() {
         onError: (error) => {
             console.error('Review error:', error);
             toast.error('Failed to update relation status');
+        }
+    });
+
+    const updateRelation = useMutation({
+        mutationFn: async ({ id, data }) => {
+            const { data: updated, error } = await supabase
+                .from('challenge_solution_matches')
+                .update(data)
+                .eq('id', id)
+                .select()
+                .single();
+            if (error) throw error;
+            return updated;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['all-relations'] });
+            toast.success('Relation updated successfully');
         }
     });
 
@@ -140,9 +166,11 @@ export function useRelationManagement() {
         useAllRDProjects,
         useAllPrograms,
         useAllRDCalls,
+        useAllPolicies,
         reviewRelation,
         deleteRelation,
-        createMatch
+        createMatch,
+        updateRelation
     };
 }
 

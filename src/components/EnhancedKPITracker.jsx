@@ -1,17 +1,16 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from './LanguageContext';
-import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
-import { 
-  AlertCircle, CheckCircle2, 
-  Upload, Loader2, RefreshCw, Database 
+import {
+  AlertCircle, CheckCircle2,
+  Upload, Loader2, RefreshCw, Database
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -24,67 +23,45 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { usePilotKPIs, usePilotKPIDatapoints, useAddKPIDatapoint } from '@/hooks/useKPIs';
 
 export default function EnhancedKPITracker({ pilot }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [selectedKPI, setSelectedKPI] = useState(null);
   const [manualValue, setManualValue] = useState('');
   const [apiEndpoint, setApiEndpoint] = useState('');
 
-  const { invokeAI, status, error, rateLimitInfo, isLoading: aiLoading, isAvailable } = useAIWithFallback({
+  const { invokeAI, status, error: aiError, rateLimitInfo, isLoading: aiLoading, isAvailable } = useAIWithFallback({
     showToasts: true,
     fallbackData: null
   });
 
-  const { data: pilotKPIs = [] } = useQuery({
-    queryKey: ['pilot-kpis', pilot.id],
-    queryFn: async () => {
-      const kpis = await base44.entities.PilotKPI.list();
-      return kpis.filter(k => k.pilot_id === pilot.id);
-    }
-  });
+  const { data: pilotKPIs = [], isLoading: kpisLoading } = usePilotKPIs(pilot.id);
+  const { data: kpiDatapoints = [], isLoading: datapointsLoading } = usePilotKPIDatapoints(pilot.id);
+  const addDatapoint = useAddKPIDatapoint();
 
-  const { data: kpiDatapoints = [] } = useQuery({
-    queryKey: ['kpi-datapoints', pilot.id],
-    queryFn: async () => {
-      const all = await base44.entities.PilotKPIDatapoint.list();
-      return all.filter(d => 
-        pilotKPIs.some(kpi => kpi.id === d.pilot_kpi_id)
-      );
-    },
-    enabled: pilotKPIs.length > 0
-  });
+  const handleManualEntry = () => {
+    if (!selectedKPI || !manualValue) return;
 
-  const manualEntryMutation = useMutation({
-    mutationFn: async ({ kpiId, value }) => {
-      await base44.entities.PilotKPIDatapoint.create({
-        pilot_kpi_id: kpiId,
-        timestamp: new Date().toISOString(),
-        value: parseFloat(value),
-        source: 'manual'
-      });
+    addDatapoint.mutate({
+      kpiId: selectedKPI,
+      value: manualValue
+    }, {
+      onSuccess: () => {
+        setManualValue('');
+        toast.success(t({ en: 'KPI value recorded', ar: 'تم تسجيل قيمة المؤشر' }));
+      }
+    });
+  };
 
-      await base44.entities.PilotKPI.update(kpiId, {
-        current_value: parseFloat(value),
-        last_updated: new Date().toISOString()
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['pilot-kpis']);
-      queryClient.invalidateQueries(['kpi-datapoints']);
-      setManualValue('');
-      toast.success(t({ en: 'KPI value recorded', ar: 'تم تسجيل قيمة المؤشر' }));
-    }
-  });
+  const handleAutoIngest = async (kpiId) => {
+    if (!apiEndpoint) return;
 
-  const autoIngestMutation = useMutation({
-    mutationFn: async ({ kpiId, endpoint }) => {
-      const prompt = `Extract KPI value from this data source endpoint: ${endpoint}
-      
-Parse the response and return the numeric KPI value.`;
+    try {
+      const prompt = `Extract KPI value from this data source endpoint: ${apiEndpoint}
+      Parse the response and return the numeric KPI value.`;
 
-      const response = await invokeAI({
+      const result = await invokeAI({
         prompt,
         response_json_schema: {
           type: "object",
@@ -92,40 +69,36 @@ Parse the response and return the numeric KPI value.`;
             value: { type: "number" },
             timestamp: { type: "string" },
             source_notes: { type: "string" }
-          }
+          },
+          required: ["value"]
         }
       });
 
-      if (response.success) {
-        await base44.entities.PilotKPIDatapoint.create({
-          pilot_kpi_id: kpiId,
-          timestamp: response.data.timestamp || new Date().toISOString(),
-          value: response.data.value,
+      if (result.success && result.data) {
+        addDatapoint.mutate({
+          kpiId,
+          value: result.data.value,
           source: 'automated',
-          notes: `Auto-ingested from ${endpoint}. ${response.data.source_notes || ''}`
-        });
-
-        await base44.entities.PilotKPI.update(kpiId, {
-          current_value: response.data.value,
-          last_updated: new Date().toISOString(),
-          data_source: endpoint
+          notes: `Auto-ingested from ${apiEndpoint}. ${result.data.source_notes || ''}`,
+          timestamp: result.data.timestamp || new Date().toISOString()
+        }, {
+          onSuccess: () => {
+            setApiEndpoint('');
+            toast.success(t({ en: 'Data ingested successfully', ar: 'تم استيراد البيانات بنجاح' }));
+          }
         });
       }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['pilot-kpis']);
-      queryClient.invalidateQueries(['kpi-datapoints']);
-      setApiEndpoint('');
-      toast.success(t({ en: 'Data ingested successfully', ar: 'تم استيراد البيانات بنجاح' }));
+    } catch (err) {
+      console.error('Auto-ingest failed:', err);
     }
-  });
+  };
 
   const getKPITrend = (kpiId) => {
     const points = kpiDatapoints
       .filter(d => d.pilot_kpi_id === kpiId)
-      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
       .slice(-10);
-    
+
     return points.map((p, idx) => ({
       index: idx + 1,
       value: p.value,
@@ -136,6 +109,7 @@ Parse the response and return the numeric KPI value.`;
   const calculateProgress = (kpi) => {
     if (!kpi.baseline_value || !kpi.target_value || !kpi.current_value) return 0;
     const range = kpi.target_value - kpi.baseline_value;
+    if (range === 0) return 100;
     const progress = kpi.current_value - kpi.baseline_value;
     return Math.max(0, Math.min(100, (progress / range) * 100));
   };
@@ -147,6 +121,8 @@ Parse the response and return the numeric KPI value.`;
     return { status: 'off_track', color: 'text-red-600', icon: AlertCircle };
   };
 
+  const isLoading = kpisLoading || datapointsLoading;
+
   return (
     <div className="space-y-4" dir={isRTL ? 'rtl' : 'ltr'}>
       <Card>
@@ -157,9 +133,13 @@ Parse the response and return the numeric KPI value.`;
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
-          
-          {pilotKPIs.length > 0 ? (
+          <AIStatusIndicator status={status} error={aiError} rateLimitInfo={rateLimitInfo} showDetails />
+
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+          ) : pilotKPIs.length > 0 ? (
             pilotKPIs.map((kpi) => {
               const trend = getKPITrend(kpi.id);
               const kpiStatus = getKPIStatus(kpi);
@@ -171,14 +151,14 @@ Parse the response and return the numeric KPI value.`;
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <h4 className="font-semibold text-slate-900">
-                        {kpi.custom_name_en || 'KPI'}
+                        {language === 'ar' ? (kpi.custom_name_ar || kpi.custom_name_en) : (kpi.custom_name_en || 'KPI')}
                       </h4>
                       <p className="text-sm text-slate-600 mt-1">{kpi.unit}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge className={kpiStatus.status === 'on_track' ? 'bg-green-100 text-green-700' : 
-                                      kpiStatus.status === 'at_risk' ? 'bg-yellow-100 text-yellow-700' :
-                                      'bg-red-100 text-red-700'}>
+                      <Badge className={kpiStatus.status === 'on_track' ? 'bg-green-100 text-green-700' :
+                        kpiStatus.status === 'at_risk' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'}>
                         {kpiStatus.status.replace(/_/g, ' ')}
                       </Badge>
                       <StatusIcon className={`h-5 w-5 ${kpiStatus.color}`} />
@@ -216,10 +196,10 @@ Parse the response and return the numeric KPI value.`;
                       <ResponsiveContainer width="100%" height={120}>
                         <LineChart data={trend}>
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="index" />
+                          <XAxis dataKey="index" hide />
                           <YAxis />
-                          <Tooltip />
-                          <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} />
+                          <Tooltip labelFormatter={(v, n) => n?.[0]?.payload?.date} />
+                          <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} dot={false} />
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
@@ -240,10 +220,13 @@ Parse the response and return the numeric KPI value.`;
                   <div className="flex gap-2 pt-2 border-t">
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
-                          onClick={() => setSelectedKPI(kpi.id)}
+                          onClick={() => {
+                            setSelectedKPI(kpi.id);
+                            setManualValue('');
+                          }}
                         >
                           <Upload className="h-3 w-3 mr-2" />
                           {t({ en: 'Manual Entry', ar: 'إدخال يدوي' })}
@@ -266,11 +249,11 @@ Parse the response and return the numeric KPI value.`;
                             />
                           </div>
                           <Button
-                            onClick={() => manualEntryMutation.mutate({ kpiId: kpi.id, value: manualValue })}
-                            disabled={!manualValue || manualEntryMutation.isPending}
+                            onClick={handleManualEntry}
+                            disabled={!manualValue || addDatapoint.isPending}
                             className="w-full"
                           >
-                            {manualEntryMutation.isPending ? (
+                            {addDatapoint.isPending ? (
                               <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> {t({ en: 'Saving...', ar: 'جاري الحفظ...' })}</>
                             ) : (
                               <>{t({ en: 'Save Value', ar: 'حفظ القيمة' })}</>
@@ -282,10 +265,13 @@ Parse the response and return the numeric KPI value.`;
 
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
-                          onClick={() => setSelectedKPI(kpi.id)}
+                          onClick={() => {
+                            setSelectedKPI(kpi.id);
+                            setApiEndpoint('');
+                          }}
                           disabled={!isAvailable}
                         >
                           <RefreshCw className="h-3 w-3 mr-2" />
@@ -309,11 +295,11 @@ Parse the response and return the numeric KPI value.`;
                             />
                           </div>
                           <Button
-                            onClick={() => autoIngestMutation.mutate({ kpiId: kpi.id, endpoint: apiEndpoint })}
-                            disabled={!apiEndpoint || autoIngestMutation.isPending || aiLoading}
+                            onClick={() => handleAutoIngest(kpi.id)}
+                            disabled={!apiEndpoint || aiLoading || addDatapoint.isPending}
                             className="w-full bg-blue-600"
                           >
-                            {autoIngestMutation.isPending || aiLoading ? (
+                            {aiLoading || addDatapoint.isPending ? (
                               <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> {t({ en: 'Ingesting...', ar: 'جاري الاستيراد...' })}</>
                             ) : (
                               <>{t({ en: 'Ingest Data', ar: 'استيراد البيانات' })}</>

@@ -7,7 +7,6 @@ import { XCircle, Loader2, AlertTriangle, FileText, Lightbulb } from 'lucide-rea
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { usePilotMutations } from '@/hooks/usePilotMutations';
-import { supabase } from '@/integrations/supabase/client';
 import {
   POST_MORTEM_SYSTEM_PROMPT,
   buildPostMortemPrompt,

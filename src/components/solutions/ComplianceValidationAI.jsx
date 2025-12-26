@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useSupabaseFileUpload } from '@/hooks/useSupabaseFileUpload';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,21 +21,21 @@ export default function ComplianceValidationAI({ solution, onValidationComplete 
   const [uploadedDocs, setUploadedDocs] = useState([]);
   const { invokeAI, status, isLoading: validating, rateLimitInfo, isAvailable } = useAIWithFallback();
 
+  const { uploadFile, isUploading } = useSupabaseFileUpload();
+
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files);
-    const uploaded = [];
 
     for (const file of files) {
-      const fileName = `compliance/${Date.now()}_${file.name}`;
-      const { data, error } = await supabase.storage.from('documents').upload(fileName, file);
-      if (!error && data) {
-        const { data: urlData } = supabase.storage.from('documents').getPublicUrl(data.path);
-        uploaded.push({ name: file.name, url: urlData.publicUrl });
+      try {
+        const publicUrl = await uploadFile(file, 'documents', 'compliance');
+        setUploadedDocs(prev => [...prev, { name: file.name, url: publicUrl }]);
+        toast.success(t({ en: 'Document uploaded', ar: 'تم رفع المستند' }));
+      } catch (error) {
+        console.error('Upload failed:', error);
+        toast.error(t({ en: 'Upload failed', ar: 'فشل الرفع' }));
       }
     }
-
-    setUploadedDocs([...uploadedDocs, ...uploaded]);
-    toast.success(t({ en: 'Documents uploaded', ar: 'تم رفع المستندات' }));
   };
 
   const validateCompliance = async () => {

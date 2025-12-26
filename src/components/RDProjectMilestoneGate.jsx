@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,57 +10,29 @@ import { CheckCircle2, X, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import FileUploader from './FileUploader';
 import { useAuth } from '@/lib/AuthContext';
+import { useRDProjectMutations } from '@/hooks/useRDProjectMutations';
 
 export default function RDProjectMilestoneGate({ project, milestone, onClose }) {
   const { language, isRTL, t } = useLanguage();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
-  
+
   const [deliverables, setDeliverables] = useState({});
   const [evidenceUrls, setEvidenceUrls] = useState([]);
   const [approvalNotes, setApprovalNotes] = useState('');
 
-  const approveMutation = useMutation({
-    mutationFn: async (data) => {
-      const updatedMilestones = project.timeline?.milestones?.map(m => 
-        m.name === milestone.name 
-          ? {
-              ...m,
-              status: 'completed',
-              completed_date: new Date().toISOString(),
-              approval_status: 'approved',
-              approved_by: data.approver,
-              approval_date: new Date().toISOString(),
-              approval_comments: data.notes,
-              evidence_urls: data.evidence
-            }
-          : m
-      );
-
-      const { error } = await supabase
-        .from('rd_projects')
-        .update({
-          timeline: {
-            ...project.timeline,
-            milestones: updatedMilestones
-          }
-        })
-        .eq('id', project.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['rd-project']);
-      toast.success(t({ en: 'Milestone approved', ar: 'تمت الموافقة على المعلم' }));
-      onClose();
-    }
-  });
+  const { approveMilestone } = useRDProjectMutations();
 
   const handleApprove = () => {
-    approveMutation.mutate({
+    approveMilestone.mutate({
+      project,
+      milestoneName: milestone.name,
       approver: user?.email,
       notes: approvalNotes,
-      evidence: evidenceUrls,
-      deliverables
+      evidence: evidenceUrls
+    }, {
+      onSuccess: () => {
+        onClose();
+      }
     });
   };
 
@@ -147,7 +117,7 @@ export default function RDProjectMilestoneGate({ project, milestone, onClose }) 
           </Button>
           <Button
             onClick={handleApprove}
-            disabled={approveMutation.isPending || evidenceUrls.length === 0}
+            disabled={approveMilestone.isPending || evidenceUrls.length === 0}
             className="flex-1 bg-green-600 hover:bg-green-700"
           >
             <CheckCircle2 className="h-4 w-4 mr-2" />

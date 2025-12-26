@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,11 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Calendar, Clock, Plus } from 'lucide-react';
-import { toast } from 'sonner';
+import { useMentorship } from '@/hooks/useMentorship';
 
 export default function MentorScheduler({ programId, mentorEmail }) {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [meeting, setMeeting] = useState({
     mentee_id: '',
@@ -24,92 +21,16 @@ export default function MentorScheduler({ programId, mentorEmail }) {
     location: 'virtual'
   });
 
-  const { data: applications = [] } = useQuery({
-    queryKey: ['mentor-mentees', programId, mentorEmail],
-    queryFn: async () => {
-      const { data: assignments, error: assignError } = await supabase
-        .from('expert_assignments')
-        .select('*')
-        .eq('entity_type', 'program')
-        .eq('entity_id', programId)
-        .eq('expert_email', mentorEmail)
-        .eq('assignment_type', 'mentor');
+  const { mentees: applications, meetings, scheduleMeeting } = useMentorship(programId, mentorEmail);
 
-      if (assignError) throw assignError;
-      if (!assignments?.length) return [];
-
-      const { data: apps, error: appsError } = await supabase
-        .from('program_applications')
-        .select('*')
-        .eq('program_id', programId)
-        .eq('status', 'accepted');
-      if (appsError) throw appsError;
-      return apps || [];
-    },
-    enabled: !!programId && !!mentorEmail
-  });
-
-  const { data: meetings = [] } = useQuery({
-    queryKey: ['mentor-meetings', programId, mentorEmail],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('program_mentorships')
-        .select('*')
-        .eq('program_id', programId)
-        .eq('mentor_email', mentorEmail);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!programId && !!mentorEmail
-  });
-
-  const scheduleMutation = useMutation({
-    mutationFn: async (data) => {
-      const mentee = applications.find(a => a.id === data.mentee_id);
-
-      const { error } = await supabase
-        .from('program_mentorships')
-        .insert({
-          program_id: programId,
-          mentor_email: mentorEmail,
-          mentee_email: mentee.applicant_email,
-          mentee_name: mentee.applicant_name,
-          session_date: data.date,
-          session_time: data.time,
-          duration_minutes: data.duration_minutes,
-          agenda: data.agenda,
-          location: data.location,
-          status: 'scheduled'
-        });
-      if (error) throw error;
-
-      // Send email via email-trigger-hub
-      await supabase.functions.invoke('email-trigger-hub', {
-        body: {
-          trigger: 'event.invitation',
-          recipient_email: mentee.applicant_email,
-          entity_type: 'program',
-          entity_id: programId,
-          variables: {
-            menteeName: mentee.applicant_name,
-            sessionDate: data.date,
-            sessionTime: data.time,
-            durationMinutes: data.duration_minutes,
-            location: data.location,
-            agenda: data.agenda
-          },
-          triggered_by: 'system'
-        }
-      });
-    },
-
-    onSuccess: () => {
-      queryClient.invalidateQueries(['mentor-meetings']);
-      setShowForm(false);
-      setMeeting({ mentee_id: '', date: '', time: '', duration_minutes: 60, agenda: '', location: 'virtual' });
-      toast.success(t({ en: 'Meeting scheduled', ar: 'تم جدولة الاجتماع' }));
-    }
-  });
+  const handleSchedule = () => {
+    scheduleMeeting.mutate(meeting, {
+      onSuccess: () => {
+        setShowForm(false);
+        setMeeting({ mentee_id: '', date: '', time: '', duration_minutes: 60, agenda: '', location: 'virtual' });
+      }
+    });
+  };
 
   return (
     <Card>
@@ -164,8 +85,8 @@ export default function MentorScheduler({ programId, mentorEmail }) {
             <div className="flex gap-2">
               <Button
                 className="flex-1"
-                onClick={() => scheduleMutation.mutate(meeting)}
-                disabled={!meeting.mentee_id || !meeting.date || scheduleMutation.isPending}
+                onClick={handleSchedule}
+                disabled={!meeting.mentee_id || !meeting.date || scheduleMeeting.isPending}
               >
                 {t({ en: 'Schedule', ar: 'جدولة' })}
               </Button>

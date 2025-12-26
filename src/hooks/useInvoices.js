@@ -2,16 +2,20 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-export function usePendingInvoices() {
+export function useInvoices(filters = {}) {
     return useQuery({
-        queryKey: ['invoices-pending'],
+        queryKey: ['invoices', filters],
         queryFn: async () => {
-            const { data, error } = await supabase
+            let query = supabase
                 .from('invoices')
-                .select('*')
-                .eq('status', 'submitted')
-                .order('issue_date', { ascending: false });
+                .select('*, providers(name_en, name_ar)')
+                .order('created_at', { ascending: false });
 
+            if (filters.status && filters.status !== 'all') {
+                query = query.eq('status', filters.status);
+            }
+
+            const { data, error } = await query;
             if (error) throw error;
             return data || [];
         },
@@ -19,32 +23,69 @@ export function usePendingInvoices() {
     });
 }
 
+export function useInvoice(id) {
+    return useQuery({
+        queryKey: ['invoice', id],
+        queryFn: async () => {
+            if (!id) return null;
+            const { data, error } = await supabase
+                .from('invoices')
+                .select('*, providers(name_en, name_ar), invoice_items(*)')
+                .eq('id', id)
+                .single();
+
+            if (error) throw error;
+            return data;
+        },
+        enabled: !!id
+    });
+}
+
 export function useInvoiceMutations() {
     const queryClient = useQueryClient();
 
-    const approveInvoice = useMutation({
-        mutationFn: async ({ invoiceId, approved, notes, approvedBy }) => {
-            const { error } = await supabase.from('invoices').update({
-                status: approved ? 'approved' : 'draft', // Rejecting usually sends back to draft or rejected
-                approved_by: approved ? approvedBy : null,
-                approval_date: approved ? new Date().toISOString() : null,
-                approval_notes: notes
-            }).eq('id', invoiceId);
-
+    const createInvoice = useMutation({
+        mutationFn: async (invoiceData) => {
+            const { data, error } = await supabase
+                .from('invoices')
+                .insert(invoiceData)
+                .select()
+                .single();
             if (error) throw error;
-            return { invoiceId, approved };
+            return data;
         },
-        onSuccess: ({ approved }) => {
-            queryClient.invalidateQueries({ queryKey: ['invoices-pending'] });
-            toast.success(approved ? 'Invoice approved successfully' : 'Invoice rejected/returned to draft');
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['invoices'] });
+            toast.success('Invoice created successfully');
         },
         onError: (error) => {
-            console.error('Invoice mutation error:', error);
-            toast.error('Failed to update invoice status');
+            toast.error(`Failed to create invoice: ${error.message}`);
+        }
+    });
+
+    const updateInvoice = useMutation({
+        mutationFn: async ({ id, updates }) => {
+            const { data, error } = await supabase
+                .from('invoices')
+                .update(updates)
+                .eq('id', id)
+                .select()
+                .single();
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['invoices'] });
+            queryClient.invalidateQueries({ queryKey: ['invoice', data.id] });
+            toast.success('Invoice updated successfully');
+        },
+        onError: (error) => {
+            toast.error(`Failed to update invoice: ${error.message}`);
         }
     });
 
     return {
-        approveInvoice
+        createInvoice,
+        updateInvoice
     };
 }

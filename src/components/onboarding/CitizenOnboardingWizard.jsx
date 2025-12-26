@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useQueryClient, useQuery } from '@tanstack/react-query';
+
 import { useAutoRoleAssignment } from '@/hooks/useAutoRoleAssignment';
+import { useOnboardingMutations } from '@/hooks/useOnboardingMutations';
+import { useCities } from '@/hooks/useCities';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,8 +15,8 @@ import { Switch } from "@/components/ui/switch";
 import { useLanguage } from '../LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { createPageUrl } from '@/utils';
-import { 
-  Users, ArrowRight, ArrowLeft, CheckCircle2, 
+import {
+  Users, ArrowRight, ArrowLeft, CheckCircle2,
   MapPin, Heart, Bell, Loader2, Sparkles, Award, Globe
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -51,13 +52,14 @@ const PARTICIPATION_TYPES = [
 export default function CitizenOnboardingWizard({ onComplete, onSkip }) {
   const { language, isRTL, t, toggleLanguage } = useLanguage();
   const { user, userProfile, checkAuth } = useAuth();
-  const queryClient = useQueryClient();
+
   const navigate = useNavigate();
   const { assignRole } = useAutoRoleAssignment();
-  
+  const { upsertProfile, updateCitizenPoints } = useOnboardingMutations();
+
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     city_id: '',
     neighborhood: '',
@@ -85,18 +87,7 @@ export default function CitizenOnboardingWizard({ onComplete, onSkip }) {
   }, [userProfile]);
 
   // Fetch cities
-  const { data: cities = [] } = useQuery({
-    queryKey: ['cities-list'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('cities')
-        .select('id, name_en, name_ar, municipality_id')
-        .eq('is_active', true)
-        .order('name_en');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: cities = [] } = useCities({ includeInactive: false });
 
   const progress = (currentStep / STEPS.length) * 100;
 
@@ -125,12 +116,14 @@ export default function CitizenOnboardingWizard({ onComplete, onSkip }) {
     }
 
     setIsSubmitting(true);
-    
+
     try {
       // Update user profile
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .update({
+      await upsertProfile.mutateAsync({
+        table: 'user_profiles',
+        matchingColumns: ['user_id'],
+        data: {
+          user_id: user.id,
           city_id: formData.city_id || null,
           interests: formData.interests,
           onboarding_completed: true,
@@ -147,37 +140,37 @@ export default function CitizenOnboardingWizard({ onComplete, onSkip }) {
             participation_types: formData.participation_types
           },
           updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
-
-      if (profileError) throw profileError;
+        }
+      });
 
       // Create citizen profile
-      await supabase.from('citizen_profiles').upsert({
-        user_id: user.id,
-        user_email: user.email,
-        city_id: formData.city_id,
-        neighborhood: formData.neighborhood,
-        interests: formData.interests,
-        participation_areas: formData.participation_types,
-        notification_preferences: {
-          new_challenges: formData.notify_new_challenges,
-          pilot_opportunities: formData.notify_pilot_opportunities,
-          events: formData.notify_events,
-          weekly_digest: formData.notify_weekly_digest
-        },
-        language_preference: language,
-        is_verified: false
-      }, { onConflict: 'user_id' });
+      await upsertProfile.mutateAsync({
+        table: 'citizen_profiles',
+        matchingColumns: ['user_id'],
+        data: {
+          user_id: user.id,
+          user_email: user.email,
+          city_id: formData.city_id,
+          neighborhood: formData.neighborhood,
+          interests: formData.interests,
+          participation_areas: formData.participation_types,
+          notification_preferences: {
+            new_challenges: formData.notify_new_challenges,
+            pilot_opportunities: formData.notify_pilot_opportunities,
+            events: formData.notify_events,
+            weekly_digest: formData.notify_weekly_digest
+          },
+          language_preference: language,
+          is_verified: false
+        }
+      });
 
       // Initialize citizen points record
-      await supabase.from('citizen_points').upsert({
-        user_id: user.id,
-        user_email: user.email,
-        points: 10, // Welcome bonus
-        level: 1,
-        total_earned: 10
-      }, { onConflict: 'user_id' });
+      await updateCitizenPoints.mutateAsync({
+        userId: user.id,
+        points: 10,
+        reason: 'Welcome Bonus'
+      });
 
       // Auto-assign citizen role (always approved)
       await assignRole({
@@ -186,7 +179,7 @@ export default function CitizenOnboardingWizard({ onComplete, onSkip }) {
         role: 'citizen'
       });
 
-      await queryClient.invalidateQueries(['user-profile']);
+
       if (checkAuth) await checkAuth();
 
       toast.success(t({ en: 'Welcome to the community! You earned 10 welcome points!', ar: 'مرحباً بك في المجتمع! لقد ربحت 10 نقاط ترحيبية!' }));
@@ -212,7 +205,7 @@ export default function CitizenOnboardingWizard({ onComplete, onSkip }) {
     <div className="fixed inset-0 bg-gradient-to-br from-orange-900/95 via-slate-900/95 to-amber-900/95 backdrop-blur-sm z-50 overflow-y-auto" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="min-h-screen py-8 px-4">
         <div className="max-w-2xl mx-auto space-y-6">
-          
+
           {/* Header with Language Toggle */}
           <div className="text-center text-white">
             <div className="flex items-center justify-between mb-4">
@@ -223,8 +216,8 @@ export default function CitizenOnboardingWizard({ onComplete, onSkip }) {
                   {t({ en: 'Join the Community', ar: 'انضم إلى المجتمع' })}
                 </h1>
               </div>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={toggleLanguage}
                 className="text-white/70 hover:text-white hover:bg-white/10 font-medium w-24"
@@ -246,13 +239,12 @@ export default function CitizenOnboardingWizard({ onComplete, onSkip }) {
                   const StepIcon = step.icon;
                   const isActive = currentStep === step.id;
                   const isComplete = currentStep > step.id;
-                  
+
                   return (
                     <React.Fragment key={step.id}>
-                      <Badge className={`px-3 py-2 border-0 ${
-                        isActive ? 'bg-orange-600 text-white' : 
+                      <Badge className={`px-3 py-2 border-0 ${isActive ? 'bg-orange-600 text-white' :
                         isComplete ? 'bg-amber-600 text-white' : 'bg-white/10 text-white/60'
-                      }`}>
+                        }`}>
                         <StepIcon className="h-4 w-4 mr-1" />
                         {step.title[language]}
                       </Badge>
@@ -307,7 +299,7 @@ export default function CitizenOnboardingWizard({ onComplete, onSkip }) {
 
                 <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
                   <p className="text-sm text-orange-800">
-                    {t({ 
+                    {t({
                       en: '📍 Your location helps us show relevant local challenges and opportunities.',
                       ar: '📍 يساعدنا موقعك في عرض التحديات والفرص المحلية ذات الصلة.'
                     })}
@@ -336,11 +328,10 @@ export default function CitizenOnboardingWizard({ onComplete, onSkip }) {
                       <div
                         key={interest.id}
                         onClick={() => toggleInterest(interest.id)}
-                        className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                          formData.interests.includes(interest.id)
-                            ? 'border-orange-500 bg-orange-50'
-                            : 'border-border hover:border-orange-300'
-                        }`}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all ${formData.interests.includes(interest.id)
+                          ? 'border-orange-500 bg-orange-50'
+                          : 'border-border hover:border-orange-300'
+                          }`}
                       >
                         <div className="flex items-center gap-2">
                           <span className="text-xl">{interest.icon}</span>
@@ -360,11 +351,10 @@ export default function CitizenOnboardingWizard({ onComplete, onSkip }) {
                       <div
                         key={type.id}
                         onClick={() => toggleParticipation(type.id)}
-                        className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                          formData.participation_types.includes(type.id)
-                            ? 'border-orange-500 bg-orange-50'
-                            : 'border-border hover:border-orange-300'
-                        }`}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all ${formData.participation_types.includes(type.id)
+                          ? 'border-orange-500 bg-orange-50'
+                          : 'border-border hover:border-orange-300'
+                          }`}
                       >
                         <div className="flex items-center gap-2">
                           <span className="text-lg">{type.icon}</span>
@@ -447,7 +437,7 @@ export default function CitizenOnboardingWizard({ onComplete, onSkip }) {
                   {t({ en: 'Welcome to the Community!', ar: 'مرحباً بك في المجتمع!' })}
                 </h2>
                 <p className="text-amber-700">
-                  {t({ 
+                  {t({
                     en: 'Start exploring challenges, submitting ideas, and earning points!',
                     ar: 'ابدأ باستكشاف التحديات وتقديم الأفكار وكسب النقاط!'
                   })}

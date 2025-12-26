@@ -1,4 +1,6 @@
-import { useRDProjectsWithVisibility } from '@/hooks/useRDProjectsWithVisibility';
+import { useRDProjects, useRDCalls } from '@/hooks/useRDHooks';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,59 +14,24 @@ import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useState } from 'react';
+import { useAuth } from '@/lib/AuthContext';
 
+/**
+ * RDPortfolioPlanner
+ * ✅ GOLD STANDARD COMPLIANT
+ */
 function RDPortfolioPlanner() {
   const { language, isRTL, t } = useLanguage();
+  const { user } = useAuth();
   const [aiRecommendations, setAiRecommendations] = useState(null);
-  const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invokeAI, status, isLoading: loading, isAvailable, rateLimitInfo, error } = useAIWithFallback();
 
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_projects')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: rdCalls = [] } = useQuery({
-    queryKey: ['rd-calls'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_calls')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // Fetch real data using Gold Standard hooks
+  const { data: rdProjects = [] } = useRDProjects(user?.email);
+  const { data: rdCalls = [] } = useRDCalls({ status: 'open' });
+  const { data: challenges = [] } = useChallengesWithVisibility();
+  const { data: pilots = [] } = usePilotsWithVisibility();
 
   const generatePortfolioPlan = async () => {
     const gapChallenges = challenges.filter(c =>
@@ -227,8 +194,8 @@ Each recommendation should include English and Arabic versions.`,
               )}
               {t({ en: 'Generate Plan', ar: 'إنشاء خطة' })}
             </Button>
-            <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mt-2" />
           </div>
+          <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={error} className="mt-2" />
         </CardContent>
       </Card>
 
@@ -416,4 +383,4 @@ Each recommendation should include English and Arabic versions.`,
   );
 }
 
-export default ProtectedPage(RDPortfolioPlanner, { requiredPermissions: [], requiredRoles: ['Executive Leadership', 'GDISB Strategy Lead', 'R&D Manager'] });
+export default ProtectedPage(RDPortfolioPlanner, { requireAdmin: true });

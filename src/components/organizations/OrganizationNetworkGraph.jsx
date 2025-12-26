@@ -1,33 +1,15 @@
 
-import { useQuery } from '@tanstack/react-query';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Network } from 'lucide-react';
 
 /**
  * Network graph visualization for organization connections
  */
-export default function OrganizationNetworkGraph({ organizationId }) {
-  const { data: partnerships = [] } = useQuery({
-    queryKey: ['org-partnerships', organizationId],
-    queryFn: () => base44.entities.Partnership.filter({
-      $or: [
-        { organization_a_id: organizationId },
-        { organization_b_id: organizationId }
-      ]
-    }),
-    enabled: !!organizationId
-  });
+import { useOrganizationPartnerships } from '@/hooks/useOrganizations';
 
-  const { data: collaborations = [] } = useQuery({
-    queryKey: ['org-collaborations', organizationId],
-    queryFn: () => base44.entities.PilotCollaboration.filter({
-      $or: [
-        { organization_a_id: organizationId },
-        { organization_b_id: organizationId }
-      ]
-    }),
-    enabled: !!organizationId
-  });
+export default function OrganizationNetworkGraph({ organizationId }) {
+  const { data: { partnerships, collaborations } = { partnerships: [], collaborations: [] } } = useOrganizationPartnerships(organizationId);
 
   const connections = partnerships.length + collaborations.length;
 

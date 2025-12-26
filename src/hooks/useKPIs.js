@@ -1,56 +1,143 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
+/**
+ * Hook for general KPIs (Plan-based)
+ */
 export const useKPIs = ({ planId } = {}) => {
     return useQuery({
         queryKey: ['kpis', { planId }],
         queryFn: async () => {
             let query = supabase.from('kpis').select('*');
-
             if (planId) {
                 query = query.eq('plan_id', planId);
             }
-
             const { data, error } = await query;
             if (error) throw error;
             return data;
         },
-        staleTime: 1000 * 60 * 5, // 5 minutes
+        staleTime: 1000 * 60 * 5,
     });
 };
 
-export const usePilotKPIDatapoints = (pilotIds) => {
+/**
+ * Hook for Pilot-specific KPIs
+ */
+export const usePilotKPIs = (pilotId) => {
     return useQuery({
-        queryKey: ['pilot-kpi-datapoints', { pilotIds }],
+        queryKey: ['pilot-kpis', pilotId],
         queryFn: async () => {
-            if (!pilotIds || pilotIds.length === 0) return [];
-
-            const { data, error } = await supabase.from('pilot_kpi_datapoints')
+            if (!pilotId) return [];
+            const { data, error } = await supabase
+                .from('pilot_kpis')
                 .select('*')
-                .in('pilot_id', pilotIds);
+                .eq('pilot_id', pilotId);
 
             if (error) throw error;
             return data || [];
         },
-        enabled: !!pilotIds && pilotIds.length > 0,
-        staleTime: 1000 * 60 // 1 minute
+        enabled: !!pilotId,
+        staleTime: 1000 * 60 * 5,
     });
 };
 
-export const useAddKPIDatapoint = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: async (newDatapoint) => {
+/**
+ * Hook for KPI Datapoints
+ */
+export const usePilotKPIDatapoints = (pilotId) => {
+    return useQuery({
+        queryKey: ['kpi-datapoints', pilotId],
+        queryFn: async () => {
+            if (!pilotId) return [];
+
+            // First get KPI IDs for this pilot
+            const { data: kpis } = await supabase
+                .from('pilot_kpis')
+                .select('id')
+                .eq('pilot_id', pilotId);
+
+            if (!kpis || kpis.length === 0) return [];
+            const kpiIds = kpis.map(k => k.id);
+
             const { data, error } = await supabase
                 .from('pilot_kpi_datapoints')
-                .insert(newDatapoint)
-                .select();
+                .select('*')
+                .in('pilot_kpi_id', kpiIds)
+                .order('timestamp', { ascending: false });
+
             if (error) throw error;
-            return data[0];
+            return data || [];
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries(['pilot-kpi-datapoints']);
+        enabled: !!pilotId,
+        staleTime: 1000 * 60,
+    });
+};
+
+/**
+ * Mutation to record a new KPI datapoint
+ */
+export const useAddKPIDatapoint = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ kpiId, value, source = 'manual', notes = '', timestamp = new Date().toISOString() }) => {
+            // 1. Insert datapoint
+            const { data: datapoint, error: dpError } = await supabase
+                .from('pilot_kpi_datapoints')
+                .insert({
+                    pilot_kpi_id: kpiId,
+                    value: parseFloat(value),
+                    source,
+                    notes,
+                    timestamp
+                })
+                .select()
+                .single();
+
+            if (dpError) throw dpError;
+
+            // 2. Update KPI current value and status
+            const { error: kpiError } = await supabase
+                .from('pilot_kpis')
+                .update({
+                    current_value: parseFloat(value),
+                    last_updated: timestamp
+                })
+                .eq('id', kpiId);
+
+            if (kpiError) throw kpiError;
+
+            return datapoint;
+        },
+        onSuccess: (data) => {
             queryClient.invalidateQueries(['pilot-kpis']);
+            queryClient.invalidateQueries(['kpi-datapoints']);
+            queryClient.invalidateQueries(['pilot']);
+        }
+    });
+};
+
+/**
+ * Mutation to update KPI configuration
+ */
+export const useUpdatePilotKPI = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ id, ...updates }) => {
+            const { data, error } = await supabase
+                .from('pilot_kpis')
+                .update(updates)
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries(['pilot-kpis', data.pilot_id]);
         }
     });
 };

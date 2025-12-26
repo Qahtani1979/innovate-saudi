@@ -87,7 +87,7 @@ export default function ProgramCreateWizard({ onComplete, initialData = {} }) {
 
   const handleCreate = async () => {
     try {
-      const program = await createProgram(formData);
+      const program = await createProgram.mutateAsync(formData);
       if (onComplete) {
         onComplete(program);
       } else {

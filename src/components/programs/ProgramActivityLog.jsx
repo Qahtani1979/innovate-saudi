@@ -1,5 +1,3 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -7,62 +5,24 @@ import {
   Activity, MessageSquare, CheckCircle2, XCircle, Clock, Rocket,
   Users, Calendar, Award, Target, Sparkles, FileText
 } from 'lucide-react';
+import { useProgramSystemActivities } from '@/hooks/useProgramActivity';
+import { useComments } from '@/hooks/useComments';
+import { useApprovalRequests } from '@/hooks/useApprovalWorkflow';
 
 export default function ProgramActivityLog({ programId }) {
   const { language, isRTL, t } = useLanguage();
 
   // Fetch all activity sources
-  const { data: systemActivity = [] } = useQuery({
-    queryKey: ['system-activity-program', programId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('system_activities')
-        .select('*')
-        .eq('entity_type', 'program')
-        .eq('entity_id', programId)
-        .order('timestamp', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!programId
-  });
-
-  const { data: comments = [] } = useQuery({
-    queryKey: ['program-comments', programId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('comments')
-        .select('*')
-        .eq('entity_type', 'program')
-        .eq('entity_id', programId)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!programId
-  });
-
-  const { data: approvals = [] } = useQuery({
-    queryKey: ['program-approvals', programId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('approval_requests')
-        .select('*')
-        .eq('entity_type', 'program')
-        .eq('entity_id', programId)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!programId
-  });
+  const { data: systemActivity = [] } = useProgramSystemActivities(programId);
+  const { data: comments = [] } = useComments('program', programId);
+  const { data: approvals = [] } = useApprovalRequests('program', programId);
 
   // Merge and sort all activities
   const mergedActivities = [
-    ...systemActivity.map(a => ({ ...a, _type: 'system', _date: new Date(a.timestamp) })),
-    ...comments.map(c => ({ ...c, _type: 'comment', _date: new Date(c.created_date) })),
-    ...approvals.map(a => ({ ...a, _type: 'approval', _date: new Date(a.created_date) }))
-  ].sort((a, b) => b._date - a._date);
+    ...systemActivity.map(a => ({ ...a, _type: 'system', _date: new Date(a.created_at) })),
+    ...comments.map(c => ({ ...c, _type: 'comment', _date: new Date(c.created_at) })),
+    ...approvals.map(a => ({ ...a, _type: 'approval', _date: new Date(a.created_at) }))
+  ].sort((a, b) => b._date.getTime() - a._date.getTime());
 
   // Group by date
   const groupedActivities = mergedActivities.reduce((groups, activity) => {
@@ -79,7 +39,7 @@ export default function ProgramActivityLog({ programId }) {
       if (activity.status === 'rejected') return XCircle;
       return Clock;
     }
-    
+
     // System activity icons
     const actionMap = {
       program_created: Rocket,
@@ -93,7 +53,7 @@ export default function ProgramActivityLog({ programId }) {
       mentor_assigned: Users,
       ai_analysis: Sparkles
     };
-    
+
     return actionMap[activity.activity_type] || Activity;
   };
 
@@ -109,11 +69,11 @@ export default function ProgramActivityLog({ programId }) {
 
   const getActivityTitle = (activity) => {
     if (activity._type === 'comment') {
-      return activity.is_internal 
+      return activity.is_internal
         ? t({ en: 'Internal Note', ar: 'ملاحظة داخلية' })
         : t({ en: 'Comment', ar: 'تعليق' });
     }
-    
+
     if (activity._type === 'approval') {
       return `${activity.gate_name?.replace(/_/g, ' ')} ${activity.status}`;
     }
@@ -178,7 +138,7 @@ export default function ProgramActivityLog({ programId }) {
                               <p className="text-xs text-slate-500 mt-1">
                                 {activity.performed_by || activity.created_by || activity.reviewer_email || t({ en: 'System', ar: 'النظام' })}
                                 {' • '}
-                                {activity.timestamp 
+                                {activity.timestamp
                                   ? new Date(activity.timestamp).toLocaleTimeString(language === 'ar' ? 'ar-SA' : 'en-US', { hour: '2-digit', minute: '2-digit' })
                                   : new Date(activity.created_date).toLocaleTimeString(language === 'ar' ? 'ar-SA' : 'en-US', { hour: '2-digit', minute: '2-digit' })
                                 }
@@ -187,8 +147,8 @@ export default function ProgramActivityLog({ programId }) {
                             {activity._type === 'approval' && (
                               <Badge className={
                                 activity.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                activity.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                                'bg-yellow-100 text-yellow-700'
+                                  activity.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                    'bg-yellow-100 text-yellow-700'
                               }>
                                 {activity.status}
                               </Badge>

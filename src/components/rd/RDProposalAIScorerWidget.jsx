@@ -1,5 +1,3 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -9,24 +7,12 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
+import { useRDMutations } from '@/hooks/useRDMutations';
+
 export default function RDProposalAIScorerWidget({ proposal }) {
   const { language, t } = useLanguage();
-  const queryClient = useQueryClient();
-  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
-
-  const updateMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase
-        .from('rd_proposals')
-        .update(data)
-        .eq('id', proposal.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['rd-proposal']);
-      toast.success(t({ en: 'AI scoring complete', ar: 'تم التقييم الذكي' }));
-    }
-  });
+  const { updateProposal } = useRDMutations();
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo, error } = useAIWithFallback();
 
   const runAIScoring = async () => {
     const result = await invokeAI({
@@ -69,21 +55,24 @@ Calculate overall score (weighted average).`,
     });
 
     if (result.success) {
-      updateMutation.mutate({
-        ai_score: result.data.overall_score,
-        ai_scoring_breakdown: {
-          innovation_score: result.data.innovation_score,
-          feasibility_score: result.data.feasibility_score,
-          team_score: result.data.team_score,
-          budget_score: result.data.budget_score,
-          impact_score: result.data.impact_score,
-          commercialization_score: result.data.commercialization_score,
-          strategic_alignment_score: result.data.strategic_alignment_score,
-          risk_score: result.data.risk_score
-        },
-        ai_recommendation: result.data.recommendation,
-        ai_strengths: result.data.strengths,
-        ai_concerns: result.data.concerns
+      updateProposal.mutate({
+        id: proposal.id,
+        data: {
+          ai_score: result.data.overall_score,
+          ai_scoring_breakdown: {
+            innovation_score: result.data.innovation_score,
+            feasibility_score: result.data.feasibility_score,
+            team_score: result.data.team_score,
+            budget_score: result.data.budget_score,
+            impact_score: result.data.impact_score,
+            commercialization_score: result.data.commercialization_score,
+            strategic_alignment_score: result.data.strategic_alignment_score,
+            risk_score: result.data.risk_score
+          },
+          ai_recommendation: result.data.recommendation,
+          ai_strengths: result.data.strengths,
+          ai_concerns: result.data.concerns
+        }
       });
     }
   };
@@ -113,7 +102,7 @@ Calculate overall score (weighted average).`,
         </div>
       </CardHeader>
       <CardContent>
-        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} className="mb-4" />
+        <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} error={error} className="mb-4" />
 
         {proposal.ai_score ? (
           <div className="space-y-4">

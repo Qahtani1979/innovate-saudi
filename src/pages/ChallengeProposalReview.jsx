@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,15 +8,15 @@ import { useAuth } from '@/lib/AuthContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { CheckCircle2, XCircle, FileText, DollarSign, Clock, Rocket } from 'lucide-react';
-import { toast } from 'sonner';
+import ProtectedPage from '../components/permissions/ProtectedPage';
 import ProposalToPilotConverter from '../components/challenges/ProposalToPilotConverter';
 import { usePermissions } from '../components/permissions/usePermissions';
 import { useProposalsWithVisibility } from '@/hooks/useProposalsWithVisibility';
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useChallengeProposalMutations } from '@/hooks/useChallengeProposalMutations';
 
 export default function ChallengeProposalReview() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
   const { hasPermission, isAdmin, isStaffUser } = usePermissions();
   const [reviewNotes, setReviewNotes] = useState({});
@@ -33,24 +31,17 @@ export default function ChallengeProposalReview() {
     limit: 200
   });
 
-  const reviewMutation = useMutation({
-    mutationFn: async ({ proposalId, status, notes }) => {
-      const { error } = await supabase
-        .from('challenge_proposals')
-        .update({
-          status,
-          review_notes: notes,
-          reviewer_email: user?.email,
-          review_date: new Date().toISOString()
-        })
-        .eq('id', proposalId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['challenge-proposals']);
-      toast.success(t({ en: 'Proposal reviewed', ar: 'تمت مراجعة المقترح' }));
-    }
-  });
+  // Custom hook for mutations
+  const { reviewProposal } = useChallengeProposalMutations();
+
+  const handleReview = (proposalId, status) => {
+    reviewProposal.mutate({
+      proposalId,
+      status,
+      notes: reviewNotes[proposalId],
+      reviewerEmail: user?.email
+    });
+  };
 
   const pendingProposals = proposals.filter(p => p.status === 'submitted');
   const shortlistedProposals = proposals.filter(p => p.status === 'shortlisted');
@@ -142,7 +133,7 @@ export default function ChallengeProposalReview() {
                       </div>
                       <h4 className="font-semibold text-slate-900">{proposal.proposal_title}</h4>
                       <p className="text-sm text-slate-600 mt-1">{proposal.approach_summary}</p>
-                      
+
                       <div className="flex gap-4 mt-3 text-xs text-slate-600">
                         <div className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
@@ -176,11 +167,7 @@ export default function ChallengeProposalReview() {
 
                       <Button
                         size="sm"
-                        onClick={() => reviewMutation.mutate({
-                          proposalId: proposal.id,
-                          status: 'accepted',
-                          notes: reviewNotes[proposal.id]
-                        })}
+                        onClick={() => handleReview(proposal.id, 'accepted')}
                         variant="outline"
                         className="bg-green-50"
                       >
@@ -190,11 +177,7 @@ export default function ChallengeProposalReview() {
 
                       <Button
                         size="sm"
-                        onClick={() => reviewMutation.mutate({
-                          proposalId: proposal.id,
-                          status: 'shortlisted',
-                          notes: reviewNotes[proposal.id]
-                        })}
+                        onClick={() => handleReview(proposal.id, 'shortlisted')}
                         variant="outline"
                       >
                         {t({ en: 'Shortlist', ar: 'قائمة قصيرة' })}
@@ -202,11 +185,7 @@ export default function ChallengeProposalReview() {
 
                       <Button
                         size="sm"
-                        onClick={() => reviewMutation.mutate({
-                          proposalId: proposal.id,
-                          status: 'rejected',
-                          notes: reviewNotes[proposal.id]
-                        })}
+                        onClick={() => handleReview(proposal.id, 'rejected')}
                         variant="outline"
                         className="text-red-600 border-red-300"
                       >

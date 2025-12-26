@@ -3,23 +3,22 @@
  * Implements: dc-2 (related entities visible)
  */
 
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
+import {
   Lightbulb, Rocket, FolderKanban, FlaskConical,
   FileText, Building2, ExternalLink, Link2Off
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useChallengeIntegrations } from '@/hooks/useChallengeIntegrations';
 
 function EntityCard({ entity, type, language, onClick }) {
   const title = language === 'ar' ? entity.title_ar : entity.title_en;
   const name = language === 'ar' ? entity.name_ar : entity.name_en;
-  
+
   return (
     <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={onClick}>
       <CardContent className="p-4">
@@ -47,7 +46,7 @@ function EmptyState({ type, language }) {
     rd_projects: { en: 'No R&D projects linked yet', ar: 'لا توجد مشاريع بحثية مرتبطة بعد' },
     proposals: { en: 'No proposals submitted yet', ar: 'لا توجد مقترحات مقدمة بعد' }
   };
-  
+
   return (
     <div className="text-center py-8">
       <Link2Off className="h-12 w-12 mx-auto text-muted-foreground/50" />
@@ -61,125 +60,22 @@ function EmptyState({ type, language }) {
 export function ChallengeRelatedEntities({ challengeId, challenge }) {
   const { language } = useLanguage();
   const navigate = useNavigate();
-  
-  // Fetch matched solutions
-  const { data: solutions, isLoading: solutionsLoading } = useQuery({
-    queryKey: ['challenge-solutions', challengeId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenge_solution_matches')
-        .select(`
-          id,
-          match_score,
-          status,
-          solutions:solution_id(
-            id, title_en, title_ar, status, provider_id
-          )
-        `)
-        .eq('challenge_id', challengeId)
-        .neq('status', 'rejected')
-        .order('match_score', { ascending: false });
-      
-      if (error) throw error;
-      return data?.map(m => ({ ...m.solutions, match_score: m.match_score })).filter(Boolean) || [];
-    },
-    enabled: !!challengeId
-  });
-  
-  // Fetch linked pilots
-  const { data: pilots, isLoading: pilotsLoading } = useQuery({
-    queryKey: ['challenge-pilots', challengeId],
-    queryFn: async () => {
-      // Check linked_pilot_ids array or challenge_id reference
-      const pilotIds = challenge?.linked_pilot_ids || [];
-      
-      if (pilotIds.length === 0) {
-        // Try fetching pilots that reference this challenge
-        const { data, error } = await supabase
-          .from('pilots')
-          .select('id, title_en, title_ar, status, municipality_id')
-          .eq('challenge_id', challengeId)
-          .eq('is_deleted', false)
-          .limit(10);
-        
-        if (error) throw error;
-        return data || [];
-      }
-      
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('id, title_en, title_ar, status, municipality_id')
-        .in('id', pilotIds)
-        .eq('is_deleted', false);
-      
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!challengeId
-  });
-  
-  // Fetch linked programs
-  const { data: programs, isLoading: programsLoading } = useQuery({
-    queryKey: ['challenge-programs', challengeId],
-    queryFn: async () => {
-      const programIds = challenge?.linked_program_ids || [];
-      
-      if (programIds.length === 0) return [];
-      
-      const { data, error } = await supabase
-        .from('programs')
-        .select('id, name_en, name_ar, status')
-        .in('id', programIds)
-        .eq('is_deleted', false);
-      
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!challengeId
-  });
-  
-  // Fetch linked R&D projects
-  const { data: rdProjects, isLoading: rdLoading } = useQuery({
-    queryKey: ['challenge-rd-projects', challengeId],
-    queryFn: async () => {
-      const rdIds = challenge?.linked_rd_ids || [];
-      
-      if (rdIds.length === 0) return [];
-      
-      const { data, error } = await supabase
-        .from('rd_projects')
-        .select('id, title_en, title_ar, status')
-        .in('id', rdIds)
-        .eq('is_deleted', false);
-      
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!challengeId
-  });
-  
-  // Fetch proposals
-  const { data: proposals, isLoading: proposalsLoading } = useQuery({
-    queryKey: ['challenge-proposals', challengeId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenge_proposals')
-        .select(`
-          id, title, status, score, submitted_at,
-          organizations:organization_id(id, name_en, name_ar)
-        `)
-        .eq('challenge_id', challengeId)
-        .eq('is_deleted', false)
-        .order('submitted_at', { ascending: false });
-      
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!challengeId
-  });
-  
-  const isLoading = solutionsLoading || pilotsLoading || programsLoading || rdLoading || proposalsLoading;
-  
+
+  const {
+    linkedSolutions,
+    linkedPilots: pilots,
+    linkedPrograms: programs,
+    linkedRDProjects: rdProjects,
+    proposals,
+    isLoading
+  } = useChallengeIntegrations(challengeId);
+
+  // Map matched solutions to flat structure expected by UI
+  const solutions = linkedSolutions?.map(m => ({
+    ...m.solution,
+    match_score: m.match_score
+  })).filter(s => s && s.id) || [];
+
   // Count items for badges
   const counts = {
     solutions: solutions?.length || 0,
@@ -188,9 +84,9 @@ export function ChallengeRelatedEntities({ challengeId, challenge }) {
     rd_projects: rdProjects?.length || 0,
     proposals: proposals?.length || 0
   };
-  
+
   const totalRelated = Object.values(counts).reduce((a, b) => a + b, 0);
-  
+
   if (isLoading) {
     return (
       <Card>
@@ -208,7 +104,7 @@ export function ChallengeRelatedEntities({ challengeId, challenge }) {
       </Card>
     );
   }
-  
+
   return (
     <Card>
       <CardHeader>
@@ -256,7 +152,7 @@ export function ChallengeRelatedEntities({ challengeId, challenge }) {
               )}
             </TabsTrigger>
           </TabsList>
-          
+
           {/* Solutions Tab */}
           <TabsContent value="solutions">
             {solutions?.length > 0 ? (
@@ -275,7 +171,7 @@ export function ChallengeRelatedEntities({ challengeId, challenge }) {
               <EmptyState type="solutions" language={language} />
             )}
           </TabsContent>
-          
+
           {/* Pilots Tab */}
           <TabsContent value="pilots">
             {pilots?.length > 0 ? (
@@ -294,7 +190,7 @@ export function ChallengeRelatedEntities({ challengeId, challenge }) {
               <EmptyState type="pilots" language={language} />
             )}
           </TabsContent>
-          
+
           {/* Programs Tab */}
           <TabsContent value="programs">
             {programs?.length > 0 ? (
@@ -313,7 +209,7 @@ export function ChallengeRelatedEntities({ challengeId, challenge }) {
               <EmptyState type="programs" language={language} />
             )}
           </TabsContent>
-          
+
           {/* R&D Tab */}
           <TabsContent value="rd">
             {rdProjects?.length > 0 ? (
@@ -332,7 +228,7 @@ export function ChallengeRelatedEntities({ challengeId, challenge }) {
               <EmptyState type="rd_projects" language={language} />
             )}
           </TabsContent>
-          
+
           {/* Proposals Tab */}
           <TabsContent value="proposals">
             {proposals?.length > 0 ? (
@@ -346,8 +242,8 @@ export function ChallengeRelatedEntities({ challengeId, challenge }) {
                           <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
                             <Building2 className="h-3 w-3" />
                             <span>
-                              {language === 'ar' 
-                                ? proposal.organizations?.name_ar 
+                              {language === 'ar'
+                                ? proposal.organizations?.name_ar
                                 : proposal.organizations?.name_en}
                             </span>
                           </div>

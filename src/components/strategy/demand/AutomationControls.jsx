@@ -7,10 +7,10 @@ import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/components/LanguageContext';
 import { useActivePlan } from '@/contexts/StrategicPlanContext';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  Zap, 
+import { useStrategyAutomation } from '@/hooks/strategy/useStrategyAutomation';
+import {
+  Zap,
   Play,
   Settings2,
   Clock,
@@ -22,6 +22,7 @@ export default function AutomationControls() {
   const { t, isRTL } = useLanguage();
   const { activePlanId, activePlan } = useActivePlan();
   const { toast } = useToast();
+  const { runAnalysis } = useStrategyAutomation();
 
   const [isRunning, setIsRunning] = useState(false);
   const [settings, setSettings] = useState({
@@ -40,34 +41,29 @@ export default function AutomationControls() {
 
     setIsRunning(true);
     try {
-      const { data, error } = await supabase.functions.invoke('strategy-scheduled-analysis', {
-        body: {
-          strategic_plan_id: activePlanId,
-          auto_generate_queue: settings.autoGenerateQueue,
-          queue_threshold: settings.queueThreshold,
-          notify_on_review: settings.notifyOnReview,
-          trigger_source: 'manual'
-        }
+      const data = await runAnalysis.mutateAsync({
+        strategicPlanId: activePlanId,
+        autoGenerateQueue: settings.autoGenerateQueue,
+        queueThreshold: settings.queueThreshold,
+        notifyOnReview: settings.notifyOnReview
       });
-
-      if (error) throw error;
 
       setLastRun({
         timestamp: new Date().toISOString(),
         results: data
       });
 
-      toast({ 
-        title: 'Analysis Complete', 
+      toast({
+        title: 'Analysis Complete',
         description: `Analyzed ${data.plans_analyzed} plan(s) - ${data.results?.[0]?.coverage_pct || 0}% coverage`
       });
 
     } catch (error) {
       console.error('Scheduled analysis error:', error);
-      toast({ 
-        title: 'Analysis Failed', 
-        description: error.message, 
-        variant: 'destructive' 
+      toast({
+        title: 'Analysis Failed',
+        description: error.message,
+        variant: 'destructive'
       });
     } finally {
       setIsRunning(false);
@@ -84,9 +80,9 @@ export default function AutomationControls() {
               {t({ en: 'Automation Controls', ar: 'تحكمات الأتمتة' })}
             </CardTitle>
             <CardDescription>
-              {t({ 
-                en: 'Configure and trigger automated gap analysis', 
-                ar: 'تكوين وتشغيل تحليل الفجوات الآلي' 
+              {t({
+                en: 'Configure and trigger automated gap analysis',
+                ar: 'تكوين وتشغيل تحليل الفجوات الآلي'
               })}
             </CardDescription>
           </div>
@@ -98,7 +94,7 @@ export default function AutomationControls() {
       <CardContent className="space-y-6">
         {/* Quick Actions */}
         <div className="flex gap-3">
-          <Button 
+          <Button
             onClick={runScheduledAnalysis}
             disabled={isRunning || !activePlanId}
             className="flex-1"
@@ -127,7 +123,7 @@ export default function AutomationControls() {
               </span>
             </div>
             <p className="text-sm text-green-700">
-              {new Date(lastRun.timestamp).toLocaleString()} - 
+              {new Date(lastRun.timestamp).toLocaleString()} -
               {lastRun.results?.results?.[0]?.coverage_pct}% {t({ en: 'coverage', ar: 'تغطية' })}
               {lastRun.results?.results?.[0]?.items_created > 0 && (
                 <span className="ml-2">
@@ -154,7 +150,7 @@ export default function AutomationControls() {
                   {t({ en: 'Automatically create queue items when gaps are found', ar: 'إنشاء عناصر القائمة تلقائيًا عند العثور على فجوات' })}
                 </p>
               </div>
-              <Switch 
+              <Switch
                 checked={settings.autoGenerateQueue}
                 onCheckedChange={(checked) => setSettings(s => ({ ...s, autoGenerateQueue: checked }))}
               />
@@ -187,7 +183,7 @@ export default function AutomationControls() {
                   {t({ en: 'Send notifications when items need manual review', ar: 'إرسال إشعارات عندما تحتاج العناصر لمراجعة يدوية' })}
                 </p>
               </div>
-              <Switch 
+              <Switch
                 checked={settings.notifyOnReview}
                 onCheckedChange={(checked) => setSettings(s => ({ ...s, notifyOnReview: checked }))}
               />
@@ -223,7 +219,7 @@ export default function AutomationControls() {
             </span>
           </div>
           <p className="text-sm text-muted-foreground">
-            {t({ 
+            {t({
               en: 'For automatic scheduled runs, configure a cron job to call the strategy-scheduled-analysis function.',
               ar: 'للتشغيل المجدول التلقائي، قم بتكوين مهمة cron لاستدعاء وظيفة strategy-scheduled-analysis.'
             })}

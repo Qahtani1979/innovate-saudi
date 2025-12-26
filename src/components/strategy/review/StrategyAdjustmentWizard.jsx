@@ -6,10 +6,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { 
+import { useStrategyAdjustmentMutations } from '@/hooks/strategy/useStrategyAdjustments';
+import { useStrategicPlanElements } from '@/hooks/strategy/useStrategicPlanElements';
+import {
   Settings, ChevronRight, ChevronLeft, Check, AlertTriangle,
   Target, Users, FileText, CheckCircle2, Sparkles, Loader2
 } from 'lucide-react';
@@ -41,7 +41,6 @@ const STEPS = [
 export default function StrategyAdjustmentWizard({ strategicPlanId, strategicPlan, planId, onComplete }) {
   const activePlanId = strategicPlanId || planId;
   const { t, language } = useLanguage();
-  const queryClient = useQueryClient();
   const { invokeAI, isLoading: aiLoading } = useAIWithFallback();
   const [currentStep, setCurrentStep] = useState(0);
   const [aiImpactAnalysis, setAiImpactAnalysis] = useState(null);
@@ -58,71 +57,10 @@ export default function StrategyAdjustmentWizard({ strategicPlanId, strategicPla
     notifyStakeholders: true
   });
 
-  // Fetch objectives and KPIs for selection
-  const { data: objectives = [] } = useQuery({
-    queryKey: ['adjustment-objectives', activePlanId],
-    queryFn: async () => {
-      if (!activePlanId) return [];
-      const { data } = await supabase
-        .from('strategic_objectives')
-        .select('id, title_en, title_ar, target_value, current_value')
-        .eq('strategic_plan_id', activePlanId);
-      return data || [];
-    },
-    enabled: !!activePlanId
-  });
 
-  const { data: kpis = [] } = useQuery({
-    queryKey: ['adjustment-kpis', activePlanId],
-    queryFn: async () => {
-      if (!activePlanId) return [];
-      const { data } = await supabase
-        .from('strategy_kpis')
-        .select('id, name_en, name_ar, target_value, current_value, unit')
-        .eq('strategic_plan_id', activePlanId);
-      return data || [];
-    },
-    enabled: !!activePlanId
-  });
+  const { objectives, kpis } = useStrategicPlanElements(activePlanId);
+  const { submitAdjustment } = useStrategyAdjustmentMutations();
 
-  // Save adjustment mutation
-  const saveMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: user } = await supabase.auth.getUser();
-      
-      // Create approval request for the adjustment
-      const { error } = await supabase
-        .from('approval_requests')
-        .insert({
-          request_type: 'strategy_adjustment',
-          entity_type: data.elementType,
-          entity_id: data.elementId || null,
-          requester_email: user?.user?.email || 'system',
-          requester_notes: data.justification,
-          metadata: {
-            element_name: data.elementName,
-            change_type: data.changeType,
-            current_value: data.currentValue,
-            new_value: data.newValue,
-            impact_level: data.impactLevel,
-            strategic_plan_id: activePlanId,
-            ai_analysis: aiImpactAnalysis
-          }
-        });
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['approval_requests']);
-      toast.success(t({ en: 'Adjustment submitted for approval', ar: 'تم إرسال التعديل للموافقة' }));
-      onComplete?.(adjustmentData);
-    },
-    onError: (error) => {
-      console.error('Save error:', error);
-      toast.error(t({ en: 'Failed to submit adjustment', ar: 'فشل في إرسال التعديل' }));
-    }
-  });
 
   const handleAIJustification = async () => {
     if (!adjustmentData.elementType || !adjustmentData.changeType) {
@@ -170,9 +108,9 @@ export default function StrategyAdjustmentWizard({ strategicPlanId, strategicPla
 
       if (result.success && result.data) {
         setAiImpactAnalysis(result.data);
-        setAdjustmentData(prev => ({ 
-          ...prev, 
-          impactLevel: result.data.recommended_level || 'medium' 
+        setAdjustmentData(prev => ({
+          ...prev,
+          impactLevel: result.data.recommended_level || 'medium'
         }));
         toast.success(t({ en: 'AI impact analysis complete', ar: 'اكتمل تحليل الأثر الذكي' }));
       }
@@ -199,7 +137,15 @@ export default function StrategyAdjustmentWizard({ strategicPlanId, strategicPla
   };
 
   const handleComplete = () => {
-    saveMutation.mutate(adjustmentData);
+    submitAdjustment.mutate({
+      ...adjustmentData,
+      strategicPlanId: activePlanId,
+      aiAnalysis: aiImpactAnalysis
+    }, {
+      onSuccess: () => {
+        onComplete?.(adjustmentData);
+      }
+    });
   };
 
   const getElementOptions = () => {
@@ -227,7 +173,7 @@ export default function StrategyAdjustmentWizard({ strategicPlanId, strategicPla
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium">{t({ en: 'Element Type', ar: 'نوع العنصر' })}</label>
-              <Select 
+              <Select
                 value={adjustmentData.elementType}
                 onValueChange={(value) => setAdjustmentData({ ...adjustmentData, elementType: value, elementId: '', elementName: '', currentValue: '' })}
               >
@@ -243,17 +189,17 @@ export default function StrategyAdjustmentWizard({ strategicPlanId, strategicPla
                 </SelectContent>
               </Select>
             </div>
-            
+
             {(adjustmentData.elementType === 'objective' || adjustmentData.elementType === 'kpi') && (
               <div>
                 <label className="text-sm font-medium">{t({ en: 'Select Element', ar: 'اختر العنصر' })}</label>
-                <Select 
+                <Select
                   value={adjustmentData.elementId}
                   onValueChange={(value) => {
                     const element = getElementOptions().find(e => e.id === value);
-                    setAdjustmentData({ 
-                      ...adjustmentData, 
-                      elementId: value, 
+                    setAdjustmentData({
+                      ...adjustmentData,
+                      elementId: value,
                       elementName: element?.name || '',
                       currentValue: element?.currentValue || ''
                     });
@@ -270,10 +216,10 @@ export default function StrategyAdjustmentWizard({ strategicPlanId, strategicPla
                 </Select>
               </div>
             )}
-            
+
             <div>
               <label className="text-sm font-medium">{t({ en: 'Change Type', ar: 'نوع التغيير' })}</label>
-              <Select 
+              <Select
                 value={adjustmentData.changeType}
                 onValueChange={(value) => setAdjustmentData({ ...adjustmentData, changeType: value })}
               >
@@ -296,7 +242,7 @@ export default function StrategyAdjustmentWizard({ strategicPlanId, strategicPla
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium">{t({ en: 'Current Value', ar: 'القيمة الحالية' })}</label>
-              <Input 
+              <Input
                 value={adjustmentData.currentValue}
                 onChange={(e) => setAdjustmentData({ ...adjustmentData, currentValue: e.target.value })}
                 placeholder={t({ en: 'Enter current value', ar: 'أدخل القيمة الحالية' })}
@@ -304,7 +250,7 @@ export default function StrategyAdjustmentWizard({ strategicPlanId, strategicPla
             </div>
             <div>
               <label className="text-sm font-medium">{t({ en: 'New Value', ar: 'القيمة الجديدة' })}</label>
-              <Input 
+              <Input
                 value={adjustmentData.newValue}
                 onChange={(e) => setAdjustmentData({ ...adjustmentData, newValue: e.target.value })}
                 placeholder={t({ en: 'Enter new value', ar: 'أدخل القيمة الجديدة' })}
@@ -323,7 +269,7 @@ export default function StrategyAdjustmentWizard({ strategicPlanId, strategicPla
                 {t({ en: 'AI Draft', ar: 'صياغة ذكية' })}
               </Button>
             </div>
-            <Textarea 
+            <Textarea
               value={adjustmentData.justification}
               onChange={(e) => setAdjustmentData({ ...adjustmentData, justification: e.target.value })}
               placeholder={t({ en: 'Explain why this adjustment is needed...', ar: 'اشرح لماذا هذا التعديل مطلوب...' })}
@@ -378,7 +324,7 @@ export default function StrategyAdjustmentWizard({ strategicPlanId, strategicPla
             )}
             <div>
               <label className="text-sm font-medium">{t({ en: 'Impact Level', ar: 'مستوى الأثر' })}</label>
-              <Select 
+              <Select
                 value={adjustmentData.impactLevel}
                 onValueChange={(value) => setAdjustmentData({ ...adjustmentData, impactLevel: value })}
               >
@@ -402,11 +348,11 @@ export default function StrategyAdjustmentWizard({ strategicPlanId, strategicPla
               {t({ en: 'Based on the impact level, the following approvers are required:', ar: 'بناءً على مستوى الأثر، المعتمدون التاليون مطلوبون:' })}
             </p>
             <div className="space-y-2">
-              {(adjustmentData.impactLevel === 'high' ? 
+              {(adjustmentData.impactLevel === 'high' ?
                 ['Strategy Director', 'Deputy Minister', 'Innovation Committee'] :
                 adjustmentData.impactLevel === 'medium' ?
-                ['Strategy Director', 'Department Head'] :
-                ['Strategy Director']
+                  ['Strategy Director', 'Department Head'] :
+                  ['Strategy Director']
               ).map((approver, i) => (
                 <div key={i} className="flex items-center gap-3 p-3 border rounded-lg">
                   <Users className="h-4 w-4 text-muted-foreground" />
@@ -416,8 +362,8 @@ export default function StrategyAdjustmentWizard({ strategicPlanId, strategicPla
               ))}
             </div>
             <div className="flex items-center gap-2 pt-2">
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 id="notify"
                 checked={adjustmentData.notifyStakeholders}
                 onChange={(e) => setAdjustmentData({ ...adjustmentData, notifyStakeholders: e.target.checked })}
@@ -478,14 +424,13 @@ export default function StrategyAdjustmentWizard({ strategicPlanId, strategicPla
             const StepIcon = step.icon;
             const isActive = index === currentStep;
             const isCompleted = index < currentStep;
-            
+
             return (
               <div key={step.id} className="flex items-center">
-                <div className={`flex items-center justify-center h-10 w-10 rounded-full border-2 ${
-                  isActive ? 'border-primary bg-primary text-primary-foreground' :
+                <div className={`flex items-center justify-center h-10 w-10 rounded-full border-2 ${isActive ? 'border-primary bg-primary text-primary-foreground' :
                   isCompleted ? 'border-primary bg-primary/20 text-primary' :
-                  'border-muted-foreground/30 text-muted-foreground'
-                }`}>
+                    'border-muted-foreground/30 text-muted-foreground'
+                  }`}>
                   {isCompleted ? <Check className="h-5 w-5" /> : <StepIcon className="h-5 w-5" />}
                 </div>
                 {index < STEPS.length - 1 && (
@@ -507,18 +452,18 @@ export default function StrategyAdjustmentWizard({ strategicPlanId, strategicPla
 
         {/* Navigation */}
         <div className="flex justify-between pt-4 border-t">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={handleBack}
             disabled={currentStep === 0}
           >
             <ChevronLeft className="h-4 w-4 mr-2" />
             {t({ en: 'Back', ar: 'رجوع' })}
           </Button>
-          
+
           {currentStep === STEPS.length - 1 ? (
-            <Button onClick={handleComplete} disabled={saveMutation.isPending}>
-              {saveMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
+            <Button onClick={handleComplete} disabled={submitAdjustment.isPending}>
+              {submitAdjustment.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
               {t({ en: 'Submit for Approval', ar: 'إرسال للموافقة' })}
             </Button>
           ) : (

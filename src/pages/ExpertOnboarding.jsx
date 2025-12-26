@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useExpertMutations } from '@/hooks/useExpertMutations';
-import { useQueryClient } from '@tanstack/react-query';
+
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +30,7 @@ function ExpertOnboarding() {
   const [extracting, setExtracting] = useState(false);
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+
   const { user } = useAuth();
   const { invokeAI } = useAIWithFallback();
   const { createExpertProfile } = useExpertMutations();
@@ -136,25 +135,6 @@ Extract the following in JSON format:
         navigate(createPageUrl(`ExpertDetail?id=${result.id}`));
       }
     });
-
-    // Notify admins via email-trigger-hub
-    try {
-      const { supabase } = await import('@/integrations/supabase/client');
-      await supabase.functions.invoke('email-trigger-hub', {
-        body: {
-          trigger: 'program.application_received',
-          recipient_email: 'admin@municipality.gov.sa',
-          entity_type: 'expert',
-          variables: {
-            applicantEmail: user?.email,
-            applicationType: 'Expert Application'
-          },
-          triggered_by: user?.email
-        }
-      });
-    } catch (error) {
-      console.error('Failed to send notification:', error);
-    }
   };
 
   return (

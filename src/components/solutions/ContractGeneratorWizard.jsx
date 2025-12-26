@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +21,6 @@ import {
 
 export default function ContractGeneratorWizard({ solution, pilot, onComplete, onCancel }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState(0);
   const { invokeAI, status, isLoading: isAIGenerating, isAvailable, rateLimitInfo } = useAIWithFallback();
 

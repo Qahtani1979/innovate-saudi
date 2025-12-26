@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useCompetitors } from '@/hooks/useMarketIntelligence';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,10 +8,10 @@ import { TrendingUp, AlertCircle, Sparkles, Loader2, Eye, DollarSign, Users } fr
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { 
-  buildMarketIntelligencePrompt, 
-  MARKET_INTELLIGENCE_SYSTEM_PROMPT, 
-  MARKET_INTELLIGENCE_SCHEMA 
+import {
+  buildMarketIntelligencePrompt,
+  MARKET_INTELLIGENCE_SYSTEM_PROMPT,
+  MARKET_INTELLIGENCE_SCHEMA
 } from '@/lib/ai/prompts/solutions/marketIntelligence';
 
 export default function RealTimeMarketIntelligence({ solution }) {
@@ -21,22 +20,7 @@ export default function RealTimeMarketIntelligence({ solution }) {
   const [autoRefresh, setAutoRefresh] = useState(false);
   const { invokeAI, status, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: competitors = [] } = useQuery({
-    queryKey: ['competitors', solution?.id],
-    queryFn: async () => {
-      if (!solution?.sectors) return [];
-      const { data, error } = await supabase
-        .from('solutions')
-        .select('*')
-        .eq('is_verified', true)
-        .neq('id', solution.id);
-      if (error) throw error;
-      return (data || []).filter(s => 
-        s.sectors?.some(sector => solution.sectors.includes(sector))
-      );
-    },
-    enabled: !!solution
-  });
+  const { data: competitors = [] } = useCompetitors(solution?.id, solution?.sectors);
 
   const fetchIntelligence = async () => {
     const result = await invokeAI({

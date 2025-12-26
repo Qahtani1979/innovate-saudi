@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,15 +8,15 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
-import { 
-  FlaskConical, Plus, Play, Pause, CheckCircle 
+import {
+  FlaskConical, Plus, Play, Pause, CheckCircle
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { useABExperimentMutations } from '@/hooks/useABExperimentMutations';
 
 export default function ABTestingManager() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+
   const [newExperiment, setNewExperiment] = useState({
     name: '',
     description: '',
@@ -26,96 +24,25 @@ export default function ABTestingManager() {
     allocation_percentages: { control: 50, treatment: 50 }
   });
 
-  // Fetch experiments
-  const { data: experiments = [], isLoading } = useQuery({
-    queryKey: ['ab-experiments'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('ab_experiments')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { createExperiment, updateExperimentStatus, useAllExperiments, useExperimentStats } = useABExperimentMutations();
+  const { data: experiments = [], isLoading } = useAllExperiments();
+  const { data: experimentStats = {} } = useExperimentStats(experiments);
 
-  // Fetch experiment statistics
-  const { data: experimentStats = {} } = useQuery({
-    queryKey: ['ab-experiment-stats'],
-    queryFn: async () => {
-      const stats = {};
-      for (const exp of experiments) {
-        const { data: assignments } = await supabase
-          .from('ab_assignments')
-          .select('variant')
-          .eq('experiment_id', exp.id);
-        
-        const { data: conversions } = await supabase
-          .from('ab_conversions')
-          .select('*, ab_assignments(variant)')
-          .eq('experiment_id', exp.id);
-
-        const variantStats = {};
-        (exp.variants || ['control', 'treatment']).forEach(v => {
-          const variantAssignments = (assignments || []).filter(a => a.variant === v).length;
-          const variantConversions = (conversions || []).filter(c => c.ab_assignments?.variant === v).length;
-          variantStats[v] = {
-            participants: variantAssignments,
-            conversions: variantConversions,
-            rate: variantAssignments > 0 ? ((variantConversions / variantAssignments) * 100).toFixed(1) : 0
-          };
+  const handleCreate = () => {
+    createExperiment.mutate({
+      ...newExperiment,
+      userEmail: user?.email
+    }, {
+      onSuccess: () => {
+        setNewExperiment({
+          name: '',
+          description: '',
+          variants: ['control', 'treatment'],
+          allocation_percentages: { control: 50, treatment: 50 }
         });
-
-        stats[exp.id] = {
-          totalParticipants: (assignments || []).length,
-          totalConversions: (conversions || []).length,
-          variants: variantStats
-        };
       }
-      return stats;
-    },
-    enabled: experiments.length > 0
-  });
-
-  // Create experiment mutation
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase.from('ab_experiments').insert({
-        ...data,
-        status: 'draft',
-        created_by: user?.email
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['ab-experiments']);
-      toast.success(t({ en: 'Experiment created!', ar: 'تم إنشاء التجربة!' }));
-      setNewExperiment({
-        name: '',
-        description: '',
-        variants: ['control', 'treatment'],
-        allocation_percentages: { control: 50, treatment: 50 }
-      });
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    }
-  });
-
-  // Update experiment status mutation
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status }) => {
-      const { error } = await supabase
-        .from('ab_experiments')
-        .update({ status, updated_at: new Date().toISOString() })
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['ab-experiments']);
-      toast.success(t({ en: 'Status updated!', ar: 'تم تحديث الحالة!' }));
-    }
-  });
+    });
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -170,7 +97,7 @@ export default function ABTestingManager() {
                               </Badge>
                             </div>
                             <p className="text-sm text-slate-500 mb-3">{exp.description}</p>
-                            
+
                             {/* Variant Stats */}
                             <div className="grid grid-cols-2 gap-4">
                               {(exp.variants || ['control', 'treatment']).map((variant) => {
@@ -200,40 +127,40 @@ export default function ABTestingManager() {
                               })}
                             </div>
                           </div>
-                          
+
                           {/* Actions */}
                           <div className="flex gap-2 ml-4">
                             {exp.status === 'draft' && (
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 variant="outline"
-                                onClick={() => updateStatusMutation.mutate({ id: exp.id, status: 'active' })}
+                                onClick={() => updateExperimentStatus.mutate({ id: exp.id, status: 'active' })}
                               >
                                 <Play className="h-4 w-4" />
                               </Button>
                             )}
                             {exp.status === 'active' && (
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 variant="outline"
-                                onClick={() => updateStatusMutation.mutate({ id: exp.id, status: 'paused' })}
+                                onClick={() => updateExperimentStatus.mutate({ id: exp.id, status: 'paused' })}
                               >
                                 <Pause className="h-4 w-4" />
                               </Button>
                             )}
                             {exp.status === 'paused' && (
                               <>
-                                <Button 
-                                  size="sm" 
+                                <Button
+                                  size="sm"
                                   variant="outline"
-                                  onClick={() => updateStatusMutation.mutate({ id: exp.id, status: 'active' })}
+                                  onClick={() => updateExperimentStatus.mutate({ id: exp.id, status: 'active' })}
                                 >
                                   <Play className="h-4 w-4" />
                                 </Button>
-                                <Button 
-                                  size="sm" 
+                                <Button
+                                  size="sm"
                                   variant="outline"
-                                  onClick={() => updateStatusMutation.mutate({ id: exp.id, status: 'completed' })}
+                                  onClick={() => updateExperimentStatus.mutate({ id: exp.id, status: 'completed' })}
                                 >
                                   <CheckCircle className="h-4 w-4" />
                                 </Button>
@@ -258,7 +185,7 @@ export default function ABTestingManager() {
                     placeholder="e.g., onboarding_wizard_v2"
                   />
                 </div>
-                
+
                 <div>
                   <Label>{t({ en: 'Description', ar: 'الوصف' })}</Label>
                   <Textarea
@@ -305,8 +232,8 @@ export default function ABTestingManager() {
                 </div>
 
                 <Button
-                  onClick={() => createMutation.mutate(newExperiment)}
-                  disabled={!newExperiment.name || createMutation.isPending}
+                  onClick={handleCreate}
+                  disabled={!newExperiment.name || createExperiment.isPending}
                   className="w-full bg-purple-600"
                 >
                   <Plus className="h-4 w-4 mr-2" />

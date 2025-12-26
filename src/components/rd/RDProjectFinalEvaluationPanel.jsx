@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useExpertEvaluations } from '@/hooks/useExpertEvaluation';
+import { useExpertEvaluationMutations } from '@/hooks/useExpertEvaluation';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,8 +15,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export default function RDProjectFinalEvaluationPanel({ project, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { submitEvaluation } = useExpertEvaluationMutations('rd_project', project.id);
+
+  const { data: evaluations = [] } = useExpertEvaluations('rd_project', project.id);
+
   const [evaluationData, setEvaluationData] = useState({
     overall_score: 80,
     innovation_score: 80,
@@ -30,67 +33,46 @@ export default function RDProjectFinalEvaluationPanel({ project, onClose }) {
     improvement_suggestions: []
   });
 
-  const { data: evaluations = [] } = useQuery({
-    queryKey: ['rd-project-final-evaluations', project.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('expert_evaluations')
-        .select('*')
-        .eq('entity_type', 'rd_project')
-        .eq('entity_id', project.id);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const submitEvaluationMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase
-        .from('expert_evaluations')
-        .insert(data);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['rd-project-final-evaluations']);
-      queryClient.invalidateQueries(['rd-project']);
-      toast.success(t({ en: 'Evaluation submitted', ar: 'تم تقديم التقييم' }));
-      setEvaluationData({
-        overall_score: 80,
-        innovation_score: 80,
-        impact_score: 80,
-        technical_quality_score: 80,
-        scalability_score: 80,
-        recommendation: 'scale',
-        feedback_text: '',
-        strengths: [],
-        weaknesses: [],
-        improvement_suggestions: []
-      });
-    }
-  });
 
   const handleSubmitEvaluation = () => {
-    submitEvaluationMutation.mutate({
-      entity_type: 'rd_project',
-      entity_id: project.id,
-      expert_email: user?.email,
-      evaluation_date: new Date().toISOString(),
-      ...evaluationData
+    submitEvaluation.mutate({
+      data: {
+        entity_type: 'rd_project',
+        entity_id: project.id,
+        expert_email: user?.email,
+        evaluation_date: new Date().toISOString(),
+        ...evaluationData
+      }
+    }, {
+      onSuccess: () => {
+        setEvaluationData({
+          overall_score: 80,
+          innovation_score: 80,
+          impact_score: 80,
+          technical_quality_score: 80,
+          scalability_score: 80,
+          recommendation: 'scale',
+          feedback_text: '',
+          strengths: [],
+          weaknesses: [],
+          improvement_suggestions: []
+        });
+      }
     });
   };
 
-  const avgScore = evaluations.length > 0 
+  const avgScore = evaluations.length > 0
     ? (evaluations.reduce((sum, e) => sum + (e.overall_score || 0), 0) / evaluations.length).toFixed(1)
     : null;
 
-  const consensusRecommendation = evaluations.length >= 2 
+  const consensusRecommendation = evaluations.length >= 2
     ? evaluations.reduce((acc, e) => {
-        acc[e.recommendation] = (acc[e.recommendation] || 0) + 1;
-        return acc;
-      }, {})
+      acc[e.recommendation] = (acc[e.recommendation] || 0) + 1;
+      return acc;
+    }, {})
     : null;
 
-  const topRecommendation = consensusRecommendation 
+  const topRecommendation = consensusRecommendation
     ? Object.entries(consensusRecommendation).sort((a, b) => b[1] - a[1])[0]
     : null;
 
@@ -163,14 +145,14 @@ export default function RDProjectFinalEvaluationPanel({ project, onClose }) {
                     <div className="text-3xl font-bold text-purple-600">{evaluation.overall_score}</div>
                     <Badge className={
                       evaluation.recommendation === 'scale' ? 'bg-green-100 text-green-700' :
-                      evaluation.recommendation === 'archive' ? 'bg-slate-100 text-slate-700' :
-                      'bg-blue-100 text-blue-700'
+                        evaluation.recommendation === 'archive' ? 'bg-slate-100 text-slate-700' :
+                          'bg-blue-100 text-blue-700'
                     }>
                       {evaluation.recommendation?.replace(/_/g, ' ')}
                     </Badge>
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-5 gap-2 mb-3">
                   <div className="text-center p-2 bg-white rounded">
                     <div className="text-sm font-bold text-blue-600">{evaluation.innovation_score}</div>
@@ -209,56 +191,56 @@ export default function RDProjectFinalEvaluationPanel({ project, onClose }) {
           <p className="text-sm font-semibold text-slate-700 mb-4">
             {t({ en: 'Submit Your Evaluation', ar: 'قدم تقييمك' })}
           </p>
-          
+
           <div className="grid grid-cols-5 gap-3 mb-4">
             <div>
               <Label className="text-xs">{t({ en: 'Innovation', ar: 'الابتكار' })}</Label>
-              <Input 
-                type="number" 
-                min="0" 
-                max="100" 
+              <Input
+                type="number"
+                min="0"
+                max="100"
                 value={evaluationData.innovation_score}
-                onChange={(e) => setEvaluationData({...evaluationData, innovation_score: parseInt(e.target.value)})}
+                onChange={(e) => setEvaluationData({ ...evaluationData, innovation_score: parseInt(e.target.value) })}
               />
             </div>
             <div>
               <Label className="text-xs">{t({ en: 'Impact', ar: 'التأثير' })}</Label>
-              <Input 
-                type="number" 
-                min="0" 
-                max="100" 
+              <Input
+                type="number"
+                min="0"
+                max="100"
                 value={evaluationData.impact_score}
-                onChange={(e) => setEvaluationData({...evaluationData, impact_score: parseInt(e.target.value)})}
+                onChange={(e) => setEvaluationData({ ...evaluationData, impact_score: parseInt(e.target.value) })}
               />
             </div>
             <div>
               <Label className="text-xs">{t({ en: 'Quality', ar: 'الجودة' })}</Label>
-              <Input 
-                type="number" 
-                min="0" 
-                max="100" 
+              <Input
+                type="number"
+                min="0"
+                max="100"
                 value={evaluationData.technical_quality_score}
-                onChange={(e) => setEvaluationData({...evaluationData, technical_quality_score: parseInt(e.target.value)})}
+                onChange={(e) => setEvaluationData({ ...evaluationData, technical_quality_score: parseInt(e.target.value) })}
               />
             </div>
             <div>
               <Label className="text-xs">{t({ en: 'Scalability', ar: 'التوسع' })}</Label>
-              <Input 
-                type="number" 
-                min="0" 
-                max="100" 
+              <Input
+                type="number"
+                min="0"
+                max="100"
                 value={evaluationData.scalability_score}
-                onChange={(e) => setEvaluationData({...evaluationData, scalability_score: parseInt(e.target.value)})}
+                onChange={(e) => setEvaluationData({ ...evaluationData, scalability_score: parseInt(e.target.value) })}
               />
             </div>
             <div>
               <Label className="text-xs">{t({ en: 'Risk', ar: 'المخاطر' })}</Label>
-              <Input 
-                type="number" 
-                min="0" 
-                max="100" 
+              <Input
+                type="number"
+                min="0"
+                max="100"
                 value={evaluationData.risk_score}
-                onChange={(e) => setEvaluationData({...evaluationData, risk_score: parseInt(e.target.value)})}
+                onChange={(e) => setEvaluationData({ ...evaluationData, risk_score: parseInt(e.target.value) })}
               />
             </div>
           </div>
@@ -266,18 +248,18 @@ export default function RDProjectFinalEvaluationPanel({ project, onClose }) {
           <div className="space-y-4">
             <div>
               <Label>{t({ en: 'Overall Score', ar: 'النقاط الإجمالية' })}</Label>
-              <Input 
-                type="number" 
-                min="0" 
-                max="100" 
+              <Input
+                type="number"
+                min="0"
+                max="100"
                 value={evaluationData.overall_score}
-                onChange={(e) => setEvaluationData({...evaluationData, overall_score: parseInt(e.target.value)})}
+                onChange={(e) => setEvaluationData({ ...evaluationData, overall_score: parseInt(e.target.value) })}
               />
             </div>
 
             <div>
               <Label>{t({ en: 'Recommendation', ar: 'التوصية' })}</Label>
-              <Select value={evaluationData.recommendation} onValueChange={(v) => setEvaluationData({...evaluationData, recommendation: v})}>
+              <Select value={evaluationData.recommendation} onValueChange={(v) => setEvaluationData({ ...evaluationData, recommendation: v })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -294,10 +276,10 @@ export default function RDProjectFinalEvaluationPanel({ project, onClose }) {
               <Label>{t({ en: 'Detailed Feedback', ar: 'ملاحظات مفصلة' })}</Label>
               <Textarea
                 value={evaluationData.feedback_text}
-                onChange={(e) => setEvaluationData({...evaluationData, feedback_text: e.target.value})}
-                placeholder={t({ 
-                  en: 'Provide detailed evaluation feedback including research objectives achievement, publication quality, municipal applicability...', 
-                  ar: 'قدم ملاحظات تقييم مفصلة تشمل تحقيق أهداف البحث، جودة المنشورات، التطبيق البلدي...' 
+                onChange={(e) => setEvaluationData({ ...evaluationData, feedback_text: e.target.value })}
+                placeholder={t({
+                  en: 'Provide detailed evaluation feedback including research objectives achievement, publication quality, municipal applicability...',
+                  ar: 'قدم ملاحظات تقييم مفصلة تشمل تحقيق أهداف البحث، جودة المنشورات، التطبيق البلدي...'
                 })}
                 rows={6}
               />
@@ -310,10 +292,10 @@ export default function RDProjectFinalEvaluationPanel({ project, onClose }) {
             </Button>
             <Button
               onClick={handleSubmitEvaluation}
-              disabled={submitEvaluationMutation.isPending || !evaluationData.feedback_text}
+              disabled={submitEvaluation.isPending || !evaluationData.feedback_text}
               className="flex-1 bg-purple-600 hover:bg-purple-700"
             >
-              {submitEvaluationMutation.isPending ? (
+              {submitEvaluation.isPending ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t({ en: 'Submitting...', ar: 'جاري التقديم...' })}</>
               ) : (
                 <><CheckCircle2 className="h-4 w-4 mr-2" />{t({ en: 'Submit Evaluation', ar: 'تقديم التقييم' })}</>

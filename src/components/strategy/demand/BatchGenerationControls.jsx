@@ -9,13 +9,13 @@ import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useLanguage } from '@/components/LanguageContext';
 import { useDemandQueue } from '@/hooks/strategy/useDemandQueue';
-import { supabase } from '@/integrations/supabase/client';
+import { useStrategyAutomation } from '@/hooks/strategy/useStrategyAutomation';
 import { toast } from 'sonner';
-import { 
-  Zap, 
-  Play, 
-  Pause, 
-  Square, 
+import {
+  Zap,
+  Play,
+  Pause,
+  Square,
   Loader2,
   CheckCircle2,
   AlertTriangle,
@@ -38,14 +38,14 @@ const ENTITY_TYPES = [
 export default function BatchGenerationControls({ strategicPlanId }) {
   const { t, isRTL } = useLanguage();
   const { queueItems, stats, refetch } = useDemandQueue(strategicPlanId);
-  
+
   const [isRunning, setIsRunning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [selectedType, setSelectedType] = useState('all');
   const [batchSize, setBatchSize] = useState(5);
   const [autoApprove, setAutoApprove] = useState(false);
   const [minQualityScore, setMinQualityScore] = useState(70);
-  
+
   // Progress tracking
   const [progress, setProgress] = useState({
     total: 0,
@@ -63,6 +63,8 @@ export default function BatchGenerationControls({ strategicPlanId }) {
     );
   };
 
+  const { generateItem, assessQuality, updateQueueResult } = useStrategyAutomation(); // Hook usage placeholder for outside the function
+
   const handleStartBatch = async () => {
     const queue = getFilteredQueue().slice(0, batchSize);
     if (queue.length === 0) {
@@ -79,71 +81,56 @@ export default function BatchGenerationControls({ strategicPlanId }) {
       current: null
     });
 
+    const { generateItem, assessQuality, updateQueueResult } = useStrategyAutomation();
+
     for (let i = 0; i < queue.length; i++) {
       if (!isRunning || isPaused) break;
-      
+
       const item = queue[i];
       setProgress(prev => ({ ...prev, current: item }));
 
       try {
-        // Update item status to in_progress
-        await supabase
-          .from('demand_queue')
-          .update({ status: 'in_progress', last_attempt_at: new Date().toISOString() })
-          .eq('id', item.id);
-
-        // Call the appropriate generator edge function
-        const generatorFn = getGeneratorFunction(item.entity_type);
-        const { data, error } = await supabase.functions.invoke(generatorFn, {
-          body: {
-            strategic_plan_id: strategicPlanId,
-            queue_item_id: item.id,
-            prefilled_spec: item.prefilled_spec,
-            auto_mode: true
-          }
+        const generationResult = await generateItem({
+          strategicPlanId,
+          queueItem: item
         });
 
-        if (error) throw error;
+        if (!generationResult.success) {
+          throw generationResult.error;
+        }
+
+        const data = generationResult.data;
 
         // Get quality assessment
-        const { data: assessment } = await supabase.functions.invoke('strategy-quality-assessor', {
-          body: {
-            entity_type: item.entity_type,
-            entity_data: data,
-            queue_item: item,
-            mode: 'quick'
-          }
+        const assessment = await assessQuality({
+          entityType: item.entity_type,
+          entityData: data,
+          queueItem: item
         });
 
         const qualityScore = assessment?.overall_score || 75;
         const status = autoApprove && qualityScore >= minQualityScore ? 'accepted' : 'review';
 
-        // Update queue item with result
-        await supabase
-          .from('demand_queue')
-          .update({
-            status,
-            generated_entity_id: data?.id,
-            generated_entity_type: item.entity_type,
-            quality_score: qualityScore,
-            quality_feedback: assessment,
-            attempts: item.attempts + 1
-          })
-          .eq('id', item.id);
+        await updateQueueResult({
+          id: item.id,
+          status,
+          generatedEntityId: data?.id,
+          generatedEntityType: item.entity_type,
+          qualityScore,
+          qualityFeedback: assessment,
+          attempts: item.attempts
+        });
 
         setProgress(prev => ({ ...prev, completed: prev.completed + 1 }));
-        
+
       } catch (error) {
         console.error(`Batch generation error for ${item.id}:`, error);
-        
-        await supabase
-          .from('demand_queue')
-          .update({
-            status: 'pending',
-            attempts: item.attempts + 1,
-            quality_feedback: { error: error.message, failed_at: new Date().toISOString() }
-          })
-          .eq('id', item.id);
+
+        await updateQueueResult({
+          id: item.id,
+          error,
+          attempts: item.attempts
+        });
 
         setProgress(prev => ({ ...prev, failed: prev.failed + 1 }));
       }
@@ -155,8 +142,8 @@ export default function BatchGenerationControls({ strategicPlanId }) {
     setIsRunning(false);
     setProgress(prev => ({ ...prev, current: null }));
     refetch();
-    
-    toast.success(t({ 
+
+    toast.success(t({
       en: `Batch complete: ${progress.completed} succeeded, ${progress.failed} failed`,
       ar: `اكتملت الدفعة: ${progress.completed} نجحت، ${progress.failed} فشلت`
     }));
@@ -207,7 +194,7 @@ export default function BatchGenerationControls({ strategicPlanId }) {
           </div>
           {isRunning && (
             <Badge variant={isPaused ? 'secondary' : 'default'} className="animate-pulse">
-              {isPaused 
+              {isPaused
                 ? t({ en: 'Paused', ar: 'متوقف مؤقتاً' })
                 : t({ en: 'Running', ar: 'قيد التشغيل' })
               }
@@ -215,7 +202,7 @@ export default function BatchGenerationControls({ strategicPlanId }) {
           )}
         </div>
         <CardDescription>
-          {t({ 
+          {t({
             en: 'Automatically generate multiple entities from the queue',
             ar: 'توليد كيانات متعددة تلقائياً من القائمة'
           })}
@@ -273,7 +260,7 @@ export default function BatchGenerationControls({ strategicPlanId }) {
                   {t({ en: 'Auto-Approve High Quality', ar: 'الموافقة التلقائية على الجودة العالية' })}
                 </label>
                 <p className="text-xs text-muted-foreground">
-                  {t({ 
+                  {t({
                     en: `Auto-approve items with quality score ≥ ${minQualityScore}`,
                     ar: `الموافقة التلقائية على العناصر ذات درجة الجودة ≥ ${minQualityScore}`
                   })}
@@ -317,8 +304,8 @@ export default function BatchGenerationControls({ strategicPlanId }) {
             </div>
 
             {/* Start Button */}
-            <Button 
-              className="w-full" 
+            <Button
+              className="w-full"
               onClick={handleStartBatch}
               disabled={getFilteredQueue().length === 0}
             >
@@ -339,8 +326,8 @@ export default function BatchGenerationControls({ strategicPlanId }) {
                   {progress.completed + progress.failed} / {progress.total}
                 </span>
               </div>
-              <Progress 
-                value={((progress.completed + progress.failed) / progress.total) * 100} 
+              <Progress
+                value={((progress.completed + progress.failed) / progress.total) * 100}
                 className="h-3"
               />
             </div>

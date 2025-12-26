@@ -1,19 +1,18 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { useLanguage } from '@/components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  History, 
-  Plus, 
-  Pencil, 
-  Trash2, 
-  CheckCircle, 
-  XCircle, 
-  Send, 
-  Play, 
+import {
+  History,
+  Plus,
+  Pencil,
+  Trash2,
+  CheckCircle,
+  XCircle,
+  Send,
+  Play,
   Calendar,
   User,
   Clock,
@@ -84,30 +83,7 @@ function formatActionName(action) {
 export function ProgramEventAuditLog({ entityType, entityId, limit = 50 }) {
   const { t } = useLanguage();
 
-  const { data: logs = [], isLoading } = useQuery({
-    queryKey: ['audit-logs', entityType, entityId],
-    queryFn: async () => {
-      let query = supabase
-        .from('access_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-      if (entityType) {
-        query = query.eq('entity_type', entityType);
-      } else {
-        query = query.or('entity_type.eq.program,entity_type.eq.event,entity_type.like.%_approval');
-      }
-
-      if (entityId) {
-        query = query.eq('entity_id', entityId);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: logs = [], isLoading } = useAuditLogs({ entityType, entityId, limit });
 
   const programLogs = logs.filter(l => l.entity_type === 'program' || l.action?.startsWith('program_'));
   const eventLogs = logs.filter(l => l.entity_type === 'event' || l.action?.startsWith('event_'));
@@ -235,7 +211,7 @@ export function ProgramEventAuditLog({ entityType, entityId, limit = 50 }) {
               {t({ en: 'Approvals', ar: 'الموافقات' })} ({approvalLogs.length})
             </TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="all" className="mt-0">
             <ScrollArea className="h-[500px]">
               {logs.length === 0 ? (
@@ -248,7 +224,7 @@ export function ProgramEventAuditLog({ entityType, entityId, limit = 50 }) {
               )}
             </ScrollArea>
           </TabsContent>
-          
+
           <TabsContent value="programs" className="mt-0">
             <ScrollArea className="h-[500px]">
               {programLogs.length === 0 ? (
@@ -260,7 +236,7 @@ export function ProgramEventAuditLog({ entityType, entityId, limit = 50 }) {
               )}
             </ScrollArea>
           </TabsContent>
-          
+
           <TabsContent value="events" className="mt-0">
             <ScrollArea className="h-[500px]">
               {eventLogs.length === 0 ? (
@@ -272,7 +248,7 @@ export function ProgramEventAuditLog({ entityType, entityId, limit = 50 }) {
               )}
             </ScrollArea>
           </TabsContent>
-          
+
           <TabsContent value="approvals" className="mt-0">
             <ScrollArea className="h-[500px]">
               {approvalLogs.length === 0 ? (

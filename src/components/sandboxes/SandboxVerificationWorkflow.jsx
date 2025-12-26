@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,11 +7,12 @@ import { useLanguage } from '../LanguageContext';
 import { Shield, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+import { useSandboxMutations } from '@/hooks/useSandboxData';
 
 export default function SandboxVerificationWorkflow({ sandbox, onClose }) {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const { verifySandbox } = useSandboxMutations();
   const [checklist, setChecklist] = useState({
     regulatory_framework: false,
     safety_protocols: false,
@@ -25,37 +24,19 @@ export default function SandboxVerificationWorkflow({ sandbox, onClose }) {
 
   const allChecked = Object.values(checklist).every(v => v);
 
-  const verifyMutation = useMutation({
-    mutationFn: async () => {
-      const { error: updateError } = await supabase
-        .from('sandboxes')
-        .update({
-          status: 'verified',
-          verification_date: new Date().toISOString(),
-          verified_by: user?.email,
-          verification_notes: notes
-        })
-        .eq('id', sandbox.id);
-      if (updateError) throw updateError;
-
-      const { error: activityError } = await supabase
-        .from('system_activities')
-        .insert({
-          entity_type: 'Sandbox',
-          entity_id: sandbox.id,
-          activity_type: 'verified',
-          description: `Sandbox "${sandbox.name_en}" verified and approved`,
-          performed_by: user?.email,
-          timestamp: new Date().toISOString()
-        });
-      if (activityError) console.log('Activity log error:', activityError);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['sandbox']);
-      toast.success(t({ en: 'Sandbox verified', ar: 'تم التحقق من المنطقة' }));
-      onClose?.();
-    }
-  });
+  const handleVerify = () => {
+    verifySandbox.mutate({
+      id: sandbox.id,
+      notes,
+      userEmail: user?.email,
+      sandboxName: sandbox.name_en
+    }, {
+      onSuccess: () => {
+        // toast handled by hook
+        onClose?.();
+      }
+    });
+  };
 
   const checklistItems = [
     { key: 'regulatory_framework', label: { en: 'Regulatory framework documented', ar: 'إطار تنظيمي موثق' } },
@@ -76,9 +57,8 @@ export default function SandboxVerificationWorkflow({ sandbox, onClose }) {
       <CardContent className="space-y-6">
         <div className="space-y-3">
           {checklistItems.map((item) => (
-            <div key={item.key} className={`flex items-center gap-3 p-3 rounded-lg border-2 ${
-              checklist[item.key] ? 'bg-green-50 border-green-300' : 'bg-slate-50 border-slate-200'
-            }`}>
+            <div key={item.key} className={`flex items-center gap-3 p-3 rounded-lg border-2 ${checklist[item.key] ? 'bg-green-50 border-green-300' : 'bg-slate-50 border-slate-200'
+              }`}>
               <Checkbox
                 checked={checklist[item.key]}
                 onCheckedChange={(checked) => setChecklist({ ...checklist, [item.key]: checked })}
@@ -95,8 +75,8 @@ export default function SandboxVerificationWorkflow({ sandbox, onClose }) {
         </div>
 
         <Button
-          onClick={() => verifyMutation.mutate()}
-          disabled={!allChecked || verifyMutation.isPending}
+          onClick={handleVerify}
+          disabled={!allChecked || verifySandbox.isPending}
           className="w-full bg-gradient-to-r from-green-600 to-emerald-600"
           size="lg"
         >

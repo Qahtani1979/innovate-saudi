@@ -1,44 +1,22 @@
 
-import { useQuery } from '@tanstack/react-query';
+// cleaned up imports
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
 import { Award, Users, Lightbulb, BookOpen } from 'lucide-react';
 
+import { useStartupEcosystem } from '@/hooks/useStartupEcosystem';
+
 export default function EcosystemContributionScore({ startupId }) {
   const { t } = useLanguage();
 
-  const { data: activities = [] } = useQuery({
-    queryKey: ['startup-activities', startupId],
-    queryFn: async () => {
-      const all = await base44.entities.UserActivity.list();
-      return all.filter(a => a.entity_id === startupId);
-    }
-  });
-
-  const { data: partnerships = [] } = useQuery({
-    queryKey: ['startup-partnerships-eco', startupId],
-    queryFn: async () => {
-      const all = await base44.entities.Partnership.list();
-      return all.filter(p => p.partner_a_id === startupId || p.partner_b_id === startupId);
-    }
-  });
-
-  const { data: mentorships = [] } = useQuery({
-    queryKey: ['startup-mentorships', startupId],
-    queryFn: async () => {
-      const all = await base44.entities.ProgramMentorship.list();
-      return all.filter(m => m.mentor_startup_id === startupId);
-    }
-  });
-
-  const { data: knowledge = [] } = useQuery({
-    queryKey: ['startup-knowledge', startupId],
-    queryFn: async () => {
-      const all = await base44.entities.KnowledgeDocument.list();
-      return all.filter(k => k.created_by === startupId);
-    }
-  });
+  const {
+    activities = [],
+    partnerships = [],
+    mentorships = [],
+    knowledge = [],
+    isLoading
+  } = useStartupEcosystem(startupId);
 
   const contributionFactors = {
     partnerships: partnerships.length * 10,

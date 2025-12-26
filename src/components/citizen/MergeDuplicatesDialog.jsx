@@ -1,63 +1,41 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Network, CheckCircle2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
-import { toast } from 'sonner';
+import { useCitizenIdeas } from '@/hooks/useCitizenIdeas';
+import { useLanguage } from '../LanguageContext';
 
 export default function MergeDuplicatesDialog({ primaryIdea, duplicateIdeas, onClose }) {
+  const { t } = useLanguage();
   const [selectedIds, setSelectedIds] = useState([]);
-  const queryClient = useQueryClient();
+  const { mergeIdeas } = useCitizenIdeas();
 
-  const mergeMutation = useMutation({
-    mutationFn: async () => {
-      // Merge all selected ideas into primary
-      const allIdeas = [primaryIdea, ...duplicateIdeas.filter(d => selectedIds.includes(d.id))];
+  const handleMerge = () => {
+    // Merge all selected ideas into primary
+    const allIdeas = [primaryIdea, ...duplicateIdeas.filter(d => selectedIds.includes(d.id))];
 
-      // Combine vote counts
-      const totalVotes = allIdeas.reduce((sum, idea) => sum + (idea.vote_count || 0), 0);
+    // Combine vote counts
+    const totalVotes = allIdeas.reduce((sum, idea) => sum + (idea.vote_count || 0), 0);
 
-      // Combine comments
-      const allSubmitters = allIdeas
-        .filter(i => i.submitter_name)
-        .map(i => i.submitter_name)
-        .join(', ');
+    // Combine co-submitters
+    const allSubmitters = allIdeas
+      .filter(i => i.submitter_name)
+      .map(i => i.submitter_name)
+      .join(', ');
 
-      // Update primary idea
-      const { error: updateError } = await supabase
-        .from('citizen_ideas')
-        .update({
-          vote_count: totalVotes,
-          description: `${primaryIdea.description}\n\n[Merged from ${selectedIds.length} similar ideas. Co-submitters: ${allSubmitters}]`
-        })
-        .eq('id', primaryIdea.id);
-
-      if (updateError) throw updateError;
-
-      // Mark duplicates as merged
-      const promises = selectedIds.map(async (id) => {
-        const { error } = await supabase
-          .from('citizen_ideas')
-          .update({
-            status: 'duplicate',
-            review_notes: `Merged into idea ${primaryIdea.id}`
-          })
-          .eq('id', id);
-
-        if (error) throw error;
-      });
-
-      await Promise.all(promises);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['citizen-ideas']);
-      toast.success(`Merged ${selectedIds.length} duplicate ideas`);
-      onClose();
-    }
-  });
+    mergeIdeas.mutate({
+      primaryId: primaryIdea.id,
+      duplicateIds: selectedIds,
+      totalVotes,
+      mergedDescription: `${primaryIdea.description}\n\n[Merged from ${selectedIds.length} similar ideas. Co-submitters: ${allSubmitters}]`
+    }, {
+      onSuccess: () => {
+        onClose();
+      }
+    });
+  };
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
@@ -65,22 +43,22 @@ export default function MergeDuplicatesDialog({ primaryIdea, duplicateIdeas, onC
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Network className="h-5 w-5 text-purple-600" />
-            Merge Duplicate Ideas
+            {t({ en: 'Merge Duplicate Ideas', ar: 'دمج الأفكار المكررة' })}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-            <p className="font-semibold text-blue-900 mb-1">Primary Idea:</p>
+            <p className="font-semibold text-blue-900 mb-1">{t({ en: 'Primary Idea:', ar: 'الفكرة الأساسية:' })}</p>
             <p className="text-sm text-blue-800">{primaryIdea.title}</p>
             <div className="flex items-center gap-2 mt-2">
-              <Badge className="bg-blue-100 text-blue-700">{primaryIdea.vote_count || 0} votes</Badge>
+              <Badge className="bg-blue-100 text-blue-700">{primaryIdea.vote_count || 0} {t({ en: 'votes', ar: 'صوت' })}</Badge>
               <Badge variant="outline">{primaryIdea.category}</Badge>
             </div>
           </div>
 
           <div>
-            <p className="font-semibold text-slate-900 mb-2">Select duplicates to merge:</p>
+            <p className="font-semibold text-slate-900 mb-2">{t({ en: 'Select duplicates to merge:', ar: 'اختر المكررات للدمج:' })}</p>
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {duplicateIdeas.map((idea) => (
                 <label
@@ -101,9 +79,9 @@ export default function MergeDuplicatesDialog({ primaryIdea, duplicateIdeas, onC
                     <p className="font-medium text-slate-900">{idea.title}</p>
                     <p className="text-xs text-slate-600 line-clamp-2">{idea.description}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <Badge variant="outline" className="text-xs">{idea.vote_count || 0} votes</Badge>
+                      <Badge variant="outline" className="text-xs">{idea.vote_count || 0} {t({ en: 'votes', ar: 'صوت' })}</Badge>
                       {idea.submitter_name && (
-                        <span className="text-xs text-slate-500">by {idea.submitter_name}</span>
+                        <span className="text-xs text-slate-500">{t({ en: 'by', ar: 'بواسطة' })} {idea.submitter_name}</span>
                       )}
                     </div>
                   </div>
@@ -115,21 +93,23 @@ export default function MergeDuplicatesDialog({ primaryIdea, duplicateIdeas, onC
           <div className="p-3 bg-green-50 rounded-lg border border-green-200">
             <p className="text-sm text-green-800">
               <CheckCircle2 className="h-4 w-4 inline mr-1" />
-              Selected duplicates will be marked as merged and their votes combined.
-              All submitters will be credited in the description.
+              {t({
+                en: 'Selected duplicates will be marked as merged and their votes combined. All submitters will be credited in the description.',
+                ar: 'سيتم وضع علامة مدموجة على الأفكار المكررة المختارة وجمع أصواتها. سيتم إدراج جميع المقدمين في الوصف.'
+              })}
             </p>
           </div>
 
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={onClose}>
-              Cancel
+              {t({ en: 'Cancel', ar: 'إلغاء' })}
             </Button>
             <Button
-              onClick={() => mergeMutation.mutate()}
-              disabled={selectedIds.length === 0 || mergeMutation.isPending}
+              onClick={handleMerge}
+              disabled={selectedIds.length === 0 || mergeIdeas.isPending}
               className="bg-purple-600"
             >
-              Merge {selectedIds.length} Ideas
+              {t({ en: `Merge ${selectedIds.length} Ideas`, ar: `دمج ${selectedIds.length} أفكار` })}
             </Button>
           </div>
         </div>

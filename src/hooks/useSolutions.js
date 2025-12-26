@@ -103,3 +103,50 @@ export function useSolutionVersions(solutionId) {
         enabled: !!solutionId
     });
 }
+
+export function useTrendingSolutions() {
+    return useQuery({
+        queryKey: ['trending-solutions'],
+        queryFn: async () => {
+            const now = new Date();
+            const last30Days = new Date(now.setDate(now.getDate() - 30));
+
+            const { data: solutions, error: solutionsError } = await supabase
+                .from('solutions')
+                .select('*')
+                .eq('is_published', true)
+                .eq('is_verified', true)
+                .order('updated_at', { ascending: false })
+                .limit(10);
+
+            if (solutionsError) throw solutionsError;
+
+            const { data: interests } = await supabase.from('solution_interests').select('*');
+            const { data: demos } = await supabase.from('demo_requests').select('*');
+            const { data: reviews } = await supabase.from('solution_reviews').select('*');
+
+            return solutions.map(solution => {
+                const recentInterests = (interests || []).filter(i =>
+                    i.solution_id === solution.id &&
+                    new Date(i.created_at) > last30Days
+                ).length;
+                const recentDemos = (demos || []).filter(d =>
+                    d.solution_id === solution.id &&
+                    new Date(d.created_at) > last30Days
+                ).length;
+                const recentReviews = (reviews || []).filter(r =>
+                    r.solution_id === solution.id &&
+                    new Date(r.created_at) > last30Days
+                ).length;
+
+                return {
+                    ...solution,
+                    trendingScore: recentInterests * 3 + recentDemos * 5 + recentReviews * 10
+                };
+            })
+                .sort((a, b) => b.trendingScore - a.trendingScore)
+                .slice(0, 5);
+        },
+        staleTime: 1000 * 60 * 30 // 30 minutes
+    });
+}

@@ -1,29 +1,23 @@
 
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
 import { AlertTriangle, Activity, TrendingDown, Shield } from 'lucide-react';
+import { useScalingPlan } from '@/hooks/useScalingPlans';
 
 export default function ScalingFailureEarlyWarning({ scalingPlanId }) {
   const { language, t } = useLanguage();
 
-  const { data: plan } = useQuery({
-    queryKey: ['scaling-plan', scalingPlanId],
-    queryFn: async () => {
-      const plans = await base44.entities.ScalingPlan.list();
-      return plans.find(p => p.id === scalingPlanId);
-    }
-  });
+  const { data: plan } = useScalingPlan(scalingPlanId);
 
   const deploymentProgress = plan?.deployment_progress || [];
-  
+
   const warnings = deploymentProgress.filter(d => {
     const adoptionRate = d.adoption_rate || 0;
     const targetRate = 70;
     const daysActive = Math.floor((new Date() - new Date(d.deployment_date)) / (1000 * 60 * 60 * 24));
-    
+
     return adoptionRate < targetRate && daysActive > 30;
   });
 
@@ -66,9 +60,8 @@ export default function ScalingFailureEarlyWarning({ scalingPlanId }) {
             {warnings.map((warning, idx) => {
               const isCritical = (warning.adoption_rate || 0) < 40;
               return (
-                <div key={idx} className={`p-4 rounded-lg border-2 ${
-                  isCritical ? 'bg-red-50 border-red-300' : 'bg-yellow-50 border-yellow-300'
-                }`}>
+                <div key={idx} className={`p-4 rounded-lg border-2 ${isCritical ? 'bg-red-50 border-red-300' : 'bg-yellow-50 border-yellow-300'
+                  }`}>
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">

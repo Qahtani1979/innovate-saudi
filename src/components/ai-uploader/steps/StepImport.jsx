@@ -7,160 +7,40 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
+import {
   ArrowLeft, CheckCircle, Loader2, Download,
   RefreshCw, Sparkles, AlertTriangle, FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { useBulkImporter } from '@/hooks/useBulkImporter';
 
 export default function StepImport({ state, updateState, onBack, onComplete }) {
-  const [isImporting, setIsImporting] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [results, setResults] = useState(null);
-  const [logs, setLogs] = useState([]);
-
-  const addLog = (message, type = 'info') => {
-    setLogs(prev => [...prev, { message, type, timestamp: new Date() }]);
-  };
+  const { isImporting, progress, results, logs, importData } = useBulkImporter();
 
   const startImport = async (retryFailedOnly = false) => {
-    setIsImporting(true);
-    setProgress(0);
-    setLogs([]);
-
-    const allRows = state.enrichedData || [];
-    const entityType = state.detectedEntity;
-    const batchSize = 50;
-
-    // Wrap rows with their original index so we can track failures
-    const existingStatuses = state.importRowStatuses || [];
-    let rowWrappers = allRows.map((row, index) => ({ row, index }));
-
-    if (retryFailedOnly && existingStatuses.length === allRows.length) {
-      rowWrappers = rowWrappers.filter((_, idx) => existingStatuses[idx] === 'failed');
-      if (rowWrappers.length === 0) {
-        addLog('No failed records to retry.', 'info');
-        toast.info('No failed records to retry.');
-        setIsImporting(false);
-        return;
+    const response = await importData({
+      data: state.enrichedData || [],
+      entityType: state.detectedEntity,
+      retryFailedOnly,
+      existingStatuses: state.importRowStatuses || [],
+      metadata: {
+        source_file: state.file?.name,
+        file_type: state.fileType,
+        mappings: Object.keys(state.fieldMappings)
       }
-    }
+    });
 
-    const rowStatuses = retryFailedOnly && existingStatuses.length === allRows.length
-      ? [...existingStatuses]
-      : new Array(allRows.length).fill('pending');
-
-    const importResults = {
-      total: rowWrappers.length,
-      inserted: 0,
-      failed: 0,
-      skipped: 0,
-      errors: []
-    };
-
-    try {
-      addLog(`Starting import of ${rowWrappers.length} records to ${entityType}...`);
-      
-      // Get user info for created_by field
-      const { data: { user } } = await supabase.auth.getUser();
-      const userEmail = user?.email;
-
-      // Process in batches
-      for (let i = 0; i < rowWrappers.length; i += batchSize) {
-        const batchWrappers = rowWrappers.slice(i, i + batchSize);
-        setProgress(Math.round((i / rowWrappers.length) * 100));
-        
-        // Clean rows - remove internal fields
-        const cleanedBatch = batchWrappers.map(({ row }) => {
-          const cleaned = { ...row };
-          delete cleaned._originalIndex;
-          delete cleaned._errors;
-          delete cleaned._warnings;
-          
-          // Add metadata
-          if (userEmail) {
-            cleaned.created_by = userEmail;
-          }
-          
-          return cleaned;
-        });
-
-        const batchNumber = Math.floor(i / batchSize) + 1;
-        addLog(`Processing batch ${batchNumber}...`);
-
-        const { data, error } = await supabase
-          .from(entityType)
-          .insert(cleanedBatch)
-          .select('id');
-
-        if (error) {
-          addLog(`Batch ${batchNumber} error: ${error.message}`, 'error');
-          importResults.errors.push({
-            batch: batchNumber,
-            error: error.message
-          });
-          importResults.failed += batchWrappers.length;
-
-          batchWrappers.forEach(({ index }) => {
-            rowStatuses[index] = 'failed';
-          });
-        } else {
-          addLog(`Inserted ${data?.length || 0} records in batch ${batchNumber}`, 'success');
-          importResults.inserted += data?.length || 0;
-
-          batchWrappers.forEach(({ index }) => {
-            rowStatuses[index] = 'success';
-          });
-        }
-      }
-
-      setProgress(100);
-      addLog(`Import completed: ${importResults.inserted} inserted, ${importResults.failed} failed`, 
-        importResults.failed > 0 ? 'warning' : 'success');
-
-      // Log to import history
-      await logImportHistory(importResults, entityType);
-
-      setResults(importResults);
-      updateState({ importResults, importRowStatuses: rowStatuses });
-
-    } catch (error) {
-      console.error('Import error:', error);
-      addLog(`Fatal error: ${error.message}`, 'error');
-      importResults.errors.push({ fatal: error.message });
-      setResults(importResults);
-    } finally {
-      setIsImporting(false);
-    }
-  };
-
-  const logImportHistory = async (results, entityType) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      await supabase.from('access_logs').insert({
-        action: 'ai_import',
-        entity_type: entityType,
-        user_email: user?.email,
-        user_id: user?.id,
-        metadata: {
-          source_file: state.file?.name,
-          file_type: state.fileType,
-          total_rows: results.total,
-          inserted: results.inserted,
-          failed: results.failed,
-          mappings: Object.keys(state.fieldMappings)
-        }
+    if (response?.success) {
+      updateState({
+        importResults: response.importResults,
+        importRowStatuses: response.rowStatuses
       });
-    } catch (error) {
-      console.error('Failed to log import:', error);
     }
   };
 
   const downloadErrorLog = () => {
     if (!results?.errors?.length) return;
-    
+
     const log = {
       importDate: new Date().toISOString(),
       entityType: state.detectedEntity,
@@ -168,7 +48,7 @@ export default function StepImport({ state, updateState, onBack, onComplete }) {
       results: results,
       logs: logs
     };
-    
+
     const blob = new Blob([JSON.stringify(log, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -180,7 +60,7 @@ export default function StepImport({ state, updateState, onBack, onComplete }) {
 
   // Show confirmation before starting
   const [confirmed, setConfirmed] = useState(false);
-  
+
   const handleStartImport = () => {
     setConfirmed(true);
     startImport();
@@ -194,7 +74,7 @@ export default function StepImport({ state, updateState, onBack, onComplete }) {
           <Sparkles className="h-16 w-16 text-primary mb-4" />
           <h2 className="text-xl font-bold mb-2">Ready to Import</h2>
           <p className="text-muted-foreground text-center mb-6 max-w-md">
-            You are about to import <strong>{state.enrichedData?.length || 0}</strong> records 
+            You are about to import <strong>{state.enrichedData?.length || 0}</strong> records
             to <strong className="capitalize">{state.detectedEntity}</strong>.
             This action cannot be undone.
           </p>
@@ -227,9 +107,8 @@ export default function StepImport({ state, updateState, onBack, onComplete }) {
         /* Results Summary */
         <div className="space-y-4">
           {/* Result Header */}
-          <div className={`text-center py-6 rounded-lg ${
-            results.failed === 0 ? 'bg-green-50' : 'bg-yellow-50'
-          }`}>
+          <div className={`text-center py-6 rounded-lg ${results.failed === 0 ? 'bg-green-50' : 'bg-yellow-50'
+            }`}>
             {results.failed === 0 ? (
               <CheckCircle className="h-16 w-16 text-green-600 mx-auto" />
             ) : (
@@ -249,9 +128,8 @@ export default function StepImport({ state, updateState, onBack, onComplete }) {
               <p className="text-3xl font-bold text-green-600">{results.inserted}</p>
               <p className="text-sm text-green-600">Inserted</p>
             </div>
-            <div className={`rounded-lg p-4 text-center ${
-              results.failed > 0 ? 'bg-red-50 border border-red-200' : 'bg-muted'
-            }`}>
+            <div className={`rounded-lg p-4 text-center ${results.failed > 0 ? 'bg-red-50 border border-red-200' : 'bg-muted'
+              }`}>
               <p className={`text-3xl font-bold ${results.failed > 0 ? 'text-red-600' : ''}`}>
                 {results.failed}
               </p>
@@ -272,9 +150,9 @@ export default function StepImport({ state, updateState, onBack, onComplete }) {
               <AlertDescription>
                 <div className="flex items-center justify-between">
                   <span>{results.errors.length} errors occurred during import</span>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={downloadErrorLog}
                     className="gap-1"
                   >
@@ -302,13 +180,12 @@ export default function StepImport({ state, updateState, onBack, onComplete }) {
               {logs.length === 0 ? (
                 <p className="text-muted-foreground">Waiting to start...</p>
               ) : logs.map((log, idx) => (
-                <div 
+                <div
                   key={idx}
-                  className={`flex items-start gap-2 ${
-                    log.type === 'error' ? 'text-red-600' : 
-                    log.type === 'success' ? 'text-green-600' : 
-                    log.type === 'warning' ? 'text-yellow-600' : 'text-muted-foreground'
-                  }`}
+                  className={`flex items-start gap-2 ${log.type === 'error' ? 'text-red-600' :
+                      log.type === 'success' ? 'text-green-600' :
+                        log.type === 'warning' ? 'text-yellow-600' : 'text-muted-foreground'
+                    }`}
                 >
                   <span className="text-muted-foreground">
                     {log.timestamp.toLocaleTimeString()}
@@ -324,9 +201,9 @@ export default function StepImport({ state, updateState, onBack, onComplete }) {
       {/* Navigation - only show after import starts or completes */}
       {confirmed && (
         <div className="flex justify-between pt-4">
-          <Button 
-            variant="outline" 
-            onClick={onBack} 
+          <Button
+            variant="outline"
+            onClick={onBack}
             disabled={isImporting}
             className="gap-2"
           >
@@ -335,28 +212,28 @@ export default function StepImport({ state, updateState, onBack, onComplete }) {
           </Button>
           <div className="flex gap-2">
             {results && results.failed > 0 && (
-               <Button 
-                 variant="outline" 
-                 onClick={() => {
-                   // Retry only rows that previously failed
-                   const statuses = state.importRowStatuses || [];
-                   const failedCount = statuses.filter(s => s === 'failed').length || results.failed;
-                   if (!failedCount) {
-                     toast.info('No failed records to retry.');
-                     return;
-                   }
-                   toast.info(`Retrying ${failedCount} failed records...`);
-                   startImport(true);
-                 }}
-                 className="gap-2"
-               >
-                 <RefreshCw className="h-4 w-4" />
-                 Retry Import
-               </Button>
-             )}
+              <Button
+                variant="outline"
+                onClick={() => {
+                  // Retry only rows that previously failed
+                  const statuses = state.importRowStatuses || [];
+                  const failedCount = statuses.filter(s => s === 'failed').length || results.failed;
+                  if (!failedCount) {
+                    toast.info('No failed records to retry.');
+                    return;
+                  }
+                  toast.info(`Retrying ${failedCount} failed records...`);
+                  startImport(true);
+                }}
+                className="gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Retry Import
+              </Button>
+            )}
 
             {results && (
-              <Button 
+              <Button
                 onClick={() => onComplete?.(results)}
                 disabled={isImporting}
                 className="gap-2"

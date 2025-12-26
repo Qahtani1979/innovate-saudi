@@ -58,7 +58,7 @@ export default function ProgramApplicationScreening({ program, onClose }) {
     }));
 
     try {
-      await updateApplicationBatch(updates);
+      await updateApplicationBatch.mutateAsync(updates);
       onClose();
     } catch (error) {
       // toast is handled by hook

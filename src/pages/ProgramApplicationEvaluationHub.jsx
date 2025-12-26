@@ -26,7 +26,7 @@ function ProgramApplicationEvaluationHub() {
 
   const handleDecision = async (appId, decision) => {
     try {
-      await updateApplicationBatch([
+      await updateApplicationBatch.mutateAsync([
         { id: appId, data: { status: decision, evaluation_date: new Date().toISOString() } }
       ]);
     } catch (error) {

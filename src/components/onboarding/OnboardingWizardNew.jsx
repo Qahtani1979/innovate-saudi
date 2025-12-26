@@ -1,14 +1,13 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation } from '@tanstack/react-query';
+import { useOnboardingMutations } from '@/hooks/useOnboardingMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { 
-  Sparkles, Building2, CheckCircle, 
-  ArrowRight, ArrowLeft, Shield, Microscope, Lightbulb, Users, Target 
+import {
+  Sparkles, Building2, CheckCircle,
+  ArrowRight, ArrowLeft, Shield, Microscope, Lightbulb, Users, Target
 } from 'lucide-react';
 import {
   Select,
@@ -35,7 +34,7 @@ export default function OnboardingWizardNew({ user, onComplete }) {
   // AI-powered role suggestion based on profile
   const suggestRoles = (data) => {
     const suggestions = [];
-    
+
     if (data.organization_type === 'municipality') {
       suggestions.push('Municipality Innovation Officer', 'Municipality Director');
     } else if (data.organization_type === 'startup') {
@@ -47,7 +46,7 @@ export default function OnboardingWizardNew({ user, onComplete }) {
     } else if (data.organization_type === 'agency') {
       suggestions.push('Government Agency Lead');
     }
-    
+
     return suggestions;
   };
 
@@ -102,26 +101,7 @@ export default function OnboardingWizardNew({ user, onComplete }) {
     }
   ];
 
-  const updateProfileMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({
-          organization_type: data.organization_type,
-          organization_name: data.organization_name,
-          sector: data.sector,
-          city: data.city,
-          job_title: data.job_title,
-          onboarding_completed: true
-        })
-        .eq('user_id', user?.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success(t({ en: 'Profile updated successfully!', ar: 'تم تحديث الملف بنجاح!' }));
-      onComplete?.();
-    }
-  });
+  const { upsertProfile } = useOnboardingMutations();
 
   const handleNext = () => {
     if (step === 2) {
@@ -131,17 +111,31 @@ export default function OnboardingWizardNew({ user, onComplete }) {
     setStep(step + 1);
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     const selectedPersona = personas.find(p => p.id === formData.selected_persona);
-    updateProfileMutation.mutate({
-      organization_type: formData.organization_type,
-      organization_name: formData.organization_name,
-      sector: formData.sector,
-      city: formData.city,
-      job_title: formData.job_title,
-      suggested_roles: selectedPersona?.roles || [],
-      onboarding_completed: true
-    });
+    try {
+      await upsertProfile.mutateAsync({
+        table: 'user_profiles',
+        data: {
+          user_id: user?.id,
+          organization_type: formData.organization_type,
+          organization_name: formData.organization_name,
+          sector: formData.sector,
+          city: formData.city,
+          job_title: formData.job_title,
+          onboarding_completed: true,
+          // Storing suggested roles in metadata if needed, or just relying on subsequent role assignment logic
+          metadata: {
+            suggested_roles: selectedPersona?.roles || []
+          }
+        }
+      });
+      toast.success(t({ en: 'Profile updated successfully!', ar: 'تم تحديث الملف بنجاح!' }));
+      onComplete?.();
+    } catch (error) {
+      console.error('Profile update failed:', error);
+      toast.error(t({ en: 'Failed to update profile', ar: 'فشل تحديث الملف' }));
+    }
   };
 
   return (
@@ -149,7 +143,7 @@ export default function OnboardingWizardNew({ user, onComplete }) {
       <Card className="w-full max-w-4xl shadow-2xl">
         {/* Progress Bar */}
         <div className="h-2 bg-slate-200 rounded-t-lg">
-          <div 
+          <div
             className="h-full bg-gradient-to-r from-blue-600 to-purple-600 transition-all duration-500 rounded-t-lg"
             style={{ width: `${(step / 4) * 100}%` }}
           />
@@ -174,7 +168,7 @@ export default function OnboardingWizardNew({ user, onComplete }) {
           {step === 1 && (
             <div className="space-y-6 text-center py-8">
               <p className="text-lg text-slate-600">
-                {t({ 
+                {t({
                   en: 'The National Municipal Innovation Platform connecting challenges, solutions, and partnerships across Saudi Arabia.',
                   ar: 'المنصة الوطنية للابتكار البلدي التي تربط التحديات والحلول والشراكات في جميع أنحاء المملكة العربية السعودية.'
                 })}
@@ -222,7 +216,7 @@ export default function OnboardingWizardNew({ user, onComplete }) {
                 <label className="text-sm font-medium mb-2 block">
                   {t({ en: 'Organization Name', ar: 'اسم المنظمة' })}
                 </label>
-                <Input 
+                <Input
                   value={formData.organization_name}
                   onChange={(e) => setFormData({ ...formData, organization_name: e.target.value })}
                   placeholder={t({ en: 'Enter organization name...', ar: 'أدخل اسم المنظمة...' })}
@@ -234,7 +228,7 @@ export default function OnboardingWizardNew({ user, onComplete }) {
                   <label className="text-sm font-medium mb-2 block">
                     {t({ en: 'City', ar: 'المدينة' })}
                   </label>
-                  <Input 
+                  <Input
                     value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                     placeholder={t({ en: 'e.g., Riyadh', ar: 'مثال: الرياض' })}
@@ -262,7 +256,7 @@ export default function OnboardingWizardNew({ user, onComplete }) {
                 <label className="text-sm font-medium mb-2 block">
                   {t({ en: 'Job Title', ar: 'المسمى الوظيفي' })}
                 </label>
-                <Input 
+                <Input
                   value={formData.job_title}
                   onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
                   placeholder={t({ en: 'Your position...', ar: 'منصبك...' })}
@@ -282,7 +276,7 @@ export default function OnboardingWizardNew({ user, onComplete }) {
                       {t({ en: 'AI Recommendation', ar: 'توصية الذكاء الاصطناعي' })}
                     </p>
                     <p className="text-xs text-blue-700 mt-1">
-                      {t({ 
+                      {t({
                         en: `Based on your profile, we suggest: ${formData.suggested_roles.join(', ')}`,
                         ar: `بناءً على ملفك الشخصي، نقترح: ${formData.suggested_roles.join('، ')}`
                       })}
@@ -301,11 +295,10 @@ export default function OnboardingWizardNew({ user, onComplete }) {
                     <button
                       key={persona.id}
                       onClick={() => setFormData({ ...formData, selected_persona: persona.id })}
-                      className={`p-4 rounded-xl border-2 transition-all text-left ${
-                        isSelected 
-                          ? `border-${persona.color}-500 bg-${persona.color}-50` 
+                      className={`p-4 rounded-xl border-2 transition-all text-left ${isSelected
+                          ? `border-${persona.color}-500 bg-${persona.color}-50`
                           : 'border-slate-200 hover:border-slate-300'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <Icon className={`h-8 w-8 text-${persona.color}-600`} />
@@ -337,7 +330,7 @@ export default function OnboardingWizardNew({ user, onComplete }) {
                   {t({ en: 'Welcome aboard!', ar: 'مرحباً بك!' })}
                 </h3>
                 <p className="text-slate-600">
-                  {t({ 
+                  {t({
                     en: "Your profile has been set up. You can now access your personalized dashboard.",
                     ar: 'تم إعداد ملفك الشخصي. يمكنك الآن الوصول إلى لوحة التحكم المخصصة لك.'
                   })}
@@ -363,7 +356,7 @@ export default function OnboardingWizardNew({ user, onComplete }) {
               </Button>
             )}
             {step < 3 && (
-              <Button 
+              <Button
                 onClick={handleNext}
                 disabled={step === 2 && !formData.organization_type}
                 className="ml-auto"
@@ -373,7 +366,7 @@ export default function OnboardingWizardNew({ user, onComplete }) {
               </Button>
             )}
             {step === 3 && (
-              <Button 
+              <Button
                 onClick={handleNext}
                 disabled={!formData.selected_persona}
                 className="ml-auto"
@@ -383,9 +376,9 @@ export default function OnboardingWizardNew({ user, onComplete }) {
               </Button>
             )}
             {step === 4 && (
-              <Button 
+              <Button
                 onClick={handleComplete}
-                disabled={updateProfileMutation.isPending}
+                disabled={upsertProfile.isPending}
                 className="mx-auto"
               >
                 {t({ en: 'Go to Dashboard', ar: 'الذهاب للوحة التحكم' })}

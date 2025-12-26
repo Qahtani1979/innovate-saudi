@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +10,7 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { buildPartnerDiscoveryPrompt, partnerDiscoverySchema, PARTNER_DISCOVERY_SYSTEM_PROMPT } from '@/lib/ai/prompts/partnerships';
 import { getSystemPrompt } from '@/lib/saudiContext';
+import { useOrganizations } from '@/hooks/useOrganizations';
 
 export default function AIPartnerDiscovery({ challengeId, sector, keywords }) {
   const { language, t } = useLanguage();
@@ -19,21 +18,11 @@ export default function AIPartnerDiscovery({ challengeId, sector, keywords }) {
   const [partners, setPartners] = useState(null);
   const [requirements, setRequirements] = useState('');
 
-  const { data: organizations = [] } = useQuery({
-    queryKey: ['organizations'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('organizations')
-        .select('*');
-      if (error) throw error;
-      return data || [];
-    },
-    initialData: []
-  });
+  const { data: organizations = [] } = useOrganizations();
 
   const discoverPartners = async () => {
     if (!isAvailable) return;
-    
+
     const response = await invokeAI({
       prompt: buildPartnerDiscoveryPrompt(sector, keywords, requirements, organizations),
       systemPrompt: getSystemPrompt(PARTNER_DISCOVERY_SYSTEM_PROMPT),

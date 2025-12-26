@@ -1,5 +1,4 @@
 import React from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { useSandboxes } from '@/hooks/useSandboxes';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +16,7 @@ import { useAuth } from '@/lib/AuthContext';
 
 function SandboxParticipantDashboard() {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
+
   const { user } = useAuth();
   const [selectedProject, setSelectedProject] = React.useState(null);
   const [dataSubmission, setDataSubmission] = React.useState({ metric: '', value: '', notes: '' });

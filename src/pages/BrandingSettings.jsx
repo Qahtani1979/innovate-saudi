@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { usePlatformConfig } from '@/hooks/usePlatformConfig';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,28 +15,9 @@ import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function BrandingSettings() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const { invoke: invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo } = usePrompt(null);
-  
-  // Fetch branding config from database
-  const { data: brandingConfig } = useQuery({
-    queryKey: ['platform-branding-config'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('platform_configs')
-        .select('*')
-        .eq('category', 'branding');
-      if (error) throw error;
-      
-      // Convert array to object keyed by config_key
-      const configObj = {};
-      (data || []).forEach(item => {
-        configObj[item.config_key] = item.config_value;
-      });
-      return configObj;
-    }
-  });
-  
+  const { configAsObject: brandingConfig, saveBatchConfig } = usePlatformConfig('branding');
+
   const [branding, setBranding] = useState({
     platform_name_en: 'Saudi Innovates',
     platform_name_ar: 'الابتكار السعودي',
@@ -50,7 +30,7 @@ function BrandingSettings() {
     accent_color: '#8B5CF6',
     font_family: 'Inter'
   });
-  
+
   // Load config from database when available
   useEffect(() => {
     if (brandingConfig) {
@@ -69,31 +49,19 @@ function BrandingSettings() {
       }));
     }
   }, [brandingConfig]);
-  
+
   // Save branding mutation
-  const saveMutation = useMutation({
-    mutationFn: async (brandingData) => {
-      // Upsert each config item
-      for (const [key, value] of Object.entries(brandingData)) {
-        await supabase
-          .from('platform_configs')
-          .upsert({
-            config_key: key,
-            config_value: value,
-            category: 'branding',
-            is_active: true,
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'config_key' });
+  // Save branding mutation
+  const handleSave = () => {
+    saveBatchConfig.mutate(branding, {
+      onSuccess: () => {
+        toast.success(t({ en: 'Branding settings saved', ar: 'تم حفظ إعدادات العلامة التجارية' }));
+      },
+      onError: () => {
+        toast.error(t({ en: 'Failed to save branding settings', ar: 'فشل في حفظ إعدادات العلامة التجارية' }));
       }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['platform-branding-config']);
-      toast.success(t({ en: 'Branding settings saved', ar: 'تم حفظ إعدادات العلامة التجارية' }));
-    },
-    onError: () => {
-      toast.error(t({ en: 'Failed to save branding settings', ar: 'فشل في حفظ إعدادات العلامة التجارية' }));
-    }
-  });
+    });
+  };
 
   const handleAIOptimize = async () => {
     const promptConfig = BRANDING_OPTIMIZATION_PROMPT_TEMPLATE({
@@ -148,19 +116,19 @@ function BrandingSettings() {
           <CardContent className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-2 block">{t({ en: 'Platform Name (English)', ar: 'اسم المنصة (إنجليزي)' })}</label>
-              <Input value={branding.platform_name_en} onChange={(e) => setBranding({...branding, platform_name_en: e.target.value})} />
+              <Input value={branding.platform_name_en} onChange={(e) => setBranding({ ...branding, platform_name_en: e.target.value })} />
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">{t({ en: 'Platform Name (Arabic)', ar: 'اسم المنصة (عربي)' })}</label>
-              <Input value={branding.platform_name_ar} onChange={(e) => setBranding({...branding, platform_name_ar: e.target.value})} />
+              <Input value={branding.platform_name_ar} onChange={(e) => setBranding({ ...branding, platform_name_ar: e.target.value })} />
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">{t({ en: 'Tagline (English)', ar: 'الشعار (إنجليزي)' })}</label>
-              <Input value={branding.tagline_en} onChange={(e) => setBranding({...branding, tagline_en: e.target.value})} />
+              <Input value={branding.tagline_en} onChange={(e) => setBranding({ ...branding, tagline_en: e.target.value })} />
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">{t({ en: 'Tagline (Arabic)', ar: 'الشعار (عربي)' })}</label>
-              <Input value={branding.tagline_ar} onChange={(e) => setBranding({...branding, tagline_ar: e.target.value})} />
+              <Input value={branding.tagline_ar} onChange={(e) => setBranding({ ...branding, tagline_ar: e.target.value })} />
             </div>
           </CardContent>
         </Card>
@@ -172,8 +140,8 @@ function BrandingSettings() {
           <CardContent className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-2 block">{t({ en: 'Main Logo', ar: 'الشعار الرئيسي' })}</label>
-              <FileUploader 
-                onUpload={(url) => setBranding({...branding, logo_url: url})}
+              <FileUploader
+                onUpload={(url) => setBranding({ ...branding, logo_url: url })}
                 accept="image/*"
               />
               {branding.logo_url && (
@@ -182,8 +150,8 @@ function BrandingSettings() {
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">{t({ en: 'Favicon', ar: 'أيقونة المتصفح' })}</label>
-              <FileUploader 
-                onUpload={(url) => setBranding({...branding, favicon_url: url})}
+              <FileUploader
+                onUpload={(url) => setBranding({ ...branding, favicon_url: url })}
                 accept="image/*"
               />
             </div>
@@ -200,34 +168,34 @@ function BrandingSettings() {
             <div>
               <label className="text-sm font-medium mb-2 block">{t({ en: 'Primary Color', ar: 'اللون الأساسي' })}</label>
               <div className="flex gap-2">
-                <Input type="color" value={branding.primary_color} onChange={(e) => setBranding({...branding, primary_color: e.target.value})} className="w-20 h-10" />
-                <Input value={branding.primary_color} onChange={(e) => setBranding({...branding, primary_color: e.target.value})} />
+                <Input type="color" value={branding.primary_color} onChange={(e) => setBranding({ ...branding, primary_color: e.target.value })} className="w-20 h-10" />
+                <Input value={branding.primary_color} onChange={(e) => setBranding({ ...branding, primary_color: e.target.value })} />
               </div>
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">{t({ en: 'Secondary Color', ar: 'اللون الثانوي' })}</label>
               <div className="flex gap-2">
-                <Input type="color" value={branding.secondary_color} onChange={(e) => setBranding({...branding, secondary_color: e.target.value})} className="w-20 h-10" />
-                <Input value={branding.secondary_color} onChange={(e) => setBranding({...branding, secondary_color: e.target.value})} />
+                <Input type="color" value={branding.secondary_color} onChange={(e) => setBranding({ ...branding, secondary_color: e.target.value })} className="w-20 h-10" />
+                <Input value={branding.secondary_color} onChange={(e) => setBranding({ ...branding, secondary_color: e.target.value })} />
               </div>
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">{t({ en: 'Accent Color', ar: 'لون التمييز' })}</label>
               <div className="flex gap-2">
-                <Input type="color" value={branding.accent_color} onChange={(e) => setBranding({...branding, accent_color: e.target.value})} className="w-20 h-10" />
-                <Input value={branding.accent_color} onChange={(e) => setBranding({...branding, accent_color: e.target.value})} />
+                <Input type="color" value={branding.accent_color} onChange={(e) => setBranding({ ...branding, accent_color: e.target.value })} className="w-20 h-10" />
+                <Input value={branding.accent_color} onChange={(e) => setBranding({ ...branding, accent_color: e.target.value })} />
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <Button 
-        className="w-full bg-purple-600 text-lg py-6" 
-        onClick={() => saveMutation.mutate(branding)}
-        disabled={saveMutation.isPending}
+      <Button
+        className="w-full bg-purple-600 text-lg py-6"
+        onClick={handleSave}
+        disabled={saveBatchConfig.isPending}
       >
-        {saveMutation.isPending ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Save className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />}
+        {saveBatchConfig.isPending ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Save className={`h-5 w-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />}
         {t({ en: 'Save Branding Settings', ar: 'حفظ إعدادات العلامة التجارية' })}
       </Button>
     </PageLayout>

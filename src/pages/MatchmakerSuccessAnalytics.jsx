@@ -1,40 +1,11 @@
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { useLanguage } from '../components/LanguageContext';
-import { TrendingUp, Users, Award, Handshake, CheckCircle2 } from 'lucide-react';
-import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useMatchmakerApplications } from '@/hooks/useMatchmakerApplications';
+import { useOrganizationPartnerships } from '@/hooks/useOrganizationPartnerships';
 
 function MatchmakerSuccessAnalytics() {
   const { t, isRTL } = useLanguage();
 
-  const { data: applications = [] } = useQuery({
-    queryKey: ['matchmaker-apps-analytics'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('matchmaker_applications')
-        .select('*');
-
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: partnerships = [] } = useQuery({
-    queryKey: ['partnerships-analytics'],
-    queryFn: async () => {
-      // Assuming organization_partnerships table exists, otherwise return empty
-      const { data, error } = await supabase
-        .from('organization_partnerships')
-        .select('*');
-
-      if (error) return []; // Graceful fallback
-      return data;
-    }
-  });
+  const { data: applications = [] } = useMatchmakerApplications();
+  const { partnerships = [] } = useOrganizationPartnerships();
 
   const stats = {
     total: applications.length,

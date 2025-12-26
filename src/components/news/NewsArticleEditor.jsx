@@ -9,8 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '@/components/LanguageContext';
 import { Newspaper, Save, Send, X, Sparkles, Loader2 } from 'lucide-react';
-import { useNewsArticleMutations } from '@/hooks/useNewsArticles';
-import { supabase } from '@/integrations/supabase/client';
+import { useNewsArticleMutations, useNewsAI } from '@/hooks/useNewsArticles';
 import { toast } from 'sonner';
 
 const CATEGORIES = [
@@ -25,8 +24,9 @@ const CATEGORIES = [
 export default function NewsArticleEditor({ article, onClose, onSave }) {
   const { language, t } = useLanguage();
   const { createArticle, updateArticle, publishArticle } = useNewsArticleMutations();
+  const { generateContent } = useNewsAI();
   const [isTranslating, setIsTranslating] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     title_en: '',
     title_ar: '',
@@ -75,32 +75,30 @@ export default function NewsArticleEditor({ article, onClose, onSave }) {
 
     setIsTranslating(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-content-generator', {
-        body: {
-          task: 'translate',
-          content: {
-            title: formData.title_en,
-            summary: formData.summary_en,
-            content: formData.content_en
-          },
-          targetLanguage: 'ar'
-        }
+      const contentToProcess = {
+        title: formData.title_en,
+        content: formData.content_en,
+        summary: formData.summary_en
+      };
+
+      const result = await generateContent.mutateAsync({
+        task: 'translate',
+        content: contentToProcess,
+        targetLanguage: 'ar'
       });
 
-      if (error) throw error;
-
-      if (data?.translation) {
+      if (result?.translation) {
         setFormData(prev => ({
           ...prev,
-          title_ar: data.translation.title || prev.title_ar,
-          summary_ar: data.translation.summary || prev.summary_ar,
-          content_ar: data.translation.content || prev.content_ar
+          title_ar: result.translation.title || prev.title_ar,
+          summary_ar: result.translation.summary || prev.summary_ar,
+          content_ar: result.translation.content || prev.content_ar
         }));
         toast.success(t({ en: 'Translation completed', ar: 'تمت الترجمة' }));
       }
     } catch (error) {
       console.error('Translation error:', error);
-      toast.error(t({ en: 'Translation failed', ar: 'فشلت الترجمة' }));
+      // Toast handled by hook
     } finally {
       setIsTranslating(false);
     }
@@ -136,7 +134,7 @@ export default function NewsArticleEditor({ article, onClose, onSave }) {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Newspaper className="h-5 w-5 text-primary" />
-            {article?.id 
+            {article?.id
               ? t({ en: 'Edit Article', ar: 'تعديل المقال' })
               : t({ en: 'Create Article', ar: 'إنشاء مقال' })
             }

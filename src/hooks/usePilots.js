@@ -128,9 +128,9 @@ export function useIterationPilots() {
 /**
  * Hook to fetch a list of pilots with optional filters
  */
-export function usePilotsList({ stage, sector, recommendation } = {}) {
+export function usePilotsList({ stage, sector, recommendation, searchCode, excludeId, createdBy } = {}) {
     return useQuery({
-        queryKey: ['pilots-list', { stage, sector, recommendation }],
+        queryKey: ['pilots-list', { stage, sector, recommendation, searchCode, excludeId, createdBy }],
         queryFn: async () => {
             let query = supabase.from('pilots').select('*').eq('is_deleted', false);
 
@@ -148,6 +148,18 @@ export function usePilotsList({ stage, sector, recommendation } = {}) {
 
             if (recommendation) {
                 query = query.eq('recommendation', recommendation);
+            }
+
+            if (searchCode) {
+                query = query.ilike('code', `%${searchCode}%`);
+            }
+
+            if (excludeId) {
+                query = query.neq('id', excludeId);
+            }
+
+            if (createdBy) {
+                query = query.eq('created_by', createdBy);
             }
 
             const { data, error } = await query;

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+
 import { useDataImportExport } from '@/hooks/useDataImportExport';
 import { useLocations } from '@/hooks/useLocations';
 import { useSectors } from '@/hooks/useSectors';
@@ -26,7 +26,7 @@ import ProtectedPage from '@/components/permissions/ProtectedPage';
 
 function ImportExportHub() {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
+
   const [activeTab, setActiveTab] = useState('ai-uploader'); // Intentionally keeping 'ai-uploader' as default/first tab concept if needed, or 'export'
 
   // Hooks
@@ -184,10 +184,6 @@ function ImportExportHub() {
     <PageLayout>
       <PageHeader
         title={t({ en: "Import/Export Hub", ar: "مركز الاستيراد والتصدير" })}
-        breadcrumbItems={[
-          { label: t({ en: "Admin", ar: "الإدارة" }), href: "/admin" },
-          { label: t({ en: "Data Management", ar: "إدارة البيانات" }) }
-        ]}
       />
 
       <Tabs defaultValue="export" className="w-full">
@@ -440,12 +436,12 @@ function ImportExportHub() {
                             <div>
                               <p className="font-medium capitalize text-sm">{log.entity_type}</p>
                               <p className="text-xs text-muted-foreground">
-                                {new Date(log.created_at).toLocaleString()} • {log.metadata?.count || 0} records
+                                {new Date(log.created_at).toLocaleString()} • {/** @type {any} */(log.metadata)?.count || 0} records
                               </p>
                             </div>
                           </div>
                           <Badge variant="outline">
-                            {log.metadata?.format?.toUpperCase() || 'CSV'}
+                            {/** @type {any} */(log.metadata)?.format?.toUpperCase() || 'CSV'}
                           </Badge>
                         </div>
                       ))}
@@ -480,12 +476,12 @@ function ImportExportHub() {
                             <div>
                               <p className="font-medium capitalize text-sm">{log.entity_type}</p>
                               <p className="text-xs text-muted-foreground">
-                                {new Date(log.created_at).toLocaleString()} • {log.metadata?.count || 0} records
+                                {new Date(log.created_at).toLocaleString()} • {/** @type {any} */(log.metadata)?.count || 0} records
                               </p>
                             </div>
                           </div>
-                          <Badge variant={log.metadata?.method === 'ai' ? 'default' : 'secondary'}>
-                            {log.metadata?.method === 'ai' ? 'AI' : 'Direct'}
+                          <Badge variant={/** @type {any} */(log.metadata)?.method === 'ai' ? 'default' : 'secondary'}>
+                            {/** @type {any} */(log.metadata)?.method === 'ai' ? 'AI' : 'Direct'}
                           </Badge>
                         </div>
                       ))}

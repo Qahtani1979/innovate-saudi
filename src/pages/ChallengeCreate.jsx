@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,7 @@ function ChallengeCreatePage() {
   const { hasPermission } = usePermissions();
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+
   const { triggerEmail } = useEmailTrigger();
 
   const { invokeAI, status: aiStatus, isLoading: isAIProcessing, isAvailable, rateLimitInfo } = useAIWithFallback();

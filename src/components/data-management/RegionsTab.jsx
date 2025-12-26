@@ -9,33 +9,26 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Target, TrendingUp } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { EntityTable } from './EntityTable';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useStrategicPlans } from '@/hooks/useStrategicPlans';
 export function RegionsTab({ regions, onEdit, onDelete, onAdd }) {
   const { t, language } = useLanguage();
   const [showStrategicPriorities, setShowStrategicPriorities] = useState(false);
 
   // Fetch strategic plans to show regional alignment
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans-regions'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('strategic_plans').select('*');
-      if (error) throw error;
-      return data || [];
-    },
+  const { data: strategicPlans = [] } = useStrategicPlans({
     enabled: showStrategicPriorities
   });
 
   // Calculate strategic coverage by region
   const getRegionStrategicCoverage = (regionId) => {
     if (!strategicPlans.length) return null;
-    
+
     // Find plans that target this region
-    const targetingPlans = strategicPlans.filter(plan => 
-      plan.target_regions?.includes(regionId) || 
+    const targetingPlans = strategicPlans.filter(plan =>
+      plan.target_regions?.includes(regionId) ||
       plan.scope === 'national'
     );
-    
+
     return {
       totalPlans: targetingPlans.length,
       activePlans: targetingPlans.filter(p => p.status === 'approved' || p.status === 'active').length
@@ -46,8 +39,8 @@ export function RegionsTab({ regions, onEdit, onDelete, onAdd }) {
     { key: 'code', label: { en: 'Code', ar: 'الرمز' } },
     { key: 'name_en', label: { en: 'Name (EN)', ar: 'الاسم (EN)' } },
     { key: 'name_ar', label: { en: 'Name (AR)', ar: 'الاسم (AR)' } },
-    { 
-      key: 'population', 
+    {
+      key: 'population',
       label: { en: 'Population', ar: 'السكان' },
       render: (item) => item.population ? `${(item.population / 1000000).toFixed(1)}M` : '-'
     },
@@ -97,16 +90,16 @@ export function RegionsTab({ regions, onEdit, onDelete, onAdd }) {
                   {t({ en: 'Regional Strategic Alignment View', ar: 'عرض التوافق الاستراتيجي الإقليمي' })}
                 </p>
                 <p>
-                  {t({ 
-                    en: 'Shows how many strategic plans target each region. Use this to identify gaps in regional coverage.', 
-                    ar: 'يوضح عدد الخطط الاستراتيجية التي تستهدف كل منطقة. استخدم هذا لتحديد فجوات التغطية الإقليمية.' 
+                  {t({
+                    en: 'Shows how many strategic plans target each region. Use this to identify gaps in regional coverage.',
+                    ar: 'يوضح عدد الخطط الاستراتيجية التي تستهدف كل منطقة. استخدم هذا لتحديد فجوات التغطية الإقليمية.'
                   })}
                 </p>
               </div>
             </div>
           </div>
         )}
-        
+
         <EntityTable
           data={regions}
           entity="Region"
@@ -114,6 +107,7 @@ export function RegionsTab({ regions, onEdit, onDelete, onAdd }) {
           onEdit={onEdit}
           onDelete={onDelete}
           onAdd={() => onAdd('Region')}
+          filters={[]}
         />
       </CardContent>
     </Card>

@@ -1,5 +1,4 @@
 
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -8,18 +7,12 @@ import { createPageUrl } from '../../utils';
 import {
   TrendingUp, DollarSign, MapPin, Clock
 } from 'lucide-react';
+import { useScalingPlans } from '@/hooks/useScalingPlans';
 
 export default function ProviderScalingCommercial({ solutionId }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: scalingPlans = [] } = useQuery({
-    queryKey: ['scaling-for-solution', solutionId],
-    queryFn: async () => {
-      const all = await base44.entities.ScalingPlan.list();
-      return all.filter(s => s.validated_solution_id === solutionId);
-    },
-    enabled: !!solutionId
-  });
+  const { data: scalingPlans = [] } = useScalingPlans({ solutionId });
 
   if (scalingPlans.length === 0) {
     return (
@@ -86,8 +79,8 @@ export default function ProviderScalingCommercial({ solutionId }) {
                       </h4>
                       <Badge className={
                         plan.status === 'active' ? 'bg-green-600' :
-                        plan.status === 'completed' ? 'bg-blue-600' :
-                        'bg-slate-600'
+                          plan.status === 'completed' ? 'bg-blue-600' :
+                            'bg-slate-600'
                       } size="sm">{plan.status}</Badge>
                     </div>
                   </div>

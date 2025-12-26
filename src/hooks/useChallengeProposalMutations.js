@@ -42,7 +42,30 @@ export function useChallengeProposalMutations() {
         }
     });
 
+    const reviewProposal = useMutation({
+        mutationFn: async ({ proposalId, status, notes, reviewerEmail }) => {
+            const { error } = await supabase
+                .from('challenge_proposals')
+                .update({
+                    status,
+                    review_notes: notes,
+                    reviewer_email: reviewerEmail,
+                    review_date: new Date().toISOString()
+                })
+                .eq('id', proposalId);
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['challenge-proposals'] });
+            toast.success('Proposal reviewed successfully');
+        },
+        onError: (error) => {
+            toast.error(`Error: ${error.message}`);
+        }
+    });
+
     return {
-        respondToProposal
+        respondToProposal,
+        reviewProposal
     };
 }

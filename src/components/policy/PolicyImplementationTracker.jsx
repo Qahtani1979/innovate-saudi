@@ -1,12 +1,12 @@
-
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
-import { 
-  CheckCircle, 
+import {
+  CheckCircle,
   Building2,
   MapPin,
   Calendar,
@@ -15,14 +15,25 @@ import {
   AlertCircle
 } from 'lucide-react';
 
+import { useMunicipalities } from '@/hooks/useMunicipalities';
+import { usePolicyMutations } from '@/hooks/usePolicyMutations';
+
 export default function PolicyImplementationTracker({ policy }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  const { data: municipalities = [] } = useMunicipalities();
+  const { submitLegalReview } = usePolicyMutations();
 
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities'],
-    queryFn: () => base44.entities.Municipality.list()
+  const [reviewData, setReviewData] = useState({
+    status: 'pending',
+    checklist: [
+      { item: t({ en: 'Legal citations verified', ar: 'الاستشهادات القانونية تم التحقق منها' }), checked: false },
+      { item: t({ en: 'Compliance check passed', ar: 'فحص الامتثال ناجح' }), checked: false },
+      { item: t({ en: 'Risk assessment completed', ar: 'اكتمل تقييم المخاطر' }), checked: false }
+    ],
+    comments: ''
   });
+
+  const hasReview = policy.legal_review?.status;
 
   const implementation = policy.implementation_progress || {
     overall_percentage: 0,
@@ -31,11 +42,11 @@ export default function PolicyImplementationTracker({ policy }) {
     milestones: []
   };
 
-  const adoptedMunicipalities = municipalities.filter(m => 
+  const adoptedMunicipalities = municipalities.filter(m =>
     implementation.municipalities_adopted?.includes(m.id)
   );
 
-  const adoptionRate = municipalities.length > 0 
+  const adoptionRate = municipalities.length > 0
     ? Math.round((adoptedMunicipalities.length / municipalities.length) * 100)
     : 0;
 
@@ -75,7 +86,7 @@ export default function PolicyImplementationTracker({ policy }) {
             </Badge>
           </div>
           <Progress value={adoptionRate} className="h-2" />
-          
+
           {adoptedMunicipalities.length > 0 && (
             <div className="p-3 bg-green-50 rounded-lg">
               <p className="text-xs font-semibold text-green-900 mb-2">
@@ -84,10 +95,10 @@ export default function PolicyImplementationTracker({ policy }) {
               <div className="flex flex-wrap gap-2">
                 {adoptedMunicipalities.map(m => (
                   <Badge key={m.id} variant="outline" className="text-xs">
-                   <MapPin className="h-3 w-3 mr-1" />
-                   <span dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                     {language === 'ar' && m.name_ar ? m.name_ar : m.name_en}
-                   </span>
+                    <MapPin className="h-3 w-3 mr-1" />
+                    <span dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                      {language === 'ar' && m.name_ar ? m.name_ar : m.name_en}
+                    </span>
                   </Badge>
                 ))}
               </div>
@@ -109,7 +120,7 @@ export default function PolicyImplementationTracker({ policy }) {
                   delayed: { icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-50' },
                   pending: { icon: Clock, color: 'text-slate-400', bg: 'bg-slate-50' }
                 };
-                
+
                 const config = statusConfig[milestone.status] || statusConfig.pending;
                 const Icon = config.icon;
 
@@ -119,7 +130,7 @@ export default function PolicyImplementationTracker({ policy }) {
                       <div className="flex items-center gap-2">
                         <Icon className={`h-4 w-4 ${config.color}`} />
                         <p className="text-sm font-medium text-slate-900" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                         {language === 'ar' && milestone.name_ar ? milestone.name_ar : milestone.name_en}
+                          {language === 'ar' && milestone.name_ar ? milestone.name_ar : milestone.name_en}
                         </p>
                       </div>
                       <Badge variant="outline" className="text-xs">
@@ -155,7 +166,7 @@ export default function PolicyImplementationTracker({ policy }) {
             <p className="text-sm font-semibold text-blue-900">
               {t({ en: 'Legal Review Required', ar: 'مراجعة قانونية مطلوبة' })}
             </p>
-            
+
             <div className="space-y-3">
               {reviewData.checklist.map((item, i) => (
                 <div key={i} className="flex items-center gap-3">
@@ -185,10 +196,12 @@ export default function PolicyImplementationTracker({ policy }) {
             <div className="flex gap-2">
               <Button
                 onClick={() => {
-                  setReviewData({ ...reviewData, status: 'approved' });
-                  setTimeout(() => reviewMutation.mutate(), 100);
+                  submitLegalReview.mutate({
+                    id: policy.id,
+                    reviewData: { ...reviewData, status: 'approved' }
+                  });
                 }}
-                disabled={reviewMutation.isPending}
+                disabled={submitLegalReview.isPending}
                 className="flex-1 gap-2 bg-green-600"
               >
                 <CheckCircle2 className="h-4 w-4" />
@@ -196,10 +209,12 @@ export default function PolicyImplementationTracker({ policy }) {
               </Button>
               <Button
                 onClick={() => {
-                  setReviewData({ ...reviewData, status: 'requires_changes' });
-                  setTimeout(() => reviewMutation.mutate(), 100);
+                  submitLegalReview.mutate({
+                    id: policy.id,
+                    reviewData: { ...reviewData, status: 'requires_changes' }
+                  });
                 }}
-                disabled={reviewMutation.isPending}
+                disabled={submitLegalReview.isPending}
                 variant="outline"
                 className="flex-1 gap-2"
               >

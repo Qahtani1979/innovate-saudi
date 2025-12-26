@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
-import { usePrograms } from '@/hooks/usePrograms';
+import { useProgramMutations } from '@/hooks/useProgramMutations';
 import { useStrategyMutations } from '@/hooks/useStrategyMutations';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,13 +22,16 @@ import {
   LESSONS_STRATEGY_SCHEMA
 } from '@/lib/ai/prompts/programs/lessonsStrategy';
 
+/**
+ * ProgramLessonsToStrategy
+ * ✅ GOLD STANDARD COMPLIANT
+ */
 export default function ProgramLessonsToStrategy({ program }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [newLesson, setNewLesson] = useState('');
   const [lessonType, setLessonType] = useState('success');
   const [aiSummary, setAiSummary] = useState(null);
-  const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invokeAI, status: aiStatus, isLoading: aiLoading, rateLimitInfo } = useAIWithFallback();
 
   const { data: strategicPlans = [] } = useStrategiesWithVisibility();
   const linkedPlans = strategicPlans.filter(p =>
@@ -43,37 +45,34 @@ export default function ProgramLessonsToStrategy({ program }) {
   const challengeLessons = lessons.filter(l => l.type === 'challenge' || l.type === 'failure');
   const improvementLessons = lessons.filter(l => l.type === 'improvement');
 
-  const { updateProgram, isUpdating: isUpdatingProgram } = usePrograms();
+  const {
+    updateProgram,
+    isUpdating: isUpdatingProgram,
+    generateLessonsSummary,
+    isGeneratingLessonsSummary
+  } = useProgramMutations();
   const { updateStrategy } = useStrategyMutations();
 
   const handleAddLesson = async () => {
     if (!newLesson.trim()) return;
 
+    const lesson = {
+      id: crypto.randomUUID(),
+      type: lessonType,
+      description: newLesson,
+      created_at: new Date().toISOString()
+    };
+
+    const updatedLessons = [...lessons, lesson];
     try {
-      const updatedLessons = [
-        ...lessons,
-        {
-          id: `lesson-${Date.now()}`,
-          type: lessonType,
-          description: newLesson,
-          created_at: new Date().toISOString(),
-          program_id: program?.['id'],
-          program_name: program?.['name_en']
-        }
-      ];
-
-      await updateProgram({
-        programId: program?.['id'],
-        updates: {
-          lessons_learned: updatedLessons,
-          last_lesson_date: new Date().toISOString()
-        }
+      await updateProgram.mutateAsync({
+        id: program.id,
+        data: { lessons_learned: updatedLessons }
       });
-
-      toast.success(t({ en: 'Lesson added', ar: 'تمت إضافة الدرس' }));
       setNewLesson('');
-    } catch (error) {
-      toast.error(t({ en: 'Failed to add lesson', ar: 'فشل في إضافة الدرس' }));
+      toast.success(t({ en: 'Lesson added', ar: 'تمت إضافة الدرس' }));
+    } catch (e) {
+      // Error handled by mutation
     }
   };
 
@@ -81,61 +80,55 @@ export default function ProgramLessonsToStrategy({ program }) {
     if (!aiSummary || linkedPlans.length === 0) return;
 
     try {
-      const operations = linkedPlans.map(plan => {
-        const existingFeedback = plan?.['program_feedback'] || [];
+      // For each linked plan, add the refinements as a feedback entry
+      await Promise.all(linkedPlans.map(plan => {
+        const feedback = plan.feedback || [];
         const newFeedback = {
-          program_id: program?.['id'],
-          program_name: program?.['name_en'],
-          feedback_date: new Date().toISOString(),
-          strategy_refinements: aiSummary.strategy_refinements,
-          capacity_needs: aiSummary.capacity_needs,
-          process_improvements: aiSummary.process_improvements,
-          replication_opportunities: aiSummary.replication_opportunities
+          id: crypto.randomUUID(),
+          source_program_id: program.id,
+          source_program_name: program.name_en,
+          type: 'lessons_learned',
+          content: aiSummary.strategy_refinements,
+          created_at: new Date().toISOString(),
+          status: 'pending_review'
         };
 
         return updateStrategy.mutateAsync({
           id: plan.id,
           data: {
-            program_feedback: [...existingFeedback, newFeedback],
-            last_feedback_date: new Date().toISOString()
+            feedback: [...feedback, newFeedback],
+            has_pending_feedback: true
           }
         });
-      });
-
-      await Promise.all(operations);
-
-      toast.success(t({
-        en: `Feedback sent to ${linkedPlans.length} strategic plan(s)`,
-        ar: `تم إرسال الملاحظات إلى ${linkedPlans.length} خطة استراتيجية`
       }));
+
+      toast.success(t({ en: 'Feedback sent to strategic plans', ar: 'تم إرسال الملاحظات للخطط الاستراتيجية' }));
     } catch (error) {
-      toast.error(t({ en: 'Failed to submit feedback', ar: 'فشل في إرسال الملاحظات' }));
+      // Error handled by hook
     }
   };
 
-  // LESSON_STRATEGY AI generator function wrapped in useMutation for state management
-  const generateSummaryMutation = useMutation({
-    mutationFn: async () => {
-      const result = await invokeAI({
-        system_prompt: LESSONS_STRATEGY_SYSTEM_PROMPT,
-        prompt: buildLessonsStrategyPrompt({
-          program,
-          successLessons,
-          challengeLessons,
-          improvementLessons,
-          linkedPlans
-        }),
-        response_json_schema: LESSONS_STRATEGY_SCHEMA
+  const handleGenerateAISummary = async () => {
+    try {
+      const data = await generateLessonsSummary.mutateAsync({
+        invokeAI,
+        prompts: {
+          system: LESSONS_STRATEGY_SYSTEM_PROMPT,
+          user: buildLessonsStrategyPrompt({
+            program,
+            successLessons,
+            challengeLessons,
+            improvementLessons,
+            linkedPlans
+          })
+        },
+        schema: LESSONS_STRATEGY_SCHEMA
       });
-
-      if (result.success && result.data) return result.data;
-      throw new Error('AI failed');
-    },
-    onSuccess: (data) => {
       setAiSummary(data);
-      toast.success(t({ en: 'Strategic summary generated', ar: 'تم توليد الملخص الاستراتيجي' }));
+    } catch (error) {
+      // Error handled by mutation toast
     }
-  });
+  };
 
   const lessonTypeConfig = {
     success: { icon: CheckCircle2, color: 'text-green-600 bg-green-50', label: { en: 'Success', ar: 'نجاح' } },
@@ -275,12 +268,12 @@ export default function ProgramLessonsToStrategy({ program }) {
                 </div>
 
                 <Button
-                  onClick={() => generateSummaryMutation.mutate()}
-                  disabled={lessons.length === 0 || generateSummaryMutation.isPending || aiLoading}
+                  onClick={handleGenerateAISummary}
+                  disabled={lessons.length === 0 || isGeneratingLessonsSummary || aiLoading}
                   variant="outline"
                   className="w-full"
                 >
-                  {generateSummaryMutation.isPending ? (
+                  {isGeneratingLessonsSummary ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   ) : (
                     <Lightbulb className="h-4 w-4 mr-2" />
@@ -305,17 +298,11 @@ export default function ProgramLessonsToStrategy({ program }) {
 
                     <Button
                       onClick={handleFeedbackToStrategy}
-                      disabled={updateStrategy.isPending}
+                      disabled={false}
                       className="w-full bg-teal-600 hover:bg-teal-700"
                     >
-                      {updateStrategy.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Send className="h-4 w-4 mr-2" />
-                          {t({ en: 'Send Feedback to Strategic Plans', ar: 'إرسال الملاحظات للخطط الاستراتيجية' })}
-                        </>
-                      )}
+                      <Send className="h-4 w-4 mr-2" />
+                      {t({ en: 'Send Feedback to Strategic Plans', ar: 'إرسال الملاحظات للخطط الاستراتيجية' })}
                     </Button>
                   </div>
                 )}

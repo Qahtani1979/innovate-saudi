@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useMunicipalities } from '@/hooks/useMunicipalities';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -9,30 +9,19 @@ import { TrendingUp, Award, AlertCircle } from 'lucide-react';
 export default function PerformanceBenchmarking({ challenge }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: similarChallenges = [] } = useQuery({
-    queryKey: ['similar-challenges-benchmark', challenge.sector],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*')
-        .eq('sector', challenge.sector)
-        .eq('status', 'resolved')
-        .neq('id', challenge.id);
-      if (error) throw error;
-      return data || [];
-    }
+  const { data: similarResponse = [] } = useChallengesWithVisibility({
+    sectorId: challenge.sector_id,
+    status: 'resolved',
+    limit: 50
   });
 
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('municipalities').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: municipalities = [] } = useMunicipalities();
 
-  if (similarChallenges.length === 0) {
+  // @ts-ignore - Handle possible paginated response structure
+  const similarChallenges = Array.isArray(similarResponse) ? similarResponse : (similarResponse?.data || []);
+  const filteredSimilar = similarChallenges.filter(c => c.id !== challenge.id);
+
+  if (filteredSimilar.length === 0) {
     return (
       <Card>
         <CardContent className="py-8 text-center">
@@ -46,18 +35,18 @@ export default function PerformanceBenchmarking({ challenge }) {
   }
 
   // Calculate benchmarks
-  const avgResolutionTime = similarChallenges.reduce((sum, c) => {
-    if (c.created_date && c.resolution_date) {
-      const days = (new Date(c.resolution_date) - new Date(c.created_date)) / (1000 * 60 * 60 * 24);
+  const avgResolutionTime = filteredSimilar.reduce((sum, c) => {
+    if (c.created_at && c.resolution_date) {
+      const days = (new Date(c.resolution_date) - new Date(c.created_at)) / (1000 * 60 * 60 * 24);
       return sum + days;
     }
     return sum;
-  }, 0) / similarChallenges.filter(c => c.created_date && c.resolution_date).length;
+  }, 0) / (filteredSimilar.filter(c => c.created_at && c.resolution_date).length || 1);
 
-  const avgScore = similarChallenges.reduce((sum, c) => sum + (c.overall_score || 0), 0) / similarChallenges.length;
+  const avgScore = filteredSimilar.reduce((sum, c) => sum + (c.overall_score || 0), 0) / (filteredSimilar.length || 1);
 
-  const thisResolutionTime = challenge.created_date && challenge.resolution_date
-    ? (new Date(challenge.resolution_date) - new Date(challenge.created_date)) / (1000 * 60 * 60 * 24)
+  const thisResolutionTime = challenge.created_at && challenge.resolution_date
+    ? (new Date(challenge.resolution_date) - new Date(challenge.created_at)) / (1000 * 60 * 60 * 24)
     : null;
 
   const chartData = [
@@ -72,6 +61,9 @@ export default function PerformanceBenchmarking({ challenge }) {
       days: Math.round(avgResolutionTime)
     }
   ];
+
+  // @ts-ignore - chartData for Recharts
+  const finalChartData = chartData;
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -122,7 +114,7 @@ export default function PerformanceBenchmarking({ challenge }) {
           {/* Comparison Chart */}
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
+              <BarChart data={finalChartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                 <YAxis yAxisId="left" orientation="left" stroke="#3b82f6" />
@@ -141,7 +133,7 @@ export default function PerformanceBenchmarking({ challenge }) {
               {t({ en: 'Top Performing Municipalities (Same Sector)', ar: 'البلديات الأفضل أداءً (نفس القطاع)' })}
             </p>
             <div className="space-y-2">
-              {similarChallenges
+              {filteredSimilar
                 .sort((a, b) => (b.overall_score || 0) - (a.overall_score || 0))
                 .slice(0, 5)
                 .map((c, i) => {
@@ -149,9 +141,8 @@ export default function PerformanceBenchmarking({ challenge }) {
                   return (
                     <div key={c.id} className="flex items-center justify-between p-2 bg-white rounded border">
                       <div className="flex items-center gap-2">
-                        <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                          i === 0 ? 'bg-yellow-100 text-yellow-700' : 'bg-slate-100 text-slate-600'
-                        }`}>
+                        <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? 'bg-yellow-100 text-yellow-700' : 'bg-slate-100 text-slate-600'
+                          }`}>
                           {i + 1}
                         </div>
                         <span className="text-sm text-slate-700">

@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,12 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { BookOpen, FileText, Video, Link as LinkIcon, Download, Plus } from 'lucide-react';
 import FileUploader from '../FileUploader';
-import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+
+import { useProgramResources } from '@/hooks/useProgramResources';
 
 export default function ResourceLibrary({ programId }) {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [filter, setFilter] = useState('all');
@@ -24,42 +22,22 @@ export default function ResourceLibrary({ programId }) {
     category: 'general'
   });
 
-  const { data: program } = useQuery({
-    queryKey: ['program', programId],
-    queryFn: async () => {
-      const { data } = await supabase.from('programs').select('*').eq('id', programId).eq('is_deleted', false).maybeSingle();
-      return data;
-    },
-    enabled: !!programId
-  });
+  const { resources, addResource } = useProgramResources(programId);
 
-  const resources = program?.resources || [];
-
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase.from('programs').update({
-        resources: [...resources, {
-          ...data,
-          id: Date.now().toString(),
-          uploaded_date: new Date().toISOString(),
-          uploaded_by: user?.email
-        }]
-      }).eq('id', programId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['program', programId]);
-      setShowForm(false);
-      setNewResource({ title: '', type: 'document', url: '', category: 'general' });
-      toast.success(t({ en: 'Resource added', ar: 'تمت إضافة المورد' }));
-    }
-  });
+  const handleSubmit = () => {
+    addResource.mutate(newResource, {
+      onSuccess: () => {
+        setShowForm(false);
+        setNewResource({ title: '', type: 'document', url: '', category: 'general' });
+      }
+    });
+  };
 
   const filteredResources = resources.filter(r => filter === 'all' || r.category === filter);
   const categories = [...new Set(resources.map(r => r.category))];
 
   const getIcon = (type) => {
-    switch(type) {
+    switch (type) {
       case 'video': return Video;
       case 'link': return LinkIcon;
       default: return FileText;
@@ -87,13 +65,13 @@ export default function ResourceLibrary({ programId }) {
             <Input
               placeholder={t({ en: 'Resource title', ar: 'عنوان المورد' })}
               value={newResource.title}
-              onChange={(e) => setNewResource({...newResource, title: e.target.value})}
+              onChange={(e) => setNewResource({ ...newResource, title: e.target.value })}
             />
             <div className="grid grid-cols-2 gap-3">
               <select
                 className="px-3 py-2 border rounded-lg text-sm"
                 value={newResource.type}
-                onChange={(e) => setNewResource({...newResource, type: e.target.value})}
+                onChange={(e) => setNewResource({ ...newResource, type: e.target.value })}
               >
                 <option value="document">Document</option>
                 <option value="video">Video</option>
@@ -102,7 +80,7 @@ export default function ResourceLibrary({ programId }) {
               <select
                 className="px-3 py-2 border rounded-lg text-sm"
                 value={newResource.category}
-                onChange={(e) => setNewResource({...newResource, category: e.target.value})}
+                onChange={(e) => setNewResource({ ...newResource, category: e.target.value })}
               >
                 <option value="general">General</option>
                 <option value="training">Training</option>
@@ -114,20 +92,20 @@ export default function ResourceLibrary({ programId }) {
               <Input
                 placeholder={t({ en: 'Resource URL', ar: 'رابط المورد' })}
                 value={newResource.url}
-                onChange={(e) => setNewResource({...newResource, url: e.target.value})}
+                onChange={(e) => setNewResource({ ...newResource, url: e.target.value })}
               />
             ) : (
               <FileUploader
                 type={newResource.type === 'video' ? 'video' : 'document'}
-                onUploadComplete={(url) => setNewResource({...newResource, url})}
+                onUploadComplete={(url) => setNewResource({ ...newResource, url })}
                 label={t({ en: 'Upload file', ar: 'رفع ملف' })}
               />
             )}
             <div className="flex gap-2">
               <Button
                 className="flex-1"
-                onClick={() => createMutation.mutate(newResource)}
-                disabled={!newResource.title || !newResource.url || createMutation.isPending}
+                onClick={handleSubmit}
+                disabled={!newResource.title || !newResource.url || addResource.isPending}
               >
                 {t({ en: 'Add', ar: 'إضافة' })}
               </Button>

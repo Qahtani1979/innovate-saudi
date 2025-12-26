@@ -7,45 +7,34 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useLanguage } from '../LanguageContext';
 import { Clock, Plus, Trash2, Save, Target, AlertTriangle } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
 import { toast } from 'sonner';
 
 /**
  * SLARuleBuilder - Updated with Strategic Priority Tiers
  * Enhancement: Strategic entities get priority SLA escalation
+ * ✅ GOLD STANDARD COMPLIANT
  */
 export default function SLARuleBuilder() {
   const { language, isRTL, t } = useLanguage();
-  
-  // Fetch strategic plans for context
-  const { data: strategicPlans = [] } = useQuery({
-    queryKey: ['strategic-plans-sla'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('strategic_plans')
-        .select('id, name_en, name_ar, status')
-        .or('is_template.is.null,is_template.eq.false')
-        .or('is_deleted.is.null,is_deleted.eq.false')
-        .order('name_en');
-      return data || [];
-    }
-  });
+
+  // Fetch strategic plans for context using Gold Standard hook
+  const { data: strategicPlans = [] } = useStrategiesWithVisibility();
 
   const [rules, setRules] = useState([
-    { 
-      entity: 'Challenge', 
-      action: 'Approval', 
-      sla_hours: 120, 
+    {
+      entity: 'Challenge',
+      action: 'Approval',
+      sla_hours: 120,
       escalate_to: 'Program Director',
       is_strategy_derived: false,
       strategic_priority_multiplier: 1,
       strategic_sla_hours: 120
     },
-    { 
-      entity: 'Pilot', 
-      action: 'Review', 
-      sla_hours: 72, 
+    {
+      entity: 'Pilot',
+      action: 'Review',
+      sla_hours: 72,
       escalate_to: 'Municipality Lead',
       is_strategy_derived: true,
       strategic_priority_multiplier: 0.5,
@@ -64,10 +53,10 @@ export default function SLARuleBuilder() {
   ];
 
   const addRule = () => {
-    setRules([...rules, { 
-      entity: '', 
-      action: '', 
-      sla_hours: 48, 
+    setRules([...rules, {
+      entity: '',
+      action: '',
+      sla_hours: 48,
       escalate_to: '',
       is_strategy_derived: false,
       strategic_priority_multiplier: 1,
@@ -82,20 +71,20 @@ export default function SLARuleBuilder() {
   const updateRule = (index, field, value) => {
     const newRules = [...rules];
     newRules[index][field] = value;
-    
+
     // Auto-calculate strategic SLA when base SLA or multiplier changes
     if (field === 'sla_hours' || field === 'strategic_priority_multiplier') {
       const baseHours = field === 'sla_hours' ? value : newRules[index].sla_hours;
       const multiplier = field === 'strategic_priority_multiplier' ? value : newRules[index].strategic_priority_multiplier;
       newRules[index].strategic_sla_hours = Math.round(baseHours * multiplier);
     }
-    
+
     // Auto-enable strategic priority when marked as strategy-derived
     if (field === 'is_strategy_derived' && value === true) {
       newRules[index].strategic_priority_multiplier = 0.5;
       newRules[index].strategic_sla_hours = Math.round(newRules[index].sla_hours * 0.5);
     }
-    
+
     setRules(newRules);
   };
 
@@ -111,9 +100,9 @@ export default function SLARuleBuilder() {
           {t({ en: 'SLA Rule Builder', ar: 'بناء قواعد اتفاقية الخدمة' })}
         </CardTitle>
         <CardDescription>
-          {t({ 
-            en: 'Configure SLA rules with strategic priority escalation', 
-            ar: 'تكوين قواعد الخدمة مع تصعيد الأولوية الاستراتيجية' 
+          {t({
+            en: 'Configure SLA rules with strategic priority escalation',
+            ar: 'تكوين قواعد الخدمة مع تصعيد الأولوية الاستراتيجية'
           })}
         </CardDescription>
       </CardHeader>
@@ -205,8 +194,8 @@ export default function SLARuleBuilder() {
                   <>
                     <div className="flex-1">
                       <label className="text-xs font-medium mb-1 block">{t({ en: 'Priority Tier', ar: 'مستوى الأولوية' })}</label>
-                      <Select 
-                        value={rule.strategic_priority_multiplier.toString()} 
+                      <Select
+                        value={rule.strategic_priority_multiplier.toString()}
                         onValueChange={(v) => updateRule(i, 'strategic_priority_multiplier', parseFloat(v))}
                       >
                         <SelectTrigger className="text-xs">
@@ -224,7 +213,7 @@ export default function SLARuleBuilder() {
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       <Badge className="bg-amber-600 text-white">
                         {t({ en: 'Standard:', ar: 'قياسي:' })} {(rule.sla_hours / 24).toFixed(1)} {t({ en: 'days', ar: 'يوم' })}
@@ -247,10 +236,10 @@ export default function SLARuleBuilder() {
                 <div className="mt-2 flex items-center gap-2 p-2 bg-amber-50 rounded border border-amber-200">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
                   <span className="text-xs text-amber-700">
-                    {t({ 
-                      en: `Strategy-derived entities will use ${rule.strategic_sla_hours}h SLA (${rule.strategic_priority_multiplier}x priority)`, 
-                      ar: `الكيانات المشتقة استراتيجيًا ستستخدم ${rule.strategic_sla_hours} ساعة (أولوية ${rule.strategic_priority_multiplier}x)` 
-                    })}
+                    {t({
+                      en: `Strategy-derived entities will use ${rule.strategic_sla_hours}h SLA (${rule.strategic_priority_multiplier}x priority)`,
+                      ar: `الكيانات المشتقة استراتيجيًا ستستخدم ${rule.strategic_sla_hours} ساعة (أولوية ${rule.strategic_priority_multiplier}x)`
+                    }) || `Strategy-derived entities will use ${rule.strategic_sla_hours}h SLA (${rule.strategic_priority_multiplier}x priority)`}
                   </span>
                 </div>
               )}

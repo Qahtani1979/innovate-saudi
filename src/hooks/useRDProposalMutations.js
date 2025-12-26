@@ -218,11 +218,47 @@ export function useRDProposalMutations() {
         }
     });
 
+    const submitScore = useMutation({
+        mutationFn: async ({ proposal, reviewer, scores, comments, total, aiScore }) => {
+            const newScore = {
+                reviewer,
+                scores,
+                comments,
+                total,
+                date: new Date().toISOString()
+            };
+
+            const { data, error } = await supabase
+                .from('rd_proposals')
+                .update({
+                    reviewer_scores: [...(proposal.reviewer_scores || []), newScore],
+                    ai_score: aiScore
+                })
+                .eq('id', proposal.id)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['rd-proposals'] });
+            queryClient.invalidateQueries({ queryKey: ['rd-proposal', data.id] });
+            queryClient.invalidateQueries({ queryKey: ['proposals'] }); // Component used 'proposals' key
+            toast.success('Score submitted');
+        },
+        onError: (error) => {
+            console.error('Error submitting score:', error);
+            toast.error('Failed to submit score');
+        }
+    });
+
     return {
         createRDProposal,
         updateRDProposal,
         deleteRDProposal,
         awardProposal,
-        reviewProposal
+        reviewProposal,
+        submitScore
     };
 }

@@ -192,12 +192,183 @@ export function usePolicyMutations() {
         }
     });
 
+    /**
+     * Update policy approval status.
+     * @type {import('@tanstack/react-query').UseMutationResult<any, Error, { id: string; status: string; comment?: string }>}
+     */
+    const updatePolicyApproval = useMutation({
+        mutationFn: async ({ id, status, comment = '' }) => {
+            const { data: updated, error } = await supabase
+                .from('policy_recommendations')
+                .update({
+                    status: status === 'approve' ? 'onboarded' : 'rejected',
+                    approval_comment: comment,
+                    last_action_date: new Date().toISOString()
+                })
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return updated;
+        },
+        onSuccess: async (data, variables) => {
+            await logPolicyActivity(variables.status === 'approve' ? 'approved' : 'rejected', data.id, {
+                comment: variables.comment,
+                title_en: data.title_en
+            });
+            queryClient.invalidateQueries({ queryKey: ['all-policies'] });
+            queryClient.invalidateQueries({ queryKey: ['policy', data.id] });
+            toast.success(t({
+                en: variables.status === 'approve' ? 'Policy approved' : 'Policy rejected',
+                ar: variables.status === 'approve' ? 'تمت الموافقة على السياسة' : 'تم رفض السياسة'
+            }));
+        },
+        onError: (error) => {
+            console.error('Policy approval update failed:', error);
+            toast.error(t({ en: 'Action failed', ar: 'فشلت العملية' }));
+        }
+    });
+
+    /**
+     * Submit legal review for a policy.
+     * @type {import('@tanstack/react-query').UseMutationResult<any, Error, { id: string; reviewData: any; approvals: any[] }>}
+     */
+    const submitLegalReview = useMutation({
+        mutationFn: async ({ id, reviewData, approvals }) => {
+            const allChecked = reviewData.checklist.every(item => item.checked);
+
+            const { error } = await supabase.from('policy_recommendations').update({
+                legal_review: {
+                    reviewer_email: (await supabase.auth.getUser()).data.user?.email,
+                    review_date: new Date().toISOString(),
+                    status: reviewData.status,
+                    checklist: reviewData.checklist,
+                    comments: reviewData.comments,
+                    legal_citations_verified: allChecked
+                },
+                workflow_stage: reviewData.status === 'approved' ? 'public_consultation' : 'draft',
+                approvals: [
+                    ...(approvals || []),
+                    {
+                        stage: 'legal_review',
+                        approved_by: (await supabase.auth.getUser()).data.user?.email,
+                        approved_date: new Date().toISOString(),
+                        status: reviewData.status,
+                        comments: reviewData.comments
+                    }
+                ]
+            }).eq('id', id);
+
+            if (error) throw error;
+            return { id, status: reviewData.status };
+        },
+        onSuccess: async ({ id, status }) => {
+            await logPolicyActivity('legal_review_submitted', id, { status });
+            queryClient.invalidateQueries({ queryKey: ['policy', id] });
+            toast.success(t({ en: 'Legal review submitted', ar: 'تم تقديم المراجعة القانونية' }));
+        },
+        onError: (error) => {
+            console.error('Legal review failed:', error);
+            toast.error(t({ en: 'Failed to submit legal review', ar: 'فشل تقديم المراجعة القانونية' }));
+        }
+    });
+
+    /**
+     * Convert policy to implementation program.
+     * @type {import('@tanstack/react-query').UseMutationResult<any, Error, { policyId: string; programData: any }>}
+     */
+    const convertPolicyToProgram = useMutation({
+        mutationFn: async ({ policyId, programData }) => {
+            // 1. Create Program
+            const { data: program, error: programError } = await supabase
+                .from('programs')
+                .insert(programData)
+                .select()
+                .single();
+
+            if (programError) throw programError;
+
+            // 2. Link Policy to Program
+            const { error: policyError } = await supabase
+                .from('policy_recommendations')
+                .update({
+                    implementation_program_id: program.id
+                })
+                .eq('id', policyId);
+
+            if (policyError) throw policyError;
+
+            // 3. Log Activity
+            await supabase.from('system_activities').insert({
+                entity_type: 'policy',
+                entity_id: policyId,
+                activity_type: 'implementation_program_created',
+                description_en: `Implementation program created: ${program.name_en}`
+            });
+
+            return program;
+        },
+        onSuccess: async (program) => {
+            queryClient.invalidateQueries({ queryKey: ['policies'] });
+            queryClient.invalidateQueries({ queryKey: ['programs'] });
+            toast.success(t({ en: 'Implementation program created', ar: 'تم إنشاء برنامج التنفيذ' }));
+        },
+        onError: (error) => {
+            console.error('Program conversion failed:', error);
+            toast.error(t({ en: 'Failed to create program', ar: 'فشل إنشاء البرنامج' }));
+        }
+    });
+
+    /**
+     * Create a policy amendment (new version).
+     */
+    const createAmendment = useMutation({
+        mutationFn: async ({ policy, amendmentData, summary_en }) => {
+            const { id, created_at, updated_at, ...policyFields } = policy;
+            const { data: newPolicy, error } = await supabase
+                .from('policy_recommendations')
+                .insert({
+                    ...policyFields,
+                    prior_version_id: id,
+                    policy_version: (policy.policy_version || 1) + 1,
+                    description_ar: amendmentData.summary_ar,
+                    description_en: summary_en,
+                    status: 'draft',
+                    workflow_stage: 'draft',
+                    amendment_changes: amendmentData.changes,
+                    amended_by: amendmentData.amended_by,
+                    amended_at: new Date().toISOString()
+                })
+                .select()
+                .single();
+
+            if (error) throw error;
+            return newPolicy;
+        },
+        onSuccess: async (newPolicy) => {
+            await logPolicyActivity('amendment_created', newPolicy.id, {
+                previous_version_id: newPolicy.prior_version_id
+            });
+            queryClient.invalidateQueries({ queryKey: ['all-policies'] });
+            toast.success(t({ en: 'Amendment created', ar: 'تم إنشاء التعديل' }));
+        },
+        onError: (error) => {
+            console.error('Amendment creation failed:', error);
+            toast.error(t({ en: 'Failed to create amendment', ar: 'فشل إنشاء التعديل' }));
+        }
+    });
+
     return {
         createPolicy,
         updatePolicy,
         deletePolicy,
         bulkUpdatePolicies,
         bulkDeletePolicies,
+        updatePolicyApproval,
+        submitLegalReview,
+        convertPolicyToProgram,
+        createAmendment,
 
         // Helper mutations
         /**
@@ -205,7 +376,7 @@ export function usePolicyMutations() {
          */
         translatePolicy: useMutation({
             mutationFn: async (data) => {
-                const { data: translationResponse, error } = await supabase.functions.invoke('translate-policy', {
+                const { data: translationResponse, error } = await supabase.functions.invoke('translatePolicy', {
                     body: { arabic_fields: data }
                 });
                 if (error) throw error;

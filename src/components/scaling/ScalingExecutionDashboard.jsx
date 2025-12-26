@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '../LanguageContext';
 import { CheckCircle2, Circle, TrendingUp, MapPin, DollarSign, Activity } from 'lucide-react';
+import { useScalingPlan, useScalingDeployments } from '@/hooks/useScalingPlans';
+import { useMunicipalities } from '@/hooks/useMunicipalities';
 
 export default function ScalingExecutionDashboard({ scalingPlanId }) {
   const { t, isRTL } = useLanguage();
@@ -13,68 +14,47 @@ export default function ScalingExecutionDashboard({ scalingPlanId }) {
   const [deployments, setDeployments] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  /* 
+   * Refactored to use Gold Standard Hooks
+   */
+  const { data: plan, isLoading: isLoadingPlan } = useScalingPlan(scalingPlanId);
+  const { data: realDeployments = [], isLoading: isLoadingDeployments } = useScalingDeployments(scalingPlanId);
+  const { data: targetMunicipalities = [], isLoading: isLoadingMunicipalities } = useMunicipalities({
+    ids: plan?.target_municipalities || []
+  });
+
   useEffect(() => {
-    loadData();
-  }, [scalingPlanId]);
+    if (isLoadingPlan || isLoadingDeployments) return;
 
-  const loadData = async () => {
-    try {
-      const { data: planData, error: planError } = await supabase
-        .from('scaling_plans')
-        .select('*')
-        .eq('id', scalingPlanId)
-        .single();
-
-      if (planError) throw planError;
-      setPlan(planData);
-
-      // Try to load real deployments first
-      const { data: realDeployments, error: depError } = await supabase
-        .from('scaling_deployments')
-        .select(`
-          *,
-          municipality:municipalities(name_en, name_ar)
-        `)
-        .eq('plan_id', scalingPlanId);
-
-      if (!depError && realDeployments && realDeployments.length > 0) {
-        setDeployments(realDeployments.map(d => ({
-          ...d,
-          municipality_name: d.municipality?.name_en,
-          municipality_name_ar: d.municipality?.name_ar
-        })));
-      } else {
-        // Fallback to mock/generated data based on target_municipalities
-        const muniIds = planData?.target_municipalities || [];
-        if (muniIds.length > 0) {
-          const { data: municipalities } = await supabase
-            .from('municipalities')
-            .select('*')
-            .in('id', muniIds);
-
-          const deploys = muniIds.map(id => {
-            const muni = municipalities?.find(m => m.id === id);
-            return {
-              municipality_id: id,
-              municipality_name: muni?.name_en,
-              municipality_name_ar: muni?.name_ar,
-              status: ['planning', 'in_progress', 'completed', 'on_hold'][Math.floor(Math.random() * 4)],
-              progress: Math.floor(Math.random() * 100),
-              kpi_status: ['on_track', 'at_risk', 'off_track'][Math.floor(Math.random() * 3)],
-              issues_count: Math.floor(Math.random() * 5),
-              last_updated: new Date().toISOString()
-            };
-          });
-          setDeployments(deploys);
-        } else {
-          setDeployments([]);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load scaling data:', error);
+    if (realDeployments.length > 0) {
+      setDeployments(realDeployments.map(d => ({
+        ...d,
+        municipality_name: d.municipality?.name_en,
+        municipality_name_ar: d.municipality?.name_ar
+      })));
+      setLoading(false);
+    } else if (!isLoadingMunicipalities && plan?.target_municipalities?.length > 0) {
+      // Fallback to mock/generated data based on target_municipalities
+      const deploys = plan.target_municipalities.map(id => {
+        const muni = targetMunicipalities?.find(m => m.id === id);
+        return {
+          municipality_id: id,
+          municipality_name: muni?.name_en,
+          municipality_name_ar: muni?.name_ar,
+          status: ['planning', 'in_progress', 'completed', 'on_hold'][Math.floor(Math.random() * 4)],
+          progress: Math.floor(Math.random() * 100),
+          kpi_status: ['on_track', 'at_risk', 'off_track'][Math.floor(Math.random() * 3)],
+          issues_count: Math.floor(Math.random() * 5),
+          last_updated: new Date().toISOString()
+        };
+      });
+      setDeployments(deploys);
+      setLoading(false);
+    } else if (!isLoadingPlan && !plan?.target_municipalities?.length) {
+      setDeployments([]);
+      setLoading(false);
     }
-    setLoading(false);
-  };
+  }, [plan, realDeployments, targetMunicipalities, isLoadingPlan, isLoadingDeployments, isLoadingMunicipalities]);
 
   if (loading) {
     return <div className="text-center py-8">{t({ en: 'Loading...', ar: 'جاري التحميل...' })}</div>;

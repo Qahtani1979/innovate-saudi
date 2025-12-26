@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query';
 import { usePolicyMutations } from '@/hooks/usePolicyMutations';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +17,6 @@ import {
 
 export default function PolicyRecommendationManager({ challengeId, policies = [], challenge = null }) {
   const { language, t } = useLanguage();
-  const queryClient = useQueryClient();
 
   const { deletePolicy } = usePolicyMutations();
 

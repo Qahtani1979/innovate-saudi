@@ -1,36 +1,11 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Award, Trophy, Star, Zap } from 'lucide-react';
+import { useChallengeGamification } from '@/hooks/useChallengeGamification';
 
 export default function ChallengeGamification({ userEmail }) {
-  const { data: solvedChallenges = [] } = useQuery({
-    queryKey: ['solved-challenges', userEmail],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*')
-        .eq('status', 'resolved')
-        .or(`challenge_owner_email.eq.${userEmail},created_by.eq.${userEmail},reviewer.eq.${userEmail}`);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: badges = [] } = useQuery({
-    queryKey: ['challenge-badges', userEmail],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('user_achievements')
-        .select('*')
-        .eq('user_email', userEmail)
-        .eq('achievement_category', 'challenge_solving');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { solvedChallenges, badges } = useChallengeGamification(userEmail);
 
   const challengesSolved = solvedChallenges.length;
   const points = challengesSolved * 100; // 100 points per solved challenge
@@ -44,8 +19,8 @@ export default function ChallengeGamification({ userEmail }) {
 
   const earnedBadges = badgeDefinitions.filter(b => challengesSolved >= b.threshold);
   const nextBadge = badgeDefinitions.find(b => challengesSolved < b.threshold);
-  const progressToNext = nextBadge 
-    ? (challengesSolved / nextBadge.threshold) * 100 
+  const progressToNext = nextBadge
+    ? (challengesSolved / nextBadge.threshold) * 100
     : 100;
 
   return (

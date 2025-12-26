@@ -7,10 +7,11 @@ import { supabase } from '@/integrations/supabase/client';
  * @param {string|string[]} options.status - Filter by status (e.g. 'active', 'draft')
  */
 export function useStrategicPlans(options = {}) {
-    const { status } = options;
+    const { status, enabled = true } = options;
 
     return useQuery({
         queryKey: ['strategic-plans', status],
+        enabled,
         queryFn: async () => {
             let query = supabase
                 .from('strategic_plans')

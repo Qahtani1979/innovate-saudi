@@ -1,32 +1,21 @@
 ﻿import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { FileText, Search, Plus, DollarSign, Calendar, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { FileText, Search, Plus, Calendar, DollarSign, Filter, Download, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useInvoices } from '@/hooks/useInvoices';
 
 function InvoiceManagement() {
   const { t } = useLanguage();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  const { data: invoices = [], isLoading } = useQuery({
-    queryKey: ['invoices'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('invoices')
-        .select('*, providers(name_en, name_ar)')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: invoices = [], isLoading } = useInvoices();
 
   const filteredInvoices = invoices.filter(inv => {
     const matchesSearch = !search ||

@@ -1,22 +1,23 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { usePolicyMutations } from '@/hooks/usePolicyMutations';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../LanguageContext';
-import { Sparkles, Calendar, Loader2, CheckCircle2 } from 'lucide-react';
+import { Sparkles, Calendar, Loader2, CheckCircle2, Wand2, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { 
-  buildPolicyToProgramPrompt, 
-  POLICY_TO_PROGRAM_SYSTEM_PROMPT, 
-  POLICY_TO_PROGRAM_SCHEMA 
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  buildPolicyToProgramPrompt,
+  POLICY_TO_PROGRAM_SYSTEM_PROMPT,
+  POLICY_TO_PROGRAM_SCHEMA
 } from '@/lib/ai/prompts/policy/policyToProgram';
-import { supabase } from '@/integrations/supabase/client';
 
-export default function PolicyToProgramConverter({ policy, onClose, onSuccess }) {
+export default function PolicyToProgramConverter({ policy, open, onOpenChange, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [programData, setProgramData] = useState({
     name_en: '',
     name_ar: '',
@@ -24,35 +25,37 @@ export default function PolicyToProgramConverter({ policy, onClose, onSuccess })
     objectives_ar: '',
     curriculum: []
   });
+  const { convertPolicyToProgram } = usePolicyMutations();
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const createProgramMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: program, error: programError } = await supabase.from('programs').insert(data).select().single();
-      if (programError) throw programError;
-      
-      const { error: policyError } = await supabase.from('policy_recommendations').update({
-        implementation_program_id: program.id
-      }).eq('id', policy.id);
-      if (policyError) throw policyError;
-
-      await supabase.from('system_activities').insert({
-        entity_type: 'policy',
-        entity_id: policy.id,
-        activity_type: 'implementation_program_created',
-        description_en: `Implementation program created: ${program.name_en}`
-      });
-
-      return program;
-    },
-    onSuccess: (program) => {
-      queryClient.invalidateQueries({ queryKey: ['policies'] });
-      queryClient.invalidateQueries({ queryKey: ['programs'] });
-      toast.success(t({ en: 'Implementation program created', ar: 'تم إنشاء برنامج التنفيذ' }));
-      onSuccess?.(program);
-      onClose?.();
+  const handleCreateProgram = () => {
+    if (!programData.name_en) {
+      toast.error(t({ en: 'Generate program first', ar: 'يرجى توليد البرنامج' }));
+      return;
     }
-  });
+
+    convertPolicyToProgram.mutate({
+      policyId: policy.id,
+      programData: {
+        ...programData,
+        program_type: 'training',
+        focus_areas: [policy.sector],
+        target_participants: programData.target_participants || {
+          type: ['municipalities', 'agencies'],
+          min_participants: 15,
+          max_participants: 60
+        },
+        duration_weeks: 8,
+        status: 'planning',
+        tags: ['policy_implementation', 'stakeholder_training']
+      }
+    }, {
+      onSuccess: (program) => {
+        onSuccess?.(program);
+        onClose?.();
+      }
+    });
+  };
 
   const generateWithAI = async () => {
     const result = await invokeAI({
@@ -67,102 +70,109 @@ export default function PolicyToProgramConverter({ policy, onClose, onSuccess })
     }
   };
 
-  const handleSubmit = () => {
-    if (!programData.name_en) {
-      toast.error(t({ en: 'Generate program first', ar: 'يرجى توليد البرنامج' }));
-      return;
-    }
-
-    createProgramMutation.mutate({
-      ...programData,
-      program_type: 'training',
-      focus_areas: [policy.sector],
-      target_participants: programData.target_participants || { 
-        type: ['municipalities', 'agencies'], 
-        min_participants: 15,
-        max_participants: 60
-      },
-      duration_weeks: 8,
-      status: 'planning',
-      tags: ['policy_implementation', 'stakeholder_training']
-    });
-  };
-
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" dir={isRTL ? 'rtl' : 'ltr'}>
-      <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <CardHeader className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white">
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-6 w-6" />
-            {t({ en: 'Create Policy Implementation Program', ar: 'إنشاء برنامج تنفيذ السياسة' })}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6 space-y-4">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir={isRTL ? 'rtl' : 'ltr'}>
+        <DialogHeader>
+          <DialogTitle>
+            {t({
+              en: 'Convert Policy to Implementation Program',
+              ar: 'تحويل السياسة إلى برنامج تنفيذ'
+            })}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-6">
           <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
-          
-          <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-            <p className="text-sm font-semibold text-indigo-900 mb-1">
-              {t({ en: 'Policy:', ar: 'السياسة:' })}
-            </p>
-            <p className="font-medium text-slate-900">{policy.title_en}</p>
-            <p className="text-xs text-slate-600 mt-1">
-              {policy.affected_stakeholders?.length || 0} {t({ en: 'stakeholder groups', ar: 'مجموعات أصحاب المصلحة' })}
+
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+            <h3 className="font-semibold text-blue-900 mb-2">
+              {language === 'en' ? policy.title_en : policy.title_ar}
+            </h3>
+            <p className="text-sm text-blue-700">
+              {language === 'en' ? policy.description_en : policy.description_ar}
             </p>
           </div>
 
-          <Button
-            onClick={generateWithAI}
-            disabled={isLoading || !isAvailable}
-            className="w-full bg-gradient-to-r from-indigo-600 to-blue-600"
-            size="lg"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                {t({ en: 'Designing Program...', ar: 'تصميم البرنامج...' })}
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-5 w-5 mr-2" />
-                {t({ en: 'Generate Implementation Program', ar: 'توليد برنامج التنفيذ' })}
-              </>
-            )}
-          </Button>
-
-          {programData.name_en && (
+          <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-4">
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <p className="font-bold text-blue-900 mb-2">{programData.name_en}</p>
-                <p className="text-sm text-slate-700">{programData.objectives_en}</p>
-              </div>
+              <label className="text-sm font-medium">
+                {t({ en: 'Program Name (EN)', ar: 'اسم البرنامج (EN)' })}
+              </label>
+              <Input
+                value={programData.name_en}
+                onChange={(e) => setProgramData({ ...programData, name_en: e.target.value })}
+                placeholder="Ex: Urban Planning Masterclass"
+              />
+            </div>
+            <div className="space-y-4">
+              <label className="text-sm font-medium">
+                {t({ en: 'Program Name (AR)', ar: 'اسم البرنامج (AR)' })}
+              </label>
+              <Input
+                value={programData.name_ar}
+                onChange={(e) => setProgramData({ ...programData, name_ar: e.target.value })}
+                placeholder="مثال: دورة التخطيط الحضري"
+                dir="rtl"
+              />
+            </div>
+          </div>
 
-              {programData.curriculum?.length > 0 && (
-                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                  <p className="text-sm font-semibold text-green-900 mb-3">
-                    {t({ en: 'Training Modules:', ar: 'الوحدات التدريبية:' })}
-                  </p>
-                  <div className="space-y-2">
-                    {programData.curriculum.map((module, i) => (
-                      <div key={i} className="p-2 bg-white rounded border">
-                        <p className="text-sm font-medium">Week {module.week}: {module.topic_en}</p>
-                      </div>
-                    ))}
+          <div className="space-y-4">
+            <label className="text-sm font-medium">
+              {t({ en: 'Program Objectives', ar: 'أهداف البرنامج' })}
+            </label>
+            <Textarea
+              value={language === 'en' ? programData.objectives_en : programData.objectives_ar}
+              onChange={(e) => setProgramData({
+                ...programData,
+                [language === 'en' ? 'objectives_en' : 'objectives_ar']: e.target.value
+              })}
+              className="h-24"
+            />
+          </div>
+
+          {programData.curriculum?.length > 0 && (
+            <div className="space-y-4 border rounded-lg p-4">
+              <h4 className="font-medium flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                {t({ en: 'Proposed Curriculum', ar: 'المنهج المقترح' })}
+              </h4>
+              <div className="space-y-2">
+                {programData.curriculum.map((module, idx) => (
+                  <div key={idx} className="flex gap-2 text-sm bg-gray-50 p-2 rounded">
+                    <span className="font-medium w-20">Week {module.week}:</span>
+                    <span>{module.topic_en || module.topic}</span>
                   </div>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
           )}
 
-          <div className="flex gap-3 pt-4">
-            <Button variant="outline" onClick={onClose} className="flex-1">
+          <div className="flex gap-3 justify-end pt-4">
+            <Button
+              variant="outline"
+              onClick={generateWithAI}
+              disabled={isLoading || !isAvailable}
+              className="gap-2"
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Wand2 className="h-4 w-4 text-purple-600" />
+              )}
+              {t({ en: 'Generate with AI', ar: 'توليد بالذكاء الاصطناعي' })}
+            </Button>
+
+            <Button variant="ghost" onClick={onClose}>
               {t({ en: 'Cancel', ar: 'إلغاء' })}
             </Button>
             <Button
-              onClick={handleSubmit}
-              disabled={createProgramMutation.isPending || !programData.name_en}
+              onClick={handleCreateProgram}
+              disabled={convertPolicyToProgram.isPending || !programData.name_en}
               className="flex-1 bg-gradient-to-r from-indigo-600 to-blue-600"
             >
-              {createProgramMutation.isPending ? (
+              {convertPolicyToProgram.isPending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
                 <CheckCircle2 className="h-4 w-4 mr-2" />
@@ -170,8 +180,8 @@ export default function PolicyToProgramConverter({ policy, onClose, onSuccess })
               {t({ en: 'Create Program', ar: 'إنشاء البرنامج' })}
             </Button>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

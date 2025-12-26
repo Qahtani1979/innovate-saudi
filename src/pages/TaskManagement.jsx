@@ -21,7 +21,7 @@ function TaskManagement() {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({});
   const [filter, setFilter] = useState('all');
-  const queryClient = useQueryClient();
+
   const { user } = useAuth();
   const { isAdmin } = usePermissions();
   const { triggerEmail } = useEmailTrigger();

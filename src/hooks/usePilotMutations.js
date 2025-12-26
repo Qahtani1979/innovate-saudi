@@ -66,6 +66,7 @@ export function usePilotMutations() {
         },
         onSuccess: async (pilot) => {
             queryClient.invalidateQueries({ queryKey: ['pilots'] });
+            queryClient.invalidateQueries({ queryKey: ['pending-pilots'] });
             await triggerEmail('pilot.created', {
                 entity_type: 'pilot',
                 entity_id: pilot.id,
@@ -163,6 +164,7 @@ export function usePilotMutations() {
                 queryClient.invalidateQueries({ queryKey: ['pilot', pilot.id] });
             }
             queryClient.invalidateQueries({ queryKey: ['pilots'] });
+            queryClient.invalidateQueries({ queryKey: ['pending-pilots'] });
         }
     });
 
@@ -218,6 +220,7 @@ export function usePilotMutations() {
         onSuccess: (pilot) => {
             queryClient.invalidateQueries({ queryKey: ['pilot', pilot.id] });
             queryClient.invalidateQueries({ queryKey: ['pilots'] });
+            queryClient.invalidateQueries({ queryKey: ['pending-pilots'] });
             toast.success(`Pilot moved to stage: ${pilot.stage}`);
         }
     });
@@ -262,6 +265,7 @@ export function usePilotMutations() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['pilots'] });
+            queryClient.invalidateQueries({ queryKey: ['pending-pilots'] });
             toast.success('Pilot deleted successfully');
         },
         onError: (error) => {
@@ -373,7 +377,25 @@ export function usePilotMutations() {
     const refreshPilots = () => {
         queryClient.invalidateQueries({ queryKey: ['pilots'] });
         queryClient.invalidateQueries({ queryKey: ['pilots-with-visibility'] });
+        queryClient.invalidateQueries({ queryKey: ['pending-pilots'] });
     };
+
+    /**
+     * Save Scaling Readiness Assessment
+     */
+    const saveScalingReadiness = useMutation({
+        mutationFn: async (assessmentData) => {
+            const { error } = await supabase.from('scaling_readiness').insert(assessmentData);
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['pilots'] });
+            toast.success('Readiness assessment complete');
+        },
+        onError: (error) => {
+            toast.error(`Assessment failed: ${error.message}`);
+        }
+    });
 
     return {
         createPilot,
@@ -390,7 +412,10 @@ export function usePilotMutations() {
         enrollCitizen,
         approveBudget: approveBudget.mutateAsync,
         isApprovingBudget: approveBudget.isPending,
-        processBudgetApproval
+        isApprovingBudget: approveBudget.isPending,
+        processBudgetApproval,
+        saveScalingReadiness: saveScalingReadiness.mutateAsync,
+        isSavingReadiness: saveScalingReadiness.isPending
     };
 }
 

@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useSystemActivities } from '@/hooks/useSystemActivities';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../components/LanguageContext';
-import { 
-  Activity, AlertCircle, TestTube, Lightbulb, Microscope, 
+import {
+  Activity, AlertCircle, TestTube, Lightbulb, Microscope,
   Calendar, Handshake, CheckCircle2,
   Filter, RefreshCw
 } from 'lucide-react';
@@ -20,31 +20,8 @@ function CrossEntityActivityStream() {
   const [filterOrg, setFilterOrg] = useState('all');
   const { user } = useAuth();
 
-  const { data: activities = [], isLoading, refetch } = useQuery({
-    queryKey: ['system-activities'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('system_activities')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50);
-      return data || [];
-    },
-    refetchInterval: 30000
-  });
-
-  const { data: userProfile } = useQuery({
-    queryKey: ['user-profile', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_email', user?.email)
-        .single();
-      return data;
-    },
-    enabled: !!user?.email
-  });
+  const { data: activities = [], isLoading, refetch } = useSystemActivities({ limit: 50 });
+  const { data: userProfile } = useUserProfile(user?.email);
 
   const activityConfig = {
     challenge_created: { icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-50', label: { en: 'Challenge submitted', ar: 'تحدي مقدم' } },
@@ -60,7 +37,7 @@ function CrossEntityActivityStream() {
 
   const filteredActivities = activities.filter(a => {
     if (filterType !== 'all' && a.activity_type !== filterType) return false;
-    if (filterOrg === 'mine' && a.created_by !== user?.email) return false;
+    if (filterOrg === 'mine' && a.user_email !== user?.email) return false;
     return true;
   });
 
@@ -127,19 +104,19 @@ function CrossEntityActivityStream() {
                         <p className="font-medium text-slate-900">
                           {activity.description || config.label[language]}
                         </p>
-                        {activity.entity_code && (
+                        {activity.entity_id && (
                           <Badge variant="outline" className="mt-1 text-xs">
-                            {activity.entity_code}
+                            {activity.entity_id}
                           </Badge>
                         )}
                       </div>
                       <span className="text-xs text-slate-500">
-                        {formatDistanceToNow(new Date(activity.created_date), { addSuffix: true })}
+                        {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
                       </span>
                     </div>
-                    {activity.created_by && (
+                    {activity.user_email && (
                       <p className="text-xs text-slate-600 mt-1">
-                        {t({ en: 'by', ar: 'بواسطة' })} {activity.created_by}
+                        {t({ en: 'by', ar: 'بواسطة' })} {activity.user_email}
                       </p>
                     )}
                   </div>

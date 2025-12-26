@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +12,10 @@ import {
   CONFLICT_DETECTOR_SCHEMA
 } from '@/lib/ai/prompts/bonus/conflictDetector';
 
+import { usePilotsList } from '@/hooks/usePilots';
+import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
+import { useRDProjects } from '@/hooks/useRDProjects';
+
 export default function ResourceConflictDetector() {
   const { language, t } = useLanguage();
   const [conflicts, setConflicts] = useState(null);
@@ -22,20 +25,9 @@ export default function ResourceConflictDetector() {
     fallbackData: null
   });
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: () => base44.entities.Pilot.list()
-  });
-
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs'],
-    queryFn: () => base44.entities.Program.list()
-  });
-
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects'],
-    queryFn: () => base44.entities.RDProject.list()
-  });
+  const { data: pilots = [] } = usePilotsList();
+  const { data: programs = [] } = useProgramsWithVisibility();
+  const { data: rdProjects = [] } = useRDProjects();
 
   const detectConflicts = async () => {
     const activePilots = pilots.filter(p => ['active', 'preparation'].includes(p.stage));
@@ -73,7 +65,7 @@ export default function ResourceConflictDetector() {
       </CardHeader>
       <CardContent className="pt-6">
         <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
-        
+
         {!conflicts && !isLoading && (
           <div className="text-center py-8">
             <AlertCircle className="h-12 w-12 text-red-300 mx-auto mb-3" />

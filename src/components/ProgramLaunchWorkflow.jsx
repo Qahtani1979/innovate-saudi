@@ -33,7 +33,7 @@ export default function ProgramLaunchWorkflow({ program, onClose }) {
 
   const handleLaunch = async () => {
     try {
-      await openApplications({
+      await openApplications.mutateAsync({
         programId: program.id,
         announcement,
         checklist

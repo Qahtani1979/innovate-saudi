@@ -1,35 +1,20 @@
 
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { MapPin, TrendingUp, Building2, DollarSign } from 'lucide-react';
+import { useProviderSolutions, useProviderPilots } from '@/hooks/useProviderPipeline';
+import { useMunicipalities } from '@/hooks/useMunicipalities';
 
 export default function MultiMunicipalityExpansionTracker({ providerId }) {
   const { t } = useLanguage();
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['provider-solutions-expansion', providerId],
-    queryFn: async () => {
-      const all = await base44.entities.Solution.list();
-      return all.filter(s => s.provider_id === providerId);
-    }
-  });
+  const { data: solutions = [] } = useProviderSolutions(providerId);
+  const solutionIds = solutions.map(s => s.id);
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['provider-pilots-expansion', providerId],
-    queryFn: async () => {
-      const solutionIds = solutions.map(s => s.id);
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => solutionIds.includes(p.solution_id));
-    },
-    enabled: solutions.length > 0
-  });
+  const { data: pilots = [] } = useProviderPilots(solutionIds);
 
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities-expansion'],
-    queryFn: () => base44.entities.Municipality.list()
-  });
+  const { data: municipalities = [] } = useMunicipalities();
 
   const uniqueMunicipalities = new Set(pilots.map(p => p.municipality_id));
   const expansionRate = pilots.length > 0 ? (uniqueMunicipalities.size / municipalities.length * 100).toFixed(1) : 0;

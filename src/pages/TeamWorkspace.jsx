@@ -1,7 +1,7 @@
 import { useLanguage } from '../components/LanguageContext';
 import TeamWorkspace from '../components/access/TeamWorkspace';
 import TeamPerformanceAnalytics from '../components/access/TeamPerformanceAnalytics';
-import { useTeams } from '@/hooks/useTeams';
+import { useTeams } from '@/hooks/useTeamMutations';
 
 export default function TeamWorkspacePage() {
   const { language, isRTL, t } = useLanguage();

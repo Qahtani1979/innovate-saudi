@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,73 +7,52 @@ import { useLanguage } from '../components/LanguageContext';
 import {
   Users, Building2, Share2, Award
 } from 'lucide-react';
-import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
-import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
-import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
-import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useCrossCityLearningData } from '@/hooks/useCrossCityLearningData';
+import { useKnowledgeDocumentMutations } from '@/hooks/useKnowledgeDocumentMutations';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 
 function CrossCityLearningHub() {
   const { t, language } = useLanguage();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
   const [shareDialog, setShareDialog] = useState(null);
   const [learningNote, setLearningNote] = useState('');
 
-  // Use visibility-aware hooks for municipalities, pilots, and challenges
-  const { data: allMunicipalities = [] } = useMunicipalitiesWithVisibility({ includeNational: true });
-  const { data: pilots = [] } = usePilotsWithVisibility();
-  const { data: challenges = [] } = useChallengesWithVisibility();
+  const {
+    allMunicipalities,
+    myMunicipality,
+    peerMunicipalities,
+    peerSuccesses,
+    pilots,
+    challenges,
+    isLoading
+  } = useCrossCityLearningData();
 
-  // Find current user's municipality from the list
-  const myMunicipality = allMunicipalities.find(m => m.contact_email === user?.email);
+  // Hooks
+  const { createKnowledgeDocument } = useKnowledgeDocumentMutations();
 
-  const shareLearningMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: result, error } = await supabase
-        .from('knowledge_documents')
-        .insert([{
-          title_en: `Learning from ${shareDialog.code}`,
-          content_en: data.learning,
-          document_type: 'best_practice',
-          source_entity_type: shareDialog.type,
-          source_entity_id: shareDialog.id,
-          municipality_id: myMunicipality?.id,
-          tags: ['cross_city_learning', shareDialog.sector],
-          is_public: true
-        }])
-        .select()
-        .single();
-      if (error) throw error;
-      return result;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['knowledge'] });
-      toast.success(t({ en: 'Learning shared with network', ar: 'تم مشاركة التعلم مع الشبكة' }));
-      setShareDialog(null);
-      setLearningNote('');
-    }
-  });
+  const handleShareLearning = (data) => {
+    createKnowledgeDocument.mutate({
+      title_en: `Learning from ${shareDialog.code}`,
+      content_en: data.learning,
+      document_type: 'best_practice',
+      source_entity_type: shareDialog.type,
+      source_entity_id: shareDialog.id,
+      municipality_id: myMunicipality?.id,
+      tags: ['cross_city_learning', shareDialog.sector],
+      is_public: true
+    }, {
+      onSuccess: () => {
+        setShareDialog(null);
+        setLearningNote('');
+      }
+    });
+  };
 
-  // Find similar municipalities
-  const peerMunicipalities = myMunicipality
-    ? allMunicipalities.filter(m =>
-      m.id !== myMunicipality.id &&
-      (Math.abs((m.population || 0) - (myMunicipality.population || 0)) < myMunicipality.population * 0.5 ||
-        m.city_type === myMunicipality.city_type)
-    )
-    : [];
 
-  // Success stories from peers
-  const peerSuccesses = pilots.filter(p =>
-    p.stage === 'completed' &&
-    p.recommendation === 'scale' &&
-    peerMunicipalities.some(m => m.id === p.municipality_id)
-  );
 
   return (
     <PageLayout>
@@ -224,8 +201,8 @@ function CrossCityLearningHub() {
 
               <div className="flex gap-2">
                 <Button
-                  onClick={() => shareLearningMutation.mutate({ learning: learningNote })}
-                  disabled={!learningNote || shareLearningMutation.isPending}
+                  onClick={() => handleShareLearning({ learning: learningNote })}
+                  disabled={!learningNote || createKnowledgeDocument.isPending}
                   className="flex-1 bg-green-600"
                 >
                   <Share2 className="h-4 w-4 mr-2" />

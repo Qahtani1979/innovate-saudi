@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '../LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,10 +8,11 @@ import { Shield, Sparkles, Loader2, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { buildRDToPolicyPrompt, RD_TO_POLICY_SCHEMA } from '@/lib/ai/prompts/rd/rdToPolicy';
+import { useRDConversionMutations } from '@/hooks/useRDConversionMutations';
 
 export default function RDToPolicyConverter({ rdProject, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  const { transitionToPolicy } = useRDConversionMutations();
   const { invokeAI, status: aiStatus, isLoading: aiGenerating, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [policyData, setPolicyData] = useState({
     title_en: '',
@@ -58,38 +57,16 @@ export default function RDToPolicyConverter({ rdProject, onClose, onSuccess }) {
     }
   };
 
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: policy, error: policyError } = await supabase
-        .from('policy_recommendations')
-        .insert(data)
-        .select()
-        .single();
-      if (policyError) throw policyError;
-      
-      // Update R&D with policy impact
-      const { error: updateError } = await supabase
-        .from('rd_projects')
-        .update({
-          policy_impact: {
-            ...rdProject.policy_impact,
-            policy_generated_id: policy.id,
-            policy_generated_date: new Date().toISOString()
-          }
-        })
-        .eq('id', rdProject.id);
-      if (updateError) throw updateError;
-
-      return policy;
-    },
-    onSuccess: (policy) => {
-      queryClient.invalidateQueries({ queryKey: ['rd-projects'] });
-      queryClient.invalidateQueries({ queryKey: ['policies'] });
-      toast.success(t({ en: 'Policy created!', ar: 'تم إنشاء السياسة!' }));
+  const handleCreate = async () => {
+    try {
+      const policy = await transitionToPolicy.mutateAsync({ policyData, rdProject });
+      // Success handled by hook, but specific close logic here
       onSuccess?.(policy);
       onClose?.();
+    } catch (error) {
+      // Error handled by hook
     }
-  });
+  };
 
   return (
     <Card className="max-w-4xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -198,11 +175,11 @@ export default function RDToPolicyConverter({ rdProject, onClose, onSuccess }) {
             {t({ en: 'Cancel', ar: 'إلغاء' })}
           </Button>
           <Button
-            onClick={() => createMutation.mutate(policyData)}
-            disabled={createMutation.isPending || !policyData.recommendation_text_en || !policyData.recommendation_text_ar}
+            onClick={handleCreate}
+            disabled={transitionToPolicy.isPending || !policyData.recommendation_text_en || !policyData.recommendation_text_ar}
             className="bg-gradient-to-r from-indigo-600 to-purple-600"
           >
-            {createMutation.isPending ? (
+            {transitionToPolicy.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 {t({ en: 'Creating...', ar: 'جاري الإنشاء...' })}

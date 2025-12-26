@@ -12,6 +12,7 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { PILOT_PROCUREMENT_SYSTEM_PROMPT, buildPilotProcurementPrompt, PILOT_PROCUREMENT_SCHEMA } from '@/lib/ai/prompts/pilots';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { useCreateContract } from '@/hooks/useContracts';
 
 export default function PilotToProcurementWorkflow({ pilot, onClose }) {
   const { language, isRTL, t } = useLanguage();

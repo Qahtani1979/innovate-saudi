@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { usePolicyMutations } from '@/hooks/usePolicyMutations';
+import { useUpdateChallengeTracks } from '@/hooks/useChallengeMutations';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,7 +15,9 @@ import { useAuth } from '@/lib/AuthContext';
 export default function PolicyWorkflow({ challenge, onSuccess, onCancel }) {
   const { language, isRTL, t } = useLanguage();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+
+  const { createPolicy } = usePolicyMutations();
+  const updateTracks = useUpdateChallengeTracks();
 
   const [formData, setFormData] = useState({
     title_ar: `توصية سياسية لـ ${challenge.title_ar || challenge.title_en}`,
@@ -29,45 +31,35 @@ export default function PolicyWorkflow({ challenge, onSuccess, onCancel }) {
     impact_assessment: ''
   });
 
-  const submitMutation = useMutation({
-    mutationFn: async (data) => {
+  const handleSubmit = async () => {
+    try {
       toast.info(t({ en: 'Creating policy recommendation...', ar: 'جاري إنشاء التوصية السياسية...' }));
-      
+
       // Create policy recommendation
-      const { data: policyRec, error } = await supabase
-        .from('policy_recommendations')
-        .insert({
-          challenge_id: challenge.id,
-          entity_type: 'challenge',
-          submitted_by: user?.email,
-          submission_date: new Date().toISOString(),
-          workflow_stage: 'draft',
-          ...data,
-          title_en: data.title_ar, // Will be translated
-          recommendation_text_en: data.recommendation_text_ar
-        })
-        .select()
-        .single();
-      if (error) throw error;
+      await createPolicy.mutateAsync({
+        challenge_id: challenge.id,
+        entity_type: 'challenge',
+        submitted_by: user?.email,
+        submission_date: new Date().toISOString(),
+        workflow_stage: 'draft',
+        ...formData, // Spread formData directly
+        title_en: formData.title_ar, // Will be translated later or by AI
+        recommendation_text_en: formData.recommendation_text_ar
+      });
 
       // Update challenge track
-      const { error: updateError } = await supabase
-        .from('challenges')
-        .update({
-          tracks: [...new Set([...(challenge.tracks || []), 'policy'])]
-        })
-        .eq('id', challenge.id);
-      if (updateError) throw updateError;
+      const newTracks = [...new Set([...(challenge.tracks || []), 'policy'])];
+      // @ts-ignore
+      await updateTracks.mutateAsync({ id: challenge.id, tracks: newTracks });
 
-      return policyRec;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['challenge', challenge.id]);
-      queryClient.invalidateQueries(['policy-recommendations']);
       toast.success(t({ en: 'Policy recommendation created', ar: 'تم إنشاء التوصية السياسية' }));
       if (onSuccess) onSuccess();
+
+    } catch (error) {
+      console.error('Workflow error:', error);
+      toast.error(t({ en: 'Failed to create policy recommendation', ar: 'فشل إنشاء التوصية السياسية' }));
     }
-  });
+  };
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -199,11 +191,11 @@ export default function PolicyWorkflow({ challenge, onSuccess, onCancel }) {
           {t({ en: 'Cancel', ar: 'إلغاء' })}
         </Button>
         <Button
-          onClick={() => submitMutation.mutate(formData)}
-          disabled={submitMutation.isPending || !formData.recommendation_text_ar}
+          onClick={handleSubmit}
+          disabled={createPolicy.isPending || updateTracks.isPending || !formData.recommendation_text_ar}
           className="bg-gradient-to-r from-purple-600 to-indigo-600"
         >
-          {submitMutation.isPending ? (
+          {createPolicy.isPending || updateTracks.isPending ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               {t({ en: 'Saving...', ar: 'جاري الحفظ...' })}

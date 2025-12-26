@@ -1,10 +1,8 @@
-
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Clock, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { useCitizenIdeas } from '@/hooks/useCitizenIdeas';
 
 const SLA_TARGETS = {
   initial_review: 3, // days
@@ -15,18 +13,14 @@ const SLA_TARGETS = {
 export default function SLATracker() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: ideas = [] } = useQuery({
-    queryKey: ['ideas-sla'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('citizen_ideas').select('*');
-      if (error) throw error;
-      return data;
-    }
-  });
+  const { ideas } = useCitizenIdeas();
+  const ideaData = ideas.data || [];
+  const isLoading = ideas.isLoading;
 
   const calculateDaysOpen = (idea) => {
-    const created = new Date(idea.created_date);
+    const created = new Date(idea.created_at || idea.created_date || 0);
     const now = new Date();
+    // @ts-ignore
     return Math.floor((now - created) / (1000 * 60 * 60 * 24));
   };
 
@@ -40,16 +34,16 @@ export default function SLATracker() {
   };
 
   const ideasByStatus = {
-    on_track: ideas.filter(i => getStatus(i, calculateDaysOpen(i)) === 'on_track'),
-    warning: ideas.filter(i => getStatus(i, calculateDaysOpen(i)) === 'warning'),
-    overdue: ideas.filter(i => getStatus(i, calculateDaysOpen(i)) === 'overdue'),
-    complete: ideas.filter(i => getStatus(i, calculateDaysOpen(i)) === 'complete')
+    on_track: ideaData.filter(i => getStatus(i, calculateDaysOpen(i)) === 'on_track'),
+    warning: ideaData.filter(i => getStatus(i, calculateDaysOpen(i)) === 'warning'),
+    overdue: ideaData.filter(i => getStatus(i, calculateDaysOpen(i)) === 'overdue'),
+    complete: ideaData.filter(i => getStatus(i, calculateDaysOpen(i)) === 'complete')
   };
 
-  const avgResponseTime = ideas.filter(i => i.review_date).reduce((sum, i) => {
+  const avgResponseTime = (ideaData.filter(i => i.review_date).reduce((sum, i) => {
     const days = calculateDaysOpen(i);
     return sum + days;
-  }, 0) / Math.max(ideas.filter(i => i.review_date).length, 1);
+  }, 0) / Math.max(ideaData.filter(i => i.review_date).length, 1)) || 0;
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>

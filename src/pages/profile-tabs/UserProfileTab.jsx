@@ -17,7 +17,7 @@ import SupabaseFileUploader from '@/components/uploads/SupabaseFileUploader';
 import { ProfileStatCard, ProfileStatGrid } from '@/components/profile/ProfileStatCard';
 import { ProfileBadge } from '@/components/profile/ProfileBadge';
 import RoleRequestStatusBanner from '@/components/profile/RoleRequestStatusBanner';
-import { useUserProfileManagement } from '@/hooks/useUserProfileManagement';
+import { useUserProfileById } from '@/hooks/useUserProfile';
 
 export default function UserProfileTab() {
   const { language, isRTL, t } = useLanguage();
@@ -29,7 +29,7 @@ export default function UserProfileTab() {
   const [coverPreview, setCoverPreview] = useState(null);
 
   // Use custom hook for profile management
-  const { profile, isLoading, updateProfile } = useUserProfileManagement(authUser?.id);
+  const { profile, isLoading, updateProfile } = useUserProfileById(authUser?.id);
 
   const handleSave = () => {
     const updateData = {

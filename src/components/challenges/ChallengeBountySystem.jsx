@@ -1,16 +1,13 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useChallengeMutations } from '@/hooks/useChallengeMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Award, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 
 export default function ChallengeBountySystem({ challenge }) {
-  const queryClient = useQueryClient();
   const [bountyData, setBountyData] = useState({
     prize_amount: '',
     prize_currency: 'SAR',
@@ -19,26 +16,26 @@ export default function ChallengeBountySystem({ challenge }) {
     evaluation_criteria: ''
   });
 
-  const createBountyMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('challenges')
-        .update({
-          bounty_enabled: true,
-          bounty_details: {
-            ...bountyData,
-            created_date: new Date().toISOString(),
-            status: 'open'
-          }
-        })
-        .eq('id', challenge.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['challenges'] });
-      toast.success('Bounty created - challenge is now open for crowdsourced solutions');
-    }
-  });
+  const { updateChallenge } = useChallengeMutations();
+
+  const handleCreateBounty = () => {
+    updateChallenge.mutate({
+      id: challenge.id,
+      data: {
+        bounty_enabled: true,
+        bounty_details: {
+          ...bountyData,
+          created_date: new Date().toISOString(),
+          status: 'open'
+        }
+      },
+      activityLog: {
+        activity_type: 'bounty_created',
+        description: `Bounty created with prize ${bountyData.prize_amount} ${bountyData.prize_currency}`,
+        metadata: { prize: bountyData.prize_amount }
+      }
+    });
+  };
 
   const existingBounty = challenge.bounty_details;
 
@@ -84,7 +81,7 @@ export default function ChallengeBountySystem({ challenge }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-slate-600">
-          Offer a prize for the best crowdsourced solution to this challenge. 
+          Offer a prize for the best crowdsourced solution to this challenge.
           Opens competition to public, startups, and innovators.
         </p>
 
@@ -124,12 +121,12 @@ export default function ChallengeBountySystem({ challenge }) {
           />
         </div>
 
-        <Button 
-          onClick={() => createBountyMutation.mutate()}
-          disabled={!bountyData.prize_amount || !bountyData.deadline_date || createBountyMutation.isPending}
+        <Button
+          onClick={handleCreateBounty}
+          disabled={!bountyData.prize_amount || !bountyData.deadline_date || updateChallenge.isPending}
           className="w-full bg-yellow-600"
         >
-          {createBountyMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          {updateChallenge.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
           <Award className="h-4 w-4 mr-2" />
           Launch Bounty Competition
         </Button>

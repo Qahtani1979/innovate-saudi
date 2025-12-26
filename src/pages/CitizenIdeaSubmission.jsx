@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
+import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
+import { useCitizenIdeas, useMyCitizenIdeas } from '@/hooks/useCitizenIdeas';
+import { usePublicIdeaActions } from '@/hooks/usePublicIdeaActions';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,8 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Lightbulb, Send, Sparkles, ArrowLeft, 
+import {
+  Lightbulb, Send, Sparkles, ArrowLeft,
   Loader2, Clock, Eye, FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -22,12 +23,10 @@ import { CitizenPageLayout, CitizenPageHeader } from '@/components/citizen/Citiz
 function CitizenIdeaSubmission() {
   const { language, isRTL, t } = useLanguage();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
-  
   const [currentStep, setCurrentStep] = useState(1);
   const [isAIProcessing, setIsAIProcessing] = useState(false);
   const [selectedIdea, setSelectedIdea] = useState(null);
-  
+
   // Form state
   const [initialIdea, setInitialIdea] = useState('');
   const [selectedMunicipality, setSelectedMunicipality] = useState('');
@@ -43,62 +42,13 @@ function CitizenIdeaSubmission() {
     ai_summary: ''
   });
 
-  // Fetch municipalities
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities-active'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('municipalities')
-        .select('id, name_en, name_ar')
-        .eq('is_active', true)
-        .order('name_en');
-      return data || [];
-    }
-  });
+  // Hooks
+  const { data: municipalities = [] } = useMunicipalitiesWithVisibility();
+  const { ideas: { submitIdea } } = useCitizenIdeas();
+  const { data: myIdeas = [], isLoading: ideasLoading } = useMyCitizenIdeas(user?.id);
+  const { analyzeIdea } = usePublicIdeaActions();
 
-  // Fetch user's submitted ideas
-  const { data: myIdeas = [], isLoading: ideasLoading } = useQuery({
-    queryKey: ['my-citizen-ideas', user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('citizen_ideas')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.id
-  });
-
-  // Submit mutation
-  const submitMutation = useMutation({
-    mutationFn: async (ideaData) => {
-      const { data, error } = await supabase
-        .from('citizen_ideas')
-        .insert({
-          ...ideaData,
-          user_id: user?.id,
-          status: 'submitted',
-          is_published: false
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['my-citizen-ideas']);
-      toast.success(t({ en: 'Idea submitted successfully!', ar: 'تم إرسال الفكرة بنجاح!' }));
-      resetForm();
-    },
-    onError: (error) => {
-      console.error('Submit error:', error);
-      toast.error(t({ en: 'Failed to submit idea', ar: 'فشل إرسال الفكرة' }));
-    }
-  });
-
-  // AI Generate
+  // AI Generate - simplified using hook logic
   const handleAIGenerate = async () => {
     if (!initialIdea.trim()) {
       toast.error(t({ en: 'Please describe your idea first', ar: 'يرجى وصف فكرتك أولاً' }));
@@ -108,27 +58,14 @@ function CitizenIdeaSubmission() {
     setIsAIProcessing(true);
     try {
       const municipality = municipalities.find(m => m.id === selectedMunicipality);
-      
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/public-idea-ai`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
-        },
-        body: JSON.stringify({
-          idea: initialIdea,
-          municipality: municipality ? `${municipality.name_en} (${municipality.name_ar})` : null,
-          user_id: user?.id,
-          user_type: 'citizen'
-        })
+
+      const result = await analyzeIdea.mutateAsync({
+        idea: initialIdea,
+        municipality: municipality ? `${municipality.name_en} (${municipality.name_ar})` : null,
+        user_id: user?.id,
+        user_type: 'citizen'
       });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'AI generation failed');
-      }
-      
       setFormData({
         title: result.title_en || '',
         title_ar: result.title_ar || '',
@@ -140,7 +77,7 @@ function CitizenIdeaSubmission() {
         feasibility_score: result.feasibility_score || 50,
         ai_summary: result.ai_summary_en || result.ai_summary || ''
       });
-      
+
       setCurrentStep(2);
       toast.success(t({ en: 'AI has analyzed your idea!', ar: 'قام الذكاء الاصطناعي بتحليل فكرتك!' }));
     } catch (error) {
@@ -151,19 +88,26 @@ function CitizenIdeaSubmission() {
     }
   };
 
-  // Submit idea
+  // Submit idea - simplified using hook mutation
   const handleSubmit = () => {
     if (!formData.title.trim()) {
       toast.error(t({ en: 'Please provide an idea title', ar: 'يرجى تقديم عنوان للفكرة' }));
       return;
     }
 
-    submitMutation.mutate({
+    submitIdea.mutate({
       title: language === 'ar' ? formData.title_ar : formData.title,
       description: language === 'ar' ? formData.description_ar : formData.description,
       category: formData.category,
       municipality_id: selectedMunicipality || null,
-      tags: formData.tags
+      tags: formData.tags,
+      user_id: user?.id,
+      status: 'submitted',
+      is_published: false
+    }, {
+      onSuccess: () => {
+        resetForm();
+      }
     });
   };
 
@@ -190,10 +134,13 @@ function CitizenIdeaSubmission() {
       <CitizenPageHeader
         icon={Lightbulb}
         title={t({ en: 'Innovation Ideas', ar: 'أفكار الابتكار' })}
+        subtitle={null}
         description={t({ en: 'Submit and track your innovation ideas', ar: 'قدم وتابع أفكارك الابتكارية' })}
         stats={[
           { icon: FileText, value: myIdeas.length, label: t({ en: 'My Ideas', ar: 'أفكاري' }) },
         ]}
+        action={null}
+        actions={null}
       />
 
       <Tabs defaultValue="submit" className="space-y-6">
@@ -224,9 +171,8 @@ function CitizenIdeaSubmission() {
               <div className="flex items-center justify-center gap-4 mb-6">
                 {[1, 2].map((step) => (
                   <div key={step} className="flex items-center">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                      currentStep >= step ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                    }`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep >= step ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                      }`}>
                       {step}
                     </div>
                     {step < 2 && <div className={`w-12 h-1 mx-2 ${currentStep > step ? 'bg-primary' : 'bg-muted'}`} />}
@@ -266,8 +212,8 @@ function CitizenIdeaSubmission() {
                     </Select>
                   </div>
 
-                  <Button 
-                    onClick={handleAIGenerate} 
+                  <Button
+                    onClick={handleAIGenerate}
                     disabled={isAIProcessing || !initialIdea.trim()}
                     className="w-full"
                   >
@@ -295,7 +241,7 @@ function CitizenIdeaSubmission() {
                       </label>
                       <Input
                         value={formData.title}
-                        onChange={(e) => setFormData({...formData, title: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                       />
                     </div>
                     <div>
@@ -304,7 +250,7 @@ function CitizenIdeaSubmission() {
                       </label>
                       <Input
                         value={formData.title_ar}
-                        onChange={(e) => setFormData({...formData, title_ar: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, title_ar: e.target.value })}
                         dir="rtl"
                       />
                     </div>
@@ -317,7 +263,7 @@ function CitizenIdeaSubmission() {
                     <Textarea
                       value={language === 'ar' ? formData.description_ar : formData.description}
                       onChange={(e) => setFormData({
-                        ...formData, 
+                        ...formData,
                         [language === 'ar' ? 'description_ar' : 'description']: e.target.value
                       })}
                       rows={4}
@@ -328,7 +274,7 @@ function CitizenIdeaSubmission() {
                     <label className="text-sm font-medium mb-2 block">
                       {t({ en: 'Category', ar: 'الفئة' })}
                     </label>
-                    <Select value={formData.category} onValueChange={(v) => setFormData({...formData, category: v})}>
+                    <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -355,8 +301,8 @@ function CitizenIdeaSubmission() {
                       <ArrowLeft className="h-4 w-4 mr-2" />
                       {t({ en: 'Back', ar: 'رجوع' })}
                     </Button>
-                    <Button onClick={handleSubmit} disabled={submitMutation.isPending} className="flex-1">
-                      {submitMutation.isPending ? (
+                    <Button onClick={handleSubmit} disabled={submitIdea.isPending} className="flex-1">
+                      {submitIdea.isPending ? (
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       ) : (
                         <Send className="h-4 w-4 mr-2" />
@@ -384,8 +330,8 @@ function CitizenIdeaSubmission() {
             </Card>
           ) : (
             myIdeas.map((idea) => (
-              <Card 
-                key={idea.id} 
+              <Card
+                key={idea.id}
                 className={`cursor-pointer transition-shadow hover:shadow-md ${selectedIdea?.id === idea.id ? 'ring-2 ring-primary' : ''}`}
                 onClick={() => setSelectedIdea(selectedIdea?.id === idea.id ? null : idea)}
               >

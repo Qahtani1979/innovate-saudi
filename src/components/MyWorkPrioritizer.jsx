@@ -1,55 +1,19 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from './LanguageContext';
 import { Sparkles, Clock, Target, ArrowRight, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { useAuth } from '@/lib/AuthContext';
 import { buildWorkPrioritizerPrompt, WORK_PRIORITIZER_SCHEMA } from '@/lib/ai/prompts/core/workPrioritizer';
+import { useMyWork } from '@/hooks/useMyWork';
 
 export default function MyWorkPrioritizer() {
   const { language, isRTL, t } = useLanguage();
   const [aiPriorities, setAiPriorities] = useState(null);
-  const { user } = useAuth();
-  
-  const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
-    showToasts: true,
-    fallbackData: null
-  });
-
-  const { data: myChallenges = [] } = useQuery({
-    queryKey: ['my-challenges', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('challenges').select('*').eq('is_deleted', false).eq('created_by', user?.email);
-      return data || [];
-    },
-    enabled: !!user
-  });
-
-  const { data: myPilots = [] } = useQuery({
-    queryKey: ['my-pilots', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('pilots').select('*').eq('is_deleted', false).eq('created_by', user?.email);
-      return data || [];
-    },
-    enabled: !!user
-  });
-
-  const { data: myTasks = [] } = useQuery({
-    queryKey: ['my-tasks', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('tasks').select('*')
-        .eq('assigned_to', user?.email)
-        .neq('status', 'completed');
-      return data || [];
-    },
-    enabled: !!user
-  });
+  // Use the new hook for fetching work items
+  const { myChallenges, myPilots, myTasks, isLoading: loadingWork } = useMyWork();
 
   const generatePriorities = async () => {
     const context = {
@@ -117,7 +81,7 @@ export default function MyWorkPrioritizer() {
               </p>
             </div>
           </div>
-          <Button 
+          <Button
             onClick={generatePriorities}
             disabled={isLoading || !isAvailable}
             className="bg-gradient-to-r from-purple-600 to-pink-600"
@@ -139,14 +103,14 @@ export default function MyWorkPrioritizer() {
 
       <CardContent>
         <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
-        
+
         {!aiPriorities && !isLoading && (
           <div className="text-center py-8">
             <Target className="h-12 w-12 text-purple-300 mx-auto mb-3" />
             <p className="text-slate-600">
-              {t({ 
-                en: 'Click "Generate Priorities" to get AI-powered recommendations for your day', 
-                ar: 'انقر "توليد الأولويات" للحصول على توصيات مدعومة بالذكاء الاصطناعي ليومك' 
+              {t({
+                en: 'Click "Generate Priorities" to get AI-powered recommendations for your day',
+                ar: 'انقر "توليد الأولويات" للحصول على توصيات مدعومة بالذكاء الاصطناعي ليومك'
               })}
             </p>
           </div>

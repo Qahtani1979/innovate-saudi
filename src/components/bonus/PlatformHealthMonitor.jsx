@@ -1,57 +1,23 @@
-import { useQuery } from '@tanstack/react-query';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { usePilotsList } from '@/hooks/usePilots';
+import { useTasks } from '@/hooks/useTasks';
+import { useSolutions } from '@/hooks/useSolutions';
+import { useRDProjects } from '@/hooks/useRDProjects';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Activity, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 
 export default function PlatformHealthMonitor() {
   const { language, t } = useLanguage();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('challenges').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('pilots').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: tasks = [] } = useQuery({
-    queryKey: ['tasks'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('tasks').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions-health'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('solutions').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects-health'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('rd_projects').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: challengesData } = useChallengesWithVisibility({ limit: 1000, paginate: false });
+  const challenges = Array.isArray(challengesData) ? challengesData : (challengesData?.data || []);
+  const { data: pilots = [] } = usePilotsList();
+  const { useUserTasks } = useTasks({ isAdmin: true, user: { email: 'admin' } }); // Assuming monitor needs all tasks or admin view
+  const { data: tasks = [] } = useUserTasks();
+  const { solutions } = useSolutions({ publishedOnly: false, limit: 1000 });
+  const { data: rdProjects = [] } = useRDProjects();
 
   const healthChecks = [
     {
@@ -68,8 +34,8 @@ export default function PlatformHealthMonitor() {
     },
     {
       name: t({ en: 'Task Completion Rate', ar: 'معدل إنجاز المهام' }),
-      status: tasks.filter(t => t.status === 'completed').length / Math.max(tasks.length, 1) > 0.7 ? 'healthy' : 
-             tasks.filter(t => t.status === 'completed').length / Math.max(tasks.length, 1) > 0.4 ? 'warning' : 'critical',
+      status: tasks.filter(t => t.status === 'completed').length / Math.max(tasks.length, 1) > 0.7 ? 'healthy' :
+        tasks.filter(t => t.status === 'completed').length / Math.max(tasks.length, 1) > 0.4 ? 'warning' : 'critical',
       value: `${Math.round((tasks.filter(t => t.status === 'completed').length / Math.max(tasks.length, 1)) * 100)}%`,
       threshold: '> 70% completion'
     },
@@ -82,7 +48,7 @@ export default function PlatformHealthMonitor() {
   ];
 
   const overallHealth = healthChecks.every(h => h.status === 'healthy') ? 'healthy' :
-                        healthChecks.some(h => h.status === 'critical') ? 'critical' : 'warning';
+    healthChecks.some(h => h.status === 'critical') ? 'critical' : 'warning';
 
   return (
     <Card className="border-2 border-teal-300">
@@ -94,8 +60,8 @@ export default function PlatformHealthMonitor() {
           </CardTitle>
           <Badge className={
             overallHealth === 'healthy' ? 'bg-green-600' :
-            overallHealth === 'critical' ? 'bg-red-600' :
-            'bg-yellow-600'
+              overallHealth === 'critical' ? 'bg-red-600' :
+                'bg-yellow-600'
           }>
             {overallHealth.toUpperCase()}
           </Badge>
@@ -105,22 +71,22 @@ export default function PlatformHealthMonitor() {
         <div className="space-y-3">
           {healthChecks.map((check, i) => {
             const Icon = check.status === 'healthy' ? CheckCircle :
-                        check.status === 'critical' ? XCircle :
-                        check.status === 'warning' ? AlertTriangle :
-                        Activity;
-            
+              check.status === 'critical' ? XCircle :
+                check.status === 'warning' ? AlertTriangle :
+                  Activity;
+
             const colorClass = check.status === 'healthy' ? 'text-green-600 bg-green-50 border-green-300' :
-                              check.status === 'critical' ? 'text-red-600 bg-red-50 border-red-300' :
-                              check.status === 'warning' ? 'text-yellow-600 bg-yellow-50 border-yellow-300' :
-                              'text-blue-600 bg-blue-50 border-blue-300';
+              check.status === 'critical' ? 'text-red-600 bg-red-50 border-red-300' :
+                check.status === 'warning' ? 'text-yellow-600 bg-yellow-50 border-yellow-300' :
+                  'text-blue-600 bg-blue-50 border-blue-300';
 
             return (
               <div key={i} className={`p-4 rounded-lg border-2 ${colorClass}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Icon className={`h-5 w-5 ${check.status === 'healthy' ? 'text-green-600' : 
-                                                  check.status === 'critical' ? 'text-red-600' :
-                                                  check.status === 'warning' ? 'text-yellow-600' : 'text-blue-600'}`} />
+                    <Icon className={`h-5 w-5 ${check.status === 'healthy' ? 'text-green-600' :
+                      check.status === 'critical' ? 'text-red-600' :
+                        check.status === 'warning' ? 'text-yellow-600' : 'text-blue-600'}`} />
                     <div>
                       <p className="font-medium text-slate-900">{check.name}</p>
                       <p className="text-xs text-slate-600">{check.threshold}</p>

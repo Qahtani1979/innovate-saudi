@@ -1,8 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-export function useNotifications(userEmail) {
+export function useNotifications(userEmail, options = {}) {
     const queryClient = useQueryClient();
+    const { refetchInterval } = options;
 
     const { data: notifications = [], isLoading } = useQuery({
         queryKey: ['notifications', userEmail],
@@ -16,10 +17,12 @@ export function useNotifications(userEmail) {
             if (error) throw error;
             return data || [];
         },
-        enabled: !!userEmail
+        enabled: !!userEmail,
+        refetchInterval
     });
 
     const markAsRead = useMutation({
+        /** @param {string} id */
         mutationFn: async (id) => {
             const { error } = await supabase
                 .from('notifications')
@@ -31,6 +34,7 @@ export function useNotifications(userEmail) {
     });
 
     const deleteNotification = useMutation({
+        /** @param {string} id */
         mutationFn: async (id) => {
             const { error } = await supabase
                 .from('notifications')

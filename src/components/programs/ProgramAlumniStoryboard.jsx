@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,65 +9,20 @@ import { createPageUrl } from '../../utils';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
+import { useProgramAlumni } from '@/hooks/useProgramAlumni';
+
 export default function ProgramAlumniStoryboard({ program, showPublicOnly = false }) {
   const { language, isRTL, t } = useLanguage();
   const [aiStories, setAiStories] = useState(null);
-  
+
   const { invokeAI, status, isLoading: generatingStories, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  // Fetch program participants/alumni
-  const { data: applications = [] } = useQuery({
-    queryKey: ['program-applications-alumni', program?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('program_applications')
-        .select('*')
-        .eq('program_id', program.id)
-        .in('status', ['graduated', 'active']);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!program
-  });
-
-  // Fetch solutions by alumni
-  const { data: alumniSolutions = [] } = useQuery({
-    queryKey: ['alumni-solutions', program?.id],
-    queryFn: async () => {
-      const participantEmails = applications.map(a => a.applicant_email);
-      if (participantEmails.length === 0) return [];
-      
-      const { data, error } = await supabase.from('solutions').select('*');
-      if (error) throw error;
-      return (data || []).filter(s => 
-        participantEmails.includes(s.created_by) ||
-        participantEmails.some(email => s.provider_name?.includes(email))
-      );
-    },
-    enabled: applications.length > 0
-  });
-
-  // Fetch pilots by alumni
-  const { data: alumniPilots = [] } = useQuery({
-    queryKey: ['alumni-pilots', program?.id],
-    queryFn: async () => {
-      const participantEmails = applications.map(a => a.applicant_email);
-      if (participantEmails.length === 0) return [];
-      
-      const { data, error } = await supabase.from('pilots').select('*').eq('is_deleted', false);
-      if (error) throw error;
-      return (data || []).filter(p => 
-        participantEmails.includes(p.created_by) ||
-        p.team?.some(t => participantEmails.includes(t.email))
-      );
-    },
-    enabled: applications.length > 0
-  });
+  const { alumni: applications, alumniSolutions, alumniPilots } = useProgramAlumni(program?.id);
 
   const handleGenerateStories = async () => {
     const alumniData = applications.slice(0, 10).map(app => ({
       name: app.applicant_name || app.applicant_email,
-      organization: app.organization_name,
+      organization: app.organization_name || app.applicant_name, // Fallback if organization_name missing
       achievements: {
         solutions: alumniSolutions.filter(s => s.created_by === app.applicant_email).length,
         pilots: alumniPilots.filter(p => p.created_by === app.applicant_email).length
@@ -113,7 +66,7 @@ Return stories with both en and ar for each field.`,
         }
       }
     });
-    
+
     if (result.success && result.data) {
       setAiStories(result.data);
     }
@@ -133,7 +86,7 @@ Return stories with both en and ar for each field.`,
             <Award className="h-5 w-5 text-amber-600" />
             {t({ en: 'Alumni Success Stories', ar: 'قصص نجاح الخريجين' })}
           </CardTitle>
-          <Button 
+          <Button
             onClick={handleGenerateStories}
             disabled={generatingStories || graduatedCount === 0 || !isAvailable}
             className="bg-amber-600"

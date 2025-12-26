@@ -6,39 +6,43 @@ import { toast } from 'sonner';
  * Hook to handle public idea submission actions
  */
 export function usePublicIdeaActions() {
+    const analyzeIdeaMutation = useMutation({
+        mutationFn: async (params) => {
+            const { idea, municipality, sessionId, user_id, user_type } = params;
+            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/public-idea-ai`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+                },
+                body: JSON.stringify({
+                    idea,
+                    municipality,
+                    session_id: sessionId,
+                    user_id,
+                    user_type: user_type || 'anonymous'
+                })
+            });
 
-    const analyzeIdea = async ({ idea, municipality, sessionId }) => {
-        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/public-idea-ai`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
-            },
-            body: JSON.stringify({
-                idea,
-                municipality,
-                session_id: sessionId,
-                user_type: 'anonymous'
-            })
-        });
+            const result = await response.json();
 
-        const result = await response.json();
+            if (response.status === 429) {
+                const error = new Error('Rate limit exceeded');
+                error.rateLimit = result.rate_limit;
+                throw error;
+            }
 
-        if (response.status === 429) {
-            const error = new Error('Rate limit exceeded');
-            error.rateLimit = result.rate_limit;
-            throw error;
+            if (!response.ok) {
+                throw new Error(result.error || 'AI generation failed');
+            }
+
+            return result;
         }
-
-        if (!response.ok) {
-            throw new Error(result.error || 'AI generation failed');
-        }
-
-        return result;
-    };
+    });
 
     const submitIdeaMutation = useMutation({
-        mutationFn: async ({ formData, initialIdea, contactInfo, language }) => {
+        mutationFn: async (params) => {
+            const { formData, initialIdea, contactInfo, language } = params;
             const { data, error } = await supabase
                 .from('citizen_ideas')
                 .insert({
@@ -55,12 +59,8 @@ export function usePublicIdeaActions() {
 
             if (error) throw error;
 
-            // Metadata handling and email trigger could be here or handled in the component. 
-            // For simplicity, we just do the insert here as the component had complex logic.
-            // But to fully refactor, we should move the email logic here or keeping it there is fine if we return data.
-
-            // Let's do the email trigger here if contact info exists
-            if (!contactInfo.is_anonymous && contactInfo.email) {
+            // Email trigger logic
+            if (contactInfo && !contactInfo.is_anonymous && contactInfo.email) {
                 try {
                     await supabase.functions.invoke('email-trigger-hub', {
                         body: {
@@ -88,7 +88,7 @@ export function usePublicIdeaActions() {
     });
 
     return {
-        analyzeIdea,
+        analyzeIdea: analyzeIdeaMutation,
         submitIdea: submitIdeaMutation
     };
 }

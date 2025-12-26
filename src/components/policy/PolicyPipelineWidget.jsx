@@ -1,5 +1,5 @@
 
-import { useQuery } from '@tanstack/react-query';
+// cleaned up imports
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,25 +8,24 @@ import { Shield, ArrowRight, Loader2, Clock, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 
+import { usePoliciesList } from '@/hooks/usePolicies';
+
 export default function PolicyPipelineWidget() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: policies = [], isLoading } = useQuery({
-    queryKey: ['policies-pipeline'],
-    queryFn: () => base44.entities.PolicyRecommendation.list('-created_date', 50)
-  });
+  const { data: policies = [], isLoading } = usePoliciesList({ limit: 50 });
 
   const pipeline = {
     pending_legal: policies.filter(p => (p.workflow_stage || p.status) === 'legal_review').length,
     pending_consultation: policies.filter(p => (p.workflow_stage || p.status) === 'public_consultation').length,
     pending_council: policies.filter(p => (p.workflow_stage || p.status) === 'council_approval').length,
     pending_ministry: policies.filter(p => (p.workflow_stage || p.status) === 'ministry_approval').length,
-    ready_publish: policies.filter(p => (p.workflow_stage || p.status) === 'council_approval' && 
+    ready_publish: policies.filter(p => (p.workflow_stage || p.status) === 'council_approval' &&
       p.approvals?.some(a => a.stage === 'council_approval' && a.status === 'approved')).length
   };
 
   const urgentPolicies = policies
-    .filter(p => p.priority_level === 'critical' && 
+    .filter(p => p.priority_level === 'critical' &&
       (p.workflow_stage || p.status) !== 'published' &&
       (p.workflow_stage || p.status) !== 'active')
     .slice(0, 3);
@@ -68,7 +67,7 @@ export default function PolicyPipelineWidget() {
             </div>
             <p className="text-2xl font-bold text-yellow-600">{pipeline.pending_legal}</p>
           </div>
-          
+
           <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
             <div className="flex items-center gap-2 mb-1">
               <Clock className="h-4 w-4 text-blue-600" />
@@ -113,7 +112,7 @@ export default function PolicyPipelineWidget() {
               <Link key={p.id} to={createPageUrl(`PolicyDetail?id=${p.id}`)}>
                 <div className="p-2 bg-red-50 rounded border border-red-200 hover:bg-red-100 transition-colors">
                   <p className="text-xs font-medium text-slate-900" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                   {language === 'ar' && p.title_ar ? p.title_ar : p.title_en}
+                    {language === 'ar' && p.title_ar ? p.title_ar : p.title_en}
                   </p>
                   <Badge className="mt-1 text-xs bg-red-600 text-white">
                     {(p.workflow_stage || p.status)?.replace(/_/g, ' ')}

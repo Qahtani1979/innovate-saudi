@@ -1,32 +1,32 @@
-
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../LanguageContext';
-import { MessageSquare, Clock, TrendingUp, Mail } from 'lucide-react';
+import { MessageSquare, Clock, TrendingUp, Mail, Loader2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { useCommunicationHub } from '@/hooks/useCommunicationHub';
 
 export default function CommunicationAnalytics() {
   const { language, t } = useLanguage();
+  const { messages: messagesQuery, allNotifications: notificationsQuery } = useCommunicationHub();
 
-  const { data: messages = [] } = useQuery({
-    queryKey: ['messages'],
-    queryFn: () => base44.entities.Message.list(),
-    initialData: []
-  });
+  const messages = messagesQuery.data || [];
+  const notifications = notificationsQuery.data || [];
+  const isLoading = messagesQuery.isLoading || notificationsQuery.isLoading;
 
-  const { data: notifications = [] } = useQuery({
-    queryKey: ['notifications'],
-    queryFn: () => base44.entities.Notification.list(),
-    initialData: []
-  });
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
 
   const avgResponseTime = messages.length > 0
     ? messages
-        .filter(m => m.replied_date && m.sent_date)
-        .reduce((sum, m) => {
-          const hours = (new Date(m.replied_date) - new Date(m.sent_date)) / (1000 * 60 * 60);
-          return sum + hours;
-        }, 0) / messages.filter(m => m.replied_date).length
+      .filter(m => m.metadata?.replied_at && m.created_at)
+      .reduce((sum, m) => {
+        const hours = (new Date(m.metadata.replied_at).getTime() - new Date(m.created_at).getTime()) / (1000 * 60 * 60);
+        return sum + hours;
+      }, 0) / (messages.filter(m => m.metadata?.replied_at).length || 1)
     : 0;
 
   const readRate = notifications.length > 0
@@ -34,13 +34,13 @@ export default function CommunicationAnalytics() {
     : 0;
 
   const sentimentCounts = {
-    positive: messages.filter(m => m.sentiment === 'positive').length,
-    neutral: messages.filter(m => m.sentiment === 'neutral').length,
-    negative: messages.filter(m => m.sentiment === 'negative').length
+    positive: messages.filter(m => m.metadata?.sentiment === 'positive').length,
+    neutral: messages.filter(m => m.metadata?.sentiment === 'neutral').length,
+    negative: messages.filter(m => m.metadata?.sentiment === 'negative').length
   };
 
   const dailyActivity = messages.reduce((acc, m) => {
-    const date = new Date(m.created_date).toLocaleDateString();
+    const date = new Date(m.created_at).toLocaleDateString();
     acc[date] = (acc[date] || 0) + 1;
     return acc;
   }, {});

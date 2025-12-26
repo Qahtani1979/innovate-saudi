@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '../LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,12 +11,14 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { useRDConversionMutations } from '@/hooks/useRDConversionMutations';
+import { useRDMunicipalities } from '@/hooks/useRDData';
 import { PILOT_TRANSITION_PROMPTS } from '@/lib/ai/prompts/rd';
 import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function RDToPilotTransition({ rdProject, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  const { transitionToPilot } = useRDConversionMutations();
   const { triggerEmail } = useEmailTrigger();
   const { invokeAI, status: aiStatus, isLoading: aiGenerating, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [selectedMunicipality, setSelectedMunicipality] = useState('');
@@ -42,16 +42,7 @@ export default function RDToPilotTransition({ rdProject, onClose, onSuccess }) {
     budget: Math.round((rdProject.budget || 200000) * 0.7)
   });
 
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities-for-pilot'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('municipalities')
-        .select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: municipalities = [] } = useRDMunicipalities();
 
   const selectedMunicipalityData = municipalities.find(m => m.id === selectedMunicipality);
 
@@ -81,37 +72,12 @@ export default function RDToPilotTransition({ rdProject, onClose, onSuccess }) {
     }
   };
 
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: pilot, error: pilotError } = await supabase
-        .from('pilots')
-        .insert(data)
-        .select()
-        .single();
-      if (pilotError) throw pilotError;
-      
-      const { error: updateError } = await supabase
-        .from('rd_projects')
-        .update({
-          pilot_opportunities: [
-            ...(rdProject.pilot_opportunities || []),
-            {
-              description_en: `Pilot created: ${pilot.title_en}`,
-              pilot_id: pilot.id,
-              municipality: data.municipality_id,
-              status: 'created'
-            }
-          ]
-        })
-        .eq('id', rdProject.id);
-      if (updateError) console.error('Update error:', updateError);
 
-      return pilot;
-    },
-    onSuccess: async (pilot) => {
-      queryClient.invalidateQueries({ queryKey: ['rd-projects'] });
-      queryClient.invalidateQueries({ queryKey: ['pilots'] });
-      
+
+  const handleCreate = async () => {
+    try {
+      const pilot = await transitionToPilot.mutateAsync({ pilotData, rdProject });
+
       await triggerEmail('pilot.created', {
         entityType: 'pilot',
         entityId: pilot.id,
@@ -122,12 +88,16 @@ export default function RDToPilotTransition({ rdProject, onClose, onSuccess }) {
           rd_project_id: rdProject.id
         }
       }).catch(err => console.error('Email trigger failed:', err));
-      
-      toast.success(t({ en: 'Pilot created!', ar: 'تم إنشاء التجربة!' }));
+
+      // Success handled by hook toast usually, but we can add specific one if needed or rely on hook
+      // transitionToPilot hook already has toast success
+
       onSuccess?.(pilot);
       onClose?.();
+    } catch (error) {
+      // Error handled by hook
     }
-  });
+  };
 
   return (
     <Card className="max-w-5xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -256,11 +226,11 @@ export default function RDToPilotTransition({ rdProject, onClose, onSuccess }) {
             {t({ en: 'Cancel', ar: 'إلغاء' })}
           </Button>
           <Button
-            onClick={() => createMutation.mutate(pilotData)}
-            disabled={createMutation.isPending || rdProject.trl_current < 6 || !pilotData.title_en}
+            onClick={handleCreate}
+            disabled={transitionToPilot.isPending || rdProject.trl_current < 6 || !pilotData.title_en}
             className="bg-gradient-to-r from-blue-600 to-teal-600"
           >
-            {createMutation.isPending ? (
+            {transitionToPilot.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 {t({ en: 'Creating...', ar: 'جاري الإنشاء...' })}

@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
   DialogContent,
@@ -33,14 +31,16 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  FolderOpen, Search, FileText, Clock, Edit, Eye, 
+import {
+  FolderOpen, Search, FileText, Clock, Edit, Eye,
   Plus, Loader2, Star, Copy, Lightbulb, Zap, Leaf, Building2, Globe,
   MoreVertical, Trash2, Archive, Download
 } from 'lucide-react';
 import { useLanguage } from '../../LanguageContext';
 import { toast } from 'sonner';
-
+import { useStrategicPlans } from '@/hooks/useStrategicPlans';
+import { useStrategyTemplates } from '@/hooks/strategy/useStrategyTemplates';
+import { useStrategyMutations } from '@/hooks/useStrategyMutations';
 
 const TEMPLATE_TYPE_ICONS = {
   innovation: Lightbulb,
@@ -62,74 +62,62 @@ const TEMPLATE_TYPE_COLORS = {
   citizen_services: 'bg-rose-500'
 };
 
-export default function PlanSelectionDialog({ 
-  onSelectPlan, 
+/**
+ * ✅ GOLD STANDARD COMPLIANT
+ * - No direct supabase imports
+ * - No direct react-query imports
+ * - Uses custom hooks for all data access
+ */
+export default function PlanSelectionDialog({
+  onSelectPlan,
   onCreateNew,
   trigger,
   defaultOpen = false
 }) {
   const { language, t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [open, setOpen] = useState(defaultOpen);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('drafts');
-  
+
   // Confirmation dialog states
   const [confirmDialog, setConfirmDialog] = useState({
     open: false,
     type: null, // 'delete' | 'archive' | 'duplicate' | 'export'
     plan: null
   });
-  const [isProcessing, setIsProcessing] = useState(false);
 
-  // Fetch public templates
-  const { data: templates = [], isLoading: isLoadingTemplates } = useQuery({
-    queryKey: ['strategy-templates-selection'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('strategic_plans')
-        .select('*')
-        .eq('is_template', true)
-        .eq('is_public', true)
-        .or('is_deleted.is.null,is_deleted.eq.false')
-        .order('is_featured', { ascending: false })
-        .order('usage_count', { ascending: false, nullsFirst: false })
-        .order('updated_at', { ascending: false });
+  // Custom hooks
+  const {
+    templates = [],
+    isLoading: isLoadingTemplates
+  } = useStrategyTemplates();
 
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: open
-  });
+  const {
+    data: plans = [],
+    isLoading,
+    refetch
+  } = useStrategicPlans(); // Fetches all non-template plans
 
-  // Fetch strategic plans (excluding templates)
-  const { data: plans = [], isLoading, refetch } = useQuery({
-    queryKey: ['strategic-plans-selection'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('strategic_plans')
-        .select('*')
-        .or('is_template.is.null,is_template.eq.false')
-        .or('is_deleted.is.null,is_deleted.eq.false')
-        .order('updated_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: open
-  });
+  const {
+    deleteStrategy,
+    updateStrategy,
+    duplicateStrategy
+  } = useStrategyMutations();
+
+  const isProcessing = deleteStrategy.isPending || updateStrategy.isPending || duplicateStrategy.isPending;
 
   const filteredPlans = plans.filter(plan => {
-    const matchesSearch = !search || 
+    const matchesSearch = !search ||
       plan.name_en?.toLowerCase().includes(search.toLowerCase()) ||
       plan.name_ar?.includes(search);
-    
+
     const matchesTab = activeTab === 'all' ||
       (activeTab === 'drafts' && plan.status === 'draft') ||
       (activeTab === 'active' && plan.status === 'active') ||
       (activeTab === 'pending' && plan.approval_status === 'pending') ||
       (activeTab === 'archived' && plan.status === 'archived');
-    
+
     return matchesSearch && matchesTab;
   });
 
@@ -146,7 +134,7 @@ export default function PlanSelectionDialog({
       completed: 'bg-blue-100 text-blue-700',
       archived: 'bg-gray-100 text-gray-700'
     };
-    
+
     return (
       <Badge className={statusColors[plan.status] || 'bg-muted'}>
         {plan.status || 'draft'}
@@ -156,13 +144,13 @@ export default function PlanSelectionDialog({
 
   const getApprovalBadge = (plan) => {
     if (!plan.approval_status || plan.approval_status === 'draft') return null;
-    
+
     const colors = {
       pending: 'bg-amber-100 text-amber-700',
       approved: 'bg-green-100 text-green-700',
       rejected: 'bg-red-100 text-red-700'
     };
-    
+
     return (
       <Badge className={colors[plan.approval_status] || 'bg-muted'}>
         {plan.approval_status}
@@ -186,131 +174,63 @@ export default function PlanSelectionDialog({
   };
 
   // Action handlers
-  const handleDeletePlan = async () => {
+  const handleDeletePlan = () => {
     if (!confirmDialog.plan) return;
-    setIsProcessing(true);
-    
-    try {
-      const { error } = await supabase
-        .from('strategic_plans')
-        .update({ 
-          is_deleted: true,
-          deleted_at: new Date().toISOString()
-        })
-        .eq('id', confirmDialog.plan.id);
-      
-      if (error) throw error;
-      
-      toast.success(t({ en: 'Plan deleted successfully', ar: 'تم حذف الخطة بنجاح' }));
-      refetch();
-      queryClient.invalidateQueries({ queryKey: ['strategic-plans'] });
-    } catch (error) {
-      console.error('Error deleting plan:', error);
-      toast.error(t({ en: 'Failed to delete plan', ar: 'فشل في حذف الخطة' }));
-    } finally {
-      setIsProcessing(false);
-      setConfirmDialog({ open: false, type: null, plan: null });
-    }
-  };
 
-  const handleDuplicatePlan = async () => {
-    if (!confirmDialog.plan) return;
-    setIsProcessing(true);
-    
-    try {
-      const originalPlan = confirmDialog.plan;
-      
-      // Create a copy of the plan
-      const { data: newPlan, error } = await supabase
-        .from('strategic_plans')
-        .insert({
-          name_en: `${originalPlan.name_en} (Copy)`,
-          name_ar: originalPlan.name_ar ? `${originalPlan.name_ar} (نسخة)` : null,
-          description_en: originalPlan.description_en,
-          description_ar: originalPlan.description_ar,
-          vision_en: originalPlan.vision_en,
-          vision_ar: originalPlan.vision_ar,
-          mission_en: originalPlan.mission_en,
-          mission_ar: originalPlan.mission_ar,
-          objectives: originalPlan.objectives,
-          pillars: originalPlan.pillars,
-          core_values: originalPlan.core_values,
-          start_date: originalPlan.start_date,
-          end_date: originalPlan.end_date,
-          municipality_id: originalPlan.municipality_id,
-          sector_id: originalPlan.sector_id,
-          status: 'draft',
-          approval_status: 'draft',
-          last_saved_step: originalPlan.last_saved_step,
-          wizard_data: originalPlan.wizard_data,
-          version_number: 1,
-          is_template: false,
-          is_public: false,
-          is_deleted: false
-        })
-        .select()
-        .single();
-      
-      if (error) throw error;
-      
-      toast.success(t({ en: 'Plan duplicated successfully', ar: 'تم نسخ الخطة بنجاح' }));
-      refetch();
-      queryClient.invalidateQueries({ queryKey: ['strategic-plans'] });
-      
-      // Optionally navigate to the new plan
-      if (newPlan) {
-        setOpen(false);
-        navigate(`/strategic-plan-builder?id=${newPlan.id}&mode=edit`);
+    deleteStrategy.mutate(confirmDialog.plan.id, {
+      onSuccess: () => {
+        setConfirmDialog({ open: false, type: null, plan: null });
+        refetch(); // Ensure list is updated
       }
-    } catch (error) {
-      console.error('Error duplicating plan:', error);
-      toast.error(t({ en: 'Failed to duplicate plan', ar: 'فشل في نسخ الخطة' }));
-    } finally {
-      setIsProcessing(false);
-      setConfirmDialog({ open: false, type: null, plan: null });
-    }
+    });
   };
 
-  const handleArchivePlan = async () => {
+  const handleDuplicatePlan = () => {
     if (!confirmDialog.plan) return;
-    setIsProcessing(true);
-    
-    try {
-      const newStatus = confirmDialog.plan.status === 'archived' ? 'draft' : 'archived';
-      
-      const { error } = await supabase
-        .from('strategic_plans')
-        .update({ 
-          status: newStatus,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', confirmDialog.plan.id);
-      
-      if (error) throw error;
-      
-      const message = newStatus === 'archived' 
-        ? t({ en: 'Plan archived successfully', ar: 'تم أرشفة الخطة بنجاح' })
-        : t({ en: 'Plan restored from archive', ar: 'تم استعادة الخطة من الأرشيف' });
-      
-      toast.success(message);
-      refetch();
-      queryClient.invalidateQueries({ queryKey: ['strategic-plans'] });
-    } catch (error) {
-      console.error('Error archiving plan:', error);
-      toast.error(t({ en: 'Failed to archive plan', ar: 'فشل في أرشفة الخطة' }));
-    } finally {
-      setIsProcessing(false);
-      setConfirmDialog({ open: false, type: null, plan: null });
-    }
+
+    duplicateStrategy.mutate(confirmDialog.plan, {
+      onSuccess: (newPlan) => {
+        setConfirmDialog({ open: false, type: null, plan: null });
+        refetch(); // Ensure list is updated
+
+        // Optionally navigate to the new plan
+        if (newPlan) {
+          setOpen(false);
+          const path = `/strategic-plan-builder?id=${newPlan.id}&mode=edit`;
+          navigate(path);
+        }
+      }
+    });
+  };
+
+  const handleArchivePlan = () => {
+    if (!confirmDialog.plan) return;
+
+    const newStatus = confirmDialog.plan.status === 'archived' ? 'draft' : 'archived';
+
+    updateStrategy.mutate({
+      id: confirmDialog.plan.id,
+      data: { status: newStatus },
+      metadata: { activity_type: newStatus === 'archived' ? 'archive' : 'restore' }
+    }, {
+      onSuccess: () => {
+        const message = newStatus === 'archived'
+          ? t({ en: 'Plan archived successfully', ar: 'تم أرشفة الخطة بنجاح' })
+          : t({ en: 'Plan restored from archive', ar: 'تم استعادة الخطة من الأرشيف' });
+        toast.success(message);
+        setConfirmDialog({ open: false, type: null, plan: null });
+        refetch();
+      }
+    });
   };
 
   const handleExportPlan = async () => {
     if (!confirmDialog.plan) return;
     setIsProcessing(true);
-    
+
     try {
       const plan = confirmDialog.plan;
-      
+
       // Create export data
       const exportData = {
         exportedAt: new Date().toISOString(),
@@ -333,7 +253,7 @@ export default function PlanSelectionDialog({
           version_number: plan.version_number
         }
       };
-      
+
       // Create and download JSON file
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -344,7 +264,7 @@ export default function PlanSelectionDialog({
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      
+
       toast.success(t({ en: 'Plan exported successfully', ar: 'تم تصدير الخطة بنجاح' }));
     } catch (error) {
       console.error('Error exporting plan:', error);
@@ -362,12 +282,12 @@ export default function PlanSelectionDialog({
   const getConfirmDialogContent = () => {
     const { type, plan } = confirmDialog;
     const planName = language === 'ar' ? (plan?.name_ar || plan?.name_en) : plan?.name_en;
-    
+
     switch (type) {
       case 'delete':
         return {
           title: t({ en: 'Delete Strategic Plan', ar: 'حذف الخطة الاستراتيجية' }),
-          description: t({ 
+          description: t({
             en: `Are you sure you want to delete "${planName}"? This action cannot be undone.`,
             ar: `هل أنت متأكد من حذف "${planName}"؟ لا يمكن التراجع عن هذا الإجراء.`
           }),
@@ -378,7 +298,7 @@ export default function PlanSelectionDialog({
       case 'duplicate':
         return {
           title: t({ en: 'Duplicate Strategic Plan', ar: 'نسخ الخطة الاستراتيجية' }),
-          description: t({ 
+          description: t({
             en: `Create a copy of "${planName}"? The new plan will be saved as a draft.`,
             ar: `إنشاء نسخة من "${planName}"؟ سيتم حفظ الخطة الجديدة كمسودة.`
           }),
@@ -389,18 +309,18 @@ export default function PlanSelectionDialog({
       case 'archive':
         const isArchived = plan?.status === 'archived';
         return {
-          title: isArchived 
+          title: isArchived
             ? t({ en: 'Restore from Archive', ar: 'استعادة من الأرشيف' })
             : t({ en: 'Archive Strategic Plan', ar: 'أرشفة الخطة الاستراتيجية' }),
           description: isArchived
-            ? t({ 
-                en: `Restore "${planName}" from archive? It will be set to draft status.`,
-                ar: `استعادة "${planName}" من الأرشيف؟ سيتم تعيينها كمسودة.`
-              })
-            : t({ 
-                en: `Archive "${planName}"? You can restore it later from the archived tab.`,
-                ar: `أرشفة "${planName}"؟ يمكنك استعادتها لاحقاً من علامة التبويب المؤرشفة.`
-              }),
+            ? t({
+              en: `Restore "${planName}" from archive? It will be set to draft status.`,
+              ar: `استعادة "${planName}" من الأرشيف؟ سيتم تعيينها كمسودة.`
+            })
+            : t({
+              en: `Archive "${planName}"? You can restore it later from the archived tab.`,
+              ar: `أرشفة "${planName}"؟ يمكنك استعادتها لاحقاً من علامة التبويب المؤرشفة.`
+            }),
           action: isArchived ? t({ en: 'Restore', ar: 'استعادة' }) : t({ en: 'Archive', ar: 'أرشفة' }),
           variant: 'default',
           onConfirm: handleArchivePlan
@@ -408,7 +328,7 @@ export default function PlanSelectionDialog({
       case 'export':
         return {
           title: t({ en: 'Export Strategic Plan', ar: 'تصدير الخطة الاستراتيجية' }),
-          description: t({ 
+          description: t({
             en: `Export "${planName}" as a JSON file? This will include all plan data.`,
             ar: `تصدير "${planName}" كملف JSON؟ سيشمل ذلك جميع بيانات الخطة.`
           }),
@@ -536,8 +456,8 @@ export default function PlanSelectionDialog({
                                       {t({ en: 'Edit', ar: 'تعديل' })}
                                     </Button>
                                   ) : plan.status === 'archived' ? (
-                                    <Button 
-                                      size="sm" 
+                                    <Button
+                                      size="sm"
                                       variant="outline"
                                       onClick={() => openConfirmDialog('archive', plan)}
                                     >
@@ -545,15 +465,15 @@ export default function PlanSelectionDialog({
                                     </Button>
                                   ) : (
                                     <>
-                                      <Button 
-                                        size="sm" 
+                                      <Button
+                                        size="sm"
                                         variant="outline"
                                         onClick={() => handleSelect(plan, 'review')}
                                       >
                                         <Eye className="h-4 w-4 mr-1" />
                                         {t({ en: 'Review', ar: 'مراجعة' })}
                                       </Button>
-                                      <Button 
+                                      <Button
                                         size="sm"
                                         onClick={() => handleSelect(plan, 'edit')}
                                       >
@@ -562,7 +482,7 @@ export default function PlanSelectionDialog({
                                       </Button>
                                     </>
                                   )}
-                                  
+
                                   {/* Actions Dropdown */}
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -586,7 +506,7 @@ export default function PlanSelectionDialog({
                                           {t({ en: 'Archive', ar: 'أرشفة' })}
                                         </DropdownMenuItem>
                                       )}
-                                      <DropdownMenuItem 
+                                      <DropdownMenuItem
                                         onClick={() => openConfirmDialog('delete', plan)}
                                         className="text-destructive focus:text-destructive"
                                       >
@@ -616,8 +536,8 @@ export default function PlanSelectionDialog({
                   <div className="text-center py-12 text-muted-foreground">
                     <Star className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>{t({ en: 'No templates available', ar: 'لا توجد قوالب متاحة' })}</p>
-                    <Button 
-                      variant="link" 
+                    <Button
+                      variant="link"
                       className="mt-2"
                       onClick={() => {
                         setOpen(false);
@@ -633,7 +553,7 @@ export default function PlanSelectionDialog({
                       {filteredTemplates.map((template) => {
                         const TypeIcon = TEMPLATE_TYPE_ICONS[template.template_type] || FileText;
                         const typeColor = TEMPLATE_TYPE_COLORS[template.template_type] || 'bg-gray-500';
-                        
+
                         return (
                           <Card key={template.id} className="hover:border-primary/50 transition-colors">
                             <CardContent className="p-4">

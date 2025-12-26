@@ -1,21 +1,14 @@
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
 import { Users, CheckCircle2, AlertTriangle, TrendingUp } from 'lucide-react';
+import { useExpertEvaluations } from '@/hooks/useExpertEvaluations';
 
 export default function MultiEvaluatorConsensus({ ideaId }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: evaluations = [] } = useQuery({
-    queryKey: ['idea-evaluations', ideaId],
-    queryFn: async () => {
-      const all = await base44.entities.ExpertEvaluation.list();
-      return all.filter(e => e.entity_type === 'citizen_idea' && e.entity_id === ideaId);
-    },
-    enabled: !!ideaId
-  });
+  const { data: evaluations = [] } = useExpertEvaluations('citizen_idea', ideaId);
 
   if (evaluations.length === 0) {
     return (

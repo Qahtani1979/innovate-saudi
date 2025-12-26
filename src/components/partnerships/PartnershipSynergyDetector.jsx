@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,23 +9,14 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { buildSynergyDetectorPrompt, synergyDetectorSchema, SYNERGY_DETECTOR_SYSTEM_PROMPT } from '@/lib/ai/prompts/partnerships';
 import { getSystemPrompt } from '@/lib/saudiContext';
+import { useOrganizations } from '@/hooks/useOrganizations';
 
 export default function PartnershipSynergyDetector({ challengeId }) {
   const { language, t } = useLanguage();
   const [opportunities, setOpportunities] = useState(null);
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: organizations = [] } = useQuery({
-    queryKey: ['organizations'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('organizations')
-        .select('*');
-      if (error) throw error;
-      return data || [];
-    },
-    initialData: []
-  });
+  const { data: organizations = [] } = useOrganizations();
 
   const detectSynergies = async () => {
     const result = await invokeAI({

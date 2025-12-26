@@ -1,6 +1,4 @@
 import React from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,45 +7,37 @@ import { useLanguage } from '../components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { FileText, CheckCircle2, XCircle } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useContractsWithVisibility } from '@/hooks/useContractsWithVisibility';
+import { useUpdateContract } from '@/hooks/useContracts';
 
 function ContractApproval() {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
   const [selectedContract, setSelectedContract] = React.useState(null);
   const [reviewComments, setReviewComments] = React.useState('');
 
-  const { data: contracts = [], isLoading } = useQuery({
-    queryKey: ['contracts-pending'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('contracts')
-        .select('*')
-        .eq('status', 'under_review');
-      if (error) throw error;
-      return data || [];
-    }
+  const { data: contracts = [], isLoading } = useContractsWithVisibility({
+    status: 'under_review'
   });
 
-  const approveMutation = useMutation({
-    mutationFn: async ({ contractId, approved }) => {
-      const { error } = await supabase
-        .from('contracts')
-        .update({
-          status: approved ? 'approved' : 'draft',
-          review_comments: reviewComments,
-          reviewed_by: user?.email,
-          reviewed_date: new Date().toISOString()
-        })
-        .eq('id', contractId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contracts-pending'] });
-      setSelectedContract(null);
-      setReviewComments('');
-    }
-  });
+  const updateContract = useUpdateContract();
+
+  const handleApprove = (contractId, approved) => {
+    updateContract.mutate({
+      id: contractId,
+      updates: {
+        status: approved ? 'approved' : 'draft',
+        review_comments: reviewComments,
+        reviewed_by: user?.email,
+        reviewed_date: new Date().toISOString()
+      }
+    }, {
+      onSuccess: () => {
+        setSelectedContract(null);
+        setReviewComments('');
+      }
+    });
+  };
 
   if (isLoading) {
     return (
@@ -118,14 +108,14 @@ function ContractApproval() {
                   />
                   <div className="flex gap-2">
                     <Button
-                      onClick={() => approveMutation.mutate({ contractId: contract.id, approved: true })}
+                      onClick={() => handleApprove(contract.id, true)}
                       className="bg-green-600 hover:bg-green-700"
                     >
                       <CheckCircle2 className="h-4 w-4 mr-2" />
                       {t({ en: 'Approve', ar: 'موافقة' })}
                     </Button>
                     <Button
-                      onClick={() => approveMutation.mutate({ contractId: contract.id, approved: false })}
+                      onClick={() => handleApprove(contract.id, false)}
                       variant="destructive"
                     >
                       <XCircle className="h-4 w-4 mr-2" />

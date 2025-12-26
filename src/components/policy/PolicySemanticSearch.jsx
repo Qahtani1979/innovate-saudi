@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,43 +9,40 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { toast } from 'sonner';
 
+import { usePolicySemanticSearch } from '@/hooks/usePolicies';
+
 export default function PolicySemanticSearch({ onResultsFound }) {
   const { language, isRTL, t } = useLanguage();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
 
-  const searchMutation = useMutation({
-    mutationFn: async (searchQuery) => {
-      const { data, error } = await supabase.functions.invoke('semantic-search', {
-        body: {
-          entity_name: 'PolicyRecommendation',
-          query: searchQuery,
-          limit: 10
-        }
-      });
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      setResults(data.results || []);
-      if (onResultsFound) {
-        onResultsFound(data.results || []);
-      }
-      if (!data.results || data.results.length === 0) {
-        toast.info(t({ en: 'No similar policies found', ar: 'لم يتم العثور على سياسات مشابهة' }));
-      }
-    },
-    onError: () => {
-      toast.error(t({ en: 'Search failed', ar: 'فشل البحث' }));
-    }
-  });
+  const searchMutation = usePolicySemanticSearch();
+
+  // Wrap the mutation call to handle success/error here or in hook?
+  // Hook returns `useMutation` result basically.
+  // But `onSuccess` logic is specific to component.
+  // `usePolicySemanticSearch` definition in `usePolicies.js` defined `mutationFn` but not `onSuccess`.
+  // So searchMutation is the mutation object. I can use .mutate(variables, { onSuccess, onError }).
 
   const handleSearch = () => {
     if (!query.trim()) {
       toast.error(t({ en: 'Enter a search query', ar: 'أدخل استعلام بحث' }));
       return;
     }
-    searchMutation.mutate(query);
+    searchMutation.mutate(query, {
+      onSuccess: (data) => {
+        setResults(data.results || []);
+        if (onResultsFound) {
+          onResultsFound(data.results || []);
+        }
+        if (!data.results || data.results.length === 0) {
+          toast.info(t({ en: 'No similar policies found', ar: 'لم يتم العثور على سياسات مشابهة' }));
+        }
+      },
+      onError: () => {
+        toast.error(t({ en: 'Search failed', ar: 'فشل البحث' }));
+      }
+    });
   };
 
   return (
@@ -58,9 +53,9 @@ export default function PolicySemanticSearch({ onResultsFound }) {
           {t({ en: 'AI Semantic Search', ar: 'البحث الدلالي الذكي' })}
         </CardTitle>
         <p className="text-xs text-slate-600 mt-1">
-          {t({ 
-            en: 'Find policies by meaning, not just keywords', 
-            ar: 'ابحث عن السياسات بالمعنى، وليس فقط الكلمات المفتاحية' 
+          {t({
+            en: 'Find policies by meaning, not just keywords',
+            ar: 'ابحث عن السياسات بالمعنى، وليس فقط الكلمات المفتاحية'
           })}
         </p>
       </CardHeader>
@@ -70,9 +65,9 @@ export default function PolicySemanticSearch({ onResultsFound }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-            placeholder={t({ 
-              en: 'e.g., "policies requiring inter-agency coordination"', 
-              ar: 'مثال: "سياسات تتطلب تنسيق بين الجهات"' 
+            placeholder={t({
+              en: 'e.g., "policies requiring inter-agency coordination"',
+              ar: 'مثال: "سياسات تتطلب تنسيق بين الجهات"'
             })}
             className="flex-1"
           />
@@ -121,8 +116,8 @@ export default function PolicySemanticSearch({ onResultsFound }) {
                       )}
                     </div>
                     <p className="text-xs text-slate-600 line-clamp-2" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                      {language === 'ar' && result.recommendation_text_ar 
-                        ? result.recommendation_text_ar 
+                      {language === 'ar' && result.recommendation_text_ar
+                        ? result.recommendation_text_ar
                         : result.recommendation_text_en}
                     </p>
                   </div>

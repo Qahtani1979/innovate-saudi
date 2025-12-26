@@ -10,7 +10,13 @@ import { useApprovalRequest } from '@/hooks/useApprovalRequest';
  *   createStrategy: import('@tanstack/react-query').UseMutationResult<any, Error, {data: any, metadata?: any}>,
  *   updateStrategy: import('@tanstack/react-query').UseMutationResult<any, Error, {id: string, data: any, metadata?: any}>,
  *   deleteStrategy: import('@tanstack/react-query').UseMutationResult<any, Error, string>,
- *   bulkUpdateStrategies: import('@tanstack/react-query').UseMutationResult<any, Error, {ids: string[], data: any}>
+ *   duplicateStrategy: import('@tanstack/react-query').UseMutationResult<any, Error, any>,
+ *   bulkUpdateStrategies: import('@tanstack/react-query').UseMutationResult<any, Error, {ids: string[], data: any}>,
+ *   submitStrategy: import('@tanstack/react-query').UseMutationResult<any, Error, {id: string, data: any, userEmail: string}>,
+ *   wizardSave: import('@tanstack/react-query').UseMutationResult<any, Error, {id?: string, data: any, mode: string}>,
+ *   wizardSubmit: import('@tanstack/react-query').UseMutationResult<any, Error, {id: string, data: any, userEmail?: string}>,
+ *   fetchTemplate: (id: string) => Promise<any>,
+ *   refreshStrategies: () => void
  * }}
  */
 export const useStrategyMutations = () => {
@@ -115,7 +121,68 @@ export const useStrategyMutations = () => {
         }
     });
 
-    // Helper for bulk updates if needed in the future
+    /** 
+     * Duplicate a strategic plan
+     * @type {any} 
+     */
+    const duplicateStrategy = useMutation({
+        mutationFn: async (/** @type {any} */ originalPlan) => {
+            const { data: newPlan, error } = await supabase
+                .from('strategic_plans')
+                .insert({
+                    name_en: `${originalPlan.name_en} (Copy)`,
+                    name_ar: originalPlan.name_ar ? `${originalPlan.name_ar} (نسخة)` : null,
+                    description_en: originalPlan.description_en,
+                    description_ar: originalPlan.description_ar,
+                    vision_en: originalPlan.vision_en,
+                    vision_ar: originalPlan.vision_ar,
+                    mission_en: originalPlan.mission_en,
+                    mission_ar: originalPlan.mission_ar,
+                    objectives: originalPlan.objectives,
+                    pillars: originalPlan.pillars,
+                    core_values: originalPlan.core_values,
+                    start_date: originalPlan.start_date,
+                    end_date: originalPlan.end_date,
+                    municipality_id: originalPlan.municipality_id,
+                    sector_id: originalPlan.sector_id,
+                    status: 'draft',
+                    approval_status: 'draft',
+                    last_saved_step: originalPlan.last_saved_step,
+                    wizard_data: originalPlan.wizard_data,
+                    version_number: 1,
+                    is_template: false,
+                    is_public: false,
+                    is_deleted: false,
+                    target_sectors: originalPlan.target_sectors,
+                    target_regions: originalPlan.target_regions,
+                    strategic_themes: originalPlan.strategic_themes,
+                    focus_technologies: originalPlan.focus_technologies,
+                    vision_2030_programs: originalPlan.vision_2030_programs,
+                })
+                .select()
+                .single();
+
+            if (error) throw error;
+            return newPlan;
+        },
+        onSuccess: (newPlan) => {
+            queryClient.invalidateQueries({ queryKey: ['strategic-plans'] });
+            toast.success('Strategy duplicated successfully');
+
+            logActivity({
+                action: 'duplicate',
+                entityType: 'strategic_plan',
+                entityId: newPlan.id,
+                details: {
+                    source_id: newPlan.id // technically source was passed in but new ID is relevant
+                }
+            });
+        },
+        onError: (error) => {
+            console.error('Error duplicating strategy:', error);
+            toast.error('Failed to duplicate strategy');
+        }
+    });
     /** @type {any} */
     const bulkUpdateStrategies = useMutation({
         mutationFn: async (/** @type {any} */ { ids, data }) => {
@@ -240,6 +307,124 @@ export const useStrategyMutations = () => {
         }
     });
 
+    /**
+     * Specialized wizard save mutation for StrategyWizardWrapper
+     */
+    const wizardSave = useMutation({
+        mutationFn: async ({ id, data, mode }) => {
+            const saveData = {
+                name_en: data.name_en,
+                name_ar: data.name_ar,
+                description_en: data.description_en,
+                description_ar: data.description_ar,
+                vision_en: data.vision_en,
+                vision_ar: data.vision_ar,
+                mission_en: data.mission_en,
+                mission_ar: data.mission_ar,
+                start_year: data.start_year,
+                end_year: data.end_year,
+                objectives: data.objectives || [],
+                kpis: data.kpis || [],
+                pillars: data.strategic_pillars || [],
+                stakeholders: data.stakeholders || [],
+                pestel: data.pestel || {},
+                swot: data.swot || {},
+                scenarios: data.scenarios || {},
+                risks: data.risks || [],
+                dependencies: data.dependencies || [],
+                constraints: data.constraints || [],
+                national_alignments: data.national_alignments || [],
+                action_plans: data.action_plans || [],
+                resource_plan: data.resource_plan || {},
+                milestones: data.milestones || [],
+                phases: data.phases || [],
+                governance: data.governance || {},
+                communication_plan: data.communication_plan || {},
+                change_management: data.change_management || {},
+                target_sectors: data.target_sectors || [],
+                target_regions: data.target_regions || [],
+                strategic_themes: data.strategic_themes || [],
+                focus_technologies: data.focus_technologies || [],
+                vision_2030_programs: data.vision_2030_programs || [],
+                budget_range: data.budget_range,
+                core_values: data.core_values || [],
+                strategic_pillars: data.strategic_pillars || [],
+                last_saved_step: 18,
+                draft_data: data,
+                status: 'draft',
+                updated_at: new Date().toISOString()
+            };
+
+            if (id) {
+                if (mode === 'edit') {
+                    saveData.version_number = (data.version_number || 1) + 1;
+                    saveData.version_notes = `Edited on ${new Date().toLocaleString()}`;
+                }
+
+                const { result } = await updateStrategy.mutateAsync({
+                    id,
+                    data: saveData,
+                    metadata: { activity_type: 'update_draft' }
+                });
+                return result;
+            } else {
+                const { result } = await createStrategy.mutateAsync({
+                    data: saveData,
+                    metadata: { activity_type: 'create_draft' }
+                });
+                return result;
+            }
+        },
+        onSuccess: (result) => {
+            queryClient.invalidateQueries({ queryKey: ['strategic-plans'] });
+            toast.success('Strategy saved successfully');
+        }
+    });
+
+    /**
+     * Specialized wizard submit mutation
+     */
+    const wizardSubmit = useMutation({
+        mutationFn: async ({ id, data, userEmail }) => {
+            // First save
+            const saveResult = await wizardSave.mutateAsync({ id, data, mode: 'edit' });
+
+            // Then submit
+            await submitStrategy.mutateAsync({
+                id: saveResult.id,
+                data: data,
+                userEmail: userEmail || 'system'
+            });
+
+            return saveResult;
+        },
+        onSuccess: () => {
+            toast.success('Plan submitted for approval!');
+        }
+    });
+
+    /**
+     * Generate program recommendations based on gaps
+     * @type {any}
+     */
+    const generateGapRecommendations = useMutation({
+        mutationFn: async ({ gaps, strategicPlans, sectors, invokeAI, prompts, schemas }) => {
+            const prompt = prompts.buildGapProgramRecommenderPrompt({
+                gaps,
+                strategicPlans,
+                sectors
+            });
+
+            const { result } = await invokeAI({
+                system_prompt: prompts.GAP_PROGRAM_RECOMMENDER_SYSTEM_PROMPT,
+                prompt,
+                response_json_schema: schemas.gapProgramRecommenderSchema
+            });
+
+            return result.recommendations || [];
+        }
+    });
+
     const fetchTemplate = async (templateId) => {
         const { data: template, error } = await supabase
             .from('strategic_plans')
@@ -256,8 +441,12 @@ export const useStrategyMutations = () => {
         createStrategy,
         updateStrategy,
         deleteStrategy,
+        duplicateStrategy,
         bulkUpdateStrategies,
         submitStrategy,
+        wizardSave,
+        wizardSubmit,
+        generateGapRecommendations,
         fetchTemplate,
         refreshStrategies  // ✅ Gold Standard
     };

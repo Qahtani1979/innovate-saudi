@@ -16,14 +16,14 @@ import { toast } from 'sonner';
 // ProtectedPage removed - handled by parent
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-  buildTemplateGeneratePrompt, 
+import { useAuth } from '@/lib/AuthContext';
+import {
+  buildTemplateGeneratePrompt,
   TEMPLATE_GENERATE_SCHEMA,
   buildTemplateAnalysisPrompt,
-  TEMPLATE_ANALYSIS_SCHEMA 
+  TEMPLATE_ANALYSIS_SCHEMA
 } from '@/lib/ai/prompts/communications/templateEditor';
+import { useEmailTemplates, useEmailTemplateMutations, useEmailTester } from '@/hooks/useEmailTemplates';
 // PageLayout, PageHeader removed - handled by parent
 
 const CATEGORIES = [
@@ -45,7 +45,6 @@ const CATEGORIES = [
 
 function EmailTemplateEditorContent() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [selectedTemplateId, setSelectedTemplateId] = useState(null);
   const [filterCategory, setFilterCategory] = useState('all');
   const [showPreview, setShowPreview] = useState(false);
@@ -54,9 +53,28 @@ function EmailTemplateEditorContent() {
   const [analysisResult, setAnalysisResult] = useState(null);
   const [testEmail, setTestEmail] = useState('');
   const [previewLanguage, setPreviewLanguage] = useState('en');
+
+  const resetForm = () => {
+    setTemplateData({
+      name_en: '',
+      name_ar: '',
+      subject_en: '',
+      subject_ar: '',
+      body_en: '',
+      body_ar: '',
+      category: 'system',
+      template_key: '',
+      variables: [],
+      is_html: true,
+      use_header: true,
+      use_footer: true,
+      is_critical: false
+    });
+    setPreviewEmail('');
+  };
   const [isSending, setIsSending] = useState(false);
   const { invokeAI, status: aiStatus, isLoading: aiLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
-  
+
   const [template, setTemplate] = useState({
     template_key: '',
     category: 'system',
@@ -82,31 +100,14 @@ function EmailTemplateEditorContent() {
     is_critical: false,
   });
 
-  // Fetch templates
-  const { data: templates = [], isLoading: loadingTemplates } = useQuery({
-    queryKey: ['email-templates'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('email_templates')
-        .select('*')
-        .order('category', { ascending: true })
-        .order('name_en', { ascending: true });
-      if (error) throw error;
-      return data;
-    }
-  });
+  // Fetch templates using hook
+  const { data: templates = [], isLoading: loadingTemplates } = useEmailTemplates();
 
-  // Fetch current user
-  const { data: currentUser } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      return user;
-    }
-  });
+  // Get current user from AuthContext
+  const { user: currentUser } = useAuth();
 
   // Filter templates
-  const filteredTemplates = templates.filter(t => 
+  const filteredTemplates = templates.filter(t =>
     filterCategory === 'all' || t.category === filterCategory
   );
 
@@ -123,117 +124,46 @@ function EmailTemplateEditorContent() {
     }
   }, [selectedTemplateId, templates]);
 
+  // Import mutations
+  const { saveTemplate, deleteTemplate } = useEmailTemplateMutations();
+  const { sendTestEmail } = useEmailTester();
+
   // Save mutation
-  const saveMutation = useMutation({
-    mutationFn: async (data) => {
-      if (selectedTemplateId) {
-        const { error } = await supabase
-          .from('email_templates')
-          .update(data)
-          .eq('id', selectedTemplateId);
-        if (error) throw error;
-        return { isUpdate: true };
-      } else {
-        const { error } = await supabase
-          .from('email_templates')
-          .insert(data);
-        if (error) throw error;
-        return { isUpdate: false };
-      }
-    },
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['email-templates'] });
-      toast.success(t({ en: 'Template saved successfully', ar: 'تم حفظ القالب بنجاح' }));
-      
-      // Clear form after creating a new template
-      if (!result.isUpdate) {
-        setSelectedTemplateId(null);
-        setTemplate({
-          template_key: '',
-          category: 'system',
-          name_en: '',
-          name_ar: '',
-          subject_en: '',
-          subject_ar: '',
-          body_en: '',
-          body_ar: '',
-          is_html: true,
-          use_header: true,
-          use_footer: true,
-          header_title_en: '',
-          header_title_ar: '',
-          header_gradient_start: '#006C35',
-          header_gradient_end: '#00A651',
-          cta_text_en: '',
-          cta_text_ar: '',
-          cta_url_variable: '',
-          variables: [],
-          is_active: true,
-          is_system: false,
-          is_critical: false,
-        });
-      }
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    }
-  });
-
-  // Delete mutation
-  const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      const { error } = await supabase
-        .from('email_templates')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['email-templates'] });
-      setSelectedTemplateId(null);
-      resetForm();
-      toast.success(t({ en: 'Template deleted', ar: 'تم حذف القالب' }));
-    }
-  });
-
-  const resetForm = () => {
-    setTemplate({
-      template_key: '',
-      category: 'system',
-      name_en: '',
-      name_ar: '',
-      subject_en: '',
-      subject_ar: '',
-      body_en: '',
-      body_ar: '',
-      is_html: true,
-      use_header: true,
-      use_footer: true,
-      header_title_en: '',
-      header_title_ar: '',
-      header_gradient_start: '#006C35',
-      header_gradient_end: '#00A651',
-      cta_text_en: '',
-      cta_text_ar: '',
-      cta_url_variable: '',
-      variables: [],
-      is_active: true,
-      is_system: false,
-      is_critical: false,
-    });
-  };
-
   const handleSave = () => {
     if (!template.template_key || !template.name_en || !template.subject_en || !template.body_en) {
       toast.error(t({ en: 'Please fill required fields', ar: 'يرجى ملء الحقول المطلوبة' }));
       return;
     }
-    saveMutation.mutate(template);
+    // Prepare data for mutation
+    const dataToSave = { ...template };
+    if (selectedTemplateId) {
+      dataToSave.id = selectedTemplateId;
+    }
+    saveTemplate.mutate(dataToSave, {
+      onSuccess: (result) => {
+        if (!result.isUpdate) {
+          setSelectedTemplateId(null);
+          resetForm();
+        }
+      }
+    });
   };
+
+  // Delete mutation handler
+  const handleDelete = (id) => {
+    deleteTemplate.mutate(id, {
+      onSuccess: () => {
+        setSelectedTemplateId(null);
+        resetForm();
+      }
+    });
+  };
+
+
 
   const handleAIGenerate = async () => {
     const categoryLabel = CATEGORIES.find(c => c.value === template.category)?.label.en || template.category;
-    
+
     const result = await invokeAI({
       prompt: buildTemplateGeneratePrompt({
         templateName: template.name_en,
@@ -242,7 +172,7 @@ function EmailTemplateEditorContent() {
       }),
       response_json_schema: TEMPLATE_GENERATE_SCHEMA
     });
-    
+
     if (result.success) {
       const data = result.data;
       setTemplate(prev => ({
@@ -269,7 +199,7 @@ function EmailTemplateEditorContent() {
   const handleAIAnalysis = async () => {
     setShowAnalysisDialog(true);
     setAnalysisResult(null);
-    
+
     // Prepare template summary for analysis
     const templateSummary = templates.map(t => ({
       key: t.template_key,
@@ -284,13 +214,13 @@ function EmailTemplateEditorContent() {
       isSystem: t.is_system,
       isCritical: t.is_critical
     }));
-    
+
     const categoryCounts = CATEGORIES.map(c => ({
       category: c.value,
       label: c.label.en,
       count: templates.filter(t => t.category === c.value).length
     }));
-    
+
     const result = await invokeAI({
       prompt: buildTemplateAnalysisPrompt({
         templateCount: templates.length,
@@ -299,7 +229,7 @@ function EmailTemplateEditorContent() {
       }),
       response_json_schema: TEMPLATE_ANALYSIS_SCHEMA
     });
-    
+
     if (result.success) {
       setAnalysisResult(result.data);
     } else {
@@ -384,88 +314,17 @@ function EmailTemplateEditorContent() {
 
     setIsSending(true);
     try {
-      // Build comprehensive test variables - language-aware based on preview language
-      const isArabic = previewLanguage === 'ar';
-      const testVariables = {
-        userName: currentUser?.user_metadata?.full_name || (isArabic ? 'مستخدم تجريبي' : 'Test User'),
-        userEmail: currentUser?.email || 'test@example.com',
-        sentAt: new Date().toLocaleString(isArabic ? 'ar-SA' : 'en-US'),
-        loginUrl: window.location.origin,
-        dashboardUrl: window.location.origin,
-        detailUrl: window.location.origin,
-        trackingUrl: window.location.origin,
-        taskUrl: window.location.origin,
-        // Role-related variables
-        roleName: isArabic ? 'موظف بلدية' : 'Municipality Staff',
-        requestedRole: isArabic ? 'موظف بلدية' : 'Municipality Staff',
-        rejectionReason: isArabic ? 'سبب الرفض التجريبي' : 'Sample rejection reason for testing',
-        // Entity-related variables
-        challengeTitle: isArabic ? 'عنوان التحدي التجريبي' : 'Sample Challenge Title',
-        solutionTitle: isArabic ? 'عنوان الحل التجريبي' : 'Sample Solution Title',
-        pilotTitle: isArabic ? 'عنوان التجربة التجريبية' : 'Sample Pilot Title',
-        proposalTitle: isArabic ? 'عنوان المقترح التجريبي' : 'Sample Proposal Title',
-        ideaTitle: isArabic ? 'عنوان الفكرة التجريبية' : 'Sample Idea Title',
-        taskName: isArabic ? 'اسم المهمة التجريبية' : 'Sample Task Name',
-        // Status and counts
-        newStatus: isArabic ? 'تمت الموافقة' : 'approved',
-        score: '85',
-        totalItems: '5',
-        // Time-related
-        deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(isArabic ? 'ar-SA' : 'en-US'),
-        expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(isArabic ? 'ar-SA' : 'en-US'),
-        // Organization
-        organizationName: isArabic ? 'المنظمة التجريبية' : 'Sample Organization',
-        municipalityName: isArabic ? 'البلدية التجريبية' : 'Sample Municipality',
-      };
-
-      // Use the current template if saved, otherwise send direct content for preview
-      const templateExists = selectedTemplateId && template.template_key;
-      
-      const { data, error } = await supabase.functions.invoke('send-email', {
-        body: templateExists ? {
-          template_key: template.template_key,
-          recipient_email: recipientEmail,
-          variables: testVariables,
-          language: previewLanguage,
-          force_send: true,
-          triggered_by: currentUser?.email
-        } : {
-          recipient_email: recipientEmail,
-          subject: previewLanguage === 'ar' ? template.subject_ar || template.subject_en : template.subject_en,
-          html: `
-            <div style="font-family: ${previewLanguage === 'ar' ? "'Noto Sans Arabic', sans-serif" : 'Arial, sans-serif'}; direction: ${previewLanguage === 'ar' ? 'rtl' : 'ltr'}; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <div style="background: linear-gradient(135deg, ${template.header_gradient_start || '#006C35'}, ${template.header_gradient_end || '#00A651'}); padding: 24px; text-align: center; color: white; border-radius: 8px 8px 0 0;">
-                <h1 style="margin: 0;">${previewLanguage === 'ar' ? template.header_title_ar || template.header_title_en : template.header_title_en || 'Test Email'}</h1>
-              </div>
-              <div style="padding: 24px; background: #fff; border: 1px solid #eee; border-top: none;">
-                ${previewLanguage === 'ar' ? template.body_ar || template.body_en : template.body_en}
-              </div>
-              <div style="padding: 16px; background: #f5f5f5; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 8px 8px;">
-                <p>© ${new Date().getFullYear()} Saudi Innovates. ${previewLanguage === 'ar' ? 'جميع الحقوق محفوظة' : 'All rights reserved'}.</p>
-              </div>
-            </div>
-          `,
-          language: previewLanguage,
-          force_send: true,
-          triggered_by: currentUser?.email
-        }
+      // Pass the necessary context to the hook
+      await sendTestEmail.mutateAsync({
+        recipientEmail,
+        template: selectedTemplateId ? template : { ...template, id: null }, // ensure id exists if selected
+        previewLanguage,
+        currentUser
       });
-
-      if (error) throw error;
-      
-      if (data.success) {
-        toast.success(t({ en: `Test email sent to ${recipientEmail}`, ar: `تم إرسال البريد التجريبي إلى ${recipientEmail}` }));
-        setShowTestDialog(false);
-      } else {
-        // Handle error object from Resend API
-        const errorMessage = typeof data.error === 'object' 
-          ? data.error?.message || JSON.stringify(data.error) 
-          : data.error || data.message || 'Failed to send email';
-        toast.error(errorMessage, { duration: 8000 });
-      }
+      setShowTestDialog(false);
     } catch (err) {
+      // toast is handled by hook
       console.error('Error sending test email:', err);
-      toast.error(err.message);
     } finally {
       setIsSending(false);
     }
@@ -483,7 +342,7 @@ function EmailTemplateEditorContent() {
     const body = previewLanguage === 'ar' && template.body_ar ? template.body_ar : template.body_en;
     const headerTitle = previewLanguage === 'ar' ? template.header_title_ar : template.header_title_en;
     const ctaText = previewLanguage === 'ar' ? template.cta_text_ar : template.cta_text_en;
-    
+
     // Replace variables with sample data
     const sampleVars = {
       userName: 'Ahmed Mohammed',
@@ -492,7 +351,7 @@ function EmailTemplateEditorContent() {
       date: new Date().toLocaleDateString(),
       link: '#'
     };
-    
+
     let processedBody = body;
     let processedSubject = subject;
     Object.entries(sampleVars).forEach(([key, value]) => {
@@ -500,7 +359,7 @@ function EmailTemplateEditorContent() {
       processedBody = processedBody.replace(regex, value);
       processedSubject = processedSubject.replace(regex, value);
     });
-    
+
     return { subject: processedSubject, body: processedBody, headerTitle, ctaText };
   };
 
@@ -575,11 +434,10 @@ function EmailTemplateEditorContent() {
                   <div
                     key={tmpl.id}
                     onClick={() => setSelectedTemplateId(tmpl.id)}
-                    className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                      selectedTemplateId === tmpl.id 
-                        ? 'border-primary bg-primary/5' 
-                        : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                    }`}
+                    className={`p-3 rounded-lg border cursor-pointer transition-all ${selectedTemplateId === tmpl.id
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                      }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
@@ -622,13 +480,13 @@ function EmailTemplateEditorContent() {
             </Button>
             <div className="flex-1" />
             {selectedTemplateId && !template.is_system && (
-              <Button variant="destructive" size="sm" onClick={() => deleteMutation.mutate(selectedTemplateId)}>
+              <Button variant="destructive" size="sm" onClick={() => handleDelete(selectedTemplateId)}>
                 <Trash2 className="h-4 w-4 mr-1" />
                 {t({ en: 'Delete', ar: 'حذف' })}
               </Button>
             )}
-            <Button onClick={handleSave} disabled={saveMutation.isPending} className="bg-emerald-600 hover:bg-emerald-700">
-              {saveMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+            <Button onClick={handleSave} disabled={saveTemplate.isPending} className="bg-emerald-600 hover:bg-emerald-700">
+              {saveTemplate.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
               {t({ en: 'Save Template', ar: 'حفظ القالب' })}
             </Button>
           </div>
@@ -643,16 +501,16 @@ function EmailTemplateEditorContent() {
             <CardContent className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium mb-1.5 block">{t({ en: 'Template Key *', ar: 'مفتاح القالب *' })}</label>
-                <Input 
-                  value={template.template_key} 
-                  onChange={(e) => setTemplate({...template, template_key: e.target.value.toLowerCase().replace(/\s/g, '_')})}
+                <Input
+                  value={template.template_key}
+                  onChange={(e) => setTemplate({ ...template, template_key: e.target.value.toLowerCase().replace(/\s/g, '_') })}
                   placeholder="welcome_new_user"
                   disabled={template.is_system}
                 />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1.5 block">{t({ en: 'Category', ar: 'الفئة' })}</label>
-                <Select value={template.category} onValueChange={(v) => setTemplate({...template, category: v})}>
+                <Select value={template.category} onValueChange={(v) => setTemplate({ ...template, category: v })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -665,27 +523,27 @@ function EmailTemplateEditorContent() {
               </div>
               <div>
                 <label className="text-sm font-medium mb-1.5 block">{t({ en: 'Name (English) *', ar: 'الاسم (إنجليزي) *' })}</label>
-                <Input value={template.name_en} onChange={(e) => setTemplate({...template, name_en: e.target.value})} />
+                <Input value={template.name_en} onChange={(e) => setTemplate({ ...template, name_en: e.target.value })} />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1.5 block">{t({ en: 'Name (Arabic)', ar: 'الاسم (عربي)' })}</label>
-                <Input value={template.name_ar || ''} onChange={(e) => setTemplate({...template, name_ar: e.target.value})} dir="rtl" />
+                <Input value={template.name_ar || ''} onChange={(e) => setTemplate({ ...template, name_ar: e.target.value })} dir="rtl" />
               </div>
               <div className="col-span-2 flex items-center gap-6">
                 <div className="flex items-center gap-2">
-                  <Switch checked={template.is_active} onCheckedChange={(v) => setTemplate({...template, is_active: v})} />
+                  <Switch checked={template.is_active} onCheckedChange={(v) => setTemplate({ ...template, is_active: v })} />
                   <span className="text-sm">{t({ en: 'Active', ar: 'نشط' })}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Switch checked={template.is_critical} onCheckedChange={(v) => setTemplate({...template, is_critical: v})} />
+                  <Switch checked={template.is_critical} onCheckedChange={(v) => setTemplate({ ...template, is_critical: v })} />
                   <span className="text-sm">{t({ en: 'Critical (bypasses preferences)', ar: 'حرج (يتجاوز التفضيلات)' })}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Switch checked={template.use_header} onCheckedChange={(v) => setTemplate({...template, use_header: v})} />
+                  <Switch checked={template.use_header} onCheckedChange={(v) => setTemplate({ ...template, use_header: v })} />
                   <span className="text-sm">{t({ en: 'Include Header', ar: 'تضمين الرأس' })}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Switch checked={template.use_footer} onCheckedChange={(v) => setTemplate({...template, use_footer: v})} />
+                  <Switch checked={template.use_footer} onCheckedChange={(v) => setTemplate({ ...template, use_footer: v })} />
                   <span className="text-sm">{t({ en: 'Include Footer', ar: 'تضمين التذييل' })}</span>
                 </div>
               </div>
@@ -712,11 +570,11 @@ function EmailTemplateEditorContent() {
                   <CardContent className="space-y-3">
                     <div>
                       <label className="text-xs font-medium mb-1 block text-muted-foreground">{t({ en: 'Subject *', ar: 'الموضوع *' })}</label>
-                      <Input value={template.subject_en} onChange={(e) => setTemplate({...template, subject_en: e.target.value})} placeholder="Welcome to {{platformName}}" />
+                      <Input value={template.subject_en} onChange={(e) => setTemplate({ ...template, subject_en: e.target.value })} placeholder="Welcome to {{platformName}}" />
                     </div>
                     <div>
                       <label className="text-xs font-medium mb-1 block text-muted-foreground">{t({ en: 'Body (HTML) *', ar: 'المحتوى (HTML) *' })}</label>
-                      <Textarea value={template.body_en} onChange={(e) => setTemplate({...template, body_en: e.target.value})} rows={14} className="font-mono text-sm" placeholder="<p>Dear {{userName}},</p>" />
+                      <Textarea value={template.body_en} onChange={(e) => setTemplate({ ...template, body_en: e.target.value })} rows={14} className="font-mono text-sm" placeholder="<p>Dear {{userName}},</p>" />
                     </div>
                   </CardContent>
                 </Card>
@@ -731,11 +589,11 @@ function EmailTemplateEditorContent() {
                   <CardContent className="space-y-3">
                     <div>
                       <label className="text-xs font-medium mb-1 block text-muted-foreground">{t({ en: 'Subject', ar: 'الموضوع' })}</label>
-                      <Input value={template.subject_ar || ''} onChange={(e) => setTemplate({...template, subject_ar: e.target.value})} dir="rtl" placeholder="مرحباً بك في {{platformName}}" />
+                      <Input value={template.subject_ar || ''} onChange={(e) => setTemplate({ ...template, subject_ar: e.target.value })} dir="rtl" placeholder="مرحباً بك في {{platformName}}" />
                     </div>
                     <div>
                       <label className="text-xs font-medium mb-1 block text-muted-foreground">{t({ en: 'Body (HTML)', ar: 'المحتوى (HTML)' })}</label>
-                      <Textarea value={template.body_ar || ''} onChange={(e) => setTemplate({...template, body_ar: e.target.value})} rows={14} dir="rtl" className="font-mono text-sm" placeholder="<p>عزيزي {{userName}}،</p>" />
+                      <Textarea value={template.body_ar || ''} onChange={(e) => setTemplate({ ...template, body_ar: e.target.value })} rows={14} dir="rtl" className="font-mono text-sm" placeholder="<p>عزيزي {{userName}}،</p>" />
                     </div>
                   </CardContent>
                 </Card>
@@ -747,37 +605,37 @@ function EmailTemplateEditorContent() {
                 <CardContent className="pt-6 grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium mb-1.5 block">{t({ en: 'Header Title (English)', ar: 'عنوان الرأس (إنجليزي)' })}</label>
-                    <Input value={template.header_title_en || ''} onChange={(e) => setTemplate({...template, header_title_en: e.target.value})} placeholder="Welcome!" />
+                    <Input value={template.header_title_en || ''} onChange={(e) => setTemplate({ ...template, header_title_en: e.target.value })} placeholder="Welcome!" />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-1.5 block">{t({ en: 'Header Title (Arabic)', ar: 'عنوان الرأس (عربي)' })}</label>
-                    <Input value={template.header_title_ar || ''} onChange={(e) => setTemplate({...template, header_title_ar: e.target.value})} dir="rtl" placeholder="مرحباً!" />
+                    <Input value={template.header_title_ar || ''} onChange={(e) => setTemplate({ ...template, header_title_ar: e.target.value })} dir="rtl" placeholder="مرحباً!" />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-1.5 block">{t({ en: 'Gradient Start Color', ar: 'لون بداية التدرج' })}</label>
                     <div className="flex gap-2">
-                      <Input type="color" value={template.header_gradient_start || '#006C35'} onChange={(e) => setTemplate({...template, header_gradient_start: e.target.value})} className="w-16 h-10 p-1" />
-                      <Input value={template.header_gradient_start || '#006C35'} onChange={(e) => setTemplate({...template, header_gradient_start: e.target.value})} />
+                      <Input type="color" value={template.header_gradient_start || '#006C35'} onChange={(e) => setTemplate({ ...template, header_gradient_start: e.target.value })} className="w-16 h-10 p-1" />
+                      <Input value={template.header_gradient_start || '#006C35'} onChange={(e) => setTemplate({ ...template, header_gradient_start: e.target.value })} />
                     </div>
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-1.5 block">{t({ en: 'Gradient End Color', ar: 'لون نهاية التدرج' })}</label>
                     <div className="flex gap-2">
-                      <Input type="color" value={template.header_gradient_end || '#00A651'} onChange={(e) => setTemplate({...template, header_gradient_end: e.target.value})} className="w-16 h-10 p-1" />
-                      <Input value={template.header_gradient_end || '#00A651'} onChange={(e) => setTemplate({...template, header_gradient_end: e.target.value})} />
+                      <Input type="color" value={template.header_gradient_end || '#00A651'} onChange={(e) => setTemplate({ ...template, header_gradient_end: e.target.value })} className="w-16 h-10 p-1" />
+                      <Input value={template.header_gradient_end || '#00A651'} onChange={(e) => setTemplate({ ...template, header_gradient_end: e.target.value })} />
                     </div>
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-1.5 block">{t({ en: 'CTA Button Text (English)', ar: 'نص زر الإجراء (إنجليزي)' })}</label>
-                    <Input value={template.cta_text_en || ''} onChange={(e) => setTemplate({...template, cta_text_en: e.target.value})} placeholder="Get Started" />
+                    <Input value={template.cta_text_en || ''} onChange={(e) => setTemplate({ ...template, cta_text_en: e.target.value })} placeholder="Get Started" />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-1.5 block">{t({ en: 'CTA Button Text (Arabic)', ar: 'نص زر الإجراء (عربي)' })}</label>
-                    <Input value={template.cta_text_ar || ''} onChange={(e) => setTemplate({...template, cta_text_ar: e.target.value})} dir="rtl" placeholder="ابدأ الآن" />
+                    <Input value={template.cta_text_ar || ''} onChange={(e) => setTemplate({ ...template, cta_text_ar: e.target.value })} dir="rtl" placeholder="ابدأ الآن" />
                   </div>
                   <div className="col-span-2">
                     <label className="text-sm font-medium mb-1.5 block">{t({ en: 'CTA URL Variable', ar: 'متغير رابط الإجراء' })}</label>
-                    <Input value={template.cta_url_variable || ''} onChange={(e) => setTemplate({...template, cta_url_variable: e.target.value})} placeholder="loginUrl, dashboardUrl, detailUrl..." />
+                    <Input value={template.cta_url_variable || ''} onChange={(e) => setTemplate({ ...template, cta_url_variable: e.target.value })} placeholder="loginUrl, dashboardUrl, detailUrl..." />
                     <p className="text-xs text-muted-foreground mt-1">{t({ en: 'The variable name that contains the URL (without {{}})', ar: 'اسم المتغير الذي يحتوي على الرابط (بدون {{}})' })}</p>
                   </div>
                 </CardContent>
@@ -820,7 +678,7 @@ function EmailTemplateEditorContent() {
           <div className="border rounded-lg overflow-hidden" dir={previewLanguage === 'ar' ? 'rtl' : 'ltr'}>
             {/* Email Header Preview */}
             {template.use_header && (
-              <div 
+              <div
                 className="p-8 text-center text-white"
                 style={{ background: `linear-gradient(135deg, ${template.header_gradient_start || '#006C35'}, ${template.header_gradient_end || '#00A651'})` }}
               >
@@ -835,14 +693,14 @@ function EmailTemplateEditorContent() {
             </div>
             {/* Body */}
             <div className="p-6 bg-white">
-              <div 
+              <div
                 className="prose prose-sm max-w-none"
                 dangerouslySetInnerHTML={{ __html: getPreviewContent().body }}
               />
               {/* CTA Button */}
               {getPreviewContent().ctaText && (
                 <div className="mt-6 text-center">
-                  <button 
+                  <button
                     className="px-6 py-3 rounded-lg text-white font-semibold"
                     style={{ backgroundColor: template.header_gradient_start || '#006C35' }}
                   >
@@ -872,9 +730,9 @@ function EmailTemplateEditorContent() {
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-1.5 block">{t({ en: 'Recipient Email', ar: 'البريد الإلكتروني للمستلم' })}</label>
-              <Input 
-                value={testEmail} 
-                onChange={(e) => setTestEmail(e.target.value)} 
+              <Input
+                value={testEmail}
+                onChange={(e) => setTestEmail(e.target.value)}
                 placeholder={currentUser?.email || 'email@example.com'}
               />
               <p className="text-xs text-muted-foreground mt-1">
@@ -913,7 +771,7 @@ function EmailTemplateEditorContent() {
               {t({ en: 'Click any item to take action - panel stays open', ar: 'انقر على أي عنصر لاتخاذ إجراء - اللوحة تبقى مفتوحة' })}
             </p>
           </SheetHeader>
-          
+
           <ScrollArea className="flex-1 h-[calc(100vh-140px)] p-4">
             {aiLoading && !analysisResult ? (
               <div className="flex flex-col items-center justify-center py-12">
@@ -924,10 +782,9 @@ function EmailTemplateEditorContent() {
               <div className="space-y-4">
                 {/* Overall Score */}
                 <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <div className={`text-3xl font-bold ${
-                    analysisResult.overall_score >= 80 ? 'text-green-600' : 
+                  <div className={`text-3xl font-bold ${analysisResult.overall_score >= 80 ? 'text-green-600' :
                     analysisResult.overall_score >= 60 ? 'text-yellow-600' : 'text-red-600'
-                  }`}>
+                    }`}>
                     {analysisResult.overall_score}/100
                   </div>
                   <div className="flex-1">
@@ -955,11 +812,11 @@ function EmailTemplateEditorContent() {
                           {gap.suggested_template && (
                             <div className="flex items-center justify-between mt-1.5">
                               <p className="text-[10px] text-muted-foreground">💡 {gap.suggested_template}</p>
-                              <Button 
-                                size="sm" 
-                                variant="ghost" 
+                              <Button
+                                size="sm"
+                                variant="ghost"
                                 className="h-5 text-[10px] px-2"
-                                onClick={() => handleCreateSuggestedTemplate({ 
+                                onClick={() => handleCreateSuggestedTemplate({
                                   template_key: gap.suggested_template.toLowerCase().replace(/\s+/g, '_'),
                                   name: gap.suggested_template,
                                   category: 'system'
@@ -990,9 +847,9 @@ function EmailTemplateEditorContent() {
                           {issue.affected_templates?.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1.5">
                               {issue.affected_templates.slice(0, 5).map((templateKey, j) => (
-                                <Badge 
-                                  key={j} 
-                                  variant="outline" 
+                                <Badge
+                                  key={j}
+                                  variant="outline"
                                   className="text-[10px] font-mono cursor-pointer hover:bg-red-100 dark:hover:bg-red-900 hover:border-red-400 transition-colors"
                                   onClick={() => handleSelectTemplateByKey(templateKey)}
                                 >
@@ -1023,8 +880,8 @@ function EmailTemplateEditorContent() {
                     </h3>
                     <div className="grid grid-cols-2 gap-1.5">
                       {analysisResult.category_analysis.map((cat, i) => (
-                        <div 
-                          key={i} 
+                        <div
+                          key={i}
                           className="p-2 border rounded-lg cursor-pointer hover:bg-muted/50 hover:border-primary/50 transition-colors"
                           onClick={() => handleFilterByCategory(cat.category)}
                         >
@@ -1073,16 +930,16 @@ function EmailTemplateEditorContent() {
                     </h3>
                     <div className="space-y-1.5">
                       {analysisResult.suggested_templates.map((tmpl, i) => (
-                        <div 
-                          key={i} 
+                        <div
+                          key={i}
                           className="p-2 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg flex items-start justify-between gap-2 hover:border-green-400 transition-colors"
                         >
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-xs truncate">{tmpl.name}</p>
                             <p className="text-[10px] text-muted-foreground font-mono truncate">{tmpl.template_key}</p>
                           </div>
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             className="h-6 text-[10px] px-2 bg-green-600 hover:bg-green-700"
                             onClick={() => handleCreateSuggestedTemplate(tmpl)}
                           >
@@ -1102,7 +959,7 @@ function EmailTemplateEditorContent() {
               </div>
             )}
           </ScrollArea>
-          
+
           <SheetFooter className="border-t flex-row gap-2 p-4">
             <Button variant="outline" onClick={() => setShowAnalysisDialog(false)} className="flex-1">
               {t({ en: 'Close', ar: 'إغلاق' })}

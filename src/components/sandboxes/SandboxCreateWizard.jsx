@@ -1,6 +1,4 @@
 import { useState } from 'react';
-
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,15 +13,15 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
-import { getSandboxDesignPrompt, sandboxDesignSchema } from '@/lib/ai/prompts/sandbox';
+import { getSandboxDesignPrompt, sandboxDesignSchema } from '@/lib/ai/prompts/sandbox/sandboxDesign';
 import { getSystemPrompt } from '@/lib/saudiContext';
 
-import { supabase } from "@/integrations/supabase/client";
+import { useSandboxMutations } from '@/hooks/useSandboxData';
+import { useSectors } from '@/hooks/useSectors';
 
 export default function SandboxCreateWizard({ onClose }) {
   const { language, t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
   const { triggerEmail } = useEmailTrigger();
   const [formData, setFormData] = useState({
@@ -41,25 +39,7 @@ export default function SandboxCreateWizard({ onClose }) {
     exit_criteria: []
   });
 
-  const { data: sectors = [] } = useQuery({
-    queryKey: ['sectors'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('sectors')
-        .select('*');
-
-      if (error) {
-        console.warn('Sectors fetch failed, returning default', error);
-        // Fallback for demo if table missing
-        return [
-          { id: 1, name_en: 'Smart Mobility', name_ar: 'التنقل الذكي' },
-          { id: 2, name_en: 'Fintech', name_ar: 'التقنية المالية' },
-          { id: 3, name_en: 'HealthTech', name_ar: 'التقنية الصحية' }
-        ];
-      }
-      return data;
-    }
-  });
+  const { data: sectors = [] } = useSectors();
 
   const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
     showToasts: true,
@@ -78,19 +58,11 @@ export default function SandboxCreateWizard({ onClose }) {
     }
   };
 
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: result, error } = await supabase
-        .from('sandboxes')
-        .insert(data)
-        .select()
-        .single();
+  const { createSandbox } = useSandboxMutations();
 
-      if (error) throw error;
-      return result;
-    },
-    onSuccess: async (sandbox) => {
-      queryClient.invalidateQueries(['sandboxes']);
+  const handleCreateSandbox = async () => {
+    try {
+      const sandbox = await createSandbox.mutateAsync(formData);
 
       try {
         await triggerEmail('sandbox.created', {
@@ -109,8 +81,10 @@ export default function SandboxCreateWizard({ onClose }) {
       toast.success(t({ en: 'Sandbox created!', ar: 'تم إنشاء المنطقة!' }));
       navigate(createPageUrl(`SandboxDetail?id=${sandbox.id}`));
       onClose?.();
+    } catch (error) {
+      // Error handled by hook or generic error
     }
-  });
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -321,12 +295,12 @@ export default function SandboxCreateWizard({ onClose }) {
                   {t({ en: 'Back', ar: 'رجوع' })}
                 </Button>
                 <Button
-                  onClick={() => createMutation.mutate(formData)}
-                  disabled={createMutation.isPending || !formData.name_en}
+                  onClick={handleCreateSandbox}
+                  disabled={createSandbox.isPending || !formData.name_en}
                   className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600"
                   size="lg"
                 >
-                  {createMutation.isPending ? (
+                  {createSandbox.isPending ? (
                     <><Loader2 className="h-5 w-5 mr-2 animate-spin" />{t({ en: 'Creating...', ar: 'جاري الإنشاء...' })}</>
                   ) : (
                     <><CheckCircle2 className="h-5 w-5 mr-2" />{t({ en: 'Create Sandbox', ar: 'إنشاء المنطقة' })}</>

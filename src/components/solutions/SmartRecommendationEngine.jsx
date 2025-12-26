@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,10 @@ import { createPageUrl } from '../../utils';
 import { useSolutions } from '@/hooks/useSolutions';
 import { useUserActivity, useLogActivity } from '@/hooks/useUserActivity';
 
+/**
+ * SmartRecommendationEngine
+ * ✅ GOLD STANDARD COMPLIANT
+ */
 export default function SmartRecommendationEngine({ challenge, userId, limit = 3 }) {
   const { t } = useLanguage();
   const [recommendations, setRecommendations] = useState([]);
@@ -68,7 +71,7 @@ export default function SmartRecommendationEngine({ challenge, userId, limit = 3
         }
 
         // Recency boost
-        const daysSinceCreated = (new Date() - new Date(solution.created_date)) / (1000 * 60 * 60 * 24);
+        const daysSinceCreated = (new Date().getTime() - new Date(solution.created_at || new Date()).getTime()) / (1000 * 60 * 60 * 24);
         if (daysSinceCreated < 30) score += 10;
 
         return { ...solution, recommendation_score: score };
@@ -85,7 +88,7 @@ export default function SmartRecommendationEngine({ challenge, userId, limit = 3
       activity_type: 'view',
       entity_type: 'solution',
       entity_id: solutionId,
-      metadata: { recommendation_score: score }
+      metadata: { recommendation_score: Number(score) }
     });
   };
 

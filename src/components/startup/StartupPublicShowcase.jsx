@@ -5,7 +5,7 @@ import { useLanguage } from '../LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { Rocket, Award, CheckCircle2, Star } from 'lucide-react';
-import { useStartups } from '@/hooks/useStartups';
+import { useStartups } from '@/hooks/useStartupEcosystem';
 import { useSolutions } from '@/hooks/useSolutions';
 import { useProviderAwards } from '@/hooks/useProviderAwards';
 
@@ -15,14 +15,14 @@ export default function StartupPublicShowcase() {
   /* 
    * Refactored to use Gold Standard Hooks
    */
-  const { data: allStartups = [] } = useStartups(); // Fetch all and filter client-side for now to match legacy logic
+  const { data: allStartups = [] } = useStartups();
   const startups = allStartups.filter(s => s.is_verified);
 
   const { solutions = [] } = useSolutions({ publishedOnly: false }); // Fetch all solutions
   const { data: awards = [] } = useProviderAwards();
 
   const enrichedStartups = startups.map(startup => {
-    const startupSolutions = solutions.filter(s => s.provider_type === 'startup' && s.provider_name === startup.name_en);
+    const startupSolutions = solutions.filter(s => s.provider_type === 'startup' && s.provider_name === startup.company_name_en);
     const startupAwards = awards.filter(a => a.provider_id === startup.id);
 
     return {
@@ -52,14 +52,14 @@ export default function StartupPublicShowcase() {
               <CardHeader className="bg-gradient-to-br from-orange-50 to-pink-50">
                 <div className="flex items-center gap-3 mb-2">
                   {startup.logo_url ? (
-                    <img src={startup.logo_url} className="h-12 w-12 rounded-lg object-cover" alt={startup.name_en} />
+                    <img src={startup.logo_url} className="h-12 w-12 rounded-lg object-cover" alt={startup.company_name_en} />
                   ) : (
                     <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center">
                       <Rocket className="h-6 w-6 text-white" />
                     </div>
                   )}
                   <div className="flex-1">
-                    <CardTitle className="text-base">{language === 'ar' && startup.name_ar ? startup.name_ar : startup.name_en}</CardTitle>
+                    <CardTitle className="text-base">{language === 'ar' && startup.company_name_ar ? startup.company_name_ar : startup.company_name_en}</CardTitle>
                     <div className="flex gap-1 mt-1">
                       <Badge className="bg-green-100 text-green-700 text-xs">
                         <CheckCircle2 className="h-3 w-3 mr-1" />

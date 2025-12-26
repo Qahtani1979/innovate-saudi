@@ -4,10 +4,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '@/components/LanguageContext';
 import { BarChart3, Mail, Eye, MousePointer, XCircle, TrendingUp, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useEmailAnalytics } from '@/hooks/useEmailAnalytics';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { format, subDays } from 'date-fns';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
@@ -15,124 +13,13 @@ export default function EmailAnalyticsDashboard() {
   const { t } = useLanguage();
   const [dateRange, setDateRange] = useState('30');
 
-  const startDate = subDays(new Date(), parseInt(dateRange));
-
-  // Fetch overall stats
-  const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ['email-analytics-stats', dateRange],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('email_logs')
-        .select('status')
-        .gte('created_at', startDate.toISOString());
-
-      if (error) throw error;
-
-      const counts = { 
-        sent: 0, 
-        delivered: 0, 
-        opened: 0, 
-        clicked: 0, 
-        failed: 0, 
-        bounced: 0 
-      };
-      
-      data?.forEach(log => {
-        if (log.status && counts[log.status] !== undefined) {
-          counts[log.status]++;
-        }
-      });
-
-      const total = data?.length || 0;
-      return { ...counts, total };
-    }
-  });
-
-  // Fetch category breakdown
-  const { data: categoryData, isLoading: categoryLoading } = useQuery({
-    queryKey: ['email-analytics-categories', dateRange],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('email_logs')
-        .select('template_key')
-        .gte('created_at', startDate.toISOString());
-
-      if (error) throw error;
-
-      const categories = {};
-      data?.forEach(log => {
-        const category = log.template_key?.split('_')[0] || 'other';
-        categories[category] = (categories[category] || 0) + 1;
-      });
-
-      return Object.entries(categories)
-        .map(([name, value]) => ({ name, value }))
-        .sort((a, b) => b.value - a.value)
-        .slice(0, 8);
-    }
-  });
-
-  // Fetch time series data
-  const { data: timeSeriesData, isLoading: timeSeriesLoading } = useQuery({
-    queryKey: ['email-analytics-timeseries', dateRange],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('email_logs')
-        .select('created_at, status')
-        .gte('created_at', startDate.toISOString())
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-
-      // Group by date
-      const byDate = {};
-      data?.forEach(log => {
-        const date = format(new Date(log.created_at), 'MMM d');
-        if (!byDate[date]) {
-          byDate[date] = { date, sent: 0, opened: 0, clicked: 0 };
-        }
-        byDate[date].sent++;
-        if (log.status === 'opened') byDate[date].opened++;
-        if (log.status === 'clicked') byDate[date].clicked++;
-      });
-
-      return Object.values(byDate);
-    }
-  });
-
-  // Fetch top templates
-  const { data: topTemplates, isLoading: templatesLoading } = useQuery({
-    queryKey: ['email-analytics-templates', dateRange],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('email_logs')
-        .select('template_key, status')
-        .gte('created_at', startDate.toISOString());
-
-      if (error) throw error;
-
-      const templates = {};
-      data?.forEach(log => {
-        const key = log.template_key || 'unknown';
-        if (!templates[key]) {
-          templates[key] = { template_key: key, sent: 0, opened: 0, clicked: 0 };
-        }
-        templates[key].sent++;
-        if (log.status === 'opened') templates[key].opened++;
-        if (log.status === 'clicked') templates[key].clicked++;
-      });
-
-      return Object.values(templates)
-        .map(t => ({
-          ...t,
-          openRate: t.sent > 0 ? ((t.opened / t.sent) * 100).toFixed(1) : '0.0'
-        }))
-        .sort((a, b) => b.sent - a.sent)
-        .slice(0, 10);
-    }
-  });
-
-  const isLoading = statsLoading || categoryLoading || timeSeriesLoading || templatesLoading;
+  const {
+    stats,
+    categories: categoryData,
+    timeSeries: timeSeriesData,
+    templates: topTemplates,
+    isLoading
+  } = useEmailAnalytics(dateRange);
 
   const statCards = [
     { key: 'total', label: { en: 'Total Sent', ar: 'إجمالي المرسل' }, icon: Mail, color: 'bg-slate-100 text-slate-600' },
@@ -173,10 +60,10 @@ export default function EmailAnalyticsDashboard() {
             {statCards.map(stat => {
               const Icon = stat.icon;
               const value = stats?.[stat.key] || 0;
-              const rate = stat.rate && stats?.total > 0 
-                ? ((value / stats.total) * 100).toFixed(1) + '%' 
+              const rate = stat.rate && stats?.total > 0
+                ? ((value / stats.total) * 100).toFixed(1) + '%'
                 : null;
-              
+
               return (
                 <Card key={stat.key} className={stat.color}>
                   <CardContent className="p-4">
@@ -209,12 +96,12 @@ export default function EmailAnalyticsDashboard() {
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis dataKey="date" fontSize={12} tick={{ fill: '#64748b' }} />
                       <YAxis fontSize={12} tick={{ fill: '#64748b' }} />
-                      <Tooltip 
-                        contentStyle={{ 
-                          background: 'white', 
+                      <Tooltip
+                        contentStyle={{
+                          background: 'white',
                           border: '1px solid #e2e8f0',
                           borderRadius: '8px'
-                        }} 
+                        }}
                       />
                       <Line type="monotone" dataKey="sent" stroke="#3b82f6" strokeWidth={2} dot={false} name="Sent" />
                       <Line type="monotone" dataKey="opened" stroke="#10b981" strokeWidth={2} dot={false} name="Opened" />
@@ -250,9 +137,9 @@ export default function EmailAnalyticsDashboard() {
                         ))}
                       </Pie>
                       <Tooltip />
-                      <Legend 
-                        layout="vertical" 
-                        align="right" 
+                      <Legend
+                        layout="vertical"
+                        align="right"
                         verticalAlign="middle"
                         formatter={(value) => <span className="text-sm capitalize">{value}</span>}
                       />
@@ -305,8 +192,8 @@ export default function EmailAnalyticsDashboard() {
                           {template.opened.toLocaleString()}
                         </td>
                         <td className="text-right py-3 px-4">
-                          <Badge 
-                            variant="secondary" 
+                          <Badge
+                            variant="secondary"
                             className={`${parseFloat(template.openRate) > 50 ? 'bg-green-100 text-green-700' : 'bg-slate-100'}`}
                           >
                             {template.openRate}%

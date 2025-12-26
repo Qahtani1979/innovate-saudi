@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRDProposalMutations } from '@/hooks/useRDMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
@@ -10,8 +9,8 @@ import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 
 export default function RDProposalSubmissionGate({ proposal, rdCall, onClose }) {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
   const { triggerEmail } = useEmailTrigger();
+  const { submitProposal } = useRDProposalMutations();
   const [checklist, setChecklist] = useState({
     title_complete: false,
     abstract_complete: false,
@@ -41,35 +40,11 @@ export default function RDProposalSubmissionGate({ proposal, rdCall, onClose }) 
 
   const allChecked = Object.values(checklist).every(v => v);
 
-  const submitMutation = useMutation({
-    mutationFn: async () => {
-      // Update status and submission date
-      const { error: updateError } = await supabase
-        .from('rd_proposals')
-        .update({
-          status: 'submitted',
-          submission_date: new Date().toISOString()
-        })
-        .eq('id', proposal.id);
-      if (updateError) throw updateError;
+  const handleSubmit = async () => {
+    try {
+      await submitProposal.mutateAsync({ id: proposal.id, title: proposal.title_en });
 
-      // Create system activity
-      const { error: activityError } = await supabase
-        .from('system_activities')
-        .insert({
-          entity_type: 'RDProposal',
-          entity_id: proposal.id,
-          activity_type: 'submitted',
-          description: `Proposal "${proposal.title_en}" submitted for review`,
-          performed_by: proposal.created_by,
-          timestamp: new Date().toISOString()
-        });
-      if (activityError) console.error('Activity log error:', activityError);
-    },
-    onSuccess: async () => {
-      queryClient.invalidateQueries(['rd-proposal']);
-      
-      // Notify call organizer using triggerEmail
+      // Notify call organizer
       if (rdCall?.organizer_email) {
         try {
           await triggerEmail('proposal.submitted', {
@@ -87,11 +62,13 @@ export default function RDProposalSubmissionGate({ proposal, rdCall, onClose }) 
           console.error('Failed to send proposal.submitted email:', error);
         }
       }
-      
+
       toast.success(t({ en: 'Proposal submitted successfully!', ar: 'تم تقديم المقترح بنجاح!' }));
       onClose?.();
+    } catch (error) {
+      // Error handled in hook
     }
-  });
+  };
 
   const checklistItems = [
     { key: 'title_complete', label: { en: 'Bilingual title (EN + AR)', ar: 'العنوان ثنائي اللغة' } },
@@ -127,9 +104,8 @@ export default function RDProposalSubmissionGate({ proposal, rdCall, onClose }) 
           {checklistItems.map((item) => (
             <div
               key={item.key}
-              className={`flex items-center gap-3 p-3 rounded-lg border-2 ${
-                checklist[item.key] ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'
-              }`}
+              className={`flex items-center gap-3 p-3 rounded-lg border-2 ${checklist[item.key] ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'
+                }`}
             >
               {checklist[item.key] ? (
                 <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
@@ -154,8 +130,8 @@ export default function RDProposalSubmissionGate({ proposal, rdCall, onClose }) 
                 </p>
               </div>
               <Button
-                onClick={() => submitMutation.mutate()}
-                disabled={submitMutation.isPending}
+                onClick={handleSubmit}
+                disabled={submitProposal.isPending}
                 className="w-full bg-gradient-to-r from-blue-600 to-teal-600"
                 size="lg"
               >

@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useRDActivityLog, useRDCallComments } from '@/hooks/useRDData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -8,33 +7,8 @@ import { Activity, MessageSquare, Clock, User } from 'lucide-react';
 export default function RDCallActivityLog({ rdCallId }) {
   const { t, language, isRTL } = useLanguage();
 
-  const { data: activities = [] } = useQuery({
-    queryKey: ['rd-call-activities', rdCallId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('system_activities')
-        .select('*')
-        .eq('entity_id', rdCallId)
-        .eq('entity_type', 'RDCall')
-        .order('created_date', { ascending: false })
-        .limit(100);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: comments = [] } = useQuery({
-    queryKey: ['rd-call-comments', rdCallId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_call_comments')
-        .select('*')
-        .eq('rd_call_id', rdCallId)
-        .order('created_date', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: activities = [] } = useRDActivityLog('RDCall', rdCallId);
+  const { data: comments = [] } = useRDCallComments(rdCallId);
 
   const allEvents = [
     ...activities.map(a => ({ ...a, type: 'activity' })),

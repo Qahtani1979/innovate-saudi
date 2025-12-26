@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useRDChallenges } from '@/hooks/useRDData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,16 +16,7 @@ export default function ResearcherMunicipalityMatcher({ researcherProfile }) {
   const [matches, setMatches] = useState([]);
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenges')
-        .select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: challenges = [] } = useRDChallenges();
 
   const findMatches = async () => {
     const response = await invokeAI({
@@ -88,13 +78,13 @@ export default function ResearcherMunicipalityMatcher({ researcherProfile }) {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2 text-sm">
                   <div className="p-3 bg-blue-50 rounded border border-blue-200">
                     <p className="font-medium text-blue-900 mb-1">{t({ en: 'Why Match:', ar: 'لماذا المطابقة:' })}</p>
                     <p className="text-slate-700">{language === 'ar' && match.reason_ar ? match.reason_ar : match.reason}</p>
                   </div>
-                  
+
                   <div className="p-3 bg-green-50 rounded border border-green-200">
                     <p className="font-medium text-green-900 mb-1">{t({ en: 'Opportunity:', ar: 'الفرصة:' })}</p>
                     <p className="text-slate-700">{language === 'ar' && match.opportunity_ar ? match.opportunity_ar : match.opportunity}</p>

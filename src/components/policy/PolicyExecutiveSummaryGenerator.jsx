@@ -7,15 +7,17 @@ import { FileText, Download, Loader2, Sparkles, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { 
-  createPolicyExecutiveSummaryPrompt, 
+import { usePolicyMutations } from '@/hooks/usePolicyMutations';
+import {
+  createPolicyExecutiveSummaryPrompt,
   POLICY_EXECUTIVE_SUMMARY_SCHEMA,
-  POLICY_EXECUTIVE_SUMMARY_SYSTEM_PROMPT 
+  POLICY_EXECUTIVE_SUMMARY_SYSTEM_PROMPT
 } from '@/lib/ai/prompts/policy';
 
 export default function PolicyExecutiveSummaryGenerator({ policy }) {
   const { language, isRTL, t } = useLanguage();
   const [summary, setSummary] = useState(null);
+  const { translatePolicy } = usePolicyMutations();
 
   const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
     showToasts: true,
@@ -31,24 +33,24 @@ export default function PolicyExecutiveSummaryGenerator({ policy }) {
 
     if (response.success) {
       try {
-        const translationResponse = await base44.functions.invoke('translatePolicy', {
-          arabic_fields: {
-            title_ar: 'Executive Summary',
-            recommendation_text_ar: response.data.summary_ar,
-            implementation_steps: [],
-            success_metrics: [],
-            stakeholder_involvement_ar: ''
-          }
+        // Use custom hook for translation
+        const translationResponse = await translatePolicy.mutateAsync({
+          title_ar: 'Executive Summary',
+          recommendation_text_ar: response.data.summary_ar,
+          implementation_steps: [],
+          success_metrics: [],
+          stakeholder_involvement_ar: ''
         });
 
         setSummary({
           ...response.data,
-          summary_en: translationResponse.data.recommendation_text_en
+          summary_en: translationResponse.recommendation_text_en
         });
-      } catch {
+      } catch (err) {
+        console.error("Translation failed", err);
         setSummary({
           ...response.data,
-          summary_en: response.data.summary_ar
+          summary_en: response.data.summary_ar // Fallback
         });
       }
     }
@@ -140,7 +142,7 @@ ${summary.conditions.map((c, i) => `${i + 1}. ${c}`).join('\n')}
       </CardHeader>
       <CardContent>
         <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
-        
+
         {summary ? (
           <div className="space-y-4">
             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
@@ -159,8 +161,8 @@ ${summary.conditions.map((c, i) => `${i + 1}. ${c}`).join('\n')}
                   <p className="text-xs text-slate-600">{t({ en: 'Risk', ar: 'المخاطر' })}</p>
                   <Badge className={
                     summary.key_stats.risk_level?.toLowerCase().includes('high') ? 'bg-red-100 text-red-700' :
-                    summary.key_stats.risk_level?.toLowerCase().includes('medium') ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-green-100 text-green-700'
+                      summary.key_stats.risk_level?.toLowerCase().includes('medium') ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-green-100 text-green-700'
                   }>
                     {summary.key_stats.risk_level}
                   </Badge>
@@ -169,12 +171,11 @@ ${summary.conditions.map((c, i) => `${i + 1}. ${c}`).join('\n')}
             )}
 
             {summary.recommendation && (
-              <div className={`p-3 rounded-lg border-l-4 ${
-                summary.recommendation === 'approve' ? 'bg-green-50 border-green-500' :
+              <div className={`p-3 rounded-lg border-l-4 ${summary.recommendation === 'approve' ? 'bg-green-50 border-green-500' :
                 summary.recommendation === 'approve_with_conditions' ? 'bg-yellow-50 border-yellow-500' :
-                summary.recommendation === 'defer' ? 'bg-orange-50 border-orange-500' :
-                'bg-red-50 border-red-500'
-              }`}>
+                  summary.recommendation === 'defer' ? 'bg-orange-50 border-orange-500' :
+                    'bg-red-50 border-red-500'
+                }`}>
                 <p className="text-xs font-semibold text-slate-900 mb-1">
                   {t({ en: 'AI Recommendation:', ar: 'توصية الذكاء:' })}
                 </p>

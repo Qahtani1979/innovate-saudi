@@ -1,26 +1,15 @@
 
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Handshake, MapPin, TrendingUp, CheckCircle2 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { usePilotCollaborations } from '@/hooks/usePilotCollaborations';
 
 function CollaborativePilots() {
   const { t } = useLanguage();
 
-  const { data: collaborations = [], isLoading } = useQuery({
-    queryKey: ['pilot-collaborations'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilot_collaborations')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: collaborations = [], isLoading } = usePilotCollaborations();
 
   const activeCollaborations = collaborations.filter(c => c.collaboration_status === 'active');
 

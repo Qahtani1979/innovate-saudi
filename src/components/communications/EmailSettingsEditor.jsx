@@ -6,32 +6,21 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '@/components/LanguageContext';
 import { Save, Loader2, Palette, Globe, Link2, Mail, Shield } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { useEmailSettings } from '@/hooks/useEmailSettings';
 
 const DEFAULT_SETTINGS = {
-  // Sender settings
   default_from_email: 'onboarding@resend.dev',
   default_from_name: 'Saudi Innovates',
   default_from_name_ar: 'ابتكر السعودية',
-  
-  // Branding
   logo_url: '',
   primary_button_color: '#006C35',
   default_header_gradient_start: '#006C35',
   default_header_gradient_end: '#00A651',
-  
-  // Footer
   footer_contact_email: 'support@saudiinnovates.sa',
   footer_address: 'Riyadh, Saudi Arabia',
   footer_social_links: { twitter: '', linkedin: '' },
-  
-  // Limits
   daily_email_limit: 1000,
   rate_limit_per_minute: 60,
-  
-  // Features
   enable_tracking: true,
   enable_click_tracking: true,
   enable_open_tracking: true,
@@ -39,74 +28,27 @@ const DEFAULT_SETTINGS = {
 
 export default function EmailSettingsEditor() {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [hasChanges, setHasChanges] = useState(false);
 
-  const { data: settingsData, isLoading } = useQuery({
-    queryKey: ['email-settings'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('email_settings')
-        .select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { isLoading, saveSettings, getParsedSettings } = useEmailSettings();
 
-  // Parse settings from database
   useEffect(() => {
-    if (settingsData) {
-      const parsed = { ...DEFAULT_SETTINGS };
-      settingsData.forEach(row => {
-        try {
-          const value = row.setting_value;
-          if (typeof value === 'string') {
-            try {
-              parsed[row.setting_key] = JSON.parse(value);
-            } catch {
-              parsed[row.setting_key] = value;
-            }
-          } else {
-            parsed[row.setting_key] = value;
-          }
-        } catch {
-          parsed[row.setting_key] = row.setting_value;
-        }
-      });
-      setSettings(parsed);
-    }
-  }, [settingsData]);
+    const parsed = getParsedSettings(DEFAULT_SETTINGS);
+    setSettings(parsed);
+  }, [getParsedSettings]);
 
   const updateSetting = (key, value) => {
     setSettings(prev => ({ ...prev, [key]: value }));
     setHasChanges(true);
   };
 
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      const upserts = Object.entries(settings).map(([key, value]) => ({
-        setting_key: key,
-        setting_value: typeof value === 'object' ? JSON.stringify(value) : String(value),
-        updated_at: new Date().toISOString()
-      }));
-      
-      for (const row of upserts) {
-        const { error } = await supabase
-          .from('email_settings')
-          .upsert(row, { onConflict: 'setting_key' });
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['email-settings'] });
-      setHasChanges(false);
-      toast.success(t({ en: 'Settings saved successfully', ar: 'تم حفظ الإعدادات بنجاح' }));
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    }
-  });
+  const handleSave = () => {
+    // @ts-ignore
+    saveSettings.mutate(settings, {
+      onSuccess: () => setHasChanges(false)
+    });
+  };
 
   if (isLoading) {
     return (
@@ -120,12 +62,12 @@ export default function EmailSettingsEditor() {
     <div className="space-y-6">
       {/* Save Button */}
       <div className="flex justify-end">
-        <Button 
-          onClick={() => saveMutation.mutate()} 
-          disabled={!hasChanges || saveMutation.isPending}
+        <Button
+          onClick={handleSave}
+          disabled={!hasChanges || saveSettings.isPending}
           className="bg-emerald-600 hover:bg-emerald-700"
         >
-          {saveMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+          {saveSettings.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
           {t({ en: 'Save Settings', ar: 'حفظ الإعدادات' })}
         </Button>
       </div>
@@ -268,11 +210,11 @@ export default function EmailSettingsEditor() {
                   </div>
                 </div>
               </div>
-              
+
               {/* Preview */}
               <div className="mt-6">
                 <label className="text-sm font-medium mb-2 block">{t({ en: 'Header Preview', ar: 'معاينة الرأس' })}</label>
-                <div 
+                <div
                   className="rounded-lg p-6 text-center text-white"
                   style={{ background: `linear-gradient(135deg, ${settings.default_header_gradient_start}, ${settings.default_header_gradient_end})` }}
                 >
@@ -319,7 +261,7 @@ export default function EmailSettingsEditor() {
                   />
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium mb-1.5 block flex items-center gap-2">
@@ -328,9 +270,9 @@ export default function EmailSettingsEditor() {
                   </label>
                   <Input
                     value={settings.footer_social_links?.twitter || ''}
-                    onChange={(e) => updateSetting('footer_social_links', { 
-                      ...settings.footer_social_links, 
-                      twitter: e.target.value 
+                    onChange={(e) => updateSetting('footer_social_links', {
+                      ...settings.footer_social_links,
+                      twitter: e.target.value
                     })}
                     placeholder="https://twitter.com/yourhandle"
                   />
@@ -342,9 +284,9 @@ export default function EmailSettingsEditor() {
                   </label>
                   <Input
                     value={settings.footer_social_links?.linkedin || ''}
-                    onChange={(e) => updateSetting('footer_social_links', { 
-                      ...settings.footer_social_links, 
-                      linkedin: e.target.value 
+                    onChange={(e) => updateSetting('footer_social_links', {
+                      ...settings.footer_social_links,
+                      linkedin: e.target.value
                     })}
                     placeholder="https://linkedin.com/company/yourcompany"
                   />
@@ -385,7 +327,7 @@ export default function EmailSettingsEditor() {
                   />
                 </div>
               </div>
-              
+
               <div className="space-y-4 pt-4 border-t">
                 <h4 className="font-medium">{t({ en: 'Tracking Options', ar: 'خيارات التتبع' })}</h4>
                 <div className="space-y-3">

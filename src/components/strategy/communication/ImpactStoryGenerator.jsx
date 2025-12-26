@@ -9,10 +9,9 @@ import { Switch } from '@/components/ui/switch';
 import { useLanguage } from '@/components/LanguageContext';
 import { useImpactStories } from '@/hooks/strategy/useImpactStories';
 import { useCommunicationAI } from '@/hooks/strategy/useCommunicationAI';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { 
-  BookOpen, Sparkles, Save, Eye, EyeOff, Star, Loader2, 
+import { useAvailableEntities } from '@/hooks/useEntitySelection';
+import {
+  BookOpen, Sparkles, Save, Eye, EyeOff, Star, Loader2,
   Image, Video, TrendingUp, Lightbulb
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -56,33 +55,7 @@ export default function ImpactStoryGenerator({ strategicPlanId, onSave }) {
   const [newTag, setNewTag] = useState('');
 
   // Fetch entities based on selected type
-  const { data: availableEntities = [], isLoading: entitiesLoading } = useQuery({
-    queryKey: ['available-entities-for-story', storyData.entity_type, strategicPlanId],
-    queryFn: async () => {
-      if (!storyData.entity_type) return [];
-      const entityConfig = ENTITY_TYPES.find(e => e.value === storyData.entity_type);
-      if (!entityConfig) return [];
-
-      let query = supabase
-        .from(entityConfig.table)
-        .select('id, title_en, title_ar, description_en, status, created_at')
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      // Filter by strategic plan if available
-      if (strategicPlanId && ['challenges', 'pilots', 'partnerships'].includes(entityConfig.table)) {
-        query = query.contains('strategic_plan_ids', [strategicPlanId]);
-      }
-
-      const { data, error } = await query;
-      if (error) {
-        console.error('Error fetching entities:', error);
-        return [];
-      }
-      return data || [];
-    },
-    enabled: !!storyData.entity_type
-  });
+  const { data: availableEntities = [], isLoading: entitiesLoading } = useAvailableEntities(storyData.entity_type);
 
   // When entity is selected, auto-populate details
   const handleEntitySelect = (entityId) => {
@@ -207,7 +180,7 @@ Status: ${entity.status || 'N/A'}
             >
               <SelectTrigger>
                 <SelectValue placeholder={
-                  entitiesLoading 
+                  entitiesLoading
                     ? t({ en: 'Loading...', ar: 'جاري التحميل...' })
                     : t({ en: 'Select an entity', ar: 'اختر كيان' })
                 } />
@@ -243,9 +216,9 @@ Status: ${entity.status || 'N/A'}
           <Textarea
             value={entityDetails}
             onChange={(e) => setEntityDetails(e.target.value)}
-            placeholder={t({ 
-              en: 'Describe the project, its goals, implementation, and outcomes...', 
-              ar: 'صف المشروع وأهدافه وتنفيذه ونتائجه...' 
+            placeholder={t({
+              en: 'Describe the project, its goals, implementation, and outcomes...',
+              ar: 'صف المشروع وأهدافه وتنفيذه ونتائجه...'
             })}
             rows={4}
           />

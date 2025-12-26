@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,57 +12,16 @@ import {
   buildImpactCalculatorPrompt,
   IMPACT_CALCULATOR_SCHEMA
 } from '@/lib/ai/prompts/programs';
+import { useMunicipalImpact } from '@/hooks/useMunicipalImpact';
 
 export default function MunicipalImpactCalculator({ programId }) {
   const { t, language } = useLanguage();
   const [impact, setImpact] = useState(null);
-  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invokeAI, status, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: program } = useQuery({
-    queryKey: ['program', programId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('programs')
-        .select('*')
-        .eq('id', programId)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!programId
-  });
+  const { program, applications, pilots, solutions, isLoading: dataLoading } = useMunicipalImpact(programId);
 
-  const { data: applications = [] } = useQuery({
-    queryKey: ['program-applications', programId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('program_applications')
-        .select('*')
-        .eq('program_id', programId)
-        .eq('status', 'accepted');
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!programId
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('pilots').select('*').eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['solutions'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('solutions').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const isLoading = analyzing || dataLoading;
 
   const calculateImpact = async () => {
     const alumniEmails = applications.map(a => a.applicant_email);
@@ -140,7 +97,7 @@ export default function MunicipalImpactCalculator({ programId }) {
       </CardHeader>
       <CardContent>
         <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails className="mb-4" />
-        
+
         {impact && (
           <div className="space-y-4">
             <div className="grid grid-cols-3 gap-3">

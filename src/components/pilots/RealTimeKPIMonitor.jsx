@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { usePilot } from '@/hooks/usePilots';
+import { usePilotKPIDatapointsHistory } from '@/hooks/useKPIs';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -11,34 +11,9 @@ export default function RealTimeKPIMonitor({ pilotId }) {
   const { language, isRTL, t } = useLanguage();
   const [liveData, setLiveData] = useState([]);
 
-  const { data: pilot } = useQuery({
-    queryKey: ['pilot', pilotId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('id', pilotId)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    refetchInterval: 30000
-  });
+  const { data: pilot } = usePilot(pilotId);
 
-  const { data: datapoints = [] } = useQuery({
-    queryKey: ['kpi-datapoints', pilotId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilot_kpi_datapoints')
-        .select('*')
-        .eq('pilot_id', pilotId)
-        .order('timestamp', { ascending: false })
-        .limit(50);
-      if (error) throw error;
-      return data || [];
-    },
-    refetchInterval: 30000
-  });
+  const { data: datapoints = [] } = usePilotKPIDatapointsHistory(pilotId);
 
   useEffect(() => {
     if (datapoints.length > 0) {
@@ -56,7 +31,7 @@ export default function RealTimeKPIMonitor({ pilotId }) {
     const currentValue = latestDatapoint?.value || 0;
     const targetValue = parseFloat(kpi.target) || 0;
     const baselineValue = parseFloat(kpi.baseline) || 0;
-    
+
     const progress = targetValue > baselineValue
       ? ((currentValue - baselineValue) / (targetValue - baselineValue)) * 100
       : 0;
@@ -156,13 +131,12 @@ export default function RealTimeKPIMonitor({ pilotId }) {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 bg-slate-200 rounded-full h-2">
-                    <div 
-                      className={`h-2 rounded-full transition-all ${
-                        kpi.status === 'achieved' ? 'bg-green-600' :
+                    <div
+                      className={`h-2 rounded-full transition-all ${kpi.status === 'achieved' ? 'bg-green-600' :
                         kpi.status === 'on_track' ? 'bg-blue-600' :
-                        kpi.status === 'at_risk' ? 'bg-yellow-600' :
-                        'bg-red-600'
-                      }`}
+                          kpi.status === 'at_risk' ? 'bg-yellow-600' :
+                            'bg-red-600'
+                        }`}
                       style={{ width: `${kpi.progress}%` }}
                     />
                   </div>
@@ -182,9 +156,9 @@ export default function RealTimeKPIMonitor({ pilotId }) {
                   {t({ en: '⚠️ Critical KPI Alert', ar: '⚠️ تنبيه مؤشر حرج' })}
                 </p>
                 <p className="text-sm text-slate-700">
-                  {t({ 
-                    en: 'One or more KPIs are significantly off track. Immediate corrective action required.', 
-                    ar: 'واحد أو أكثر من المؤشرات خارج المسار بشكل كبير. مطلوب إجراء تصحيحي فوري.' 
+                  {t({
+                    en: 'One or more KPIs are significantly off track. Immediate corrective action required.',
+                    ar: 'واحد أو أكثر من المؤشرات خارج المسار بشكل كبير. مطلوب إجراء تصحيحي فوري.'
                   })}
                 </p>
               </div>

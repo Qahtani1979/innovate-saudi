@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import { useQueryClient } from '@tanstack/react-query';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,7 +60,7 @@ const DEFAULT_TEMPLATES = [
 
 export default function EmailTemplateManager() {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);

@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
 import { useStrategicKPIs } from '@/hooks/useStrategicKPIs';
 import { usePrograms } from '@/hooks/usePrograms';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +13,9 @@ import { toast } from 'sonner';
 
 export default function ProgramOutcomeKPITracker({ program }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
+  const { language, isRTL, t } = useLanguage();
+  const { data: strategicPlans = [] } = useStrategiesWithVisibility();
+
   const { kpis: strategicKPIs, isLoading: isLoadingKPIs, recordContribution, isRecording } = useStrategicKPIs({
     planIds: program?.['strategic_plan_ids'] || program?.['strategic_objective_ids'] || [],
     strategicPlans

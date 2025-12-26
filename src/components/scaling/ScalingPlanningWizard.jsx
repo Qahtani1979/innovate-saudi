@@ -10,14 +10,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { buildScalingEstimatesPrompt, SCALING_ESTIMATES_SCHEMA } from '@/lib/ai/prompts/scaling/planningWizard';
+import { useMunicipalities } from '@/hooks/useMunicipalities';
+import { useScalingMutations } from '@/hooks/useScalingMutations';
 
 export default function ScalingPlanningWizard({ pilot, onComplete, onCancel }) {
   const { t, isRTL } = useLanguage();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [municipalities, setMunicipalities] = useState([]);
+  // Fetch municipalities for target selection
+  const { data: municipalities = [], isLoading: isLoadingMunicipalities } = useMunicipalities();
   const { invokeAI, status, isLoading: aiEstimating, isAvailable, rateLimitInfo } = useAIWithFallback();
-  
+  const { createScalingPlan } = useScalingMutations();
+
   const [planData, setPlanData] = useState({
     pilot_id: pilot?.id,
     title_en: `${pilot?.title_en} - National Scaling`,
@@ -32,10 +36,6 @@ export default function ScalingPlanningWizard({ pilot, onComplete, onCancel }) {
     ai_timeline_estimate: null,
     ai_readiness_scores: []
   });
-
-  useEffect(() => {
-    base44.entities.Municipality.list().then(setMunicipalities);
-  }, []);
 
   const generateAIEstimates = async () => {
     const result = await invokeAI({
@@ -62,7 +62,7 @@ export default function ScalingPlanningWizard({ pilot, onComplete, onCancel }) {
   };
 
   const scoreMunicipalReadiness = async () => {
-    const selectedMunis = municipalities.filter(m => 
+    const selectedMunis = municipalities.filter(m =>
       planData.target_municipalities.includes(m.id)
     );
 
@@ -110,7 +110,7 @@ Return score 0-100 and brief rationale.`,
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      await base44.entities.ScalingPlan.create(planData);
+      await createScalingPlan.mutateAsync(planData);
       onComplete?.();
     } catch (error) {
       console.error('Failed to create scaling plan:', error);
@@ -125,9 +125,8 @@ Return score 0-100 and brief rationale.`,
           <div className="flex items-center justify-between mb-4">
             {[1, 2, 3, 4].map((s) => (
               <div key={s} className="flex items-center">
-                <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                  step >= s ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'
-                }`}>
+                <div className={`h-10 w-10 rounded-full flex items-center justify-center ${step >= s ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'
+                  }`}>
                   {step > s ? <CheckCircle2 className="h-5 w-5" /> : s}
                 </div>
                 {s < 4 && <div className={`h-1 w-20 ${step > s ? 'bg-blue-600' : 'bg-slate-200'}`} />}
@@ -165,11 +164,10 @@ Return score 0-100 and brief rationale.`,
                         : [...prev.target_municipalities, muni.id]
                     }));
                   }}
-                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                    planData.target_municipalities.includes(muni.id)
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-slate-200 hover:border-slate-300'
-                  }`}
+                  className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${planData.target_municipalities.includes(muni.id)
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-slate-200 hover:border-slate-300'
+                    }`}
                 >
                   <p className="font-semibold text-sm">{isRTL ? muni.name_ar : muni.name_en}</p>
                   <div className="flex items-center gap-2 mt-2 text-xs">

@@ -65,10 +65,41 @@ export function useUserFollows(userEmail) {
         }
     });
 
+    const useEntityFollowers = (entityType, entityId) => useQuery({
+        queryKey: ['entity-followers', entityType, entityId],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('user_follows')
+                .select('*')
+                .eq('followed_entity_type', entityType)
+                .eq('followed_entity_id', entityId);
+            if (error) throw error;
+            return data || [];
+        },
+        enabled: !!entityType && !!entityId
+    });
+
     return {
         useFollowers,
         useFollowing,
+        useEntityFollowers,
         followMutation,
         unfollowMutation
     };
+}
+
+export function useEntityFollowersData(entityType, entityId) {
+    return useQuery({
+        queryKey: ['entity-followers', entityType, entityId],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('user_follows')
+                .select('*')
+                .eq('followed_entity_type', entityType)
+                .eq('followed_entity_id', entityId);
+            if (error) throw error;
+            return data || [];
+        },
+        enabled: !!entityType && !!entityId
+    });
 }

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useQueryClient, useQuery } from '@tanstack/react-query';
+
 import { useAutoRoleAssignment } from '@/hooks/useAutoRoleAssignment';
+import { useOnboardingMutations } from '@/hooks/useOnboardingMutations';
+import { useSectors } from '@/hooks/useSectors';
+import { useMunicipalitiesCount } from '@/hooks/useMunicipalities';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,8 +15,8 @@ import { Label } from "@/components/ui/label";
 import { useLanguage } from '../LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { createPageUrl } from '@/utils';
-import { 
-  Shield, ArrowRight, ArrowLeft, CheckCircle2, 
+import {
+  Shield, ArrowRight, ArrowLeft, CheckCircle2,
   Building2, Target, BarChart3, Layers, Map, Globe, Loader2, Activity
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -37,13 +39,14 @@ const OVERSIGHT_CAPABILITIES = [
 export default function DeputyshipOnboardingWizard({ onComplete, onSkip }) {
   const { language, isRTL, t, toggleLanguage } = useLanguage();
   const { user, userProfile, checkAuth } = useAuth();
-  const queryClient = useQueryClient();
+
   const navigate = useNavigate();
   const { checkAndAssignRole } = useAutoRoleAssignment();
-  
+  const { upsertProfile } = useOnboardingMutations();
+
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     job_title: '',
     department: '',
@@ -54,31 +57,10 @@ export default function DeputyshipOnboardingWizard({ onComplete, onSkip }) {
   });
 
   // Fetch sectors
-  const { data: sectors = [] } = useQuery({
-    queryKey: ['sectors-active'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('sectors')
-        .select('id, name_en, name_ar, icon')
-        .eq('is_active', true)
-        .order('name_en');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: sectors = [] } = useSectors();
 
   // Fetch municipalities count
-  const { data: municipalitiesCount = 0 } = useQuery({
-    queryKey: ['municipalities-count'],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from('municipalities')
-        .select('id', { count: 'exact', head: true })
-        .eq('is_active', true);
-      if (error) return 0;
-      return count || 0;
-    }
-  });
+  const { data: municipalitiesCount = 0 } = useMunicipalitiesCount();
 
   // Pre-populate from Stage 1 onboarding data
   useEffect(() => {
@@ -112,12 +94,15 @@ export default function DeputyshipOnboardingWizard({ onComplete, onSkip }) {
     }
 
     setIsSubmitting(true);
-    
+
     try {
       // Update user profile
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .update({
+      // Update user profile
+      await upsertProfile.mutateAsync({
+        table: 'user_profiles',
+        matchingColumns: ['user_id'],
+        data: {
+          user_id: user.id,
           job_title: formData.job_title || null,
           job_title_en: formData.job_title || null,
           department: formData.department || null,
@@ -134,10 +119,8 @@ export default function DeputyshipOnboardingWizard({ onComplete, onSkip }) {
             focus_sectors: formData.selectedSectors
           },
           updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
-
-      if (profileError) throw profileError;
+        }
+      });
 
       // Check auto-approval for deputyship role (usually requires MoMAH email domain)
       const roleResult = await checkAndAssignRole({
@@ -148,7 +131,7 @@ export default function DeputyshipOnboardingWizard({ onComplete, onSkip }) {
         language
       });
 
-      await queryClient.invalidateQueries(['user-profile']);
+
       if (checkAuth) await checkAuth();
 
       if (roleResult.autoApproved) {
@@ -170,9 +153,9 @@ export default function DeputyshipOnboardingWizard({ onComplete, onSkip }) {
   const handleSkip = async () => {
     try {
       sessionStorage.setItem('deputyship_wizard_skipped', Date.now().toString());
-      toast.info(t({ 
-        en: 'You can complete your profile anytime from settings.', 
-        ar: 'يمكنك إكمال ملفك الشخصي في أي وقت من الإعدادات.' 
+      toast.info(t({
+        en: 'You can complete your profile anytime from settings.',
+        ar: 'يمكنك إكمال ملفك الشخصي في أي وقت من الإعدادات.'
       }));
       onSkip?.();
       navigate(createPageUrl('ExecutiveDashboard'));
@@ -196,7 +179,7 @@ export default function DeputyshipOnboardingWizard({ onComplete, onSkip }) {
     <div className="fixed inset-0 bg-gradient-to-br from-indigo-900/95 via-slate-900/95 to-purple-900/95 backdrop-blur-sm z-50 overflow-y-auto" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="min-h-screen py-8 px-4">
         <div className="max-w-2xl mx-auto space-y-6">
-          
+
           {/* Header with Language Toggle */}
           <div className="text-center text-white">
             <div className="flex items-center justify-between mb-4">
@@ -207,8 +190,8 @@ export default function DeputyshipOnboardingWizard({ onComplete, onSkip }) {
                   {t({ en: 'Deputyship Profile Setup', ar: 'إعداد ملف الوكالة' })}
                 </h1>
               </div>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={toggleLanguage}
                 className="text-white/70 hover:text-white hover:bg-white/10 font-medium w-24"
@@ -230,13 +213,12 @@ export default function DeputyshipOnboardingWizard({ onComplete, onSkip }) {
                   const StepIcon = step.icon;
                   const isActive = currentStep === step.id;
                   const isComplete = currentStep > step.id;
-                  
+
                   return (
                     <React.Fragment key={step.id}>
-                      <Badge className={`px-3 py-2 border-0 ${
-                        isActive ? 'bg-indigo-600 text-white' : 
+                      <Badge className={`px-3 py-2 border-0 ${isActive ? 'bg-indigo-600 text-white' :
                         isComplete ? 'bg-purple-600 text-white' : 'bg-white/10 text-white/60'
-                      }`}>
+                        }`}>
                         <StepIcon className="h-4 w-4 mr-1" />
                         {step.title[language]}
                       </Badge>
@@ -358,11 +340,10 @@ export default function DeputyshipOnboardingWizard({ onComplete, onSkip }) {
                     <div
                       key={sector.id}
                       onClick={() => toggleSector(sector.id)}
-                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                        formData.selectedSectors.includes(sector.id)
-                          ? 'border-indigo-500 bg-indigo-50'
-                          : 'border-border hover:border-indigo-300'
-                      }`}
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${formData.selectedSectors.includes(sector.id)
+                        ? 'border-indigo-500 bg-indigo-50'
+                        : 'border-border hover:border-indigo-300'
+                        }`}
                     >
                       <div className="text-2xl mb-2">{sector.icon || '🏢'}</div>
                       <div className="font-medium text-sm">

@@ -5,7 +5,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from './LanguageContext';
 import { Archive, Loader2, X } from 'lucide-react';
 import { useChallengeMutations } from '@/hooks/useChallengeMutations';
-import { supabase } from '@/integrations/supabase/client';
 
 export default function ChallengeArchiveWorkflow({ challenge, onClose }) {
   const { language, isRTL, t } = useLanguage();

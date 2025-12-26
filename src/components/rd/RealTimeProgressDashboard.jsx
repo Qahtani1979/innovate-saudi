@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useRDProject } from '@/hooks/useRDData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../LanguageContext';
 import { Activity, BookOpen, Award, TrendingUp } from 'lucide-react';
@@ -8,19 +7,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 export default function RealTimeProgressDashboard({ projectId }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: project } = useQuery({
-    queryKey: ['rd-project', projectId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rd_projects')
-        .select('*')
-        .eq('id', projectId)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    refetchInterval: 30000
-  });
+  const { data: project } = useRDProject(projectId);
 
   const milestones = project?.timeline?.milestones || [];
   const completedMilestones = milestones.filter(m => m.status === 'completed').length;

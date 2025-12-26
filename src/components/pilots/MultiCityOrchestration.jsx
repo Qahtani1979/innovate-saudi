@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { usePilotsList } from '@/hooks/usePilots';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
@@ -9,19 +8,9 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recha
 export default function MultiCityOrchestration({ masterPilot }) {
   const { language, t } = useLanguage();
 
-  const { data: childPilots = [] } = useQuery({
-    queryKey: ['child-pilots', masterPilot.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*')
-        .ilike('code', `%${masterPilot.code}%`)
-        .neq('id', masterPilot.id)
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    },
-    initialData: []
+  const { data: childPilots = [] } = usePilotsList({
+    searchCode: masterPilot.code,
+    excludeId: masterPilot.id
   });
 
   const cityData = childPilots.map(p => ({
@@ -30,7 +19,7 @@ export default function MultiCityOrchestration({ masterPilot }) {
     kpiAchievement: p.kpis?.filter(k => k.status === 'on_track').length || 0
   }));
 
-  const avgProgress = cityData.length > 0 
+  const avgProgress = cityData.length > 0
     ? Math.round(cityData.reduce((sum, c) => sum + c.progress, 0) / cityData.length)
     : 0;
 
@@ -93,7 +82,7 @@ export default function MultiCityOrchestration({ masterPilot }) {
                     </Badge>
                   </div>
                   <div className="w-full bg-slate-100 rounded-full h-2">
-                    <div 
+                    <div
                       className={`h-2 rounded-full ${progress >= 70 ? 'bg-green-600' : progress >= 50 ? 'bg-yellow-600' : 'bg-red-600'}`}
                       style={{ width: `${progress}%` }}
                     />
@@ -105,9 +94,9 @@ export default function MultiCityOrchestration({ masterPilot }) {
 
           <div className="p-3 bg-blue-50 rounded border border-blue-300">
             <p className="text-xs text-slate-600">
-              {t({ 
-                en: 'Synchronized milestones and shared learnings across all cities enable consistent implementation', 
-                ar: 'المعالم المتزامنة والتعلم المشترك عبر جميع المدن يمكّن التنفيذ المتسق' 
+              {t({
+                en: 'Synchronized milestones and shared learnings across all cities enable consistent implementation',
+                ar: 'المعالم المتزامنة والتعلم المشترك عبر جميع المدن يمكّن التنفيذ المتسق'
               })}
             </p>
           </div>

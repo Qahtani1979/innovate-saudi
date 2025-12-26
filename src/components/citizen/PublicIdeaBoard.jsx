@@ -1,55 +1,26 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThumbsUp, MessageSquare, MapPin, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
-import { useVisibilitySystem } from '@/hooks/visibility/useVisibilitySystem';
+import { useCitizenIdeasWithVisibility } from '@/hooks/useCitizenIdeasWithVisibility';
+import { useVoteOnIdea } from '@/hooks/useCitizenIdeas';
 
 export default function PublicIdeaBoard({ municipalityId }) {
-  const queryClient = useQueryClient();
   const [filter, setFilter] = useState('trending');
-  const { userMunicipalityId, hasFullVisibility, isNational } = useVisibilitySystem();
 
-  // Apply visibility filtering to citizen ideas
-  const { data: ideas = [] } = useQuery({
-    queryKey: ['citizen-ideas', municipalityId, filter, userMunicipalityId, hasFullVisibility],
-    queryFn: async () => {
-      let query = supabase.from('citizen_ideas').select('*').eq('is_published', true);
-      
-      // Filter by municipality based on visibility
-      if (municipalityId) {
-        query = query.eq('municipality_id', municipalityId);
-      } else if (!hasFullVisibility && !isNational && userMunicipalityId) {
-        // Non-admin users see their municipality's ideas only
-        query = query.eq('municipality_id', userMunicipalityId);
-      }
-      
-      if (filter === 'trending') {
-        query = query.order('votes_count', { ascending: false });
-      } else if (filter === 'recent') {
-        query = query.order('created_at', { ascending: false });
-      }
-      const { data } = await query.limit(20);
-      return data || [];
-    },
-    initialData: []
+  // Use visibility-aware hook for ideas
+  const ideasQuery = useCitizenIdeasWithVisibility({
+    municipalityId,
+    orderBy: filter === 'trending' ? 'votes_count' : 'created_at',
+    orderDirection: 'desc',
+    limit: 20
   });
 
-  const voteMutation = useMutation({
-    mutationFn: async (ideaId) => {
-      const idea = ideas.find(i => i.id === ideaId);
-      return supabase.from('citizen_ideas').update({
-        votes_count: (idea.votes_count || 0) + 1
-      }).eq('id', ideaId);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['citizen-ideas']);
-      toast.success('Vote counted!');
-    }
-  });
+  const ideasData = ideasQuery.data;
+  const ideas = Array.isArray(ideasData) ? ideasData : (ideasData?.data || []);
+  const voteMutation = useVoteOnIdea();
 
   const getCategoryColor = (category) => {
     const colors = {
@@ -83,6 +54,7 @@ export default function PublicIdeaBoard({ municipalityId }) {
         </Button>
       </div>
 
+      {/* @ts-ignore */}
       {ideas.map((idea, i) => (
         <Card key={idea.id} className="hover:shadow-lg transition-shadow">
           <CardContent className="pt-6">

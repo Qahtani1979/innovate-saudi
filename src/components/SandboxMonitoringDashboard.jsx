@@ -1,30 +1,17 @@
 
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { AlertTriangle, Activity, Shield, Zap } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
+import { useSandboxMonitoringData, useSandboxData } from '@/hooks/useSandboxData';
+
 export default function SandboxMonitoringDashboard({ sandbox }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: monitoringData = [] } = useQuery({
-    queryKey: ['monitoring-data', sandbox.id],
-    queryFn: async () => {
-      const all = await base44.entities.SandboxMonitoringData.list();
-      return all.filter(m => m.sandbox_id === sandbox.id)
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    }
-  });
-
-  const { data: incidents = [] } = useQuery({
-    queryKey: ['sandbox-incidents', sandbox.id],
-    queryFn: async () => {
-      const all = await base44.entities.SandboxIncident.list();
-      return all.filter(i => i.sandbox_id === sandbox.id);
-    }
-  });
+  const { data: monitoringData = [] } = useSandboxMonitoringData(sandbox.id);
+  const { incidents = [] } = useSandboxData(sandbox.id);
 
   const activeIncidents = incidents.filter(i => i.status !== 'resolved');
   const criticalAlerts = monitoringData.filter(m => m.alert_triggered);

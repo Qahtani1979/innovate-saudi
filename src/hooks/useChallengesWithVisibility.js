@@ -22,10 +22,14 @@ export function useChallengesWithVisibility(options = {}) {
     publishedOnly = false,
     strategicPlanId,
     municipalityId,
+    tracks,
     // Pagination Options
     page,
     pageSize,
-    paginate = false
+    paginate = false,
+    // Sorting Options
+    sortBy = 'created_at',
+    sortOrder = 'desc'
   } = options;
 
   const permissionsData = usePermissions();
@@ -65,7 +69,10 @@ export function useChallengesWithVisibility(options = {}) {
       municipalityId,
       page,
       pageSize,
-      paginate
+      paginate,
+      sortBy,
+      sortOrder,
+      tracks
     }],
     queryFn: async () => {
       // 1. Base Select
@@ -88,6 +95,10 @@ export function useChallengesWithVisibility(options = {}) {
       if (sectorsOverlap?.length > 0) query = query.overlaps('sectors', sectorsOverlap);
       if (strategicPlanId) query = query.contains('strategic_plan_ids', [strategicPlanId]);
       if (municipalityId) query = query.eq('municipality_id', municipalityId);
+      if (tracks) {
+        if (Array.isArray(tracks)) query = query.contains('tracks', tracks);
+        else query = query.contains('tracks', [tracks]);
+      }
 
       // 3. Visibility Logic (Unified)
 
@@ -117,7 +128,7 @@ export function useChallengesWithVisibility(options = {}) {
       }
 
       // 4. Sorting & Pagination
-      query = query.order('created_at', { ascending: false });
+      query = query.order(sortBy, { ascending: sortOrder === 'asc' });
 
       if (paginate && page && pageSize) {
         const from = (page - 1) * pageSize;

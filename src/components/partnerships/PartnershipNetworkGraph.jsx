@@ -1,43 +1,23 @@
 import { useMemo } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Network, Users } from 'lucide-react';
+import { usePartnerships } from '@/hooks/usePartnerships';
+import { useOrganizations } from '@/hooks/useOrganizations';
 
 export default function PartnershipNetworkGraph() {
   const { language, t } = useLanguage();
 
-  const { data: partnerships = [] } = useQuery({
-    queryKey: ['partnerships'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('partnerships')
-        .select('*');
-      if (error) throw error;
-      return data || [];
-    },
-    initialData: []
-  });
-
-  const { data: organizations = [] } = useQuery({
-    queryKey: ['organizations'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('organizations')
-        .select('*');
-      if (error) throw error;
-      return data || [];
-    },
-    initialData: []
-  });
+  const { data: partnerships = [] } = usePartnerships();
+  const { data: organizations = [] } = useOrganizations();
 
   const networkData = useMemo(() => {
     const orgConnections = {};
-    
+
     partnerships.forEach(p => {
-      p.parties?.forEach(party => {
+      const parties = Array.isArray(p.parties) ? p.parties : [];
+      parties.forEach(party => {
         const orgId = party.organization_id;
         if (!orgConnections[orgId]) {
           orgConnections[orgId] = {
@@ -47,9 +27,9 @@ export default function PartnershipNetworkGraph() {
           };
         }
         orgConnections[orgId].partnerships++;
-        
+
         // Add connections to other parties
-        p.parties.forEach(otherParty => {
+        parties.forEach(otherParty => {
           if (otherParty.organization_id !== orgId) {
             orgConnections[orgId].connections.add(otherParty.organization_id);
           }
@@ -120,9 +100,9 @@ export default function PartnershipNetworkGraph() {
 
         <div className="p-3 bg-indigo-50 rounded border border-indigo-300">
           <p className="text-xs text-slate-600">
-            {t({ 
-              en: 'Network analysis reveals key connectors and collaboration opportunities across the ecosystem', 
-              ar: 'تحليل الشبكة يكشف الموصلات الرئيسية وفرص التعاون عبر النظام البيئي' 
+            {t({
+              en: 'Network analysis reveals key connectors and collaboration opportunities across the ecosystem',
+              ar: 'تحليل الشبكة يكشف الموصلات الرئيسية وفرص التعاون عبر النظام البيئي'
             })}
           </p>
         </div>

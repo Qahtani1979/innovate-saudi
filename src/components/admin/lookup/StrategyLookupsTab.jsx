@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,70 +57,41 @@ const LOOKUP_CONFIGS = {
   }
 };
 
+import { useStrategyLookup } from '@/hooks/useStrategyLookups';
+
 function LookupTable({ config, lookupKey }) {
   const { language, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({});
 
-  const { data: items = [], isLoading } = useQuery({
-    queryKey: [config.table],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from(config.table)
-        .select('*')
-        .order('display_order');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const {
+    data: items = [],
+    isLoading,
+    createMutation,
+    updateMutation,
+    deleteMutation
+  } = useStrategyLookup(config.table);
 
-  const saveMutation = useMutation({
-    mutationFn: async (data) => {
-      if (editingItem) {
-        const { error } = await supabase
-          .from(config.table)
-          .update(data)
-          .eq('id', editingItem.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from(config.table)
-          .insert([data]);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries([config.table]);
-      queryClient.invalidateQueries(['taxonomy-global']);
-      setDialogOpen(false);
-      setEditingItem(null);
-      setFormData({});
-      toast.success(t({ en: 'Saved successfully', ar: 'تم الحفظ بنجاح' }));
-    },
-    onError: (err) => {
-      toast.error(err.message);
+  const handleSave = (data) => {
+    if (editingItem) {
+      updateMutation.mutate({ id: editingItem.id, data }, {
+        onSuccess: () => {
+          setDialogOpen(false);
+          setEditingItem(null);
+          setFormData({});
+        }
+      });
+    } else {
+      createMutation.mutate(data, {
+        onSuccess: () => {
+          setDialogOpen(false);
+          setEditingItem(null);
+          setFormData({});
+        }
+      });
     }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      const { error } = await supabase
-        .from(config.table)
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries([config.table]);
-      queryClient.invalidateQueries(['taxonomy-global']);
-      toast.success(t({ en: 'Deleted successfully', ar: 'تم الحذف بنجاح' }));
-    },
-    onError: (err) => {
-      toast.error(err.message);
-    }
-  });
+  };
 
   const handleEdit = (item) => {
     setEditingItem(item);
@@ -141,7 +110,7 @@ function LookupTable({ config, lookupKey }) {
       toast.error(t({ en: 'Code and English name are required', ar: 'الرمز والاسم بالإنجليزية مطلوبان' }));
       return;
     }
-    saveMutation.mutate(formData);
+    handleSave(formData);
   };
 
   const Icon = config.icon;
@@ -193,9 +162,9 @@ function LookupTable({ config, lookupKey }) {
                       <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
                         <Edit2 className="h-4 w-4" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => {
                           if (confirm(t({ en: 'Delete this item?', ar: 'حذف هذا العنصر؟' }))) {
                             deleteMutation.mutate(item.id);
@@ -224,7 +193,7 @@ function LookupTable({ config, lookupKey }) {
         <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle>
-              {editingItem 
+              {editingItem
                 ? t({ en: `Edit ${config.title.en}`, ar: `تعديل ${config.title.ar}` })
                 : t({ en: `Add ${config.title.en}`, ar: `إضافة ${config.title.ar}` })
               }
@@ -234,17 +203,17 @@ function LookupTable({ config, lookupKey }) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium mb-1 block">{t({ en: 'Code', ar: 'الرمز' })} *</label>
-                <Input 
-                  value={formData.code || ''} 
+                <Input
+                  value={formData.code || ''}
                   onChange={(e) => setFormData({ ...formData, code: e.target.value.toLowerCase().replace(/\s+/g, '_') })}
                   placeholder="unique_code"
                 />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">{t({ en: 'Display Order', ar: 'ترتيب العرض' })}</label>
-                <Input 
+                <Input
                   type="number"
-                  value={formData.display_order || ''} 
+                  value={formData.display_order || ''}
                   onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) })}
                 />
               </div>
@@ -252,15 +221,15 @@ function LookupTable({ config, lookupKey }) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium mb-1 block">{t({ en: 'Name (EN)', ar: 'الاسم (EN)' })} *</label>
-                <Input 
-                  value={formData.name_en || ''} 
+                <Input
+                  value={formData.name_en || ''}
                   onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
                 />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">{t({ en: 'Name (AR)', ar: 'الاسم (AR)' })}</label>
-                <Input 
-                  value={formData.name_ar || ''} 
+                <Input
+                  value={formData.name_ar || ''}
                   onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
                   dir="rtl"
                 />
@@ -269,16 +238,16 @@ function LookupTable({ config, lookupKey }) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium mb-1 block">{t({ en: 'Description (EN)', ar: 'الوصف (EN)' })}</label>
-                <Textarea 
-                  value={formData.description_en || ''} 
+                <Textarea
+                  value={formData.description_en || ''}
                   onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
                   rows={2}
                 />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">{t({ en: 'Description (AR)', ar: 'الوصف (AR)' })}</label>
-                <Textarea 
-                  value={formData.description_ar || ''} 
+                <Textarea
+                  value={formData.description_ar || ''}
                   onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
                   rows={2}
                   dir="rtl"
@@ -288,8 +257,8 @@ function LookupTable({ config, lookupKey }) {
             {config.fields.includes('category') && (
               <div>
                 <label className="text-sm font-medium mb-1 block">{t({ en: 'Category', ar: 'الفئة' })}</label>
-                <Input 
-                  value={formData.category || ''} 
+                <Input
+                  value={formData.category || ''}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 />
               </div>
@@ -297,8 +266,8 @@ function LookupTable({ config, lookupKey }) {
             {config.fields.includes('official_url') && (
               <div>
                 <label className="text-sm font-medium mb-1 block">{t({ en: 'Official URL', ar: 'الرابط الرسمي' })}</label>
-                <Input 
-                  value={formData.official_url || ''} 
+                <Input
+                  value={formData.official_url || ''}
                   onChange={(e) => setFormData({ ...formData, official_url: e.target.value })}
                   placeholder="https://..."
                 />
@@ -307,14 +276,14 @@ function LookupTable({ config, lookupKey }) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium mb-1 block">{t({ en: 'Icon', ar: 'الأيقونة' })}</label>
-                <Input 
-                  value={formData.icon || ''} 
+                <Input
+                  value={formData.icon || ''}
                   onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
                   placeholder="lucide-icon-name"
                 />
               </div>
               <div className="flex items-center gap-2 pt-6">
-                <Switch 
+                <Switch
                   checked={formData.is_active ?? true}
                   onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
                 />
@@ -326,8 +295,8 @@ function LookupTable({ config, lookupKey }) {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               {t({ en: 'Cancel', ar: 'إلغاء' })}
             </Button>
-            <Button onClick={handleSubmit} disabled={saveMutation.isPending}>
-              {saveMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            <Button onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}>
+              {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {t({ en: 'Save', ar: 'حفظ' })}
             </Button>
           </DialogFooter>

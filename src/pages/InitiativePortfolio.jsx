@@ -1,18 +1,12 @@
-﻿import { useState } from 'react';
-import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
-import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
-import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
-import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
-import { useRDProjectsWithVisibility } from '@/hooks/useRDProjectsWithVisibility';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+﻿import React, { useState } from 'react';
+import { useInitiativePortfolioData } from '@/hooks/useInitiativePortfolioData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../components/LanguageContext';
-import { AlertCircle, TestTube, Microscope, Calendar, Download, Search, ChevronRight } from 'lucide-react';
+import { AlertCircle, AlertTriangle, TestTube, Microscope, Calendar, Download, Search, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
@@ -25,61 +19,12 @@ function InitiativePortfolio() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterTheme, setFilterTheme] = useState('all');
 
-  const { data: challenges = [] } = useChallengesWithVisibility();
-  const { data: pilots = [] } = usePilotsWithVisibility();
-  const { data: rdProjects = [] } = useRDProjectsWithVisibility();
-  const { data: programs = [] } = useProgramsWithVisibility();
-  const { data: strategicPlans = [] } = useStrategiesWithVisibility();
-
-  const activePlan = strategicPlans.find(p => p.status === 'active') || strategicPlans[0];
-
-  // Unified initiative view
-  const allInitiatives = [
-    ...challenges.map(c => ({
-      id: c.id,
-      type: 'challenge',
-      title: c.title_en || c.title_ar,
-      sector: c.sector,
-      status: c.status,
-      strategic_theme: c.strategic_goal,
-      year: new Date(c.created_date).getFullYear(),
-      entity: c,
-      page: 'ChallengeDetail'
-    })),
-    ...pilots.map(p => ({
-      id: p.id,
-      type: 'pilot',
-      title: p.title_en || p.title_ar,
-      sector: p.sector,
-      status: p.stage,
-      strategic_theme: p.tags?.find(t => activePlan?.strategic_themes?.some(st => st.name_en?.toLowerCase().includes(t.toLowerCase()))),
-      year: new Date(p.created_date).getFullYear(),
-      entity: p,
-      page: 'PilotDetail'
-    })),
-    ...rdProjects.map(r => ({
-      id: r.id,
-      type: 'rd_project',
-      title: r.title_en || r.title_ar,
-      sector: r.research_area_en,
-      status: r.status,
-      strategic_theme: r.tags?.find(t => activePlan?.strategic_themes?.some(st => st.name_en?.toLowerCase().includes(t.toLowerCase()))),
-      year: new Date(r.created_date).getFullYear(),
-      entity: r,
-      page: 'RDProjectDetail'
-    })),
-    ...programs.map(p => ({
-      id: p.id,
-      type: 'program',
-      title: p.name_en || p.name_ar,
-      sector: p.focus_areas?.join(', '),
-      status: p.status,
-      strategic_theme: p.tags?.find(t => activePlan?.strategic_themes?.some(st => st.name_en?.toLowerCase().includes(t.toLowerCase()))),
-      year: new Date(p.created_date).getFullYear(),
-      entity: p,
-      page: 'ProgramDetail'
-    }))
-  ];
+  const {
+    allInitiatives,
+    activePlan,
+    themes,
+    isLoading
+  } = useInitiativePortfolioData();
 
   // Filter initiatives
   const filteredInitiatives = allInitiatives.filter(initiative => {
@@ -93,13 +38,17 @@ function InitiativePortfolio() {
   });
 
   // Group by strategic theme
-  const themes = activePlan?.strategic_themes || [];
-  const groupedByTheme = themes.map(theme => ({
-    theme: theme.name_en,
-    initiatives: filteredInitiatives.filter(i =>
-      i.strategic_theme?.toLowerCase().includes(theme.name_en?.toLowerCase())
-    )
-  }));
+  // themes is provided by hook
+  const groupedByTheme = themes.map(theme => {
+    // @ts-ignore
+    const themeName = theme.name_en || theme;
+    return {
+      theme: themeName,
+      initiatives: filteredInitiatives.filter(i =>
+        i.strategic_theme?.toLowerCase().includes(themeName?.toLowerCase())
+      )
+    };
+  });
 
   const unassigned = filteredInitiatives.filter(i => !i.strategic_theme);
 

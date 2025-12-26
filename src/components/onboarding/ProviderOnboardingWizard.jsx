@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useQueryClient, useQuery } from '@tanstack/react-query';
+
 import { useAutoRoleAssignment } from '@/hooks/useAutoRoleAssignment';
+import { useOnboardingMutations } from '@/hooks/useOnboardingMutations';
+import { useRegions } from '@/hooks/useRegions';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,8 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '../LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { createPageUrl } from '@/utils';
-import { 
-  Rocket, ArrowRight, ArrowLeft, CheckCircle2, 
+import {
+  Rocket, ArrowRight, ArrowLeft, CheckCircle2,
   Building2, Target, Globe, Loader2, Map
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -62,13 +63,14 @@ const STAGES = [
 export default function ProviderOnboardingWizard({ onComplete, onSkip }) {
   const { language, isRTL, t, toggleLanguage } = useLanguage();
   const { user, userProfile, checkAuth } = useAuth();
-  const queryClient = useQueryClient();
+
   const navigate = useNavigate();
   const { checkAndAssignRole } = useAutoRoleAssignment();
-  
+  const { upsertProfile } = useOnboardingMutations();
+
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     company_name_en: '',
     company_name_ar: '',
@@ -84,17 +86,7 @@ export default function ProviderOnboardingWizard({ onComplete, onSkip }) {
   });
 
   // Fetch regions for geographic coverage
-  const { data: regions = [] } = useQuery({
-    queryKey: ['regions-list'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('regions')
-        .select('id, name_en, name_ar')
-        .order('name_en');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: regions = [] } = useRegions();
 
   // Pre-populate from Stage 1 onboarding data
   useEffect(() => {
@@ -148,12 +140,15 @@ export default function ProviderOnboardingWizard({ onComplete, onSkip }) {
     }
 
     setIsSubmitting(true);
-    
+
     try {
       // Update user profile with provider data
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .update({
+      // Update user profile with provider data
+      await upsertProfile.mutateAsync({
+        table: 'user_profiles',
+        matchingColumns: ['user_id'],
+        data: {
+          user_id: user.id,
           organization_en: formData.company_name_en || null,
           organization_ar: formData.company_name_ar || null,
           bio_en: formData.description_en || null,
@@ -170,10 +165,8 @@ export default function ProviderOnboardingWizard({ onComplete, onSkip }) {
             geographic_coverage: formData.geographic_coverage
           },
           updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
-
-      if (profileError) throw profileError;
+        }
+      });
 
       // Create or update provider profile
       const providerData = {
@@ -194,9 +187,11 @@ export default function ProviderOnboardingWizard({ onComplete, onSkip }) {
         status: 'pending_verification'
       };
 
-      await supabase
-        .from('providers')
-        .upsert(providerData, { onConflict: 'user_id' });
+      await upsertProfile.mutateAsync({
+        table: 'providers',
+        matchingColumns: ['user_id'],
+        data: providerData
+      });
 
       // Auto-assign role or create pending request
       const roleResult = await checkAndAssignRole({
@@ -213,7 +208,7 @@ export default function ProviderOnboardingWizard({ onComplete, onSkip }) {
         toast.info(t({ en: 'Provider profile created! Role pending approval.', ar: 'تم إنشاء ملف المزود! الدور في انتظار الموافقة.' }));
       }
 
-      await queryClient.invalidateQueries(['user-profile']);
+
       if (checkAuth) await checkAuth();
 
       onComplete?.(formData);
@@ -229,9 +224,9 @@ export default function ProviderOnboardingWizard({ onComplete, onSkip }) {
   const handleSkip = async () => {
     try {
       sessionStorage.setItem('provider_wizard_skipped', Date.now().toString());
-      toast.info(t({ 
-        en: 'You can complete your profile anytime from settings.', 
-        ar: 'يمكنك إكمال ملفك الشخصي في أي وقت من الإعدادات.' 
+      toast.info(t({
+        en: 'You can complete your profile anytime from settings.',
+        ar: 'يمكنك إكمال ملفك الشخصي في أي وقت من الإعدادات.'
       }));
       onSkip?.();
       navigate(createPageUrl('StartupDashboard'));
@@ -254,7 +249,7 @@ export default function ProviderOnboardingWizard({ onComplete, onSkip }) {
     <div className="fixed inset-0 bg-gradient-to-br from-blue-900/95 via-slate-900/95 to-indigo-900/95 backdrop-blur-sm z-50 overflow-y-auto" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="min-h-screen py-8 px-4">
         <div className="max-w-2xl mx-auto space-y-6">
-          
+
           {/* Header with Language Toggle */}
           <div className="text-center text-white">
             <div className="flex items-center justify-between mb-4">
@@ -265,8 +260,8 @@ export default function ProviderOnboardingWizard({ onComplete, onSkip }) {
                   {t({ en: 'Solution Provider Setup', ar: 'إعداد مزود الحلول' })}
                 </h1>
               </div>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={toggleLanguage}
                 className="text-white/70 hover:text-white hover:bg-white/10 font-medium w-24"
@@ -288,13 +283,12 @@ export default function ProviderOnboardingWizard({ onComplete, onSkip }) {
                   const StepIcon = step.icon;
                   const isActive = currentStep === step.id;
                   const isComplete = currentStep > step.id;
-                  
+
                   return (
                     <React.Fragment key={step.id}>
-                      <Badge className={`px-3 py-2 border-0 ${
-                        isActive ? 'bg-blue-600 text-white' : 
+                      <Badge className={`px-3 py-2 border-0 ${isActive ? 'bg-blue-600 text-white' :
                         isComplete ? 'bg-green-600 text-white' : 'bg-white/10 text-white/60'
-                      }`}>
+                        }`}>
                         <StepIcon className="h-4 w-4 mr-1" />
                         {step.title[language]}
                       </Badge>
@@ -410,11 +404,10 @@ export default function ProviderOnboardingWizard({ onComplete, onSkip }) {
                       <div
                         key={sector.id}
                         onClick={() => toggleSector(sector.id)}
-                        className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                          formData.sectors.includes(sector.id)
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-border hover:border-blue-300'
-                        }`}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all ${formData.sectors.includes(sector.id)
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-border hover:border-blue-300'
+                          }`}
                       >
                         <div className="flex items-center gap-2">
                           <Checkbox checked={formData.sectors.includes(sector.id)} readOnly />
@@ -434,11 +427,10 @@ export default function ProviderOnboardingWizard({ onComplete, onSkip }) {
                       <div
                         key={type.id}
                         onClick={() => toggleChallengeInterest(type.id)}
-                        className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                          formData.challenge_interests.includes(type.id)
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-border hover:border-blue-300'
-                        }`}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all ${formData.challenge_interests.includes(type.id)
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-border hover:border-blue-300'
+                          }`}
                       >
                         <div className="flex items-center gap-2">
                           <Checkbox checked={formData.challenge_interests.includes(type.id)} readOnly />
@@ -470,11 +462,10 @@ export default function ProviderOnboardingWizard({ onComplete, onSkip }) {
                     <div
                       key={region.id}
                       onClick={() => toggleRegion(region.id)}
-                      className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                        formData.geographic_coverage.includes(region.id)
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-border hover:border-blue-300'
-                      }`}
+                      className={`p-3 rounded-lg border cursor-pointer transition-all ${formData.geographic_coverage.includes(region.id)
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-border hover:border-blue-300'
+                        }`}
                     >
                       <div className="flex items-center gap-2">
                         <Checkbox checked={formData.geographic_coverage.includes(region.id)} readOnly />
@@ -484,9 +475,9 @@ export default function ProviderOnboardingWizard({ onComplete, onSkip }) {
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {t({ 
-                    en: 'Leave empty if you can serve all regions', 
-                    ar: 'اتركها فارغة إذا كنت تستطيع خدمة جميع المناطق' 
+                  {t({
+                    en: 'Leave empty if you can serve all regions',
+                    ar: 'اتركها فارغة إذا كنت تستطيع خدمة جميع المناطق'
                   })}
                 </p>
               </CardContent>

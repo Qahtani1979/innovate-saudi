@@ -1,9 +1,25 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { useAuditLogger, AUDIT_ACTIONS } from './useAuditLogger';
+
+/**
+ * Hook to fetch all teams
+ * @returns {object} React Query result with teams data
+ */
+export function useTeams() {
+    return useQuery({
+        queryKey: ['teams'],
+        queryFn: async () => {
+            const { data, error } = await supabase.from('teams').select('*');
+            if (error) throw error;
+            return data || [];
+        },
+        staleTime: 1000 * 60 * 5 // 5 minutes
+    });
+}
 
 export function useTeamMutations() {
     const queryClient = useQueryClient();

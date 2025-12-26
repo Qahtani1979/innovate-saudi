@@ -1,13 +1,12 @@
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { User, CheckCircle, ExternalLink } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import { useUserProfile, useUserProfileById } from '@/hooks/useUserProfiles';
 
-export function UserProfileLink({ 
-  userId, 
+export function UserProfileLink({
+  userId,
   userEmail,
   userName,
   avatarUrl,
@@ -16,36 +15,20 @@ export function UserProfileLink({
   size = 'sm',
   className
 }) {
-  // Fetch profile if we only have email
-  const { data: profile } = useQuery({
-    queryKey: ['user-profile-link', userId || userEmail],
-    queryFn: async () => {
-      if (userId) {
-        const { data } = await supabase
-          .from('user_profiles')
-          .select('user_id, full_name, full_name_en, avatar_url, is_public, verified')
-          .eq('user_id', userId)
-          .maybeSingle();
-        return data;
-      }
-      if (userEmail) {
-        const { data } = await supabase
-          .from('user_profiles')
-          .select('user_id, full_name, full_name_en, avatar_url, is_public, verified')
-          .eq('user_email', userEmail)
-          .maybeSingle();
-        return data;
-      }
-      return null;
-    },
-    enabled: !!(userId || userEmail)
-  });
+  // Fetch profile by ID or Email
+  const { data: profileById } = useUserProfileById(userId);
+  const { data: profileByEmail } = useUserProfile(userEmail); // Will be skipped if userEmail is null inside hook (enabled check)
+
+  const profile = userId ? profileById : profileByEmail;
 
   const displayName = userName || profile?.full_name_en || profile?.full_name || userEmail || 'Unknown User';
   const displayAvatar = avatarUrl || profile?.avatar_url;
   const profileUserId = userId || profile?.user_id;
   const isPublic = profile?.is_public;
   const isVerified = profile?.verified;
+
+  // ... rest of component
+
 
   const sizeClasses = {
     xs: 'h-5 w-5',
@@ -97,7 +80,7 @@ export function UserProfileLink({
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Link 
+          <Link
             to={`/profile/${profileUserId}`}
             className="hover:opacity-80 transition-opacity"
           >
@@ -114,36 +97,17 @@ export function UserProfileLink({
   );
 }
 
-export function UserProfileAvatar({ 
-  userId, 
+export function UserProfileAvatar({
+  userId,
   userEmail,
   avatarUrl,
   size = 'md',
   linkToProfile = true
 }) {
-  const { data: profile } = useQuery({
-    queryKey: ['user-avatar', userId || userEmail],
-    queryFn: async () => {
-      if (userId) {
-        const { data } = await supabase
-          .from('user_profiles')
-          .select('user_id, avatar_url, is_public')
-          .eq('user_id', userId)
-          .maybeSingle();
-        return data;
-      }
-      if (userEmail) {
-        const { data } = await supabase
-          .from('user_profiles')
-          .select('user_id, avatar_url, is_public')
-          .eq('user_email', userEmail)
-          .maybeSingle();
-        return data;
-      }
-      return null;
-    },
-    enabled: !!(userId || userEmail)
-  });
+  const { data: profileById } = useUserProfileById(userId);
+  const { data: profileByEmail } = useUserProfile(userEmail);
+
+  const profile = userId ? profileById : profileByEmail;
 
   const displayAvatar = avatarUrl || profile?.avatar_url;
   const profileUserId = userId || profile?.user_id;

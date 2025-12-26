@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,11 +10,14 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { IDEA_TO_PROPOSAL_SYSTEM_PROMPT, buildIdeaToProposalPrompt, IDEA_TO_PROPOSAL_SCHEMA } from '@/lib/ai/prompts/citizen';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useConvertIdeaToProposal } from '@/hooks/useCitizenIdeas';
 
 export default function IdeaToProposalConverter({ idea, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+
+  const convertToProposal = useConvertIdeaToProposal();
+
   const [proposalData, setProposalData] = useState({
     title_en: '',
     title_ar: '',
@@ -28,49 +29,6 @@ export default function IdeaToProposalConverter({ idea, onClose, onSuccess }) {
     duration_weeks: 12,
     team_composition: [],
     success_metrics_proposed: []
-  });
-
-  /** @type {import('@tanstack/react-query').UseMutationResult<any, any, any, any>} */
-  const createProposalMutation = useMutation({
-    /** @param {any} data */
-    mutationFn: async (data) => {
-      const { data: proposal, error: proposalError } = await supabase
-        .from('innovation_proposals')
-        .insert(data)
-        .select()
-        .single();
-
-      if (proposalError) throw proposalError;
-
-      // Update idea status (Note: schema seems missing converted_entity fields, so we only update status)
-      const { error: ideaError } = await supabase
-        .from('citizen_ideas')
-        .update({ status: 'converted_to_proposal' })
-        .eq('id', idea.id);
-
-      if (ideaError) throw ideaError;
-
-      // Log activity
-      await supabase.from('system_activities').insert({
-        entity_type: 'citizen_idea',
-        entity_id: idea.id,
-        activity_type: 'converted_to_innovation_proposal',
-        description: `Idea converted to InnovationProposal: ${proposal.title_en}`,
-        metadata: { proposal_id: proposal.id }
-      });
-
-      return proposal;
-    },
-    onSuccess: (proposal) => {
-      queryClient.invalidateQueries({ queryKey: ['ideas'] });
-      queryClient.invalidateQueries({ queryKey: ['innovation-proposals'] });
-      toast.success(t({ en: 'Proposal created successfully', ar: 'تم إنشاء المقترح بنجاح' }));
-      onSuccess?.(proposal);
-      onClose?.();
-    },
-    onError: (error) => {
-      toast.error(t({ en: 'Failed to create proposal', ar: 'فشل إنشاء المقترح' }));
-    }
   });
 
   const generateWithAI = async () => {
@@ -86,30 +44,38 @@ export default function IdeaToProposalConverter({ idea, onClose, onSuccess }) {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!proposalData.title_en || !proposalData.description_en) {
       toast.error(t({ en: 'Title and description required', ar: 'العنوان والوصف مطلوبان' }));
       return;
     }
 
     // Map fields to innovation_proposals schema
-    const payload = {
+    const targetData = {
       title_en: proposalData.title_en,
       title_ar: proposalData.title_ar,
       description_en: proposalData.description_en,
       description_ar: proposalData.description_ar,
-      proposed_solution: proposalData.implementation_plan_en, // Mapping implementation plan to proposed_solution
+      proposed_solution: proposalData.implementation_plan_en,
       budget_estimate: proposalData.budget_estimate,
-      timeline: `${proposalData.duration_weeks} weeks`, // Consolidating duration into timeline
-      team_info: proposalData.team_composition, // This is JSONB in schema
+      timeline: `${proposalData.duration_weeks} weeks`,
+      team_info: proposalData.team_composition,
       expected_impact: proposalData.success_metrics_proposed ? JSON.stringify(proposalData.success_metrics_proposed) : null,
-      submitter_email: idea.submitter_email,
+      submitter_email: idea.user_email || idea.submitter_email,
       municipality_id: idea.municipality_id,
       proposal_type: 'solution',
       status: 'submitted'
     };
 
-    createProposalMutation.mutate(payload);
+    try {
+      // @ts-ignore - Variables type inference issue
+      const proposal = await convertToProposal.mutateAsync({ idea, proposalData: targetData });
+
+      onSuccess?.(proposal);
+      onClose?.();
+    } catch (error) {
+      console.error('Conversion error:', error);
+    }
   };
 
   return (
@@ -243,16 +209,16 @@ export default function IdeaToProposalConverter({ idea, onClose, onSuccess }) {
               variant="outline"
               onClick={onClose}
               className="flex-1"
-              disabled={createProposalMutation.isPending}
+              disabled={convertToProposal.isPending}
             >
               {t({ en: 'Cancel', ar: 'إلغاء' })}
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={createProposalMutation.isPending || !proposalData.title_en}
+              disabled={convertToProposal.isPending || !proposalData.title_en}
               className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600"
             >
-              {createProposalMutation.isPending ? (
+              {convertToProposal.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {t({ en: 'Creating...', ar: 'جاري الإنشاء...' })}

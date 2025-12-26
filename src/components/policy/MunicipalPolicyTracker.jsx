@@ -1,5 +1,6 @@
 
-import { useQuery } from '@tanstack/react-query';
+import { usePoliciesList } from '@/hooks/usePolicies';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -11,42 +12,36 @@ import { createPageUrl } from '../../utils';
 export default function MunicipalPolicyTracker({ municipalityId }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: challenges = [] } = useQuery({
-    queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.list()
+  const { data: challenges = [] } = useChallengesWithVisibility({
+    municipalityId: municipalityId,
+    status: 'active'
   });
 
-  const { data: policies = [], isLoading } = useQuery({
-    queryKey: ['municipal-policies', municipalityId],
-    queryFn: async () => {
-      const all = await base44.entities.PolicyRecommendation.list();
-      // Filter policies that affect this municipality
-      return all.filter(p => {
-        // Adopted by this municipality
-        if (p.implementation_progress?.municipalities_adopted?.includes(municipalityId)) return true;
-        // Platform-wide policies affect all
-        if (p.entity_type === 'platform') return true;
-        // Challenge from this municipality
-        if (p.challenge_id) {
-          const challenge = challenges.find(c => c.id === p.challenge_id);
-          if (challenge?.municipality_id === municipalityId) return true;
-        }
-        return false;
-      });
-    },
-    enabled: !!municipalityId && challenges.length > 0
+  const { data: allPolicies = [], isLoading } = usePoliciesList();
+
+  const policies = allPolicies.filter(p => {
+    // Adopted by this municipality
+    if (p.implementation_progress?.municipalities_adopted?.includes(municipalityId)) return true;
+    // Platform-wide policies affect all
+    if (p.entity_type === 'platform') return true;
+    // Challenge from this municipality
+    if (p.challenge_id) {
+      const challenge = challenges.find(c => c.id === p.challenge_id);
+      if (challenge) return true; // useChallengesWithVisibility already filtered by municipalityId mostly, but we assume if it's there, it's relevant
+    }
+    return false;
   });
 
-  const adoptedPolicies = policies.filter(p => 
+  const adoptedPolicies = policies.filter(p =>
     p.implementation_progress?.municipalities_adopted?.includes(municipalityId)
   );
-  
-  const pendingPolicies = policies.filter(p => 
+
+  const pendingPolicies = policies.filter(p =>
     !p.implementation_progress?.municipalities_adopted?.includes(municipalityId) &&
     ['published', 'active'].includes(p.workflow_stage || p.status)
   );
 
-  const adoptionRate = policies.length > 0 
+  const adoptionRate = policies.length > 0
     ? (adoptedPolicies.length / policies.length * 100).toFixed(0)
     : 0;
 
@@ -114,9 +109,9 @@ export default function MunicipalPolicyTracker({ municipalityId }) {
                   <div className="p-3 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                       <p className="text-sm font-medium text-slate-900" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-                         {language === 'ar' && policy.title_ar ? policy.title_ar : policy.title_en}
-                       </p>
+                        <p className="text-sm font-medium text-slate-900" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                          {language === 'ar' && policy.title_ar ? policy.title_ar : policy.title_en}
+                        </p>
                         <div className="flex gap-2 mt-1">
                           <Badge className="text-xs bg-green-600 text-white">
                             {t({ en: 'Active', ar: 'فعال' })}

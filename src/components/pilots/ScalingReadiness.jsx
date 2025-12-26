@@ -10,11 +10,12 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { getScalingReadinessPrompt, scalingReadinessSchema } from '@/lib/ai/prompts/pilots';
 import { getSystemPrompt } from '@/lib/saudiContext';
-import { supabase } from '@/integrations/supabase/client';
+import { usePilotMutations } from '@/hooks/usePilotMutations';
 
 export default function ScalingReadiness({ pilot }) {
   const { language, isRTL, t } = useLanguage();
   const [assessment, setAssessment] = useState(null);
+  const { saveScalingReadiness, isSavingReadiness } = usePilotMutations();
 
   const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
     showToasts: true,
@@ -30,8 +31,8 @@ export default function ScalingReadiness({ pilot }) {
 
     if (success && data) {
       setAssessment(data);
-      
-      await supabase.from('scaling_readiness').insert({
+
+      await saveScalingReadiness({
         pilot_id: pilot.id,
         assessment_date: new Date().toISOString().split('T')[0],
         overall_score: data.overall_score,
@@ -41,9 +42,6 @@ export default function ScalingReadiness({ pilot }) {
         ready_to_scale: data.overall_score >= 75,
         readiness_level: data.readiness_level
       });
-
-      toast.success(t({ en: 'Readiness assessment complete', ar: 'اكتمل تقييم الجاهزية' }));
-    }
     }
   };
 
@@ -75,7 +73,7 @@ export default function ScalingReadiness({ pilot }) {
       </CardHeader>
       <CardContent className="pt-6">
         <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
-        
+
         {!assessment && !isLoading && (
           <div className="text-center py-8">
             <TrendingUp className="h-12 w-12 text-green-300 mx-auto mb-3" />
@@ -100,11 +98,10 @@ export default function ScalingReadiness({ pilot }) {
               </div>
 
               <div className="flex flex-col justify-center">
-                <div className={`p-6 rounded-lg border-2 text-center ${
-                  assessment.overall_score >= 80 ? 'bg-green-50 border-green-300' :
-                  assessment.overall_score >= 60 ? 'bg-yellow-50 border-yellow-300' :
-                  'bg-red-50 border-red-300'
-                }`}>
+                <div className={`p-6 rounded-lg border-2 text-center ${assessment.overall_score >= 80 ? 'bg-green-50 border-green-300' :
+                    assessment.overall_score >= 60 ? 'bg-yellow-50 border-yellow-300' :
+                      'bg-red-50 border-red-300'
+                  }`}>
                   <p className="text-sm font-medium text-slate-600 mb-2">
                     {t({ en: 'Overall Readiness', ar: 'الجاهزية الإجمالية' })}
                   </p>
@@ -113,9 +110,9 @@ export default function ScalingReadiness({ pilot }) {
                   </p>
                   <Badge className={
                     assessment.readiness_level === 'optimal' ? 'bg-green-600 text-white' :
-                    assessment.readiness_level === 'ready' ? 'bg-green-500 text-white' :
-                    assessment.readiness_level === 'partially_ready' ? 'bg-yellow-500 text-white' :
-                    'bg-red-500 text-white'
+                      assessment.readiness_level === 'ready' ? 'bg-green-500 text-white' :
+                        assessment.readiness_level === 'partially_ready' ? 'bg-yellow-500 text-white' :
+                          'bg-red-500 text-white'
                   }>
                     {assessment.readiness_level}
                   </Badge>
@@ -145,8 +142,8 @@ export default function ScalingReadiness({ pilot }) {
                           </div>
                           <Badge className={
                             gap.severity === 'critical' ? 'bg-red-600 text-white' :
-                            gap.severity === 'high' ? 'bg-orange-600 text-white' :
-                            'bg-yellow-600 text-white'
+                              gap.severity === 'high' ? 'bg-orange-600 text-white' :
+                                'bg-yellow-600 text-white'
                           }>
                             {gap.severity}
                           </Badge>
@@ -173,8 +170,8 @@ export default function ScalingReadiness({ pilot }) {
                       <div className="flex items-center gap-2 text-xs">
                         <Badge className={
                           action.priority === 'high' ? 'bg-red-100 text-red-700' :
-                          action.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-blue-100 text-blue-700'
+                            action.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-blue-100 text-blue-700'
                         }>
                           {action.priority}
                         </Badge>

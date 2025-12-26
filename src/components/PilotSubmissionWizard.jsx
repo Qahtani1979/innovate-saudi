@@ -8,7 +8,7 @@ import { Send, CheckCircle2, AlertCircle, Loader2, FileText, Target } from 'luci
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { toast } from 'sonner';
 import { usePilotMutations } from '@/hooks/usePilotMutations';
-import { supabase } from '@/integrations/supabase/client';
+
 
 export default function PilotSubmissionWizard({ pilot, onClose }) {
   const { language, isRTL, t } = useLanguage();

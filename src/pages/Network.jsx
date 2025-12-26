@@ -1,6 +1,5 @@
 import { useState } from 'react';
 
-import { supabase } from '@/integrations/supabase/client';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { NETWORK_INSIGHTS_PROMPT_TEMPLATE, NETWORK_INSIGHTS_RESPONSE_SCHEMA } from '@/lib/ai/prompts/network/insights';
 import { useOrganizationsWithVisibility } from '@/hooks/useOrganizationsWithVisibility';

@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,38 +8,18 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { buildPartnershipNetworkPrompt, PARTNERSHIP_NETWORK_SCHEMA } from '@/lib/ai/prompts/partnerships';
+import { usePilots } from '@/hooks/usePilots';
+import { useRDProjects } from '@/hooks/useRDProjects';
+import { useOrganizations } from '@/hooks/useOrganizations';
 
 export default function PartnershipNetwork() {
   const { language, isRTL, t } = useLanguage();
   const [aiSuggestions, setAiSuggestions] = useState(null);
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('pilots').select('*').eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: rdProjects = [] } = useQuery({
-    queryKey: ['rd-projects'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('rd_projects').select('*').eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: organizations = [] } = useQuery({
-    queryKey: ['organizations'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('organizations').select('*').eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  const { data: pilots = [] } = usePilots();
+  const { data: rdProjects = [] } = useRDProjects();
+  const { data: organizations = [] } = useOrganizations();
 
   // Build collaboration network
   const collaborations = [];

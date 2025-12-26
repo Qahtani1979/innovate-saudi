@@ -1,17 +1,19 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
+import { useAllUserProfiles } from '@/hooks/useUserProfiles';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
-import { Megaphone, Send, Users, Calendar } from 'lucide-react';
+import { Megaphone, Send, Users, Calendar, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AnnouncementTargeting() {
   const { language, t } = useLanguage();
-  const queryClient = useQueryClient();
+  const { notify, isNotifying } = useNotificationSystem();
+  const { data: users = [] } = useAllUserProfiles();
+
   const [formData, setFormData] = useState({
     title: '',
     message: '',
@@ -22,50 +24,50 @@ export default function AnnouncementTargeting() {
     channels: ['in_app']
   });
 
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      // Send to targeted users
-      const users = await base44.entities.User.list();
-      const targeted = users.filter(u => {
-        if (data.target_roles.length > 0 && !data.target_roles.includes(u.role)) return false;
-        return true;
+  const handleSend = async () => {
+    // Send to targeted users
+    const targeted = users.filter(u => {
+      // @ts-ignore
+      const userRole = u.role || u.persona_type;
+      if (formData.target_roles.length > 0 && !formData.target_roles.includes(userRole)) return false;
+      return true;
+    });
+
+    // @ts-ignore
+    const targetedEmails = targeted.map(u => u.email).filter(Boolean);
+
+    if (targetedEmails.length === 0) {
+      toast.warning(t({ en: 'No users match the selected criteria', ar: 'لا يوجد مستخدمين يطابقون المعايير' }));
+      return;
+    }
+
+    try {
+      await notify({
+        type: 'announcement',
+        recipientEmails: targetedEmails,
+        title: formData.title,
+        message: formData.message,
+        sendEmail: formData.channels.includes('email'),
+        emailTemplate: 'campaign.announcement',
+        emailVariables: {
+          title: formData.title,
+          message: formData.message
+        },
+        entityType: 'announcement',
+        entityId: 'broadcast'
       });
 
-      // Create notification for each
-      await Promise.all(targeted.map(u => 
-        base44.entities.Notification.create({
-          user_email: u.email,
-          title: data.title,
-          message: data.message,
-          type: 'announcement',
-          priority: 'medium'
-        })
-      ));
-
-      // Send emails if selected
-      if (data.channels.includes('email')) {
-        await Promise.all(targeted.slice(0, 10).map(u =>
-          supabase.functions.invoke('email-trigger-hub', {
-            body: {
-              trigger: 'campaign.announcement',
-              recipient_email: u.email,
-              variables: {
-                title: data.title,
-                message: data.message
-              }
-            }
-          })
-        ));
-      }
-
-      return { sent: targeted.length };
-    },
-    onSuccess: (result) => {
-      queryClient.invalidateQueries(['notifications']);
-      toast.success(t({ en: `Sent to ${result.sent} users`, ar: `أُرسل لـ ${result.sent} مستخدم` }));
+      toast.success(t({
+        en: `Sent to ${targetedEmails.length} users`,
+        ar: `أُرسل لـ ${targetedEmails.length} مستخدم`
+      }));
       setFormData({ title: '', message: '', target_roles: [], target_regions: [], target_sectors: [], scheduled_date: '', channels: ['in_app'] });
+
+    } catch (error) {
+      toast.error(t({ en: 'Failed to send announcement', ar: 'فشل إرسال الإعلان' }));
+      console.error(error);
     }
-  });
+  };
 
   const toggleRole = (role) => {
     setFormData(prev => ({
@@ -100,7 +102,7 @@ export default function AnnouncementTargeting() {
           </label>
           <Input
             value={formData.title}
-            onChange={(e) => setFormData({...formData, title: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             placeholder={t({ en: 'Announcement title', ar: 'عنوان الإعلان' })}
           />
         </div>
@@ -111,7 +113,7 @@ export default function AnnouncementTargeting() {
           </label>
           <Textarea
             value={formData.message}
-            onChange={(e) => setFormData({...formData, message: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, message: e.target.value })}
             rows={4}
           />
         </div>
@@ -159,17 +161,21 @@ export default function AnnouncementTargeting() {
           <Input
             type="datetime-local"
             value={formData.scheduled_date}
-            onChange={(e) => setFormData({...formData, scheduled_date: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })}
           />
         </div>
 
         <Button
-          onClick={() => createMutation.mutate(formData)}
-          disabled={!formData.title || !formData.message || createMutation.isPending}
+          onClick={handleSend}
+          disabled={!formData.title || !formData.message || isNotifying}
           className="w-full bg-indigo-600"
         >
-          <Send className="h-4 w-4 mr-2" />
-          {formData.scheduled_date 
+          {isNotifying ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Send className="h-4 w-4 mr-2" />
+          )}
+          {formData.scheduled_date
             ? t({ en: 'Schedule Announcement', ar: 'جدولة الإعلان' })
             : t({ en: 'Send Now', ar: 'إرسال الآن' })
           }

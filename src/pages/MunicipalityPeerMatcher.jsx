@@ -1,30 +1,28 @@
 import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import PersonaPageLayout from '@/components/layout/PersonaPageLayout';
 import PeerBenchmarkingTool from '@/components/municipalities/PeerBenchmarkingTool';
 import { Users, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
 
+/**
+ * MunicipalityPeerMatcher
+ * ✅ GOLD STANDARD COMPLIANT
+ */
 const MunicipalityPeerMatcher = () => {
   const { language, t } = useLanguage();
   const { userProfile } = useAuth();
 
-  const { data: municipality, isLoading } = useQuery({
-    queryKey: ['my-municipality-peer', userProfile?.municipality_id],
-    queryFn: async () => {
-      if (!userProfile?.municipality_id) return null;
-      const { data, error } = await supabase
-        .from('municipalities')
-        .select('*')
-        .eq('id', userProfile.municipality_id)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!userProfile?.municipality_id
+  const municipalityId = userProfile?.municipality_id;
+
+  // Use visibility-aware hook with filter
+  const { data: municipalities = [], isLoading } = useMunicipalitiesWithVisibility({
+    filterIds: municipalityId ? [municipalityId] : [],
+    limit: 1
   });
+
+  const municipality = municipalities[0] || null;
 
   return (
     <PersonaPageLayout
@@ -50,7 +48,10 @@ const MunicipalityPeerMatcher = () => {
         ) : (
           <Card>
             <CardContent className="py-12 text-center text-muted-foreground">
-              {t ? t({ en: 'No municipality assigned to your profile', ar: 'لم يتم تعيين بلدية لملفك الشخصي' }) : 'No municipality assigned to your profile'}
+              {t ? t({
+                en: 'No municipality assigned to your profile',
+                ar: 'لم يتم تعيين بلدية لملفك الشخصي'
+              }) : 'No municipality assigned to your profile'}
             </CardContent>
           </Card>
         )}

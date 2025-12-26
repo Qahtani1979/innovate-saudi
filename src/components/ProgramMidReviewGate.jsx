@@ -33,7 +33,7 @@ export default function ProgramMidReviewGate({ program, onClose }) {
 
   const handleCompleteReview = async () => {
     try {
-      await completeMidReview({
+      await completeMidReview.mutateAsync({
         programId: program.id,
         checklist,
         notes: reviewNotes,

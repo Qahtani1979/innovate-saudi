@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '../components/LanguageContext';
+import { useNotificationSystem } from './useNotificationSystem';
 
 /**
  * Hook for fetching a single living lab by ID.
@@ -29,11 +30,31 @@ export function useLivingLab(id) {
 }
 
 /**
+ * Hook for fetching R&D projects linked to a living lab
+ */
+export function useLivingLabProjects(labId) {
+    return useQuery({
+        queryKey: ['rd-projects', labId],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('rd_projects')
+                .select('*')
+                .eq('living_lab_id', labId);
+
+            if (error) throw error;
+            return data || [];
+        },
+        enabled: !!labId
+    });
+}
+
+/**
  * Hook to manage living lab mutations
  */
 export function useLivingLabMutations(labId) {
     const queryClient = useQueryClient();
     const { t } = useLanguage();
+    const { notify } = useNotificationSystem();
 
     const updateLivingLab = useMutation({
         mutationFn: async (data) => {
@@ -50,36 +71,70 @@ export function useLivingLabMutations(labId) {
             toast.success(t({ en: 'Living lab updated', ar: 'تم تحديث المختبر' }));
         },
         onError: (error) => {
-            toast.error(t({ en: 'Failed to update living lab', ar: 'فشل تحديث المختبر' }));
-            console.error('Update error:', error);
+            toast.error(t({ en: 'Failed to update living lab', ar: 'فشل تحديث المختبر' }) + ': ' + error.message);
         }
     });
 
-    const createLivingLab = useMutation({
-        mutationFn: async (data) => {
-            const { data: result, error } = await supabase
+    const updateProjectMilestones = useMutation({
+        mutationFn: async ({ lab, projectId, milestones }) => {
+            const updatedProjects = (lab.current_projects || []).map(p => {
+                if (p.id === projectId) {
+                    return { ...p, milestones };
+                }
+                return p;
+            });
+
+            const { error } = await supabase
                 .from('living_labs')
-                .insert(data)
-                .select()
-                .single();
+                .update({ current_projects: updatedProjects })
+                .eq('id', labId);
 
             if (error) throw error;
-            return result;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(['living-labs-with-visibility']);
-            toast.success(t({ en: 'Living lab created', ar: 'تم إنشاء المختبر' }));
+            queryClient.invalidateQueries(['living-lab', labId]);
+            toast.success(t({ en: 'Milestones updated', ar: 'تم تحديث المعالم' }));
+        }
+    });
+
+    const launchLab = useMutation({
+        mutationFn: async ({ lab, checklist, notes }) => {
+            // 1. Update lab status
+            const { error: updateError } = await supabase
+                .from('living_labs')
+                .update({
+                    status: 'operational',
+                    launch_date: new Date().toISOString().split('T')[0],
+                    launch_checklist: checklist,
+                    launch_notes: notes
+                })
+                .eq('id', labId);
+
+            if (updateError) throw updateError;
+
+            // 2. Notify stakeholders (using unified system)
+            await notify({
+                type: 'livinglab_launched',
+                entityType: 'living_lab',
+                entityId: labId,
+                recipientEmails: [lab.director_email, lab.manager_email].filter(Boolean),
+                title: `Living Lab Launched: ${lab.name_en}`,
+                titleAr: `تم إطلاق المختبر الحي: ${lab.name_ar}`,
+                message: `${lab.name_en} is now operational and accepting research projects.`,
+                messageAr: `${lab.name_ar} الآن يعمل ويستقبل المشاريع البحثية.`,
+                metadata: { lab_name: lab.name_en }
+            });
         },
-        onError: (error) => {
-            toast.error(t({ en: 'Failed to create living lab', ar: 'فشل إنشاء المختبر' }));
-            console.error('Create error:', error);
+        onSuccess: () => {
+            queryClient.invalidateQueries(['living-lab', labId]);
+            queryClient.invalidateQueries(['living-labs-with-visibility']);
+            toast.success(t({ en: 'Living Lab launched successfully', ar: 'تم إطلاق المختبر بنجاح' }));
         }
     });
 
     return {
         updateLivingLab,
-        createLivingLab
+        updateProjectMilestones,
+        launchLab
     };
 }
-
-export default useLivingLab;

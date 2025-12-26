@@ -165,3 +165,55 @@ export function useExpertEvaluationsByEntity(entityType, entityId) {
         enabled: !!entityType && !!entityId,
     });
 }
+
+export function useExpertAssignmentsWithDetails(email) {
+    return useQuery({
+        queryKey: ['expert-assignments-with-details', email],
+        queryFn: async () => {
+            // 1. Fetch assignments
+            const { data: assignments, error } = await supabase
+                .from('expert_assignments')
+                .select(`
+                  *,
+                  expert_panel:expert_panels(name_en, name_ar)
+                `)
+                .eq('expert_email', email)
+                .eq('is_deleted', false)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            if (!assignments || assignments.length === 0) return [];
+
+            // 2. Enrich with entity details
+            const enrichedAssignments = await Promise.all(
+                assignments.map(async (a) => {
+                    try {
+                        let entity = null;
+                        const tableName = a.entity_type === 'rd_proposal' ? 'rd_proposals' : `${a.entity_type}s`;
+
+                        // Safety check for unknown entity types or if table names assume simple pluralization
+                        // For now we assume the convention holds or we rely on the catching of errors
+
+                        const { data: entityData, error: entityError } = await supabase
+                            .from(tableName)
+                            .select('*')
+                            .eq('id', a.entity_id)
+                            .single();
+
+                        if (!entityError) {
+                            entity = entityData;
+                        }
+                        return { ...a, entity };
+                    } catch (err) {
+                        console.warn(`Failed to fetch details for assignment ${a.id} (type: ${a.entity_type})`, err);
+                        return { ...a, entity: null };
+                    }
+                })
+            );
+
+            return enrichedAssignments;
+        },
+        enabled: !!email,
+        staleTime: 5 * 60 * 1000
+    });
+}

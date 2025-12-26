@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useTeams } from '@/hooks/useTeams';
+import { useTeams } from '@/hooks/useTeamMutations';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useTeamMutations } from '@/hooks/useTeamMutations';
 import { useUsersWithVisibility } from '@/hooks/useUsersWithVisibility';

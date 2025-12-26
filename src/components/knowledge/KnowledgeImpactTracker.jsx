@@ -1,37 +1,17 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../LanguageContext';
 import { Eye, Download, Target } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { useKnowledgeDocuments } from '@/hooks/useKnowledgeDocuments';
+import { usePilotsList } from '@/hooks/usePilots';
 
 export default function KnowledgeImpactTracker() {
   const { language, t } = useLanguage();
 
-  const { data: docs = [] } = useQuery({
-    queryKey: ['knowledge-docs'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('knowledge_documents')
-        .select('*');
-      if (error) throw error;
-      return data || [];
-    },
-    initialData: []
-  });
+  const { useAllDocuments } = useKnowledgeDocuments();
+  const { data: docs = [] } = useAllDocuments();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pilots')
-        .select('*')
-        .eq('is_deleted', false);
-      if (error) throw error;
-      return data || [];
-    },
-    initialData: []
-  });
+  const { data: pilots = [] } = usePilotsList();
 
   // Simulate impact data (in production, track via AccessLog)
   const impactData = docs.slice(0, 10).map(doc => ({

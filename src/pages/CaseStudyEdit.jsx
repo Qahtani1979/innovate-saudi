@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import { useCaseStudy, useCaseStudyMutations } from '@/hooks/useCaseStudies';
 
 function CaseStudyEdit() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -19,21 +18,8 @@ function CaseStudyEdit() {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
 
-  const queryClient = useQueryClient();
-
-  const { data: caseStudy, isLoading } = useQuery({
-    queryKey: ['case-study', caseId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('case_studies')
-        .select('*')
-        .eq('id', caseId)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!caseId
-  });
+  const { data: caseStudy, isLoading } = useCaseStudy(caseId);
+  const { updateCaseStudy } = useCaseStudyMutations();
 
   const [formData, setFormData] = useState({});
 
@@ -41,20 +27,13 @@ function CaseStudyEdit() {
     if (caseStudy) setFormData(caseStudy);
   }, [caseStudy]);
 
-  const updateMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase
-        .from('case_studies')
-        .update(data)
-        .eq('id', caseId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['case-study', caseId] });
-      toast.success(t({ en: 'Case study updated', ar: 'تم تحديث دراسة الحالة' }));
-      navigate(createPageUrl('Knowledge'));
-    }
-  });
+  const handleUpdate = () => {
+    updateCaseStudy.mutate({ id: caseId, data: formData }, {
+      onSuccess: () => {
+        navigate(createPageUrl('Knowledge'));
+      }
+    });
+  };
 
   if (isLoading) {
     return (
@@ -143,11 +122,11 @@ function CaseStudyEdit() {
               {t({ en: 'Cancel', ar: 'إلغاء' })}
             </Button>
             <Button
-              onClick={() => updateMutation.mutate(formData)}
-              disabled={updateMutation.isPending}
+              onClick={handleUpdate}
+              disabled={updateCaseStudy.isPending}
               className="bg-gradient-to-r from-green-600 to-emerald-600"
             >
-              {updateMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {updateCaseStudy.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {t({ en: 'Save Changes', ar: 'حفظ التغييرات' })}
             </Button>
           </div>

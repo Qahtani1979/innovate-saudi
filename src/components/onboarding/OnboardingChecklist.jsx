@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,25 +8,14 @@ import { useLanguage } from '../LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { useAuth } from '@/lib/AuthContext';
+import { useOnboardingMutations } from '@/hooks/useOnboardingMutations';
 
 export default function OnboardingChecklist({ onDismiss }) {
   const { t, isRTL, language } = useLanguage();
   const { user, userProfile } = useAuth();
-  const queryClient = useQueryClient();
   const [collapsed, setCollapsed] = useState(false);
 
-  const updateProfileMutation = useMutation({
-    mutationFn: async (updates) => {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update(updates)
-        .eq('user_id', user?.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['user-profile']);
-    }
-  });
+  const { upsertProfile } = useOnboardingMutations();
 
   // Use userProfile from auth context
   const profile = userProfile || {};
@@ -64,8 +51,13 @@ export default function OnboardingChecklist({ onDismiss }) {
   const progress = (completedCount / checklistItems.length) * 100;
 
   const handleDismiss = () => {
-    updateProfileMutation.mutate({ 
-      onboarding_completed: true 
+    upsertProfile.mutate({
+      table: 'user_profiles',
+      data: {
+        user_id: user?.id,
+        onboarding_completed: true,
+        updated_at: new Date().toISOString()
+      }
     });
     onDismiss?.();
   };
@@ -76,7 +68,7 @@ export default function OnboardingChecklist({ onDismiss }) {
   if (collapsed) {
     return (
       <div className="fixed bottom-4 right-4 z-40" dir={isRTL ? 'rtl' : 'ltr'}>
-        <Button 
+        <Button
           onClick={() => setCollapsed(false)}
           className="bg-gradient-to-r from-primary to-blue-600 shadow-lg hover:shadow-xl transition-shadow"
         >
@@ -118,22 +110,20 @@ export default function OnboardingChecklist({ onDismiss }) {
         </CardHeader>
         <CardContent className="space-y-2 pb-4">
           {checklistItems.map((item) => (
-            <div key={item.id} className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
-              item.completed 
-                ? 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800' 
-                : 'bg-card hover:bg-muted/50 border-border'
-            }`}>
+            <div key={item.id} className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${item.completed
+              ? 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800'
+              : 'bg-card hover:bg-muted/50 border-border'
+              }`}>
               {item.completed ? (
                 <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
               ) : (
                 <Circle className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
               )}
               <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium ${
-                  item.completed 
-                    ? 'text-green-900 line-through dark:text-green-100' 
-                    : 'text-foreground'
-                }`}>
+                <p className={`text-sm font-medium ${item.completed
+                  ? 'text-green-900 line-through dark:text-green-100'
+                  : 'text-foreground'
+                  }`}>
                   {item.title[language]}
                 </p>
                 {!item.completed && item.action && (

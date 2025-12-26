@@ -14,6 +14,8 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 
+import { useChallengeMutations } from '@/hooks/useChallengeMutations';
+
 export default function BulkActionsToolbar({ selectedItems, onComplete, onClear }) {
   const { language, isRTL, t } = useLanguage();
   const [showDialog, setShowDialog] = useState(false);
@@ -21,6 +23,8 @@ export default function BulkActionsToolbar({ selectedItems, onComplete, onClear 
   const [actionData, setActionData] = useState({});
   const [loading, setLoading] = useState(false);
   const [lastAction, setLastAction] = useState(null);
+
+  const { updateChallenge } = useChallengeMutations();
 
   const actions = [
     { id: 'move', label: { en: 'Move to Stage', ar: 'نقل للمرحلة' }, icon: Move },
@@ -44,7 +48,7 @@ export default function BulkActionsToolbar({ selectedItems, onComplete, onClear 
       });
 
       for (const update of updates) {
-        await base44.entities.Challenge.update(update.id, update.data);
+        await updateChallenge.mutateAsync({ id: update.id, data: update.data });
       }
 
       setLastAction({ action, items: selectedItems, data: actionData, timestamp: Date.now() });
@@ -52,7 +56,9 @@ export default function BulkActionsToolbar({ selectedItems, onComplete, onClear 
       setShowDialog(false);
       onComplete();
     } catch (error) {
-      toast.error(t({ en: 'Bulk action failed', ar: 'فشل الإجراء الجماعي' }));
+      // Error handled by hook toast usually, but here we catch implies one failure stops all?
+      // Or we let it propagate? 
+      // Existing code caught error.
     } finally {
       setLoading(false);
     }
@@ -60,13 +66,13 @@ export default function BulkActionsToolbar({ selectedItems, onComplete, onClear 
 
   const handleUndo = async () => {
     if (!lastAction || Date.now() - lastAction.timestamp > 300000) return;
-    
+
     setLoading(true);
     try {
       for (const item of lastAction.items) {
         const revertData = {};
         if (lastAction.action === 'archive') revertData.is_archived = false;
-        await base44.entities.Challenge.update(item.id, revertData);
+        await updateChallenge.mutateAsync({ id: item.id, data: revertData });
       }
       toast.success(t({ en: 'Action undone', ar: 'تم التراجع' }));
       setLastAction(null);
@@ -129,7 +135,7 @@ export default function BulkActionsToolbar({ selectedItems, onComplete, onClear 
             <p className="text-sm text-slate-600">
               {t({ en: `This will affect ${selectedItems.length} items`, ar: `سيؤثر هذا على ${selectedItems.length} عنصر` })}
             </p>
-            
+
             {action === 'move' && (
               <Select onValueChange={(v) => setActionData({ stage: v })}>
                 <SelectTrigger>

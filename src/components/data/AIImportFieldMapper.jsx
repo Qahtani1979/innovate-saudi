@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,27 +6,29 @@ import { useLanguage } from '../LanguageContext';
 import { FileText, Sparkles, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { useEntitySchema } from '@/hooks/useDataImport';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AIImportFieldMapper({ csvHeaders, entityName, onMappingComplete }) {
-  const { language, t } = useLanguage();
+  const { t } = useLanguage();
   const [mapping, setMapping] = useState({});
   const [validation, setValidation] = useState(null);
-  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { invokeAI, status, isLoading: generating, isAvailable, rateLimitInfo } = useAIWithFallback();
+  const { data: schema, isLoading: schemaLoading } = useEntitySchema(entityName);
 
   const analyzeMapping = async () => {
+    if (!schema || generating) return;
+
     try {
-      const schema = await base44.entities[entityName].schema();
-      
       const result = await invokeAI({
         prompt: `Map CSV columns to entity fields:
 
 CSV Headers: ${csvHeaders.join(', ')}
 
 Entity Fields:
-${Object.entries(schema.properties).map(([field, prop]) => 
-  `${field} (${prop.type}): ${prop.description || ''}`
-).join('\n')}
+${Object.entries(schema.properties).map(([field, prop]) =>
+          `${field} (${prop.type}): ${prop.description || ''}`
+        ).join('\n')}
 
 Suggest mapping for each CSV column to the best matching entity field.
 If no good match, suggest null.`,
@@ -74,8 +76,13 @@ If no good match, suggest null.`,
             <FileText className="h-5 w-5 text-blue-600" />
             {t({ en: 'AI Field Mapper', ar: 'مخطط الحقول الذكي' })}
           </CardTitle>
-          <Button onClick={analyzeMapping} disabled={isLoading || !isAvailable} size="sm" className="bg-blue-600">
-            {isLoading ? (
+          <Button
+            onClick={analyzeMapping}
+            disabled={generating || schemaLoading || !isAvailable || !schema}
+            size="sm"
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            {(generating || schemaLoading) ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Sparkles className="h-4 w-4 mr-2" />
@@ -86,12 +93,21 @@ If no good match, suggest null.`,
       </CardHeader>
       <CardContent className="pt-6">
         <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails className="mb-4" />
-        
-        {!validation && !isLoading && (
+
+        {!validation && !generating && !schemaLoading && (
           <div className="text-center py-8">
             <FileText className="h-12 w-12 text-blue-300 mx-auto mb-3" />
             <p className="text-sm text-slate-600">
               {t({ en: `AI will map ${csvHeaders.length} CSV columns to entity fields`, ar: `الذكاء سيخطط ${csvHeaders.length} عمود CSV لحقول الكيان` })}
+            </p>
+          </div>
+        )}
+
+        {(generating || schemaLoading) && !validation && (
+          <div className="flex flex-col items-center justify-center py-12 space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <p className="text-sm text-slate-500">
+              {schemaLoading ? t({ en: 'Fetching schema...', ar: 'جاري جلب القالب...' }) : t({ en: 'Analyzing headers...', ar: 'جاري تحليل العناوين...' })}
             </p>
           </div>
         )}
@@ -128,9 +144,9 @@ If no good match, suggest null.`,
               </div>
             ))}
 
-            <Button 
+            <Button
               onClick={() => onMappingComplete?.(mapping)}
-              className="w-full bg-blue-600 mt-4"
+              className="w-full bg-blue-600 mt-4 hover:bg-blue-700"
             >
               <CheckCircle className="h-4 w-4 mr-2" />
               {t({ en: 'Apply Mapping', ar: 'تطبيق التخطيط' })}

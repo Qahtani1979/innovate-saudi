@@ -1,57 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { useLanguage } from './LanguageContext';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
-import { AlertTriangle, Clock, Calendar } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { useDeadlines } from '@/hooks/useDeadlines';
 
 export default function DeadlineAlerts() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: tasks = [] } = useQuery({
-    queryKey: ['upcoming-tasks'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('tasks').select('*').neq('status', 'completed');
-      if (error) throw error;
-      const upcoming = (data || []).filter(t => {
-        if (!t.due_date) return false;
-        const daysUntil = Math.ceil((new Date(t.due_date) - new Date()) / (1000 * 60 * 60 * 24));
-        return daysUntil >= 0 && daysUntil <= 7;
-      });
-      return upcoming.sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
-    }
-  });
-
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['pilots-milestones'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('pilots').select('*');
-      if (error) throw error;
-      return (data || []).filter(p => {
-        if (!p.milestones) return false;
-        return p.milestones.some(m => {
-          if (!m.due_date || m.completed) return false;
-          const daysUntil = Math.ceil((new Date(m.due_date) - new Date()) / (1000 * 60 * 60 * 24));
-          return daysUntil >= 0 && daysUntil <= 7;
-        });
-      });
-    }
-  });
-
-  const { data: programs = [] } = useQuery({
-    queryKey: ['programs-deadlines'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('programs').select('*');
-      if (error) throw error;
-      return (data || []).filter(p => {
-        if (!p.application_deadline) return false;
-        const daysUntil = Math.ceil((new Date(p.application_deadline) - new Date()) / (1000 * 60 * 60 * 24));
-        return daysUntil >= 0 && daysUntil <= 14;
-      });
-    }
-  });
+  const { tasks, pilotMilestones: pilots, programs } = useDeadlines();
 
   const getDaysUntil = (date) => {
     const days = Math.ceil((new Date(date) - new Date()) / (1000 * 60 * 60 * 24));
@@ -90,9 +42,9 @@ export default function DeadlineAlerts() {
                   <p className="text-xs text-slate-600">{task.description}</p>
                 </div>
                 <Badge className={getUrgencyColor(days)}>
-                  {days === 0 ? t({ en: 'Today', ar: 'اليوم' }) : 
-                   days === 1 ? t({ en: 'Tomorrow', ar: 'غداً' }) :
-                   `${days}d`}
+                  {days === 0 ? t({ en: 'Today', ar: 'اليوم' }) :
+                    days === 1 ? t({ en: 'Tomorrow', ar: 'غداً' }) :
+                      `${days}d`}
                 </Badge>
               </div>
             </div>

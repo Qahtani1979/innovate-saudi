@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from "@/integrations/supabase/client";
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMatchMutations } from '@/hooks/useMatchMutations';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,42 +14,8 @@ export default function MatchAcceptanceAction({ match, onChange }) {
     const [feedback, setFeedback] = useState('');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [actionType, setActionType] = useState(null); // 'accept' or 'reject'
-    const queryClient = useQueryClient();
 
-    // Mutation to update match status
-    const updateMatchMutation = useMutation({
-        mutationFn: async ({ status, feedbackText }) => {
-            const { data, error } = await supabase
-                .from('challenge_solution_matches')
-                .update({
-                    status: status,
-                    municipality_feedback: feedbackText,
-                    municipality_action_date: new Date().toISOString(),
-                    municipality_reviewer_id: (await supabase.auth.getUser()).data.user?.id
-                })
-                .eq('id', match.id)
-                .select()
-                .single();
-
-            if (error) throw error;
-            return data;
-        },
-        onSuccess: (data) => {
-            toast.success(
-                actionType === 'accept'
-                    ? t({ en: 'Match accepted successfully', ar: 'تم قبول المطابقة بنجاح' })
-                    : t({ en: 'Match rejected', ar: 'تم رفض المطابقة' })
-            );
-            setIsDialogOpen(false);
-            setFeedback('');
-            queryClient.invalidateQueries(['challenge_solution_matches']);
-            if (onChange) onChange(data);
-        },
-        onError: (error) => {
-            toast.error(t({ en: 'Failed to update match', ar: 'فشل تحديث المطابقة' }));
-            console.error(error);
-        }
-    });
+    const { updateMatchStatus } = useMatchMutations();
 
     const handleAction = (type) => {
         setActionType(type);
@@ -64,7 +29,23 @@ export default function MatchAcceptanceAction({ match, onChange }) {
         }
 
         const status = actionType === 'accept' ? 'accepted' : 'rejected';
-        updateMatchMutation.mutate({ status, feedbackText: feedback });
+
+        updateMatchStatus.mutate({
+            matchId: match.id,
+            status,
+            feedback
+        }, {
+            onSuccess: (data) => {
+                toast.success(
+                    actionType === 'accept'
+                        ? t({ en: 'Match accepted successfully', ar: 'تم قبول المطابقة بنجاح' })
+                        : t({ en: 'Match rejected', ar: 'تم رفض المطابقة' })
+                );
+                setIsDialogOpen(false);
+                setFeedback('');
+                if (onChange) onChange(data);
+            }
+        });
     };
 
     if (!match) return null;
@@ -186,11 +167,11 @@ export default function MatchAcceptanceAction({ match, onChange }) {
                         </Button>
                         <Button
                             onClick={submitAction}
-                            disabled={updateMatchMutation.isPending}
+                            disabled={updateMatchStatus.isPending}
                             variant={actionType === 'reject' ? 'destructive' : 'default'}
                             className={actionType === 'accept' ? 'bg-green-600 hover:bg-green-700' : ''}
                         >
-                            {updateMatchMutation.isPending && <FileText className="h-4 w-4 mr-2 animate-spin" />}
+                            {updateMatchStatus.isPending && <FileText className="h-4 w-4 mr-2 animate-spin" />}
                             {t({ en: 'Submit Decision', ar: 'إرسال القرار' })}
                         </Button>
                     </DialogFooter>

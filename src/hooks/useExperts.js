@@ -22,3 +22,19 @@ export function useExpertAssignments() {
         }
     });
 }
+
+export function useExpertProfile(userId) {
+    return useQuery({
+        queryKey: ['expert-profile', userId],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('expert_profiles')
+                .select('*')
+                .eq('user_id', userId)
+                .maybeSingle();
+            if (error) throw error;
+            return data;
+        },
+        enabled: !!userId
+    });
+}

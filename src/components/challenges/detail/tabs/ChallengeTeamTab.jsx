@@ -2,32 +2,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '@/components/LanguageContext';
 import { Users } from 'lucide-react';
 import CollaborativeEditing from '@/components/CollaborativeEditing';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useChallengeTeamStats } from '@/hooks/useChallengeTeamStats';
 
 export default function ChallengeTeamTab({ challenge }) {
     const { t } = useLanguage();
     const challengeId = challenge?.id;
     const stakeholders = challenge?.stakeholders || [];
 
-    // Fetch counts for stats
-    const { data: stats = { comments: 0, evaluations: 0, activities: 0 } } = useQuery({
-        queryKey: ['challenge-team-stats', challengeId],
-        queryFn: async () => {
-            const [comments, evaluations, activities] = await Promise.all([
-                supabase.from('comments').select('id', { count: 'exact', head: true }).eq('challenge_id', challengeId),
-                supabase.from('expert_evaluations').select('id', { count: 'exact', head: true }).eq('challenge_id', challengeId),
-                supabase.from('activity_logs').select('id', { count: 'exact', head: true }).eq('entity_id', challengeId)
-            ]);
-
-            return {
-                comments: comments.count || 0,
-                evaluations: evaluations.count || 0,
-                activities: activities.count || 0
-            };
-        },
-        enabled: !!challengeId
-    });
+    const { data: stats = { comments: 0, evaluations: 0, activities: 0 } } = useChallengeTeamStats(challengeId);
 
     return (
         <div className="space-y-6">

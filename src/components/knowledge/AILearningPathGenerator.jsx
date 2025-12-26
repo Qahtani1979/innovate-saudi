@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,22 +6,14 @@ import { useLanguage } from '../LanguageContext';
 import { BookOpen, Sparkles, Loader2, ArrowRight } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useKnowledgeDocuments } from '@/hooks/useKnowledgeDocuments';
 
 export default function AILearningPathGenerator({ userRole, goal }) {
   const { language, t } = useLanguage();
   const [path, setPath] = useState(null);
 
-  const { data: docs = [] } = useQuery({
-    queryKey: ['knowledge-docs'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('knowledge_documents')
-        .select('*');
-      if (error) throw error;
-      return data || [];
-    },
-    initialData: []
-  });
+  const { useAllDocuments } = useKnowledgeDocuments();
+  const { data: docs = [] } = useAllDocuments();
 
   const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
     showToasts: true,
@@ -90,7 +80,7 @@ Order by dependency (basics → advanced)`,
       </CardHeader>
       <CardContent className="pt-6">
         <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
-        
+
         {!path && !isLoading && (
           <div className="text-center py-8">
             <BookOpen className="h-12 w-12 text-purple-300 mx-auto mb-3" />

@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useScalingPlan, useScalingExpertSignOffs } from '@/hooks/useScalingPlans';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,50 +6,35 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { TrendingUp, MapPin, Target, Award, Users, FileText, Activity } from 'lucide-react';
+import { TrendingUp, MapPin, Target, Award, Users, FileText, Activity, Loader2 } from 'lucide-react';
 import ScalingExecutionDashboard from '../components/scaling/ScalingExecutionDashboard';
 import StrategicAlignmentWidget from '../components/strategy/StrategicAlignmentWidget';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
+/**
+ * ScalingPlanDetail
+ * ✅ GOLD STANDARD COMPLIANT
+ */
 function ScalingPlanDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const planId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
 
-  const { data: scalingPlan, isLoading } = useQuery({
-    queryKey: ['scaling-plan', planId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('scaling_plans')
-        .select('*')
-        .eq('id', planId)
-        .single();
+  const { data: scalingPlan, isLoading } = useScalingPlan(planId);
+  const { data: expertSignOffs = [] } = useScalingExpertSignOffs(planId);
 
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!planId
-  });
-
-  const { data: expertSignOffs = [] } = useQuery({
-    queryKey: ['scaling-expert-signoffs', planId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('expert_evaluations')
-        .select('*')
-        .eq('entity_type', 'scaling_plan')
-        .eq('entity_id', planId);
-
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!planId
-  });
-
-  if (isLoading || !scalingPlan) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+        <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  if (!scalingPlan) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <p className="text-slate-500">{t({ en: 'Scaling plan not found', ar: 'خطة التوسع غير موجودة' })}</p>
       </div>
     );
   }
@@ -70,10 +54,10 @@ function ScalingPlanDetail() {
               </Badge>
             </div>
             <h1 className="text-5xl font-bold mb-2">
-              {language === 'ar' && scalingPlan.title_ar ? scalingPlan.title_ar : scalingPlan.title_en}
+              {language === 'ar' && scalingPlan.title_ar ? scalingPlan.title_ar : (scalingPlan.title_en || scalingPlan.title)}
             </h1>
             <p className="text-xl text-white/90">
-              {scalingPlan.target_municipalities?.length || 0} {t({ en: 'municipalities', ar: 'بلدية' })} • {scalingPlan.estimated_timeline_months} {t({ en: 'months', ar: 'شهر' })}
+              {scalingPlan.target_municipalities?.length || 0} {t({ en: 'municipalities', ar: 'بلدية' })} • {scalingPlan.estimated_timeline_months || scalingPlan.timeline_months} {t({ en: 'months', ar: 'شهر' })}
             </p>
           </div>
         </div>
@@ -110,7 +94,7 @@ function ScalingPlanDetail() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-600">{t({ en: 'Timeline', ar: 'الجدول' })}</p>
-                <p className="text-3xl font-bold text-purple-600">{scalingPlan.estimated_timeline_months}m</p>
+                <p className="text-3xl font-bold text-purple-600">{scalingPlan.estimated_timeline_months || scalingPlan.timeline_months || 0}m</p>
               </div>
               <Target className="h-8 w-8 text-purple-600" />
             </div>
@@ -123,7 +107,8 @@ function ScalingPlanDetail() {
               <div>
                 <p className="text-sm text-slate-600">{t({ en: 'Budget', ar: 'الميزانية' })}</p>
                 <p className="text-2xl font-bold text-amber-600">
-                  {scalingPlan.estimated_total_budget ? `${(scalingPlan.estimated_total_budget / 1000).toFixed(0)}K` : 'N/A'}
+                  {scalingPlan.estimated_total_budget ? `${(scalingPlan.estimated_total_budget / 1000).toFixed(0)}K` :
+                    scalingPlan.budget_total ? `${(scalingPlan.budget_total / 1000).toFixed(0)}K` : 'N/A'}
                 </p>
               </div>
               <TrendingUp className="h-8 w-8 text-amber-600" />
@@ -175,11 +160,11 @@ function ScalingPlanDetail() {
               <CardTitle>{t({ en: 'Scaling Plan Overview', ar: 'نظرة عامة على خطة التوسع' })}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {scalingPlan.description_en && (
+              {(scalingPlan.description_en || scalingPlan.description) && (
                 <div>
                   <p className="text-sm font-medium text-slate-700 mb-2">{t({ en: 'Description', ar: 'الوصف' })}</p>
                   <p className="text-sm text-slate-600 leading-relaxed">
-                    {language === 'ar' && scalingPlan.description_ar ? scalingPlan.description_ar : scalingPlan.description_en}
+                    {language === 'ar' && scalingPlan.description_ar ? scalingPlan.description_ar : (scalingPlan.description_en || scalingPlan.description)}
                   </p>
                 </div>
               )}

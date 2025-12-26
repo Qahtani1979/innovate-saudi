@@ -20,6 +20,7 @@ export function usePilotsWithVisibility(options = {}) {
     includeDeleted = false,
     providerId = null,
     municipalityId, // New option
+    stage, // New option
     limit = 50
   } = options;
 
@@ -53,7 +54,8 @@ export function usePilotsWithVisibility(options = {}) {
       sectorId,
       limit,
       providerId,
-      municipalityId
+      municipalityId,
+      stage
     }],
     queryFn: async () => {
       let baseSelect = `
@@ -109,6 +111,11 @@ export function usePilotsWithVisibility(options = {}) {
       // Apply municipality filter if provided
       if (municipalityId) {
         query = query.eq('municipality_id', municipalityId);
+      }
+
+      // Apply stage filter if provided
+      if (stage) {
+        query = query.eq('stage', stage);
       }
 
       // Admin or full visibility users see everything
@@ -177,6 +184,9 @@ export function usePilotsWithVisibility(options = {}) {
         }
         if (municipalityId) {
           filtered = filtered.filter(p => p.municipality_id === municipalityId);
+        }
+        if (stage) {
+          filtered = filtered.filter(p => p.stage === stage);
         }
 
         return filtered.slice(0, limit);

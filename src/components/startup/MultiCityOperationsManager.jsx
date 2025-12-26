@@ -1,40 +1,18 @@
 
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Building2, MapPin } from 'lucide-react';
+import { useProviderSolutions, useProviderPilots, useProviderScalingPlans } from '@/hooks/useProviderPipeline';
 
 export default function MultiCityOperationsManager({ providerId }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['provider-solutions-multi', providerId],
-    queryFn: async () => {
-      const all = await base44.entities.Solution.list();
-      return all.filter(s => s.provider_id === providerId);
-    }
-  });
+  const { data: solutions = [] } = useProviderSolutions(providerId);
+  const solutionIds = solutions.map(s => s.id);
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['provider-pilots-multi', providerId],
-    queryFn: async () => {
-      const solutionIds = solutions.map(s => s.id);
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => solutionIds.includes(p.solution_id));
-    },
-    enabled: solutions.length > 0
-  });
-
-  const { data: scalingPlans = [] } = useQuery({
-    queryKey: ['scaling-plans-multi', providerId],
-    queryFn: async () => {
-      const solutionIds = solutions.map(s => s.id);
-      const all = await base44.entities.ScalingPlan.list();
-      return all.filter(sp => solutionIds.includes(sp.validated_solution_id));
-    },
-    enabled: solutions.length > 0
-  });
+  const { data: pilots = [] } = useProviderPilots(solutionIds);
+  const { data: scalingPlans = [] } = useProviderScalingPlans(solutionIds);
 
   // Group deployments by city
   const deploymentsByCity = pilots.reduce((acc, pilot) => {

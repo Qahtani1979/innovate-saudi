@@ -22,7 +22,7 @@ export default function ProgramSelectionWorkflow({ program, onClose }) {
 
   const handleFinalize = async () => {
     try {
-      await finalizeSelection({
+      await finalizeSelection.mutateAsync({
         programId: program.id,
         selectedIds: selected,
         rejectedIds: rejected,

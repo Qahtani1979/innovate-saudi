@@ -1,30 +1,22 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { BookOpen, ExternalLink, Lightbulb } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
+import { useKnowledgeDocuments } from '@/hooks/useKnowledgeDocuments';
 
 export default function ContextualKnowledgeWidget({ context }) {
   const { language, t } = useLanguage();
   const [recommendations, setRecommendations] = useState([]);
 
-  useEffect(() => {
-    if (context?.entityType && context?.sector) {
-      findRelevantDocs();
-    }
-  }, [context]);
+  const { useAllDocuments } = useKnowledgeDocuments();
+  const { data: allDocs = [] } = useAllDocuments();
 
-  const findRelevantDocs = async () => {
-    try {
-      const { data: allDocs, error } = await supabase
-        .from('knowledge_documents')
-        .select('*');
-      if (error) throw error;
-      
-      const relevant = (allDocs || [])
+  useEffect(() => {
+    if (context?.entityType && context?.sector && allDocs.length > 0) {
+      const relevant = allDocs
         .filter(doc => {
           const sectorMatch = doc.sector === context.sector;
           const typeMatch = doc.type?.includes(context.entityType);
@@ -33,10 +25,8 @@ export default function ContextualKnowledgeWidget({ context }) {
         .slice(0, 3);
 
       setRecommendations(relevant);
-    } catch (error) {
-      console.error('Failed to load recommendations:', error);
     }
-  };
+  }, [context, allDocs]);
 
   if (recommendations.length === 0) return null;
 

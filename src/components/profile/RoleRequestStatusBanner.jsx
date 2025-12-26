@@ -1,10 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '../LanguageContext';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Clock, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { useMyRoleRequests } from '@/hooks/useRoleRequests';
 
 /**
  * Compact role request status banner for profile page
@@ -14,23 +13,7 @@ export default function RoleRequestStatusBanner() {
   const { user } = useAuth();
   const { t } = useLanguage();
 
-  const { data: pendingRequests = [], isLoading } = useQuery({
-    queryKey: ['role-requests-status', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return [];
-      const { data, error } = await supabase
-        .from('role_requests')
-        .select('*')
-        .eq('user_email', user.email)
-        .in('status', ['pending', 'approved', 'rejected'])
-        .order('created_at', { ascending: false })
-        .limit(5);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.email,
-    refetchInterval: 30000 // Refresh every 30 seconds
-  });
+  const { data: pendingRequests = [], isLoading } = useMyRoleRequests(user?.email);
 
   if (isLoading) {
     return null;
@@ -116,15 +99,15 @@ export default function RoleRequestStatusBanner() {
             </AlertTitle>
             <AlertDescription className="text-sm">
               {request.status === 'pending' && (
-                t({ 
-                  en: 'Your request is being reviewed by an administrator.', 
-                  ar: 'طلبك قيد المراجعة من قبل المسؤول.' 
+                t({
+                  en: 'Your request is being reviewed by an administrator.',
+                  ar: 'طلبك قيد المراجعة من قبل المسؤول.'
                 })
               )}
               {request.status === 'approved' && (
-                t({ 
-                  en: 'Your request has been approved! Refresh the page to access your new role.', 
-                  ar: 'تمت الموافقة على طلبك! قم بتحديث الصفحة للوصول إلى دورك الجديد.' 
+                t({
+                  en: 'Your request has been approved! Refresh the page to access your new role.',
+                  ar: 'تمت الموافقة على طلبك! قم بتحديث الصفحة للوصول إلى دورك الجديد.'
                 })
               )}
               {request.status === 'rejected' && (

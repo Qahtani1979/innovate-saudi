@@ -12,16 +12,47 @@ import {
   getProposalScreeningSchema,
   getProposalScreeningSystemPrompt
 } from '@/lib/ai/prompts/citizen';
+import { useInnovationProposalMutations } from '@/hooks/useInnovationProposalMutations';
 
-import { supabase } from '@/lib/supabase';
-
+/**
+ * AIProposalScreening
+ * ✅ GOLD STANDARD COMPLIANT
+ */
 export default function AIProposalScreening({ proposal, onScreeningComplete }) {
   const [screeningResults, setScreeningResults] = useState(proposal.ai_pre_screening || null);
+  const { updateProposal } = useInnovationProposalMutations();
 
   const { invokeAI, status, error, rateLimitInfo, isLoading, isAvailable } = useAIWithFallback({
     showToasts: true,
     fallbackData: null
   });
+
+  const handleScreeningUpdate = (data) => {
+    const aiEvaluationScore = Math.round(
+      (data.proposal_completeness_score +
+        data.feasibility_score +
+        data.budget_reasonability_score +
+        data.team_adequacy_score +
+        data.strategic_alignment_preliminary) / 5
+    );
+
+    updateProposal.mutate(
+      {
+        id: proposal.id,
+        updates: {
+          ai_pre_screening: data,
+          ai_evaluation_score: aiEvaluationScore
+        }
+      },
+      {
+        onSuccess: () => {
+          setScreeningResults(data);
+          toast.success('AI screening complete');
+          onScreeningComplete?.(data);
+        }
+      }
+    );
+  };
 
   const runAIScreening = async () => {
     const { success, data } = await invokeAI({
@@ -31,30 +62,7 @@ export default function AIProposalScreening({ proposal, onScreeningComplete }) {
     });
 
     if (success && data) {
-      try {
-        // Update proposal with screening results
-        const { error: updateError } = await supabase
-          .from('innovation_proposals')
-          .update({
-            ai_pre_screening: data,
-            ai_evaluation_score: Math.round(
-              (data.proposal_completeness_score +
-                data.feasibility_score +
-                data.budget_reasonability_score +
-                data.team_adequacy_score +
-                data.strategic_alignment_preliminary) / 5
-            )
-          })
-          .eq('id', proposal.id);
-
-        if (updateError) throw updateError;
-
-        setScreeningResults(data);
-        toast.success('AI screening complete');
-        onScreeningComplete?.(data);
-      } catch (updateError) {
-        toast.error('Failed to save screening results');
-      }
+      handleScreeningUpdate(data);
     }
   };
 

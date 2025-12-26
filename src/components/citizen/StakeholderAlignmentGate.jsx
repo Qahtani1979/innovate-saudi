@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,8 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from 'sonner';
-import { Users, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { Users, CheckCircle2, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import { useInnovationProposalMutations } from '@/hooks/useInnovationProposalMutations';
 
 export default function StakeholderAlignmentGate({ proposal, onGateComplete }) {
   const { user } = useAuth();
@@ -20,14 +19,16 @@ export default function StakeholderAlignmentGate({ proposal, onGateComplete }) {
     notes: '',
     decision: 'pending'
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const queryClient = useQueryClient();
 
-  const submitAlignmentMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase
-        .from('innovation_proposals')
-        .update({
+  const { updateProposal } = useInnovationProposalMutations();
+  const isSubmitting = updateProposal.isPending;
+
+  const handleAlignmentSubmission = async (data) => {
+    try {
+      {/* @ts-ignore */ }
+      await updateProposal.mutateAsync({
+        id: proposal.id,
+        data: {
           stakeholder_alignment_gate: {
             stakeholder_buy_in: data.stakeholder_buy_in,
             resource_availability: data.resource_availability,
@@ -38,206 +39,165 @@ export default function StakeholderAlignmentGate({ proposal, onGateComplete }) {
             review_date: new Date().toISOString(),
             passed: data.decision === 'approved'
           },
-          status: data.decision === 'approved' ? 'approved' : 
-                  data.decision === 'rejected' ? 'rejected' : 
-                  'under_evaluation'
-        })
-        .eq('id', proposal.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['innovation-proposals']);
-      toast.success('Stakeholder alignment assessment saved');
+          status: data.decision === 'approved' ? 'approved' :
+            data.decision === 'rejected' ? 'rejected' :
+              'under_evaluation'
+        }
+      });
       onGateComplete?.();
-    },
-    onError: (error) => {
-      toast.error('Failed to save: ' + error.message);
+    } catch (error) {
+      console.error('Alignment submission error:', error);
     }
-  });
+  };
 
   const handleSubmit = () => {
-    // Validate all fields are selected
-    if (alignment.stakeholder_buy_in === null || 
-        alignment.resource_availability === null || 
-        alignment.policy_alignment === null) {
-      toast.error('Please complete all assessments');
+    if (!alignment.stakeholder_buy_in || !alignment.resource_availability || !alignment.policy_alignment) {
+      toast.error('Please complete all assessment fields');
       return;
     }
 
-    // Auto-determine decision
-    const allApproved = alignment.stakeholder_buy_in && 
-                        alignment.resource_availability && 
-                        alignment.policy_alignment;
-    
+    const allApproved =
+      alignment.stakeholder_buy_in === 'approved' &&
+      alignment.resource_availability === 'approved' &&
+      alignment.policy_alignment === 'approved';
+
     const decision = allApproved ? 'approved' : 'conditional';
 
-    setAlignment(prev => ({ ...prev, decision }));
-    submitAlignmentMutation.mutate({ ...alignment, decision });
+    handleAlignmentSubmission({ ...alignment, decision });
   };
 
   const existingGate = proposal.stakeholder_alignment_gate;
 
-  if (existingGate?.decision) {
+  if (existingGate?.passed) {
     return (
-      <Card className="border-2 border-green-300 bg-green-50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
-            Stakeholder Alignment - Completed
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-3 gap-3">
-            <div className="text-center p-3 bg-white rounded-lg">
-              <p className="text-xs text-slate-600 mb-1">Buy-In</p>
-              {existingGate.stakeholder_buy_in ? 
-                <CheckCircle2 className="h-6 w-6 text-green-600 mx-auto" /> : 
-                <XCircle className="h-6 w-6 text-red-600 mx-auto" />
-              }
-            </div>
-            <div className="text-center p-3 bg-white rounded-lg">
-              <p className="text-xs text-slate-600 mb-1">Resources</p>
-              {existingGate.resource_availability ? 
-                <CheckCircle2 className="h-6 w-6 text-green-600 mx-auto" /> : 
-                <XCircle className="h-6 w-6 text-red-600 mx-auto" />
-              }
-            </div>
-            <div className="text-center p-3 bg-white rounded-lg">
-              <p className="text-xs text-slate-600 mb-1">Policy</p>
-              {existingGate.policy_alignment ? 
-                <CheckCircle2 className="h-6 w-6 text-green-600 mx-auto" /> : 
-                <XCircle className="h-6 w-6 text-red-600 mx-auto" />
-              }
+      <Card className="border-green-200 bg-green-50/30">
+        <CardContent className="pt-6">
+          <div className="flex flex-col items-center justify-center py-4 text-center space-y-3">
+            <CheckCircle2 className="h-12 w-12 text-green-500" />
+            <div className="space-y-1">
+              <h3 className="text-lg font-semibold">Alignment Verified</h3>
+              <p className="text-muted-foreground text-xs">
+                Stakeholder agreement and resource availability confirmed.
+              </p>
+              <Badge variant="success" className="mt-2 text-[10px]">
+                Passed on {new Date(existingGate.review_date).toLocaleDateString()}
+              </Badge>
             </div>
           </div>
-          <Badge className={existingGate.decision === 'approved' ? 'bg-green-600' : 'bg-yellow-600'}>
-            {existingGate.decision}
-          </Badge>
-          {existingGate.notes && (
-            <div className="p-3 bg-white rounded-lg text-sm">
-              <p className="text-slate-600">{existingGate.notes}</p>
-            </div>
-          )}
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="border-2 border-indigo-300">
-      <CardHeader className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
-        <CardTitle className="flex items-center gap-2">
-          <Users className="h-6 w-6" />
-          Stakeholder Alignment Gate - Stage 3
+    <Card className="border-primary/20">
+      <CardHeader className="bg-primary/5 pb-3">
+        <CardTitle className="text-base flex items-center">
+          <Users className="h-5 w-5 mr-3 text-primary" />
+          Stakeholder Alignment Gate
         </CardTitle>
-        <p className="text-sm text-white/90 mt-1">
-          Assess stakeholder buy-in, resource availability, and policy alignment
-        </p>
       </CardHeader>
       <CardContent className="pt-6 space-y-6">
-        {/* Stakeholder Buy-In */}
+        {/* Stakeholder Buy-in */}
         <div className="space-y-3">
-          <Label className="text-base font-semibold">1. Stakeholder Buy-In</Label>
-          <p className="text-sm text-slate-600">
-            Do key stakeholders (municipality leadership, department heads) support this proposal?
-          </p>
-          <RadioGroup 
-            value={alignment.stakeholder_buy_in?.toString()} 
-            onValueChange={(val) => setAlignment({...alignment, stakeholder_buy_in: val === 'true'})}
+          <Label className="text-sm font-semibold">Stakeholder Buy-in</Label>
+          {/* @ts-ignore */}
+          <RadioGroup
+            value={alignment.stakeholder_buy_in}
+            onValueChange={(val) => setAlignment(p => ({ ...p, stakeholder_buy_in: val }))}
+            className="flex gap-4"
           >
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="true" id="buy-in-yes" />
-              <Label htmlFor="buy-in-yes" className="cursor-pointer">
-                <CheckCircle2 className="h-4 w-4 text-green-600 inline mr-1" />
-                Yes - Strong stakeholder support
-              </Label>
+              <RadioGroupItem value="approved" id="buyin-approved" />
+              <Label htmlFor="buyin-approved" className="cursor-pointer text-xs">Confirmed</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="false" id="buy-in-no" />
-              <Label htmlFor="buy-in-no" className="cursor-pointer">
-                <XCircle className="h-4 w-4 text-red-600 inline mr-1" />
-                No - Insufficient buy-in
-              </Label>
+              <RadioGroupItem value="pending" id="buyin-pending" />
+              <Label htmlFor="buyin-pending" className="cursor-pointer text-xs">Discussion</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="rejected" id="buyin-rejected" />
+              <Label htmlFor="buyin-rejected" className="cursor-pointer text-xs">Lacking</Label>
             </div>
           </RadioGroup>
         </div>
 
         {/* Resource Availability */}
         <div className="space-y-3">
-          <Label className="text-base font-semibold">2. Resource Availability</Label>
-          <p className="text-sm text-slate-600">
-            Are the required resources (budget, personnel, infrastructure) available?
-          </p>
-          <RadioGroup 
-            value={alignment.resource_availability?.toString()} 
-            onValueChange={(val) => setAlignment({...alignment, resource_availability: val === 'true'})}
+          <Label className="text-sm font-semibold">Resource Availability</Label>
+          {/* @ts-ignore */}
+          <RadioGroup
+            value={alignment.resource_availability}
+            onValueChange={(val) => setAlignment(p => ({ ...p, resource_availability: val }))}
+            className="flex gap-4"
           >
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="true" id="resources-yes" />
-              <Label htmlFor="resources-yes" className="cursor-pointer">
-                <CheckCircle2 className="h-4 w-4 text-green-600 inline mr-1" />
-                Yes - Resources available
-              </Label>
+              <RadioGroupItem value="approved" id="res-approved" />
+              <Label htmlFor="res-approved" className="cursor-pointer text-xs">Available</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="false" id="resources-no" />
-              <Label htmlFor="resources-no" className="cursor-pointer">
-                <XCircle className="h-4 w-4 text-red-600 inline mr-1" />
-                No - Resource constraints
-              </Label>
+              <RadioGroupItem value="pending" id="res-pending" />
+              <Label htmlFor="res-pending" className="cursor-pointer text-xs">Partially</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="rejected" id="res-rejected" />
+              <Label htmlFor="res-rejected" className="cursor-pointer text-xs">Unavailable</Label>
             </div>
           </RadioGroup>
         </div>
 
         {/* Policy Alignment */}
         <div className="space-y-3">
-          <Label className="text-base font-semibold">3. Policy Alignment</Label>
-          <p className="text-sm text-slate-600">
-            Does this align with current policies, regulations, and strategic priorities?
-          </p>
-          <RadioGroup 
-            value={alignment.policy_alignment?.toString()} 
-            onValueChange={(val) => setAlignment({...alignment, policy_alignment: val === 'true'})}
+          <Label className="text-sm font-semibold">Policy Alignment</Label>
+          {/* @ts-ignore */}
+          <RadioGroup
+            value={alignment.policy_alignment}
+            onValueChange={(val) => setAlignment(p => ({ ...p, policy_alignment: val }))}
+            className="flex gap-4"
           >
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="true" id="policy-yes" />
-              <Label htmlFor="policy-yes" className="cursor-pointer">
-                <CheckCircle2 className="h-4 w-4 text-green-600 inline mr-1" />
-                Yes - Aligned with policy
-              </Label>
+              <RadioGroupItem value="approved" id="pol-approved" />
+              <Label htmlFor="pol-approved" className="cursor-pointer text-xs">Aligned</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="false" id="policy-no" />
-              <Label htmlFor="policy-no" className="cursor-pointer">
-                <XCircle className="h-4 w-4 text-red-600 inline mr-1" />
-                No - Policy conflicts
-              </Label>
+              <RadioGroupItem value="pending" id="pol-pending" />
+              <Label htmlFor="pol-pending" className="cursor-pointer text-xs">Review</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="rejected" id="pol-rejected" />
+              <Label htmlFor="pol-rejected" className="cursor-pointer text-xs">Conflicts</Label>
             </div>
           </RadioGroup>
         </div>
 
-        {/* Notes */}
         <div className="space-y-2">
-          <Label>Notes & Recommendations</Label>
+          <Label className="text-sm font-semibold">Additional Notes</Label>
           <Textarea
+            placeholder="Notes..."
             value={alignment.notes}
-            onChange={(e) => setAlignment({...alignment, notes: e.target.value})}
-            placeholder="Additional context, conditions, or recommendations..."
-            rows={4}
+            onChange={(e) => setAlignment(p => ({ ...p, notes: e.target.value }))}
+            rows={3}
+            className="text-xs"
           />
         </div>
 
-        {/* Submit */}
-        <div className="flex gap-3 pt-4 border-t">
-          <Button 
-            onClick={handleSubmit}
-            disabled={isSubmitting || alignment.stakeholder_buy_in === null}
-            className="flex-1 bg-indigo-600"
-          >
-            {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Submit Assessment
-          </Button>
-        </div>
+        <Button
+          className="w-full h-10 text-sm"
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              Finalize Alignment
+            </>
+          )}
+        </Button>
       </CardContent>
     </Card>
   );

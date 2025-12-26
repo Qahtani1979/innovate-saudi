@@ -53,6 +53,27 @@ export function useInnovationProposalMutations() {
     return {
         updateProposal,
         approveProposal,
-        rejectProposal
+        rejectProposal,
+        createProposal: useMutation({
+            mutationFn: async (data) => {
+                const { data: result, error } = await supabase
+                    .from('innovation_proposals')
+                    .insert(data)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                return result;
+            },
+            onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ['innovation-proposals'] });
+                queryClient.invalidateQueries({ queryKey: ['innovation-proposals-with-visibility'] });
+                toast.success('Proposal submitted successfully');
+            },
+            onError: (error) => {
+                console.error('Proposal creation error:', error);
+                toast.error('Failed to submit proposal');
+            }
+        })
     };
 }

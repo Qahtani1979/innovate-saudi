@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,6 +16,8 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { IDEA_RESPONSE_PROMPT_TEMPLATE, IDEA_RESPONSE_SCHEMA } from '@/lib/ai/prompts/citizen/ideaResponse';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useInnovationProposalMutations } from '@/hooks/useInnovationProposalMutations';
 
 const STEPS = [
   { id: 1, title: { en: 'Select Challenge', ar: 'اختر التحدي' }, icon: Target },
@@ -31,13 +31,12 @@ function ChallengeIdeaResponse() {
   const [searchParams] = useSearchParams();
   const challengeId = searchParams.get('challenge_id');
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { invokeAI, status, isLoading: aiGenerating, rateLimitInfo, isAvailable } = useAIWithFallback();
   const { user } = useAuth();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [initialDescription, setInitialDescription] = useState('');
-  
+
   const [formData, setFormData] = useState({
     challenge_alignment_id: challengeId || '',
     title_en: '',
@@ -58,17 +57,13 @@ function ChallengeIdeaResponse() {
   });
 
   // Fetch open challenges
-  const { data: challenges = [], isLoading: loadingChallenges } = useQuery({
-    queryKey: ['challenges-open'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('challenges')
-        .select('id, title_en, title_ar, description_en, description_ar, sector, priority, status, kpis, desired_outcome_en, desired_outcome_ar, municipality_id')
-        .eq('is_published', true)
-        .in('status', ['approved', 'in_treatment', 'open']);
-      return data || [];
-    }
+  const { data: challenges = [], isLoading: loadingChallenges } = useChallengesWithVisibility({
+    publishedOnly: true,
+    status: ['approved', 'in_treatment', 'open'],
+    limit: 100 // Reasonable limit for selection
   });
+
+  const { createProposal } = useInnovationProposalMutations();
 
   const selectedChallenge = challenges.find(c => c.id === formData.challenge_alignment_id);
 
@@ -124,48 +119,6 @@ function ChallengeIdeaResponse() {
     }
   };
 
-  // Submit mutation
-  const submitMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: result, error } = await supabase
-        .from('innovation_proposals')
-        .insert({
-          code: `PROP-${Date.now().toString().slice(-8)}`,
-          title_en: data.title_en,
-          title_ar: data.title_ar,
-          description_en: data.description_en,
-          description_ar: data.description_ar,
-          challenge_alignment_id: data.challenge_alignment_id,
-          proposal_type: data.proposal_type,
-          submitter_type: data.submitter_type,
-          submitter_email: data.submitter_email,
-          submitter_name: data.submitter_name,
-          submitter_organization: data.submitter_organization,
-          implementation_plan: data.implementation_plan,
-          budget_estimate: data.budget_estimate ? parseFloat(data.budget_estimate) : null,
-          timeline_proposal: data.timeline_proposal,
-          expected_outcomes: data.expected_outcomes,
-          team_description: data.team_description,
-          resources_needed: data.resources_needed,
-          status: 'submitted',
-          created_by: user?.email,
-        })
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return result;
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries(['innovation-proposals']);
-      toast.success(t({ en: 'Proposal submitted successfully!', ar: 'تم تقديم المقترح بنجاح!' }));
-      navigate(`/innovation-proposal-detail?id=${data.id}`);
-    },
-    onError: (error) => {
-      toast.error(error.message || t({ en: 'Failed to submit proposal', ar: 'فشل في تقديم المقترح' }));
-    }
-  });
-
   const handleNext = () => {
     if (currentStep === 1 && !formData.challenge_alignment_id) {
       toast.error(t({ en: 'Please select a challenge', ar: 'يرجى اختيار تحدي' }));
@@ -191,7 +144,18 @@ function ChallengeIdeaResponse() {
       toast.error(t({ en: 'Please complete all required fields', ar: 'يرجى إكمال جميع الحقول المطلوبة' }));
       return;
     }
-    submitMutation.mutate(formData);
+
+    createProposal.mutate({
+      ...formData,
+      code: `PROP-${Date.now().toString().slice(-8)}`,
+      budget_estimate: formData.budget_estimate ? parseFloat(formData.budget_estimate) : null,
+      status: 'submitted',
+      created_by: user?.email,
+    }, {
+      onSuccess: (data) => {
+        navigate(`/innovation-proposal-detail?id=${data.id}`);
+      }
+    });
   };
 
   const progress = (currentStep / 4) * 100;
@@ -212,7 +176,7 @@ function ChallengeIdeaResponse() {
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
           {STEPS.map((step) => (
-            <div 
+            <div
               key={step.id}
               className={`flex items-center gap-2 ${currentStep >= step.id ? 'text-primary' : 'text-muted-foreground'}`}
             >
@@ -256,11 +220,10 @@ function ChallengeIdeaResponse() {
                     <div
                       key={challenge.id}
                       onClick={() => setFormData(prev => ({ ...prev, challenge_alignment_id: challenge.id }))}
-                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                        formData.challenge_alignment_id === challenge.id
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border hover:border-primary/50'
-                      }`}
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${formData.challenge_alignment_id === challenge.id
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                        }`}
                     >
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">
@@ -268,8 +231,8 @@ function ChallengeIdeaResponse() {
                             {isRTL ? (challenge.title_ar || challenge.title_en) : challenge.title_en}
                           </h3>
                           <p className="text-sm text-muted-foreground line-clamp-2">
-                            {isRTL 
-                              ? (challenge.description_ar || challenge.description_en)?.substring(0, 150) 
+                            {isRTL
+                              ? (challenge.description_ar || challenge.description_en)?.substring(0, 150)
                               : challenge.description_en?.substring(0, 150)}...
                           </p>
                         </div>
@@ -278,7 +241,7 @@ function ChallengeIdeaResponse() {
                         )}
                       </div>
                       <div className="flex gap-2 mt-3">
-                        {challenge.sector && <Badge variant="secondary">{challenge.sector}</Badge>}
+                        {challenge.sector && <Badge variant="secondary">{challenge.sector?.name_en || challenge.sector}</Badge>}
                         {challenge.priority && <Badge variant="outline">{challenge.priority}</Badge>}
                       </div>
                     </div>
@@ -319,7 +282,7 @@ function ChallengeIdeaResponse() {
                 <Textarea
                   value={initialDescription}
                   onChange={(e) => setInitialDescription(e.target.value)}
-                  placeholder={t({ 
+                  placeholder={t({
                     en: 'Describe your idea in your own words. What solution do you propose? How will it help solve the challenge? (Be as detailed as you can)',
                     ar: 'صف فكرتك بكلماتك الخاصة. ما الحل الذي تقترحه؟ كيف سيساعد في حل التحدي؟ (كن مفصلاً قدر الإمكان)'
                   })}
@@ -328,8 +291,8 @@ function ChallengeIdeaResponse() {
                 />
               </div>
 
-              <Button 
-                onClick={generateProposal} 
+              <Button
+                onClick={generateProposal}
                 disabled={aiGenerating || !initialDescription.trim() || !isAvailable}
                 className="w-full"
                 size="lg"
@@ -470,8 +433,8 @@ function ChallengeIdeaResponse() {
                     </div>
                     <div className="space-y-2">
                       <Label>{t({ en: 'Submitter Type', ar: 'نوع المقدم' })}</Label>
-                      <Select 
-                        value={formData.submitter_type} 
+                      <Select
+                        value={formData.submitter_type}
                         onValueChange={(v) => setFormData(prev => ({ ...prev, submitter_type: v }))}
                       >
                         <SelectTrigger>
@@ -520,7 +483,7 @@ function ChallengeIdeaResponse() {
                     <p className="font-semibold">{formData.title_en}</p>
                     {formData.title_ar && <p className="text-sm text-muted-foreground" dir="rtl">{formData.title_ar}</p>}
                   </div>
-                  
+
                   <div>
                     <p className="text-xs text-muted-foreground">{t({ en: 'Description', ar: 'الوصف' })}</p>
                     <p className="text-sm line-clamp-4">{formData.description_en}</p>
@@ -572,12 +535,12 @@ function ChallengeIdeaResponse() {
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             ) : (
-              <Button 
+              <Button
                 onClick={handleSubmit}
-                disabled={submitMutation.isPending}
+                disabled={createProposal.isPending}
                 className="bg-gradient-to-r from-primary to-primary/80"
               >
-                {submitMutation.isPending ? (
+                {createProposal.isPending ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
                   <Send className="h-4 w-4 mr-2" />

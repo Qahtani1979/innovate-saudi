@@ -5,73 +5,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
 import { DollarSign, CheckCircle2, XCircle } from 'lucide-react';
 
+import { useScalingBudgetApproval } from '@/hooks/useBudgetGates';
+
 export default function BudgetApprovalGate({ scalingPlan, onApproved, onRejected }) {
   const { t, isRTL } = useLanguage();
-  const [decision, setDecision] = useState('');
   const [comments, setComments] = useState('');
-  const [loading, setLoading] = useState(false);
+  const { approvalMutation } = useScalingBudgetApproval();
 
-  const handleApprove = async () => {
-    setLoading(true);
-    try {
-      await base44.entities.ScalingPlan.update(scalingPlan.id, {
-        budget_approved: true,
-        budget_approval_date: new Date().toISOString(),
-        budget_approval_comments: comments
-      });
-      
-      const { supabase } = await import('@/integrations/supabase/client');
-      await supabase.functions.invoke('email-trigger-hub', {
-        body: {
-          trigger: 'proposal.accepted',
-          recipient_email: scalingPlan.created_by,
-          entity_type: 'scaling_plan',
-          entity_id: scalingPlan.id,
-          variables: {
-            planTitle: scalingPlan.title_en,
-            budgetAmount: scalingPlan.estimated_budget,
-            comments: comments
-          },
-          triggered_by: 'system'
-        }
-      });
-      
-      onApproved?.();
-    } catch (error) {
-      console.error('Approval failed:', error);
-    }
-    setLoading(false);
-  };
-
-  const handleReject = async () => {
-    setLoading(true);
-    try {
-      await base44.entities.ScalingPlan.update(scalingPlan.id, {
-        budget_approved: false,
-        budget_approval_date: new Date().toISOString(),
-        budget_approval_comments: comments
-      });
-      
-      const { supabase } = await import('@/integrations/supabase/client');
-      await supabase.functions.invoke('email-trigger-hub', {
-        body: {
-          trigger: 'proposal.revision_requested',
-          recipient_email: scalingPlan.created_by,
-          entity_type: 'scaling_plan',
-          entity_id: scalingPlan.id,
-          variables: {
-            planTitle: scalingPlan.title_en,
-            comments: comments
-          },
-          triggered_by: 'system'
-        }
-      });
-      
-      onRejected?.();
-    } catch (error) {
-      console.error('Rejection failed:', error);
-    }
-    setLoading(false);
+  const handleDecision = (decision) => {
+    approvalMutation.mutate({ scalingPlan, decision, comments }, {
+      onSuccess: () => {
+        if (decision === 'approve') onApproved?.();
+        else onRejected?.();
+      }
+    });
   };
 
   return (
@@ -92,7 +39,7 @@ export default function BudgetApprovalGate({ scalingPlan, onApproved, onRejected
           <div className="p-4 bg-slate-50 rounded-lg">
             <p className="text-xs text-slate-600">{t({ en: 'Per Municipality', ar: 'لكل بلدية' })}</p>
             <p className="text-2xl font-bold text-slate-900">
-              {scalingPlan?.target_municipalities?.length > 0 
+              {scalingPlan?.target_municipalities?.length > 0
                 ? (scalingPlan.estimated_budget / scalingPlan.target_municipalities.length).toLocaleString()
                 : 'N/A'} SAR
             </p>
@@ -138,11 +85,11 @@ export default function BudgetApprovalGate({ scalingPlan, onApproved, onRejected
 
         {/* Actions */}
         <div className="flex gap-3 justify-end">
-          <Button variant="outline" onClick={handleReject} disabled={loading} className="gap-2">
+          <Button variant="outline" onClick={() => handleDecision('reject')} disabled={approvalMutation.isPending} className="gap-2">
             <XCircle className="h-4 w-4" />
             {t({ en: 'Request Revision', ar: 'طلب مراجعة' })}
           </Button>
-          <Button onClick={handleApprove} disabled={loading} className="gap-2 bg-green-600 hover:bg-green-700">
+          <Button onClick={() => handleDecision('approve')} disabled={approvalMutation.isPending} className="gap-2 bg-green-600 hover:bg-green-700">
             <CheckCircle2 className="h-4 w-4" />
             {t({ en: 'Approve Budget', ar: 'الموافقة على الميزانية' })}
           </Button>

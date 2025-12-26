@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,35 +8,21 @@ import { useLanguage } from '../LanguageContext';
 import RequesterAI from '../approval/RequesterAI';
 import ReviewerAI from '../approval/ReviewerAI';
 import { toast } from 'sonner';
+import { useMunicipalities } from '@/hooks/useMunicipalities';
+import { useApprovalMutations } from '@/hooks/useApprovalRequest';
+import { usePolicyMutations } from '@/hooks/usePolicyMutations';
 
 export default function PolicyMinistryApprovalGate({ policy, approvalRequest, currentUser }) {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
   const [decisionComments, setDecisionComments] = useState('');
   const [scalingNotes, setScalingNotes] = useState(policy.scaling_potential_notes || '');
 
-  const { data: municipalities = [] } = useQuery({
-    queryKey: ['municipalities'],
-    queryFn: () => base44.entities.Municipality.list()
-  });
-
-  const updateApprovalMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.ApprovalRequest.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['approval-requests']);
-      toast.success(t({ en: 'Ministry decision recorded', ar: 'تم تسجيل قرار الوزارة' }));
-    }
-  });
-
-  const updatePolicyMutation = useMutation({
-    mutationFn: (data) => base44.entities.PolicyRecommendation.update(policy.id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['policy', policy.id]);
-    }
-  });
+  const { data: municipalities = [] } = useMunicipalities();
+  const { updatePolicy } = usePolicyMutations();
+  const { updateApproval } = useApprovalMutations();
 
   const handleMinistryDecision = async (decisionType) => {
-    await updateApprovalMutation.mutateAsync({
+    await updateApproval.mutateAsync({
       id: approvalRequest.id,
       data: {
         status: decisionType === 'approved' ? 'approved' : decisionType === 'rejected' ? 'rejected' : 'conditional',
@@ -49,10 +34,13 @@ export default function PolicyMinistryApprovalGate({ policy, approvalRequest, cu
     });
 
     if (decisionType === 'approved') {
-      await updatePolicyMutation.mutateAsync({
-        workflow_stage: 'ministry_approved',
-        status: 'approved',
-        approval_date: new Date().toISOString()
+      await updatePolicy.mutateAsync({
+        id: policy.id,
+        data: {
+          workflow_stage: 'ministry_approved',
+          status: 'approved',
+          approval_date: new Date().toISOString()
+        }
       });
     }
   };
@@ -123,8 +111,11 @@ export default function PolicyMinistryApprovalGate({ policy, approvalRequest, cu
                 />
               </div>
 
-              <Button 
-                onClick={() => updatePolicyMutation.mutate({ scaling_potential_notes: scalingNotes })}
+              <Button
+                onClick={() => updatePolicy.mutate({
+                  id: policy.id,
+                  data: { scaling_potential_notes: scalingNotes }
+                })}
                 className="w-full"
               >
                 <TrendingUp className="h-4 w-4 mr-2" />
@@ -171,9 +162,9 @@ export default function PolicyMinistryApprovalGate({ policy, approvalRequest, cu
                     {t({ en: '⚠️ This is the final approval gate', ar: '⚠️ هذه بوابة الموافقة النهائية' })}
                   </p>
                   <p className="text-xs text-slate-700">
-                    {t({ 
-                      en: 'Once approved, the policy will be marked as officially approved and ready for implementation nationwide.', 
-                      ar: 'بمجرد الموافقة، ستكون السياسة معتمدة رسميًا وجاهزة للتنفيذ على المستوى الوطني.' 
+                    {t({
+                      en: 'Once approved, the policy will be marked as officially approved and ready for implementation nationwide.',
+                      ar: 'بمجرد الموافقة، ستكون السياسة معتمدة رسميًا وجاهزة للتنفيذ على المستوى الوطني.'
                     })}
                   </p>
                 </div>

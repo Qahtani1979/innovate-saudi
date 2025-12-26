@@ -1,5 +1,4 @@
 
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -8,24 +7,16 @@ import { Shield, Activity, AlertCircle, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 
+import { useSandboxData } from '@/hooks/useSandboxData';
+import { usePilotsList } from '@/hooks/usePilots';
+
 export default function SandboxCapacityManager({ sandbox }) {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: applications = [] } = useQuery({
-    queryKey: ['sandbox-applications', sandbox.id],
-    queryFn: async () => {
-      const all = await base44.entities.SandboxApplication.list();
-      return all.filter(a => a.sandbox_id === sandbox.id);
-    }
-  });
+  const { applications = [] } = useSandboxData(sandbox.id);
+  const { data: allPilots = [] } = usePilotsList();
 
-  const { data: pilots = [] } = useQuery({
-    queryKey: ['sandbox-pilots', sandbox.id],
-    queryFn: async () => {
-      const all = await base44.entities.Pilot.list();
-      return all.filter(p => p.sandbox_zone?.includes(sandbox.name_en) || p.living_lab_id === sandbox.id);
-    }
-  });
+  const pilots = allPilots.filter(p => p.sandbox_zone?.includes(sandbox.name_en) || p.living_lab_id === sandbox.id);
 
   const activeApplications = applications.filter(a => a.status === 'active').length;
   const pendingApplications = applications.filter(a => a.status === 'submitted' || a.status === 'under_review').length;

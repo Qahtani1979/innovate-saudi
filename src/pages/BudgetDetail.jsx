@@ -1,5 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useBudget } from '@/hooks/useBudgets';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -14,19 +13,7 @@ function BudgetDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const budgetId = urlParams.get('id');
 
-  const { data: budget, isLoading } = useQuery({
-    queryKey: ['budget', budgetId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('budgets')
-        .select('*')
-        .eq('id', budgetId)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!budgetId
-  });
+  const { data: budget, isLoading } = useBudget(budgetId);
 
   if (isLoading || !budget) {
     return (

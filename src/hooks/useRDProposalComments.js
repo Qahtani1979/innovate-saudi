@@ -23,10 +23,14 @@ export function useAddRDProposalComment() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ rd_proposal_id, comment_text }) => {
+        mutationFn: async ({ rd_proposal_id, comment_text, section = 'general' }) => {
             const { data, error } = await supabase
                 .from('rd_proposal_comments')
-                .insert([{ rd_proposal_id, comment_text }])
+                .insert([{
+                    rd_proposal_id,
+                    comment_text,
+                    section
+                }])
                 .select()
                 .single();
 

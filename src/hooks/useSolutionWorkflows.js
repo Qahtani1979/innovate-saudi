@@ -208,3 +208,27 @@ export function useSaveMatches() {
         }
     });
 }
+
+/**
+ * Hook for Creating an R&D Project
+ */
+export function useCreateRDProject() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (data) => {
+            const { error } = await supabase
+                .from('rd_projects')
+                .insert(data);
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['rd-projects'] });
+            toast.success('R&D proposal created');
+        },
+        onError: (error) => {
+            console.error('Failed to create R&D proposal:', error);
+            toast.error(`Failed to create R&D proposal: ${error.message}`);
+        }
+    });
+}

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,11 +14,12 @@ import {
   buildIdeaToSolutionPrompt,
   IDEA_TO_SOLUTION_SCHEMA
 } from '@/lib/ai/prompts/citizen/ideaToSolution';
+import { useConvertIdeaToSolution } from '@/hooks/useCitizenIdeas';
 
 export default function IdeaToSolutionConverter({ idea, onClose }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
-  const { invokeAI, isLoading: enhancing, status, error, rateLimitInfo } = useAIWithFallback();
+  const { invokeAI, isLoading: enhancing, status, error: aiError, rateLimitInfo } = useAIWithFallback();
+  const { mutate: convertToSolution, isPending: isConverting } = useConvertIdeaToSolution();
 
   const [solutionData, setSolutionData] = useState({
     name_en: idea.title || '',
@@ -55,51 +55,15 @@ export default function IdeaToSolutionConverter({ idea, onClose }) {
     }
   };
 
-  const createSolutionMutation = useMutation({
-    mutationFn: async (data) => {
-      const { supabase } = await import('@/integrations/supabase/client');
-      
-      const solution = await base44.entities.Solution.create({
-        ...data,
-        code: `SOL-IDEA-${Date.now()}`,
-        is_verified: false
-      });
+  const handleConvert = () => {
+    if (!solutionData.name_en) return;
 
-      // Update idea
-      await base44.entities.CitizenIdea.update(idea.id, {
-        status: 'converted_to_solution',
-        converted_solution_id: solution.id
-      });
-
-      // Send solution submitted email notification via email-trigger-hub
-      try {
-        await supabase.functions.invoke('email-trigger-hub', {
-          body: {
-            trigger: 'solution.submitted',
-            recipient_email: idea.submitter_email,
-            entity_type: 'solution',
-            entity_id: solution.id,
-            variables: {
-              solutionName: data.name_en || data.name_ar,
-              solutionCode: solution.code,
-              dashboardUrl: window.location.origin + '/solutions/' + solution.id
-            },
-            language: language,
-            triggered_by: 'system'
-          }
-        });
-      } catch (emailError) {
-        console.error('Failed to send solution submitted email:', emailError);
+    convertToSolution({ idea, solutionData }, {
+      onSuccess: () => {
+        if (onClose) onClose();
       }
-
-      return solution;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['citizen-ideas']);
-      toast.success(t({ en: 'Solution created from idea!', ar: 'تم إنشاء حل من الفكرة!' }));
-      if (onClose) onClose();
-    }
-  });
+    });
+  };
 
   return (
     <Card className="max-w-4xl">
@@ -110,8 +74,8 @@ export default function IdeaToSolutionConverter({ idea, onClose }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
-        
+        <AIStatusIndicator status={status} error={aiError} rateLimitInfo={rateLimitInfo} />
+
         <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
           <p className="text-sm text-purple-900">
             <strong>{t({ en: 'Original Idea:', ar: 'الفكرة الأصلية:' })}</strong> {idea.title}
@@ -206,11 +170,11 @@ export default function IdeaToSolutionConverter({ idea, onClose }) {
             {t({ en: 'Cancel', ar: 'إلغاء' })}
           </Button>
           <Button
-            onClick={() => createSolutionMutation.mutate(solutionData)}
-            disabled={createSolutionMutation.isPending || !solutionData.name_en}
+            onClick={handleConvert}
+            disabled={isConverting || !solutionData.name_en}
             className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600"
           >
-            {createSolutionMutation.isPending ? (
+            {isConverting ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Lightbulb className="h-4 w-4 mr-2" />

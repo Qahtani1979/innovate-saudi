@@ -1,5 +1,4 @@
-﻿import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+﻿import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Building2, Network, Activity, Target, TrendingUp } from 'lucide-react';
@@ -14,9 +13,13 @@ import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility
 function MultiCityOrchestration() {
   const { language, isRTL, t } = useLanguage();
 
-  const { data: municipalities = [] } = useMunicipalitiesWithVisibility({ includeAll: true });
-  const { data: pilots = [] } = usePilotsWithVisibility({ includeAll: true });
-  const { data: challenges = [] } = useChallengesWithVisibility({ includeAll: true });
+  const { data: municipalitiesRaw = [] } = useMunicipalitiesWithVisibility({ includeAll: true });
+  const { data: pilotsRaw = [] } = usePilotsWithVisibility({ includeAll: true });
+  const { data: challengesRaw = [] } = useChallengesWithVisibility({ includeAll: true });
+
+  const municipalities = Array.isArray(municipalitiesRaw) ? municipalitiesRaw : (municipalitiesRaw?.data || []);
+  const pilots = Array.isArray(pilotsRaw) ? pilotsRaw : (pilotsRaw?.data || []);
+  const challenges = Array.isArray(challengesRaw) ? challengesRaw : (challengesRaw?.data || []);
 
   const multiCityPilots = pilots.filter(p => p.scaling_plan?.target_locations?.length > 1);
   const activeMunicipalities = municipalities.filter(m =>
@@ -45,7 +48,7 @@ function MultiCityOrchestration() {
         <Card className="bg-gradient-to-br from-blue-50 to-white">
           <CardContent className="pt-6 text-center">
             <Building2 className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-            <p className="text-3xl font-bold text-blue-600">{activeMunicipalities.length}</p>
+            <p className="text-3xl font-bold text-blue-600">{activeMunicipalities?.length || 0}</p>
             <p className="text-sm text-slate-600">{t({ en: 'Active Cities', ar: 'Ù…Ø¯Ù† Ù†Ø´Ø·Ø©' })}</p>
           </CardContent>
         </Card>

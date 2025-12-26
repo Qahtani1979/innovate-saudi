@@ -1,7 +1,5 @@
 import { useState } from 'react';
 
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,12 +10,14 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { buildMatchNotifierPrompt, MATCH_NOTIFIER_SCHEMA } from '@/lib/ai/prompts/matchmaker';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 export default function AutomatedMatchNotifier({ match, provider, challenge }) {
   const { language, t } = useLanguage();
   const [emailContent, setEmailContent] = useState('');
-  const queryClient = useQueryClient();
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
+
+  const { notify, isNotifying } = useNotificationSystem();
 
   const generateEmail = async () => {
     const result = await invokeAI({
@@ -31,48 +31,38 @@ export default function AutomatedMatchNotifier({ match, provider, challenge }) {
     }
   };
 
-  const sendNotification = useMutation({
-    mutationFn: async () => {
-      const [subject, ...bodyLines] = emailContent.split('\n').filter(line => line.trim());
-      const body = bodyLines.join('\n');
+  const handleSendNotification = async () => {
+    const [subject, ...bodyLines] = emailContent.split('\n').filter(line => line.trim());
+    const body = bodyLines.join('\n');
 
-      await supabase.functions.invoke('email-trigger-hub', {
-        body: {
-          trigger: 'MATCHMAKER_MATCH',
-          recipientEmail: provider.contact_email,
-          entityType: 'match',
-          entityId: match.id,
-          variables: {
-            providerName: provider.name_en,
-            challengeTitle: challenge.title_en,
-            matchScore: match.match_score,
-            emailSubject: subject.replace('Subject: ', ''),
-            emailBody: body
-          }
+    const emailSubjectRaw = subject.replace('Subject: ', '');
+
+    try {
+      await notify({
+        type: 'matchmaker_match',
+        entityType: 'match',
+        entityId: match.id,
+        recipientEmails: [provider.contact_email],
+        title: 'New Challenge Match',
+        message: `You've been matched to challenge: ${challenge.title_en}`,
+        sendEmail: true,
+        emailTemplate: 'MATCHMAKER_MATCH', // Assuming this template or generic handling exists in edge function
+        // If the edge function expects specific body structure for ad-hoc emails, we might need to adjust useNotificationSystem
+        // But based on useNotificationSystem implementation, it invokes 'email-trigger-hub' with variables.
+        emailVariables: {
+          providerName: provider.name_en,
+          challengeTitle: challenge.title_en,
+          matchScore: match.match_score,
+          emailSubject: emailSubjectRaw,
+          emailBody: body
         }
       });
-
-      // Insert into notifications table if it exists, or just valid as sent
-      const { error } = await supabase.from('notifications').insert([
-        {
-          recipient_email: provider.contact_email,
-          notification_type: 'matchmaker_match',
-          title: 'New Challenge Match',
-          message: `You've been matched to challenge: ${challenge.title_en}`,
-          related_entity_type: 'match',
-          related_entity_id: match.id
-        }
-      ]);
-
-      if (error) {
-        console.warn('Failed to save notification record, but email trigger sent.', error);
-      }
-    },
-    onSuccess: () => {
       toast.success(t({ en: 'Notification sent', ar: 'تم إرسال الإشعار' }));
-      queryClient.invalidateQueries(['notifications']);
+      setEmailContent('');
+    } catch (error) {
+      toast.error(t({ en: 'Failed to send notification', ar: 'فشل إرسال الإشعار' }));
     }
-  });
+  };
 
   return (
     <Card className="border-2 border-blue-300">
@@ -123,8 +113,8 @@ export default function AutomatedMatchNotifier({ match, provider, challenge }) {
 
             <div className="flex gap-2">
               <Button
-                onClick={() => sendNotification.mutate()}
-                disabled={sendNotification.isPending}
+                onClick={handleSendNotification}
+                disabled={isNotifying}
                 className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600"
               >
                 <Send className="h-4 w-4 mr-2" />

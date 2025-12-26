@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
@@ -8,26 +7,20 @@ import { BarChart3, TrendingUp, Award, Sparkles, Loader2, Target } from 'lucide-
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
 
 export default function AIProgramBenchmarking({ program }) {
   const { language, isRTL, t } = useLanguage();
   const { invokeAI, status, isLoading: analyzing, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [benchmarkData, setBenchmarkData] = useState(null);
 
-  // Fetch similar programs
-  const { data: allPrograms = [] } = useQuery({
-    queryKey: ['all-programs-benchmark'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('programs').select('*');
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // Fetch similar programs (limit 100 to find diverse set)
+  const { data: allPrograms = [] } = useProgramsWithVisibility({ limit: 100 });
 
-  const similarPrograms = allPrograms.filter(p => 
+  const similarPrograms = allPrograms.filter(p =>
     p.id !== program.id &&
-    (p.program_type === program.program_type || 
-     p.focus_areas?.some(f => program.focus_areas?.includes(f)))
+    (p.program_type === program.program_type ||
+      p.focus_areas?.some(f => program.focus_areas?.includes(f)))
   );
 
   const handleAnalyze = async () => {
@@ -124,7 +117,7 @@ Provide bilingual analysis:
         return 0;
       })
       .filter(v => v > 0);
-    
+
     if (values.length === 0) return 0;
     const below = values.filter(v => v < value).length;
     return Math.round((below / values.length) * 100);
@@ -134,8 +127,8 @@ Provide bilingual analysis:
     {
       metric: t({ en: 'Graduation', ar: 'التخرج' }),
       current: program.graduation_rate || 0,
-      average: similarPrograms.length > 0 
-        ? similarPrograms.reduce((sum, p) => sum + (p.graduation_rate || 0), 0) / similarPrograms.length 
+      average: similarPrograms.length > 0
+        ? similarPrograms.reduce((sum, p) => sum + (p.graduation_rate || 0), 0) / similarPrograms.length
         : 0,
       percentile: calculatePercentile(program.graduation_rate || 0, 'graduation_rate')
     },
@@ -165,7 +158,7 @@ Provide bilingual analysis:
             <BarChart3 className="h-5 w-5 text-blue-600" />
             {t({ en: 'Peer Benchmarking & Comparison', ar: 'المقارنة بالأقران' })}
           </CardTitle>
-          <Button 
+          <Button
             onClick={handleAnalyze}
             disabled={analyzing || similarPrograms.length === 0 || !isAvailable}
             className="bg-blue-600"
@@ -275,7 +268,7 @@ Provide bilingual analysis:
                   </div>
                   <div className="flex-1">
                     <div className="h-3 bg-blue-200 rounded-full overflow-hidden">
-                      <div 
+                      <div
                         className="h-full bg-blue-600 rounded-full transition-all"
                         style={{ width: `${benchmarkData.cost_analysis.percentile}%` }}
                       />

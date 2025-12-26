@@ -5,15 +5,12 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
-import { CheckCircle2, Circle, Network, Wrench, Zap, X } from 'lucide-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { CheckCircle2, Circle, Network, Wrench, Zap, X, Loader2 } from 'lucide-react';
+import { useLivingLabMutations } from '@/hooks/useLivingLab';
 
 export default function LivingLabInfrastructureWizard({ livingLab, onClose }) {
   const { t, isRTL } = useLanguage();
-  const queryClient = useQueryClient();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(1); // Keep step state if needed for future expansion
   const [data, setData] = useState({
     internet_connectivity: false,
     power_backup: false,
@@ -26,6 +23,8 @@ export default function LivingLabInfrastructureWizard({ livingLab, onClose }) {
     notes: ''
   });
 
+  const { updateLivingLab } = useLivingLabMutations(livingLab.id);
+
   const checklist = [
     { key: 'internet_connectivity', label: { en: 'High-speed internet connectivity', ar: 'اتصال إنترنت عالي السرعة' }, icon: Network },
     { key: 'power_backup', label: { en: 'Power backup systems', ar: 'أنظمة الطاقة الاحتياطية' }, icon: Zap },
@@ -37,30 +36,22 @@ export default function LivingLabInfrastructureWizard({ livingLab, onClose }) {
     { key: 'monitoring_systems', label: { en: 'Environmental monitoring', ar: 'المراقبة البيئية' }, icon: Network }
   ];
 
-  const updateMutation = useMutation({
-    mutationFn: async (updateData) => {
-      const { error } = await supabase.from('living_labs').update(updateData).eq('id', livingLab.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['living-lab']);
-      toast.success(t({ en: 'Infrastructure setup completed', ar: 'تم إكمال إعداد البنية التحتية' }));
-      onClose();
-    }
-  });
-
   const completedItems = checklist.filter(item => data[item.key]).length;
   const progress = (completedItems / checklist.length) * 100;
 
   const handleComplete = () => {
-    updateMutation.mutate({
+    updateLivingLab.mutate({
       infrastructure_status: progress === 100 ? 'ready' : 'partial',
       infrastructure_setup: data
+    }, {
+      onSuccess: () => {
+        onClose();
+      }
     });
   };
 
   return (
-    <Card className="w-full">
+    <Card className="w-full border-2 border-slate-100 shadow-lg">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
@@ -90,24 +81,21 @@ export default function LivingLabInfrastructureWizard({ livingLab, onClose }) {
           <h4 className="font-semibold text-sm">{t({ en: 'Infrastructure Checklist', ar: 'قائمة البنية التحتية' })}</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {checklist.map((item) => {
-              const Icon = item.icon;
               const checked = data[item.key];
               return (
                 <button
                   key={item.key}
                   onClick={() => setData({ ...data, [item.key]: !checked })}
-                  className={`p-4 rounded-lg border-2 transition-all text-left ${
-                    checked 
-                      ? 'bg-green-50 border-green-300' 
+                  className={`p-4 rounded-lg border-2 transition-all text-left ${checked
+                      ? 'bg-green-50 border-green-300'
                       : 'bg-white border-slate-200 hover:border-blue-300'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`h-6 w-6 rounded-full border-2 flex items-center justify-center ${
-                      checked 
-                        ? 'bg-green-600 border-green-600' 
+                    <div className={`h-6 w-6 rounded-full border-2 flex items-center justify-center transition-colors ${checked
+                        ? 'bg-green-600 border-green-600'
                         : 'bg-white border-slate-300'
-                    }`}>
+                      }`}>
                       {checked && <CheckCircle2 className="h-4 w-4 text-white" />}
                     </div>
                     <div className="flex-1">
@@ -140,13 +128,13 @@ export default function LivingLabInfrastructureWizard({ livingLab, onClose }) {
           <Button variant="outline" onClick={onClose}>
             {t({ en: 'Cancel', ar: 'إلغاء' })}
           </Button>
-          <Button 
+          <Button
             onClick={handleComplete}
-            disabled={updateMutation.isPending}
-            className="bg-gradient-to-r from-blue-600 to-teal-600"
+            disabled={updateLivingLab.isPending}
+            className="bg-gradient-to-r from-blue-600 to-teal-600 shadow-md hover:shadow-lg transition-all"
           >
-            {updateMutation.isPending ? (
-              <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+            {updateLivingLab.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <>
                 <CheckCircle2 className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />

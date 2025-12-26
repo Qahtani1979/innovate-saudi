@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMIIMutation } from '@/hooks/useMIIData';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
@@ -14,7 +13,6 @@ import { useMIIData } from '@/hooks/useMIIData';
  */
 export default function AutomatedMIICalculator({ municipalityId }) {
   const { language, t } = useLanguage();
-  const queryClient = useQueryClient();
   const [calculating, setCalculating] = useState(false);
   const [justCalculated, setJustCalculated] = useState(false);
 
@@ -28,18 +26,14 @@ export default function AutomatedMIICalculator({ municipalityId }) {
     hasData,
     isLoading
   } = useMIIData(municipalityId);
+  const { mutateAsync: calculateMIIAction, isPending: calculatingFromHook } = useMIIMutation();
 
   const calculateMII = async () => {
     setCalculating(true);
     setJustCalculated(false);
 
     try {
-      const { data, error } = await supabase.functions.invoke('calculate-mii', {
-        body: { municipality_id: municipalityId }
-      });
-
-      if (error) throw error;
-
+      const data = await calculateMIIAction(municipalityId);
       const result = data.results?.[0];
       if (result) {
         toast.success(t({
@@ -47,11 +41,6 @@ export default function AutomatedMIICalculator({ municipalityId }) {
           ar: `تم حساب المؤشر: ${result.overall_score} نقطة`
         }));
         setJustCalculated(true);
-
-        // Invalidate queries to refresh data
-        queryClient.invalidateQueries(['mii-latest-result', municipalityId]);
-        queryClient.invalidateQueries(['mii-history', municipalityId]);
-        queryClient.invalidateQueries(['municipality', municipalityId]);
       }
     } catch (error) {
       console.error('MII calculation failed:', error);
@@ -148,7 +137,7 @@ export default function AutomatedMIICalculator({ municipalityId }) {
                 </h4>
                 <ul className="space-y-1">
                   {strengths.map((s, i) => (
-                    <li key={i} className="text-sm text-green-700">✓ {s}</li>
+                    <li key={i} className="text-sm text-green-700">✓ {String(s)}</li>
                   ))}
                 </ul>
               </div>
@@ -162,7 +151,7 @@ export default function AutomatedMIICalculator({ municipalityId }) {
                 </h4>
                 <ul className="space-y-1">
                   {improvementAreas.map((area, i) => (
-                    <li key={i} className="text-sm text-slate-700">→ {area}</li>
+                    <li key={i} className="text-sm text-slate-700">→ {String(area)}</li>
                   ))}
                 </ul>
               </div>

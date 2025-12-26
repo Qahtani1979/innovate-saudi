@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useChallengesHubData } from '@/hooks/useChallengesHubData';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 import { usePermissions } from '@/components/permissions/usePermissions';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -141,34 +140,9 @@ function ChallengesHub() {
 
   // Enable realtime updates for challenge list (rt-1, live-1)
   const { isConnected: realtimeConnected } = useChallengeListRealtime();
-  // Fetch pending approvals
-  const { data: pendingApprovals = [] } = useQuery({
-    queryKey: ['pending-challenge-approvals'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('approval_requests')
-        .select('*')
-        .eq('entity_type', 'challenge')
-        .eq('approval_status', 'pending')
-        .limit(5);
-      if (error) throw error;
-      return data || [];
-    }
-  });
 
-  // Fetch recent proposals
-  const { data: recentProposals = [] } = useQuery({
-    queryKey: ['recent-challenge-proposals'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('challenge_proposals')
-        .select('*, challenges(title_en, code)')
-        .order('created_at', { ascending: false })
-        .limit(5);
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // Fetch pending approvals and recent proposals via hook
+  const { pendingApprovals, recentProposals } = useChallengesHubData();
 
   // Calculate metrics
   const metrics = useMemo(() => {
@@ -350,21 +324,20 @@ function ChallengesHub() {
               {workflowPhases.map((phase, idx) => (
                 <div key={phase.key} className="flex items-center flex-1 min-w-[140px]">
                   <div className="flex-1 text-center">
-                    <div className={`mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
-                      idx === 0 ? 'bg-blue-100 text-blue-600' :
+                    <div className={`mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-2 ${idx === 0 ? 'bg-blue-100 text-blue-600' :
                       idx === 1 ? 'bg-yellow-100 text-yellow-600' :
-                      idx === 2 ? 'bg-purple-100 text-purple-600' :
-                      'bg-green-100 text-green-600'
-                    }`}>
+                        idx === 2 ? 'bg-purple-100 text-purple-600' :
+                          'bg-green-100 text-green-600'
+                      }`}>
                       <phase.icon className="h-6 w-6" />
                     </div>
                     <p className="text-sm font-medium">{t(phase.label)}</p>
                     <p className="text-xs text-muted-foreground">{t(phase.description)}</p>
                     <Badge variant="outline" className="mt-1">
                       {idx === 0 ? metrics.byStatus.draft :
-                       idx === 1 ? metrics.pendingReview :
-                       idx === 2 ? metrics.active :
-                       metrics.byStatus.resolved}
+                        idx === 1 ? metrics.pendingReview :
+                          idx === 2 ? metrics.active :
+                            metrics.byStatus.resolved}
                     </Badge>
                   </div>
                   {idx < workflowPhases.length - 1 && (
@@ -493,14 +466,13 @@ function ChallengesHub() {
                         <span className="capitalize">{priority.replace(/_/g, ' ')}</span>
                         <span className="font-medium">{count}</span>
                       </div>
-                      <Progress 
-                        value={metrics.total > 0 ? (count / metrics.total) * 100 : 0} 
-                        className={`h-2 ${
-                          priority === 'tier_1' ? '[&>div]:bg-red-500' :
+                      <Progress
+                        value={metrics.total > 0 ? (count / metrics.total) * 100 : 0}
+                        className={`h-2 ${priority === 'tier_1' ? '[&>div]:bg-red-500' :
                           priority === 'tier_2' ? '[&>div]:bg-orange-500' :
-                          priority === 'tier_3' ? '[&>div]:bg-yellow-500' :
-                          '[&>div]:bg-green-500'
-                        }`}
+                            priority === 'tier_3' ? '[&>div]:bg-yellow-500' :
+                              '[&>div]:bg-green-500'
+                          }`}
                       />
                     </div>
                   ))}

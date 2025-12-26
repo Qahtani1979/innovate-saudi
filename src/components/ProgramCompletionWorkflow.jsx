@@ -38,7 +38,7 @@ export default function ProgramCompletionWorkflow({ program, onClose }) {
 
   const handleComplete = async () => {
     try {
-      await completeProgram({
+      await completeProgram.mutateAsync({
         programId: program.id,
         completionData,
         completionChecklist

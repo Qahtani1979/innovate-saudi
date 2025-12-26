@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ function TaxonomyBuilder() {
   const [newSubsector, setNewSubsector] = useState(null);
   const { invokeAI, status, isLoading: aiLoading, isAvailable, rateLimitInfo, error } = useAIWithFallback();
   const [showWizard, setShowWizard] = useState(false);
-  const queryClient = useQueryClient();
+
 
   // Data from Context
   const { sectors, subsectors, services, tags } = useTaxonomy();

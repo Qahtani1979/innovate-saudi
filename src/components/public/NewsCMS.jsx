@@ -6,11 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Newspaper, Plus } from 'lucide-react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAllNewsArticles } from '@/hooks/useNewsArticles';
 
 export default function NewsCMS() {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
   const [editing, setEditing] = useState(null);
   const [formData, setFormData] = useState({
     title_en: '',
@@ -21,17 +20,8 @@ export default function NewsCMS() {
     is_published: false
   });
 
-  // Note: NewsArticle entity would need to be created
-  const { data: articles = [] } = useQuery({
-    queryKey: ['news-articles'],
-    queryFn: async () => {
-      try {
-        return await base44.entities.NewsArticle?.list() || [];
-      } catch {
-        return [];
-      }
-    }
-  });
+  // Refactored to use custom hook
+  const { data: articles = [] } = useAllNewsArticles();
 
   return (
     <Card>
@@ -55,11 +45,11 @@ export default function NewsCMS() {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <Input placeholder="Title (EN)" value={formData.title_en} onChange={(e) => setFormData({...formData, title_en: e.target.value})} />
-          <Input placeholder="Title (AR)" value={formData.title_ar} onChange={(e) => setFormData({...formData, title_ar: e.target.value})} dir="rtl" />
+          <Input placeholder="Title (EN)" value={formData.title_en} onChange={(e) => setFormData({ ...formData, title_en: e.target.value })} />
+          <Input placeholder="Title (AR)" value={formData.title_ar} onChange={(e) => setFormData({ ...formData, title_ar: e.target.value })} dir="rtl" />
         </div>
 
-        <Textarea placeholder="Content (EN)" value={formData.content_en} onChange={(e) => setFormData({...formData, content_en: e.target.value})} rows={4} />
+        <Textarea placeholder="Content (EN)" value={formData.content_en} onChange={(e) => setFormData({ ...formData, content_en: e.target.value })} rows={4} />
 
         <Button className="w-full bg-blue-600">
           <Plus className="h-4 w-4 mr-2" />

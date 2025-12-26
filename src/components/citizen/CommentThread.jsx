@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,67 +7,33 @@ import { useLanguage } from '../LanguageContext';
 import { MessageSquare, Send, Flag, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+import { useComments, useCommentMutations } from '@/hooks/useComments';
 
 export default function CommentThread({ ideaId, entityType = 'citizen_idea', entityId }) {
   const { language, isRTL, t } = useLanguage();
   const { user } = useAuth();
   const [newComment, setNewComment] = useState('');
   const [commenterName, setCommenterName] = useState('');
-  const queryClient = useQueryClient();
-  
+
   const actualEntityId = entityId || ideaId;
 
-  const { data: comments = [] } = useQuery({
-    queryKey: ['comments', entityType, actualEntityId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('comments')
-        .select('*')
-        .eq('entity_type', entityType)
-        .eq('entity_id', actualEntityId)
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: true });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!actualEntityId
-  });
-
-  const addCommentMutation = useMutation({
-    mutationFn: async (data) => {
-      const { error } = await supabase.from('comments').insert(data);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['comments', entityType, actualEntityId]);
-      setNewComment('');
-      toast.success(t({ en: 'Comment posted', ar: 'تم نشر التعليق' }));
-    }
-  });
-
-  const flagCommentMutation = useMutation({
-    mutationFn: async (commentId) => {
-      const { error } = await supabase
-        .from('comments')
-        .update({ is_internal: true })
-        .eq('id', commentId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['comments', entityType, actualEntityId]);
-      toast.success(t({ en: 'Comment flagged for review', ar: 'تم الإبلاغ عن التعليق' }));
-    }
-  });
+  const { data: comments = [] } = useComments(entityType, actualEntityId);
+  const { addComment: addCommentMutation, flagComment: flagCommentMutation } = useCommentMutations(entityType, actualEntityId);
 
   const handleSubmit = () => {
     if (!newComment.trim()) return;
-    
+
     addCommentMutation.mutate({
       entity_type: entityType,
       entity_id: actualEntityId,
       comment_text: newComment,
       user_name: commenterName || user?.email?.split('@')[0] || 'Anonymous',
       user_email: user?.email || 'anonymous@guest.com'
+    }, {
+      onSuccess: () => {
+        setNewComment('');
+        toast.success(t({ en: 'Comment posted', ar: 'تم نشر التعليق' }));
+      }
     });
   };
 
@@ -102,7 +66,7 @@ export default function CommentThread({ ideaId, entityType = 'citizen_idea', ent
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => flagCommentMutation.mutate(comment.id)}
+                  onClick={() => flagCommentMutation.mutate({ id: comment.id })}
                   className="text-slate-400 hover:text-red-600"
                 >
                   <Flag className="h-4 w-4" />
@@ -126,7 +90,7 @@ export default function CommentThread({ ideaId, entityType = 'citizen_idea', ent
             onChange={(e) => setNewComment(e.target.value)}
             rows={3}
           />
-          <Button 
+          <Button
             onClick={handleSubmit}
             disabled={!newComment.trim() || addCommentMutation.isPending}
             className="bg-purple-600"

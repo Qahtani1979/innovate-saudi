@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,20 +10,18 @@ import { Send, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { useChallengeProposalMutations } from '@/hooks/useChallengeProposalMutations';
+import { useSolutions } from '@/hooks/useSolutions';
 
 export default function ProposalSubmissionForm({ challenge, onSuccess, onCancel }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
   const { triggerEmail } = useEmailTrigger();
 
-  const { data: solutions = [] } = useQuery({
-    queryKey: ['my-solutions', user?.email],
-    queryFn: async () => {
-      const { data } = await supabase.from('solutions').select('*').eq('is_deleted', false).eq('created_by', user?.email);
-      return data || [];
-    },
-    enabled: !!user
+  const { createProposal } = useChallengeProposalMutations();
+  const { solutions } = useSolutions({
+    publishedOnly: false,
+    limit: 100
   });
 
   const [formData, setFormData] = useState({
@@ -40,37 +36,31 @@ export default function ProposalSubmissionForm({ challenge, onSuccess, onCancel 
     success_metrics: [{ metric: '', target: '' }]
   });
 
-  const submitMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: proposal, error } = await supabase.from('challenge_proposals').insert({
-        challenge_id: challenge.id,
-        proposer_email: user.email,
-        ...data,
-        submission_date: new Date().toISOString(),
-        status: 'submitted'
-      }).select().single();
-      if (error) throw error;
-      return proposal;
-    },
-    onSuccess: async (proposal) => {
-      queryClient.invalidateQueries(['proposals']);
-      
-      // Trigger email notification for proposal submission
-      await triggerEmail('challenge.proposal_received', {
-        entityType: 'challenge_proposal',
-        entityId: proposal.id,
-        variables: {
-          proposal_title: formData.proposal_title,
-          challenge_title: challenge.title_en,
-          challenge_id: challenge.id,
-          proposer_email: user.email
-        }
-      }).catch(err => console.error('Email trigger failed:', err));
-      
-      toast.success(t({ en: 'Proposal submitted successfully!', ar: 'تم إرسال المقترح بنجاح!' }));
-      if (onSuccess) onSuccess();
-    }
-  });
+  const handleSubmit = (data) => {
+    createProposal.mutate({
+      challenge_id: challenge.id,
+      proposer_email: user.email,
+      ...data,
+      submission_date: new Date().toISOString(),
+      status: 'submitted'
+    }, {
+      onSuccess: async (proposal) => {
+        // Trigger email notification for proposal submission
+        await triggerEmail('challenge.proposal_received', {
+          entityType: 'challenge_proposal',
+          entityId: proposal.id,
+          variables: {
+            proposal_title: formData.proposal_title,
+            challenge_title: challenge.title_en,
+            challenge_id: challenge.id,
+            proposer_email: user.email
+          }
+        }).catch(err => console.error('Email trigger failed:', err));
+
+        if (onSuccess) onSuccess();
+      }
+    });
+  };
 
   return (
     <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
