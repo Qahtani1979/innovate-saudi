@@ -15,6 +15,24 @@ export function useOrganizations() {
     });
 }
 
+export const useOrganizationsList = useOrganizations;
+
+export function useOrganizationLeaderboard() {
+    return useQuery({
+        queryKey: ['org-leaderboard'],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('organizations')
+                .select('*')
+                .order('reputation_score', { ascending: false });
+            if (error) throw error;
+            return data || [];
+        }
+    });
+}
+
+
+
 export function useOrganizationByOwner(email) {
     return useQuery({
         queryKey: ['organization', 'owner', email],

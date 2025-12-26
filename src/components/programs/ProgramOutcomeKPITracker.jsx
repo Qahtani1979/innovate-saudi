@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 
 export default function ProgramOutcomeKPITracker({ program }) {
   const { language, isRTL, t } = useLanguage();
-  const { language, isRTL, t } = useLanguage();
+  const [kpiContributions, setKpiContributions] = useState({});
   const { data: strategicPlans = [] } = useStrategiesWithVisibility();
 
   const { kpis: strategicKPIs, isLoading: isLoadingKPIs, recordContribution, isRecording } = useStrategicKPIs({

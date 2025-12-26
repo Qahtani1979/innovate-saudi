@@ -10,9 +10,7 @@ import { useMunicipalities } from '@/hooks/useMunicipalities';
 
 export default function ScalingExecutionDashboard({ scalingPlanId }) {
   const { t, isRTL } = useLanguage();
-  const [plan, setPlan] = useState(null);
   const [deployments, setDeployments] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   /* 
    * Refactored to use Gold Standard Hooks
@@ -32,7 +30,7 @@ export default function ScalingExecutionDashboard({ scalingPlanId }) {
         municipality_name: d.municipality?.name_en,
         municipality_name_ar: d.municipality?.name_ar
       })));
-      setLoading(false);
+
     } else if (!isLoadingMunicipalities && plan?.target_municipalities?.length > 0) {
       // Fallback to mock/generated data based on target_municipalities
       const deploys = plan.target_municipalities.map(id => {
@@ -49,14 +47,14 @@ export default function ScalingExecutionDashboard({ scalingPlanId }) {
         };
       });
       setDeployments(deploys);
-      setLoading(false);
+
     } else if (!isLoadingPlan && !plan?.target_municipalities?.length) {
       setDeployments([]);
-      setLoading(false);
+
     }
   }, [plan, realDeployments, targetMunicipalities, isLoadingPlan, isLoadingDeployments, isLoadingMunicipalities]);
 
-  if (loading) {
+  if (isLoadingPlan || isLoadingDeployments) {
     return <div className="text-center py-8">{t({ en: 'Loading...', ar: 'جاري التحميل...' })}</div>;
   }
 

@@ -1,3 +1,4 @@
+import { useMutation } from '@tanstack/react-query';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -26,7 +27,7 @@ export function usePolicyMutations() {
             return data;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(['policies']);
+            queryClient.invalidateQueries({ queryKey: ['policies'] });
             toast.success(t({ en: 'Policy created successfully', ar: 'تم إنشاء السياسة بنجاح' }));
         }
     });
@@ -45,8 +46,8 @@ export function usePolicyMutations() {
             return data;
         },
         onSuccess: (data) => {
-            queryClient.invalidateQueries(['policies']);
-            queryClient.invalidateQueries(['policy', data.id]);
+            queryClient.invalidateQueries({ queryKey: ['policies'] });
+            queryClient.invalidateQueries({ queryKey: ['policy', data.id] });
             toast.success(t({ en: 'Policy updated successfully', ar: 'تم تحديث السياسة بنجاح' }));
         }
     });
@@ -76,7 +77,7 @@ export function usePolicyMutations() {
             return data;
         },
         onSuccess: (_, variables) => {
-            queryClient.invalidateQueries(['policy-documents', variables.policyId]);
+            queryClient.invalidateQueries({ queryKey: ['policy-documents', variables.policyId] });
             toast.success(t({ en: 'Attachment uploaded', ar: 'تم رفع المرفق' }));
         }
     });
@@ -86,6 +87,17 @@ export function usePolicyMutations() {
         updatePolicy,
         uploadAttachment,
         isPending: createPolicy.isPending || updatePolicy.isPending || uploadAttachment.isPending
+    };
+}
+
+/**
+ * Hook for invalidating policy queries
+ */
+export function usePolicyInvalidator() {
+    const queryClient = useAppQueryClient();
+    return () => {
+        queryClient.invalidateQueries({ queryKey: ['policies'] });
+        queryClient.invalidateQueries({ queryKey: ['policy'] });
     };
 }
 

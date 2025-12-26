@@ -122,8 +122,6 @@ const StrategyOwnershipAssigner = ({ strategicPlanId, strategicPlan, objectives 
   };
 
   const [isSuggestingAI, setIsSuggestingAI] = useState(false);
-  const { generateOwnership } = useStrategyAIGeneration();
-
   const suggestWithAI = async () => {
     setIsSuggestingAI(true);
     try {
@@ -470,7 +468,7 @@ const StrategyOwnershipAssigner = ({ strategicPlanId, strategicPlan, objectives 
                 <thead>
                   <tr className="border-b">
                     <th className="text-left p-2 font-semibold">{t({ en: 'Objective', ar: 'الهدف' })}</th>
-                    {SAMPLE_USERS.map(user => (
+                    {availableUsers.map(user => (
                       <th key={user.email} className="p-2 text-center">
                         <div className="font-semibold">{user.name.split(' ')[0]}</div>
                         <div className="text-xs text-slate-500">{user.role}</div>
@@ -482,7 +480,7 @@ const StrategyOwnershipAssigner = ({ strategicPlanId, strategicPlan, objectives 
                   {assignments.map((assignment, index) => (
                     <tr key={assignment.objective_id} className="border-b hover:bg-slate-50">
                       <td className="p-2 font-medium">{assignment.objective_title}</td>
-                      {SAMPLE_USERS.map(user => {
+                      {availableUsers.map(user => {
                         let role = '';
                         let color = '';
                         if (assignment.responsible === user.email) { role = 'R'; color = 'bg-blue-500'; }

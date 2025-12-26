@@ -1,4 +1,4 @@
-import { usePermissions } from './usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Lock } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';

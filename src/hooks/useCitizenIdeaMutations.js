@@ -1,3 +1,4 @@
+import { useMutation } from '@tanstack/react-query';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -326,5 +327,51 @@ export function useCitizenIdeaMutations() {
         semanticSearch,
         isPending: submitIdea.isPending || updateIdea.isPending || bulkUpdateIdeas.isPending || mergeIdeas.isPending || voteOnIdea.isPending
     };
+}
+
+/**
+ * Hook for generic idea conversion (e.g., to challenges)
+ */
+export function useIdeaConversion() {
+    const queryClient = useAppQueryClient();
+    const { t } = useLanguage();
+
+    return useMutation({
+        mutationFn: async ({ ideaId, targetTable, targetData, statusUpdate }) => {
+            // 1. Insert into target table
+            const { data: targetRecord, error: targetError } = await supabase
+                .from(targetTable)
+                .insert(targetData)
+                .select()
+                .single();
+
+            if (targetError) throw targetError;
+
+            // 2. Update status of source idea
+            const updateField = targetTable === 'challenges' ? 'converted_challenge_id' :
+                targetTable === 'solutions' ? 'converted_solution_id' :
+                    `converted_${targetTable.slice(0, -1)}_id`;
+
+            const { error: ideaError } = await supabase
+                .from('citizen_ideas')
+                .update({
+                    status: statusUpdate,
+                    [updateField]: targetRecord.id
+                })
+                .eq('id', ideaId);
+
+            if (ideaError) throw ideaError;
+
+            return targetRecord;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['citizen-ideas'] });
+            toast.success(t({ en: 'Successfully converted idea!', ar: 'تم تحويل الفكرة بنجاح!' }));
+        },
+        onError: (error) => {
+            console.error('Conversion error:', error);
+            toast.error(t({ en: 'Failed to convert idea', ar: 'فشل تحويل الفكرة' }));
+        }
+    });
 }
 

@@ -61,6 +61,24 @@ export function usePublicMunicipalities() {
 }
 
 /**
+ * Hook to fetch sectors for public view
+ */
+export function usePublicSectors() {
+    return useQuery({
+        queryKey: ['public-sectors'],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('sectors')
+                .select('*')
+                .order('name_en');
+            if (error) throw error;
+            return data || [];
+        }
+    });
+}
+
+
+/**
  * Hook to fetch public pilots for map
  */
 export function usePublicPilots() {

@@ -4,7 +4,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Lightbulb, TestTube, TrendingUp, MapPin, Target, Zap, Plus, FileText, Clock, Megaphone, Users } from 'lucide-react';
+import { AlertCircle, Lightbulb, TestTube, TrendingUp, MapPin, Target, Zap, Plus, FileText, Clock, Megaphone, Users, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { useLanguage } from '../components/LanguageContext';
@@ -25,7 +25,7 @@ import PersonaDashboardWidget from '../components/PersonaDashboardWidget';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import RoleRequestStatusBanner from '../components/profile/RoleRequestStatusBanner';
 import { usePersonaRouting } from '@/hooks/usePersonaRouting';
-import { useLocations } from '@/hooks/useLocations';
+import { useMunicipalities } from '@/hooks/useLocations';
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
@@ -61,13 +61,13 @@ function Home() {
   const { data: allSolutions = [] } = useSolutionsWithVisibility();
   const solutions = allSolutions.filter(s => s.is_published).slice(0, 10);
 
-  const { data: municipalities = [] } = useLocations();
+  const { data: municipalities = [] } = useMunicipalities();
 
   const { data: allPrograms = [] } = useProgramsWithVisibility();
   const programs = allPrograms.filter(p => p.is_published).slice(0, 10);
 
 
-  const { data: userProfile } = useUserProfiles(user?.email);
+  const { data: userProfile } = useUserProfile(user?.email);
 
   const { data: allExpertAssignments = [] } = useExpertAssignments(user?.email);
   const myExpertAssignments = allExpertAssignments.filter(a => a.status !== 'completed');

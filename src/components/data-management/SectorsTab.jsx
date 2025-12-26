@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useState } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -45,6 +44,10 @@ import { useSectorManagement } from '@/hooks/useSectorManagement';
 
 export function SectorsTab() {
   const { t, language } = useLanguage();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogType, setDialogType] = useState('sector'); // 'sector', 'subsector', 'service'
+  const [editingItem, setEditingItem] = useState(null);
+  const [formData, setFormData] = useState({});
 
   const {
     sectors,

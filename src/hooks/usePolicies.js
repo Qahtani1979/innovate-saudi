@@ -146,3 +146,5 @@ export function usePolicySemanticSearch() {
         }
     });
 }
+
+export const usePolicies = usePoliciesList;

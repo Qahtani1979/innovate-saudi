@@ -46,10 +46,10 @@ export default function EventAttendeeList({ eventId, canManage = false }) {
   const filteredRegistrations = (registrations || []).filter(reg => {
     if (!searchTerm) return true;
     const search = searchTerm.toLowerCase();
-    {/* @ts-ignore */ }
+
     return reg.user_profiles?.full_name?.toLowerCase().includes(search) ||
-      {/* @ts-ignore */ }
-    reg.attendee_email?.toLowerCase().includes(search);
+
+      reg.attendee_email?.toLowerCase().includes(search);
   });
 
   const stats = {
@@ -151,28 +151,28 @@ export default function EventAttendeeList({ eventId, canManage = false }) {
                 <div key={reg.id} className="p-3 flex items-center justify-between hover:bg-muted/5 transition-colors">
                   <div className="flex items-center space-x-3 rtl:space-x-reverse">
                     <Avatar className="h-8 w-8 border">
-                      {/* @ts-ignore */}
+
                       <AvatarImage src={reg.user_profiles?.avatar_url} />
                       <AvatarFallback className="text-[10px]">
-                        {/* @ts-ignore */}
+
                         {reg.user_profiles?.full_name?.split(' ').map(n => n[0]).join('') ||
-                          {/* @ts-ignore */ }
-                         reg.attendee_email?.[0].toUpperCase()}
+
+                          reg.attendee_email?.[0].toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div className="grid gap-0.5">
                       <div className="flex items-center space-x-2 rtl:space-x-reverse">
                         <span className="font-medium text-xs">
-                          {/* @ts-ignore */}
+
                           {reg.user_profiles?.full_name || reg.attendee_email}
                         </span>
-                        {/* @ts-ignore */}
+
                         {reg.registration_type === 'vip' && (
                           <Badge variant="warning" className="text-[8px] h-3 px-1 py-0 border-none">VIP</Badge>
                         )}
                       </div>
                       <span className="text-[10px] text-muted-foreground truncate max-w-[120px]">
-                        {/* @ts-ignore */}
+
                         {reg.user_profiles?.email || reg.attendee_email}
                       </span>
                     </div>
@@ -201,7 +201,7 @@ export default function EventAttendeeList({ eventId, canManage = false }) {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
                             onClick={() => {
-                              {/* @ts-ignore */ }
+
                               updateStatus({
                                 registrationId: reg.id,
                                 status: 'confirmed'
@@ -213,7 +213,7 @@ export default function EventAttendeeList({ eventId, canManage = false }) {
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => {
-                              {/* @ts-ignore */ }
+
                               updateStatus({
                                 registrationId: reg.id,
                                 status: 'attended'
@@ -225,7 +225,7 @@ export default function EventAttendeeList({ eventId, canManage = false }) {
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => {
-                              {/* @ts-ignore */ }
+
                               updateStatus({
                                 registrationId: reg.id,
                                 status: 'no_show'

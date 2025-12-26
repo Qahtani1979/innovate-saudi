@@ -11,7 +11,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useRegions } from '@/hooks/useRegions';
-import { useLocations } from '@/hooks/useLocations';
+import { useMunicipalities } from '@/hooks/useLocations';
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
@@ -22,7 +22,7 @@ function RegionalDashboard() {
   const [selectedRegion, setSelectedRegion] = useState(null);
 
   const { data: regions = [] } = useRegions();
-  const { data: municipalities = [] } = useLocations();
+  const { data: municipalities = [] } = useMunicipalities();
   const { data: challenges = [] } = useChallengesWithVisibility();
   const { data: pilots = [] } = usePilotsWithVisibility();
   const { data: solutions = [] } = useSolutionsWithVisibility();

@@ -109,7 +109,7 @@ export default function StrategyToProgramGenerator({ strategicPlanId, onProgramC
                 <SelectItem key={plan.id} value={plan.id}>
                   <div className="flex items-center gap-2">
                     <Target className="h-4 w-4 text-indigo-600" />
-                    {language === 'ar' && plan?.name_ar ? plan?.name_ar : plan?.name_en || (plan as any)?.title_en}
+                    {language === 'ar' && plan?.name_ar ? plan?.name_ar : plan?.name_en || plan?.title_en}
                   </div>
                 </SelectItem>
               ))}
@@ -126,9 +126,9 @@ export default function StrategyToProgramGenerator({ strategicPlanId, onProgramC
             <p className="text-sm text-slate-600">
               {language === 'ar' && selectedPlan?.description_ar ? selectedPlan?.description_ar : selectedPlan?.description_en || selectedPlan?.vision_en}
             </p>
-            {((selectedPlan as any)?.objectives || (selectedPlan as any)?.strategic_objectives)?.length > 0 && (
+            {(selectedPlan?.objectives || selectedPlan?.strategic_objectives)?.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
-                {((selectedPlan as any).objectives || (selectedPlan as any).strategic_objectives || []).slice(0, 3).map((obj, i) => (
+                {(selectedPlan.objectives || selectedPlan.strategic_objectives || []).slice(0, 3).map((obj, i) => (
                   <Badge key={i} variant="outline" className="text-xs">
                     {typeof obj === 'object' ? obj?.name_en || obj?.title : obj}
                   </Badge>

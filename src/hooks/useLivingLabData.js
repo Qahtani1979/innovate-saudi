@@ -38,3 +38,18 @@ export function useLivingLabData(livingLabId) {
         }
     };
 }
+export { useLivingLabBookings } from './useLivingLabBookings';
+
+export function usePilotsForLabs() {
+    return useQuery({
+        queryKey: ['pilots-for-labs'],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('pilots')
+                .select('*')
+                .not('living_lab_id', 'is', null);
+            if (error) throw error;
+            return data || [];
+        }
+    });
+}

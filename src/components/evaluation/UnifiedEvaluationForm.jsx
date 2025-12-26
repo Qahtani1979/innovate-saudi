@@ -44,8 +44,6 @@ export default function UnifiedEvaluationForm({
   const [improvements, setImprovements] = useState(['', '', '']);
   const [conditions, setConditions] = useState(['']);
 
-  const { createEvaluation } = useEvaluationMutations(); // Keep for access checking? No, new hook handles it.
-
   const submitEvaluationMutation = useSubmitEvaluation({
     entityType,
     entityId,

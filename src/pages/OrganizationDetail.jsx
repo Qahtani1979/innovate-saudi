@@ -27,7 +27,7 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowApprovalTab';
 import OrganizationWorkflowTab from '../components/organizations/OrganizationWorkflowTab';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
-import { useOrganization, useOrganizationSolutions, useOrganizationPilots } from '@/hooks/useOrganizations';
+import { useOrganization, useOrganizationSolutions, useOrganizationPilots } from '@/hooks/useOrganization';
 
 function OrganizationDetail() {
   const urlParams = new URLSearchParams(window.location.search);

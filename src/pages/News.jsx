@@ -13,7 +13,7 @@ import {
   CitizenPageHeader,
   CitizenEmptyState
 } from '@/components/citizen/CitizenPageLayout';
-import { usePublishedNews, useFeaturedNews } from '@/hooks/useNewsArticles';
+
 import NewsArticleCard from '@/components/news/NewsArticleCard';
 import NewsArticleDetail from '@/components/news/NewsArticleDetail';
 import { format } from 'date-fns';

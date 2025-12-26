@@ -1,3 +1,4 @@
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -66,8 +67,8 @@ export function useLivingLabMutations(labId) {
             if (error) throw error;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(['living-lab', labId]);
-            queryClient.invalidateQueries(['living-labs-with-visibility']);
+            queryClient.invalidateQueries({ queryKey: ['living-lab', labId] });
+            queryClient.invalidateQueries({ queryKey: ['living-labs-with-visibility'] });
             toast.success(t({ en: 'Living lab updated', ar: 'تم تحديث المختبر' }));
         },
         onError: (error) => {
@@ -92,7 +93,7 @@ export function useLivingLabMutations(labId) {
             if (error) throw error;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(['living-lab', labId]);
+            queryClient.invalidateQueries({ queryKey: ['living-lab', labId] });
             toast.success(t({ en: 'Milestones updated', ar: 'تم تحديث المعالم' }));
         }
     });
@@ -126,8 +127,8 @@ export function useLivingLabMutations(labId) {
             });
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(['living-lab', labId]);
-            queryClient.invalidateQueries(['living-labs-with-visibility']);
+            queryClient.invalidateQueries({ queryKey: ['living-lab', labId] });
+            queryClient.invalidateQueries({ queryKey: ['living-labs-with-visibility'] });
             toast.success(t({ en: 'Living Lab launched successfully', ar: 'تم إطلاق المختبر بنجاح' }));
         }
     });
@@ -139,3 +140,40 @@ export function useLivingLabMutations(labId) {
     };
 }
 
+
+/**
+ * Hook for fetching sandboxes linked to a living lab
+ */
+export function useLivingLabSandboxes(labId) {
+    return useQuery({
+        queryKey: ['living-lab-sandboxes', labId],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('sandboxes')
+                .select('*')
+                .eq('living_lab_id', labId);
+            if (error) throw error;
+            return data || [];
+        },
+        enabled: !!labId
+    });
+}
+
+/**
+ * Hook for fetching expert evaluations for a living lab
+ */
+export function useLivingLabEvaluations(labId) {
+    return useQuery({
+        queryKey: ['living-lab-evaluations', labId],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('expert_evaluations')
+                .select('*')
+                .eq('entity_type', 'living_lab')
+                .eq('entity_id', labId);
+            if (error) throw error;
+            return data || [];
+        },
+        enabled: !!labId
+    });
+}

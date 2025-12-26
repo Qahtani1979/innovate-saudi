@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Award, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
-import { useExpertEvaluation, useExpertEvaluationMutations } from '@/hooks/useExpertEvaluation';
+import { useExpertEvaluation, useExpertEvaluationMutations } from '@/hooks/useExpertEvaluations';
 
 export default function ProgramExpertEvaluation({ program, approvalRequest }) {
   const { t, language } = useLanguage();

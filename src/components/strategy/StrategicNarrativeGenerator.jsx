@@ -4,7 +4,7 @@ import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
+
 import { useLanguage } from '../LanguageContext';
 import { FileText, Sparkles, Loader2, Download } from 'lucide-react';
 import { toast } from 'sonner';

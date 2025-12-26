@@ -64,7 +64,7 @@ export default function StrategyReprioritizer({ strategicPlanId, strategicPlan, 
   }, [dbObjectives, objectives, language]);
 
   // Use custom mutation hook
-  const updatePrioritiesMutation = useUpdateObjectivePriorities();
+  const saveMutation = useUpdateObjectivePriorities();
 
   const handleSave = () => {
     const updates = items.map((item, index) => ({
@@ -72,7 +72,7 @@ export default function StrategyReprioritizer({ strategicPlanId, strategicPlan, 
       display_order: index + 1
     }));
 
-    updatePrioritiesMutation.mutate({ updates, planId: activePlanId }, {
+    saveMutation.mutate({ updates, planId: activePlanId }, {
       onSuccess: () => {
         setHasChanges(false);
         onSave?.(items);
@@ -99,10 +99,7 @@ export default function StrategyReprioritizer({ strategicPlanId, strategicPlan, 
     setAiSuggestion(null);
   };
 
-  const handleSave = () => {
-    saveMutation.mutate(items);
-    onSave?.(items);
-  };
+
 
   const handleAIReprioritize = async () => {
     if (items.length === 0) {

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useCitizenIdeas, useSubmitEvaluation } from '@/hooks/useCitizenIdeas';
+import { useCitizenIdeas } from '@/hooks/useCitizenIdeas';
+import { useSubmitEvaluation } from '@/hooks/useEvaluations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

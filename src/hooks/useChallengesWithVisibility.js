@@ -178,3 +178,6 @@ export function useChallenge(challengeId) {
     staleTime: 1000 * 60 * 5
   });
 }
+
+export default useChallengesWithVisibility;
+

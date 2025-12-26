@@ -6,7 +6,9 @@ import {
   useProgramExperts,
   useMyProgramApplications,
   useMyProgramEvents,
-  useApplicationsForPrograms
+  useApplicationsForPrograms,
+  useSubmitProgramApplication,
+  useSubmitInnovationProposal
 } from './useProgramDetails';
 import { useProgramMutations } from './useProgramMutations';
 
@@ -63,7 +65,9 @@ export {
   useProgramExperts,
   useMyProgramApplications,
   useMyProgramEvents,
-  useApplicationsForPrograms
+  useApplicationsForPrograms,
+  useSubmitProgramApplication,
+  useSubmitInnovationProposal
 };
 
 // These were specifically in usePrograms.js, keeping them here if not moved yet

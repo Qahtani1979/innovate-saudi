@@ -1,3 +1,4 @@
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -78,14 +79,12 @@ export function useLivingLabBookingMutations(labId) {
 
             await supabase.from('notifications').insert({
                 title: `New Resource Booking Request`,
-                body: `${data.requester_name} requested ${data.resource_name}`,
-                notification_type: 'approval',
-                priority: 'medium',
-                link_url: labId ? `/LivingLabDetail?id=${labId}` : '/LivingLabs', // Adjust link
+                message: `${data.requester_name} requested ${data.resource_name}`,
+                type: 'approval',
+                severity: 'medium',
+                link: labId ? `/LivingLabDetail?id=${labId}` : '/LivingLabs',
                 entity_type: 'LivingLabResourceBooking',
-                entity_id: booking.id,
-                action_required: true,
-                // user_id: ? Need to notify admin.
+                entity_id: booking.id
             });
 
             return booking;
@@ -118,10 +117,10 @@ export function useLivingLabBookingMutations(labId) {
             // Notify requester
             await supabase.from('notifications').insert({
                 title: status === 'approved' ? 'Resource Booking Approved' : 'Resource Booking Rejected',
-                body: `Your booking request for ${resource_name} has been ${status}.`,
-                notification_type: 'alert',
-                priority: status === 'approved' ? 'medium' : 'high',
-                link_url: lab_id ? `/LivingLabDetail?id=${lab_id}` : '#',
+                message: `Your booking request for ${resource_name} has been ${status}.`,
+                type: 'alert',
+                severity: status === 'approved' ? 'medium' : 'high',
+                link: lab_id ? `/LivingLabDetail?id=${lab_id}` : '#',
                 entity_type: 'LivingLabResourceBooking',
                 entity_id: id
             });

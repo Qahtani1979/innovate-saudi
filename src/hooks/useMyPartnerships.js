@@ -3,28 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUserProfile } from '@/hooks/useUserProfile'; // Consolidated user profile hook
 import { differenceInDays } from 'date-fns';
 
-export function useMyPartnerships(userEmail) {
-    // 1. Get User Profile to find Organization ID
-    const { data: userProfile } = useUserProfiles(userEmail);
-    const orgId = userProfile?.organization_id;
-
-    // Pagination State
-    // Note: Since this hook uses manual query construction for complex OR logic, 
-    // we accept page/pageSize as args usually, but standard simple hooks might fix them.
-    // For consistency with useEntityPagination usage in components, we usually pass page to the hook?
-    // useEntityPagination({ page: current }) -> re-runs query.
-    // So let's accept { page = 1, pageSize = 12 } as options.
-}
-
-// We need to return a hook function similar to useEntityPagination factory result
-export function useMyPartnershipsHook({ page = 1, pageSize = 12 } = {}, userEmail) {
-    // This naming is awkward. Usually we just export `useMyPartnerships(userEmail, page)`.
-    // Let's stick to the signature: useMyPartnerships(userEmail, { page, pageSize }) 
-}
 
 // Actual Implementation
 export function useMyPartnerships(userEmail, { page = 1, pageSize = 12 } = {}) {
-    const { data: userProfile } = useUserProfiles(userEmail);
+    const { data: userProfile } = useUserProfile(userEmail);
     const orgId = userProfile?.organization_id;
 
     // 1. PAGINATED LIST
@@ -60,7 +42,7 @@ export function useMyPartnerships(userEmail, { page = 1, pageSize = 12 } = {}) {
             return { data, count };
         },
         enabled: !!userEmail, // Wait for email, orgId might be null which is fine
-        keepPreviousData: true,
+        placeholderData: (prev) => prev,
         staleTime: 5 * 60 * 1000
     });
 
@@ -80,7 +62,7 @@ export function useMyPartnerships(userEmail, { page = 1, pageSize = 12 } = {}) {
             // Fetch Minimal Fields for Stats
             const { data, error } = await supabase
                 .from('partnerships')
-                .select('id, status, milestones, deliverables, meetings, joint_initiatives')
+                .select('id, status, milestones, deliverables, joint_initiatives')
                 .eq('is_deleted', false)
                 .or(orConditions.join(','));
 

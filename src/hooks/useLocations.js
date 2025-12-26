@@ -36,3 +36,14 @@ export function useCitiesList() {
         staleTime: 1000 * 60 * 60
     });
 }
+
+export function useLocations() {
+    return {
+        useRegions: useRegionsList,
+        useMunicipalities,
+        useCities: useCitiesList,
+        useAllMunicipalities: useMunicipalities
+    };
+}
+export const useCities = useCitiesList;
+export const useRegions = useRegionsList;

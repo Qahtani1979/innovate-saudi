@@ -1,4 +1,4 @@
-import { usePermissions } from './usePermissions';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Lock } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
@@ -38,7 +38,7 @@ export default function ProtectedPage(Component, options = {}) {
     if (requiredRoles.length > 0) {
       const userRoles = user?.assigned_roles || [];
       const hasRequiredRole = requiredRoles.some(role => userRoles.includes(role));
-      
+
       if (!hasRequiredRole) {
         return fallback || (
           <div className="flex items-center justify-center h-96">
@@ -55,10 +55,10 @@ export default function ProtectedPage(Component, options = {}) {
 
     // Permission check - use hasAnyPermission by default for flexibility
     if (requiredPermissions.length > 0) {
-      const hasAccess = requireAllPermissions 
+      const hasAccess = requireAllPermissions
         ? requiredPermissions.every(perm => hasPermission(perm))
         : hasAnyPermission(requiredPermissions);
-      
+
       if (!hasAccess) {
         return fallback || (
           <div className="flex items-center justify-center h-96">

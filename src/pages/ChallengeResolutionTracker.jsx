@@ -255,8 +255,8 @@ function ChallengeResolutionTracker() {
                           <div className="mt-2">
                             <div className="flex items-center gap-2 text-sm">
                               <span className="text-muted-foreground">{t({ en: 'Progress:', ar: 'التقدم:' })}</span>
-                              <Progress value={(challenge.treatment_plan as any).progress || 0} className="flex-1 h-2" />
-                              <span>{(challenge.treatment_plan as any).progress || 0}%</span>
+                              <Progress value={challenge.treatment_plan.progress || 0} className="flex-1 h-2" />
+                              <span>{challenge.treatment_plan.progress || 0}%</span>
                             </div>
                           </div>
                         )}

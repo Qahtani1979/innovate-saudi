@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from '../components/LanguageContext';
-import { TrendingUp, CheckCircle2, Target, DollarSign, Sparkles } from 'lucide-react';
+import { TrendingUp, CheckCircle2, Target, DollarSign, Sparkles, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
@@ -33,7 +33,6 @@ function ScalingWorkflow() {
   const {
     useCompletedPilots,
     useScaledPilots,
-    useScalingPlans,
     useScalingPlans,
     useApproveScaling,
     invalidateScalingPlans

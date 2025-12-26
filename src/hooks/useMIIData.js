@@ -1,3 +1,4 @@
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -191,6 +192,21 @@ export function useMIIBenchmarking() {
   });
 }
 
+export function useAllMIIResults() {
+  return useQuery({
+    queryKey: ['all-mii-results'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('mii_results')
+        .select('*')
+        .eq('is_published', true)
+        .order('assessment_year', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }
+  });
+}
+
 export function useMIIMutation() {
   const queryClient = useAppQueryClient();
   return useMutation({
@@ -202,7 +218,7 @@ export function useMIIMutation() {
       return data;
     },
     onSuccess: (_, municipalityId) => {
-      queryClient.invalidateQueries(['mii-history', municipalityId]);
+      queryClient.invalidateQueries({ queryKey: ['mii-history', municipalityId] });
     }
   });
 }

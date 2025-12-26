@@ -16,11 +16,12 @@ import {
   GAP_PROGRAM_RECOMMENDER_SYSTEM_PROMPT
 } from '@/lib/ai/prompts/strategy';
 
-import { useStrategiesWithVisibility, useStrategyMutations } from '@/hooks/useStrategyMutations';
-import { useProgramsWithVisibility } from '@/hooks/useProgramMutations';
-import { useChallengesWithVisibility } from '@/hooks/useChallengeMutations';
-import { useSectors } from '@/hooks/useSectors';
+import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
+import { useStrategyMutations } from '@/hooks/useStrategyMutations';
+import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
 import { useProgramMutations } from '@/hooks/useProgramMutations';
+import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { useSectors } from '@/hooks/useSectors';
 
 export default function StrategicGapProgramRecommender({ strategicPlanId, onProgramCreated }) {
   const { language, isRTL, t } = useLanguage();

@@ -1,12 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+export { useIdeaConversion } from './useCitizenIdeaMutations';
 
 /**
  * Hook for managing citizen ideas (Queries only)
  * ✅ GOLD STANDARD COMPLIANT
  * Mutations moved to useCitizenIdeaMutations.js
  */
-export function useCitizenIdeas(options = {}) {
+export function useCitizenIdeasQuery(options = {}) {
     const { municipalityId, status = 'all', limit = 1000, citizenEmail } = options;
 
     return useQuery({
@@ -82,3 +83,29 @@ export function useMyCitizenIdeas(userId) {
         enabled: !!userId
     });
 }
+
+import { useCitizenIdeaMutations } from './useCitizenIdeaMutations';
+
+export const useCitizenIdeaActions = useCitizenIdeaMutations;
+
+export const useIdea = useSingleCitizenIdea;
+export const useIdeaMutations = useCitizenIdeaMutations;
+
+export function useVoteOnIdea() {
+    const { voteOnIdea } = useCitizenIdeaMutations();
+    return voteOnIdea;
+}
+
+export function useCitizenIdeas(options = {}) {
+    const ideas = useCitizenIdeasQuery(options);
+    const { updateIdea, submitIdea, deleteIdea } = useCitizenIdeaMutations();
+
+    return {
+        ideas,
+        updateIdea,
+        submitIdea,
+        deleteIdea
+    };
+}
+
+

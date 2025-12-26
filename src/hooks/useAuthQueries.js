@@ -31,3 +31,23 @@ export function useLoginHistory(page = 1, pageSize = 10) {
         placeholderData: (previousData) => previousData // Keep previous data while fetching new page
     });
 }
+
+export function useMFAStatus() {
+    const { user } = useAuth();
+    return useQuery({
+        queryKey: ['mfa-status', user?.id],
+        queryFn: async () => {
+            if (!user?.id) return { enabled: false };
+            const { data, error } = await supabase.auth.mfa.listFactors();
+            if (error) throw error;
+
+            const activeFactor = data?.all?.find(f => f.status === 'verified');
+            return {
+                enabled: !!activeFactor,
+                factorId: activeFactor?.id,
+                factors: data?.all || []
+            };
+        },
+        enabled: !!user?.id
+    });
+}

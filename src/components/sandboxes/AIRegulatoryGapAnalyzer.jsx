@@ -7,7 +7,7 @@ import { Shield, Sparkles, Loader2, AlertTriangle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { REGULATORY_GAP_ANALYZER_PROMPT_TEMPLATE } from '@/lib/ai/prompts/sandbox';
+import { getRegulatoryGapAnalyzerPrompt, regulatoryGapAnalyzerSchema } from '@/lib/ai/prompts/sandbox';
 import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function AIRegulatoryGapAnalyzer({ application }) {
@@ -16,11 +16,11 @@ export default function AIRegulatoryGapAnalyzer({ application }) {
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const analyzeRegulatory = async () => {
-    const template = REGULATORY_GAP_ANALYZER_PROMPT_TEMPLATE({ application });
+    const prompt = getRegulatoryGapAnalyzerPrompt({ application });
     const result = await invokeAI({
-      prompt: template.prompt,
-      system_prompt: template.system,
-      response_json_schema: template.schema
+      prompt,
+      system_prompt: getSystemPrompt('REGULATORY_ANALYST'),
+      response_json_schema: regulatoryGapAnalyzerSchema
     });
 
     if (result.success) {
@@ -63,8 +63,8 @@ export default function AIRegulatoryGapAnalyzer({ application }) {
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className={`p-4 rounded-lg border-2 text-center ${analysis.risk_level === 'high' ? 'bg-red-50 border-red-300' :
-                  analysis.risk_level === 'medium' ? 'bg-yellow-50 border-yellow-300' :
-                    'bg-green-50 border-green-300'
+                analysis.risk_level === 'medium' ? 'bg-yellow-50 border-yellow-300' :
+                  'bg-green-50 border-green-300'
                 }`}>
                 <p className="text-sm text-slate-600 mb-1">{t({ en: 'Risk Level', ar: 'مستوى المخاطر' })}</p>
                 <p className="text-2xl font-bold">{analysis.risk_level?.toUpperCase()}</p>
@@ -91,8 +91,8 @@ export default function AIRegulatoryGapAnalyzer({ application }) {
                 <div className="space-y-2">
                   {analysis.conflicts.map((conflict, idx) => (
                     <div key={idx} className={`p-3 rounded-lg border ${conflict.severity === 'high' ? 'bg-red-50 border-red-300' :
-                        conflict.severity === 'medium' ? 'bg-yellow-50 border-yellow-300' :
-                          'bg-blue-50 border-blue-300'
+                      conflict.severity === 'medium' ? 'bg-yellow-50 border-yellow-300' :
+                        'bg-blue-50 border-blue-300'
                       }`}>
                       <div className="flex items-start justify-between mb-1">
                         <p className="font-medium text-sm text-slate-900">{conflict.regulation}</p>
