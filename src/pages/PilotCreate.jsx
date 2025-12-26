@@ -7,7 +7,7 @@ import { ArrowLeft, ArrowRight, Save, Loader2, CheckCircle2 } from 'lucide-react
 import { Button } from "@/components/ui/button";
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { usePermissions } from '@/components/permissions/usePermissions';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useLanguage } from '@/components/LanguageContext';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { usePilotMutations } from '@/hooks/usePilotMutations';
