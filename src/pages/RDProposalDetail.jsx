@@ -119,8 +119,7 @@ function RDProposalDetail() {
           pilot_potential: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
           risk_mitigation: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
         }
-      },
-      system_prompt: "You are an expert R&D consultant providing strategic insights on research proposals."
+      }
     });
 
     if (result.success) {
