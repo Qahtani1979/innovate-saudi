@@ -227,7 +227,6 @@ import MyApprovals from './pages/MyApprovals';
 import MyApplications from './pages/MyApplications';
 import MyDeadlines from './pages/MyDeadlines';
 import MyPerformance from './pages/MyPerformance';
-import MyPartnerships from './pages/MyPartnerships';
 import MyPrograms from './pages/MyPrograms';
 import MyLearning from './pages/MyLearning';
 import MyDelegation from './pages/MyDelegation';
@@ -805,7 +804,6 @@ export const PAGES = {
     "MyApplications": MyApplications,
     "MyDeadlines": MyDeadlines,
     "MyPerformance": MyPerformance,
-    "MyPartnerships": MyPartnerships,
     "MyPrograms": MyPrograms,
     "MyLearning": MyLearning,
     "MyDelegation": MyDelegation,
