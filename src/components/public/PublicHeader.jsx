@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
-import { usePersonaRouting } from '@/hooks/usePersonaRouting';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -15,8 +14,10 @@ export default function PublicHeader() {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   
-  // Get role-based dashboard from persona routing
-  const { defaultDashboard, dashboardLabel } = usePersonaRouting();
+  // Simple dashboard routing - avoid complex persona routing in public header
+  // This keeps the public header lightweight and avoids permission-related queries
+  const defaultDashboard = '/home';
+  const dashboardLabel = { en: 'Dashboard', ar: 'لوحة التحكم' };
 
   const navLinks = [
     { href: '/', label: t({ en: 'Home', ar: 'الرئيسية' }) },
