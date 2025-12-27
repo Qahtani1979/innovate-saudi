@@ -11,7 +11,7 @@ import { format, differenceInDays } from 'date-fns';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
 import { useMyPartnerships } from '@/hooks/useMyPartnerships';
-import { Pagination } from '@/components/ui/Pagination';
+import { Pagination } from '@/components/ui/pagination';
 import { Skeleton } from '@/components/ui/skeleton';
 
 function MyPartnershipsPage() {
