@@ -1,6 +1,15 @@
+import { Link } from 'react-router-dom';
 import { useSolutions } from '@/hooks/useSolutions';
 import { usePilotsList } from '@/hooks/usePilots';
 import { useAllSolutionReviews } from '@/hooks/useSolutionReviews';
+import { useLanguage } from '@/components/LanguageContext';
+import ProtectedPage from '@/components/permissions/ProtectedPage';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Activity, CheckCircle2, AlertCircle, TestTube, Target } from 'lucide-react';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { createPageUrl } from '@/utils/routing';
 
 function SolutionHealthDashboard() {
   const { language, isRTL, t } = useLanguage();
