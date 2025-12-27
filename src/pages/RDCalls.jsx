@@ -4,7 +4,8 @@ import { useRDProposalsWithVisibility } from '@/hooks/useRDProposalsWithVisibili
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RD_CALLS_INSIGHTS_PROMPT_TEMPLATE, RD_CALLS_INSIGHTS_RESPONSE_SCHEMA } from '@/lib/ai/prompts/rd/callsInsights';
+import { RD_CALL_SYSTEM_PROMPT, rdCallPrompts } from '@/lib/ai/prompts/rd/callPrompts';
+import { buildPrompt } from '@/lib/ai/promptBuilder';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -99,10 +100,12 @@ function RDCallsPage() {
       themes: c.research_areas || []
     }));
 
+    const { prompt, schema } = buildPrompt(rdCallPrompts.aggregateInsights, { callSummary, stats });
+
     const { success, data } = await invokeAI({
-      prompt: RD_CALLS_INSIGHTS_PROMPT_TEMPLATE({ callSummary, stats }),
-      system_prompt: "You are an AI research strategy advisor specializing in Saudi municipal innovation. Analyze the R&D call patterns and provide strategic insights.",
-      response_json_schema: RD_CALLS_INSIGHTS_RESPONSE_SCHEMA
+      prompt,
+      system_prompt: RD_CALL_SYSTEM_PROMPT,
+      response_json_schema: schema
     });
 
     if (success) {

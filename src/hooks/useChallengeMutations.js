@@ -4,7 +4,7 @@
 
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+
 import { useAuth } from '@/lib/AuthContext';
 import { useAuditLogger, AUDIT_ACTIONS, ENTITY_TYPES } from './useAuditLogger';
 import { useChallengeNotifications } from './useChallengeNotifications';
@@ -14,7 +14,7 @@ import {
   getValidationErrors
 } from '@/lib/validations/challengeSchema';
 import { useLanguage } from '@/components/LanguageContext';
-import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+
 import { useNotificationSystem } from '@/hooks/useNotificationSystem'; // Changed from AutoNotification
 import { useAccessControl } from '@/hooks/useAccessControl';
 
@@ -23,8 +23,8 @@ import { useAccessControl } from '@/hooks/useAccessControl';
  */
 export function useChallengeFollow(challengeId) {
   const { user } = useAuth();
-  const queryClient = useAppQueryClient();
   const { notify } = useNotificationSystem();
+
 
   const { data: follows = [], isLoading } = useQuery({
     queryKey: ['challenge-follows', challengeId, user?.email],
@@ -58,7 +58,7 @@ export function useChallengeFollow(challengeId) {
     },
     onSuccess: (_, action) => {
       queryClient.invalidateQueries({ queryKey: ['challenge-follows'] });
-      toast.success(action === 'follow' ? 'Following challenge' : 'Unfollowed challenge');
+      notify.success(action === 'follow' ? 'Following challenge' : 'Unfollowed challenge');
     }
   });
 
@@ -77,6 +77,7 @@ export function useChallengeInterest(challengeId) {
   const { user } = useAuth();
   const queryClient = useAppQueryClient();
   const { t } = useLanguage();
+  const { notify } = useNotificationSystem();
 
   const { data: interest, isLoading } = useQuery({
     queryKey: ['challenge-interest', challengeId, user?.email],
@@ -109,7 +110,7 @@ export function useChallengeInterest(challengeId) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['challenge-interest'] });
-      toast.success(t({ en: 'Interest registered!', ar: 'تم تسجيل الاهتمام!' }));
+      notify.success(t({ en: 'Interest registered!', ar: 'تم تسجيل الاهتمام!' }));
     }
   });
 
@@ -124,7 +125,7 @@ export function useChallengeInterest(challengeId) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['challenge-interest'] });
-      toast.success(t({ en: 'Interest withdrawn', ar: 'تم سحب الاهتمام' }));
+      notify.success(t({ en: 'Interest withdrawn', ar: 'تم سحب الاهتمام' }));
     }
   });
 
@@ -138,7 +139,7 @@ export function useChallengeInterest(challengeId) {
 
 export function useEscalateChallenge() {
   const queryClient = useAppQueryClient();
-  const { triggerEmail } = useEmailTrigger();
+  const { notify } = useNotificationSystem();
 
   return useMutation({
     mutationFn: async (challenge) => {
@@ -148,10 +149,16 @@ export function useEscalateChallenge() {
       }).eq('id', challenge.id);
       if (error) throw error;
 
-      await triggerEmail('challenge.escalated', {
+      await notify({
+        type: 'challenge_escalated',
         entityType: 'challenge',
         entityId: challenge.id,
-        variables: {
+        title: 'Challenge Escalated',
+        message: `Challenge ${challenge.code} has been escalated to level ${(challenge.escalation_level || 0) + 1}`,
+        recipientEmails: [], // Logic to determine recipients (e.g. admin) should be here or handled by backend, but for now we keep safe defaults or user
+        sendEmail: true,
+        emailTemplate: 'challenge_escalated',
+        emailVariables: {
           challenge_title: challenge.title_en || challenge.title_ar,
           challenge_code: challenge.code,
           days_overdue: challenge.sla?.daysOverdue || 0,
@@ -162,7 +169,7 @@ export function useEscalateChallenge() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['challenges'] });
-      toast.success('Challenge escalated');
+      notify.success('Challenge escalated');
     }
   });
 }
@@ -172,6 +179,7 @@ export function useEscalateChallenge() {
  */
 export function useUpdateChallengeTracks() {
   const queryClient = useAppQueryClient();
+  const { notify } = useNotificationSystem();
 
   return useMutation({
     mutationFn: async ({ id, tracks }) => {
@@ -190,7 +198,7 @@ export function useUpdateChallengeTracks() {
     },
     onError: (error) => {
       console.error('Failed to update tracks:', error);
-      toast.error('Failed to route challenge');
+      notify.error('Failed to route challenge');
     }
   });
 }
@@ -200,6 +208,7 @@ export function useUpdateChallengeTracks() {
  */
 export function useImportChallenges() {
   const queryClient = useAppQueryClient();
+  const { notify } = useNotificationSystem();
 
   return useMutation({
     mutationFn: async (challenges) => {
@@ -229,9 +238,9 @@ export function useImportChallenges() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['challenges'] });
       if (data.failed > 0) {
-        toast.warning(`Imported ${data.success} challenges. ${data.failed} failed.`);
+        notify.warning(`Imported ${data.success} challenges. ${data.failed} failed.`);
       } else {
-        toast.success(`Successfully imported ${data.total} challenges`);
+        notify.success(`Successfully imported ${data.total} challenges`);
       }
     }
   });
@@ -263,7 +272,7 @@ export function useChallengeMutations() {
   const { notifyStatusChange, notifyAssignment } = useChallengeNotifications();
   const { notify } = useNotificationSystem();
   const { t } = useLanguage();
-  const { triggerEmail } = useEmailTrigger();
+
 
   /* 
    * ACCESS CONTROL LAYER
@@ -333,7 +342,7 @@ export function useChallengeMutations() {
     onSuccess: (challenge) => {
       queryClient.invalidateQueries({ queryKey: ['challenges'] });
       queryClient.invalidateQueries({ queryKey: ['pending-challenges'] });
-      toast.success('Challenge created successfully');
+      notify.success('Challenge created successfully');
     }
   });
 
@@ -429,7 +438,7 @@ export function useChallengeMutations() {
       if (context?.previousChallenge) {
         queryClient.setQueryData(['challenge', id], context.previousChallenge);
       }
-      toast.error(`Update failed: ${error.message}`);
+      notify.error(`Update failed: ${error.message}`);
     },
     onSettled: (challenge) => {
       if (challenge) {
@@ -445,7 +454,7 @@ export function useChallengeMutations() {
           newStatus: variables.data.status
         });
       }
-      toast.success('Challenge updated');
+      notify.success('Challenge updated');
     }
   });
 
@@ -487,7 +496,7 @@ export function useChallengeMutations() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['challenges'] });
-      toast.success(t({ en: 'Challenge deleted', ar: 'تم حذف التحدي' }));
+      notify.success(t({ en: 'Challenge deleted', ar: 'تم حذف التحدي' }));
     }
   });
 
@@ -515,20 +524,17 @@ export function useChallengeMutations() {
       queryClient.invalidateQueries({ queryKey: ['pending-challenges'] });
 
       if (challenge) {
-        // Notification logic matching Challenges.jsx
+        // Notification: Challenge Archived
         notify({
           title: t({ en: 'Challenge Archived', ar: 'تم أرشفة التحدي' }),
           message: t({ en: `${challenge.code} has been archived`, ar: `تمت أرشفة ${challenge.code}` }),
-          type: 'alert',
+          type: 'challenge_status_changed', // Generic type or specific
           entityType: 'challenge',
           entityId: challenge.id,
-          recipientEmails: [user?.email].filter(Boolean)
-        }).catch(console.error);
-
-        triggerEmail('challenge.status_changed', {
-          entity_type: 'challenge',
-          entity_id: challenge.id,
-          variables: {
+          recipientEmails: [user?.email].filter(Boolean),
+          sendEmail: true,
+          emailTemplate: 'challenge_status_changed',
+          emailVariables: {
             challenge_title: challenge.title_en || challenge.title_ar,
             challenge_code: challenge.code,
             old_status: challenge.status,
@@ -537,7 +543,7 @@ export function useChallengeMutations() {
         }).catch(console.error);
       }
 
-      toast.success(t({ en: 'Challenge archived', ar: 'تم أرشفة التحدي' }));
+      notify.success(t({ en: 'Challenge archived', ar: 'تم أرشفة التحدي' }));
     }
   });
 
@@ -596,7 +602,7 @@ export function useChallengeMutations() {
       notifyStatusChange.mutate({ challenge, oldStatus: 'draft', newStatus: 'submitted' });
       queryClient.invalidateQueries({ queryKey: ['challenges'] });
       queryClient.invalidateQueries({ queryKey: ['pending-challenges'] });
-      toast.success('Challenge submitted for review');
+      notify.success('Challenge submitted for review');
     }
   });
 
@@ -662,7 +668,7 @@ export function useChallengeMutations() {
       });
       queryClient.invalidateQueries({ queryKey: ['challenges'] });
       queryClient.invalidateQueries({ queryKey: ['pending-challenges'] });
-      toast.success(`Status changed to ${challenge.status}`);
+      notify.success(`Status changed to ${challenge.status}`);
     }
   });
 
@@ -689,7 +695,7 @@ export function useChallengeMutations() {
     onSuccess: (challenge) => {
       notifyAssignment.mutate({ challenge, assigneeEmail: challenge.review_assigned_to, assignmentType: 'reviewer' });
       queryClient.invalidateQueries({ queryKey: ['challenge', challenge.id] });
-      toast.success('Reviewer assigned');
+      notify.success('Reviewer assigned');
     }
   });
 
@@ -783,7 +789,7 @@ export function useChallengeMutations() {
       onSuccess: (data) => {
         queryClient.invalidateQueries({ queryKey: ['challenge', data.id] });
         queryClient.invalidateQueries({ queryKey: ['challenges'] });
-        toast.success(t({ en: 'Publishing settings updated', ar: 'تم تحديث إعدادات النشر' }));
+        notify.success(t({ en: 'Publishing settings updated', ar: 'تم تحديث إعدادات النشر' }));
       }
     })
   };

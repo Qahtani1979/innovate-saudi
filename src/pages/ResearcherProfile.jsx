@@ -9,6 +9,8 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { ContactSection, BioSection, SkillsBadges } from '../components/profile/BilingualProfileDisplay';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { researcherPrompts } from '@/lib/ai/prompts/ecosystem/researcherPrompts';
+import { buildPrompt } from '@/lib/ai/promptBuilder';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
 
 function ResearcherProfile() {
@@ -20,33 +22,17 @@ function ResearcherProfile() {
   const { data: researcher } = useResearcher(researcherId);
 
   const findCollaborators = async () => {
-    const result = await invokeAI({
-      system_prompt: "You are an AI research collaborator matching assistant for the Saudi municipal innovation ecosystem. Your goal is to identify high-potential research partnerships between individuals and institutions based on specific expertise areas and Vision 2030 alignment.",
-      prompt: `Find potential collaborators for this researcher:
-Name: ${researcher?.['full_name_en'] || researcher?.['name_en']}
-Research Areas: ${researcher?.['research_areas']?.join(', ')}
-Expertise: ${researcher?.['expertise_keywords']?.join(', ')}
-Institution: ${researcher?.['institution_id']}
+    const { prompt, schema, system } = buildPrompt(researcherPrompts.findPotentialCollaborators, {
+      name: researcher?.['full_name_en'] || researcher?.['name_en'],
+      researchAreas: researcher?.['research_areas'],
+      expertise: researcher?.['expertise_keywords'],
+      institution: researcher?.['institution_id']
+    });
 
-Suggest 5 researchers or institutions who would be ideal collaborators based on complementary expertise.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          collaborators: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                name: { type: 'string' },
-                institution: { type: 'string' },
-                expertise: { type: 'array', items: { type: 'string' } },
-                match_score: { type: 'number' },
-                collaboration_potential: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+    const result = await invokeAI({
+      system_prompt: system,
+      prompt,
+      response_json_schema: schema
     });
     if (result.success) {
       setCollaborators(result.data?.collaborators || []);

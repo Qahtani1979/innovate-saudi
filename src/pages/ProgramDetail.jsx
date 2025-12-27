@@ -44,7 +44,6 @@ import MunicipalImpactCalculator from '../components/programs/MunicipalImpactCal
 import ProgramOutcomeKPITracker from '../components/programs/ProgramOutcomeKPITracker';
 import ProgramLessonsToStrategy from '../components/programs/ProgramLessonsToStrategy';
 import { usePrompt } from '@/hooks/usePrompt';
-import { PROGRAM_DETAIL_PROMPT_TEMPLATE } from '@/lib/ai/prompts/programs/programDetail';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
 
 import { useProgram, useProgramApplications, useProgramComments, useProgramExperts } from '@/hooks/useProgramDetails';
@@ -86,13 +85,16 @@ export default function ProgramDetail() {
   const handleAIInsights = async () => {
     setShowAIInsights(true);
     try {
+      const { programPrompts } = await import('@/lib/ai/prompts/ecosystem/programPrompts');
+      const { buildPrompt } = await import('@/lib/ai/promptBuilder');
+
       // Use centralized prompt template
-      const promptConfig = PROGRAM_DETAIL_PROMPT_TEMPLATE(program);
+      const { prompt, schema, system } = buildPrompt(programPrompts.detailAnalysis, { program });
 
       const result = await invokeAI({
-        prompt: promptConfig.prompt,
-        system_prompt: promptConfig.system,
-        response_json_schema: promptConfig.schema
+        prompt,
+        system_prompt: system,
+        response_json_schema: schema
       });
       if (result.success) {
         setAiInsights(result.data);
@@ -100,6 +102,7 @@ export default function ProgramDetail() {
         toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
       }
     } catch (error) {
+      console.error(error);
       toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
     }
   };

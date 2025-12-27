@@ -2,6 +2,10 @@ import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/LanguageContext';
+import { useMutation } from '@tanstack/react-query';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
+import { useAuditLogger } from '@/hooks/useAuditLogger';
+import { useAuth } from '@/lib/AuthContext';
 
 /**
  * Hook for managing matchmaker proposals.
@@ -9,6 +13,9 @@ import { useLanguage } from '@/components/LanguageContext';
 export function useMatchmakerProposalMutations() {
     const queryClient = useAppQueryClient();
     const { t } = useLanguage();
+    const { notify } = useNotificationSystem();
+    const { logCrudOperation } = useAuditLogger();
+    const { user } = useAuth();
 
     const createProposal = useMutation({
         mutationFn: async ({ matchId, applicationId, challengeId, formData, status = 'draft' }) => {
@@ -36,7 +43,46 @@ export function useMatchmakerProposalMutations() {
                     .update({ status: 'proposal_submitted' })
                     .eq('id', matchId);
                 if (matchError) throw matchError;
+
+                // Notification Logic
+                // Fetch match details to find recipient (Challenge Owner)
+                const { data: matchData } = await supabase
+                    .from('challenge_solution_matches')
+                    .select(`
+                        id,
+                        challenge:challenges!inner(
+                            id,
+                            title_en,
+                            profiles:created_by(email)
+                        )
+                    `)
+                    .eq('id', matchId)
+                    .single();
+
+                // @ts-ignore
+                const recipientEmail = matchData?.challenge?.profiles?.email;
+
+                if (recipientEmail) {
+                    await notify({
+                        type: 'matchmaker_proposal_submitted',
+                        entityType: 'matchmaker_proposal',
+                        entityId: data.id,
+                        recipientEmails: [recipientEmail],
+                        title: 'New Proposal Received',
+                        message: `A new proposal has been submitted for match #${matchId}`,
+                        metadata: { match_id: matchId, challenge_id: challengeId },
+                        sendEmail: true,
+                        emailTemplate: 'matchmaker_proposal_submitted',
+                        emailVariables: {
+                            // @ts-ignore
+                            challenge_title: matchData?.challenge?.title_en,
+                            proposal_id: data.id
+                        }
+                    });
+                }
             }
+
+            await logCrudOperation('create', 'matchmaker_proposal', data.id, null, { matchId, status });
 
             return data;
         },

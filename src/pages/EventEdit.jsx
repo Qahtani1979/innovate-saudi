@@ -12,7 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '@/components/LanguageContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/lib/AuthContext';
-import { useEvents } from '@/hooks/useEvents';
+import { useEvents, useEvent } from '@/hooks/useEvents';
+import { useEventMutations } from '@/hooks/useEventMutations';
 import { usePrograms } from '@/hooks/usePrograms';
 import { useMunicipalities } from '@/hooks/useMunicipalities';
 import { EVENT_TYPES, EVENT_STATUSES } from '@/components/events/EventFilters';
@@ -43,7 +44,7 @@ function EventEdit() {
   const [searchParams] = useSearchParams();
   const eventId = searchParams.get('id');
 
-  const { updateEvent, cancelEvent, isUpdating, isCancelling, useEvent } = useEvents();
+  const { updateEvent, cancelEvent, isUpdating, isCancelling } = useEventMutations();
   const { data: event, isLoading } = useEvent(eventId);
   const { handleMediaSelect } = useMediaIntegration('events', eventId);
 

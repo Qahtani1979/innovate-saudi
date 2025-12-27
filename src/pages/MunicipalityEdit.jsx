@@ -17,6 +17,8 @@ import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { useMunicipalityMutations } from '@/hooks/useMunicipalityMutations';
 import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
 import { useLocations } from '@/hooks/useLocations';
+import { MUNICIPALITY_EDITOR_SYSTEM_PROMPT, municipalityEditorPrompts } from '@/lib/ai/prompts/municipalities/editorPrompts';
+import { buildPrompt } from '@/lib/ai/promptBuilder';
 
 function MunicipalityEdit() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -55,24 +57,20 @@ function MunicipalityEdit() {
     });
   };
 
+
+
+  // ... inside handleAIEnhance (lines ~58)
   const handleAIEnhance = async () => {
-    const prompt = `Generate professional municipality description for Saudi municipality:
 
-Municipality: ${formData.name_en} | ${formData.name_ar}
-Region: ${formData.region}
-Population: ${formData.population || 'N/A'}
-
-Create bilingual content highlighting the municipality's characteristics and innovation potential.`;
+    // Build Prompt
+    const { prompt, schema } = buildPrompt(municipalityEditorPrompts.enhanceDescription, {
+      formData
+    });
 
     const result = await invokeAI({
       prompt,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          description_en: { type: 'string' },
-          description_ar: { type: 'string' }
-        }
-      }
+      system_prompt: MUNICIPALITY_EDITOR_SYSTEM_PROMPT,
+      response_json_schema: schema
     });
 
     if (result.success) {

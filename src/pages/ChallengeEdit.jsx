@@ -25,6 +25,8 @@ import { useSectors } from '@/hooks/useSectors';
 import { useRegions, useCities } from '@/hooks/useRegions';
 import { useSubsectors } from '@/hooks/useSubsectors';
 import { useServices } from '@/hooks/useServices';
+import { CHALLENGE_EDITOR_SYSTEM_PROMPT, challengeEditorPrompts } from '@/lib/ai/prompts/challenges/editorPrompts';
+import { buildPrompt } from '@/lib/ai/promptBuilder';
 
 function ChallengeEdit() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -163,163 +165,18 @@ function ChallengeEdit() {
     }
 
     try {
-      const prompt = `
-        Analyze this Saudi municipal challenge and provide COMPLETE BILINGUAL (Arabic + English) structured output covering ALL fields.
-        
-        Current data:
-        Title EN: ${formData.title_en}
-        Title AR: ${formData.title_ar}
-        Description EN: ${formData.description_en}
-        Description AR: ${formData.description_ar}
-        Problem EN: ${formData.problem_statement_en}
-        Problem AR: ${formData.problem_statement_ar}
-        Current EN: ${formData.current_situation_en}
-        Current AR: ${formData.current_situation_ar}
-        Desired EN: ${formData.desired_outcome_en}
-        Desired AR: ${formData.desired_outcome_ar}
-        Sector: ${formData.sector}
-        Municipality: ${formData.municipality_id}
-        
-        Available Sectors:
-        ${sectors.map(s => `- ID: ${s.id}, Code: ${s.code}, EN: ${s.name_en}, AR: ${s.name_ar || ''}`).join('\n')}
-        
-        Available Subsectors:
-        ${subsectors.map(ss => `- ID: ${ss.id}, Sector: ${ss.sector_id}, EN: ${ss.name_en}, AR: ${ss.name_ar || ''}`).join('\n')}
-        
-        Available Services:
-        ${services.slice(0, 50).map(svc => `- ID: ${svc.id}, EN: ${svc.name_en}, AR: ${svc.name_ar || ''}`).join('\n')}
-        
-        Generate COMPLETE enhancement for ALL fields:
-        1. Titles (AR + EN) - concise, professional
-        2. Taglines (AR + EN) - one-liner summary
-        3. Descriptions (AR + EN) - detailed 250+ words each, Saudi municipal terminology
-        4. Problem Statements (AR + EN) - clear, specific
-        5. Current Situations (AR + EN) - factual status
-        6. Desired Outcomes (AR + EN) - measurable goal
-        7. Root Cause single (AR + EN) - main underlying issue
-        8. Root Causes array (4-6 specific causes) - bilingual
-        9. **Sector ID** - select BEST MATCH from available sectors list above
-        10. **Subsector ID** - select BEST MATCH from available subsectors for that sector
-        11. **Service ID** - select most relevant affected service from list above
-        12. Affected Services array (2-4 service names)
-        13. Severity score (0-100) - criticality
-        14. Impact score (0-100) - population affected
-        12. Overall score - calculated
-        13. Affected Population (size: number, demographics: string, location: string)
-        14. Affected Population Size - number
-        15. KPIs (4 KPIs with bilingual names, baseline, target, unit)
-        16. Stakeholders (3-5 with name, role, involvement)
-        17. Data Evidence (2-4 with type, source, value, date)
-        18. Constraints (2-3 with type, description)
-        19. Keywords (8-12 bilingual AR/EN terms)
-        20. Theme category
-        21. Challenge Type (service_quality/infrastructure/etc)
-        22. Category - specific subcategory
-        23. Priority tier (1=critical, 2=high, 3=medium, 4=low)
-        24. Track recommendation (pilot/r_and_d/program/procurement/policy)
-        25. Budget Estimate (SAR)
-        26. Timeline Estimate (weeks/months)
-        27. Ministry Service
-        28. Responsible Agency
-        29. Department
-        30. Strategic Goal alignment
-        
-        Use Saudi municipal context, real data intelligence, and best practices.
-      `;
+      // Build Prompt
+      const { prompt, schema } = buildPrompt(challengeEditorPrompts.enhance, {
+        formData,
+        sectors,
+        subsectors,
+        services
+      });
 
       const aiResult = await invokeAI({
         prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            refined_title_en: { type: 'string' },
-            refined_title_ar: { type: 'string' },
-            refined_tagline_en: { type: 'string' },
-            refined_tagline_ar: { type: 'string' },
-            improved_description_en: { type: 'string' },
-            improved_description_ar: { type: 'string' },
-            problem_statement_en: { type: 'string' },
-            problem_statement_ar: { type: 'string' },
-            current_situation_en: { type: 'string' },
-            current_situation_ar: { type: 'string' },
-            desired_outcome_en: { type: 'string' },
-            desired_outcome_ar: { type: 'string' },
-            root_cause_en: { type: 'string' },
-            root_cause_ar: { type: 'string' },
-            root_causes: { type: 'array', items: { type: 'string' } },
-            sector_id: { type: 'string' },
-            subsector_id: { type: 'string' },
-            service_id: { type: 'string' },
-            affected_services: { type: 'array', items: { type: 'string' } },
-            severity_score: { type: 'number' },
-            impact_score: { type: 'number' },
-            affected_population: {
-              type: 'object',
-              properties: {
-                size: { type: 'number' },
-                demographics: { type: 'string' },
-                location: { type: 'string' }
-              }
-            },
-            affected_population_size: { type: 'number' },
-            keywords: { type: 'array', items: { type: 'string' } },
-            kpis: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  name: { type: 'string' },
-                  baseline: { type: 'string' },
-                  target: { type: 'string' }
-                }
-              }
-            },
-            stakeholders: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  name: { type: 'string' },
-                  role: { type: 'string' },
-                  involvement: { type: 'string' }
-                }
-              }
-            },
-            data_evidence: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  type: { type: 'string' },
-                  source: { type: 'string' },
-                  value: { type: 'string' },
-                  date: { type: 'string' }
-                }
-              }
-            },
-            constraints: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  type: { type: 'string' },
-                  description: { type: 'string' }
-                }
-              }
-            },
-            theme: { type: 'string' },
-            category: { type: 'string' },
-            challenge_type: { type: 'string' },
-            priority_tier: { type: 'number' },
-            tracks: { type: 'array', items: { type: 'string' } },
-            budget_estimate: { type: 'number' },
-            timeline_estimate: { type: 'string' },
-            ministry_service: { type: 'string' },
-            responsible_agency: { type: 'string' },
-            department: { type: 'string' },
-            strategic_goal: { type: 'string' }
-          }
-        }
+        system_prompt: CHALLENGE_EDITOR_SYSTEM_PROMPT,
+        response_json_schema: schema
       });
 
       if (aiResult.success) {

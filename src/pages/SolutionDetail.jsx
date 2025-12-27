@@ -42,7 +42,6 @@ import RealTimeMarketIntelligence from '../components/solutions/RealTimeMarketIn
 import TRLAssessmentTool from '../components/solutions/TRLAssessmentTool';
 import SolutionRDCollaborationProposal from '../components/solutions/SolutionRDCollaborationProposal';
 import { usePrompt } from '@/hooks/usePrompt';
-import { SOLUTION_DETAIL_PROMPT_TEMPLATE } from '@/lib/ai/prompts/solutions/solutionDetail';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import SolutionNotFound from '../components/solutions/SolutionNotFound';
@@ -138,13 +137,16 @@ function SolutionDetailPage() {
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
-    // Use centralized prompt template
-    const promptConfig = SOLUTION_DETAIL_PROMPT_TEMPLATE(solution);
+    // Use standardized prompts
+    const { solutionPrompts, SOLUTION_SYSTEM_PROMPT } = await import('@/lib/ai/prompts/innovation/solutionPrompts');
+    const { buildPrompt } = await import('@/lib/ai/promptBuilder');
+
+    const { prompt, schema } = buildPrompt(solutionPrompts.detailAnalysis, { solution });
 
     const result = await invokeAI({
-      prompt: promptConfig.prompt,
-      system_prompt: promptConfig.system,
-      response_json_schema: promptConfig.schema
+      prompt,
+      system_prompt: SOLUTION_SYSTEM_PROMPT,
+      response_json_schema: schema
     });
     if (result.success) {
       setAiInsights(result.data);

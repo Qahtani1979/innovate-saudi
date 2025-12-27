@@ -12,7 +12,8 @@ import { AlertCircle, Plus, Edit, Eye, LayoutGrid, List, Sparkles, Loader2, Tren
 import { toast } from 'sonner';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
 import { usePrompt } from '@/hooks/usePrompt';
-import { CHALLENGE_QUICK_SUGGESTION_PROMPT_TEMPLATE } from '@/lib/ai/prompts/challenges/myChallenges';
+import { myChallengePrompts } from '@/lib/ai/prompts/ecosystem/myChallengePrompts';
+import { buildPrompt } from '@/lib/ai/promptBuilder';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { StandardPagination } from '@/components/ui/StandardPagination';
 import { EntityListSkeleton } from '@/components/ui/skeletons/EntityListSkeleton';
@@ -48,7 +49,7 @@ function MyChallenges() {
       const challenge = challenges.find(c => c.id === challengeId);
       if (!challenge) return;
 
-      const promptConfig = CHALLENGE_QUICK_SUGGESTION_PROMPT_TEMPLATE({
+      const { prompt, schema, system } = buildPrompt(myChallengePrompts.quickSuggestion, {
         title: challenge.title_en,
         description: challenge.description_en,
         status: challenge.status,
@@ -57,9 +58,9 @@ function MyChallenges() {
       });
 
       const response = await invokeAI({
-        prompt: promptConfig.prompt,
-        system_prompt: promptConfig.system,
-        response_json_schema: promptConfig.schema
+        prompt: prompt,
+        system_prompt: system,
+        response_json_schema: schema
       });
 
       if (response.success) {

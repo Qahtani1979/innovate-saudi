@@ -65,11 +65,13 @@ function SolutionsPage() {
 
 
   // Use visibility-aware hook for solutions
-  const { data: solutions = [], isLoading } = useSolutionsWithVisibility({
+  const { data: solutionsResponse, isLoading } = useSolutionsWithVisibility({
     sectorId: sectorFilter !== 'all' ? sectorFilter : undefined,
     maturityLevel: maturityFilter !== 'all' ? maturityFilter : undefined,
     limit: 100
   });
+
+  const solutions = Array.isArray(solutionsResponse) ? solutionsResponse : (solutionsResponse?.data || []);
 
   // mh-2: Optimistic updates handled in hook
   const { deleteSolution, bulkArchiveSolutions, togglePublishSolution } = useSolutionMutations();
@@ -132,7 +134,8 @@ function SolutionsPage() {
     setShowAIInsights(true);
 
     // Import centralized prompt module
-    const { SOLUTION_PORTFOLIO_PROMPT_TEMPLATE, SOLUTION_PORTFOLIO_RESPONSE_SCHEMA } = await import('@/lib/ai/prompts/solutions/portfolioAnalysis');
+    const { solutionPrompts, SOLUTION_SYSTEM_PROMPT } = await import('@/lib/ai/prompts/innovation/solutionPrompts');
+    const { buildPrompt } = await import('@/lib/ai/promptBuilder');
 
     const solutionSummary = solutions.slice(0, 15).map(s => ({
       name: s.name_en,
@@ -143,15 +146,18 @@ function SolutionsPage() {
       sectors: s.sectors
     }));
 
+    const { prompt, schema } = buildPrompt(solutionPrompts.portfolioAnalysis, {
+      solutionSummary,
+      totalSolutions: solutions.length,
+      marketReadyCount: solutions.filter(s => s.maturity_level === 'market_ready' || s.maturity_level === 'proven').length,
+      startupCount: solutions.filter(s => s.provider_type === 'startup').length,
+      avgDeployments: Math.round(solutions.reduce((acc, s) => acc + (s.deployment_count || 0), 0) / solutions.length || 0)
+    });
+
     const result = await invokeAI({
-      prompt: SOLUTION_PORTFOLIO_PROMPT_TEMPLATE({
-        solutionSummary,
-        totalSolutions: solutions.length,
-        marketReadyCount: solutions.filter(s => s.maturity_level === 'market_ready' || s.maturity_level === 'proven').length,
-        startupCount: solutions.filter(s => s.provider_type === 'startup').length,
-        avgDeployments: Math.round(solutions.reduce((acc, s) => acc + (s.deployment_count || 0), 0) / solutions.length || 0)
-      }),
-      response_json_schema: SOLUTION_PORTFOLIO_RESPONSE_SCHEMA
+      prompt,
+      system_prompt: SOLUTION_SYSTEM_PROMPT,
+      response_json_schema: schema
     });
     if (result.success) {
       setAiInsights(result.data);

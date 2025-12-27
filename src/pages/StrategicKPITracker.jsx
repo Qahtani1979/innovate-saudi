@@ -14,11 +14,8 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import {
-  STRATEGIC_KPI_INSIGHTS_SCHEMA,
-  STRATEGIC_KPI_INSIGHTS_PROMPT_TEMPLATE,
-  STRATEGIC_KPI_PROMPT
-} from '@/lib/ai/prompts/kpi/strategicKPI';
+import { KPI_SYSTEM_PROMPT, kpiPrompts } from '@/lib/ai/prompts/ecosystem/kpiPrompts';
+import { buildPrompt } from '@/lib/ai/promptBuilder';
 
 function StrategicKPITracker() {
   const { language, isRTL, t } = useLanguage();
@@ -29,8 +26,11 @@ function StrategicKPITracker() {
   /* 
    * Level 6 Verification: Data Layer Integration
    */
-  const { data: pilots = [] } = usePilotsWithVisibility({ limit: 1000 });
-  const { data: challenges = [] } = useChallengesWithVisibility({ limit: 1000 });
+  const { data: pilotsResponse } = usePilotsWithVisibility({ limit: 1000 });
+  const pilots = Array.isArray(pilotsResponse) ? pilotsResponse : (pilotsResponse?.data || []);
+
+  const { data: challengesResponse } = useChallengesWithVisibility({ limit: 1000 });
+  const challenges = Array.isArray(challengesResponse) ? challengesResponse : (challengesResponse?.data || []);
 
   // Mock strategic KPIs - in real app, would come from StrategicPlan entity
   const strategicKPIs = [
@@ -124,14 +124,16 @@ function StrategicKPITracker() {
       status: kpi.status
     }));
 
+    const { prompt, schema } = buildPrompt(kpiPrompts.strategicInsights, {
+      kpiData,
+      activePilots: pilots.length,
+      totalChallenges: challenges.length
+    });
+
     const result = await invokeAI({
-      prompt: STRATEGIC_KPI_INSIGHTS_PROMPT_TEMPLATE({
-        kpiData,
-        activePilots: pilots.length,
-        totalChallenges: challenges.length
-      }),
-      system_prompt: STRATEGIC_KPI_PROMPT.system,
-      response_json_schema: STRATEGIC_KPI_INSIGHTS_SCHEMA
+      prompt,
+      system_prompt: KPI_SYSTEM_PROMPT,
+      response_json_schema: schema
     });
 
     if (result.success) {

@@ -31,10 +31,14 @@ function StrategyCopilotChat() {
     setInput('');
 
     // Import centralized prompt module
-    const { STRATEGY_COPILOT_PROMPT_TEMPLATE } = await import('@/lib/ai/prompts/strategy/copilot');
-    
+    const { STRATEGY_COPILOT_SYSTEM_PROMPT, strategyPrompts } = await import('@/lib/ai/prompts/strategy/strategyPrompts');
+    const { buildPrompt } = await import('@/lib/ai/promptBuilder');
+
+    const { prompt } = buildPrompt(strategyPrompts.copilot, { input });
+
     const result = await invokeAI({
-      prompt: STRATEGY_COPILOT_PROMPT_TEMPLATE(input)
+      prompt,
+      system_prompt: STRATEGY_COPILOT_SYSTEM_PROMPT
     });
 
     if (result.success) {
@@ -62,7 +66,7 @@ function StrategyCopilotChat() {
             {t({ en: 'AI-powered strategic advisor', ar: 'المستشار الاستراتيجي الذكي' })}
           </p>
         </CardHeader>
-        
+
         <CardContent className="flex-1 flex flex-col pt-6 space-y-4 overflow-hidden">
           {messages.length === 0 && (
             <div className="flex-1 flex items-center justify-center">
@@ -74,7 +78,7 @@ function StrategyCopilotChat() {
                 <p className="text-sm text-slate-600 mb-6">
                   {t({ en: 'I can help with budget allocation, portfolio analysis, and strategic planning', ar: 'يمكنني المساعدة في توزيع الميزانية وتحليل المحفظة والتخطيط الاستراتيجي' })}
                 </p>
-                
+
                 <div className="space-y-2">
                   <p className="text-xs text-slate-500 mb-2">{t({ en: 'Try asking:', ar: 'جرب السؤال:' })}</p>
                   {suggestedQuestions.map((q, i) => (
@@ -101,11 +105,10 @@ function StrategyCopilotChat() {
                     </div>
                   )}
                   <div className={`max-w-[80%] ${msg.role === 'user' ? 'order-first' : ''}`}>
-                    <div className={`rounded-2xl px-4 py-3 ${
-                      msg.role === 'user' 
-                        ? 'bg-purple-600 text-white' 
+                    <div className={`rounded-2xl px-4 py-3 ${msg.role === 'user'
+                        ? 'bg-purple-600 text-white'
                         : 'bg-white border border-slate-200'
-                    }`}>
+                      }`}>
                       {msg.role === 'user' ? (
                         <p className="text-sm">{msg.content}</p>
                       ) : (

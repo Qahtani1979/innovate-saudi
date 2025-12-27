@@ -1,117 +1,91 @@
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { useMutation } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 // AI helpers for committee review governance flows
-// Exposes { isPending, mutateAsync } just like React Query mutations
 export function useCommitteeAI() {
-  const { toast } = useToast();
+  const { invokeAI, status, isLoading: isAiLoading, rateLimitInfo } = useAIWithFallback();
 
-  const [agendaPending, setAgendaPending] = useState(false);
-  const [schedulePending, setSchedulePending] = useState(false);
-  const [impactPending, setImpactPending] = useState(false);
-  const [actionsPending, setActionsPending] = useState(false);
-  const [summaryPending, setSummaryPending] = useState(false);
+  const prioritizeAgenda = useMutation({
+    mutationFn: async ({ agendaItems, committeeData, meetingContext }) => {
+      const { success, data, error } = await invokeAI({
+        system_prompt: 'You are an expert committee secretary assisting with agenda prioritization.',
+        prompt: JSON.stringify({ action: 'prioritize_agenda', agendaItems, committeeData, meetingContext }),
+        // Schema could be passed here if defined
+      });
 
-  const prioritizeAgenda = {
-    isPending: agendaPending,
-    mutateAsync: async ({ agendaItems, committeeData, meetingContext }) => {
-      setAgendaPending(true);
-      try {
-        const { data, error } = await supabase.functions.invoke('strategy-committee-ai', {
-          body: { action: 'prioritize_agenda', agendaItems, committeeData, meetingContext },
-        });
-        if (error) throw error;
-        return data.result;
-      } catch (error) {
-        console.error('AI prioritizeAgenda error', error);
-        toast({ title: 'AI Error', description: error.message, variant: 'destructive' });
-        throw error;
-      } finally {
-        setAgendaPending(false);
-      }
+      if (!success) throw new Error(error || 'AI prioritization failed');
+      return data.result || data; // Handle both wrapper structure and direct edge function result
     },
-  };
+    onError: (error) => {
+      console.error('AI prioritizeAgenda error', error);
+      toast.error(`AI Error: ${error.message}`);
+    }
+  });
 
-  const optimizeScheduling = {
-    isPending: schedulePending,
-    mutateAsync: async ({ committeeData, agendaItems, meetingContext }) => {
-      setSchedulePending(true);
-      try {
-        const { data, error } = await supabase.functions.invoke('strategy-committee-ai', {
-          body: { action: 'optimize_scheduling', committeeData, agendaItems, meetingContext },
-        });
-        if (error) throw error;
-        return data.result;
-      } catch (error) {
-        console.error('AI optimizeScheduling error', error);
-        toast({ title: 'AI Error', description: error.message, variant: 'destructive' });
-        throw error;
-      } finally {
-        setSchedulePending(false);
-      }
-    },
-  };
+  const optimizeScheduling = useMutation({
+    mutationFn: async ({ committeeData, agendaItems, meetingContext }) => {
+      const { success, data, error } = await invokeAI({
+        system_prompt: 'You are an expert scheduler optimizing committee meetings.',
+        prompt: JSON.stringify({ action: 'optimize_scheduling', committeeData, agendaItems, meetingContext }),
+      });
 
-  const predictDecisionImpact = {
-    isPending: impactPending,
-    mutateAsync: async ({ decisions, committeeData, meetingContext }) => {
-      setImpactPending(true);
-      try {
-        const { data, error } = await supabase.functions.invoke('strategy-committee-ai', {
-          body: { action: 'predict_decision_impact', decisions, committeeData, meetingContext },
-        });
-        if (error) throw error;
-        return data.result;
-      } catch (error) {
-        console.error('AI predictDecisionImpact error', error);
-        toast({ title: 'AI Error', description: error.message, variant: 'destructive' });
-        throw error;
-      } finally {
-        setImpactPending(false);
-      }
+      if (!success) throw new Error(error || 'AI scheduling failed');
+      return data.result || data;
     },
-  };
+    onError: (error) => {
+      console.error('AI optimizeScheduling error', error);
+      toast.error(`AI Error: ${error.message}`);
+    }
+  });
 
-  const generateActionItems = {
-    isPending: actionsPending,
-    mutateAsync: async ({ decisions, committeeData, meetingContext }) => {
-      setActionsPending(true);
-      try {
-        const { data, error } = await supabase.functions.invoke('strategy-committee-ai', {
-          body: { action: 'generate_action_items', decisions, committeeData, meetingContext },
-        });
-        if (error) throw error;
-        return data.result;
-      } catch (error) {
-        console.error('AI generateActionItems error', error);
-        toast({ title: 'AI Error', description: error.message, variant: 'destructive' });
-        throw error;
-      } finally {
-        setActionsPending(false);
-      }
-    },
-  };
+  const predictDecisionImpact = useMutation({
+    mutationFn: async ({ decisions, committeeData, meetingContext }) => {
+      const { success, data, error } = await invokeAI({
+        system_prompt: 'You are a strategic advisor predicting policy impacts.',
+        prompt: JSON.stringify({ action: 'predict_decision_impact', decisions, committeeData, meetingContext }),
+      });
 
-  const summarizeMeeting = {
-    isPending: summaryPending,
-    mutateAsync: async ({ decisions, agendaItems, committeeData, meetingContext }) => {
-      setSummaryPending(true);
-      try {
-        const { data, error } = await supabase.functions.invoke('strategy-committee-ai', {
-          body: { action: 'summarize_meeting', decisions, agendaItems, committeeData, meetingContext },
-        });
-        if (error) throw error;
-        return data.result;
-      } catch (error) {
-        console.error('AI summarizeMeeting error', error);
-        toast({ title: 'AI Error', description: error.message, variant: 'destructive' });
-        throw error;
-      } finally {
-        setSummaryPending(false);
-      }
+      if (!success) throw new Error(error || 'AI prediction failed');
+      return data.result || data;
     },
-  };
+    onError: (error) => {
+      console.error('AI predictDecisionImpact error', error);
+      toast.error(`AI Error: ${error.message}`);
+    }
+  });
+
+  const generateActionItems = useMutation({
+    mutationFn: async ({ decisions, committeeData, meetingContext }) => {
+      const { success, data, error } = await invokeAI({
+        system_prompt: 'You are an efficient minute-taker generating action items.',
+        prompt: JSON.stringify({ action: 'generate_action_items', decisions, committeeData, meetingContext }),
+      });
+
+      if (!success) throw new Error(error || 'AI generation failed');
+      return data.result || data;
+    },
+    onError: (error) => {
+      console.error('AI generateActionItems error', error);
+      toast.error(`AI Error: ${error.message}`);
+    }
+  });
+
+  const summarizeMeeting = useMutation({
+    mutationFn: async ({ decisions, agendaItems, committeeData, meetingContext }) => {
+      const { success, data, error } = await invokeAI({
+        system_prompt: 'You are an expert executive summarizer.',
+        prompt: JSON.stringify({ action: 'summarize_meeting', decisions, agendaItems, committeeData, meetingContext }),
+      });
+
+      if (!success) throw new Error(error || 'AI summary failed');
+      return data.result || data;
+    },
+    onError: (error) => {
+      console.error('AI summarizeMeeting error', error);
+      toast.error(`AI Error: ${error.message}`);
+    }
+  });
 
   return {
     prioritizeAgenda,
@@ -119,5 +93,10 @@ export function useCommitteeAI() {
     predictDecisionImpact,
     generateActionItems,
     summarizeMeeting,
+    // Expose shared state
+    status,
+    isLoading: isAiLoading || prioritizeAgenda.isPending || optimizeScheduling.isPending || predictDecisionImpact.isPending || generateActionItems.isPending || summarizeMeeting.isPending,
+    rateLimitInfo
   };
 }
+

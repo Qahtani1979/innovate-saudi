@@ -1,6 +1,7 @@
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { useVisibilitySystem } from '@/hooks/visibility/useVisibilitySystem';
@@ -72,6 +73,7 @@ export function useTechnologyRoadmapMutations() {
     const { t } = useLanguage();
     const { user } = useAuth();
     const { logCrudOperation } = useAuditLogger();
+    const { notify } = useNotificationSystem();
 
     const createRoadmapItem = useMutation({
         mutationFn: async (data) => {
@@ -96,10 +98,10 @@ export function useTechnologyRoadmapMutations() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['technology-roadmap']);
-            toast.success(t({ en: 'Roadmap item created', ar: 'تم إنشاء عنصر خارطة الطريق' }));
+            notify.success(t({ en: 'Roadmap item created', ar: 'تم إنشاء عنصر خارطة الطريق' }));
         },
         onError: (error) => {
-            toast.error(t({ en: 'Failed to create item', ar: 'فشل إنشاء العنصر' }));
+            notify.error(t({ en: 'Failed to create item', ar: 'فشل إنشاء العنصر' }));
             console.error('Create roadmap item error:', error);
         },
     });
@@ -128,10 +130,10 @@ export function useTechnologyRoadmapMutations() {
         onSuccess: (item) => {
             queryClient.invalidateQueries(['technology-roadmap']);
             queryClient.invalidateQueries(['technology-roadmap-item', item.id]);
-            toast.success(t({ en: 'Roadmap item updated', ar: 'تم تحديث عنصر خارطة الطريق' }));
+            notify.success(t({ en: 'Roadmap item updated', ar: 'تم تحديث عنصر خارطة الطريق' }));
         },
         onError: (error) => {
-            toast.error(t({ en: 'Failed to update item', ar: 'فشل تحديث العنصر' }));
+            notify.error(t({ en: 'Failed to update item', ar: 'فشل تحديث العنصر' }));
             console.error('Update roadmap item error:', error);
         },
     });
@@ -157,10 +159,10 @@ export function useTechnologyRoadmapMutations() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['technology-roadmap']);
-            toast.success(t({ en: 'Roadmap item deleted', ar: 'تم حذف عنصر خارطة الطريق' }));
+            notify.success(t({ en: 'Roadmap item deleted', ar: 'تم حذف عنصر خارطة الطريق' }));
         },
         onError: (error) => {
-            toast.error(t({ en: 'Failed to delete item', ar: 'فشل حذف العنصر' }));
+            notify.error(t({ en: 'Failed to delete item', ar: 'فشل حذف العنصر' }));
             console.error('Delete roadmap item error:', error);
         },
     });

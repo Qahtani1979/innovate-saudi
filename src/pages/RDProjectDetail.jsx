@@ -19,7 +19,8 @@ import RDProjectActivityLog from '../components/rd/RDProjectActivityLog';
 import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowApprovalTab';
 import { usePermissions } from '@/hooks/usePermissions';
 import { usePrompt } from '@/hooks/usePrompt';
-import { RD_PROJECT_DETAIL_PROMPT_TEMPLATE } from '@/lib/ai/prompts/rd/rdProjectDetail';
+import { RD_PROJECT_SYSTEM_PROMPT, rdProjectPrompts } from '@/lib/ai/prompts/rd/projectPrompts';
+import { buildPrompt } from '@/lib/ai/promptBuilder';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
 import { useRDProject } from '@/hooks/useRDProjectsWithVisibility';
@@ -125,12 +126,12 @@ export default function RDProjectDetail() {
   const handleAIInsights = async () => {
     setShowAIInsights(true);
     // Use centralized prompt template
-    const promptConfig = RD_PROJECT_DETAIL_PROMPT_TEMPLATE(project);
+    const { prompt, schema } = buildPrompt(rdProjectPrompts.detailInsights, { project });
 
     const response = await invokeAI({
-      prompt: promptConfig.prompt,
-      system_prompt: promptConfig.system,
-      response_json_schema: promptConfig.schema
+      prompt,
+      system_prompt: RD_PROJECT_SYSTEM_PROMPT,
+      response_json_schema: schema
     });
     if (response.success) {
       setAiInsights(response.data);

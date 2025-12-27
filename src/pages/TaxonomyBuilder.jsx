@@ -48,20 +48,19 @@ function TaxonomyBuilder() {
 
 
   const generateAISuggestions = async () => {
-    const {
-      TAXONOMY_SUGGESTIONS_PROMPT_TEMPLATE,
-      TAXONOMY_SUGGESTIONS_RESPONSE_SCHEMA,
-      TAXONOMY_SUGGESTIONS_SYSTEM_PROMPT
-    } = await import('@/lib/ai/prompts/taxonomy/suggestions');
+    const { TAXONOMY_SYSTEM_PROMPT, taxonomyPrompts } = await import('@/lib/ai/prompts/ecosystem/taxonomyPrompts');
+    const { buildPrompt } = await import('@/lib/ai/promptBuilder');
+
+    const { prompt, schema } = buildPrompt(taxonomyPrompts.suggestions, {
+      sectors,
+      subsectorsCount: subsectors.length,
+      servicesCount: services.length
+    });
 
     const result = await invokeAI({
-      prompt: TAXONOMY_SUGGESTIONS_PROMPT_TEMPLATE({
-        sectors,
-        subsectorsCount: subsectors.length,
-        servicesCount: services.length
-      }),
-      response_json_schema: TAXONOMY_SUGGESTIONS_RESPONSE_SCHEMA,
-      system_prompt: TAXONOMY_SUGGESTIONS_SYSTEM_PROMPT
+      prompt,
+      response_json_schema: schema,
+      system_prompt: TAXONOMY_SYSTEM_PROMPT
     });
 
     if (result.success) {

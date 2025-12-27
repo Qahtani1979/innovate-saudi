@@ -18,6 +18,8 @@ import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { useOrganization } from '@/hooks/useOrganization';
 import { useOrganizationMutations } from '@/hooks/useOrganizationMutations';
 import { useLocations } from '@/hooks/useLocations';
+import { ORGANIZATION_PROFILE_SYSTEM_PROMPT, organizationProfilePrompts } from '@/lib/ai/prompts/organizations/profilePrompts';
+import { buildPrompt } from '@/lib/ai/promptBuilder';
 
 function OrganizationEdit() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -42,28 +44,15 @@ function OrganizationEdit() {
   }, [organization]);
 
   const handleAIEnhance = async () => {
-    const prompt = `Enhance this organization profile with professional, detailed bilingual content:
-
-Organization: ${formData.name_en}
-Type: ${formData.org_type}
-Current Description: ${formData.description_en || 'N/A'}
-
-Generate comprehensive bilingual (English + Arabic) content:
-1. Improved names (EN + AR)
-2. Professional descriptions (EN + AR) - 150+ words each`;
+    // Build Prompt
+    const { prompt, schema } = buildPrompt(organizationProfilePrompts.enhance, {
+      formData
+    });
 
     const result = await invokeAI({
       prompt,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          name_en: { type: 'string' },
-          name_ar: { type: 'string' },
-          description_en: { type: 'string' },
-          description_ar: { type: 'string' }
-        }
-      },
-      system_prompt: 'You are an expert bilingual content writer.'
+      system_prompt: ORGANIZATION_PROFILE_SYSTEM_PROMPT,
+      response_json_schema: schema
     });
 
     if (result.success) {
@@ -626,6 +615,7 @@ Generate comprehensive bilingual (English + Arabic) content:
                   label={t({ en: 'Upload Logo', ar: 'رفع الشعار' })}
                   maxSize={5}
                   onUploadComplete={(url) => setFormData({ ...formData, logo_url: url })}
+                  description="Upload organization logo (PNG, JPG)"
                 />
               </div>
 
@@ -636,6 +626,7 @@ Generate comprehensive bilingual (English + Arabic) content:
                   label={t({ en: 'Upload Image', ar: 'رفع صورة' })}
                   maxSize={10}
                   onUploadComplete={(url) => setFormData({ ...formData, image_url: url })}
+                  description="Upload main profile image"
                 />
               </div>
 
@@ -646,6 +637,7 @@ Generate comprehensive bilingual (English + Arabic) content:
                   label={t({ en: 'Upload Banner', ar: 'رفع بانر' })}
                   maxSize={10}
                   onUploadComplete={(url) => setFormData({ ...formData, banner_url: url })}
+                  description="Upload banner image (1920x400 recommended)"
                 />
               </div>
             </div>
@@ -658,6 +650,7 @@ Generate comprehensive bilingual (English + Arabic) content:
                 maxSize={50}
                 preview={false}
                 onUploadComplete={(url) => setFormData({ ...formData, brochure_url: url })}
+                description="Upload organization brochure (PDF, Max 50MB)"
               />
             </div>
 
@@ -675,6 +668,7 @@ Generate comprehensive bilingual (English + Arabic) content:
                     gallery_urls: [...(prev.gallery_urls || []), url]
                   }));
                 }}
+                description="Add images to organization gallery"
               />
               {formData.gallery_urls?.length > 0 && (
                 <div className="grid grid-cols-4 gap-2 mt-2">

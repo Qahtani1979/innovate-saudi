@@ -16,6 +16,8 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { RD_CALL_SYSTEM_PROMPT, rdCallPrompts } from '@/lib/ai/prompts/rd/callPrompts';
+import { buildPrompt } from '@/lib/ai/promptBuilder';
 
 function RDCallCreate() {
   const { language, isRTL, t } = useLanguage();
@@ -84,12 +86,12 @@ function RDCallCreate() {
     }
 
     // Import centralized prompt module
-    const { RD_CALL_CREATE_PROMPT_TEMPLATE, RD_CALL_CREATE_RESPONSE_SCHEMA } = await import('@/lib/ai/prompts/rd/callCreate');
+    const { prompt, schema } = buildPrompt(rdCallPrompts.draft, formData);
 
     const { success, data } = await invokeAI({
-      prompt: RD_CALL_CREATE_PROMPT_TEMPLATE(formData),
-      response_json_schema: RD_CALL_CREATE_RESPONSE_SCHEMA,
-      system_prompt: "You are an expert R&D consultant helping to draft research call documents."
+      prompt,
+      response_json_schema: schema,
+      system_prompt: RD_CALL_SYSTEM_PROMPT
     });
 
     if (success) {

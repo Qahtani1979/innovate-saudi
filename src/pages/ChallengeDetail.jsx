@@ -11,7 +11,6 @@ import {
   Award, Image, Shield, Network, BookOpen, Calendar
 } from 'lucide-react';
 import { usePrompt } from '@/hooks/usePrompt';
-import { CHALLENGE_DETAIL_PROMPT_TEMPLATE } from '@/lib/ai/prompts/challenges/challengeDetail';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
 import { useSolutionsWithVisibility, usePilotsWithVisibility, useContractsWithVisibility } from '@/hooks/visibility';
@@ -68,9 +67,11 @@ function useChallengeData(challengeId) {
 
   const { data: allSolutions = [] } = useSolutionsWithVisibility({ limit: 1000 });
   const { data: allPilots = [] } = usePilotsWithVisibility({ limit: 1000 });
+  // @ts-ignore - challenge_id exists on runtime objects
   const pilots = allPilots.filter(p => p.challenge_id === challengeId);
 
   const { data: allContracts = [] } = useContractsWithVisibility({ limit: 1000 });
+  // @ts-ignore - challenge_id exists on runtime objects
   const contracts = allContracts.filter(c => c.challenge_id === challengeId);
 
   return {
@@ -139,11 +140,15 @@ export default function ChallengeDetailRefactored() {
     }
 
     try {
-      const promptConfig = CHALLENGE_DETAIL_PROMPT_TEMPLATE(challenge);
+      const { myChallengePrompts } = await import('@/lib/ai/prompts/ecosystem/myChallengePrompts');
+      const { buildPrompt } = await import('@/lib/ai/promptBuilder');
+
+      const { prompt, schema, system } = buildPrompt(myChallengePrompts.analysis, challenge);
+
       const result = await invokeAI({
-        prompt: promptConfig.prompt,
-        system_prompt: promptConfig.system,
-        response_json_schema: promptConfig.schema
+        prompt,
+        system_prompt: system,
+        response_json_schema: schema
       });
 
       if (result.success) {

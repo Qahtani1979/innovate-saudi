@@ -8,7 +8,6 @@ import { useLanguage } from '../components/LanguageContext';
 import SandboxPolicyFeedbackWorkflow from '../components/sandboxes/SandboxPolicyFeedbackWorkflow';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { SANDBOX_DETAIL_PROMPT_TEMPLATE } from '@/lib/ai/prompts/sandbox/sandboxDetail';
 import {
   Shield, MapPin, TestTube, CheckCircle2, AlertCircle, Sparkles,
   Activity, Building2, Wifi, Database, Zap, Users, Phone, Mail,
@@ -82,11 +81,15 @@ function SandboxDetail() {
   const handleAIInsights = async () => {
     setShowAIInsights(true);
     try {
-      const promptData = SANDBOX_DETAIL_PROMPT_TEMPLATE(sandbox);
+      const { sandboxPrompts } = await import('@/lib/ai/prompts/ecosystem/sandboxPrompts');
+      const { buildPrompt } = await import('@/lib/ai/promptBuilder');
+
+      const { prompt, schema, system } = buildPrompt(sandboxPrompts.detailAnalysis, { sandbox });
+
       const result = await invokeAI({
-        prompt: promptData.prompt,
-        system_prompt: promptData.system,
-        response_json_schema: promptData.schema
+        prompt,
+        system_prompt: system,
+        response_json_schema: schema
       });
       if (result.success && result.data) {
         setAiInsights(result.data);

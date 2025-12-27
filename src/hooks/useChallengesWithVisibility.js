@@ -168,11 +168,14 @@ export function useChallenge(challengeId) {
     queryKey: ['challenge', challengeId],
     queryFn: async () => {
       if (!challengeId) return null;
-      return fetchWithVisibility('challenges', `
+      const data = await fetchWithVisibility('challenges', `
         *,
         municipality:municipalities(id, name_en, name_ar, region_id, region:regions(id, code, name_en)),
         sector:sectors(id, name_en, name_ar, code)
-      `, { id: challengeId, single: true });
+      `, {
+        additionalFilters: { id: challengeId }
+      });
+      return data?.[0] || null;
     },
     enabled: !!challengeId && !isVisibilityLoading,
     staleTime: 1000 * 60 * 5

@@ -86,15 +86,15 @@ function SandboxCreate() {
       return;
     }
     try {
-      // Import centralized prompt module
-      const {
-        SANDBOX_CREATE_PROMPT_TEMPLATE,
-        SANDBOX_CREATE_RESPONSE_SCHEMA
-      } = await import('@/lib/ai/prompts/sandbox/creation');
+      const { sandboxPrompts } = await import('@/lib/ai/prompts/ecosystem/sandboxPrompts');
+      const { buildPrompt } = await import('@/lib/ai/promptBuilder');
+
+      const { prompt, schema, system } = buildPrompt(sandboxPrompts.editor, formData);
 
       const result = await invokeAI({
-        prompt: SANDBOX_CREATE_PROMPT_TEMPLATE(formData),
-        response_json_schema: SANDBOX_CREATE_RESPONSE_SCHEMA
+        prompt,
+        system_prompt: system,
+        response_json_schema: schema
       });
 
       if (result.success) {

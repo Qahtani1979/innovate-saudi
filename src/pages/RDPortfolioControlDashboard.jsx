@@ -13,6 +13,8 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useAuth } from '@/lib/AuthContext';
+import { RD_PROJECT_SYSTEM_PROMPT, rdProjectPrompts } from '@/lib/ai/prompts/rd/projectPrompts';
+import { buildPrompt } from '@/lib/ai/promptBuilder';
 
 function RDPortfolioControlDashboard() {
   const { language, isRTL, t } = useLanguage();
@@ -43,31 +45,19 @@ function RDPortfolioControlDashboard() {
   const chartData = Object.values(researchAreaData);
 
   const generatePortfolioAnalysis = async () => {
+    const { prompt, schema } = buildPrompt(rdProjectPrompts.portfolioAnalysis, {
+      projects: rdProjects,
+      activeProjects,
+      totalPublications,
+      totalPatents,
+      avgTRLGain,
+      chartData
+    });
+
     const result = await invokeAI({
-      prompt: `Analyze R&D portfolio:
-
-Total projects: ${rdProjects.length}
-Active: ${activeProjects.length}
-Publications: ${totalPublications}
-Patents: ${totalPatents}
-Avg TRL gain: ${Math.round(avgTRLGain * 10) / 10}
-
-Research areas: ${JSON.stringify(chartData)}
-
-Provide:
-1. Portfolio diversity assessment
-2. Research gaps to address
-3. Commercialization potential (TRL advancement)
-4. Recommendations for next R&D calls`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          diversity_score: { type: 'number' },
-          gaps: { type: 'array', items: { type: 'string' } },
-          commercialization_opportunities: { type: 'array', items: { type: 'string' } },
-          call_recommendations: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      prompt,
+      system_prompt: RD_PROJECT_SYSTEM_PROMPT,
+      response_json_schema: schema
     });
 
     if (result.success) {

@@ -16,6 +16,8 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { useRDProject } from '@/hooks/useRDProjectsWithVisibility';
 import { useRDProjectMutations } from '@/hooks/useRDProjectMutations';
+import { RD_PROJECT_SYSTEM_PROMPT, rdProjectPrompts } from '@/lib/ai/prompts/rd/projectPrompts';
+import { buildPrompt } from '@/lib/ai/promptBuilder';
 
 function RDProjectEditPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -42,102 +44,15 @@ function RDProjectEditPage() {
   };
 
   const handleAIEnhance = async () => {
-    const prompt = `Enhance this R&D project with comprehensive professional academic and technical content for Saudi municipal innovation:
-
-Project Title: ${formData.title_en || formData.title_ar || 'Untitled Project'}
-Institution: ${formData.institution_en || formData.institution || 'Unknown'}
-Institution Type: ${formData.institution_type || 'university'}
-Research Area: ${formData.research_area_en || formData.research_area || 'General Research'}
-Current Abstract: ${formData.abstract_en || 'N/A'}
-Current Methodology: ${formData.methodology_en || formData.methodology || 'N/A'}
-Principal Investigator: ${formData.principal_investigator?.name_en || formData.principal_investigator?.name || 'N/A'}
-Funding Source: ${formData.funding_source_en || formData.funding_source || 'N/A'}
-TRL Start: ${formData.trl_start || 'N/A'}
-TRL Target: ${formData.trl_target || 'N/A'}
-
-Generate comprehensive BILINGUAL (English + Arabic) content for ALL fields:
-1. Improved titles (EN + AR) - academic, precise, and compelling
-2. Research taglines (EN + AR) - concise summaries
-3. Detailed abstracts (EN + AR) - 400+ words each covering research problem, methodology, objectives, expected outcomes, and significance
-4. Institution name (EN + AR) - proper academic institution name
-5. Research area (EN + AR) - specific research domain
-6. Research methodology (EN + AR) - detailed scientific approach
-7. Funding source (EN + AR) - funding body name
-8. Principal investigator name (EN + AR) - researcher name and title (EN + AR)
-9. Research keywords (8-12 relevant terms)
-10. Research themes (3-5 themes)
-11. Expected outputs with bilingual descriptions and types (4-6 outputs like publications, patents, prototypes, datasets)
-12. Impact assessment with bilingual content (academic, practical, policy impacts in EN + AR)
-13. Pilot opportunities with bilingual descriptions (2-3 potential pilot scenarios in Saudi municipalities)`;
+    // Build Prompt
+    const { prompt, schema } = buildPrompt(rdProjectPrompts.enhance, {
+      formData
+    });
 
     const result = await invokeAI({
       prompt,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          title_en: { type: 'string' },
-          title_ar: { type: 'string' },
-          tagline_en: { type: 'string' },
-          tagline_ar: { type: 'string' },
-          abstract_en: { type: 'string' },
-          abstract_ar: { type: 'string' },
-          institution_en: { type: 'string' },
-          institution_ar: { type: 'string' },
-          research_area_en: { type: 'string' },
-          research_area_ar: { type: 'string' },
-          methodology_en: { type: 'string' },
-          methodology_ar: { type: 'string' },
-          funding_source_en: { type: 'string' },
-          funding_source_ar: { type: 'string' },
-          principal_investigator: {
-            type: 'object',
-            properties: {
-              name_en: { type: 'string' },
-              name_ar: { type: 'string' },
-              title_en: { type: 'string' },
-              title_ar: { type: 'string' }
-            }
-          },
-          keywords: { type: 'array', items: { type: 'string' } },
-          research_themes: { type: 'array', items: { type: 'string' } },
-          expected_outputs: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                output_en: { type: 'string' },
-                output_ar: { type: 'string' },
-                type: { type: 'string' },
-                target_date: { type: 'string' }
-              }
-            }
-          },
-          impact_assessment: {
-            type: 'object',
-            properties: {
-              academic_impact_en: { type: 'string' },
-              academic_impact_ar: { type: 'string' },
-              practical_impact_en: { type: 'string' },
-              practical_impact_ar: { type: 'string' },
-              policy_impact_en: { type: 'string' },
-              policy_impact_ar: { type: 'string' }
-            }
-          },
-          pilot_opportunities: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                description_en: { type: 'string' },
-                description_ar: { type: 'string' },
-                municipality: { type: 'string' },
-                status: { type: 'string' }
-              }
-            }
-          }
-        }
-      },
-      system_prompt: "You are an expert R&D consultant helping to refine project proposals."
+      system_prompt: RD_PROJECT_SYSTEM_PROMPT,
+      response_json_schema: schema
     });
 
     if (result.success && result.data) {

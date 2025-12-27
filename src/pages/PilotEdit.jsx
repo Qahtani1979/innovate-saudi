@@ -26,6 +26,7 @@ import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
 import { useLocations } from '@/hooks/useLocations';
 import { useLivingLabs } from '@/hooks/useLivingLabs';
 import { useSandboxes } from '@/hooks/useSandboxes';
+import { buildPrompt } from '@/lib/ai/promptBuilder';
 
 function PilotEditPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -144,249 +145,38 @@ function PilotEditPage() {
     }
   };
 
+
+
+  // ... inside component
+
   const handleSectionAIEnhance = async (section) => {
     setIsAIProcessing(true);
     try {
+      const { pilotPrompts } = await import('@/lib/ai/prompts/ecosystem/pilotPrompts');
+      const { buildPrompt } = await import('@/lib/ai/promptBuilder');
+
       const challenge = challenges.find(c => c.id === formData.challenge_id);
       const solution = solutions.find(s => s.id === formData.solution_id);
       const municipality = municipalities.find(m => m.id === formData.municipality_id);
 
-      const baseContext = `
-        CONTEXT - Pilot Information:
-        Title: ${formData.title_en} | ${formData.title_ar || ''}
-        Challenge: ${challenge?.title_en || 'N/A'}
-        Solution: ${solution?.name_en || 'N/A'}
-        Municipality: ${municipality?.name_en || 'N/A'}
-        Sector: ${formData.sector}
-        Stage: ${formData.stage}
-        Description: ${formData.description_en?.substring(0, 200)}
-        
-        Generate BILINGUAL (Arabic + English) content for Saudi municipal innovation pilot.
-      `;
-
-      let prompt = '';
-      let schema = {};
-
-      if (section === 'technology') {
-        prompt = `${baseContext}
-        
-        Current Stack: ${JSON.stringify(formData.technology_stack)}
-        Solution: ${solution?.name_en}
-        Budget: ${formData.budget}
-        
-        Recommend comprehensive technology stack (8-12 items) covering:
-        - Hardware (sensors, devices, infrastructure)
-        - Software (platforms, applications, tools)
-        - Data & Analytics
-        - Communication & Networking
-        - Security & Compliance
-        
-        For each: category, technology, version, purpose`;
-
-        schema = {
-          type: 'object',
-          properties: {
-            technology_stack: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  category: { type: 'string' },
-                  technology: { type: 'string' },
-                  version: { type: 'string' },
-                  purpose: { type: 'string' }
-                }
-              }
-            }
-          }
-        };
-      } else if (section === 'engagement') {
-        prompt = `${baseContext}
-        
-        Municipality: ${municipality?.name_en}
-        Target Population: ${JSON.stringify(formData.target_population)}
-        
-        Generate public engagement strategy with:
-        1. Realistic community session targets
-        2. Feedback collection goals
-        3. Expected satisfaction scores
-        4. Anticipated media coverage (5-8 outlets with dates and sentiment)`;
-
-        schema = {
-          type: 'object',
-          properties: {
-            public_engagement: {
-              type: 'object',
-              properties: {
-                community_sessions: { type: 'number' },
-                feedback_collected: { type: 'number' },
-                satisfaction_score: { type: 'number' }
-              }
-            },
-            media_coverage: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  outlet: { type: 'string' },
-                  date: { type: 'string' },
-                  url: { type: 'string' },
-                  sentiment: { type: 'string', enum: ['positive', 'neutral', 'negative'] }
-                }
-              }
-            }
-          }
-        };
-      } else if (section === 'details') {
-        prompt = `${baseContext}
-        
-        Current data:
-        Title EN: ${formData.title_en}
-        Title AR: ${formData.title_ar || ''}
-        Description EN: ${formData.description_en || ''}
-        Description AR: ${formData.description_ar || ''}
-        Objective EN: ${formData.objective_en || ''}
-        Objective AR: ${formData.objective_ar || ''}
-        
-        Enhance: refined titles, taglines, detailed descriptions (200+ words each), clear objectives, hypothesis, methodology, scope.`;
-
-        schema = {
-          type: 'object',
-          properties: {
-            title_en: { type: 'string' },
-            title_ar: { type: 'string' },
-            tagline_en: { type: 'string' },
-            tagline_ar: { type: 'string' },
-            description_en: { type: 'string' },
-            description_ar: { type: 'string' },
-            objective_en: { type: 'string' },
-            objective_ar: { type: 'string' },
-            hypothesis: { type: 'string' },
-            methodology: { type: 'string' },
-            scope: { type: 'string' }
-          }
-        };
-      } else if (section === 'kpis') {
-        prompt = `${baseContext}
-        
-        Generate 5-8 comprehensive KPIs with:
-        - Bilingual names
-        - Realistic baseline values
-        - Ambitious but achievable targets
-        - Appropriate units
-        - Measurement frequency`;
-
-        schema = {
-          type: 'object',
-          properties: {
-            kpis: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  name: { type: 'string' },
-                  baseline: { type: 'string' },
-                  target: { type: 'string' },
-                  unit: { type: 'string' },
-                  measurement_frequency: { type: 'string' },
-                  data_source: { type: 'string' }
-                }
-              }
-            }
-          }
-        };
-      } else if (section === 'timeline') {
-        prompt = `${baseContext}
-        
-        Duration: ${formData.duration_weeks} weeks
-        Start: ${formData.timeline?.pilot_start || 'TBD'}
-        
-        Generate 6-10 realistic milestones with:
-        - Bilingual names and descriptions
-        - Evenly distributed dates
-        - Key deliverables (EN + AR arrays)`;
-
-        schema = {
-          type: 'object',
-          properties: {
-            milestones: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  name: { type: 'string' },
-                  name_ar: { type: 'string' },
-                  description: { type: 'string' },
-                  description_ar: { type: 'string' },
-                  due_date: { type: 'string' },
-                  deliverables: { type: 'array', items: { type: 'string' } },
-                  deliverables_ar: { type: 'array', items: { type: 'string' } },
-                  status: { type: 'string' }
-                }
-              }
-            }
-          }
-        };
-      } else if (section === 'risks') {
-        prompt = `${baseContext}
-        
-        Generate 4-6 specific risks with:
-        - Clear risk descriptions
-        - Probability (low/medium/high)
-        - Impact (low/medium/high)
-        - Detailed mitigation strategies
-        - Safety protocols (5-8 items)
-        - Regulatory exemptions if needed`;
-
-        schema = {
-          type: 'object',
-          properties: {
-            risks: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  risk: { type: 'string' },
-                  probability: { type: 'string' },
-                  impact: { type: 'string' },
-                  mitigation: { type: 'string' },
-                  status: { type: 'string' }
-                }
-              }
-            },
-            safety_protocols: { type: 'array', items: { type: 'string' } },
-            regulatory_exemptions: { type: 'array', items: { type: 'string' } }
-          }
-        };
-      } else if (section === 'evaluation') {
-        prompt = `${baseContext}
-        
-        Current: TRL ${formData.trl_start || 4} → ${formData.trl_target || 7}
-        
-        Generate evaluation content:
-        - Bilingual evaluation summaries (150+ words)
-        - AI insights
-        - Success probability (0-100)
-        - Risk level assessment
-        - Recommendation (scale/iterate/pivot/terminate/pending)`;
-
-        schema = {
-          type: 'object',
-          properties: {
-            evaluation_summary_en: { type: 'string' },
-            evaluation_summary_ar: { type: 'string' },
-            ai_insights: { type: 'string' },
-            success_probability: { type: 'number' },
-            risk_level: { type: 'string' },
-            recommendation: { type: 'string' }
-          }
-        };
+      // Get standardized prompt config from new registry
+      const promptConfig = pilotPrompts.editor[section];
+      if (!promptConfig) {
+        toast.error('Invalid enhancement section');
+        return;
       }
+
+      const { prompt, schema, system } = buildPrompt(promptConfig, {
+        formData,
+        solution,
+        municipality,
+        challenge
+      });
 
       const result = await invokeAI({
         prompt,
         response_json_schema: schema,
-        system_prompt: "You are an expert innovation consultant helping to refine pilot project details."
+        system_prompt: system
       });
 
       if (!result.success) {
@@ -408,7 +198,10 @@ function PilotEditPage() {
 
       toast.success(`✨ ${section} enhanced successfully!`);
     } catch (error) {
+      console.error(error);
       toast.error('AI enhancement failed: ' + error.message);
+    } finally {
+      setIsAIProcessing(false);
     }
   };
 

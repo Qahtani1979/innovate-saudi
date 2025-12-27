@@ -1,7 +1,7 @@
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation } from '@tanstack/react-query';
-import { toast } from 'sonner';
+
 import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 export function useTaxonomyMutations() {
@@ -17,7 +17,7 @@ export function useTaxonomyMutations() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['sectors']);
-            toast.success('Sector created');
+            notify.success('Sector created');
 
             // Notification: Sector Created
             notify({
@@ -40,7 +40,7 @@ export function useTaxonomyMutations() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['sectors']);
-            toast.success('Sector updated');
+            notify.success('Sector updated');
         }
     });
 
@@ -51,7 +51,7 @@ export function useTaxonomyMutations() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['sectors']);
-            toast.success('Sector deleted');
+            notify.success('Sector deleted');
         }
     });
 
@@ -64,7 +64,7 @@ export function useTaxonomyMutations() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['subsectors']);
-            toast.success('Subsector created');
+            notify.success('Subsector created');
         }
     });
 
@@ -76,7 +76,7 @@ export function useTaxonomyMutations() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['subsectors']);
-            toast.success('Subsector updated');
+            notify.success('Subsector updated');
         }
     });
 
@@ -87,7 +87,7 @@ export function useTaxonomyMutations() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['subsectors']);
-            toast.success('Subsector deleted');
+            notify.success('Subsector deleted');
         }
     });
 
@@ -100,7 +100,7 @@ export function useTaxonomyMutations() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['services']);
-            toast.success('Service created');
+            notify.success('Service created');
         }
     });
 
@@ -112,7 +112,7 @@ export function useTaxonomyMutations() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['services']);
-            toast.success('Service updated');
+            notify.success('Service updated');
         }
     });
 
@@ -123,7 +123,7 @@ export function useTaxonomyMutations() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['services']);
-            toast.success('Service deleted');
+            notify.success('Service deleted');
         }
     });
 
@@ -137,7 +137,7 @@ export function useTaxonomyMutations() {
         onSuccess: () => {
             queryClient.invalidateQueries(['tags']);
             queryClient.invalidateQueries(['tags-all']); // Invalidate both potential keys
-            toast.success('Tag created');
+            notify.success('Tag created');
         }
     });
 
@@ -149,7 +149,7 @@ export function useTaxonomyMutations() {
         onSuccess: () => {
             queryClient.invalidateQueries(['tags']);
             queryClient.invalidateQueries(['tags-all']);
-            toast.success('Tag deleted');
+            notify.success('Tag deleted');
         }
     });
 

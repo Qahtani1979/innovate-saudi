@@ -22,6 +22,8 @@ import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { useSolutionMutations } from '../hooks/useSolutionMutations';
 import { useSolutionDetails } from '@/hooks/useSolutionDetails';
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
+import { SOLUTION_CONSULTANT_SYSTEM_PROMPT, enhancementPrompts } from '@/lib/ai/prompts/solutions/enhancerPrompts';
+import { buildPrompt } from '@/lib/ai/promptBuilder';
 
 function SolutionEditPage() {
   const { user } = usePermissions();
@@ -50,81 +52,26 @@ function SolutionEditPage() {
   const { updateSolution } = useSolutionMutations();
 
 
+
+
+  // ... inside component
+
   const handleAIEnhancement = async () => {
     if (!formData.name_en && !formData.description_en) {
       toast.error(language === 'ar' ? 'يرجى إدخال الاسم أو الوصف أولاً' : 'Please enter a name or description first');
       return;
     }
 
-    const challengeContext = challenges.length > 0 ? `
-      Available Challenges (analyze and match to this solution):
-      ${challenges.slice(0, 20).map(c => `
-      - Code: ${c.code}
-        Title: ${c.title_en}
-        Sector: ${c.sector}
-        Description: ${c.description_en?.substring(0, 150)}
-      `).join('\n')}
-      
-      Task: Analyze the solution and identify which challenges it could address.
-      Return an array of challenge codes that match.
-      ` : '';
-
-    const prompt = `
-        Analyze this innovation solution and provide BILINGUAL (Arabic + English) structured output.
-        
-        Current data:
-        Name EN: ${formData.name_en}
-        Name AR: ${formData.name_ar}
-        Description EN: ${formData.description_en}
-        Description AR: ${formData.description_ar}
-        Provider: ${formData.provider_name}
-        
-        ${challengeContext}
-        
-        Generate comprehensive enhancement:
-        1. Refined names (AR + EN) - concise, professional
-        2. Improved descriptions (AR + EN) - detailed, 200+ words
-        3. Taglines (AR + EN) - catchy one-liners
-        4. Value proposition - clear benefit statement
-        5. Features (5-8 key features)
-        6. Use cases (3-5 use cases with title, description, sector)
-        7. Technology stack (array of technologies used)
-        8. Sectors (array of applicable sectors)
-        9. TRL level (1-9)
-        10. Matched challenge codes (if applicable)
-      `;
+    // Build Standardized Prompt
+    const { prompt, schema } = buildPrompt(enhancementPrompts.enhanceDetails, {
+      formData,
+      challenges
+    });
 
     const result = await invokeAI({
       prompt,
-      system_prompt: "You are an expert innovation consultant specializing in Saudi Arabia's municipal sector.",
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          refined_name_en: { type: 'string' },
-          refined_name_ar: { type: 'string' },
-          improved_description_en: { type: 'string' },
-          improved_description_ar: { type: 'string' },
-          tagline_en: { type: 'string' },
-          tagline_ar: { type: 'string' },
-          value_proposition: { type: 'string' },
-          features: { type: 'array', items: { type: 'string' } },
-          use_cases: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                title: { type: 'string' },
-                description: { type: 'string' },
-                sector: { type: 'string' }
-              }
-            }
-          },
-          technology_stack: { type: 'array', items: { type: 'string' } },
-          sectors: { type: 'array', items: { type: 'string' } },
-          trl: { type: 'number' },
-          matched_challenge_codes: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      system_prompt: SOLUTION_CONSULTANT_SYSTEM_PROMPT,
+      response_json_schema: schema
     });
 
     if (result.success) {

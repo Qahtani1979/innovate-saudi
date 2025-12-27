@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
 import { Target, AlertTriangle, TrendingUp, CheckCircle2, Sparkles, AlertCircle, TestTube, Microscope, Calendar } from 'lucide-react';
+import { STRATEGY_SYSTEM_PROMPT, strategyPrompts } from '@/lib/ai/prompts/ecosystem/strategyPrompts';
+import { buildPrompt } from '@/lib/ai/promptBuilder';
 
 export default function StrategicExecutionDashboard() {
   const { language, isRTL, t } = useLanguage();
@@ -65,38 +67,18 @@ export default function StrategicExecutionDashboard() {
       ...calculateThemeProgress(theme)
     })) || [];
 
+    const { prompt, schema } = buildPrompt(strategyPrompts.executionInsights, {
+      activePlan,
+      themeProgress,
+      totalChallenges: challenges.length,
+      activePilots: pilots.filter(p => p.stage === 'active').length,
+      completedPilots: pilots.filter(p => p.stage === 'completed').length
+    });
+
     const { success, data } = await invokeAI({
-      prompt: `Analyze strategic plan execution progress and provide actionable insights.
-
-Plan: ${activePlan.name_en}
-Themes Progress: ${JSON.stringify(themeProgress)}
-Total Challenges: ${challenges.length}
-Active Pilots: ${pilots.filter(p => p.stage === 'active').length}
-Completed Pilots: ${pilots.filter(p => p.stage === 'completed').length}
-
-Provide 3-5 critical insights about:
-1. Themes that are behind schedule and recommended actions
-2. Opportunities to accelerate progress
-3. Resource reallocation suggestions
-
-Be specific and actionable.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          insights: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                type: { type: "string", enum: ["alert", "recommendation", "opportunity"] },
-                title: { type: "string" },
-                description: { type: "string" },
-                action: { type: "string" }
-              }
-            }
-          }
-        }
-      }
+      prompt,
+      system_prompt: STRATEGY_SYSTEM_PROMPT,
+      response_json_schema: schema
     });
 
     if (success) {

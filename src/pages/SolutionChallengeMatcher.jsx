@@ -82,51 +82,18 @@ function SolutionChallengeMatcher() {
   };
 
   const generateProposal = async (challenge) => {
+    const { solutionPrompts, SOLUTION_SYSTEM_PROMPT } = await import('@/lib/ai/prompts/innovation/solutionPrompts');
+    const { buildPrompt } = await import('@/lib/ai/promptBuilder');
+
+    const { prompt, schema } = buildPrompt(solutionPrompts.automatedMatching, {
+      solution: selectedSolution,
+      challenge
+    });
+
     const result = await invokeAI({
-      prompt: `Generate a comprehensive proposal for this solution to address this challenge.
-
-SOLUTION:
-Name: ${selectedSolution.name_en}
-Provider: ${selectedSolution.provider_name}
-Description: ${selectedSolution.description_en}
-Features: ${selectedSolution.features?.join(', ') || 'N/A'}
-Maturity: ${selectedSolution.maturity_level}
-TRL: ${selectedSolution.trl || 'N/A'}
-Deployments: ${selectedSolution.deployment_count || 0}
-Success Rate: ${selectedSolution.success_rate || 0}%
-
-CHALLENGE:
-Title: ${challenge.title_en}
-Description: ${challenge.description_en}
-Sector: ${challenge.sector}
-Priority: ${challenge.priority}
-Budget: ${challenge.budget_estimate || 'N/A'} SAR
-
-Generate bilingual (English + Arabic) proposal:
-1. Executive Summary (why this solution fits)
-2. Technical Approach (how it addresses the challenge)
-3. Implementation Plan (timeline, phases)
-4. Expected Outcomes (KPIs, impact)
-5. Budget Breakdown
-6. Risk Mitigation
-7. Provider Qualifications
-
-Be persuasive and detailed.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          proposal_title_en: { type: 'string' },
-          proposal_title_ar: { type: 'string' },
-          executive_summary_en: { type: 'string' },
-          executive_summary_ar: { type: 'string' },
-          technical_approach_en: { type: 'string' },
-          implementation_plan_en: { type: 'string' },
-          expected_outcomes: { type: 'array', items: { type: 'string' } },
-          budget_breakdown: { type: 'array', items: { type: 'object' } },
-          risk_mitigation: { type: 'array', items: { type: 'string' } },
-          qualifications_summary: { type: 'string' }
-        }
-      }
+      prompt,
+      response_json_schema: schema,
+      system_prompt: SOLUTION_SYSTEM_PROMPT
     });
 
     if (result.success) {
@@ -165,7 +132,7 @@ Be persuasive and detailed.`,
         </p>
       </div>
 
-      <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} />
+      <AIStatusIndicator status={aiStatus} rateLimitInfo={rateLimitInfo} error={null} />
 
       {/* Proposal Draft Modal */}
       {proposalDraft && (

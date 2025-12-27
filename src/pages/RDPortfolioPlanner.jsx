@@ -15,6 +15,8 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useState } from 'react';
+import { RD_PROJECT_SYSTEM_PROMPT, rdProjectPrompts } from '@/lib/ai/prompts/rd/projectPrompts';
+import { buildPrompt } from '@/lib/ai/promptBuilder';
 import { useAuth } from '@/lib/AuthContext';
 
 /**
@@ -39,67 +41,17 @@ function RDPortfolioPlanner() {
       !rdProjects.some(r => r.challenge_ids?.includes(c.id))
     );
 
+    const { prompt, schema } = buildPrompt(rdProjectPrompts.portfolioPlanner, {
+      projects: rdProjects,
+      calls: rdCalls,
+      gapChallenges,
+      challenges
+    });
+
     const result = await invokeAI({
-      prompt: `Create a strategic R&D portfolio plan for Saudi municipal innovation:
-
-Current State:
-- Active R&D Projects: ${rdProjects.length}
-- R&D Calls: ${rdCalls.length}
-- Unaddressed Challenges: ${gapChallenges.length}
-- Challenges by sector: ${challenges.slice(0, 10).map(c => `${c.sector}: ${c.title_en}`).join('; ')}
-
-Generate bilingual recommendations for:
-1. Recommended R&D calls for next 12 months (3-5 calls)
-2. Budget allocation across research themes
-3. Priority research areas based on challenge gaps
-4. Timeline for call launches
-5. Expected TRL progression targets
-
-Each recommendation should include English and Arabic versions.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          recommended_calls: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                title_en: { type: 'string' },
-                title_ar: { type: 'string' },
-                focus_area_en: { type: 'string' },
-                focus_area_ar: { type: 'string' },
-                budget: { type: 'number' },
-                timeline_en: { type: 'string' },
-                timeline_ar: { type: 'string' },
-                expected_projects: { type: 'number' },
-                priority: { type: 'string' }
-              }
-            }
-          },
-          research_themes: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                theme_en: { type: 'string' },
-                theme_ar: { type: 'string' },
-                budget_percentage: { type: 'number' },
-                rationale_en: { type: 'string' },
-                rationale_ar: { type: 'string' }
-              }
-            }
-          },
-          portfolio_balance: {
-            type: 'object',
-            properties: {
-              short_term_percentage: { type: 'number' },
-              long_term_percentage: { type: 'number' },
-              justification_en: { type: 'string' },
-              justification_ar: { type: 'string' }
-            }
-          }
-        }
-      }
+      prompt,
+      system_prompt: RD_PROJECT_SYSTEM_PROMPT,
+      response_json_schema: schema
     });
 
     if (result.success) {

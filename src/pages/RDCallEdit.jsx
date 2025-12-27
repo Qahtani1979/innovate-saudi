@@ -17,6 +17,8 @@ import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { RD_CALL_SYSTEM_PROMPT, rdCallPrompts } from '@/lib/ai/prompts/rd/callPrompts';
+import { buildPrompt } from '@/lib/ai/promptBuilder';
 
 function RDCallEdit() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -47,75 +49,15 @@ function RDCallEdit() {
   };
 
   const handleAIEnhance = async () => {
-    const prompt = `Enhance this R&D call with professional content for Saudi municipal innovation:
-
-Title: ${formData.title_en}
-Current Description: ${formData.description_en || 'N/A'}
-Current Themes: ${formData.research_themes?.map(t => t.theme).join(', ') || 'N/A'}
-Call Type: ${formData.call_type || 'open_call'}
-
-Generate comprehensive enhanced bilingual content:
-1. Improved title (keep essence, make more professional) and tagline (EN + AR)
-2. Professional detailed description (EN + AR) - 500+ words explaining scope, importance, alignment with Vision 2030
-3. Clear objectives in both languages
-4. Enhanced/expanded research themes with descriptions (3-5 themes)
-5. Expected outcomes/deliverables (5-7 items)
-6. Eligibility criteria (5-7 items)
-7. Evaluation criteria with weights (4-5 items, weights sum to 100)
-8. Submission requirements (3-5 items)
-9. Focus areas/keywords (5-8 items)`;
+    // Build Prompt
+    const { prompt, schema } = buildPrompt(rdCallPrompts.enhance, {
+      formData
+    });
 
     const result = await invokeAI({
       prompt,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          title_en: { type: 'string' },
-          title_ar: { type: 'string' },
-          tagline_en: { type: 'string' },
-          tagline_ar: { type: 'string' },
-          description_en: { type: 'string' },
-          description_ar: { type: 'string' },
-          objectives_en: { type: 'string' },
-          objectives_ar: { type: 'string' },
-          expected_outcomes: { type: 'array', items: { type: 'string' } },
-          eligibility_criteria: { type: 'array', items: { type: 'string' } },
-          research_themes: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                theme: { type: 'string' },
-                description: { type: 'string' }
-              }
-            }
-          },
-          evaluation_criteria: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                criterion: { type: 'string' },
-                description: { type: 'string' },
-                weight: { type: 'number' }
-              }
-            }
-          },
-          submission_requirements: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                requirement: { type: 'string' },
-                description: { type: 'string' },
-                mandatory: { type: 'boolean' }
-              }
-            }
-          },
-          focus_areas: { type: 'array', items: { type: 'string' } }
-        }
-      },
-      system_prompt: "You are an expert R&D consultant helping to draft professional research calls."
+      system_prompt: RD_CALL_SYSTEM_PROMPT,
+      response_json_schema: schema
     });
 
     if (result.success && result.data) {

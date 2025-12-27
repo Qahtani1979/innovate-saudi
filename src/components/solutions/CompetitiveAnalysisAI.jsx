@@ -5,11 +5,7 @@ import { useLanguage } from '../LanguageContext';
 import { TrendingUp, Sparkles, Loader2 } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import {
-  generateCompetitiveAnalysisPrompt,
-  getCompetitiveAnalysisSchema,
-  getCompetitiveAnalysisSystemPrompt
-} from '@/lib/ai/prompts/solution';
+// Styles & Icons import
 
 export default function CompetitiveAnalysisAI({ solution, allSolutions }) {
   const { language, isRTL, t } = useLanguage();
@@ -17,15 +13,23 @@ export default function CompetitiveAnalysisAI({ solution, allSolutions }) {
   const { invokeAI, status, isLoading: loading, rateLimitInfo, isAvailable } = useAIWithFallback();
 
   const handleAnalyze = async () => {
-    const competitors = allSolutions.filter(s => 
-      s.id !== solution.id && 
+    const competitors = allSolutions.filter(s =>
+      s.id !== solution.id &&
       s.sectors?.some(sec => solution.sectors?.includes(sec))
     ).slice(0, 5);
 
+    const { solutionPrompts, SOLUTION_SYSTEM_PROMPT } = await import('@/lib/ai/prompts/innovation/solutionPrompts');
+    const { buildPrompt } = await import('@/lib/ai/promptBuilder');
+
+    const { prompt, schema } = buildPrompt(solutionPrompts.competitiveAnalysis, {
+      solution,
+      competitors
+    });
+
     const { success, data } = await invokeAI({
-      prompt: generateCompetitiveAnalysisPrompt(solution, competitors),
-      response_json_schema: getCompetitiveAnalysisSchema(),
-      system_prompt: getCompetitiveAnalysisSystemPrompt()
+      prompt,
+      response_json_schema: schema,
+      system_prompt: SOLUTION_SYSTEM_PROMPT
     });
 
     if (success) {

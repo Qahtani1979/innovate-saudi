@@ -5,8 +5,8 @@
  */
 
 export * from './pricingSuggester';
-export * from './competitiveAnalysis';
-export * from './successPredictor';
+// export * from './competitiveAnalysis'; // Deprecated
+// export * from './successPredictor'; // Deprecated
 export * from './complianceValidation';
 export * from './marketIntelligence';
 export * from './automatedMatching';

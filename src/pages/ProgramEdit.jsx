@@ -122,33 +122,20 @@ function ProgramEditPage() {
   };
 
   const handleAIEnhance = async () => {
-    const prompt = `Enhance this program description with professional, detailed bilingual content:
+    // Dynamic import to avoid circular deps and reduce bundle size
+    const { programPrompts } = await import('@/lib/ai/prompts/ecosystem/programPrompts');
+    const { buildPrompt } = await import('@/lib/ai/promptBuilder');
 
-Program: ${formData.name_en}
-Type: ${formData.program_type}
-Current Description: ${formData.description_en || 'N/A'}
-
-Generate comprehensive bilingual (English + Arabic) content:
-1. Improved names (EN + AR)
-2. Compelling taglines (EN + AR)
-3. Detailed descriptions (EN + AR) - 250+ words each
-4. Program objectives (EN + AR)`;
+    // Build Prompt
+    const { prompt, schema, system } = buildPrompt(programPrompts.editor, {
+      ...formData,
+      name_en: formData.name_en // Ensure name_en comes from formData
+    });
 
     const result = await invokeAI({
       prompt,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          name_en: { type: 'string' },
-          name_ar: { type: 'string' },
-          tagline_en: { type: 'string' },
-          tagline_ar: { type: 'string' },
-          description_en: { type: 'string' },
-          description_ar: { type: 'string' },
-          objectives_en: { type: 'string' },
-          objectives_ar: { type: 'string' }
-        }
-      }
+      system_prompt: system,
+      response_json_schema: schema
     });
 
     if (result.success) {

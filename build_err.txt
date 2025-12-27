@@ -1,0 +1,30 @@
+
+> innovate-saudi-app@0.0.0 build
+> vite build
+
+[36mvite v6.3.6 [32mbuilding for production...[36m[39m
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+transforming...
+[32m✓[39m 2347 modules transformed.
+[31m✗[39m Build failed in 6.41s
+[31merror during build:
+[31msrc/hooks/useTaxonomyMutations.js (5:9): Identifier "useNotificationSystem" has already been declared[31m
+file: [36mC:/Users/alqah/innovate-saudi/src/hooks/useTaxonomyMutations.js:5:9[31m
+[33m
+3: import { useMutation } from '@tanstack/react-query';
+4: import { useNotificationSystem } from '@/hooks/useNotificationSystem';
+5: import { useNotificationSystem } from '@/hooks/useNotificationSystem';
+            ^
+6: 
+7: export function useTaxonomyMutations() {
+[31m
+    at getRollupError (file:///C:/Users/alqah/innovate-saudi/node_modules/rollup/dist/es/shared/parseAst.js:401:41)
+    at error (file:///C:/Users/alqah/innovate-saudi/node_modules/rollup/dist/es/shared/parseAst.js:397:42)
+    at Module.error (file:///C:/Users/alqah/innovate-saudi/node_modules/rollup/dist/es/shared/node-entry.js:16960:16)
+    at Module.addImport (file:///C:/Users/alqah/innovate-saudi/node_modules/rollup/dist/es/shared/node-entry.js:17527:22)
+    at ImportDeclaration.initialise (file:///C:/Users/alqah/innovate-saudi/node_modules/rollup/dist/es/shared/node-entry.js:13020:28)
+    at convertNode (file:///C:/Users/alqah/innovate-saudi/node_modules/rollup/dist/es/shared/node-entry.js:16358:10)
+    at convertNodeList (file:///C:/Users/alqah/innovate-saudi/node_modules/rollup/dist/es/shared/node-entry.js:16368:38)
+    at Array.program (file:///C:/Users/alqah/innovate-saudi/node_modules/rollup/dist/es/shared/node-entry.js:16218:21)
+    at convertNode (file:///C:/Users/alqah/innovate-saudi/node_modules/rollup/dist/es/shared/node-entry.js:16357:28)
+    at convertProgram (file:///C:/Users/alqah/innovate-saudi/node_modules/rollup/dist/es/shared/node-entry.js:15598:12)[39m

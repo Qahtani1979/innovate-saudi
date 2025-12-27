@@ -1,11 +1,11 @@
 import { useMutation } from '@tanstack/react-query';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
-import { useAuditLogger, AUDIT_ACTIONS, ENTITY_TYPES } from './useAuditLogger';
-import { useEmailTrigger } from './useEmailTrigger';
+import { useAuditLogger, AUDIT_ACTIONS, ENTITY_TYPES } from '@/hooks/useAuditLogger';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import { useAccessControl } from '@/hooks/useAccessControl';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 /**
  * Hook for pilot-related mutations: create, update, change stage, delete.
@@ -17,6 +17,7 @@ export function usePilotMutations() {
     const { logCrudOperation, logStatusChange } = useAuditLogger();
     const { triggerEmail } = useEmailTrigger();
     const { checkPermission, checkEntityAccess } = useAccessControl();
+    const { notify } = useNotificationSystem();
     const archivePilots = useBulkArchivePilots();
     const deletePilots = useBulkDeletePilots();
 
@@ -72,7 +73,8 @@ export function usePilotMutations() {
                     municipality: pilot.municipality_id
                 }
             }).catch(err => console.error('Email trigger failed:', err));
-            toast.success('Pilot created successfully');
+
+            notify.success('Pilot created successfully');
         }
     });
 
@@ -154,7 +156,7 @@ export function usePilotMutations() {
             if (context?.previousPilot) {
                 queryClient.setQueryData(['pilot', id], context.previousPilot);
             }
-            toast.error(`Update failed: ${error.message}`);
+            notify.error(`Update failed: ${error.message}`);
         },
         onSettled: (pilot) => {
             if (pilot) {
@@ -218,7 +220,7 @@ export function usePilotMutations() {
             queryClient.invalidateQueries({ queryKey: ['pilot', pilot.id] });
             queryClient.invalidateQueries({ queryKey: ['pilots'] });
             queryClient.invalidateQueries({ queryKey: ['pending-pilots'] });
-            toast.success(`Pilot moved to stage: ${pilot.stage}`);
+            notify.success(`Pilot moved to stage: ${pilot.stage}`);
         }
     });
 
@@ -263,10 +265,10 @@ export function usePilotMutations() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['pilots'] });
             queryClient.invalidateQueries({ queryKey: ['pending-pilots'] });
-            toast.success('Pilot deleted successfully');
+            notify.success('Pilot deleted successfully');
         },
         onError: (error) => {
-            toast.error(`Delete failed: ${error.message}`);
+            notify.error(`Delete failed: ${error.message}`);
         }
     });
 
@@ -320,7 +322,7 @@ export function usePilotMutations() {
             if (variables.sandboxId) {
                 queryClient.invalidateQueries({ queryKey: ['sandbox', variables.sandboxId] });
             }
-            toast.success('Sandbox exit processed successfully');
+            notify.success('Sandbox exit processed successfully');
         }
     });
 
@@ -344,7 +346,7 @@ export function usePilotMutations() {
         onSuccess: (pilot) => {
             queryClient.invalidateQueries({ queryKey: ['pilots'] });
             queryClient.invalidateQueries({ queryKey: ['iteration-pilots'] });
-            toast.success(`Iteration started for: ${pilot.title_en}`);
+            notify.success(`Iteration started for: ${pilot.title_en}`);
         }
     });
 
@@ -359,10 +361,10 @@ export function usePilotMutations() {
         onSuccess: () => {
             queryClient.invalidateQueries(['enrollment']);
             queryClient.invalidateQueries(['my-enrollments']);
-            toast.success('Successfully enrolled in pilot!');
+            notify.success('Successfully enrolled in pilot!');
         },
         onError: (error) => {
-            toast.error(`Enrollment failed: ${error.message}`);
+            notify.error(`Enrollment failed: ${error.message}`);
         }
     });
 
@@ -417,7 +419,7 @@ export function usePilotMutations() {
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ['pilots'] });
             queryClient.invalidateQueries({ queryKey: ['pilot', variables.pilot.id] });
-            toast.success(variables.approved ? 'Budget approved' : 'Budget rejected');
+            notify.success(variables.approved ? 'Budget approved' : 'Budget rejected');
         }
     });
 
@@ -441,10 +443,10 @@ export function usePilotMutations() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['pilots'] });
-            toast.success('Readiness assessment complete');
+            notify.success('Readiness assessment complete');
         },
         onError: (error) => {
-            toast.error(`Assessment failed: ${error.message}`);
+            notify.error(`Assessment failed: ${error.message}`);
         }
     });
 
@@ -518,11 +520,11 @@ export function usePilotMutations() {
         onSuccess: (pilot) => {
             queryClient.invalidateQueries({ queryKey: ['pilots'] });
             queryClient.invalidateQueries({ queryKey: ['matchmaker-applications'] });
-            toast.success('Pilot & Partnership created successfully!');
+            notify.success('Pilot & Partnership created successfully!');
         },
         onError: (error) => {
             console.error('Conversion failed:', error);
-            toast.error('Failed to create pilot');
+            notify.error('Failed to create pilot');
         }
     });
 
@@ -557,10 +559,10 @@ export function usePilotMutations() {
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ['pilot', variables.pilotId] });
             queryClient.invalidateQueries({ queryKey: ['pilots'] });
-            toast.success('Milestones updated successfully');
+            notify.success('Milestones updated successfully');
         },
         onError: (error) => {
-            toast.error(`Failed to update milestones: ${error.message}`);
+            notify.error(`Failed to update milestones: ${error.message}`);
         }
     });
 
@@ -595,6 +597,7 @@ export function usePilotMutations() {
 function useBulkArchivePilots() {
     const queryClient = useAppQueryClient();
     const { checkPermission } = useAccessControl();
+    const { notify } = useNotificationSystem();
 
     return useMutation({
         mutationFn: async (ids) => {
@@ -608,7 +611,7 @@ function useBulkArchivePilots() {
         },
         onSuccess: (ids) => {
             queryClient.invalidateQueries({ queryKey: ['pilots'] });
-            toast.success(`${ids.length} pilots archived`);
+            notify.success(`${ids.length} pilots archived`);
         }
     });
 }
@@ -619,6 +622,7 @@ function useBulkArchivePilots() {
 function useBulkDeletePilots() {
     const queryClient = useAppQueryClient();
     const { checkPermission } = useAccessControl();
+    const { notify } = useNotificationSystem();
 
     return useMutation({
         mutationFn: async (ids) => {
@@ -632,10 +636,9 @@ function useBulkDeletePilots() {
         },
         onSuccess: (ids) => {
             queryClient.invalidateQueries({ queryKey: ['pilots'] });
-            toast.success(`${ids.length} pilots deleted`);
+            notify.success(`${ids.length} pilots deleted`);
         }
     });
 }
-
 export default usePilotMutations;
 

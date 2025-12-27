@@ -7,7 +7,8 @@ import { Cpu, Sparkles, TrendingUp, Loader2, ArrowRight } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { TECHNOLOGY_ROADMAP_PROMPT_TEMPLATE, TECHNOLOGY_ROADMAP_RESPONSE_SCHEMA } from '@/lib/ai/prompts/technology/roadmap';
+import { TECHNOLOGY_ROADMAP_SYSTEM_PROMPT, technologyRoadmapPrompts } from '@/lib/ai/prompts/ecosystem/technologyPrompts';
+import { buildPrompt } from '@/lib/ai/promptBuilder';
 import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
 import { useRDProjects } from '@/hooks/useRDProjects';
@@ -27,10 +28,17 @@ function TechnologyRoadmap() {
     const solutionTech = solutions.map(s => s.technical_specifications?.technology_stack?.join(', ')).filter(Boolean).slice(0, 10).join('; ');
     const rdFocus = rdProjects.map(r => r.research_area_en).filter(Boolean).slice(0, 8).join(', ');
 
+    // Build Prompt
+    const { prompt, schema } = buildPrompt(technologyRoadmapPrompts.generate, {
+      pilotTech,
+      solutionTech,
+      rdFocus
+    });
+
     const response = await invokeAI({
-      prompt: TECHNOLOGY_ROADMAP_PROMPT_TEMPLATE({ pilotTech, solutionTech, rdFocus }),
-      system_prompt: "You are an expert Technology Strategist for Innovate Saudi. Your goal is to analyze the current technology landscape and generate a roadmap for adoption.",
-      response_json_schema: TECHNOLOGY_ROADMAP_RESPONSE_SCHEMA
+      prompt,
+      system_prompt: TECHNOLOGY_ROADMAP_SYSTEM_PROMPT,
+      response_json_schema: schema
     });
 
     if (response.success) {

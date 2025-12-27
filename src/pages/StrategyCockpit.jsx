@@ -23,6 +23,8 @@ import StrategicCoverageWidget from '../components/strategy/StrategicCoverageWid
 import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { STRATEGY_SYSTEM_PROMPT, strategyPrompts } from '@/lib/ai/prompts/strategy/strategyPrompts';
+import { buildPrompt } from '@/lib/ai/promptBuilder';
 
 function StrategyCockpitPage() {
   const { language, isRTL, t } = useLanguage();
@@ -93,33 +95,19 @@ function StrategyCockpitPage() {
   const handleAIInsights = async () => {
     setShowAIInsights(true);
     try {
+      const { prompt, schema } = buildPrompt(strategyPrompts.cockpitInsights, {
+        challengesCount: filteredChallenges.length,
+        activePilots: filteredPilots.filter(p => p.stage === 'in_progress').length,
+        completedPilots: filteredPilots.filter(p => p.stage === 'completed').length,
+        atRiskPilots: filteredPilots.filter(p => p.risk_level === 'high').length,
+        programsCount: filteredPrograms.length,
+        portfolioHeatmap
+      });
+
       const result = await invokeAI({
-        prompt: `Analyze this strategic portfolio for Saudi municipal innovation and provide strategic insights:
-
-Challenges: ${filteredChallenges.length}
-Active Pilots: ${filteredPilots.filter(p => p.stage === 'in_progress').length}
-Completed: ${filteredPilots.filter(p => p.stage === 'completed').length}
-At Risk: ${filteredPilots.filter(p => p.risk_level === 'high').length}
-Programs: ${filteredPrograms.length}
-
-Portfolio by Sector: ${JSON.stringify(portfolioHeatmap)}
-
-Provide insights in format:
-1. Strategic focus recommendations for next quarter
-2. Portfolio balance and diversification analysis  
-3. Risk mitigation priorities
-4. Acceleration opportunities
-5. Resource reallocation suggestions`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            strategic_focus: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            portfolio_balance: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            risk_priorities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            acceleration_opportunities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-            resource_reallocation: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-          }
-        }
+        prompt,
+        system_prompt: STRATEGY_SYSTEM_PROMPT,
+        response_json_schema: schema
       });
       if (result.success) {
         setAiInsights(result.data);

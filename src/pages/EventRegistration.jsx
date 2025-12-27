@@ -7,7 +7,8 @@ import { Calendar, Users, MapPin, Clock, CheckCircle2, XCircle, Loader2 } from '
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
-import { useEvent, useEventMutations } from '@/hooks/useEvents';
+import { useEvent } from '@/hooks/useEvents';
+import { useEventMutations } from '@/hooks/useEventMutations';
 
 function EventRegistration() {
   const { t, language } = useLanguage();

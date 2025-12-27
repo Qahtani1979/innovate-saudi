@@ -6,7 +6,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+
 import { useAuth } from '@/lib/AuthContext';
 import { useAuditLogger, AUDIT_ACTIONS, ENTITY_TYPES } from './useAuditLogger';
 import { useNotificationSystem } from '@/hooks/useNotificationSystem';
@@ -55,17 +55,11 @@ export function useUserMutations() {
         },
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['user-invitations'] });
-            toast.success(`Successfully invited ${data.length} user(s)`);
-
-            // Notifications are usually handled by email service (Supabase Auth or Custom)
-            // But we can trigger a system notification if needed.
-            // Invite is implicit email.
-            // We'll trust supabase.auth or email-trigger-hub if used.
-            // Just logging for now via notify if we want to track it.
+            notify.success(`Successfully invited ${data.length} user(s)`);
         },
         onError: (error) => {
             console.error('Invite error:', error);
-            toast.error('Failed to send invitations');
+            notify.error('Failed to send invitations');
         }
     });
 
@@ -89,10 +83,10 @@ export function useUserMutations() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['user-invitations'] });
-            toast.success('Invitation resent');
+            notify.success('Invitation resent');
         },
         onError: (error) => {
-            toast.error(`Failed to resend: ${error.message}`);
+            notify.error(`Failed to resend: ${error.message}`);
         }
     });
 
@@ -128,10 +122,10 @@ export function useUserMutations() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['user-invitations'] });
-            toast.success('Invitation cancelled');
+            notify.success('Invitation cancelled');
         },
         onError: (error) => {
-            toast.error(`Failed to cancel invitation: ${error.message}`);
+            notify.error(`Failed to cancel invitation: ${error.message}`);
         }
     });
 
@@ -168,7 +162,7 @@ export function useUserMutations() {
         onSuccess: (updatedProfile, { id }) => {
             queryClient.invalidateQueries({ queryKey: ['user-profiles'] });
             queryClient.invalidateQueries({ queryKey: ['user-profile', id] });
-            toast.success('Profile updated details');
+            notify.success('Profile updated details');
 
             // Notification: Profile Updated
             notify({
@@ -182,7 +176,7 @@ export function useUserMutations() {
             });
         },
         onError: (error) => {
-            toast.error(`Failed to update profile: ${error.message}`);
+            notify.error(`Failed to update profile: ${error.message}`);
         }
     });
 
@@ -236,7 +230,7 @@ export function useUserMutations() {
         onSuccess: (_, { userId }) => {
             queryClient.invalidateQueries({ queryKey: ['user-roles', userId] });
             queryClient.invalidateQueries({ queryKey: ['user-roles', userId] });
-            toast.success('User roles updated');
+            notify.success('User roles updated');
 
             // Notification: Roles Updated
             notify({
@@ -252,7 +246,7 @@ export function useUserMutations() {
             });
         },
         onError: (error) => {
-            toast.error(`Failed to update roles: ${error.message}`);
+            notify.error(`Failed to update roles: ${error.message}`);
         }
     });
 
@@ -281,7 +275,7 @@ export function useUserMutations() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['user-profiles'] });
-            toast.success('User deactivated');
+            notify.success('User deactivated');
 
             // Notification: User Deactivated
             notify({

@@ -18,6 +18,8 @@ import OnboardingWizard from '../components/onboarding/OnboardingWizard';
 import OnboardingChecklist from '../components/onboarding/OnboardingChecklist';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { userPrompts } from '@/lib/ai/prompts/ecosystem/userPrompts';
+import { buildPrompt } from '@/lib/ai/promptBuilder';
 import { useUserMutations } from '@/hooks/useUserMutations';
 import { useSystemAnalytics } from '@/hooks/useSystemAnalytics';
 import { useTaxonomy } from '@/hooks/useTaxonomy';
@@ -155,18 +157,15 @@ function UserManagementHub() {
       toast.error(t({ en: 'Please enter role name first', ar: 'يرجى إدخال اسم الدور أولاً' }));
       return;
     }
-    const response = await invokeAI({
-      prompt: `Based on this role: "${formData.name}" (${formData.description || ''}), suggest appropriate permissions for a Saudi municipal innovation platform.
-        
-Common permissions: challenge_create, challenge_edit, challenge_view_all, pilot_create, pilot_edit, pilot_view_all, solution_create, solution_view_all, program_view_all, reports_view, analytics_view, user_invite, role_manage, team_manage.
+    const { prompt, schema, system } = buildPrompt(userPrompts.suggestPermissions, {
+      name: formData.name,
+      description: formData.description
+    });
 
-Return a list of permission codes this role should have.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          permissions: { type: 'array', items: { type: 'string' } }
-        }
-      }
+    const response = await invokeAI({
+      prompt,
+      system_prompt: system,
+      response_json_schema: schema
     });
     if (response.success && response.data?.permissions) {
       setFormData({ ...formData, permissions: response.data.permissions });

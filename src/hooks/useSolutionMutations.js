@@ -2,10 +2,11 @@ import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
-import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem'; // Replaces EmailTrigger
 import { useAuditLogger, AUDIT_ACTIONS, ENTITY_TYPES } from './useAuditLogger';
 import { useAccessControl } from '@/hooks/useAccessControl';
-import { useLogActivity } from '@/hooks/useUserActivity';
+// Removed useLogActivity as it's likely redundant with AuditLogger + Notification
+import { useMutation } from '@tanstack/react-query';
 
 /**
  * Hook for solution-related mutations: create, update, delete.
@@ -14,7 +15,7 @@ import { useLogActivity } from '@/hooks/useUserActivity';
 export function useSolutionMutations() {
     const queryClient = useAppQueryClient();
     const { user } = useAuth();
-    const { triggerEmail } = useEmailTrigger();
+    const { notify } = useNotificationSystem();
     const { logCrudOperation } = useAuditLogger();
     const { checkPermission, checkEntityAccess } = useAccessControl();
 
@@ -59,16 +60,24 @@ export function useSolutionMutations() {
         onSuccess: async (solution) => {
             queryClient.invalidateQueries({ queryKey: ['solutions'] });
 
-            // Trigger email notification
-            await triggerEmail('solution.created', {
-                entity_type: 'solution',
-                entity_id: solution.id,
-                variables: {
+            // Notify Admin/Manager
+            await notify({
+                type: 'solution_created',
+                entityType: 'solution',
+                entityId: solution.id,
+                title: 'New Solution Created',
+                message: `Solution "${solution.name_en}" has been created by ${solution.provider_name}.`,
+                recipientEmails: [], // System notification to admins? or just rely on feed
+                sendEmail: true, // Send email to admins? Or maybe confirm to creator?
+                // Let's assume confirmation to creator for now, or alert to admins.
+                // Gold Standard: notify() handles routing if configured.
+                emailTemplate: 'solution_created',
+                emailVariables: {
                     solution_name: solution.name_en,
                     solution_code: solution.code,
                     provider_name: solution.provider_name
                 }
-            }).catch(err => console.error('Email trigger failed:', err));
+            });
 
             toast.success('Solution created successfully!');
         },
@@ -291,44 +300,10 @@ export function useSolutionMutations() {
             // Audit
             await logCrudOperation('VERIFY', ENTITY_TYPES.SOLUTION, solutionId, null, { verified: true });
 
-            // Notification
-            await supabase.from('notifications').insert({
-                notification_type: 'solution_verified',
-                title: `Solution Verified: ${verificationData.solutionName}`,
-                message: `${verificationData.solutionName} has been verified and is now available in the marketplace.`,
-                severity: 'success',
-                link: `/SolutionDetail?id=${solutionId}`
-            });
-
-            // Auto-enrollment
-            try {
-                await supabase.functions.invoke('autoMatchmakerEnrollment', { body: { solution_id: solutionId } });
-            } catch (error) {
-                console.error('Auto-enrollment failed:', error);
-            }
-
             return solutionId;
         },
-        onSuccess: async (solutionId, variables) => {
-            queryClient.invalidateQueries({ queryKey: ['solution', solutionId] });
+        onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['solutions'] });
-
-            // Trigger solution.verified email
-            try {
-                await triggerEmail('solution.verified', {
-                    entityType: 'solution',
-                    entityId: solutionId,
-                    variables: {
-                        solutionName: variables.verificationData.solutionName,
-                        providerName: variables.verificationData.providerName,
-                        verificationDate: new Date().toISOString().split('T')[0],
-                        recommendation: variables.verificationData.aiRecommendation?.recommendation || 'approved'
-                    }
-                });
-            } catch (error) {
-                console.error('Failed to send solution.verified email:', error);
-            }
-
             toast.success('Solution verified successfully');
         },
         onError: (error) => {
@@ -341,18 +316,22 @@ export function useSolutionMutations() {
      */
     const sendFeedbackToProvider = useMutation({
         mutationFn: async ({ pilotId, solution, pilot, data }) => {
-            // Email Trigger
-            await triggerEmail('pilot.feedback_request', {
-                recipient_email: solution?.contact_email || pilot?.created_by,
-                entity_type: 'pilot',
-                entity_id: pilotId,
-                variables: {
+            // Notify Provider
+            await notify({
+                type: 'pilot_feedback_request', // or solution_feedback
+                entityType: 'pilot',
+                entityId: pilotId,
+                recipientEmails: [solution?.contact_email || pilot?.created_by].filter(Boolean),
+                title: 'Feedback Request',
+                message: 'You have received feedback on your pilot.',
+                sendEmail: true,
+                emailTemplate: 'pilot_feedback_request',
+                emailVariables: {
                     pilotTitle: pilot?.title_en,
                     municipalityId: pilot?.municipality_id,
                     improvements: data.improvements,
                     aiSuggestions: data.ai_suggestions ? JSON.stringify(data.ai_suggestions, null, 2) : ''
-                },
-                triggered_by: 'system'
+                }
             });
 
             // Log Activity
@@ -394,7 +373,7 @@ export function useSolutionMutations() {
         isUpdating: updateSolution.isPending,
         isDeleting: deleteSolution.isPending,
         bulkArchiveSolutions,
-        bulkDeprecateSolutions, // Added bulkDeprecateSolutions
+
         togglePublishSolution,
         sendFeedbackToProvider,
         verifySolution

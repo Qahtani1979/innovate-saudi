@@ -1,11 +1,11 @@
 import { useMutation } from '@tanstack/react-query';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 export function useRDProposalMutations() {
     const queryClient = useAppQueryClient();
+    const { notify } = useNotificationSystem();
 
     const submitProposal = useMutation({
         mutationFn: async (/** @type {{id: any, title: any, checklist: any, notes: string, aiBrief: any}} */ { id, title, checklist, notes, aiBrief }) => {
@@ -36,11 +36,11 @@ export function useRDProposalMutations() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rd-proposal'] });
-            // Success toast handled by component usually, or here.
+            notify.success('Proposal submitted successfully');
         },
         onError: (error) => {
             console.error('Submission error:', error);
-            toast.error('Failed to submit proposal');
+            notify.error('Failed to submit proposal');
         }
     });
 
@@ -49,6 +49,7 @@ export function useRDProposalMutations() {
 
 export function useTRLAssessmentMutations() {
     const queryClient = useAppQueryClient();
+    const { notify } = useNotificationSystem();
 
     const updateTRL = useMutation({
         mutationFn: async (/** @type {{id: any, trl: any, assessment: any}} */ { id, trl, assessment }) => {
@@ -63,11 +64,11 @@ export function useTRLAssessmentMutations() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rd-projects'] });
-            toast.success('TRL updated successfully');
+            notify.success('TRL updated successfully');
         },
         onError: (error) => {
             console.error('TRL update error:', error);
-            toast.error('Failed to update TRL');
+            notify.error('Failed to update TRL');
         }
     });
 
@@ -95,11 +96,11 @@ export function useTRLAssessmentMutations() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rd-project'] }); // Singular or plural? RDTRLAdvancement uses 'rd-project' (singular)
             queryClient.invalidateQueries({ queryKey: ['rd-projects'] });
-            toast.success('TRL advanced successfully');
+            notify.success('TRL advanced successfully');
         },
         onError: (error) => {
             console.error('TRL advancement error:', error);
-            toast.error('Failed to advance TRL');
+            notify.error('Failed to advance TRL');
         }
     });
 
@@ -120,11 +121,11 @@ export function useRDMutations() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rd-proposal'] });
-            toast.success('Proposal updated');
+            notify.success('Proposal updated');
         },
         onError: (error) => {
             console.error('Update error:', error);
-            toast.error('Failed to update proposal');
+            notify.error('Failed to update proposal');
         }
     });
 
@@ -138,11 +139,11 @@ export function useRDMutations() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rd-project'] });
-            toast.success('Project updated');
+            notify.success('Project updated');
         },
         onError: (error) => {
             console.error('Update error:', error);
-            toast.error('Failed to update project');
+            notify.error('Failed to update project');
         }
     });
 
@@ -190,11 +191,11 @@ export function useRDMutations() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rd-project'] });
             queryClient.invalidateQueries({ queryKey: ['policies-for-impact'] });
-            toast.success('Policy impact linked');
+            notify.success('Policy impact linked');
         },
         onError: (error) => {
             console.error('Link error:', error);
-            toast.error('Failed to link policy');
+            notify.error('Failed to link policy');
         }
     });
 
@@ -230,11 +231,11 @@ export function useRDMutations() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rd-project'] });
             queryClient.invalidateQueries({ queryKey: ['policies-for-impact'] });
-            toast.success('Link removed');
+            notify.success('Link removed');
         },
         onError: (error) => {
             console.error('Unlink error:', error);
-            toast.error('Failed to unlink policy');
+            notify.error('Failed to unlink policy');
         }
     });
 
@@ -280,11 +281,11 @@ export function useRDMutations() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rd-project'] });
-            toast.success('Project kicked off successfully');
+            notify.success('Project kicked off successfully');
         },
         onError: (error) => {
             console.error('Kickoff error:', error);
-            toast.error('Failed to kick off project');
+            notify.error('Failed to kick off project');
         }
     });
 
@@ -334,11 +335,11 @@ export function useRDMutations() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rd-project'] });
-            toast.success('Project marked as completed');
+            notify.success('Project marked as completed');
         },
         onError: (error) => {
             console.error('Completion error:', error);
-            toast.error('Failed to complete project');
+            notify.error('Failed to complete project');
         }
     });
 
@@ -375,11 +376,11 @@ export function useRDMutations() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rd-proposal'] });
             queryClient.invalidateQueries({ queryKey: ['proposals'] });
-            toast.success('Feedback sent');
+            notify.success('Feedback sent');
         },
         onError: (error) => {
             console.error('Feedback error:', error);
-            toast.error('Failed to send feedback');
+            notify.error('Failed to send feedback');
         }
     });
 
@@ -401,11 +402,11 @@ export function useRDMutations() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rd-project'] });
-            toast.success('Outputs validated');
+            notify.success('Outputs validated');
         },
         onError: (error) => {
             console.error('Validation error:', error);
-            toast.error('Failed to validate outputs');
+            notify.error('Failed to validate outputs');
         }
     });
 

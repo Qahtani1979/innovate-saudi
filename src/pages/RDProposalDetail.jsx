@@ -46,6 +46,8 @@ import RDProposalEscalationAutomation from '../components/rd/RDProposalEscalatio
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useAuth } from '@/lib/AuthContext';
+import { RD_PROPOSAL_SYSTEM_PROMPT, rdProposalPrompts } from '@/lib/ai/prompts/rd/proposalPrompts';
+import { buildPrompt } from '@/lib/ai/promptBuilder';
 
 function RDProposalDetail() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -103,23 +105,22 @@ function RDProposalDetail() {
   const statusInfo = statusConfig[proposal.status] || statusConfig.draft;
   const StatusIcon = statusInfo.icon;
 
+
+
+  // ... inside component
+
   const handleAIInsights = async () => {
     setShowAIInsights(true);
+
+    // Build Standardized Prompt
+    const { prompt, schema } = buildPrompt(rdProposalPrompts.analyze, {
+      proposal
+    });
+
     const result = await invokeAI({
-      system_prompt: "You are a strategic R&D analyst specializing in Saudi municipal innovation and Vision 2030 alignment. Provide highly technical yet accessible insights on research proposals, focusing on feasibility, impact, and scaling potential.",
-      prompt: `Analyze this research proposal for Saudi municipal innovation R&D and provide strategic insights in BOTH English AND Arabic:
-... (trimmed) ...
- Risk factors and mitigation recommendations`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          strengths: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          improvements: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          vision_alignment: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          pilot_potential: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-          risk_mitigation: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
-        }
-      }
+      prompt,
+      system_prompt: RD_PROPOSAL_SYSTEM_PROMPT,
+      response_json_schema: schema
     });
 
     if (result.success) {

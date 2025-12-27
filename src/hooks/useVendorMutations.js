@@ -1,10 +1,11 @@
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
-import { useAuditLogger, AUDIT_ACTIONS } from './useAuditLogger';
-import { useEmailTrigger } from './useEmailTrigger';
+import { useAuditLogger, AUDIT_ACTIONS } from '@/hooks/useAuditLogger';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
+import { useMutation } from '@tanstack/react-query';
 
 /**
  * Hook for vendor mutations
@@ -15,6 +16,7 @@ export function useVendorMutations() {
     const { user } = useAuth();
     const { logCrudOperation, logStatusChange } = useAuditLogger();
     const { triggerEmail } = useEmailTrigger();
+    const { notify } = useNotificationSystem();
 
     const createVendor = useMutation({
         mutationFn: async (data) => {
@@ -38,12 +40,17 @@ export function useVendorMutations() {
             return vendor;
         },
         onSuccess: (vendor) => {
-            queryClient.invalidateQueries(['vendors']);
-            toast.success(t({ en: 'Vendor created successfully', ar: 'تم إنشاء المورد بنجاح' }));
+            queryClient.invalidateQueries({ queryKey: ['vendors'] });
+
+            notify.success(t({ en: 'Vendor created successfully', ar: 'تم إنشاء المورد بنجاح' }), {
+                description: t({ en: `Vendor "${vendor.name}" has been created.`, ar: `تم إنشاء المورد "${vendor.name}".` })
+            });
         },
         onError: (error) => {
-            toast.error(t({ en: 'Failed to create vendor', ar: 'فشل إنشاء المورد' }));
             console.error('Create vendor error:', error);
+            notify.error(t({ en: 'Failed to create vendor', ar: 'فشل إنشاء المورد' }), {
+                description: error.message
+            });
         },
     });
 
@@ -69,13 +76,16 @@ export function useVendorMutations() {
             return vendor;
         },
         onSuccess: (vendor) => {
-            queryClient.invalidateQueries(['vendors']);
-            queryClient.invalidateQueries(['vendor', vendor.id]);
-            toast.success(t({ en: 'Vendor updated successfully', ar: 'تم تحديث المورد بنجاح' }));
+            queryClient.invalidateQueries({ queryKey: ['vendors'] });
+            queryClient.invalidateQueries({ queryKey: ['vendor', vendor.id] });
+
+            notify.success(t({ en: 'Vendor updated successfully', ar: 'تم تحديث المورد بنجاح' }));
         },
         onError: (error) => {
-            toast.error(t({ en: 'Failed to update vendor', ar: 'فشل تحديث المورد' }));
             console.error('Update vendor error:', error);
+            notify.error(t({ en: 'Failed to update vendor', ar: 'فشل تحديث المورد' }), {
+                description: error.message
+            });
         },
     });
 
@@ -103,12 +113,15 @@ export function useVendorMutations() {
             return id;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(['vendors']);
-            toast.success(t({ en: 'Vendor deleted successfully', ar: 'تم حذف المورد بنجاح' }));
+            queryClient.invalidateQueries({ queryKey: ['vendors'] });
+
+            notify.success(t({ en: 'Vendor deleted successfully', ar: 'تم حذف المورد بنجاح' }));
         },
         onError: (error) => {
-            toast.error(t({ en: 'Failed to delete vendor', ar: 'فشل حذف المورد' }));
             console.error('Delete vendor error:', error);
+            notify.error(t({ en: 'Failed to delete vendor', ar: 'فشل حذف المورد' }), {
+                description: error.message
+            });
         },
     });
 
@@ -151,13 +164,16 @@ export function useVendorMutations() {
             return vendor;
         },
         onSuccess: (vendor) => {
-            queryClient.invalidateQueries(['vendors']);
-            queryClient.invalidateQueries(['vendor', vendor.id]);
-            toast.success(t({ en: 'Vendor approved successfully', ar: 'تمت الموافقة على المورد بنجاح' }));
+            queryClient.invalidateQueries({ queryKey: ['vendors'] });
+            queryClient.invalidateQueries({ queryKey: ['vendor', vendor.id] });
+
+            notify.success(t({ en: 'Vendor approved successfully', ar: 'تمت الموافقة على المورد بنجاح' }));
         },
         onError: (error) => {
-            toast.error(t({ en: 'Failed to approve vendor', ar: 'فشلت الموافقة على المورد' }));
             console.error('Approve vendor error:', error);
+            notify.error(t({ en: 'Failed to approve vendor', ar: 'فشلت الموافقة على المورد' }), {
+                description: error.message
+            });
         },
     });
 
@@ -202,13 +218,16 @@ export function useVendorMutations() {
             return vendor;
         },
         onSuccess: (vendor) => {
-            queryClient.invalidateQueries(['vendors']);
-            queryClient.invalidateQueries(['vendor', vendor.id]);
-            toast.success(t({ en: 'Vendor rejected', ar: 'تم رفض المورد' }));
+            queryClient.invalidateQueries({ queryKey: ['vendors'] });
+            queryClient.invalidateQueries({ queryKey: ['vendor', vendor.id] });
+
+            notify.success(t({ en: 'Vendor rejected', ar: 'تم رفض المورد' }));
         },
         onError: (error) => {
-            toast.error(t({ en: 'Failed to reject vendor', ar: 'فشل رفض المورد' }));
             console.error('Reject vendor error:', error);
+            notify.error(t({ en: 'Failed to reject vendor', ar: 'فشل رفض المورد' }), {
+                description: error.message
+            });
         },
     });
 

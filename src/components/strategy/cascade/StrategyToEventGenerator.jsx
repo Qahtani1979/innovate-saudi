@@ -8,13 +8,13 @@ import { useLanguage } from '@/components/LanguageContext';
 import { Sparkles, CalendarDays, Loader2, CheckCircle2, Plus, Users, MapPin, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { useApprovalRequest } from '@/hooks/useApprovalRequest';
-import { useEvents } from '@/hooks/useEvents';
+import { useEventMutations } from '@/hooks/useEventMutations';
 import { useStrategyAIGeneration } from '@/hooks/useStrategyAIGeneration';
 
 export default function StrategyToEventGenerator({ strategicPlanId, strategicPlan, onEventCreated }) {
   const { t, isRTL } = useLanguage();
   const { createApprovalRequest } = useApprovalRequest();
-  const { createEvent } = useEvents();
+  const { createEvent } = useEventMutations();
   const { generateEvents } = useStrategyAIGeneration();
   const [eventType, setEventType] = useState('workshop');
   const [targetAudience, setTargetAudience] = useState([]);

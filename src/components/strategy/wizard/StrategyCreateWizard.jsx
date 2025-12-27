@@ -8,7 +8,7 @@ import { useLanguage } from '../../LanguageContext';
 import { toast } from 'sonner';
 import ProtectedPage from '../../permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import { buildStrategyWizardPrompt, STRATEGY_WIZARD_SYSTEM_PROMPT } from '@/lib/ai/prompts/strategy/wizardPrompts';
+import { buildStrategyWizardPrompt, STRATEGY_WIZARD_SYSTEM_PROMPT } from '@/lib/ai/prompts/ecosystem/strategyWizardPrompts';
 import { WIZARD_STEPS, initialWizardData } from './StrategyWizardSteps';
 import WizardStepIndicator from './WizardStepIndicator';
 import Step1Context from './steps/Step1Context';

@@ -14,6 +14,8 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { useRDProposal } from '@/hooks/useRDProposal';
 import { useRDProposalMutations } from '@/hooks/useRDProposalMutations';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
+import { RD_PROPOSAL_SYSTEM_PROMPT, rdProposalPrompts } from '@/lib/ai/prompts/rd/proposalPrompts';
+import { buildPrompt } from '@/lib/ai/promptBuilder';
 
 export default function RDProposalEdit() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -49,51 +51,15 @@ export default function RDProposalEdit() {
   };
 
   const handleAIEnhance = async () => {
-    const prompt = `Enhance this research proposal with professional academic content:
-
-Title: ${formData.title_en}
-Abstract: ${formData.abstract_en || 'N/A'}
-Research Area: ${formData.research_area || 'N/A'}
-Methodology: ${formData.methodology_en || 'N/A'}
-
-Generate comprehensive bilingual (English + Arabic) enhanced content:
-1. Improved title and tagline (EN + AR)
-2. Detailed abstract (EN + AR) - 300+ words covering objectives, methodology, expected outcomes
-3. Enhanced methodology description (EN + AR) - 200+ words
-4. Literature review section (5+ key references)
-5. Expected outputs with descriptions
-6. Impact statement (EN + AR)
-7. Innovation claim (what makes it novel)
-8. 5-8 relevant keywords`;
+    // Build Prompt
+    const { prompt, schema } = buildPrompt(rdProposalPrompts.enhance, {
+      formData
+    });
 
     const result = await invokeAI({
       prompt,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          title_en: { type: 'string' },
-          title_ar: { type: 'string' },
-          tagline_en: { type: 'string' },
-          tagline_ar: { type: 'string' },
-          abstract_en: { type: 'string' },
-          abstract_ar: { type: 'string' },
-          methodology_en: { type: 'string' },
-          methodology_ar: { type: 'string' },
-          impact_statement: { type: 'string' },
-          innovation_claim: { type: 'string' },
-          keywords: { type: 'array', items: { type: 'string' } },
-          expected_outputs: {
-            type: 'array', items: {
-              type: 'object',
-              properties: {
-                output: { type: 'string' },
-                type: { type: 'string' },
-                description: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+      system_prompt: RD_PROPOSAL_SYSTEM_PROMPT,
+      response_json_schema: schema
     });
 
     if (result.success) {

@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Target, CheckCircle2, AlertCircle, Loader2, Link2 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useStrategicPlans } from '@/hooks/useStrategicPlans';
-import { useEvents } from '@/hooks/useEvents';
+import { useEventMutations } from '@/hooks/useEventMutations';
 
 export default function EventStrategicAlignment({ event, onUpdate }) {
   const { language, t } = useLanguage();
@@ -14,7 +14,7 @@ export default function EventStrategicAlignment({ event, onUpdate }) {
   const [selectedObjectiveIds, setSelectedObjectiveIds] = useState(event?.strategic_objective_ids || []);
 
   const { data: strategicPlans = [] } = useStrategicPlans({ status: 'active' });
-  const { updateEvent, isUpdating } = useEvents();
+  const { updateEvent, isUpdating } = useEventMutations();
 
   // Calculate alignment score
   const alignmentScore = selectedObjectiveIds.length

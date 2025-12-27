@@ -1,9 +1,11 @@
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
+import { useQuery, useMutation } from '@tanstack/react-query';
 
 export function useUserFollows(userEmail) {
     const queryClient = useAppQueryClient();
+    const { notify } = useNotificationSystem();
 
     const useFollowers = () => useQuery({
         queryKey: ['user-followers', userEmail],
@@ -44,9 +46,20 @@ export function useUserFollows(userEmail) {
             if (error) throw error;
             return data;
         },
-        onSuccess: () => {
+        onSuccess: (_, { targetEmail }) => {
             queryClient.invalidateQueries(['user-following']);
-            toast.success('User followed successfully');
+            notify.success('User followed successfully');
+
+            // Notify the user being followed
+            notify({
+                type: 'user_follow',
+                entityType: 'user',
+                entityId: userEmail, // The follower
+                recipientEmails: [targetEmail],
+                title: 'New Follower',
+                message: `You have a new follower.`,
+                sendEmail: true
+            });
         }
     });
 
@@ -61,7 +74,7 @@ export function useUserFollows(userEmail) {
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['user-following']);
-            toast.success('User unfollowed successfully');
+            notify.success('User unfollowed successfully');
         }
     });
 

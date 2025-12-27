@@ -27,7 +27,8 @@ import CommitteeMeetingScheduler from '../components/CommitteeMeetingScheduler';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowApprovalTab';
 import { usePrompt } from '@/hooks/usePrompt';
-import { RD_CALL_INSIGHTS_PROMPT_TEMPLATE } from '@/lib/ai/prompts/rd/callInsights';
+import { RD_CALL_SYSTEM_PROMPT, rdCallPrompts } from '@/lib/ai/prompts/rd/callPrompts';
+import { buildPrompt } from '@/lib/ai/promptBuilder';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 // import { useAuth } from '@/lib/AuthContext'; // Removed unused import
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
@@ -115,7 +116,7 @@ function RDCallDetailPage() {
 
   const handleAIInsights = async () => {
     setShowAIInsights(true);
-    const promptConfig = RD_CALL_INSIGHTS_PROMPT_TEMPLATE({
+    const { prompt, schema } = buildPrompt(rdCallPrompts.insights, {
       title: call.title_en,
       callType: call.call_type,
       status: call.status,
@@ -128,9 +129,9 @@ function RDCallDetailPage() {
     });
 
     const response = await invokeAI({
-      prompt: promptConfig.prompt,
-      system_prompt: promptConfig.system,
-      response_json_schema: promptConfig.schema
+      prompt,
+      system_prompt: RD_CALL_SYSTEM_PROMPT,
+      response_json_schema: schema
     });
     if (response.success) {
       setAiInsights(response.data);

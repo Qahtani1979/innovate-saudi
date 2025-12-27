@@ -6,7 +6,6 @@ import { Sparkles, Loader2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePrompt } from '@/hooks/usePrompt';
-import { COMPETITIVE_ANALYSIS_PROMPT_TEMPLATE } from '@/lib/ai/prompts/competitive/intelligence';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 function CompetitiveIntelligenceDashboard() {
@@ -28,7 +27,10 @@ function CompetitiveIntelligenceDashboard() {
   ];
 
   const generateInsights = async () => {
-    const promptConfig = COMPETITIVE_ANALYSIS_PROMPT_TEMPLATE({
+    const { intelligencePrompts } = await import('@/lib/ai/prompts/ecosystem/intelligencePrompts');
+    const { buildPrompt } = await import('@/lib/ai/promptBuilder');
+
+    const { prompt, schema, system } = buildPrompt(intelligencePrompts.competitiveAnalysis, {
       competitors,
       metrics: radarData,
       saudiPosition: competitors.find(c => c.city === 'Saudi (Avg)'),
@@ -36,11 +38,11 @@ function CompetitiveIntelligenceDashboard() {
     });
 
     const result = await invokeAI({
-      prompt: promptConfig.prompt,
-      system_prompt: promptConfig.system,
-      response_json_schema: promptConfig.schema
+      prompt,
+      system_prompt: system,
+      response_json_schema: schema
     });
-    
+
     if (result.success) {
       setInsights(result.data);
     }
@@ -62,7 +64,7 @@ function CompetitiveIntelligenceDashboard() {
           {t({ en: 'AI Analysis', ar: 'تحليل ذكي' })}
         </Button>
       </div>
-      
+
       <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} />
 
       {/* Comparison Chart */}

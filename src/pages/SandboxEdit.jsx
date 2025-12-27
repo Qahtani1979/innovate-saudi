@@ -15,7 +15,6 @@ import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import StrategicPlanSelector from '@/components/strategy/StrategicPlanSelector';
-import { SANDBOX_ENHANCEMENT_PROMPT_TEMPLATE, SANDBOX_ENHANCEMENT_RESPONSE_SCHEMA } from '@/lib/ai/prompts/sandbox/enhancement';
 import { useSandbox } from '@/hooks/useSandbox';
 import { useSandboxMutations } from '@/hooks/useSandboxMutations';
 
@@ -51,14 +50,19 @@ function SandboxEdit() {
 
   const handleAIEnhance = async () => {
     try {
+      const { sandboxPrompts } = await import('@/lib/ai/prompts/ecosystem/sandboxPrompts');
+      const { buildPrompt } = await import('@/lib/ai/promptBuilder');
+
+      const { prompt, schema, system } = buildPrompt(sandboxPrompts.editor, {
+        name_en: formData.name_en,
+        domain: formData.domain,
+        description_en: formData.description_en || ''
+      });
+
       const result = await invokeAI({
-        prompt: SANDBOX_ENHANCEMENT_PROMPT_TEMPLATE({
-          sandboxType: formData.sandbox_type,
-          domain: formData.domain,
-          location: formData.location || 'Saudi Arabia',
-          description: formData.description_en
-        }),
-        response_json_schema: SANDBOX_ENHANCEMENT_RESPONSE_SCHEMA
+        prompt,
+        system_prompt: system,
+        response_json_schema: schema
       });
 
       if (result.success) {
@@ -272,6 +276,7 @@ function SandboxEdit() {
               {t({ en: 'Strategic Alignment', ar: 'التوافق الاستراتيجي' })}
             </h3>
             <StrategicPlanSelector
+              label={t({ en: 'Select Strategic Alignment', ar: 'اختر المواءمة الاستراتيجية' })}
               selectedPlanIds={formData.strategic_plan_ids || []}
               selectedObjectiveIds={formData.strategic_objective_ids || []}
               onPlanChange={(ids) => setFormData({ ...formData, strategic_plan_ids: ids, is_strategy_derived: ids.length > 0 })}
@@ -289,6 +294,7 @@ function SandboxEdit() {
                 <FileUploader
                   type="image"
                   label={t({ en: 'Upload Image', ar: 'رفع صورة' })}
+                  description={t({ en: 'Max 10MB', ar: 'الحد الأقصى 10 ميجابايت' })}
                   maxSize={10}
                   onUploadComplete={(url) => setFormData({ ...formData, image_url: url })}
                 />
@@ -299,6 +305,7 @@ function SandboxEdit() {
                 <FileUploader
                   type="video"
                   label={t({ en: 'Upload Video', ar: 'رفع فيديو' })}
+                  description={t({ en: 'Max 200MB', ar: 'الحد الأقصى 200 ميجابايت' })}
                   maxSize={200}
                   preview={false}
                   onUploadComplete={(url) => setFormData({ ...formData, video_url: url })}
@@ -311,6 +318,7 @@ function SandboxEdit() {
               <FileUploader
                 type="document"
                 label={t({ en: 'Upload PDF', ar: 'رفع PDF' })}
+                description={t({ en: 'Max 50MB', ar: 'الحد الأقصى 50 ميجابايت' })}
                 maxSize={50}
                 preview={false}
                 onUploadComplete={(url) => setFormData({ ...formData, brochure_url: url })}
@@ -322,6 +330,7 @@ function SandboxEdit() {
               <FileUploader
                 type="image"
                 label={t({ en: 'Add to Gallery', ar: 'إضافة للمعرض' })}
+                description={t({ en: 'Max 10MB', ar: 'الحد الأقصى 10 ميجابايت' })}
                 maxSize={10}
                 enableImageSearch={true}
                 searchContext={formData.name_en}

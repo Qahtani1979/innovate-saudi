@@ -51,71 +51,26 @@ function SandboxLabCapacityPlanner() {
   const labBookings = pilots.filter(p => p.living_lab_id);
 
   const analyzeCapacity = async () => {
+    const { sandboxPrompts } = await import('@/lib/ai/prompts/ecosystem/sandboxPrompts');
+    const { buildPrompt } = await import('@/lib/ai/promptBuilder');
+
+    const context = {
+      sandboxesCount: sandboxes.length,
+      activeSandboxes: sandboxes.filter(s => s.status === 'active').length,
+      totalCapacity: sandboxes.reduce((sum, s) => sum + (s.capacity || 5), 0),
+      occupiedSlots: sandboxes.reduce((sum, s) => sum + (s.current_pilots || 0), 0),
+      livingLabsCount: livingLabs.length,
+      livingLabsCapacity: livingLabs.reduce((sum, l) => sum + (l.capacity_projects || 3), 0),
+      labBookingsCount: labBookings.length,
+      pilotsNeedingFacilities: pilots.filter(p => !p.living_lab_id && !p.sandbox_id && p.stage === 'active').length
+    };
+
+    const { prompt, schema, system } = buildPrompt(sandboxPrompts.capacityAnalysis, context);
+
     const result = await invokeAI({
-      prompt: `Analyze sandbox and living lab capacity for Saudi municipal innovation:
-
-Sandboxes: ${sandboxes.length}
-- Active: ${sandboxes.filter(s => s.status === 'active').length}
-- Capacity: ${sandboxes.reduce((sum, s) => sum + (s.capacity || 5), 0)} total slots
-- Occupied: ${sandboxes.reduce((sum, s) => sum + (s.current_pilots || 0), 0)}
-
-Living Labs: ${livingLabs.length}
-- Total Capacity: ${livingLabs.reduce((sum, l) => sum + (l.capacity_projects || 3), 0)}
-- Bookings: ${labBookings.length}
-
-Pilots needing facilities: ${pilots.filter(p => !p.living_lab_id && !p.sandbox_id && p.stage === 'active').length}
-
-Generate bilingual capacity analysis:
-1. Current utilization by facility
-2. Capacity bottlenecks and constraints
-3. Expansion recommendations(where, when, capacity)
-4. Booking optimization suggestions
-5. AI allocation recommendations for upcoming pilots`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          facility_utilization: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                facility_name: { type: 'string' },
-                type: { type: 'string' },
-                capacity: { type: 'number' },
-                occupied: { type: 'number' },
-                utilization_percentage: { type: 'number' }
-              }
-            }
-          },
-          bottlenecks: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                issue_en: { type: 'string' },
-                issue_ar: { type: 'string' },
-                severity: { type: 'string' },
-                recommendation_en: { type: 'string' },
-                recommendation_ar: { type: 'string' }
-              }
-            }
-          },
-          expansion_plan: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                location_en: { type: 'string' },
-                location_ar: { type: 'string' },
-                type: { type: 'string' },
-                capacity: { type: 'number' },
-                timeline: { type: 'string' },
-                priority: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+      prompt,
+      system_prompt: system,
+      response_json_schema: schema
     });
 
     if (result.success) {

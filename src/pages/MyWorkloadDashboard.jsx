@@ -14,7 +14,8 @@ import {
 } from 'lucide-react';
 import MyWeekAhead from '../components/MyWeekAhead';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { WORKLOAD_PRIORITIES_PROMPT_TEMPLATE, WORKLOAD_PRIORITIES_SCHEMA, formatWorkItemsForPrioritization } from '@/lib/ai/prompts/workload/prioritization';
+import { workloadPrompts, formatWorkItemsForPrioritization } from '@/lib/ai/prompts/ecosystem/workloadPrompts';
+import { buildPrompt } from '@/lib/ai/promptBuilder';
 
 function MyWorkloadDashboard() {
   const { language, isRTL, t } = useLanguage();
@@ -33,9 +34,12 @@ function MyWorkloadDashboard() {
       tasks: myTasks
     });
 
+    const { prompt, schema, system } = buildPrompt(workloadPrompts.prioritize, { workItems });
+
     const { success, data } = await invokeAI({
-      prompt: WORKLOAD_PRIORITIES_PROMPT_TEMPLATE({ workItems }),
-      response_json_schema: WORKLOAD_PRIORITIES_SCHEMA
+      prompt,
+      system_prompt: system,
+      response_json_schema: schema
     });
 
     if (success) {

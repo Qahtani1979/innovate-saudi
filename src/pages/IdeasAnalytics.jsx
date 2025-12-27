@@ -14,6 +14,8 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { IDEAS_ANALYST_SYSTEM_PROMPT, ideasAnalyticsPrompts } from '@/lib/ai/prompts/analytics/ideasPrompts';
+import { buildPrompt } from '@/lib/ai/promptBuilder';
 
 /**
  * IdeasAnalytics
@@ -59,29 +61,21 @@ function IdeasAnalytics() {
     topCategory: categoryData.length > 0 ? categoryData.reduce((a, b) => a.value > b.value ? a : b).name : 'N/A'
   };
 
+
+
+  // ... inside generateInsights (line ~62)
   const generateInsights = async () => {
     const topIdeas = ideas.slice(0, 10);
-    const prompt = `Analyze these citizen ideas and provide strategic insights:
 
-${topIdeas.map(i => `- ${i.title} (Category: ${i.category}, Votes: ${i.votes_count || 0})`).join('\n')}
-
-Provide:
-1. Top 3 emerging themes from citizen input
-2. Recommended actions for the municipality
-3. Ideas with highest potential impact (list 3)
-4. Suggested improvements to the ideas submission process`;
+    // Build Prompt
+    const { prompt, schema } = buildPrompt(ideasAnalyticsPrompts.analyzeTrends, {
+      topIdeas
+    });
 
     const result = await invokeAI({
       prompt,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          themes: { type: 'array', items: { type: 'string' } },
-          recommendations: { type: 'array', items: { type: 'string' } },
-          high_impact_ideas: { type: 'array', items: { type: 'string' } },
-          process_improvements: { type: 'array', items: { type: 'string' } }
-        }
-      }
+      system_prompt: IDEAS_ANALYST_SYSTEM_PROMPT,
+      response_json_schema: schema
     });
 
     if (result.success) {

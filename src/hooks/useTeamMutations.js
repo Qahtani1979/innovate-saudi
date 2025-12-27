@@ -1,6 +1,6 @@
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
@@ -52,10 +52,10 @@ export function useTeamMutations() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['teams']);
-            toast.success(t({ en: 'Team created', ar: 'تم إنشاء الفريق' }));
+            notify.success(t({ en: 'Team created', ar: 'تم إنشاء الفريق' }));
         },
         onError: (error) => {
-            toast.error(t({ en: 'Failed to create team', ar: 'فشل إنشاء الفريق' }));
+            notify.error(t({ en: 'Failed to create team', ar: 'فشل إنشاء الفريق' }));
             console.error('Create team error:', error);
         },
     });
@@ -83,10 +83,10 @@ export function useTeamMutations() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['teams']);
-            toast.success(t({ en: 'Team updated', ar: 'تم تحديث الفريق' }));
+            notify.success(t({ en: 'Team updated', ar: 'تم تحديث الفريق' }));
         },
         onError: (error) => {
-            toast.error(t({ en: 'Failed to update team', ar: 'فشل تحديث الفريق' }));
+            notify.error(t({ en: 'Failed to update team', ar: 'فشل تحديث الفريق' }));
             console.error('Update team error:', error);
         },
     });
@@ -112,10 +112,10 @@ export function useTeamMutations() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['teams']);
-            toast.success(t({ en: 'Team deleted', ar: 'تم حذف الفريق' }));
+            notify.success(t({ en: 'Team deleted', ar: 'تم حذف الفريق' }));
         },
         onError: (error) => {
-            toast.error(t({ en: 'Failed to delete team', ar: 'فشل حذف الفريق' }));
+            notify.error(t({ en: 'Failed to delete team', ar: 'فشل حذف الفريق' }));
             console.error('Delete team error:', error);
         },
     });
@@ -141,7 +141,7 @@ export function useTeamMutations() {
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries(['teams']);
             queryClient.invalidateQueries(['team-members', variables.teamId]);
-            toast.success(t({ en: 'Member added to team', ar: 'تمت إضافة العضو للفريق' }));
+            notify.success(t({ en: 'Member added to team', ar: 'تمت إضافة العضو للفريق' }));
 
             // Notification: Member Added
             notify({
@@ -155,7 +155,7 @@ export function useTeamMutations() {
             });
         },
         onError: (error) => {
-            toast.error(t({ en: 'Failed to add member', ar: 'فشل إضافة العضو' }));
+            notify.error(t({ en: 'Failed to add member', ar: 'فشل إضافة العضو' }));
             console.error('Add team member error:', error);
         },
     });
@@ -174,10 +174,10 @@ export function useTeamMutations() {
         onSuccess: (variables) => {
             queryClient.invalidateQueries(['teams']);
             queryClient.invalidateQueries(['team-members', variables.teamId]);
-            toast.success(t({ en: 'Member removed from team', ar: 'تمت إزالة العضو من الفريق' }));
+            notify.success(t({ en: 'Member removed from team', ar: 'تمت إزالة العضو من الفريق' }));
         },
         onError: (error) => {
-            toast.error(t({ en: 'Failed to remove member', ar: 'فشل إزالة العضو' }));
+            notify.error(t({ en: 'Failed to remove member', ar: 'فشل إزالة العضو' }));
             console.error('Remove team member error:', error);
         },
     });
@@ -198,10 +198,10 @@ export function useTeamMutations() {
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries(['teams']);
             queryClient.invalidateQueries(['team-members', variables.teamId]);
-            toast.success(t({ en: 'Member role updated', ar: 'تم تحديث دور العضو' }));
+            notify.success(t({ en: 'Member role updated', ar: 'تم تحديث دور العضو' }));
         },
         onError: (error) => {
-            toast.error(t({ en: 'Failed to update role', ar: 'فشل تحديث الدور' }));
+            notify.error(t({ en: 'Failed to update role', ar: 'فشل تحديث الدور' }));
             console.error('Update team member role error:', error);
         },
     });

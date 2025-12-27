@@ -7,20 +7,20 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { useAuditLogger, AUDIT_ACTIONS, ENTITY_TYPES } from './useAuditLogger';
-import { useEmailTrigger } from '@/hooks/useEmailTrigger';
-import { useAutoNotification } from '@/hooks/useAutoNotification';
-import { useAuditLog } from '@/hooks/useAuditLog';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 import { useAccessControl } from '@/hooks/useAccessControl';
+import { useMutation } from '@tanstack/react-query';
 
 export function useProgramMutations() {
     const queryClient = useAppQueryClient();
     const { user } = useAuth();
     const { logCrudOperation } = useAuditLogger();
-    const { triggerEmail } = useEmailTrigger();
-    const { logProgramActivity, logApprovalActivity } = useAuditLog();
+    const { notify } = useNotificationSystem();
     const { checkPermission, checkEntityAccess } = useAccessControl();
-    const { notifyProgramEvent } = useAutoNotification();
 
+    /**
+     * Create Program
+     */
     /**
      * Create Program
      */
@@ -63,19 +63,36 @@ export function useProgramMutations() {
                 });
 
                 try {
-                    await triggerEmail('program.submitted', {
-                        entity_type: 'program',
-                        entity_id: data.id,
-                        recipient_email: user?.email,
-                        entity_data: {
-                            name: data.name_en,
+                    await notify({
+                        type: 'program_approval_requested',
+                        entityType: 'program',
+                        entityId: data.id,
+                        title: 'Program Approval Requested',
+                        message: `Program "${data.name_en}" requires approval.`,
+                        recipientEmails: [user?.email],
+                        sendEmail: true,
+                        emailTemplate: 'program_approval_requested',
+                        emailVariables: {
+                            program_name: data.name_en,
                             program_type: data.program_type,
-                            start_date: /** @type {any} */(data).start_date
+                            requester_email: user?.email
                         }
                     });
                 } catch (e) {
-                    console.warn('Email trigger failed:', e);
+                    console.warn('Notification failed:', e);
                 }
+            } else {
+                try {
+                    await notify({
+                        type: 'program_created',
+                        entityType: 'program',
+                        entityId: data.id,
+                        title: 'Program Created',
+                        message: `Program "${data.name_en}" created successfully.`,
+                        recipientEmails: [user?.email],
+                        sendEmail: true
+                    });
+                } catch (e) { }
             }
 
             await logCrudOperation(AUDIT_ACTIONS.CREATE, ENTITY_TYPES.PROGRAM, data.id, null, programData);
@@ -85,17 +102,11 @@ export function useProgramMutations() {
         onSuccess: async (data) => {
             queryClient.invalidateQueries({ queryKey: ['programs'] });
             queryClient.invalidateQueries({ queryKey: ['programs-with-visibility'] });
-            toast.success('Program created successfully');
 
-            const action = data.status === 'pending' ? 'submitted' : 'created';
-            await logProgramActivity(action, data);
-
-            try {
-                await notifyProgramEvent(data, data.status === 'pending' ? 'submitted' : 'created');
-            } catch (e) { console.warn('Notification failed:', e); }
+            notify.success('Program created successfully');
         },
         onError: (error) => {
-            toast.error(`Failed to create program: ${error.message}`);
+            notify.error(`Failed to create program: ${error.message}`);
         }
     });
 
@@ -128,10 +139,10 @@ export function useProgramMutations() {
         },
         onSuccess: async (data) => {
             queryClient.invalidateQueries({ queryKey: ['programs'] });
-            toast.success(`Created ${data.length} programs`);
+            notify.success(`Created ${data.length} programs`);
         },
         onError: (error) => {
-            toast.error(`Failed to create programs: ${error.message}`);
+            notify.error(`Failed to create programs: ${error.message}`);
         }
     });
 
@@ -163,32 +174,30 @@ export function useProgramMutations() {
             if (error) throw error;
 
             await logCrudOperation(AUDIT_ACTIONS.UPDATE, ENTITY_TYPES.PROGRAM, id, null, updates);
-            return data;
+            return { data, previousCreator: currentProgram.created_by };
         },
-        onSuccess: async (data, variables) => {
+        onSuccess: async ({ data, previousCreator }, variables) => {
             queryClient.invalidateQueries({ queryKey: ['programs'] });
             queryClient.invalidateQueries({ queryKey: ['programs-with-visibility'] });
             queryClient.invalidateQueries({ queryKey: ['program', variables.id] });
-            toast.success('Program updated');
 
-            await logProgramActivity('updated', data, {
-                updated_fields: Object.keys(variables.data || {})
-            });
+            notify.success('Program updated');
 
+            // Notify Update
             try {
-                await triggerEmail('program.updated', {
-                    entity_type: 'program',
-                    entity_id: data.id,
-                    entity_data: {
-                        name: data.name_en,
-                        program_type: data.program_type,
-                        status: data.status
-                    }
+                await notify({
+                    type: 'program_updated',
+                    entityType: 'program',
+                    entityId: data.id,
+                    recipientEmails: [previousCreator || user?.email], // Notify owner
+                    title: 'Program Updated',
+                    message: `Program "${data.name_en}" has been updated.`,
+                    sendEmail: true
                 });
-            } catch (e) { console.warn('Email trigger failed:', e); }
+            } catch (e) { console.warn('Notification failed:', e); }
         },
         onError: (error) => {
-            toast.error(`Failed to update program: ${error.message}`);
+            notify.error(`Failed to update program: ${error.message}`);
         }
     });
 
@@ -221,17 +230,6 @@ export function useProgramMutations() {
 
             if (error) throw error;
 
-            // Create notification
-            await supabase
-                .from('notifications')
-                .insert({
-                    type: 'program_launched',
-                    title: `New Program: ${data.name_en}`,
-                    message: announcement || `${data.name_en} is now accepting applications.`,
-                    severity: 'info',
-                    link: `/ProgramDetail?id=${data.id}`
-                });
-
             return data;
         },
         onSuccess: async (data, variables) => {
@@ -240,24 +238,29 @@ export function useProgramMutations() {
             queryClient.invalidateQueries({ queryKey: ['notifications'] });
             toast.success('Program opened for applications');
 
-            await logProgramActivity('status_changed', data, {
-                new_status: 'applications_open',
-                action: 'opened_applications',
-                announcement: variables.announcement
-            });
+            // Audit
+            await logCrudOperation('UPDATE', ENTITY_TYPES.PROGRAM, data.id, null, { status: 'applications_open', announcement: variables.announcement });
 
             try {
-                await triggerEmail('program.launched', {
-                    entity_type: 'program',
-                    entity_id: data.id,
-                    entity_data: {
+                await notify({
+                    type: 'program_launched',
+                    entityType: 'program',
+                    entityId: data.id,
+                    title: `New Program: ${data.name_en}`,
+                    message: variables.announcement || `${data.name_en} is now accepting applications.`,
+                    recipientEmails: [], // Public notification? Or rely on system feeds.
+                    // If sendEmail is true, who to? Maybe registered users interested in programs.
+                    // Gold Standard: system might fan out.
+                    sendEmail: true,
+                    emailTemplate: 'program_launched',
+                    emailVariables: {
                         name: data.name_en,
                         program_type: data.program_type,
                         announcement: variables.announcement,
-                        launchDate: /** @type {any} */(data)?.launch_date
+                        launchDate: data.launch_date
                     }
                 });
-            } catch (e) { console.warn('Email trigger failed:', e); }
+            } catch (e) { console.warn('Notification failed:', e); }
         }
     });
 
@@ -296,10 +299,11 @@ export function useProgramMutations() {
             queryClient.invalidateQueries({ queryKey: ['program', data.id] });
             toast.success('Program started');
 
-            await logProgramActivity('status_changed', data, { new_status: 'active', action: 'started' });
+            await logCrudOperation('UPDATE', ENTITY_TYPES.PROGRAM, data.id, null, { status: 'active', action: 'started' });
         }
     });
 
+    /**
     /**
      * Complete Program
      */
@@ -334,15 +338,27 @@ export function useProgramMutations() {
             queryClient.invalidateQueries({ queryKey: ['program', data.id] });
             toast.success('Program completed');
 
-            await logProgramActivity('status_changed', data, { new_status: 'completed', action: 'completed' });
-            try { await notifyProgramEvent(data, 'completed'); } catch (e) { }
+            await logCrudOperation('UPDATE', ENTITY_TYPES.PROGRAM, data.id, null, { status: 'completed' });
+
             try {
-                await triggerEmail('program.completed', {
-                    entity_type: 'program',
-                    entity_id: data.id,
-                    entity_data: { name: data.name_en, program_type: data.program_type }
+                await notify({
+                    type: 'program_completed',
+                    entityType: 'program',
+                    entityId: data.id,
+                    title: 'Program Completed',
+                    message: `Program "${data.name_en}" has been completed.`,
+                    recipientEmails: [data.created_by], // Notify creator.
+                    // Also notify participants?
+                    sendEmail: true,
+                    emailTemplate: 'program_completed',
+                    emailVariables: {
+                        name: data.name_en,
+                        program_type: data.program_type
+                    }
                 });
-            } catch (e) { }
+            } catch (e) {
+                console.warn('Notification failed:', e);
+            }
         }
     });
 
@@ -376,11 +392,24 @@ export function useProgramMutations() {
             if (error) throw error;
 
             if (notifyParticipants) {
-                await triggerEmail('program.cancelled', {
-                    entity_type: 'program',
-                    entity_id: programId,
-                    entity_data: { name: data.name_en, cancellation_reason: reason }
-                });
+                try {
+                    await notify({
+                        type: 'program_cancelled',
+                        entityType: 'program',
+                        entityId: programId,
+                        title: 'Program Cancelled',
+                        message: `Program "${data.name_en}" has been cancelled. Reason: ${reason}`,
+                        recipientEmails: [], // System fan-out?
+                        // If we want to notify participants, we need to fetch them.
+                        // Or let system handle it by entityId reference if "participants" are linked.
+                        sendEmail: true,
+                        emailTemplate: 'program_cancelled',
+                        emailVariables: {
+                            name: data.name_en,
+                            cancellation_reason: reason
+                        }
+                    });
+                } catch (e) { console.warn('Notification failed:', e); }
             }
 
             return data;
@@ -389,7 +418,7 @@ export function useProgramMutations() {
             queryClient.invalidateQueries({ queryKey: ['programs'] });
             queryClient.invalidateQueries({ queryKey: ['program', data.id] });
             toast.success('Program cancelled');
-            await logProgramActivity('status_changed', data, { new_status: 'cancelled', action: 'cancelled' });
+            await logCrudOperation('UPDATE', ENTITY_TYPES.PROGRAM, data.id, null, { status: 'cancelled', reason: data.cancellation_reason });
         }
     });
 
@@ -423,7 +452,7 @@ export function useProgramMutations() {
             queryClient.invalidateQueries({ queryKey: ['programs'] });
             queryClient.invalidateQueries({ queryKey: ['programs-with-visibility'] });
             toast.success('Program deleted');
-            await logProgramActivity('deleted', { id });
+            await logCrudOperation('DELETE', ENTITY_TYPES.PROGRAM, id, null, {});
         }
     });
 
@@ -452,7 +481,18 @@ export function useProgramMutations() {
         onSuccess: async (data) => {
             queryClient.invalidateQueries({ queryKey: ['programs'] });
             queryClient.invalidateQueries({ queryKey: ['program', data.id] });
-            await logApprovalActivity('approved', 'program', data.id, { program_name: data.name_en });
+            await logCrudOperation('APPROVE', ENTITY_TYPES.PROGRAM, data.id, null, { approval_status: 'approved' });
+
+            // Notify Creator
+            await notify({
+                type: 'program_approved',
+                entityType: 'program',
+                entityId: data.id,
+                recipientEmails: [data.created_by],
+                title: 'Program Approved',
+                message: `Program "${data.name_en}" has been approved.`,
+                sendEmail: true
+            });
             toast.success('Program approved');
         }
     });
@@ -480,7 +520,17 @@ export function useProgramMutations() {
         onSuccess: async (data) => {
             queryClient.invalidateQueries({ queryKey: ['programs'] });
             queryClient.invalidateQueries({ queryKey: ['program', data.id] });
-            await logApprovalActivity('rejected', 'program', data.id, { program_name: data.name_en });
+            await logCrudOperation('REJECT', ENTITY_TYPES.PROGRAM, data.id, null, { approval_status: 'rejected' });
+            // Notify Creator
+            await notify({
+                type: 'program_rejected',
+                entityType: 'program',
+                entityId: data.id,
+                recipientEmails: [data.created_by],
+                title: 'Program Rejected',
+                message: `Program "${data.name_en}" has been rejected.`,
+                sendEmail: true
+            });
             toast.success('Program rejected');
         }
     });
@@ -569,21 +619,22 @@ export function useProgramMutations() {
             queryClient.invalidateQueries({ queryKey: ['program-applications', data.program.id] });
             toast.success(`Selection finalized: ${data.selectedCount} accepted`);
 
-            await logProgramActivity('selection_finalized', data.program, {
+            await logCrudOperation('UPDATE', ENTITY_TYPES.PROGRAM, data.program.id, null, {
                 accepted_count: data.selectedCount,
-                rejected_count: data.rejectedCount
+                rejected_count: data.rejectedCount,
+                action: 'selection_finalized'
             });
 
             // Summary notification
-            await supabase
-                .from('notifications')
-                .insert({
-                    type: 'program_selection_done',
-                    title: 'Selection Finalized',
-                    message: `${data.selectedCount} participants selected for ${data.program.name_en}`,
-                    severity: 'success',
-                    link: `/ProgramDetail?id=${data.program.id}`
-                });
+            await notify({
+                type: 'program_selection_done',
+                entityType: 'program',
+                entityId: data.program.id,
+                title: 'Selection Finalized',
+                message: `${data.selectedCount} participants selected for ${data.program.name_en}`,
+                recipientEmails: [data.program.created_by],
+                sendEmail: true
+            });
         }
     });
 
@@ -613,7 +664,7 @@ export function useProgramMutations() {
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['program', data.id] });
             toast.success('Mid-program review completed');
-            logProgramActivity('mid_review_completed', data);
+            logCrudOperation('UPDATE', ENTITY_TYPES.PROGRAM, data.id, null, { mid_review: true });
         }
     });
 

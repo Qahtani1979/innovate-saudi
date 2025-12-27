@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useTaxonomyMutations } from './useTaxonomyMutations';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
-import { toast } from 'sonner';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 export function useTaxonomyPublisher() {
     const [isPublishing, setIsPublishing] = useState(false);
     const [progress, setProgress] = useState(0);
     const queryClient = useAppQueryClient();
+    const { notify } = useNotificationSystem();
     const { createSector, createSubsector, createService } = useTaxonomyMutations();
 
     const publish = async (sectors, subsectors, services, onComplete) => {
@@ -75,12 +76,12 @@ export function useTaxonomyPublisher() {
             queryClient.invalidateQueries(['subsectors']);
             queryClient.invalidateQueries(['services']);
 
-            toast.success('Taxonomy published successfully');
+            notify.success('Taxonomy published successfully');
             if (onComplete) onComplete();
 
         } catch (error) {
             console.error('Publishing failed:', error);
-            toast.error('Failed to publish taxonomy');
+            notify.error('Failed to publish taxonomy');
         } finally {
             setIsPublishing(false);
             setProgress(0);

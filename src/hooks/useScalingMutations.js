@@ -1,10 +1,11 @@
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
-import { useAuditLogger, AUDIT_ACTIONS } from './useAuditLogger';
-import { useEmailTrigger } from './useEmailTrigger';
+import { useAuditLogger, AUDIT_ACTIONS } from '@/hooks/useAuditLogger';
+import { useEmailTrigger } from '@/hooks/useEmailTrigger';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
+import { useMutation } from '@tanstack/react-query';
 
 /**
  * Hook for scaling plan mutations
@@ -15,6 +16,7 @@ export function useScalingMutations() {
     const { user } = useAuth();
     const { logCrudOperation, logStatusChange } = useAuditLogger();
     const { triggerEmail } = useEmailTrigger();
+    const { notify } = useNotificationSystem();
 
     const createScalingPlan = useMutation({
         mutationFn: async (data) => {
@@ -38,12 +40,15 @@ export function useScalingMutations() {
             return plan;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(['scaling-plans']);
-            toast.success(t({ en: 'Scaling plan created', ar: 'تم إنشاء خطة التوسع' }));
+            queryClient.invalidateQueries({ queryKey: ['scaling-plans'] });
+
+            notify.success(t({ en: 'Scaling plan created', ar: 'تم إنشاء خطة التوسع' }));
         },
         onError: (error) => {
-            toast.error(t({ en: 'Failed to create plan', ar: 'فشل إنشاء الخطة' }));
             console.error('Create scaling plan error:', error);
+            notify.error(t({ en: 'Failed to create plan', ar: 'فشل إنشاء الخطة' }), {
+                description: error.message
+            });
         },
     });
 
@@ -69,13 +74,16 @@ export function useScalingMutations() {
             return plan;
         },
         onSuccess: (plan) => {
-            queryClient.invalidateQueries(['scaling-plans']);
-            queryClient.invalidateQueries(['scaling-plan', plan.id]);
-            toast.success(t({ en: 'Scaling plan updated', ar: 'تم تحديث خطة التوسع' }));
+            queryClient.invalidateQueries({ queryKey: ['scaling-plans'] });
+            queryClient.invalidateQueries({ queryKey: ['scaling-plan', plan.id] });
+
+            notify.success(t({ en: 'Scaling plan updated', ar: 'تم تحديث خطة التوسع' }));
         },
         onError: (error) => {
-            toast.error(t({ en: 'Failed to update plan', ar: 'فشل تحديث الخطة' }));
             console.error('Update scaling plan error:', error);
+            notify.error(t({ en: 'Failed to update plan', ar: 'فشل تحديث الخطة' }), {
+                description: error.message
+            });
         },
     });
 
@@ -99,12 +107,15 @@ export function useScalingMutations() {
             return id;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(['scaling-plans']);
-            toast.success(t({ en: 'Scaling plan deleted', ar: 'تم حذف خطة التوسع' }));
+            queryClient.invalidateQueries({ queryKey: ['scaling-plans'] });
+
+            notify.success(t({ en: 'Scaling plan deleted', ar: 'تم حذف خطة التوسع' }));
         },
         onError: (error) => {
-            toast.error(t({ en: 'Failed to delete plan', ar: 'فشل حذف الخطة' }));
             console.error('Delete scaling plan error:', error);
+            notify.error(t({ en: 'Failed to delete plan', ar: 'فشل حذف الخطة' }), {
+                description: error.message
+            });
         },
     });
 
@@ -147,13 +158,16 @@ export function useScalingMutations() {
             return plan;
         },
         onSuccess: (plan) => {
-            queryClient.invalidateQueries(['scaling-plans']);
-            queryClient.invalidateQueries(['scaling-plan', plan.id]);
-            toast.success(t({ en: 'Scaling plan approved', ar: 'تمت الموافقة على خطة التوسع' }));
+            queryClient.invalidateQueries({ queryKey: ['scaling-plans'] });
+            queryClient.invalidateQueries({ queryKey: ['scaling-plan', plan.id] });
+
+            notify.success(t({ en: 'Scaling plan approved', ar: 'تمت الموافقة على خطة التوسع' }));
         },
         onError: (error) => {
-            toast.error(t({ en: 'Failed to approve plan', ar: 'فشلت الموافقة على الخطة' }));
             console.error('Approve scaling plan error:', error);
+            notify.error(t({ en: 'Failed to approve plan', ar: 'فشلت الموافقة على الخطة' }), {
+                description: error.message
+            });
         },
     });
 
@@ -184,13 +198,16 @@ export function useScalingMutations() {
             return plan;
         },
         onSuccess: (plan) => {
-            queryClient.invalidateQueries(['scaling-plans']);
-            queryClient.invalidateQueries(['scaling-plan', plan.id]);
-            toast.success(t({ en: 'Scaling plan execution started', ar: 'بدأ تنفيذ خطة التوسع' }));
+            queryClient.invalidateQueries({ queryKey: ['scaling-plans'] });
+            queryClient.invalidateQueries({ queryKey: ['scaling-plan', plan.id] });
+
+            notify.success(t({ en: 'Scaling plan execution started', ar: 'بدأ تنفيذ خطة التوسع' }));
         },
         onError: (error) => {
-            toast.error(t({ en: 'Failed to execute plan', ar: 'فشل تنفيذ الخطة' }));
             console.error('Execute scaling plan error:', error);
+            notify.error(t({ en: 'Failed to execute plan', ar: 'فشل تنفيذ الخطة' }), {
+                description: error.message
+            });
         },
     });
 
@@ -233,11 +250,14 @@ export function useScalingMutations() {
         onSuccess: (program) => {
             queryClient.invalidateQueries({ queryKey: ['scaling-plans'] });
             queryClient.invalidateQueries({ queryKey: ['programs'] });
-            toast.success(t({ en: 'Training program created', ar: 'تم إنشاء البرنامج التدريبي' }));
+
+            notify.success(t({ en: 'Training program created', ar: 'تم إنشاء البرنامج التدريبي' }));
         },
         onError: (error) => {
-            toast.error(t({ en: 'Failed to create program', ar: 'فشل إنشاء البرنامج' }));
             console.error('Institutionalize scaling plan error:', error);
+            notify.error(t({ en: 'Failed to create program', ar: 'فشل إنشاء البرنامج' }), {
+                description: error.message
+            });
         }
     });
 

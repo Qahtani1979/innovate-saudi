@@ -20,9 +20,9 @@ import {
   useEvent,
   useEventComments,
   useEventBookmarkStatus,
-  useEventMutations,
   useEventInvalidator
 } from '@/hooks/useEvents';
+import { useEventMutations } from '@/hooks/useEventMutations';
 
 function EventDetail() {
   const { t, language } = useLanguage();

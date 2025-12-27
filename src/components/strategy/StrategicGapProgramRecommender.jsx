@@ -14,7 +14,7 @@ import {
   buildGapProgramRecommenderPrompt,
   gapProgramRecommenderSchema,
   GAP_PROGRAM_RECOMMENDER_SYSTEM_PROMPT
-} from '@/lib/ai/prompts/strategy';
+} from '@/lib/ai/prompts/ecosystem/analysisPrompts';
 
 import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
 import { useStrategyMutations } from '@/hooks/useStrategyMutations';

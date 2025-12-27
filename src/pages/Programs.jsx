@@ -38,7 +38,6 @@ import { useProgramMutations } from '@/hooks/useProgramMutations';
 import { useSectors } from '@/hooks/useSectors';
 import { useRegions } from '@/hooks/useRegions';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
-import { PROGRAMS_INSIGHTS_PROMPT_TEMPLATE, PROGRAMS_INSIGHTS_RESPONSE_SCHEMA } from '@/lib/ai/prompts/programs/insights';
 import { useState } from 'react';
 
 function ProgramsPage({ embedded = false }) {
@@ -107,6 +106,9 @@ function ProgramsPage({ embedded = false }) {
   const handleAIInsights = async () => {
     setShowAIInsights(true);
     try {
+      const { programPrompts } = await import('@/lib/ai/prompts/ecosystem/programPrompts');
+      const { buildPrompt } = await import('@/lib/ai/promptBuilder');
+
       const programSummary = programs.slice(0, 15).map(p => ({
         name: p.name_en,
         type: p.program_type,
@@ -115,17 +117,21 @@ function ProgramsPage({ embedded = false }) {
         outcomes: p.outcomes
       }));
 
+      const { prompt, schema, system } = buildPrompt(programPrompts.insights, {
+        programSummary,
+        stats
+      });
+
       const result = await invokeAI({
-        prompt: PROGRAMS_INSIGHTS_PROMPT_TEMPLATE({
-          programSummary,
-          stats
-        }),
-        response_json_schema: PROGRAMS_INSIGHTS_RESPONSE_SCHEMA
+        prompt,
+        system_prompt: system,
+        response_json_schema: schema
       });
       if (result.success && result.data) {
         setAiInsights(result.data);
       }
     } catch (error) {
+      console.error(error);
       toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
     }
   };

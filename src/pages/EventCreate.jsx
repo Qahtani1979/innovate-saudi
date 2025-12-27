@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '@/components/LanguageContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/lib/AuthContext';
-import { useEvents } from '@/hooks/useEvents';
+import { useEventMutations } from '@/hooks/useEventMutations';
 import { usePrograms } from '@/hooks/usePrograms';
 import { useMunicipalities } from '@/hooks/useMunicipalities';
 import { EVENT_TYPES } from '@/components/events/EventFilters';
@@ -42,7 +42,7 @@ function EventCreate() {
   const [searchParams] = useSearchParams();
   const programId = searchParams.get('program_id');
 
-  const { createEvent, isCreating } = useEvents();
+  const { createEvent, isCreating } = useEventMutations();
 
   const [activeTab, setActiveTab] = useState('basic');
   const [formData, setFormData] = useState({

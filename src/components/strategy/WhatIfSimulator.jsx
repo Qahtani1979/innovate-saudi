@@ -10,11 +10,11 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useTaxonomy } from '@/hooks/useTaxonomy';
 import { getSystemPrompt } from '@/lib/saudiContext';
-import { 
-  buildWhatIfSimulatorPrompt, 
+import {
+  buildWhatIfSimulatorPrompt,
   whatIfSimulatorSchema,
-  WHAT_IF_SIMULATOR_SYSTEM_PROMPT 
-} from '@/lib/ai/prompts/strategy';
+  WHAT_IF_SIMULATOR_SYSTEM_PROMPT
+} from '@/lib/ai/prompts/ecosystem/simulationPrompts';
 import {
   Collapsible,
   CollapsibleContent,
@@ -24,7 +24,7 @@ import {
 export default function WhatIfSimulator({ currentState }) {
   const { language, isRTL, t } = useLanguage();
   const { sectors, isLoading: taxonomyLoading } = useTaxonomy();
-  
+
   const [selectedSectorIds, setSelectedSectorIds] = useState([]);
   const [budgetAllocation, setBudgetAllocation] = useState({});
   const [predictions, setPredictions] = useState(null);
@@ -39,12 +39,12 @@ export default function WhatIfSimulator({ currentState }) {
     if (sectors.length > 0 && selectedSectorIds.length === 0) {
       const initialSectors = sectors.slice(0, 4).map(s => s.id);
       setSelectedSectorIds(initialSectors);
-      
+
       const equalShare = Math.floor(100 / initialSectors.length);
       const allocation = {};
       initialSectors.forEach((id, idx) => {
-        allocation[id] = idx === initialSectors.length - 1 
-          ? 100 - (equalShare * (initialSectors.length - 1)) 
+        allocation[id] = idx === initialSectors.length - 1
+          ? 100 - (equalShare * (initialSectors.length - 1))
           : equalShare;
       });
       setBudgetAllocation(allocation);
@@ -55,7 +55,7 @@ export default function WhatIfSimulator({ currentState }) {
     setSelectedSectorIds(prev => {
       const isSelected = prev.includes(sectorId);
       let newSelection;
-      
+
       if (isSelected) {
         if (prev.length <= 2) return prev;
         newSelection = prev.filter(id => id !== sectorId);
@@ -63,16 +63,16 @@ export default function WhatIfSimulator({ currentState }) {
         if (prev.length >= 6) return prev;
         newSelection = [...prev, sectorId];
       }
-      
+
       const equalShare = Math.floor(100 / newSelection.length);
       const newAllocation = {};
       newSelection.forEach((id, idx) => {
-        newAllocation[id] = idx === newSelection.length - 1 
-          ? 100 - (equalShare * (newSelection.length - 1)) 
+        newAllocation[id] = idx === newSelection.length - 1
+          ? 100 - (equalShare * (newSelection.length - 1))
           : equalShare;
       });
       setBudgetAllocation(newAllocation);
-      
+
       return newSelection;
     });
   };
@@ -85,7 +85,7 @@ export default function WhatIfSimulator({ currentState }) {
 
   const runSimulation = async () => {
     const sectorNames = selectedSectorIds.map(id => getSectorName(id));
-    const allocationText = selectedSectorIds.map(id => 
+    const allocationText = selectedSectorIds.map(id =>
       `${getSectorName(id)}: ${budgetAllocation[id]}%`
     ).join(', ');
 
@@ -107,8 +107,8 @@ export default function WhatIfSimulator({ currentState }) {
       const equalShare = Math.floor(100 / initialSectors.length);
       const allocation = {};
       initialSectors.forEach((id, idx) => {
-        allocation[id] = idx === initialSectors.length - 1 
-          ? 100 - (equalShare * (initialSectors.length - 1)) 
+        allocation[id] = idx === initialSectors.length - 1
+          ? 100 - (equalShare * (initialSectors.length - 1))
           : equalShare;
       });
       setBudgetAllocation(allocation);
@@ -141,7 +141,7 @@ export default function WhatIfSimulator({ currentState }) {
       </CardHeader>
       <CardContent className="space-y-6">
         <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} showDetails />
-        
+
         {/* Sector Selector */}
         <Collapsible open={showSectorSelector} onOpenChange={setShowSectorSelector}>
           <CollapsibleTrigger asChild>

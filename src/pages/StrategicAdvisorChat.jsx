@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,10 @@ import { Send, Bot, User, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
+import { STRATEGY_SYSTEM_PROMPT, strategyPrompts } from '@/lib/ai/prompts/ecosystem/strategyPrompts';
+import { getAdvisorActions } from '@/lib/ai/prompts/ecosystem/advisorActions';
+import { buildPrompt } from '@/lib/ai/promptBuilder';
+
 function StrategicAdvisorChat() {
   const { language, isRTL, t } = useLanguage();
 
@@ -15,7 +20,7 @@ function StrategicAdvisorChat() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
 
-  /* 
+  /*
    * Local chat state management
    */
   const { invokeAI, isLoading: aiLoading } = useAIWithFallback();
@@ -45,12 +50,16 @@ function StrategicAdvisorChat() {
 
     try {
       // Construct prompt with context from previous messages
-      const context = messages.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n');
-      const prompt = `Context:\n${context}\n\nUser: ${input}`;
+      const history = messages.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n');
+
+      const { prompt } = buildPrompt(strategyPrompts.advisorChat, {
+        history,
+        input
+      });
 
       const result = await invokeAI({
         prompt,
-        system_prompt: "You are a Strategic Advisor AI for the Innovate Saudi platform. Provide strategic insights, identifying gaps, risks, and opportunities in the innovation portfolio."
+        system_prompt: STRATEGY_SYSTEM_PROMPT
       });
 
       if (result.success) {
@@ -71,12 +80,10 @@ function StrategicAdvisorChat() {
     }
   };
 
-  const quickActions = [
-    { label: t({ en: 'Weekly Portfolio Digest', ar: 'ملخص المحفظة الأسبوعي' }), prompt: 'Provide a weekly digest of portfolio health: gaps detected, pilots at risk, new opportunities, and priority recommendations for this week.' },
-    { label: t({ en: 'Gap Analysis', ar: 'تحليل الفجوات' }), prompt: 'Analyze the current portfolio and identify strategic gaps by sector, municipality type, and innovation stage. Suggest what initiatives to launch.' },
-    { label: t({ en: 'Risk Assessment', ar: 'تقييم المخاطر' }), prompt: 'Identify high-risk pilots and challenges that need intervention. Provide specific recommendations for each.' },
-    { label: t({ en: 'Generate Draft Plan', ar: 'توليد مسودة خطة' }), prompt: 'Generate a draft strategic plan for 2026 based on current portfolio gaps, emerging trends, and municipal priorities.' }
-  ];
+  // Get user context for permission-aware actions
+  const { user } = useAuth();
+  // Pass user context to filter actions
+  const quickActions = getAdvisorActions(user);
 
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -104,14 +111,11 @@ function StrategicAdvisorChat() {
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    // Update input and trigger send immediately
-                    // Note: In a real app we might need a more robust way to trigger this spread across renders
-                    // For now we just set input
                     setInput(action.prompt);
                   }}
                   className="text-xs"
                 >
-                  {action.label}
+                  {t(action.label)}
                 </Button>
               ))}
             </div>

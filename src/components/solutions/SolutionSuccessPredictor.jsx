@@ -8,11 +8,7 @@ import { Sparkles, Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import {
-  generateSuccessPredictionPrompt,
-  getSuccessPredictionSchema,
-  getSuccessPredictionSystemPrompt
-} from '@/lib/ai/prompts/solution';
+// Styles & Icons import
 
 export default function SolutionSuccessPredictor({ solution, challenge }) {
   const { t } = useLanguage();
@@ -20,10 +16,15 @@ export default function SolutionSuccessPredictor({ solution, challenge }) {
   const { invokeAI, status, isLoading, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const predictSuccess = async () => {
+    const { solutionPrompts, SOLUTION_SYSTEM_PROMPT } = await import('@/lib/ai/prompts/innovation/solutionPrompts');
+    const { buildPrompt } = await import('@/lib/ai/promptBuilder');
+
+    const { prompt, schema } = buildPrompt(solutionPrompts.successPrediction, { solution, challenge });
+
     const result = await invokeAI({
-      prompt: generateSuccessPredictionPrompt(solution, challenge),
-      response_json_schema: getSuccessPredictionSchema(),
-      system_prompt: getSuccessPredictionSystemPrompt()
+      prompt,
+      response_json_schema: schema,
+      system_prompt: SOLUTION_SYSTEM_PROMPT
     });
 
     if (result.success) {
@@ -33,7 +34,7 @@ export default function SolutionSuccessPredictor({ solution, challenge }) {
   };
 
   const successColor = prediction?.success_probability >= 70 ? 'green' :
-                       prediction?.success_probability >= 50 ? 'yellow' : 'red';
+    prediction?.success_probability >= 50 ? 'yellow' : 'red';
 
   return (
     <Card>
@@ -45,7 +46,7 @@ export default function SolutionSuccessPredictor({ solution, challenge }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <AIStatusIndicator status={status} rateLimitInfo={rateLimitInfo} showDetails />
-        
+
         <Button
           onClick={predictSuccess}
           disabled={isLoading || !isAvailable}

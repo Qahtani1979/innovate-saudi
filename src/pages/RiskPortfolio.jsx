@@ -18,71 +18,33 @@ function RiskPortfolio() {
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const { invokeAI, isLoading: analyzing, status, error, rateLimitInfo } = useAIWithFallback();
 
-  const { data: pilots = [] } = usePilotsWithVisibility();
-  const { data: challenges = [] } = useChallengesWithVisibility();
+  const { data: pilotsResponse } = usePilotsWithVisibility();
+  const pilots = Array.isArray(pilotsResponse) ? pilotsResponse : (pilotsResponse?.data || []);
+
+  const { data: challengesResponse } = useChallengesWithVisibility();
+  const challenges = Array.isArray(challengesResponse) ? challengesResponse : (challengesResponse?.data || []);
   const { data: rdProjects = [] } = useRDProjectsWithVisibility();
 
   const analyzeRisks = async () => {
     // Import centralized prompt module
-    const { RISK_PORTFOLIO_PROMPT_TEMPLATE, RISK_PORTFOLIO_RESPONSE_SCHEMA } = await import('@/lib/ai/prompts/analytics/riskPortfolio');
+    // Import centralized prompt module
+    const { RISK_SYSTEM_PROMPT, riskPrompts } = await import('@/lib/ai/prompts/ecosystem/riskPrompts');
+    const { buildPrompt } = await import('@/lib/ai/promptBuilder');
 
     const highRiskPilots = pilots.filter(p => p.risk_level === 'high' || p.risk_level === 'critical');
     const activePilotsCount = pilots.filter(p => p.stage === 'active' || p.stage === 'monitoring').length;
     const activeChallengesCount = challenges.filter(c => c.status === 'approved' || c.status === 'in_treatment').length;
 
+    const { prompt, schema } = buildPrompt(riskPrompts.portfolioAnalysis, {
+      highRiskPilots,
+      activePilotsCount,
+      activeChallengesCount
+    });
+
     const result = await invokeAI({
-      prompt: RISK_PORTFOLIO_PROMPT_TEMPLATE({
-        highRiskPilots,
-        activePilotsCount,
-        activeChallengesCount
-      }),
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          risk_heatmap: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                risk_category_en: { type: 'string' },
-                risk_category_ar: { type: 'string' },
-                severity: { type: 'string' },
-                affected_count: { type: 'number' },
-                description_en: { type: 'string' },
-                description_ar: { type: 'string' }
-              }
-            }
-          },
-          risk_trends: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                period: { type: 'string' },
-                high_risk: { type: 'number' },
-                medium_risk: { type: 'number' },
-                low_risk: { type: 'number' }
-              }
-            }
-          },
-          mitigation_priorities: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                action_en: { type: 'string' },
-                action_ar: { type: 'string' },
-                urgency: { type: 'string' },
-                impact_en: { type: 'string' },
-                impact_ar: { type: 'string' }
-              }
-            }
-          },
-          portfolio_risk_score: { type: 'number' },
-          risk_interpretation_en: { type: 'string' },
-          risk_interpretation_ar: { type: 'string' }
-        }
-      }
+      prompt,
+      system_prompt: RISK_SYSTEM_PROMPT,
+      response_json_schema: schema
     });
 
     if (result.success && result.data) {

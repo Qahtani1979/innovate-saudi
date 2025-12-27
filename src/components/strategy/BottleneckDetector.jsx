@@ -12,7 +12,7 @@ import {
   buildBottleneckDetectorPrompt,
   bottleneckDetectorSchema,
   BOTTLENECK_DETECTOR_SYSTEM_PROMPT
-} from '@/lib/ai/prompts/strategy';
+} from '@/lib/ai/prompts/ecosystem/analysisPrompts';
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 import { usePilotsList } from '@/hooks/usePilots';
 

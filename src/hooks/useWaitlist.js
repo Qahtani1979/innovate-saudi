@@ -1,12 +1,14 @@
 
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 import { useEmailTrigger } from './useEmailTrigger';
 
 export function useWaitlist(programId) {
     const queryClient = useAppQueryClient();
     const { triggerEmail } = useEmailTrigger();
+    const { notify } = useNotificationSystem();
 
     const waitlistQuery = useQuery({
         queryKey: ['waitlist-applications', programId],
@@ -52,10 +54,10 @@ export function useWaitlist(programId) {
         onSuccess: () => {
             queryClient.invalidateQueries(['waitlist-applications', programId]);
             queryClient.invalidateQueries(['program-applications', programId]);
-            toast.success('Participant promoted from waitlist');
+            notify.success('Participant promoted from waitlist');
         },
         onError: (error) => {
-            toast.error('Failed to promote participant: ' + error.message);
+            notify.error('Failed to promote participant: ' + error.message);
         }
     });
 

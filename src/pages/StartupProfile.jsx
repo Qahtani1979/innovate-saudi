@@ -29,31 +29,18 @@ function StartupProfile() {
   const { data: pilots = [] } = usePilots({ solutionIds: solutions.map(s => s.id) });
 
   const findMatchingChallenges = async () => {
-    const result = await invokeAI({
-      prompt: `Analyze this startup and suggest matching challenges:
-Startup: ${startup[0]?.name_en}
-Sectors: ${startup[0]?.sectors?.join(', ')}
-Solutions: ${solutions.map(s => s.name_en).join(', ')}
-Stage: ${startup[0]?.stage}
+    const { solutionPrompts, SOLUTION_SYSTEM_PROMPT } = await import('@/lib/ai/prompts/innovation/solutionPrompts');
+    const { buildPrompt } = await import('@/lib/ai/promptBuilder');
 
-Find 5 best-matching challenges from the platform that align with their capabilities.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          matches: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                challenge_title: { type: 'string' },
-                sector: { type: 'string' },
-                match_score: { type: 'number' },
-                reasoning: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
+    const { prompt, schema } = buildPrompt(solutionPrompts.matchingChallenges, {
+      startup: startup[0],
+      solutions
+    });
+
+    const result = await invokeAI({
+      prompt,
+      response_json_schema: schema,
+      system_prompt: SOLUTION_SYSTEM_PROMPT
     });
 
     if (result.success) {

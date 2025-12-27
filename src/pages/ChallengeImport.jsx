@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { useChallengeMutations } from '@/hooks/useChallengeMutations';
+import { CHALLENGE_IMPORT_SYSTEM_PROMPT, challengeImportPrompts } from '@/lib/ai/prompts/challenges/importPrompts';
+import { buildPrompt } from '@/lib/ai/promptBuilder';
 
 export default function ChallengeImport() {
   const { language, isRTL, t } = useLanguage();
@@ -130,29 +132,14 @@ export default function ChallengeImport() {
       setProgress((i / parsedData.length) * 100);
 
       try {
-        const prompt = `Translate the following challenge data from Arabic to English. Return JSON only.
-
-Arabic Title: ${record.title_ar}
-Arabic Description: ${record.description_ar}
-Arabic Root Cause: ${record.root_cause_ar}
-
-Return:
-{
-  "title_en": "...",
-  "description_en": "...",
-  "root_cause_en": "..."
-}`;
+        const { prompt, schema } = buildPrompt(challengeImportPrompts.translate, {
+          record
+        });
 
         const result = await invokeAI({
-          prompt: prompt,
-          response_json_schema: {
-            type: "object",
-            properties: {
-              title_en: { type: "string" },
-              description_en: { type: "string" },
-              root_cause_en: { type: "string" }
-            }
-          }
+          prompt,
+          system_prompt: CHALLENGE_IMPORT_SYSTEM_PROMPT,
+          response_json_schema: schema
         });
 
         if (result.success) {
@@ -182,35 +169,14 @@ Return:
       setProgress((i / parsedData.length) * 100);
 
       try {
-        const prompt = `Analyze this challenge and enrich with AI scoring and classification:
-
-Title: ${record.title_en}
-Description: ${record.description_en}
-Sector: ${record.sector}
-
-Generate:
-1. Severity score (0-100)
-2. Impact score (0-100)
-3. Keywords (5-7 terms)
-4. Root causes array (3-5 specific causes)
-5. Affected services (2-4 municipal services)
-6. Priority tier (1-4, where 1=critical)
-7. Theme category`;
+        const { prompt, schema } = buildPrompt(challengeImportPrompts.enrich, {
+          record
+        });
 
         const result = await invokeAI({
           prompt,
-          response_json_schema: {
-            type: 'object',
-            properties: {
-              severity_score: { type: 'number' },
-              impact_score: { type: 'number' },
-              keywords: { type: 'array', items: { type: 'string' } },
-              root_causes: { type: 'array', items: { type: 'string' } },
-              affected_services: { type: 'array', items: { type: 'string' } },
-              priority_tier: { type: 'number' },
-              theme: { type: 'string' }
-            }
-          }
+          system_prompt: CHALLENGE_IMPORT_SYSTEM_PROMPT,
+          response_json_schema: schema
         });
 
         if (result.success) {
@@ -273,6 +239,7 @@ Generate:
         icon={Upload}
         title={{ en: 'Import Challenges', ar: 'استيراد التحديات' }}
         description={{ en: 'Bulk import challenges from CSV/TXT file', ar: 'استيراد جماعي للتحديات من ملف CSV/TXT' }}
+        action={<div />}
       />
 
       <Card>

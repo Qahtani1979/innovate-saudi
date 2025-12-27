@@ -46,7 +46,6 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { toast } from 'sonner';
 import { usePrompt } from '@/hooks/usePrompt';
-import { PILOT_DETAIL_PROMPT_TEMPLATE } from '@/lib/ai/prompts/pilots/pilotDetail';
 import MultiStepApproval from '../components/MultiStepApproval';
 import FinancialTracker from '../components/FinancialTracker';
 import RegulatoryCompliance from '../components/RegulatoryCompliance';
@@ -155,18 +154,22 @@ function PilotDetailPage() {
     setShowAIInsights(true);
     setAiLoading(true);
     try {
-      // Use centralized prompt template
-      const promptConfig = PILOT_DETAIL_PROMPT_TEMPLATE({
+      const { pilotPrompts } = await import('@/lib/ai/prompts/ecosystem/pilotPrompts');
+      const { buildPrompt } = await import('@/lib/ai/promptBuilder');
+
+      const pilotData = {
         ...pilot,
         municipality_name: municipality?.name_en,
         challenge_title: challenge?.title_en,
         solution_name: solution?.name_en
-      });
+      };
+
+      const { prompt, schema, system } = buildPrompt(pilotPrompts.detailAnalysis, pilotData);
 
       const result = await invokeAI({
-        prompt: promptConfig.prompt,
-        system_prompt: promptConfig.system,
-        response_json_schema: promptConfig.schema
+        prompt,
+        system_prompt: system,
+        response_json_schema: schema
       });
       if (result.success) {
         setAiInsights(result.data);
@@ -174,6 +177,7 @@ function PilotDetailPage() {
         toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
       }
     } catch (error) {
+      console.error(error);
       toast.error(t({ en: 'Failed to generate AI insights', ar: 'فشل توليد الرؤى الذكية' }));
     } finally {
       setAiLoading(false);

@@ -24,7 +24,7 @@ export function useUserRoleMutations() {
             return data;
         },
         onSuccess: (_, { userId }) => {
-            toast.success('Role added successfully');
+            notify.success('Role added successfully');
             queryClient.invalidateQueries({ queryKey: ['user-roles', userId] });
             queryClient.invalidateQueries({ queryKey: ['users'] }); // Maybe refresh user list too
 
@@ -41,7 +41,7 @@ export function useUserRoleMutations() {
         },
         onError: (error) => {
             console.error('Error adding role:', error);
-            toast.error('Failed to add role');
+            notify.error('Failed to add role');
         }
     });
 
@@ -59,7 +59,7 @@ export function useUserRoleMutations() {
             if (error) throw error;
         },
         onSuccess: (_, { userId }) => {
-            toast.success('Role removed successfully');
+            notify.success('Role removed successfully');
             queryClient.invalidateQueries({ queryKey: ['user-roles', userId] });
             queryClient.invalidateQueries({ queryKey: ['users'] });
 
@@ -76,7 +76,7 @@ export function useUserRoleMutations() {
         },
         onError: (error) => {
             console.error('Error removing role:', error);
-            toast.error('Failed to remove role');
+            notify.error('Failed to remove role');
         }
     });
 
@@ -104,7 +104,7 @@ export function useUserRoleMutations() {
             }
         },
         onSuccess: (_, { userId }) => {
-            toast.success('Roles updated successfully');
+            notify.success('Roles updated successfully');
             queryClient.invalidateQueries(['user-roles', userId]);
 
             // Notification: Roles Updated
@@ -120,7 +120,7 @@ export function useUserRoleMutations() {
         },
         onError: (error) => {
             console.error('Error updating roles:', error);
-            toast.error('Failed to update roles');
+            notify.error('Failed to update roles');
         }
     });
 

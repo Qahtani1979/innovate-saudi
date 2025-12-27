@@ -7,12 +7,6 @@ import { Sparkles, TrendingUp, Calendar, AlertTriangle, Loader2, Info } from 'lu
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import useAIWithFallback, { AI_STATUS } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator, { AIOptionalBadge } from '@/components/ai/AIStatusIndicator';
-import {
-  buildCapacityPredictorPrompt,
-  capacityPredictorSchema,
-  CAPACITY_PREDICTOR_SYSTEM_PROMPT
-} from '@/lib/ai/prompts/core';
-import { useCapacityPredictor } from '@/hooks/useAIInsights';
 import { useSystemEntities } from '@/hooks/useSystemData';
 
 export default function AICapacityPredictor({ sandbox }) {
@@ -20,28 +14,33 @@ export default function AICapacityPredictor({ sandbox }) {
   const [prediction, setPrediction] = useState(null);
 
   const { data: applications = [] } = useSystemEntities('SandboxApplication');
-  const { predictMutation, status, error, rateLimitInfo, isLoading, isAvailable } = useCapacityPredictor();
+  const { invokeAI, status, isLoading, isAvailable, rateLimitInfo, error } = useAIWithFallback();
 
   const runPrediction = async () => {
     const historicalData = applications.filter(a => a.sandbox_id === sandbox.id);
+    const { sandboxPrompts } = await import('@/lib/ai/prompts/ecosystem/sandboxPrompts');
+    const { buildPrompt } = await import('@/lib/ai/promptBuilder');
 
-    predictMutation.mutate({
+    const { prompt, schema, system } = buildPrompt(sandboxPrompts.capacityPrediction, {
       sandbox,
-      historicalData,
-      promptBuilder: buildCapacityPredictorPrompt,
-      schema: capacityPredictorSchema,
-      systemPrompt: CAPACITY_PREDICTOR_SYSTEM_PROMPT
-    }, {
-      onSuccess: (data) => {
-        setPrediction({
-          ...data,
-          peak_periods: language === 'ar' ? data.peak_periods_ar : data.peak_periods_en,
-          resource_allocation: language === 'ar' ? data.resource_allocation_ar : data.resource_allocation_en,
-          potential_bottlenecks: language === 'ar' ? data.potential_bottlenecks_ar : data.potential_bottlenecks_en,
-          insights: language === 'ar' ? data.insights_ar : data.insights_en
-        });
-      }
+      historicalData
     });
+
+    const { success, data } = await invokeAI({
+      prompt,
+      system_prompt: system,
+      response_json_schema: schema
+    });
+
+    if (success) {
+      setPrediction({
+        ...data,
+        peak_periods: language === 'ar' ? data.peak_periods_ar : data.peak_periods_en,
+        resource_allocation: language === 'ar' ? data.resource_allocation_ar : data.resource_allocation_en,
+        potential_bottlenecks: language === 'ar' ? data.potential_bottlenecks_ar : data.potential_bottlenecks_en,
+        insights: language === 'ar' ? data.insights_ar : data.insights_en
+      });
+    }
   };
 
   const recommendationColors = {
