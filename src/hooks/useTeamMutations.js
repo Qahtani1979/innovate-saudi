@@ -1,9 +1,11 @@
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { useAuditLogger, AUDIT_ACTIONS } from './useAuditLogger';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 /**
  * Hook to fetch all teams
@@ -26,6 +28,7 @@ export function useTeamMutations() {
     const { t } = useLanguage();
     const { user } = useAuth();
     const { logCrudOperation } = useAuditLogger();
+    const { notify } = useNotificationSystem();
 
     const createTeam = useMutation({
         mutationFn: async (data) => {
@@ -139,6 +142,17 @@ export function useTeamMutations() {
             queryClient.invalidateQueries(['teams']);
             queryClient.invalidateQueries(['team-members', variables.teamId]);
             toast.success(t({ en: 'Member added to team', ar: 'تمت إضافة العضو للفريق' }));
+
+            // Notification: Member Added
+            notify({
+                type: 'team_member_added',
+                entityType: 'team',
+                entityId: variables.teamId,
+                recipientEmails: [variables.userEmail],
+                title: 'Added to Team',
+                message: `You have been added to a team.`,
+                sendEmail: true
+            });
         },
         onError: (error) => {
             toast.error(t({ en: 'Failed to add member', ar: 'فشل إضافة العضو' }));

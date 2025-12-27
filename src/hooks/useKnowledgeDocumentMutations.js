@@ -1,9 +1,11 @@
+import { useMutation } from '@tanstack/react-query';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { useAuditLogger } from '@/hooks/useAuditLogger';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 import * as usePlatformCore from './usePlatformCore';
 
 /**
@@ -14,6 +16,7 @@ export function useKnowledgeDocumentMutations() {
     const { t } = useLanguage();
     const { user } = useAuth();
     const { logAction } = useAuditLogger();
+    const { notify } = useNotificationSystem();
 
     const { uploadMutation } = usePlatformCore.useFileStorage();
 
@@ -52,6 +55,17 @@ export function useKnowledgeDocumentMutations() {
                 entity_id: data.id,
                 // @ts-ignore
                 details: { title: data.title_en, type: data.doc_type }
+            });
+
+            // Notification: Document Uploaded
+            notify({
+                type: 'document_uploaded',
+                entityType: 'knowledge_document',
+                entityId: data.id,
+                recipientEmails: [], // Admin/Public
+                title: 'Document Uploaded',
+                message: `New document uploaded: ${data.title_en}`,
+                sendEmail: false
             });
         },
         onError: (error) => {
@@ -109,6 +123,17 @@ export function useKnowledgeDocumentMutations() {
                 entity_id: data.id,
                 // @ts-ignore
                 details: { title: data.title_en, type: data.category }
+            });
+
+            // Notification: Document Created
+            notify({
+                type: 'document_created',
+                entityType: 'knowledge_document',
+                entityId: data.id,
+                recipientEmails: [],
+                title: 'Document Created',
+                message: `New document created: ${data.title_en}`,
+                sendEmail: false
             });
         },
         onError: (error) => {

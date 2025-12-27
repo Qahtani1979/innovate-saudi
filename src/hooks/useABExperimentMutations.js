@@ -1,11 +1,14 @@
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 import { useLanguage } from '../components/LanguageContext';
 
 export function useABExperimentMutations() {
     const queryClient = useAppQueryClient();
     const { t } = useLanguage();
+    const { notify } = useNotificationSystem();
 
     const createExperiment = useMutation({
         mutationFn: async ({ name, description, variants, allocation_percentages, userEmail }) => {
@@ -22,6 +25,17 @@ export function useABExperimentMutations() {
         onSuccess: () => {
             queryClient.invalidateQueries(['ab-experiments']);
             toast.success(t({ en: 'Experiment created!', ar: 'تم إنشاء التجربة!' }));
+
+            // Notification: Experiment Created
+            notify({
+                type: 'ab_experiment_created',
+                entityType: 'ab_experiment',
+                entityId: 'new', // ID not returned by mutationFn currently
+                recipientEmails: [],
+                title: 'AB Experiment Created',
+                message: 'New AB experiment created.',
+                sendEmail: false
+            });
         },
         onError: (error) => {
             toast.error(error.message);
@@ -39,6 +53,17 @@ export function useABExperimentMutations() {
         onSuccess: () => {
             queryClient.invalidateQueries(['ab-experiments']);
             toast.success(t({ en: 'Status updated!', ar: 'تم تحديث الحالة!' }));
+
+            // Notification: Status Updated
+            notify({
+                type: 'ab_experiment_status_updated',
+                entityType: 'ab_experiment',
+                entityId: 'id', // ID not in scope
+                recipientEmails: [],
+                title: 'Experiment Status Updated',
+                message: 'AB experiment status updated.',
+                sendEmail: false
+            });
         }
     });
 

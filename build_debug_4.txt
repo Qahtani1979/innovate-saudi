@@ -1,0 +1,32 @@
+
+> innovate-saudi-app@0.0.0 build
+> vite build
+
+[36mvite v6.3.6 [32mbuilding for production...[36m[39m
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+transforming...
+
+/grid.svg referenced in /grid.svg didn't resolve at build time, it will remain unchanged to be resolved at runtime
+[32mÔ£ô[39m 5446 modules transformed.
+Ô£ù Build failed in 13.82s
+error during build:
+src/hooks/useMatchMutations.js (12:10): Identifier "queryClient" has already been declared
+file: C:/Users/alqah/innovate-saudi/src/hooks/useMatchMutations.js:12:10
+
+10: export function useMatchMutations() {
+11:     const queryClient = useAppQueryClient();
+12:     const queryClient = useAppQueryClient();
+              ^
+13:     const { notify } = useNotificationSystem();
+14:     const { user } = useAuth();
+
+    at getRollupError (file:///C:/Users/alqah/innovate-saudi/node_modules/rollup/dist/es/shared/parseAst.js:401:41)
+    at error (file:///C:/Users/alqah/innovate-saudi/node_modules/rollup/dist/es/shared/parseAst.js:397:42)
+    at Module.error (file:///C:/Users/alqah/innovate-saudi/node_modules/rollup/dist/es/shared/node-entry.js:16960:16)
+    at FunctionBodyScope.addDeclaration (file:///C:/Users/alqah/innovate-saudi/node_modules/rollup/dist/es/shared/node-entry.js:6263:21)
+    at Identifier.declare (file:///C:/Users/alqah/innovate-saudi/node_modules/rollup/dist/es/shared/node-entry.js:5425:35)
+    at VariableDeclarator.declareDeclarator (file:///C:/Users/alqah/innovate-saudi/node_modules/rollup/dist/es/shared/node-entry.js:13042:17)
+    at VariableDeclaration.initialise (file:///C:/Users/alqah/innovate-saudi/node_modules/rollup/dist/es/shared/node-entry.js:15418:24)
+    at convertNode (file:///C:/Users/alqah/innovate-saudi/node_modules/rollup/dist/es/shared/node-entry.js:16358:10)
+    at convertNodeList (file:///C:/Users/alqah/innovate-saudi/node_modules/rollup/dist/es/shared/node-entry.js:16368:38)
+    at Array.blockStatement (file:///C:/Users/alqah/innovate-saudi/node_modules/rollup/dist/es/shared/node-entry.js:15844:21)

@@ -1,9 +1,11 @@
+import { useMutation } from '@tanstack/react-query';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { useAuditLogger, AUDIT_ACTIONS } from './useAuditLogger';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 /**
  * Hook for proposal mutations
@@ -13,6 +15,7 @@ export function useProposalMutations() {
     const { t } = useLanguage();
     const { user } = useAuth();
     const { logCrudOperation } = useAuditLogger();
+    const { notify } = useNotificationSystem();
 
     const createProposal = useMutation({
         mutationFn: async (data) => {
@@ -31,7 +34,26 @@ export function useProposalMutations() {
 
             if (error) throw error;
 
+
+
             await logCrudOperation(AUDIT_ACTIONS.CREATE, 'challenge_proposal', proposal.id, null, proposalData);
+
+            // Notification: Proposal Submitted
+            await notify({
+                type: 'challenge_proposal_submitted',
+                entityType: 'challenge_proposal',
+                entityId: proposal.id,
+                recipientEmails: [user?.email].filter(Boolean),
+                title: 'Proposal Submitted Successfully',
+                message: `Your proposal "${proposalData.title || 'Untitled'}" has been submitted.`,
+                sendEmail: true,
+                emailTemplate: 'challenge_proposal.submitted',
+                emailVariables: {
+                    user_name: user?.user_metadata?.full_name || 'Innovator',
+                    proposal_title: proposalData.title || 'Untitled',
+                    submission_date: new Date().toLocaleDateString()
+                }
+            });
 
             return proposal;
         },
@@ -64,6 +86,25 @@ export function useProposalMutations() {
             if (error) throw error;
 
             await logCrudOperation(AUDIT_ACTIONS.UPDATE, 'challenge_proposal', id, currentProposal, data);
+
+            // Notification: Status Change
+            if (data.status && data.status !== currentProposal.status) {
+                await notify({
+                    type: `challenge_proposal_${data.status}`,
+                    entityType: 'challenge_proposal',
+                    entityId: id,
+                    recipientEmails: [currentProposal.proposer_email].filter(Boolean),
+                    title: `Proposal Status Update: ${data.status}`,
+                    message: `Your proposal "${currentProposal.title}" status has been updated to: ${data.status}.`,
+                    sendEmail: true,
+                    emailTemplate: 'challenge_proposal.status_update',
+                    emailVariables: {
+                        proposal_title: currentProposal.title,
+                        new_status: data.status,
+                        update_date: new Date().toLocaleDateString()
+                    }
+                });
+            }
 
             return proposal;
         },

@@ -1,12 +1,14 @@
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useMutation } from '@tanstack/react-query';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 /**
  * Hook to manage user role mutations
  */
 export function useUserRoleMutations() {
     const queryClient = useAppQueryClient();
+    const { notify } = useNotificationSystem();
 
     const addRole = useMutation({
         /**
@@ -25,6 +27,17 @@ export function useUserRoleMutations() {
             toast.success('Role added successfully');
             queryClient.invalidateQueries({ queryKey: ['user-roles', userId] });
             queryClient.invalidateQueries({ queryKey: ['users'] }); // Maybe refresh user list too
+
+            // Notification: Role Added
+            notify({
+                type: 'user_role_assigned',
+                entityType: 'user_role',
+                entityId: userId,
+                recipientEmails: [], // User presumably
+                title: 'Role Assigned',
+                message: 'A new role has been assigned to your account.',
+                sendEmail: true
+            });
         },
         onError: (error) => {
             console.error('Error adding role:', error);
@@ -49,6 +62,17 @@ export function useUserRoleMutations() {
             toast.success('Role removed successfully');
             queryClient.invalidateQueries({ queryKey: ['user-roles', userId] });
             queryClient.invalidateQueries({ queryKey: ['users'] });
+
+            // Notification: Role Removed
+            notify({
+                type: 'user_role_removed',
+                entityType: 'user_role',
+                entityId: userId,
+                recipientEmails: [], // User
+                title: 'Role Removed',
+                message: 'A role has been removed from your account.',
+                sendEmail: true
+            });
         },
         onError: (error) => {
             console.error('Error removing role:', error);
@@ -82,6 +106,17 @@ export function useUserRoleMutations() {
         onSuccess: (_, { userId }) => {
             toast.success('Roles updated successfully');
             queryClient.invalidateQueries(['user-roles', userId]);
+
+            // Notification: Roles Updated
+            notify({
+                type: 'user_roles_updated',
+                entityType: 'user_role',
+                entityId: userId,
+                recipientEmails: [],
+                title: 'Roles Updated',
+                message: 'Your account roles have been updated.',
+                sendEmail: true
+            });
         },
         onError: (error) => {
             console.error('Error updating roles:', error);

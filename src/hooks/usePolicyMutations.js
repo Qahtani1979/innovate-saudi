@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/LanguageContext';
 import { useFileStorage } from './usePlatformCore';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
+import { useAuth } from '@/lib/AuthContext';
 
 /**
  * Hook for policy-related mutations
@@ -13,6 +15,8 @@ export function usePolicyMutations() {
     const queryClient = useAppQueryClient();
     const { t } = useLanguage();
     const { uploadMutation } = useFileStorage();
+    const { notify } = useNotificationSystem();
+    const { user } = useAuth();
 
     // Create policy recommendation
     const createPolicy = useMutation({
@@ -29,6 +33,23 @@ export function usePolicyMutations() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['policies'] });
             toast.success(t({ en: 'Policy created successfully', ar: 'تم إنشاء السياسة بنجاح' }));
+
+            // Notification: Policy Created
+            notify({
+                type: 'policy_created',
+                entityType: 'policy',
+                entityId: 'new', // We assume success but insert only returns data if we selected it.
+                // data is returned from mutationFn.
+                recipientEmails: [user?.email].filter(Boolean),
+                title: 'Policy Recommendation Created',
+                message: 'Your policy recommendation has been successfully created.',
+                sendEmail: true,
+                emailTemplate: 'policy.created',
+                emailVariables: {
+                    user_name: user?.user_metadata?.full_name || 'User',
+                    creation_date: new Date().toLocaleDateString()
+                }
+            });
         }
     });
 
@@ -49,6 +70,28 @@ export function usePolicyMutations() {
             queryClient.invalidateQueries({ queryKey: ['policies'] });
             queryClient.invalidateQueries({ queryKey: ['policy', data.id] });
             toast.success(t({ en: 'Policy updated successfully', ar: 'تم تحديث السياسة بنجاح' }));
+
+            // Notification: Policy Updated / Published
+            if (data) {
+                const isPublished = data.status === 'published' || data.status === 'active';
+                notify({
+                    type: isPublished ? 'policy_published' : 'policy_updated',
+                    entityType: 'policy',
+                    entityId: data.id,
+                    recipientEmails: [user?.email].filter(Boolean),
+                    title: isPublished ? 'Policy Published' : 'Policy Updated',
+                    message: isPublished
+                        ? `Policy "${data.title_en || data.title}" is now live.`
+                        : `Policy "${data.title_en || data.title}" has been updated.`,
+                    sendEmail: true,
+                    emailTemplate: isPublished ? 'policy.published' : 'policy.updated',
+                    emailVariables: {
+                        policy_title: data.title_en || data.title,
+                        status: data.status,
+                        update_date: new Date().toLocaleDateString()
+                    }
+                });
+            }
         }
     });
 

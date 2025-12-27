@@ -1,8 +1,10 @@
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useMutation } from '@tanstack/react-query';
 import { useAuditLogger } from '@/hooks/useAuditLogger';
 import { useApprovalRequest } from '@/hooks/useApprovalRequest';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 /**
  * Hook for strategic plan mutations (create, update, delete).
@@ -22,6 +24,7 @@ import { useApprovalRequest } from '@/hooks/useApprovalRequest';
 export const useStrategyMutations = () => {
     const queryClient = useAppQueryClient();
     const { logActivity } = useAuditLogger();
+    const { notify } = useNotificationSystem();
 
     /** @type {any} */
     const createStrategy = useMutation({
@@ -47,6 +50,17 @@ export const useStrategyMutations = () => {
                     name: result.name_en,
                     ...metadata
                 }
+            });
+
+            // Notification: Strategy Created
+            notify({
+                type: 'strategy_created',
+                entityType: 'strategic_plan',
+                entityId: result.id,
+                recipientEmails: [],
+                title: 'New Strategy Created',
+                message: `Strategy "${result.name_en}" has been created.`,
+                sendEmail: true
             });
         },
         onError: (error) => {
@@ -293,6 +307,17 @@ export const useStrategyMutations = () => {
             queryClient.invalidateQueries({ queryKey: ['strategic-plans'] });
             queryClient.invalidateQueries({ queryKey: ['approval-requests'] });
             toast.success('Plan submitted for approval!');
+
+            // Notification: Strategy Submitted
+            notify({
+                type: 'strategy_submitted',
+                entityType: 'strategic_plan',
+                entityId: id, // Assuming ID is passed correctly
+                recipientEmails: [], // Approvers
+                title: 'Strategy Submitted for Approval',
+                message: 'A strategic plan has been submitted for approval.',
+                sendEmail: true
+            });
 
             logActivity({
                 action: 'submit_approval',

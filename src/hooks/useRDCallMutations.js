@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
 import { useAuditLogger, AUDIT_ACTIONS, ENTITY_TYPES } from './useAuditLogger';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 /**
  * @typedef {Object} RDCall
@@ -22,6 +23,7 @@ export function useRDCallMutations() {
     const queryClient = useAppQueryClient();
     const { user } = useAuth();
     const { logCrudOperation } = useAuditLogger();
+    const { notify } = useNotificationSystem();
 
     // Approve R&D Call
     const approveRDCallMutation = useMutation({
@@ -218,6 +220,25 @@ export function useRDCallMutations() {
 
             await logCrudOperation('PUBLISH', ENTITY_TYPES.RD_CALL, id, null, { status: 'open', notes });
 
+
+
+            // Notification: Call Published
+            await notify({
+                type: 'rd_call_published',
+                entityType: 'rd_call',
+                entityId: id,
+                recipientEmails: [user?.email].filter(Boolean), // Notify the publisher confirming action
+                title: 'R&D Call Published',
+                message: `R&D Call "${result.title_en}" is now live and accepting proposals.`,
+                sendEmail: true,
+                emailTemplate: 'rd_call.published',
+                emailVariables: {
+                    call_title: result.title_en,
+                    call_id: result.id,
+                    publish_date: new Date().toLocaleDateString()
+                }
+            });
+
             return result;
         },
         onSuccess: (data) => {
@@ -262,6 +283,26 @@ export function useRDCallMutations() {
             });
 
             await logCrudOperation('DECISION', ENTITY_TYPES.RD_CALL, id, null, { status: newStatus, decision, comments });
+
+            // Notification: Call Decision (e.g. Approved for Publication)
+            if (decision === 'approved' || decision === 'rejected') {
+                await notify({
+                    type: `rd_call_${decision}`,
+                    entityType: 'rd_call',
+                    entityId: id,
+                    recipientEmails: [user?.email].filter(Boolean), // Notify admin taking action (confirmation)
+                    title: `R&D Call ${decision === 'approved' ? 'Approved' : 'Rejected'}`,
+                    message: `R&D Call "${result.title_en}" has been ${decision}.`,
+                    sendEmail: true,
+                    emailTemplate: `rd_call.${decision}`,
+                    emailVariables: {
+                        call_title: result.title_en,
+                        decision_comments: comments
+                    }
+                });
+            }
+
+
 
             return result;
         },
@@ -349,6 +390,47 @@ export function useRDCallMutations() {
             });
 
             await logCrudOperation('AWARD', ENTITY_TYPES.RD_CALL, id, null, { winners: awardedProposals.length });
+
+            await logCrudOperation('AWARD', ENTITY_TYPES.RD_CALL, id, null, { winners: awardedProposals.length });
+
+            // 5. Notifications
+
+            // A. Notify Winners
+            for (const proposal of awardedProposals) {
+                await notify({
+                    type: 'rd_proposal_awarded',
+                    entityType: 'rd_proposal',
+                    entityId: proposal.id,
+                    recipientEmails: [proposal.principal_investigator?.email, proposal.principal_investigator_email].filter(Boolean),
+                    title: 'R&D Proposal Awarded',
+                    message: `Congratulations! Your proposal "${proposal.title_en}" has been selected for funding.`,
+                    sendEmail: true,
+                    emailTemplate: 'proposal.accepted',
+                    emailVariables: {
+                        recipientName: proposal.principal_investigator?.name || 'Researcher',
+                        proposalTitle: proposal.title_en,
+                        awardedAmount: (proposal.budget_requested || 0).toLocaleString(),
+                        callTitle: call.title_en
+                    }
+                });
+            }
+
+            // B. Notify Manager (Summary)
+            await notify({
+                type: 'rd_call_awards_announced',
+                entityType: 'rd_call',
+                entityId: id,
+                recipientEmails: [user?.email].filter(Boolean),
+                title: 'R&D Awards Announced',
+                message: `Awards for "${call.title_en}" have been processed. ${awardedProposals.length} proposals awarded.`,
+                sendEmail: true,
+                emailTemplate: 'rd_call.awards_announced',
+                emailVariables: {
+                    call_title: call.title_en,
+                    winners_count: awardedProposals.length,
+                    total_amount: awardedProposals.reduce((sum, p) => sum + (p.budget_requested || 0), 0).toLocaleString()
+                }
+            });
 
             return call;
         },

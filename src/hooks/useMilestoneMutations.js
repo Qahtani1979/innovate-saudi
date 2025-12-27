@@ -3,16 +3,19 @@
  * Handles CRUD operations for milestones (pilot/sandbox/project milestones)
  */
 
+import { useMutation } from '@tanstack/react-query';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { useAuditLogger, AUDIT_ACTIONS } from './useAuditLogger';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 export function useMilestoneMutations(entityType, entityId) {
     const queryClient = useAppQueryClient();
     const { user } = useAuth();
     const { logCrudOperation } = useAuditLogger();
+    const { notify } = useNotificationSystem();
 
     const tableMap = {
         pilot: 'pilot_milestones',
@@ -52,10 +55,26 @@ export function useMilestoneMutations(entityType, entityId) {
 
             return milestone;
         },
-        onSuccess: () => {
+        onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: [`${entityType}-milestones`, entityId] });
             queryClient.invalidateQueries({ queryKey: [entityType, entityId] });
             toast.success('Milestone created');
+
+            // Notification: Milestone Created
+            notify({
+                type: 'milestone_created',
+                entityType: 'milestone',
+                entityId: data?.id || 'new',
+                recipientEmails: [user?.email].filter(Boolean),
+                title: 'Milestone Created',
+                message: 'New milestone has been added.',
+                sendEmail: true,
+                emailTemplate: 'milestone.created',
+                emailVariables: {
+                    milestone_title: data?.title || 'Untitled',
+                    entity_type: entityType
+                }
+            });
         },
         onError: (error) => {
             toast.error(`Failed to create milestone: ${error.message}`);
@@ -129,6 +148,24 @@ export function useMilestoneMutations(entityType, entityId) {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`${entityType}-milestones`, entityId] });
             toast.success('Milestone status updated');
+
+            // Notification: Milestone Status
+            if (status === 'completed') {
+                notify({
+                    type: 'milestone_completed',
+                    entityType: 'milestone',
+                    entityId: id,
+                    recipientEmails: [user?.email].filter(Boolean),
+                    title: 'Milestone Completed',
+                    message: 'Milestone marked as completed.',
+                    sendEmail: true,
+                    emailTemplate: 'milestone.completed',
+                    emailVariables: {
+                        status: status,
+                        completion_date: new Date().toLocaleDateString()
+                    }
+                });
+            }
         }
     });
 

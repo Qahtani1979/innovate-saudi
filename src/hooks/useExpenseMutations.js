@@ -3,11 +3,13 @@
  * Handles CRUD operations for pilot expenses with audit logging
  */
 
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { useAuditLogger, AUDIT_ACTIONS, ENTITY_TYPES } from './useAuditLogger';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 export function usePilotExpenses(pilotId) {
     return useQuery({
@@ -30,6 +32,7 @@ export function useExpenseMutations(pilotId) {
     const queryClient = useAppQueryClient();
     const { user } = useAuth();
     const { logCrudOperation } = useAuditLogger();
+    const { notify } = useNotificationSystem();
 
     /**
      * Create Expense
@@ -61,10 +64,21 @@ export function useExpenseMutations(pilotId) {
 
             return expense;
         },
-        onSuccess: () => {
+        onSuccess: (expense) => {
             queryClient.invalidateQueries({ queryKey: ['pilot-expenses', pilotId] });
             queryClient.invalidateQueries({ queryKey: ['pilot', pilotId] });
             toast.success('Expense added');
+
+            // Notification: Expense Submitted
+            notify({
+                type: 'expense_submitted',
+                entityType: 'pilot_expense',
+                entityId: expense.id,
+                recipientEmails: [], // PM or Finance
+                title: 'New Expense Submitted',
+                message: `New expense submitted for pilot. Amount: ${expense.amount}`,
+                sendEmail: true
+            });
         },
         onError: (error) => {
             toast.error(`Failed to add expense: ${error.message}`);
@@ -86,9 +100,20 @@ export function useExpenseMutations(pilotId) {
             if (error) throw error;
             return expense;
         },
-        onSuccess: () => {
+        onSuccess: (expense) => {
             queryClient.invalidateQueries({ queryKey: ['pilot-expenses', pilotId] });
             toast.success('Expense updated');
+
+            // Notification: Expense Updated (e.g. Approved)
+            notify({
+                type: 'expense_updated',
+                entityType: 'pilot_expense',
+                entityId: expense.id,
+                recipientEmails: [],
+                title: 'Expense Updated',
+                message: `Expense status/details updated.`,
+                sendEmail: false
+            });
         }
     });
 

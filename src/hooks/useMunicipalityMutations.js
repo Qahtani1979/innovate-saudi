@@ -1,11 +1,14 @@
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useMutation } from '@tanstack/react-query';
 import { useLanguage } from '../components/LanguageContext';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 export function useMunicipalityMutations(onCreateSuccess) {
     const queryClient = useAppQueryClient();
     const { t } = useLanguage();
+    const { notify } = useNotificationSystem();
 
     const createMunicipality = useMutation({
         mutationFn: async (formDataInput) => {
@@ -33,6 +36,18 @@ export function useMunicipalityMutations(onCreateSuccess) {
             queryClient.invalidateQueries({ queryKey: ['municipalities'] });
             queryClient.invalidateQueries({ queryKey: ['municipalities-with-visibility'] });
             toast.success(t({ en: 'Municipality created', ar: 'تم إنشاء البلدية' }));
+
+            // Notification: Municipality Created
+            notify({
+                type: 'municipality_created',
+                entityType: 'municipality',
+                entityId: data.id,
+                recipientEmails: [], // Admins
+                title: 'Municipality Created',
+                message: `New municipality "${data.name_en}" created.`,
+                sendEmail: false
+            });
+
             if (onCreateSuccess) onCreateSuccess(data);
         },
         onError: (error) => {
@@ -61,6 +76,17 @@ export function useMunicipalityMutations(onCreateSuccess) {
             // Invalidate specific municipality query if it exists (e.g. from useMunicipality or list find)
             queryClient.invalidateQueries({ queryKey: ['municipality', updated.id] });
             toast.success(t({ en: 'Municipality updated successfully', ar: 'تم تحديث البلدية بنجاح' }));
+
+            // Notification: Municipality Updated
+            notify({
+                type: 'municipality_updated',
+                entityType: 'municipality',
+                entityId: updated.id,
+                recipientEmails: [],
+                title: 'Municipality Updated',
+                message: `Municipality "${updated.name_en}" updated.`,
+                sendEmail: false
+            });
         },
         onError: (error) => {
             console.error('Error updating municipality:', error);

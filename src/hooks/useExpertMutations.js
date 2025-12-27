@@ -1,9 +1,12 @@
+import { useMutation } from '@tanstack/react-query';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 export function useExpertMutations() {
     const queryClient = useAppQueryClient();
+    const { notify } = useNotificationSystem();
 
     const updateExpertProfile = useMutation({
         mutationFn: async ({ id, data }) => {
@@ -26,22 +29,21 @@ export function useExpertMutations() {
             if (error) throw error;
 
             // Trigger notification
-            try {
-                await supabase.functions.invoke('email-trigger-hub', {
-                    body: {
-                        trigger: 'program.application_received',
-                        recipient_email: 'admin@municipality.gov.sa',
-                        entity_type: 'expert',
-                        variables: {
-                            applicantEmail: data.user_email,
-                            applicationType: 'Expert Application'
-                        },
-                        triggered_by: data.user_email
-                    }
-                });
-            } catch (notifyError) {
-                console.error('Failed to send notification:', notifyError);
-            }
+            // Trigger notification
+            await notify({
+                type: 'expert_application_received',
+                entityType: 'expert',
+                entityId: result?.id || 'new',
+                recipientEmails: ['admin@municipality.gov.sa'], // Hardcoded as per original
+                title: 'New Expert Application',
+                message: `New expert application received from ${data.user_email}`,
+                sendEmail: true,
+                emailTemplate: 'expert.application_received',
+                emailVariables: {
+                    applicantEmail: data.user_email,
+                    applicationType: 'Expert Application'
+                }
+            });
 
             return result;
         },

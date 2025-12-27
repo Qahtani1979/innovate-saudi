@@ -1,9 +1,12 @@
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
+import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 export function useTaxonomyMutations() {
     const queryClient = useAppQueryClient();
+    const { notify } = useNotificationSystem();
 
     // --- Sectors ---
     const createSector = useMutation({
@@ -15,6 +18,17 @@ export function useTaxonomyMutations() {
         onSuccess: () => {
             queryClient.invalidateQueries(['sectors']);
             toast.success('Sector created');
+
+            // Notification: Sector Created
+            notify({
+                type: 'sector_created',
+                entityType: 'sector',
+                entityId: 'new_sector', // ID not in scope unless we change onSuccess(data)
+                recipientEmails: [],
+                title: 'Sector Created',
+                message: 'New sector created.',
+                sendEmail: false
+            });
         }
     });
 

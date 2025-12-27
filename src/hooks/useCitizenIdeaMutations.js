@@ -3,6 +3,7 @@ import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/LanguageContext';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 /**
  * Hook for all citizen idea mutations
@@ -11,6 +12,7 @@ import { useLanguage } from '@/components/LanguageContext';
 export function useCitizenIdeaMutations() {
     const queryClient = useAppQueryClient();
     const { t, language } = useLanguage();
+    const { notify } = useNotificationSystem();
 
     // 1. Core CRUD Mutations
 
@@ -27,9 +29,25 @@ export function useCitizenIdeaMutations() {
             if (error) throw error;
             return data;
         },
-        onSuccess: () => {
+        onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['citizen-ideas'] });
             toast.success(t({ en: 'Idea submitted successfully', ar: 'تم تقديم الفكرة بنجاح' }));
+
+            // Notification: Idea Submitted
+            notify({
+                type: 'citizen_idea_submitted',
+                entityType: 'citizen_idea',
+                entityId: data?.id || 'new',
+                recipientEmails: [data?.submitter_email].filter(Boolean),
+                title: 'Idea Submitted Successfully',
+                message: 'Your idea has been received and is under review.',
+                sendEmail: true,
+                emailTemplate: 'citizen_idea.submitted',
+                emailVariables: {
+                    idea_title: data?.title || 'Untitled',
+                    submission_date: new Date().toLocaleDateString()
+                }
+            });
         },
         onError: (error) => {
             console.error('Submit error:', error);
@@ -190,19 +208,29 @@ export function useCitizenIdeaMutations() {
 
             // Trigger notifications and embeddings (background)
             supabase.functions.invoke('generateEmbeddings', { body: { entity_name: 'Pilot', mode: 'id', entity_id: pilot.id } }).catch(() => { });
-            supabase.functions.invoke('email-trigger-hub', {
-                body: {
-                    trigger: 'pilot.created',
-                    recipient_email: idea.user_email || idea.submitter_email,
-                    entity_id: pilot.id,
-                    variables: { pilotTitle: pilotData.title_en || pilotData.title_ar, pilotCode: targetData.code },
-                    language: language,
+
+
+            // Notification: Pilot Created from Idea
+            await notify({
+                type: 'pilot_created',
+                entityType: 'pilot',
+                entityId: pilot.id,
+                recipientEmails: [idea.user_email || idea.submitter_email].filter(Boolean),
+                title: 'Idea Converted to Pilot',
+                message: `Your idea has been successfully converted to a pilot project: ${pilotData.title_en || pilotData.title_ar}`,
+                sendEmail: true,
+                emailTemplate: 'pilot.created',
+                emailVariables: {
+                    pilotTitle: pilotData.title_en || pilotData.title_ar,
+                    pilotCode: targetData.code,
                     triggered_by: 'system'
                 }
-            }).catch(() => { });
+            });
 
             return pilot;
         }
+
+
     });
 
     /** @type {import('@tanstack/react-query').UseMutationResult<any, any, {idea: any, proposalData: any}>} */

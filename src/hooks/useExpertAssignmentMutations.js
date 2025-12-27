@@ -1,9 +1,12 @@
+import { useMutation } from '@tanstack/react-query';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 export function useExpertAssignmentMutations() {
     const queryClient = useAppQueryClient();
+    const { notify } = useNotificationSystem();
 
     const acceptAssignment = useMutation({
         mutationFn: async (id) => {
@@ -65,28 +68,22 @@ export function useExpertAssignmentMutations() {
 
             if (error) throw error;
 
-            // Send notifications via email-trigger-hub
-            // We do this in the mutation fn to keep logic encapsulated
-            for (const email of expertEmails) {
-                try {
-                    await supabase.functions.invoke('email-trigger-hub', {
-                        body: {
-                            trigger: 'evaluation.assigned',
-                            recipient_email: email,
-                            entity_type: entityType,
-                            entity_id: selectedEntityId,
-                            variables: {
-                                entityType: entityType.replace(/_/g, ' '),
-                                dueDate: dueDate || 'Not specified',
-                                notes: assignmentNotes || ''
-                            },
-                            triggered_by: 'system'
-                        }
-                    });
-                } catch (error) {
-                    console.error('Failed to send notification to', email, error);
+            // Send notifications via useNotificationSystem
+            await Promise.all(expertEmails.map(email => notify({
+                type: 'evaluation_assigned',
+                entityType: 'expert_assignment',
+                entityId: selectedEntityId, // Using entity ID as context
+                recipientEmails: [email],
+                title: 'New Evaluation Assignment',
+                message: `You have been assigned to evaluate: ${entityType.replace(/_/g, ' ')}. Due: ${dueDate || 'Not specified'}.`,
+                sendEmail: true,
+                emailTemplate: 'evaluation.assigned',
+                emailVariables: {
+                    entityType: entityType.replace(/_/g, ' '),
+                    dueDate: dueDate || 'Not specified',
+                    notes: assignmentNotes || ''
                 }
-            }
+            })));
 
             return created;
         },

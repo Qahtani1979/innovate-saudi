@@ -1,9 +1,12 @@
+import { useMutation } from '@tanstack/react-query';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 export function useOrganizationMutations(organizationId, onCreateSuccess) {
     const queryClient = useAppQueryClient();
+    const { notify } = useNotificationSystem();
 
     const createOrganization = useMutation({
         mutationFn: async (data) => {
@@ -36,6 +39,17 @@ export function useOrganizationMutations(organizationId, onCreateSuccess) {
             queryClient.invalidateQueries({ queryKey: ['organizations'] });
             queryClient.invalidateQueries({ queryKey: ['organizations-visibility'] });
             if (onCreateSuccess) onCreateSuccess(org);
+
+            // Notification: Org Created
+            notify({
+                type: 'organization_created',
+                entityType: 'organization',
+                entityId: org.id,
+                recipientEmails: ['admin@municipality.gov.sa'],
+                title: 'New Organization Registered',
+                message: `Organization "${org.name_en}" has been registered.`,
+                sendEmail: true
+            });
         },
         onError: (error) => {
             console.error('Error creating organization:', error);
@@ -97,6 +111,17 @@ export function useOrganizationMutations(organizationId, onCreateSuccess) {
             queryClient.invalidateQueries({ queryKey: ['organization'] });
             queryClient.invalidateQueries({ queryKey: ['organizations-visibility'] });
             toast.success('Organization verified successfully');
+
+            // Notification: Verified
+            notify({
+                type: 'organization_verified',
+                entityType: 'organization',
+                entityId: id,
+                recipientEmails: [], // Notify Org Owner if possible (needs fetch)
+                title: 'Organization Verified',
+                message: 'Organization has been verified.',
+                sendEmail: false
+            });
         },
         onError: (error) => {
             console.error('Error verifying organization:', error);

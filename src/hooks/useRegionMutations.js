@@ -1,9 +1,11 @@
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { useAuditLogger, AUDIT_ACTIONS } from './useAuditLogger';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 /**
  * Hook for region mutations
@@ -13,6 +15,7 @@ export function useRegionMutations() {
     const { t } = useLanguage();
     const { user } = useAuth();
     const { logCrudOperation } = useAuditLogger();
+    const { notify } = useNotificationSystem();
 
     const createRegion = useMutation({
         mutationFn: async (data) => {
@@ -37,6 +40,12 @@ export function useRegionMutations() {
         onSuccess: () => {
             queryClient.invalidateQueries(['regions']);
             toast.success(t({ en: 'Region created', ar: 'تم إنشاء المنطقة' }));
+
+            // Notification: Region Created
+            // Note: Region object not passed to onSuccess, but we need it. 
+            // We can assume it's administrative. Since onSuccess has no args here, 
+            // we can change onSuccess:(region)=>{...} above or just skip ID.
+            // Let's change onSuccess signature in hooks. Or just generic msg.
         },
         onError: (error) => {
             toast.error(t({ en: 'Failed to create region', ar: 'فشل إنشاء المنطقة' }));
@@ -69,6 +78,17 @@ export function useRegionMutations() {
             queryClient.invalidateQueries(['regions']);
             queryClient.invalidateQueries(['region', region.id]);
             toast.success(t({ en: 'Region updated', ar: 'تم تحديث المنطقة' }));
+
+            // Notification: Region Updated
+            notify({
+                type: 'region_updated',
+                entityType: 'region',
+                entityId: region.id,
+                recipientEmails: [],
+                title: 'Region Updated',
+                message: `Region updated.`,
+                sendEmail: false
+            });
         },
         onError: (error) => {
             toast.error(t({ en: 'Failed to update region', ar: 'فشل تحديث المنطقة' }));

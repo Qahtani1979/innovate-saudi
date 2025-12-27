@@ -1,0 +1,27 @@
+
+> innovate-saudi-app@0.0.0 build
+> vite build
+
+[36mvite v6.3.6 [32mbuilding for production...[36m[39m
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+transforming...
+
+/grid.svg referenced in /grid.svg didn't resolve at build time, it will remain unchanged to be resolved at runtime
+[32mÔ£ô[39m 3181 modules transformed.
+Ô£ù Build failed in 9.75s
+error during build:
+[vite:build-import-analysis] [plugin vite:build-import-analysis] src/hooks/useUserMutations.js (295:5): Failed to parse source for import analysis because the content contains invalid JS syntax. If you are using JSX, make sure to name the file with the .jsx or .tsx extension.
+file: C:/Users/alqah/innovate-saudi/src/hooks/useUserMutations.js:295:5
+
+293:             });
+294: }
+295:     });
+          ^
+296: 
+297: return {
+
+    at getRollupError (file:///C:/Users/alqah/innovate-saudi/node_modules/rollup/dist/es/shared/parseAst.js:401:41)
+    at error (file:///C:/Users/alqah/innovate-saudi/node_modules/rollup/dist/es/shared/parseAst.js:397:42)
+    at Object.error (file:///C:/Users/alqah/innovate-saudi/node_modules/rollup/dist/es/shared/node-entry.js:22123:20)
+    at Object.error (file:///C:/Users/alqah/innovate-saudi/node_modules/rollup/dist/es/shared/node-entry.js:21181:42)
+    at Object.handler (file:///C:/Users/alqah/innovate-saudi/node_modules/vite/dist/node/chunks/dep-Bu492Fnd.js:45407:16)

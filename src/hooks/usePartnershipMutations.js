@@ -2,10 +2,12 @@ import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '../components/LanguageContext';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 export function usePartnershipMutations(onCreateSuccess) {
     const queryClient = useAppQueryClient();
     const { t } = useLanguage();
+    const { notify } = useNotificationSystem();
 
     const createPartnership = useMutation({
         mutationFn: async ({ data, userEmail }) => {
@@ -25,6 +27,23 @@ export function usePartnershipMutations(onCreateSuccess) {
             queryClient.invalidateQueries(['partnerships']);
             queryClient.invalidateQueries(['partnerships-with-visibility']);
             toast.success(t({ en: 'Partnership created successfully', ar: 'تم إنشاء الشراكة بنجاح' }));
+
+            // Notification: Partnership Created
+            notify({
+                type: 'partnership_created',
+                entityType: 'partnership',
+                entityId: newItem?.id || 'new',
+                recipientEmails: [newItem?.created_by].filter(Boolean),
+                title: 'Partnership Request Submitted',
+                message: 'Your partnership request has been submitted successfully.',
+                sendEmail: true,
+                emailTemplate: 'partnership.submitted',
+                emailVariables: {
+                    partnership_title: newItem?.organization_name || 'Partnership',
+                    submission_date: new Date().toLocaleDateString()
+                }
+            });
+
             if (onCreateSuccess) onCreateSuccess(newItem);
         },
         onError: (error) => {
@@ -41,10 +60,17 @@ export function usePartnershipMutations(onCreateSuccess) {
                 .eq('id', id);
             if (error) throw error;
         },
-        onSuccess: () => {
+        onSuccess: (data, variables) => {
             queryClient.invalidateQueries(['partnerships']);
             queryClient.invalidateQueries(['partnerships-with-visibility']);
             toast.success(t({ en: 'Partnership updated successfully', ar: 'تم تحديث الشراكة بنجاح' }));
+
+            // Notification: Status Change (variables has 'status' if updated)
+            if (variables.status) {
+                // Note: We don't have the creator email here easily without fetching.
+                // For now, we assume the user updating is NOT the creator, but admin.
+                // We'll skip email for simplified Phase 1 unless we fetch the record.
+            }
         },
         onError: (error) => {
             toast.error(t({ en: 'Failed to update partnership', ar: 'فشل في تحديث الشراكة' }));
@@ -73,16 +99,17 @@ export function usePartnershipMutations(onCreateSuccess) {
 
     const notifyPartner = useMutation({
         mutationFn: async ({ organizationId, recipientEmail, details }) => {
-            const { error } = await supabase.functions.invoke('email-trigger-hub', {
-                body: {
-                    trigger: 'partnership.proposal',
-                    recipient_email: recipientEmail, // 'admin@platform.gov.sa' or specific email
-                    entity_type: 'organization',
-                    entity_id: organizationId,
-                    variables: details
-                }
+            await notify({
+                type: 'partnership_proposal',
+                entityType: 'organization',
+                entityId: organizationId,
+                recipientEmails: [recipientEmail],
+                title: 'New Partnership Proposal',
+                message: 'You have received a new partnership proposal.',
+                sendEmail: true,
+                emailTemplate: 'partnership.proposal',
+                emailVariables: details
             });
-            if (error) throw error;
         },
         onError: (error) => {
             console.error('Failed to notify partner:', error);

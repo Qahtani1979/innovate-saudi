@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 export function useRDProposalMutations() {
     const queryClient = useAppQueryClient();
@@ -107,6 +108,7 @@ export function useTRLAssessmentMutations() {
 
 export function useRDMutations() {
     const queryClient = useAppQueryClient();
+    const { notify } = useNotificationSystem();
 
     const updateProposal = useMutation({
         mutationFn: async ({ id, data }) => {
@@ -254,7 +256,27 @@ export function useRDMutations() {
                 .eq('id', project.id);
             if (error) throw error;
 
-            // Notification handled by component using useNotificationSystem
+            // Send notification to PI and team members
+            await notify({
+                type: 'rd_project_kickoff',
+                entityType: 'rd_project',
+                entityId: project.id,
+                recipientEmails: [
+                    project.principal_investigator_email,
+                    ...(project.team_members || []).map(m => m.email).filter(Boolean)
+                ].filter(Boolean),
+                title: 'R&D Project Kicked Off',
+                message: `Research project "${project.title_en}" has officially started on ${new Date(kickoffDate).toLocaleDateString()}.`,
+                sendEmail: true,
+                emailTemplate: 'rd_project.kickoff',
+                emailVariables: {
+                    project_title: project.title_en,
+                    project_code: project.code,
+                    kickoff_date: kickoffDate,
+                    pi_name: project.principal_investigator_name,
+                    notes: notes
+                }
+            });
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rd-project'] });
@@ -287,7 +309,28 @@ export function useRDMutations() {
                 .eq('id', project.id);
             if (error) throw error;
 
-            // Notification handled by component using useNotificationSystem
+            // Send completion notification to PI and stakeholders
+            await notify({
+                type: 'rd_project_completed',
+                entityType: 'rd_project',
+                entityId: project.id,
+                recipientEmails: [
+                    project.principal_investigator_email,
+                    ...(project.stakeholder_emails || []),
+                    ...(project.team_members || []).map(m => m.email).filter(Boolean)
+                ].filter(Boolean),
+                title: 'R&D Project Completed',
+                message: `Research project "${project.title_en}" has been successfully completed with TRL ${trlAchieved} achieved.`,
+                sendEmail: true,
+                emailTemplate: 'rd_project.completed',
+                emailVariables: {
+                    project_title: project.title_en,
+                    project_code: project.code,
+                    trl_achieved: trlAchieved,
+                    impact_summary: impactSummary,
+                    commercialization_potential: commercializationPotential
+                }
+            });
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rd-project'] });
@@ -311,7 +354,23 @@ export function useRDMutations() {
                 .eq('id', proposal.id);
             if (error) throw error;
 
-            // Notification handled by component using useNotificationSystem
+            // Send feedback notification to proposal owner
+            await notify({
+                type: 'rd_proposal_feedback',
+                entityType: 'rd_proposal',
+                entityId: proposal.id,
+                recipientEmails: [proposal.principal_investigator_email].filter(Boolean),
+                title: 'Feedback Received on Your R&D Proposal',
+                message: `Feedback has been provided for your proposal "${proposal.title_en}". Please review the comments and recommendations.`,
+                sendEmail: true,
+                emailTemplate: 'rd_proposal.feedback',
+                emailVariables: {
+                    proposal_title: proposal.title_en,
+                    proposal_code: proposal.code,
+                    feedback_summary: feedback.substring(0, 200),
+                    reviewer_name: 'Review Committee'
+                }
+            });
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rd-proposal'] });

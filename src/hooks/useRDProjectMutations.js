@@ -1,11 +1,14 @@
+import { useMutation } from '@tanstack/react-query';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/components/LanguageContext';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 export function useRDProjectMutations() {
     const queryClient = useAppQueryClient();
     const { t } = useLanguage();
+    const { notify } = useNotificationSystem();
 
     const createRDProject = useMutation({
         mutationFn: async (newProject) => {
@@ -16,6 +19,30 @@ export function useRDProjectMutations() {
                 .single();
 
             if (error) throw error;
+            if (error) throw error;
+
+            // Notification: Project Created
+            if (data) {
+                await notify({
+                    type: 'rd_project_created',
+                    entityType: 'rd_project',
+                    entityId: data.id,
+                    recipientEmails: [
+                        data.principal_investigator_email || data.principal_investigator?.email, // Handle both structures
+                        ...(data.team_members || []).map(m => m.email)
+                    ].filter(Boolean),
+                    title: 'R&D Project Created',
+                    message: `New R&D project "${data.title_en}" has been created.`,
+                    sendEmail: true,
+                    emailTemplate: 'rd_project.created',
+                    emailVariables: {
+                        project_title: data.title_en,
+                        project_code: data.code,
+                        pi_name: data.principal_investigator_name || data.principal_investigator?.name
+                    }
+                });
+            }
+
             return /** @type {any} */(data);
         },
         onSuccess: () => {
@@ -38,6 +65,29 @@ export function useRDProjectMutations() {
                 .single();
 
             if (error) throw error;
+            if (error) throw error;
+
+            // Notification: Project Updated
+            if (data) {
+                await notify({
+                    type: 'rd_project_updated',
+                    entityType: 'rd_project',
+                    entityId: data.id,
+                    recipientEmails: [
+                        data.principal_investigator_email || data.principal_investigator?.email
+                    ].filter(Boolean),
+                    title: 'R&D Project Updated',
+                    message: `R&D project "${data.title_en}" details have been updated.`,
+                    sendEmail: true,
+                    emailTemplate: 'rd_project.updated',
+                    emailVariables: {
+                        project_title: data.title_en,
+                        project_code: data.code,
+                        update_summary: 'Project details updated.'
+                    }
+                });
+            }
+
             return /** @type {any} */(data);
         },
         onSuccess: (data) => {
@@ -55,9 +105,32 @@ export function useRDProjectMutations() {
             const { error } = await supabase
                 .from('rd_projects')
                 .update({ is_deleted: true, deleted_date: new Date().toISOString() })
-                .eq('id', /** @type {string} */(/** @type {unknown} */ (id)));
+                .eq('id', /** @type {string} */(/** @type {unknown} */ (id)))
+                .select()
+                .single();
 
             if (error) throw error;
+
+            // Notification: Project Deleted
+            // @ts-ignore
+            if (data) {
+                await notify({
+                    type: 'rd_project_deleted',
+                    entityType: 'rd_project',
+                    entityId: data.id,
+                    recipientEmails: [
+                        data.principal_investigator_email || data.principal_investigator?.email
+                    ].filter(Boolean),
+                    title: 'R&D Project Deleted',
+                    message: `R&D project "${data.title_en}" has been deleted.`,
+                    sendEmail: true, // Optional: might prefer in-app only for deletion
+                    emailTemplate: 'rd_project.deleted',
+                    emailVariables: {
+                        project_title: data.title_en,
+                        project_code: data.code
+                    }
+                });
+            }
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rd-projects-with-visibility'] });
@@ -99,6 +172,31 @@ export function useRDProjectMutations() {
                 .single();
 
             if (error) throw error;
+            if (error) throw error;
+
+            // Notification: Milestone Approved
+            if (data) {
+                await notify({
+                    type: 'rd_milestone_completed',
+                    entityType: 'rd_project',
+                    entityId: data.id,
+                    recipientEmails: [
+                        data.principal_investigator_email || data.principal_investigator?.email,
+                        ...(data.team_members || []).map(m => m.email)
+                    ].filter(Boolean),
+                    title: 'Milestone Approved',
+                    message: `Milestone "${milestoneName}" has been approved for project "${data.title_en}".`,
+                    sendEmail: true,
+                    emailTemplate: 'rd_project.milestone_completed',
+                    emailVariables: {
+                        project_title: data.title_en,
+                        project_code: data.code,
+                        milestone_name: milestoneName,
+                        approver_name: approver
+                    }
+                });
+            }
+
             return data;
         },
         onSuccess: (data) => {

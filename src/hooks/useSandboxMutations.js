@@ -3,17 +3,20 @@
  * Implements CRUD operations for Sandboxes with audit logging and notifications
  */
 
+import { useMutation } from '@tanstack/react-query';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { useAuditLogger, AUDIT_ACTIONS, ENTITY_TYPES } from './useAuditLogger';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 export function useSandboxMutations() {
     const queryClient = useAppQueryClient();
     const { user } = useAuth();
     const { logCrudOperation, logStatusChange } = useAuditLogger();
     const approveSandboxApplication = useApproveSandboxApplication();
+    const { notify } = useNotificationSystem();
 
     /**
      * Create Sandbox
@@ -48,6 +51,16 @@ export function useSandboxMutations() {
         onSuccess: (sandbox) => {
             queryClient.invalidateQueries({ queryKey: ['sandboxes'] });
             toast.success('Sandbox created successfully');
+
+            notify({
+                type: 'sandbox_created',
+                entityType: 'sandbox',
+                entityId: sandbox.id,
+                recipientEmails: [user?.email],
+                title: 'Sandbox Created',
+                message: `Sandbox "${sandboxData.title || 'New Sandbox'}" has been created.`,
+                sendEmail: true
+            });
         },
         onError: (error) => {
             toast.error(`Failed to create sandbox: ${error.message}`);
@@ -208,17 +221,17 @@ export function useSandboxMutations() {
                 .eq('id', id);
             if (updateError) throw updateError;
 
-            // Create notification
-            const { error: notifError } = await supabase
-                .from('notifications')
-                .insert([{
-                    type: 'sandbox_launched',
-                    title: `Sandbox Launched: ${name}`,
-                    message: `${name} is now active and accepting applications.`,
-                    severity: 'success',
-                    link: `/SandboxDetail?id=${id}`
-                }]);
-            if (notifError) throw notifError;
+            // Create notification via notify()
+            await notify({
+                type: 'sandbox_launched',
+                entityType: 'sandbox',
+                entityId: id,
+                recipientEmails: [], // Public or subscribers?
+                title: `Sandbox Launched: ${name}`,
+                message: `${name} is now active and accepting applications.`,
+                sendEmail: false,
+                link: `/SandboxDetail?id=${id}`
+            });
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['sandboxes'] });
@@ -247,6 +260,7 @@ export function useSandboxMutations() {
 function useApproveSandboxApplication() {
     const queryClient = useAppQueryClient();
     const { user } = useAuth();
+    const { notify } = useNotificationSystem();
 
     return useMutation({
         mutationFn: async ({ id, approved, projectTitle }) => {
@@ -258,14 +272,15 @@ function useApproveSandboxApplication() {
 
             if (error) throw error;
 
-            // Notification
-            await supabase.from('notifications').insert({
+            // Notification via notify()
+            await notify({
+                type: 'sandbox_application_status',
+                entityType: 'sandbox_application',
+                entityId: id,
+                recipientEmails: [], // Applicant email should be fetched or passed
                 title: approved ? 'Sandbox Application Approved' : 'Sandbox Application Rejected',
-                body: `Your application for ${projectTitle} has been ${approved ? 'approved' : 'rejected'}.`,
-                notification_type: 'alert',
-                priority: 'high',
-                entity_type: 'SandboxApplication',
-                entity_id: id
+                message: `Your application for ${projectTitle} has been ${approved ? 'approved' : 'rejected'}.`,
+                sendEmail: true
             });
 
             return id;

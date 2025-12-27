@@ -1,9 +1,11 @@
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 export function useRoleMutations() {
     const queryClient = useAppQueryClient();
+    const { notify } = useNotificationSystem();
 
     const createRole = useMutation({
         mutationFn: async (data) => {
@@ -28,6 +30,17 @@ export function useRoleMutations() {
             queryClient.invalidateQueries({ queryKey: ['roles'] });
             queryClient.invalidateQueries({ queryKey: ['role-permissions'] });
             toast.success('Role created');
+
+            // Notification: Role Created
+            notify({
+                type: 'role_created',
+                entityType: 'role',
+                entityId: 'new',
+                recipientEmails: [],
+                title: 'Role Created',
+                message: 'New role created.',
+                sendEmail: false
+            });
         }
     });
 
@@ -59,6 +72,17 @@ export function useRoleMutations() {
             queryClient.invalidateQueries({ queryKey: ['roles'] });
             queryClient.invalidateQueries({ queryKey: ['role-permissions'] });
             toast.success('Role updated');
+
+            // Notification: Role Updated
+            notify({
+                type: 'role_updated',
+                entityType: 'role',
+                entityId: 'id', // Not passed to onSuccess, assuming administrative
+                recipientEmails: [],
+                title: 'Role Updated',
+                message: 'Role updated.',
+                sendEmail: false
+            });
         }
     });
 
@@ -74,6 +98,17 @@ export function useRoleMutations() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['roles'] });
             toast.success('Role deleted');
+
+            // Notification: Role Deleted
+            notify({
+                type: 'role_deleted',
+                entityType: 'role',
+                entityId: 'id',
+                recipientEmails: [],
+                title: 'Role Deleted',
+                message: 'Role deleted.',
+                sendEmail: false
+            });
         }
     });
 

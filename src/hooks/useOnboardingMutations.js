@@ -1,11 +1,13 @@
+import { useMutation } from '@tanstack/react-query';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useLanguage } from '../components/LanguageContext';
+import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 export function useOnboardingMutations() {
     const queryClient = useAppQueryClient();
     const { t } = useLanguage();
+    const { notify } = useNotificationSystem();
 
     // Generic Profile Upsert
     const upsertProfile = useMutation({
@@ -46,6 +48,16 @@ export function useOnboardingMutations() {
         },
         onSuccess: () => {
             toast.success(t({ en: 'Role request submitted', ar: 'تم إرسال طلب الصلاحية' }));
+
+            notify({
+                type: 'role_requested',
+                entityType: 'user',
+                entityId: userId,
+                recipientEmails: ['admin@municipality.gov.sa'],
+                title: 'New Role Request',
+                message: `User requested role: ${role}`,
+                sendEmail: true
+            });
         },
         onError: (error) => {
             console.error('Role request failed:', error);
@@ -87,18 +99,17 @@ export function useOnboardingMutations() {
 
     const sendOnboardingEmail = useMutation({
         mutationFn: async ({ trigger, email, recipient_user_id, entityType, entityId, variables }) => {
-            const body = {
-                trigger,
-                recipient_email: email,
-                variables
-            };
-
-            if (recipient_user_id) body.recipient_user_id = recipient_user_id;
-            if (entityType) body.entity_type = entityType;
-            if (entityId) body.entity_id = entityId;
-
-            const { error } = await supabase.functions.invoke('email-trigger-hub', { body });
-            if (error) throw error;
+            await notify({
+                type: trigger, // Map trigger to type? Or use generic
+                entityType: entityType || 'onboarding',
+                entityId: entityId || 'new',
+                recipientEmails: [email],
+                title: 'Onboarding Notification', // Generic title, template handles subject
+                message: 'Onboarding Update',
+                sendEmail: true,
+                emailTemplate: trigger,
+                emailVariables: variables
+            });
         },
         onError: (error) => {
             console.error('Failed to send onboarding email:', error);
