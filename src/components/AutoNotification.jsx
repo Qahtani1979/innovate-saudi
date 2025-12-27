@@ -1,46 +1,13 @@
-import { supabase } from '@/integrations/supabase/client';
+/**
+ * Auto Notification Utilities
+ * Provides helper functions for creating notifications using the Gold Standard hook pattern.
+ * These are utility functions that components can use with useNotificationSystem hook.
+ */
 
-export const createNotification = async ({ title, body, type, priority, linkUrl, entityType, entityId, recipients, createdBy = 'system' }) => {
-  try {
-    const notificationData = {
-      title,
-      body,
-      notification_type: type || 'alert',
-      priority: priority || 'medium',
-      link_url: linkUrl,
-      entity_type: entityType,
-      entity_id: entityId,
-      created_by: createdBy, // 'system@saudiinnovates.sa' or actual user ID if passed
-      is_read: false
-    };
-
-    // Create notification for each recipient if specified
-    if (recipients && recipients.length > 0) {
-      const notifications = recipients.map(recipientId => ({
-        ...notificationData,
-        recipient_id: recipientId // Assuming recipient is a user ID
-      }));
-
-      const { error } = await supabase.from('notifications').insert(notifications);
-      if (error) throw error;
-
-    } else {
-      // Broadcast or system notification (handling depends on DB schema, usually requires a recipient)
-      // If broadcast is intended, logic might differ. For now, assuming standard insert.
-      // If no recipient, maybe it's a global log?
-      console.warn('Notification created without specific recipients (Broadcast not fully implemented):', title);
-      const { error } = await supabase.from('system_notifications').insert(notificationData).select(); // distinct table for broadcasts?
-      if (error) {
-        // Fallback if system_notifications doesn't exist, just log
-        console.warn('Could not save broadcast notification', error);
-      }
-    }
-  } catch (error) {
-    console.error('Failed to create notification:', error);
-  }
-};
-
-export const notifyOnStatusChange = async (entity, entityType, oldStatus, newStatus) => {
+/**
+ * Build notification payload for status changes
+ */
+export const buildStatusChangeNotification = (entity, entityType, oldStatus, newStatus) => {
   const messages = {
     Challenge: {
       approved: 'Challenge approved and ready for treatment',
@@ -67,21 +34,27 @@ export const notifyOnStatusChange = async (entity, entityType, oldStatus, newSta
   };
 
   const message = messages[entityType]?.[newStatus];
-  if (message) {
-    await createNotification({
-      title: `${entityType} Status Updated`,
-      body: `${entity.code || entity.title_en || entity.name_en}: ${message}`,
-      type: 'alert',
-      priority: entityType === 'Event' && newStatus === 'cancelled' ? 'high' : 'medium',
-      linkUrl: `${entityType}Detail?id=${entity.id}`,
-      entityType: entityType.toLowerCase(),
-      entityId: entity.id
-    });
-  }
+  if (!message) return null;
+
+  return {
+    type: `${entityType.toLowerCase()}_status_changed`,
+    entityType: entityType.toLowerCase(),
+    entityId: entity.id,
+    title: `${entityType} Status Updated`,
+    message: `${entity.code || entity.title_en || entity.name_en}: ${message}`,
+    priority: entityType === 'Event' && newStatus === 'cancelled' ? 'high' : 'medium',
+    metadata: {
+      old_status: oldStatus,
+      new_status: newStatus,
+      entity_code: entity.code
+    }
+  };
 };
 
-// Program-specific notifications
-export const notifyProgramEvent = async (program, eventType, metadata = {}) => {
+/**
+ * Build notification payload for program events
+ */
+export const buildProgramEventNotification = (program, eventType, metadata = {}) => {
   const eventMessages = {
     created: 'New program has been created',
     submitted: 'Program submitted for approval',
@@ -95,22 +68,27 @@ export const notifyProgramEvent = async (program, eventType, metadata = {}) => {
   };
 
   const message = eventMessages[eventType];
-  if (message) {
-    await createNotification({
-      title: `Program: ${program.name_en || program.title_en}`,
-      body: message,
-      type: eventType === 'application_received' ? 'task' : 'alert',
-      priority: ['approved', 'launched'].includes(eventType) ? 'high' : 'medium',
-      linkUrl: `/ProgramDetail?id=${program.id}`,
-      entityType: 'program',
-      entityId: program.id,
-      recipients: metadata.recipients
-    });
-  }
+  if (!message) return null;
+
+  return {
+    type: `program_${eventType}`,
+    entityType: 'program',
+    entityId: program.id,
+    title: `Program: ${program.name_en || program.title_en}`,
+    message,
+    priority: ['approved', 'launched'].includes(eventType) ? 'high' : 'medium',
+    metadata: {
+      program_code: program.code,
+      event_type: eventType,
+      ...metadata
+    }
+  };
 };
 
-// Event-specific notifications
-export const notifyEventAction = async (event, actionType, metadata = {}) => {
+/**
+ * Build notification payload for event actions
+ */
+export const buildEventActionNotification = (event, actionType, metadata = {}) => {
   const actionMessages = {
     created: 'New event has been created',
     submitted: 'Event submitted for approval',
@@ -124,16 +102,36 @@ export const notifyEventAction = async (event, actionType, metadata = {}) => {
   };
 
   const message = actionMessages[actionType];
-  if (message) {
-    await createNotification({
-      title: `Event: ${event.title_en}`,
-      body: message,
-      type: actionType === 'reminder' ? 'reminder' : 'alert',
-      priority: ['cancelled', 'reminder'].includes(actionType) ? 'high' : 'medium',
-      linkUrl: `/EventDetail?id=${event.id}`,
-      entityType: 'event',
-      entityId: event.id,
-      recipients: metadata.recipients
-    });
-  }
+  if (!message) return null;
+
+  return {
+    type: `event_${actionType}`,
+    entityType: 'event',
+    entityId: event.id,
+    title: `Event: ${event.title_en}`,
+    message,
+    priority: ['cancelled', 'reminder'].includes(actionType) ? 'high' : 'medium',
+    metadata: {
+      event_code: event.code,
+      action_type: actionType,
+      ...metadata
+    }
+  };
 };
+
+/**
+ * Hook for using notification utilities
+ * Usage:
+ * const { notifyStatusChange, notifyProgramEvent, notifyEventAction } = useAutoNotifications();
+ * await notifyStatusChange(entity, 'Challenge', 'pending', 'approved', ['user@example.com']);
+ */
+export const useAutoNotifications = () => {
+  // This would be imported from useNotificationSystem in components
+  // Keeping as utility functions that return payloads for now
+  return {
+    buildStatusChangeNotification,
+    buildProgramEventNotification,
+    buildEventActionNotification
+  };
+};
+

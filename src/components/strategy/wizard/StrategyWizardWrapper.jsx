@@ -40,7 +40,7 @@ import Step18Review from './steps/Step18Review';
 import AIStrategicPlanAnalyzer from './AIStrategicPlanAnalyzer';
 import { useStrategyAI } from '@/hooks/strategy/useStrategyAI';
 import { useStrategyMutations } from '@/hooks/useStrategyMutations';
-import { useStrategiesWithVisibility } from '@/hooks/useStrategyMutations';
+import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
 
 /**
  * StrategyWizardWrapper

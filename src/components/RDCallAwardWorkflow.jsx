@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { Award, X, Send, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { createNotification } from './AutoNotification';
 import { useRDCallMutations } from '@/hooks/useRDCallMutations';
 
 export default function RDCallAwardWorkflow({ rdCall, selectedProposals, onClose }) {
@@ -26,19 +25,7 @@ export default function RDCallAwardWorkflow({ rdCall, selectedProposals, onClose
         notifyAll
       });
 
-      // Simple notifications (can be moved deeper too if needed)
-      for (const proposal of selectedProposals) {
-        await createNotification({
-          title: 'R&D Proposal Awarded!',
-          body: `Congratulations! Your proposal "${proposal.title_en}" has been awarded funding.`,
-          type: 'success',
-          priority: 'high',
-          linkUrl: `RDProposalDetail?id=${proposal.id}`,
-          entityType: 'proposal',
-          entityId: proposal.id,
-          recipientEmail: proposal.principal_investigator?.email
-        });
-      }
+      // Notifications handled by useRDCallMutations hook
 
       onClose();
     } catch (error) {

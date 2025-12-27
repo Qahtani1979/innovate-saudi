@@ -11,7 +11,7 @@ import { useLanguage } from '../components/LanguageContext';
 import { Save, Loader2, Sparkles, X, Eye, EyeOff, Target } from 'lucide-react';
 import FileUploader from '../components/FileUploader';
 import CollaborativeEditing from '../components/CollaborativeEditing';
-import { createNotification } from '../components/AutoNotification';
+
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { FileText } from 'lucide-react';

@@ -1,7 +1,7 @@
+import { useMutation } from '@tanstack/react-query';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { createNotification } from '@/components/AutoNotification';
 
 export function useRDProposalMutations() {
     const queryClient = useAppQueryClient();
@@ -254,15 +254,7 @@ export function useRDMutations() {
                 .eq('id', project.id);
             if (error) throw error;
 
-            await createNotification({
-                title: 'R&D Project Kicked Off',
-                body: `Research project "${project.title_en}" has officially started!`,
-                type: 'success',
-                priority: 'high',
-                linkUrl: `RDProjectDetail?id=${project.id}`,
-                entityType: 'rd_project',
-                entityId: project.id
-            });
+            // Notification handled by component using useNotificationSystem
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rd-project'] });
@@ -295,15 +287,7 @@ export function useRDMutations() {
                 .eq('id', project.id);
             if (error) throw error;
 
-            await createNotification({
-                title: 'R&D Project Completed',
-                body: `Research project "${project.title_en}" has been successfully completed!`,
-                type: 'success',
-                priority: 'high',
-                linkUrl: `RDProjectDetail?id=${project.id}`,
-                entityType: 'rd_project',
-                entityId: project.id
-            });
+            // Notification handled by component using useNotificationSystem
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rd-project'] });
@@ -327,16 +311,7 @@ export function useRDMutations() {
                 .eq('id', proposal.id);
             if (error) throw error;
 
-            await createNotification({
-                title: 'Proposal Feedback Available',
-                body: `Feedback has been provided for your proposal "${proposal.title_en}"`,
-                type: 'info',
-                priority: 'medium',
-                linkUrl: `RDProposalDetail?id=${proposal.id}`,
-                entityType: 'proposal',
-                entityId: proposal.id,
-                recipients: proposal.created_by ? [proposal.created_by] : []
-            });
+            // Notification handled by component using useNotificationSystem
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rd-proposal'] });

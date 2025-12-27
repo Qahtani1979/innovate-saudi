@@ -1,3 +1,4 @@
+import { useMutation } from '@tanstack/react-query';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -525,6 +526,44 @@ export function usePilotMutations() {
         }
     });
 
+    /**
+     * Update Pilot Milestones
+     */
+    const updateMilestones = useMutation({
+        mutationFn: async ({ pilotId, milestones, justCompleted }) => {
+            const { error } = await supabase
+                .from('pilots')
+                .update({ milestones, updated_at: new Date().toISOString() })
+                .eq('id', pilotId);
+
+            if (error) throw error;
+
+            // Trigger email if milestone was completed
+            if (justCompleted) {
+                await triggerEmail('pilot.milestone_completed', {
+                    entity_type: 'pilot',
+                    entity_id: pilotId,
+                    variables: {
+                        milestone_name: justCompleted.name,
+                        milestone_due_date: justCompleted.due_date,
+                        completed_count: milestones.filter(m => m.completed).length,
+                        total_milestones: milestones.length
+                    }
+                }).catch(err => console.error('Email trigger failed:', err));
+            }
+
+            return milestones;
+        },
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['pilot', variables.pilotId] });
+            queryClient.invalidateQueries({ queryKey: ['pilots'] });
+            toast.success('Milestones updated successfully');
+        },
+        onError: (error) => {
+            toast.error(`Failed to update milestones: ${error.message}`);
+        }
+    });
+
     return {
         createPilot,
         updatePilot,
@@ -532,9 +571,11 @@ export function usePilotMutations() {
         deletePilot,
         exitPilotFromSandbox, // New method
         refreshPilots,  // ✅ Gold Standard: Export refresh method
+        updateMilestones, // ✅ New: Milestone management
         isCreating: createPilot.isPending,
         isUpdating: updatePilot.isPending,
         isDeleting: deletePilot.isPending,
+        isUpdatingMilestones: updateMilestones.isPending,
         archivePilots: archivePilots.mutateAsync,
         deletePilots: deletePilots.mutateAsync,
         startIteration,

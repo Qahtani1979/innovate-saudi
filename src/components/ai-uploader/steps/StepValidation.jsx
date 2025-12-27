@@ -8,12 +8,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { 
+import {
   ArrowRight, ArrowLeft, CheckCircle, AlertTriangle, Sparkles, RefreshCw, Wand2
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { useEntityReferenceData, useCheckDatabaseDuplicates } from '@/hooks/useReferenceData';
 import {
   TRANSLATION_SYSTEM_PROMPT,
   buildTranslationPrompt,
@@ -31,11 +31,30 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
   const [enrichData, setEnrichData] = useState(true);
   const { invokeAI } = useAIWithFallback({ showToasts: false });
 
+  // Load reference data using hook
+  const mappedFields = Object.keys(state.fieldMappings || {});
+  const { data: referenceData = {}, isLoading: isLoadingRefData } = useEntityReferenceData(mappedFields);
+
+  // Get title field for duplicate checking
+  const titleField = mappedFields.find(k => k.includes('title_en') || k.includes('name_en'));
+  const titleValues = state.extractedData?.rows
+    ?.map(r => {
+      const mapping = state.fieldMappings?.[titleField];
+      return mapping ? r[mapping.sourceColumn] : null;
+    })
+    ?.filter(Boolean) || [];
+
+  const { data: existingRecords = [] } = useCheckDatabaseDuplicates(
+    state.detectedEntity,
+    titleField,
+    titleValues
+  );
+
   useEffect(() => {
-    if (!validationResults) {
+    if (!validationResults && !isLoadingRefData) {
       runValidation();
     }
-  }, []);
+  }, [isLoadingRefData]);
 
   // Lookup tables for linked entities
   const LOOKUP_TABLES = {
@@ -54,57 +73,25 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
     solution_id: { table: 'solutions', nameField: 'name_en' },
   };
 
-  // Load reference data for entity resolution
-  const loadReferenceData = async () => {
-    const refData = {};
-    const mappedFields = Object.keys(state.fieldMappings);
-    
-    // Identify which lookup tables we need
-    const neededLookups = Object.entries(LOOKUP_TABLES).filter(([field]) => 
-      mappedFields.includes(field) || 
-      mappedFields.some(f => f.includes(field.replace('_id', '')))
-    );
-
-    for (const [field, config] of neededLookups) {
-      try {
-        const { data } = await supabase
-          .from(config.table)
-          .select(`id, ${config.nameField}, name_ar`)
-          .limit(500);
-        
-        if (data) {
-          refData[field] = data.map(item => ({
-            id: item.id,
-            name_en: item[config.nameField] || item.name_en || item.title_en,
-            name_ar: item.name_ar || item.title_ar
-          }));
-        }
-      } catch (e) {
-        console.warn(`Failed to load ${config.table}:`, e);
-      }
-    }
-    return refData;
-  };
-
   // Match text to reference entity ID
   const resolveEntityId = (text, refList) => {
     if (!text || !refList?.length) return null;
     const normalized = text.toString().toLowerCase().trim();
-    
+
     // Exact match
-    let match = refList.find(r => 
+    let match = refList.find(r =>
       r.name_en?.toLowerCase().trim() === normalized ||
       r.name_ar?.trim() === text.trim()
     );
-    
+
     // Partial match
     if (!match) {
-      match = refList.find(r => 
+      match = refList.find(r =>
         r.name_en?.toLowerCase().includes(normalized) ||
         normalized.includes(r.name_en?.toLowerCase())
       );
     }
-    
+
     return match?.id || null;
   };
 
@@ -125,29 +112,28 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
     };
 
     try {
-      // Load reference data for linked entities
+      // Reference data already loaded via hook
       setValidationProgress(10);
-      const referenceData = await loadReferenceData();
-      
+
       const rows = state.extractedData.rows;
       const mappings = state.fieldMappings;
       const batchSize = 10;
-      
+
       // Identify fields needing special handling
       const idFields = Object.keys(mappings).filter(f => f.endsWith('_id'));
       const enFields = Object.keys(mappings).filter(f => f.endsWith('_en'));
       const arFields = Object.keys(mappings).filter(f => f.endsWith('_ar'));
-      const textNameFields = Object.keys(mappings).filter(f => 
-        (f.includes('sector') || f.includes('municipality') || f.includes('region') || 
-         f.includes('city') || f.includes('organization') || f.includes('provider')) &&
+      const textNameFields = Object.keys(mappings).filter(f =>
+        (f.includes('sector') || f.includes('municipality') || f.includes('region') ||
+          f.includes('city') || f.includes('organization') || f.includes('provider')) &&
         !f.endsWith('_id')
       );
-      
+
       // Process in batches
       for (let i = 0; i < rows.length; i += batchSize) {
         const batch = rows.slice(i, i + batchSize);
         setValidationProgress(10 + Math.round((i / rows.length) * 50));
-        
+
         // Transform rows using mappings
         const transformedBatch = batch.map((row, idx) => {
           const transformed = { _originalIndex: i + idx };
@@ -164,7 +150,7 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
           const rowErrors = [];
           const rowWarnings = [];
           const rowEnrichments = [];
-          
+
           // Check required fields
           Object.entries(mappings).forEach(([field, mapping]) => {
             const value = row[field];
@@ -181,8 +167,8 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
               // Look for corresponding text field
               const baseName = idField.replace('_id', '');
               const textField = textNameFields.find(f => f.includes(baseName)) ||
-                               Object.keys(row).find(k => k.includes(baseName) && !k.endsWith('_id'));
-              
+                Object.keys(row).find(k => k.includes(baseName) && !k.endsWith('_id'));
+
               if (textField && row[textField]) {
                 const resolvedId = resolveEntityId(row[textField], referenceData[idField]);
                 if (resolvedId) {
@@ -234,7 +220,7 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
           } else {
             results.invalidRows++;
           }
-          
+
           results.errors.push(...rowErrors);
           results.warnings.push(...rowWarnings);
           results.enrichments.push(...rowEnrichments);
@@ -244,12 +230,12 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
 
       // AI-enhanced validation for translations and additional suggestions
       setValidationProgress(70);
-      
+
       // Collect items needing AI translation
       const translationNeeded = results.enrichments
         .filter(e => e.suggestedValue?.startsWith('__NEEDS_TRANSLATION__:'))
         .slice(0, 30); // Limit for AI processing
-      
+
       if (translationNeeded.length > 0) {
         const textsToTranslate = translationNeeded.map(e => ({
           rowIndex: e.rowIndex,
@@ -283,7 +269,7 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
 
       // Additional AI analysis for data quality
       setValidationProgress(85);
-      
+
       if (results.processedRows.length > 0) {
         const sampleRows = results.processedRows.slice(0, 5);
         const availableRefs = Object.entries(referenceData)
@@ -292,9 +278,9 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
 
         const aiResult = await invokeAI({
           prompt: buildDataQualityPrompt(
-            state.detectedEntity, 
-            sampleRows, 
-            availableRefs, 
+            state.detectedEntity,
+            sampleRows,
+            availableRefs,
             Object.keys(state.fieldMappings).join(', ')
           ),
           system_prompt: DATA_QUALITY_SYSTEM_PROMPT,
@@ -331,55 +317,24 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
 
   const checkDatabaseDuplicates = async (results) => {
     try {
-      // Get title/name field for duplicate check
-      const titleField = Object.keys(state.fieldMappings).find(
-        k => k.includes('title_en') || k.includes('name_en')
-      );
-      
-      if (!titleField) return;
+      // Use existing records from hook
+      if (!titleField || existingRecords.length === 0) return;
 
-      const values = results.processedRows
-        .map(r => r[titleField])
-        .filter(Boolean)
-        .slice(0, 50); // Check first 50
+      const existingValues = new Set(existingRecords.map(e => e[titleField]?.toLowerCase().trim()));
 
-      if (values.length === 0) return;
-
-      // Build query - handle tables with/without is_deleted
-      let query = supabase
-        .from(state.detectedEntity)
-        .select(titleField)
-        .in(titleField, values)
-        .limit(100);
-
-      // Only add is_deleted filter for tables that have this column
-      const tablesWithDeleted = ['challenges', 'solutions', 'pilots', 'programs', 'providers', 
-        'organizations', 'rd_projects', 'sandboxes', 'events', 'contracts', 'budgets', 
-        'strategic_plans', 'rd_calls'];
-      
-      if (tablesWithDeleted.includes(state.detectedEntity)) {
-        query = query.eq('is_deleted', false);
-      }
-
-      const { data: existing } = await query;
-
-      if (existing && existing.length > 0) {
-        const existingValues = new Set(existing.map(e => e[titleField]?.toLowerCase().trim()));
-        
-        results.processedRows.forEach((row, idx) => {
-          const value = row[titleField]?.toLowerCase().trim();
-          if (existingValues.has(value)) {
-            results.duplicates.push({
-              rowIndex: idx,
-              duplicateOf: 'database',
-              field: titleField,
-              value: row[titleField],
-              inDatabase: true
-            });
-            results.warnings.push(`Row ${idx + 1}: Already exists in database - "${row[titleField]}"`);
-          }
-        });
-      }
+      results.processedRows.forEach((row, idx) => {
+        const value = row[titleField]?.toLowerCase().trim();
+        if (existingValues.has(value)) {
+          results.duplicates.push({
+            rowIndex: idx,
+            duplicateOf: 'database',
+            field: titleField,
+            value: row[titleField],
+            inDatabase: true
+          });
+          results.warnings.push(`Row ${idx + 1}: Already exists in database - "${row[titleField]}"`);
+        }
+      });
     } catch (error) {
       console.error('Database duplicate check error:', error);
     }
@@ -387,7 +342,7 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
 
   const applyAllCorrections = () => {
     if (!validationResults?.corrections) return;
-    
+
     const updatedRows = [...validationResults.processedRows];
     validationResults.corrections.forEach(correction => {
       if (updatedRows[correction.rowIndex]) {
@@ -406,7 +361,7 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
 
   const applyAllEnrichments = () => {
     if (!validationResults?.enrichments) return;
-    
+
     const updatedRows = [...validationResults.processedRows];
     validationResults.enrichments.forEach(enrichment => {
       if (updatedRows[enrichment.rowIndex]) {
@@ -425,7 +380,7 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
 
   const handleContinue = () => {
     if (!validationResults) return;
-    
+
     // Apply selected corrections/enrichments
     if (applyCorrections && validationResults.corrections.length > 0) {
       applyAllCorrections();
@@ -434,9 +389,9 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
       applyAllEnrichments();
     }
 
-    updateState({ 
+    updateState({
       validationResults,
-      enrichedData: validationResults.processedRows 
+      enrichedData: validationResults.processedRows
     });
     onNext();
   };
@@ -467,9 +422,8 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
               <p className="text-2xl font-bold text-green-600">{validationResults.validRows}</p>
               <p className="text-sm text-green-600">Valid</p>
             </div>
-            <div className={`rounded-lg p-4 text-center ${
-              validationResults.warnings.length > 0 ? 'bg-yellow-50 border border-yellow-200' : 'bg-muted'
-            }`}>
+            <div className={`rounded-lg p-4 text-center ${validationResults.warnings.length > 0 ? 'bg-yellow-50 border border-yellow-200' : 'bg-muted'
+              }`}>
               <p className={`text-2xl font-bold ${validationResults.warnings.length > 0 ? 'text-yellow-600' : ''}`}>
                 {validationResults.warnings.length}
               </p>
@@ -477,9 +431,8 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
                 Warnings
               </p>
             </div>
-            <div className={`rounded-lg p-4 text-center ${
-              validationResults.errors.length > 0 ? 'bg-red-50 border border-red-200' : 'bg-muted'
-            }`}>
+            <div className={`rounded-lg p-4 text-center ${validationResults.errors.length > 0 ? 'bg-red-50 border border-red-200' : 'bg-muted'
+              }`}>
               <p className={`text-2xl font-bold ${validationResults.errors.length > 0 ? 'text-red-600' : ''}`}>
                 {validationResults.errors.length}
               </p>
@@ -502,7 +455,7 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
                 <ul className="text-sm text-yellow-700 space-y-1">
                   {validationResults.duplicates.slice(0, 5).map((dup, idx) => (
                     <li key={idx}>
-                      Row {dup.rowIndex + 1}: "{dup.value}" 
+                      Row {dup.rowIndex + 1}: "{dup.value}"
                       {dup.inDatabase ? ' (exists in database)' : ` matches row ${dup.duplicateOf + 1}`}
                     </li>
                   ))}
@@ -524,8 +477,8 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
                     AI suggested {validationResults.corrections.length} corrections
                   </span>
                 </div>
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   variant="outline"
                   onClick={applyAllCorrections}
                   className="gap-1"
@@ -562,8 +515,8 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
                     AI can enrich {validationResults.enrichments.length} fields
                   </span>
                 </div>
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   variant="outline"
                   onClick={applyAllEnrichments}
                   className="gap-1"
@@ -590,16 +543,16 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
           {/* Options */}
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
-              <Checkbox 
-                id="applyCorrections" 
+              <Checkbox
+                id="applyCorrections"
                 checked={applyCorrections}
                 onCheckedChange={setApplyCorrections}
               />
               <Label htmlFor="applyCorrections">Apply AI corrections</Label>
             </div>
             <div className="flex items-center gap-2">
-              <Checkbox 
-                id="enrichData" 
+              <Checkbox
+                id="enrichData"
                 checked={enrichData}
                 onCheckedChange={setEnrichData}
               />
@@ -621,8 +574,8 @@ export default function StepValidation({ state, updateState, onNext, onBack }) {
           <ArrowLeft className="h-4 w-4" />
           Back
         </Button>
-        <Button 
-          onClick={handleContinue} 
+        <Button
+          onClick={handleContinue}
           disabled={isValidating || !validationResults}
           className="gap-2"
         >

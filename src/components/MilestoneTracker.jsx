@@ -6,68 +6,50 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from './LanguageContext';
 import { Calendar, Plus, X, Edit } from 'lucide-react';
-import { useEmailTrigger } from '@/hooks/useEmailTrigger';
-import { usePilotIntegrations } from '@/hooks/usePilotIntegrations';
+import { usePilotMutations } from '@/hooks/usePilotMutations';
 
 export default function MilestoneTracker({ pilot }) {
   const { language, isRTL, t } = useLanguage();
   const [editing, setEditing] = useState(false);
   const [newMilestone, setNewMilestone] = useState({ name: '', due_date: '', status: 'pending' });
-  const { triggerEmail } = useEmailTrigger();
-  const pilotIntegrations = usePilotIntegrations(pilot?.id);
+  const { updateMilestones, isUpdatingMilestones } = usePilotMutations();
 
   const milestones = pilot?.milestones || [];
 
-  const updateMilestones = async (updatedMilestones) => {
+  const handleUpdateMilestones = async (updatedMilestones) => {
     // Check if any milestone was just completed
     const justCompleted = updatedMilestones.find((m, i) =>
       m.completed && (!milestones[i] || !milestones[i].completed)
     );
 
-    if (justCompleted) {
-      await triggerEmail('pilot.milestone_completed', {
-        entity_type: 'pilot',
-        entity_id: pilot.id,
-        variables: {
-          pilot_title: pilot.title_en,
-          pilot_code: pilot.code,
-          milestone_name: justCompleted.name,
-          milestone_due_date: justCompleted.due_date,
-          completed_count: updatedMilestones.filter(m => m.completed).length,
-          total_milestones: updatedMilestones.length
-        }
-      }).catch(err => console.error('Email trigger failed:', err));
-    }
-
-    // Use pilot integrations to update (this would need to be added to the hook)
-    // For now, we'll keep the direct update pattern but with static import
-    const { supabase } = await import('@/integrations/supabase/client');
-    const { error } = await supabase
-      .from('pilots')
-      .update({ milestones: updatedMilestones })
-      .eq('id', pilot.id);
-
-    if (error) throw error;
-    setEditing(false);
+    updateMilestones.mutate({
+      pilotId: pilot.id,
+      milestones: updatedMilestones,
+      justCompleted
+    }, {
+      onSuccess: () => {
+        setEditing(false);
+      }
+    });
   };
 
   const toggleMilestone = (index) => {
     const updated = [...milestones];
     updated[index].completed = !updated[index].completed;
     updated[index].status = updated[index].completed ? 'completed' : 'pending';
-    updateMutation.mutate(updated);
+    handleUpdateMilestones(updated);
   };
 
   const addMilestone = () => {
     if (!newMilestone.name) return;
     const updated = [...milestones, { ...newMilestone, completed: false }];
-    updateMutation.mutate(updated);
+    handleUpdateMilestones(updated);
     setNewMilestone({ name: '', due_date: '', status: 'pending' });
   };
 
   const removeMilestone = (index) => {
     const updated = milestones.filter((_, i) => i !== index);
-    updateMutation.mutate(updated);
+    handleUpdateMilestones(updated);
   };
 
   const completedCount = milestones.filter(m => m.completed).length;
@@ -105,7 +87,7 @@ export default function MilestoneTracker({ pilot }) {
               <Checkbox
                 checked={milestone.completed}
                 onCheckedChange={() => toggleMilestone(index)}
-                disabled={updateMutation.isPending}
+                disabled={isUpdatingMilestones}
               />
               <div className="flex-1">
                 <p className={`font-medium text-sm ${milestone.completed ? 'line-through text-slate-500' : 'text-slate-900'}`}>

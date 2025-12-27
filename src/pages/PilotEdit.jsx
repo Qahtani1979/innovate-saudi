@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../components/LanguageContext';
 import { Save, Loader2, Sparkles, Plus, X, AlertTriangle, Eye, TestTube } from 'lucide-react';
-import { createNotification } from '../components/AutoNotification';
+
 import CollaborativeEditing from '../components/CollaborativeEditing';
 import FileUploader from '../components/FileUploader';
 import { toast } from 'sonner';

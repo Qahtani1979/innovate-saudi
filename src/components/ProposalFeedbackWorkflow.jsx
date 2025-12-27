@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useLanguage } from './LanguageContext';
 import { MessageSquare, X, Send, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
-import { createNotification } from './AutoNotification';
+
 import { useRDMutations } from '@/hooks/useRDMutations';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
