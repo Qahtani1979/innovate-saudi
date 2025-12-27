@@ -6,7 +6,7 @@ import {
     PaginationLink,
     PaginationNext,
     PaginationPrevious,
-} from "@/components/ui/Pagination";
+} from "@/components/ui/pagination";
 
 /**
  * Standardized Pagination Control using shadcn/ui primitives.
