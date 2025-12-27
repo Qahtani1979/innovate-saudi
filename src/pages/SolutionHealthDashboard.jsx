@@ -9,7 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Activity, CheckCircle2, AlertCircle, TestTube, Target } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
-import { createPageUrl } from '@/utils/routing';
 
 function SolutionHealthDashboard() {
   const { language, isRTL, t } = useLanguage();
@@ -157,7 +156,7 @@ function SolutionHealthDashboard() {
               <div key={solution.id} className="p-4 border-2 rounded-lg hover:border-purple-300 transition-all">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
-                    <Link to={createPageUrl('SolutionDetail') + `?id=${solution.id}`} className="hover:underline">
+                    <Link to={`/solutions/${solution.id}`} className="hover:underline">
                       <h3 className="font-bold text-slate-900">{solution.name_en || solution.name_ar}</h3>
                     </Link>
                     <p className="text-xs text-slate-600 mt-1">{solution.provider_name}</p>
