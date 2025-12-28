@@ -23,7 +23,7 @@ import StrategicCoverageWidget from '../components/strategy/StrategicCoverageWid
 import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import { STRATEGY_SYSTEM_PROMPT, strategyPrompts } from '@/lib/ai/prompts/strategy/strategyPrompts';
+import { STRATEGY_SYSTEM_PROMPT, strategyPrompts } from '@/lib/ai/prompts/ecosystem/strategyPrompts';
 import { buildPrompt } from '@/lib/ai/promptBuilder';
 
 function StrategyCockpitPage() {

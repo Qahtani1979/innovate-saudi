@@ -31,7 +31,7 @@ function StrategyCopilotChat() {
     setInput('');
 
     // Import centralized prompt module
-    const { STRATEGY_COPILOT_SYSTEM_PROMPT, strategyPrompts } = await import('@/lib/ai/prompts/strategy/strategyPrompts');
+    const { STRATEGY_COPILOT_SYSTEM_PROMPT, strategyPrompts } = await import('@/lib/ai/prompts/ecosystem/strategyPrompts');
     const { buildPrompt } = await import('@/lib/ai/promptBuilder');
 
     const { prompt } = buildPrompt(strategyPrompts.copilot, { input });
@@ -106,8 +106,8 @@ function StrategyCopilotChat() {
                   )}
                   <div className={`max-w-[80%] ${msg.role === 'user' ? 'order-first' : ''}`}>
                     <div className={`rounded-2xl px-4 py-3 ${msg.role === 'user'
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-white border border-slate-200'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-white border border-slate-200'
                       }`}>
                       {msg.role === 'user' ? (
                         <p className="text-sm">{msg.content}</p>
