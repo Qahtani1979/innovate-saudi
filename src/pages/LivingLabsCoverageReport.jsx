@@ -244,7 +244,7 @@ function LivingLabsCoverageReport() {
         name: 'Citizen Engagement & Co-Creation',
         stages: [
           { name: 'Citizen recruitment for project', status: 'missing', automation: 'N/A' },
-          { name: 'Citizen onboarding', status: 'missing', automation: 'N/A' },
+          { name: 'CitizenLivingLabParticipation', status: 'Pending', priority: 'Medium', complexity: 'Medium', type: 'Detail' },
           { name: 'Co-creation sessions facilitation', status: 'partial', automation: 'CitizenScienceIntegration exists' },
           { name: 'Citizen data/feedback collection', status: 'missing', automation: 'N/A' },
           { name: 'Citizen compensation/recognition', status: 'missing', automation: 'N/A' },

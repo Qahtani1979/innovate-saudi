@@ -982,7 +982,7 @@ export const PAGES = {
     "EvaluationRubricBuilder": EvaluationRubricBuilder,
     "InnovationProposalsCoverageReport": InnovationProposalsCoverageReport,
     "StagesCriteriaCoverageReport": StagesCriteriaCoverageReport,
-    "SandboxOperatorPortal": SandboxOperatorPortal,
+    // SandboxOperatorPortal - already defined
     "LivingLabOperatorPortal": LivingLabOperatorPortal,
     "ChallengeDetailProgress": ChallengeDetailProgress,
     "ChallengeDetailDeepVerification": ChallengeDetailDeepVerification,
@@ -1051,7 +1051,6 @@ export const PAGES = {
 
     "ServiceQualityDashboard": ServiceQualityDashboard,
     "SandboxParticipantDashboard": SandboxParticipantDashboard,
-    "CitizenLabParticipation": CitizenLivingLabParticipation,
     "PublicGeographicMap": PublicGeographicMap,
     "ComprehensiveReportAudit": ComprehensiveReportAudit,
     "ReportConsolidationTracker": ReportConsolidationTracker,

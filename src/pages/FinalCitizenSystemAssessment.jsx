@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
+import {
   CheckCircle2, AlertCircle, XCircle, Shield, Database, Code, Sparkles
 } from 'lucide-react';
 import ProtectedPage from '@/components/permissions/ProtectedPage';
@@ -91,7 +91,7 @@ function FinalCitizenSystemAssessment() {
         { name: 'citizen_pilot_enrollments table', status: 'complete', details: 'Schema: pilot_id, user_id, user_email, enrollment_type, enrolled_at, status, feedback, rating, participation_notes, withdrawn_at, withdrawal_reason' },
         { name: 'RLS Policies', status: 'complete', details: '2 policies: Admin manage, Users manage own enrollments' },
         { name: 'CitizenPilotEnrollment page', status: 'complete', details: 'Pilot browsing and enrollment flow' },
-        { name: 'CitizenLabParticipation page', status: 'complete', details: 'Living lab participation tracking' },
+        { name: 'CitizenLivingLabParticipation', status: 'Verified', notes: 'Integrated into Citizen Lab flow' },
         { name: 'PublicPilotTracker page', status: 'complete', details: 'Public view of active pilots' },
       ]
     },
@@ -216,7 +216,7 @@ function FinalCitizenSystemAssessment() {
   };
 
   const totalComponents = systems.reduce((sum, s) => sum + s.components.length, 0);
-  const completeComponents = systems.reduce((sum, s) => 
+  const completeComponents = systems.reduce((sum, s) =>
     sum + s.components.filter(c => c.status === 'complete').length, 0);
 
   return (
@@ -273,13 +273,13 @@ function FinalCitizenSystemAssessment() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {['citizen_ideas', 'citizen_votes', 'citizen_profiles', 'citizen_points', 
+            {['citizen_ideas', 'citizen_votes', 'citizen_profiles', 'citizen_points',
               'citizen_badges', 'citizen_feedback', 'citizen_notifications', 'citizen_pilot_enrollments'].map(table => (
-              <div key={table} className="p-3 border rounded-lg flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <span className="text-sm font-mono">{table}</span>
-              </div>
-            ))}
+                <div key={table} className="p-3 border rounded-lg flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <span className="text-sm font-mono">{table}</span>
+                </div>
+              ))}
           </div>
         </CardContent>
       </Card>
