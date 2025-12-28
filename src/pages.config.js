@@ -98,7 +98,6 @@ import PilotLaunchWizard from "./pages/PilotLaunchWizard";
 import IterationWorkflow from "./pages/IterationWorkflow";
 import PlatformDocs from "./pages/PlatformDocs";
 import PilotManagementPanel from "./pages/PilotManagementPanel";
-import CitizenLivingLabParticipation from "./pages/CitizenLivingLabParticipation";
 import PilotWorkflowGuide from "./pages/PilotWorkflowGuide";
 import PlatformAudit from "./pages/PlatformAudit";
 import RegionManagement from "./pages/RegionManagement";
