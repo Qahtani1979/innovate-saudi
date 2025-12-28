@@ -61,6 +61,28 @@ export function useMyWork() {
         enabled: !!user?.email
     });
 
+    // AI Prioritization Logic
+    const [aiPriorities, setAiPriorities] = useState(null);
+    const { invokeAI, isLoading: isAIAnalyzing, isAvailable: isAIAvailable, status: aiStatus, error: aiError, rateLimitInfo } = useAIWithFallback();
+
+    const generatePriorities = async () => {
+        // Build context from work items
+        const context = {
+            challenges: myChallenges,
+            pilots: myPilots,
+            tasks: myTasks
+        };
+
+        const { success, data } = await invokeAI({
+            prompt: buildWorkPrioritizerPrompt(context),
+            response_json_schema: WORK_PRIORITIZER_SCHEMA
+        });
+
+        if (success && data) {
+            setAiPriorities(data);
+        }
+    };
+
     return {
         myChallenges,
         myPilots,
