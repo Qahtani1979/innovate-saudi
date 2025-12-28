@@ -1,53 +1,67 @@
 /**
- * Submission Brief Prompts
- * AI assistance for creating submission briefs
+ * Challenge Submission Brief Prompts
+ * AI assistance for creating submission briefs for open innovation challenges
  */
 
-import { getSystemPrompt } from '@/lib/saudiContext';
+import { getSystemPrompt, SAUDI_CONTEXT } from '@/lib/saudiContext';
 
 export const SUBMISSION_BRIEF_SYSTEM_PROMPT = getSystemPrompt('FULL', true) + `
-You are an expert innovation evaluator.
-Your goal is to summarize a challenge submission into a concise brief for reviewers.
-Analyze:
-- Clarity of problem statement
-- Evidence provided
-- Impact potential
-- Complexity and Feasibility
+You are an expert Open Innovation Facilitator.
+Your goal is to create compelling Challenge Submission Briefs that attract high-quality solvers.
+
+KEY ELEMENTS:
+1. Narrative: A compelling story about *why* this challenge matters.
+2. Clarity: Specific, measurable problem statements.
+3. Motivation: Clear incentives (monetary, pilot opportunities, IP rights).
+4. Targeting: Language tailored to the specific type of solver (e.g., tech startups vs. academic researchers).
+
+GUIDELINES:
+- Use active, inspiring language.
+- Clearly define what "winning" looks like.
+- Highlight the support provided (data access, mentorship, sandbox).
 `;
 
 export const SUBMISSION_BRIEF_SCHEMA = {
     type: "object",
     properties: {
-        executive_summary_en: { type: "string" },
-        executive_summary_ar: { type: "string" },
-        key_highlights: {
+        brief_title_en: { type: "string", description: "Catchy title" },
+        brief_title_ar: { type: "string" },
+        problem_context: { type: "string" },
+        challenge_statement: { type: "string", description: "One sentence summary of the core problem" },
+        target_solvers: {
+            type: "array",
+            items: { type: "string", enum: ["startups", "smes", "enterprises", "universities", "individuals"] }
+        },
+        success_criteria: { type: "array", items: { type: "string" } },
+        incentives: {
             type: "array",
             items: {
                 type: "object",
                 properties: {
-                    en: { type: "string" },
-                    ar: { type: "string" }
+                    type: { type: "string", enum: ["cash", "contract", "pilot", "support", "recognition"] },
+                    description: { type: "string" }
                 }
             }
         },
-        complexity: { type: "string", enum: ["high", "medium", "low"] },
-        complexity_reason_en: { type: "string" },
-        complexity_reason_ar: { type: "string" },
-        estimated_review_days: { type: "integer" }
+        submission_requirements: { type: "array", items: { type: "string" } },
+        support_resources: { type: "array", items: { type: "string" }, description: "Data, mentors, tools provided" },
+        intellectual_property: { type: "string", description: "IP ownership model" }
     }
 };
 
 export const createSubmissionBriefPrompt = (challenge) => `
-Create a submission brief for the following challenge:
+Create a Challenge Submission Brief for:
 
 Title: ${challenge.title_en}
 Description: ${challenge.description_en}
-Sector: ${challenge.sector}
+Type: ${challenge.type || 'Open Innovation'}
+Target Audience: ${challenge.audience || 'General Tech Ecosystem'}
 
-Requirements:
-1. Executive Summary (Concise overview)
-2. Key Highlights (3-5 bullet points)
-3. Complexity Assessment with reasoning
+REQUEST:
+1. Draft a brief that effectively explains the problem and motivates solvers.
+2. Define clear success criteria and submission requirements.
+3. Suggest appropriate incentives for this type of challenge.
+4. Structure the output for public publication.
 
-Response Format: JSON
+Response Format: Structured JSON.
 `;

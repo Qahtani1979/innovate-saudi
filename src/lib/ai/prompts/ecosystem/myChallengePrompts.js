@@ -6,6 +6,8 @@ You are a Saudi municipal innovation advisor. Provide actionable, concise sugges
 ${SAUDI_CONTEXT.VISION_2030}
 `);
 
+const BASE_SYSTEM_PROMPT = getSystemPrompt('FULL', true);
+
 export const myChallengePrompts = {
     quickSuggestion: {
         system: MY_CHALLENGES_SYSTEM_PROMPT,
