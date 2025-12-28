@@ -1,3 +1,4 @@
+import { useMutation } from '@/hooks/useAppQueryClient';
 import { useEntityPagination } from '@/hooks/useEntityPagination';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
@@ -70,4 +71,6 @@ export function useMyBookmarks(userId, page = 1) {
         isMutating: removeMutation.isPending || clearAllMutation.isPending
     };
 }
+
+
 

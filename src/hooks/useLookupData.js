@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useDepartments() {
@@ -72,3 +72,4 @@ export async function submitCustomEntry({ entryType, nameEn, nameAr, userEmail, 
   if (error) throw error;
   return data;
 }
+

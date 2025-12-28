@@ -1,4 +1,4 @@
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@/hooks/useAppQueryClient';
 import { useVisibilitySystem } from './visibility/useVisibilitySystem';
 
 export function useSolutionsWithVisibility(options = {}) {
@@ -110,3 +110,4 @@ export function useMySolutions(email) {
     staleTime: 1000 * 60 * 2 // 2 minutes
   });
 }
+

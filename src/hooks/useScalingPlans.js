@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useVisibilitySystem } from '@/hooks/visibility/useVisibilitySystem';
 
@@ -135,3 +135,4 @@ export function useScalingDeployments(planId) {
         staleTime: 1000 * 60 * 5,
     });
 }
+

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useChallengeMetrics(challengeId) {
@@ -44,3 +44,4 @@ export function useChallengeMetrics(challengeId) {
         error: solutionsCount.error || pilotsCount.error
     };
 }
+

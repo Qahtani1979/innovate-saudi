@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useResearcherData() {
@@ -30,3 +30,4 @@ export function useResearcherData() {
         isLoading: projectsLoading || orgsLoading
     };
 }
+

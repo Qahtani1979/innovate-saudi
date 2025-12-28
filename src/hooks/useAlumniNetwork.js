@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useAlumniNetwork(programId) {
@@ -42,3 +42,4 @@ export function useAlumniNetwork(programId) {
         isLoading: applications.isLoading || solutions.isLoading || pilots.isLoading
     };
 }
+

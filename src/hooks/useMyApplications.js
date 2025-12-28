@@ -1,5 +1,5 @@
 import { useEntityPagination } from '@/hooks/useEntityPagination';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useMyApplications(userEmail, { matchmakerPage = 1, programsPage = 1, rdPage = 1 } = {}) {
@@ -70,3 +70,4 @@ export function useMyApplications(userEmail, { matchmakerPage = 1, programsPage 
         stats
     };
 }
+

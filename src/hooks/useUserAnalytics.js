@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useTasks } from '@/hooks/useTasks';
@@ -138,3 +138,4 @@ export function useUserAnalytics() {
         monthlyActivity: getMonthlyActivity()
     };
 }
+

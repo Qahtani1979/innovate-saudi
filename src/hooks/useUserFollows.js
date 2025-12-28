@@ -1,7 +1,7 @@
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useNotificationSystem } from '@/hooks/useNotificationSystem';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@/hooks/useAppQueryClient';
 
 export function useUserFollows(userEmail) {
     const queryClient = useAppQueryClient();
@@ -116,4 +116,5 @@ export function useEntityFollowersData(entityType, entityId) {
         enabled: !!entityType && !!entityId
     });
 }
+
 

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useVisibilitySystem } from '@/hooks/visibility/useVisibilitySystem';
 
@@ -59,3 +59,4 @@ export function useResearcher(id) {
 export function useResearchersByInstitution(institutionId) {
     return useResearchers({ institutionId });
 }
+

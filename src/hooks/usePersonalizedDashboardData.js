@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function usePersonalizedDashboardData(userEmail) {
@@ -65,3 +65,4 @@ export function usePersonalizedDashboardData(userEmail) {
         isLoading: tasksLoading || approvalsLoading || challengesLoading || pilotsLoading
     };
 }
+

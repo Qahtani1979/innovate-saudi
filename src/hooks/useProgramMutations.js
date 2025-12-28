@@ -9,7 +9,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useAuditLogger, AUDIT_ACTIONS, ENTITY_TYPES } from './useAuditLogger';
 import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 import { useAccessControl } from '@/hooks/useAccessControl';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation } from '@/hooks/useAppQueryClient';
 
 export function useProgramMutations() {
     const queryClient = useAppQueryClient();
@@ -762,4 +762,5 @@ export function useProgramMutations() {
 }
 
 export default useProgramMutations;
+
 

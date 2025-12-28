@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useVisibilitySystem } from './visibility/useVisibilitySystem';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -89,3 +89,4 @@ export function useRDCall(callId) {
 }
 
 export default useRDCallsWithVisibility;
+

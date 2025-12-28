@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation } from '@/hooks/useAppQueryClient';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -12,7 +12,7 @@ export function useOnboardingMutations() {
 
     /**
      * Generic Profile Upsert
-     * @type {import('@tanstack/react-query').UseMutationResult<any, any, { table: string, data: any, matchingColumns?: string[] }>}
+     * @type {import('@/hooks/useAppQueryClient').UseMutationResult<any, any, { table: string, data: any, matchingColumns?: string[] }>}
      */
     const upsertProfile = useMutation({
         mutationFn: async ({ table, data, matchingColumns }) => {
@@ -37,7 +37,7 @@ export function useOnboardingMutations() {
 
     /**
      * Create Role Request
-     * @type {import('@tanstack/react-query').UseMutationResult<any, any, { userId: string, role: string, department: string, justification: string, municipality_id: string }>}
+     * @type {import('@/hooks/useAppQueryClient').UseMutationResult<any, any, { userId: string, role: string, department: string, justification: string, municipality_id: string }>}
      */
     const createRoleRequest = useMutation({
         mutationFn: async ({ userId, role, department, justification, municipality_id }) => {
@@ -104,7 +104,7 @@ export function useOnboardingMutations() {
 
     /**
      * Send Onboarding Email
-     * @type {import('@tanstack/react-query').UseMutationResult<any, any, { trigger: string, email: string, recipient_user_id: string, variables: any }>}
+     * @type {import('@/hooks/useAppQueryClient').UseMutationResult<any, any, { trigger: string, email: string, recipient_user_id: string, variables: any }>}
      */
     const sendOnboardingEmail = useMutation({
         mutationFn: async ({ trigger, email, recipient_user_id, entityType, entityId, variables }) => {
@@ -133,4 +133,5 @@ export function useOnboardingMutations() {
         sendOnboardingEmail
     };
 }
+
 

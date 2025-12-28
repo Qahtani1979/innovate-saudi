@@ -1,5 +1,5 @@
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation } from '@/hooks/useAppQueryClient';
 import { toast } from 'sonner';
 
 // AI helpers for committee review governance flows
@@ -99,4 +99,5 @@ export function useCommitteeAI() {
     rateLimitInfo
   };
 }
+
 

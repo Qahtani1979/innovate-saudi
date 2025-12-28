@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -26,3 +26,4 @@ export function useChallengeTeamStats(challengeId) {
         staleTime: 1000 * 60 * 2 // 2 minutes
     });
 }
+

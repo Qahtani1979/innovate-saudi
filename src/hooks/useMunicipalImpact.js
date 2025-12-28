@@ -1,5 +1,5 @@
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useMunicipalImpact(programId) {
@@ -57,3 +57,4 @@ export function useMunicipalImpact(programId) {
         isLoading: programQuery.isLoading || applicationsQuery.isLoading || pilotsQuery.isLoading || solutionsQuery.isLoading
     };
 }
+

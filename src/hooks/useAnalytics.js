@@ -3,7 +3,7 @@
  * Tracks user interactions like searches, views, etc.
  */
 
-import { useMutation } from '@tanstack/react-query';
+import { useMutation } from '@/hooks/useAppQueryClient';
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
@@ -76,3 +76,4 @@ export function useAnalytics() {
         trackPageView
     };
 }
+

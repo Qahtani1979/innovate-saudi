@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useEntityVisibility } from '@/hooks/useEntityVisibility';
 
@@ -30,3 +30,4 @@ export function useTeamsWithVisibility(options = {}) {
         staleTime: 1000 * 60 * 5, // 5 minutes
     });
 }
+

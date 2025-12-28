@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation } from '@/hooks/useAppQueryClient';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -16,7 +16,7 @@ export function useCitizenIdeaMutations() {
 
     // 1. Core CRUD Mutations
 
-    /** @type {import('@tanstack/react-query').UseMutationResult<any, any, any>} */
+    /** @type {import('@/hooks/useAppQueryClient').UseMutationResult<any, any, any>} */
     const submitIdea = useMutation({
         /** @param {any} newIdea */
         mutationFn: async (newIdea) => {
@@ -55,7 +55,7 @@ export function useCitizenIdeaMutations() {
         }
     });
 
-    /** @type {import('@tanstack/react-query').UseMutationResult<any, any, {id: string, updates: any}>} */
+    /** @type {import('@/hooks/useAppQueryClient').UseMutationResult<any, any, {id: string, updates: any}>} */
     const updateIdea = useMutation({
         /** @param {{id: string, updates: any}} params */
         mutationFn: async ({ id, updates }) => {
@@ -80,7 +80,7 @@ export function useCitizenIdeaMutations() {
         }
     });
 
-    /** @type {import('@tanstack/react-query').UseMutationResult<any, any, {ids: string[], updates: any}>} */
+    /** @type {import('@/hooks/useAppQueryClient').UseMutationResult<any, any, {ids: string[], updates: any}>} */
     const bulkUpdateIdeas = useMutation({
         /** @param {{ids: string[], updates: any}} params */
         mutationFn: async ({ ids, updates }) => {
@@ -103,7 +103,7 @@ export function useCitizenIdeaMutations() {
         }
     });
 
-    /** @type {import('@tanstack/react-query').UseMutationResult<any, any, {primaryId: string, duplicateIds: string[], totalVotes: number, mergedDescription: string}>} */
+    /** @type {import('@/hooks/useAppQueryClient').UseMutationResult<any, any, {primaryId: string, duplicateIds: string[], totalVotes: number, mergedDescription: string}>} */
     const mergeIdeas = useMutation({
         /** @param {{primaryId: string, duplicateIds: string[], totalVotes: number, mergedDescription: string}} params */
         mutationFn: async ({ primaryId, duplicateIds, totalVotes, mergedDescription }) => {
@@ -141,7 +141,7 @@ export function useCitizenIdeaMutations() {
 
     // 2. Voting Mutations
 
-    /** @type {import('@tanstack/react-query').UseMutationResult<any, any, string>} */
+    /** @type {import('@/hooks/useAppQueryClient').UseMutationResult<any, any, string>} */
     const voteOnIdea = useMutation({
         /** @param {string} ideaId */
         mutationFn: async (ideaId) => {
@@ -183,7 +183,7 @@ export function useCitizenIdeaMutations() {
 
     // 3. Conversion Mutations
 
-    /** @type {import('@tanstack/react-query').UseMutationResult<any, any, {idea: any, pilotData: any, targetData: any}>} */
+    /** @type {import('@/hooks/useAppQueryClient').UseMutationResult<any, any, {idea: any, pilotData: any, targetData: any}>} */
     const convertToPilot = useMutation({
         /** @param {{idea: any, pilotData: any, targetData: any}} params */
         mutationFn: async ({ idea, pilotData, targetData }) => {
@@ -233,7 +233,7 @@ export function useCitizenIdeaMutations() {
 
     });
 
-    /** @type {import('@tanstack/react-query').UseMutationResult<any, any, {idea: any, proposalData: any}>} */
+    /** @type {import('@/hooks/useAppQueryClient').UseMutationResult<any, any, {idea: any, proposalData: any}>} */
     const convertToProposal = useMutation({
         /** @param {{idea: any, proposalData: any}} params */
         mutationFn: async ({ idea, proposalData }) => {
@@ -256,7 +256,7 @@ export function useCitizenIdeaMutations() {
         }
     });
 
-    /** @type {import('@tanstack/react-query').UseMutationResult<any, any, {idea: any, rdData: any}>} */
+    /** @type {import('@/hooks/useAppQueryClient').UseMutationResult<any, any, {idea: any, rdData: any}>} */
     const convertToRD = useMutation({
         /** @param {{idea: any, rdData: any}} params */
         mutationFn: async ({ idea, rdData }) => {
@@ -287,7 +287,7 @@ export function useCitizenIdeaMutations() {
         }
     });
 
-    /** @type {import('@tanstack/react-query').UseMutationResult<any, any, {idea: any, solutionData: any}>} */
+    /** @type {import('@/hooks/useAppQueryClient').UseMutationResult<any, any, {idea: any, solutionData: any}>} */
     const convertToSolution = useMutation({
         /** @param {{idea: any, solutionData: any}} params */
         mutationFn: async ({ idea, solutionData }) => {
@@ -319,7 +319,7 @@ export function useCitizenIdeaMutations() {
 
     // 4. Utility Actions
 
-    /** @type {import('@tanstack/react-query').UseMutationResult<any, any, any>} */
+    /** @type {import('@/hooks/useAppQueryClient').UseMutationResult<any, any, any>} */
     const triggerNotification = useMutation({
         /** @param {any} payload */
         mutationFn: async (payload) => {
@@ -329,7 +329,7 @@ export function useCitizenIdeaMutations() {
         }
     });
 
-    /** @type {import('@tanstack/react-query').UseMutationResult<any, any, {embedding: number[], limit?: number, threshold?: number}>} */
+    /** @type {import('@/hooks/useAppQueryClient').UseMutationResult<any, any, {embedding: number[], limit?: number, threshold?: number}>} */
     const semanticSearch = useMutation({
         /** @param {{embedding: number[], limit?: number, threshold?: number}} params */
         mutationFn: async ({ embedding, limit = 5, threshold = 0.75 }) => {
@@ -402,4 +402,5 @@ export function useIdeaConversion() {
         }
     });
 }
+
 

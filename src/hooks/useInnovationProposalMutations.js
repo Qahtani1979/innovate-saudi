@@ -1,6 +1,6 @@
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation } from '@/hooks/useAppQueryClient';
 import { toast } from 'sonner';
 import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
@@ -114,4 +114,5 @@ export function useInnovationProposalMutations() {
         })
     };
 }
+
 

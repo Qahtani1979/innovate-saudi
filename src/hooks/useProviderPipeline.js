@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useProviderSolutions(providerId, providerEmail) {
@@ -138,3 +138,4 @@ export function useProviderScalingPlans(solutionIds) {
         enabled: !!solutionIds && solutionIds.length > 0
     });
 }
+

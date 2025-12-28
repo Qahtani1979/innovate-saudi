@@ -1,3 +1,4 @@
+import { useQuery, useMutation } from '@/hooks/useAppQueryClient';
 /**
  * Challenge Integrations Hook
  * Implements: ext-1 (solutions), ext-2 (pilots), ext-3 (programs),
@@ -418,4 +419,6 @@ export function useChallengeIntegrations(challengeId) {
 }
 
 export default useChallengeIntegrations;
+
+
 

@@ -3,7 +3,7 @@
  * Aggregates challenges, pilots, and tasks for the user dashboard.
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -65,3 +65,4 @@ export function useMyWork() {
         isLoading: loadingChallenges || loadingPilots || loadingTasks
     };
 }
+

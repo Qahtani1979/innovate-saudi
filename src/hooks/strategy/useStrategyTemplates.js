@@ -3,7 +3,7 @@ import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { toast } from 'sonner';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@/hooks/useAppQueryClient';
 import { STRATEGY_TEMPLATE_TYPES } from '@/constants/strategyTemplateTypes';
 
 export function useStrategyTemplates() {
@@ -440,4 +440,5 @@ export function useStrategyTemplates() {
     })
   };
 }
+
 

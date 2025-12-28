@@ -1,5 +1,5 @@
 import { useEntityPagination } from '@/hooks/useEntityPagination';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { addDays, isWithinInterval } from 'date-fns';
 
@@ -125,3 +125,4 @@ export function useMyRDProjects(user, invokeAI) {
         generateInsights
     };
 }
+

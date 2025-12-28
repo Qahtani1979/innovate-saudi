@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function usePolicyTemplates() {
@@ -148,3 +148,4 @@ export function usePolicySemanticSearch() {
 }
 
 export const usePolicies = usePoliciesList;
+

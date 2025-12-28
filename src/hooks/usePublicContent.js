@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function usePublicContent() {
@@ -185,3 +185,4 @@ export function usePlatformStats() {
         staleTime: 1000 * 60 * 15 // 15 min
     });
 }
+

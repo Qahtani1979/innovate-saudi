@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { usePermissions } from '@/hooks/usePermissions';
 
@@ -38,3 +38,4 @@ export function useProgramApplications(options = {}) {
 }
 
 export default useProgramApplications;
+

@@ -1,3 +1,4 @@
+import { useQuery, useMutation } from '@/hooks/useAppQueryClient';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { eventSyncService } from '@/services/eventSyncService';
 
@@ -72,4 +73,6 @@ export function useEventSync(programId) {
         updateEventsWithSyncIds: eventSyncService.updateEventsWithSyncIds
     };
 }
+
+
 

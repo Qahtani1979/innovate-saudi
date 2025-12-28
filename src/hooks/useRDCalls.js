@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useRDCalls(options = {}) {
@@ -27,3 +27,4 @@ export function useRDCalls(options = {}) {
         staleTime: 1000 * 60 * 10, // 10 minutes
     });
 }
+

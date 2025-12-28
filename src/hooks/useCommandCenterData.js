@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { useVisibilitySystem } from './visibility/useVisibilitySystem';
 
 /**
@@ -107,3 +107,4 @@ export function useCommandCenterData() {
         isLoading
     };
 }
+

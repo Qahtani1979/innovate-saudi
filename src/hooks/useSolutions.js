@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -185,4 +185,5 @@ export function useTrendingSolutions() {
         staleTime: 1000 * 60 * 30 // 30 minutes
     });
 }
+
 

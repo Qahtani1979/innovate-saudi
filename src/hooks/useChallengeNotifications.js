@@ -1,5 +1,5 @@
 import { useNotificationSystem } from '@/hooks/useNotificationSystem';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation } from '@/hooks/useAppQueryClient';
 import { useAuth } from '@/lib/AuthContext';
 
 // ... Notification Types Constants (Keep these as they are specific to challenges) ...
@@ -340,3 +340,4 @@ export function useChallengeNotifications() {
 }
 
 export default useChallengeNotifications;
+

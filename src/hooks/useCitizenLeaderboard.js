@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -25,3 +25,4 @@ export function useCitizenLeaderboard(options = {}) {
         staleTime: 1000 * 60 * 10, // 10 minutes (leaderboards are typically cached longer)
     });
 }
+

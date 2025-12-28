@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -7,7 +7,7 @@ import { toast } from 'sonner';
  */
 export function usePublicIdeaActions() {
     /**
-     * @type {import('@tanstack/react-query').UseMutationResult<any, any, { idea: any, municipality: any, sessionId: any, user_id: any, user_type?: string }>}
+     * @type {import('@/hooks/useAppQueryClient').UseMutationResult<any, any, { idea: any, municipality: any, sessionId: any, user_id: any, user_type?: string }>}
      */
     const analyzeIdeaMutation = useMutation({
         mutationFn: async (params) => {
@@ -44,7 +44,7 @@ export function usePublicIdeaActions() {
     });
 
     /**
-     * @type {import('@tanstack/react-query').UseMutationResult<any, any, { formData: any, initialIdea: any, contactInfo: any, language: any }>}
+     * @type {import('@/hooks/useAppQueryClient').UseMutationResult<any, any, { formData: any, initialIdea: any, contactInfo: any, language: any }>}
      */
     const submitIdeaMutation = useMutation({
         mutationFn: async (params) => {
@@ -98,3 +98,4 @@ export function usePublicIdeaActions() {
         submitIdea: submitIdeaMutation
     };
 }
+

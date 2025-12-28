@@ -1,7 +1,7 @@
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@/hooks/useAppQueryClient';
 
 /**
  * Hook to manage notification preferences for all users (Admin view).
@@ -75,4 +75,5 @@ export function useAllNotificationPreferences(searchTerm = '') {
         updatePreferences: updatePreferences.mutate
     };
 }
+
 

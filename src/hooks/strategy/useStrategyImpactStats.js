@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useStrategyImpactStats(strategicPlanId) {
@@ -23,3 +23,4 @@ export function useStrategyImpactStats(strategicPlanId) {
         staleTime: 1000 * 60 * 10 // 10 minutes caching for stats
     });
 }
+

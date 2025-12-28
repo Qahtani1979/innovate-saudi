@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 export { useIdeaConversion } from './useCitizenIdeaMutations';
 
@@ -107,5 +107,6 @@ export function useCitizenIdeas(options = {}) {
         deleteIdea
     };
 }
+
 
 

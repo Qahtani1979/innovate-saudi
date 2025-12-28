@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { subDays, format } from 'date-fns';
 
@@ -127,3 +127,4 @@ export function useEmailAnalytics(dateRange = '30') {
         error: statsQuery.error || categoriesQuery.error || timeSeriesQuery.error || templatesQuery.error
     };
 }
+

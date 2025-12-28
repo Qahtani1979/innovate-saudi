@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '../components/LanguageContext';
 import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 import { useAuditLogger } from '@/hooks/useAuditLogger';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation } from '@/hooks/useAppQueryClient';
 
 export function useTrainingMutations() {
     const queryClient = useAppQueryClient();
@@ -56,4 +56,5 @@ export function useTrainingMutations() {
         enrollMunicipality
     };
 }
+
 

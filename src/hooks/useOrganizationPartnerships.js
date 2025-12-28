@@ -1,3 +1,4 @@
+import { useQuery, useMutation } from '@/hooks/useAppQueryClient';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "sonner";
@@ -91,4 +92,6 @@ export function useOrganizationPartnerships(organizationId) {
 }
 
 export default useOrganizationPartnerships;
+
+
 

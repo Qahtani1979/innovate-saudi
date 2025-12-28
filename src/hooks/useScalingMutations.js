@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useAuditLogger, AUDIT_ACTIONS } from '@/hooks/useAuditLogger';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import { useNotificationSystem } from '@/hooks/useNotificationSystem';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation } from '@/hooks/useAppQueryClient';
 
 /**
  * Hook for scaling plan mutations
@@ -272,4 +272,5 @@ export function useScalingMutations() {
 }
 
 export default useScalingMutations;
+
 

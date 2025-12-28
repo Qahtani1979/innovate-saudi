@@ -3,7 +3,7 @@
  * Handles CRUD operations for pilot expenses with audit logging
  */
 
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@/hooks/useAppQueryClient';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -147,4 +147,5 @@ export function useExpenseMutations(pilotId) {
 }
 
 export default useExpenseMutations;
+
 

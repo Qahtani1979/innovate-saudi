@@ -1,6 +1,6 @@
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@/hooks/useAppQueryClient';
 import { toast } from 'sonner';
 import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 import { useLanguage } from '../components/LanguageContext';
@@ -127,4 +127,5 @@ export function useABExperimentMutations() {
         useExperimentStats
     };
 }
+
 

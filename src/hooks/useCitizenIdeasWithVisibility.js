@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { useVisibilitySystem } from './visibility/useVisibilitySystem';
 
 export function useCitizenIdeasWithVisibility(options = {}) {
@@ -25,3 +25,4 @@ export function useCitizenIdeasWithVisibility(options = {}) {
         enabled: !isVisibilityLoading
     });
 }
+

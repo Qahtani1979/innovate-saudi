@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 // Fetch full taxonomy hierarchy: Domain → Deputyship → Sector → Subsector → Service
@@ -204,3 +204,4 @@ export function useTaxonomyData() {
         refetchOnMount: false,
     });
 }
+

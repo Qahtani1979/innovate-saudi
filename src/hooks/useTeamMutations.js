@@ -1,7 +1,7 @@
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@/hooks/useAppQueryClient';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { useAuditLogger, AUDIT_ACTIONS } from './useAuditLogger';
@@ -224,4 +224,5 @@ export function useTeamMutations() {
         refreshTeams,  // ✅ Gold Standard
     };
 }
+
 

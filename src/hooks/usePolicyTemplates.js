@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@/hooks/useAppQueryClient';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -23,7 +23,7 @@ export function usePolicyTemplateMutations() {
     const queryClient = useAppQueryClient();
 
     /**
-     * @type {import('@tanstack/react-query').UseMutationResult<void, Error, any>}
+     * @type {import('@/hooks/useAppQueryClient').UseMutationResult<void, Error, any>}
      */
     const createTemplate = useMutation({
         mutationFn: async (data) => {
@@ -37,7 +37,7 @@ export function usePolicyTemplateMutations() {
     });
 
     /**
-     * @type {import('@tanstack/react-query').UseMutationResult<void, Error, { id: string; data: any }>}
+     * @type {import('@/hooks/useAppQueryClient').UseMutationResult<void, Error, { id: string; data: any }>}
      */
     const updateTemplate = useMutation({
         mutationFn: async ({ id, data }) => {
@@ -51,7 +51,7 @@ export function usePolicyTemplateMutations() {
     });
 
     /**
-     * @type {import('@tanstack/react-query').UseMutationResult<void, Error, string>}
+     * @type {import('@/hooks/useAppQueryClient').UseMutationResult<void, Error, string>}
      */
     const deleteTemplate = useMutation({
         mutationFn: async (id) => {
@@ -65,7 +65,7 @@ export function usePolicyTemplateMutations() {
     });
 
     /**
-     * @type {import('@tanstack/react-query').UseMutationResult<void, Error, { id: string; newOrder: number }>}
+     * @type {import('@/hooks/useAppQueryClient').UseMutationResult<void, Error, { id: string; newOrder: number }>}
      */
     const reorderTemplate = useMutation({
         mutationFn: async ({ id, newOrder }) => {
@@ -77,4 +77,5 @@ export function usePolicyTemplateMutations() {
 
     return { createTemplate, updateTemplate, deleteTemplate, reorderTemplate };
 }
+
 

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -28,3 +28,4 @@ export function useSandbox(id) {
 }
 
 export default useSandbox;
+

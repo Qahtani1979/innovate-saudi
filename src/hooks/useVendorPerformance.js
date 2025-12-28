@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useVisibilitySystem } from '@/hooks/visibility/useVisibilitySystem';
 
@@ -77,3 +77,4 @@ export function useVendorPerformanceSummary(vendorId) {
 }
 
 export default useVendorPerformance;
+

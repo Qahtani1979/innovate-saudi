@@ -1,3 +1,4 @@
+import { useMutation } from '@/hooks/useAppQueryClient';
 /**
  * Hook for Milestone Approval Gate
  * Handles logic for approving/rejecting pilot milestones.
@@ -52,4 +53,6 @@ export function useMilestoneApproval() {
 
     return { approveMutation };
 }
+
+
 

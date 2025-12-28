@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useSectors() {
@@ -16,3 +16,4 @@ export function useSectors() {
     staleTime: 1000 * 60 * 60 // 1 hour
   });
 }
+

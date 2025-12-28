@@ -1,5 +1,5 @@
 import { useEntityPagination } from '@/hooks/useEntityPagination';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useMyPrograms(userEmail, page = 1) {
@@ -87,3 +87,4 @@ export function useMyPrograms(userEmail, page = 1) {
         upcomingEvents
     };
 }
+

@@ -3,7 +3,7 @@
  * Implements CRUD operations for Sandboxes with audit logging and notifications
  */
 
-import { useMutation } from '@tanstack/react-query';
+import { useMutation } from '@/hooks/useAppQueryClient';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -293,4 +293,5 @@ function useApproveSandboxApplication() {
 }
 
 export default useSandboxMutations;
+
 

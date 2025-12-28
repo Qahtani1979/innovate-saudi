@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { toast } from 'sonner';
@@ -7,7 +7,7 @@ export function useStrategyThemeGenerator() {
     const { invokeAI, isLoading: aiLoading } = useAIWithFallback();
 
     /**
-     * @type {import('@tanstack/react-query').UseMutationResult<any, any, { selectedPlan: any }>}
+     * @type {import('@/hooks/useAppQueryClient').UseMutationResult<any, any, { selectedPlan: any }>}
      */
     const generateThemes = useMutation({
         mutationFn: async ({ selectedPlan }) => {
@@ -112,3 +112,4 @@ For each theme provide:
         themes: generateThemes.data || []
     };
 }
+

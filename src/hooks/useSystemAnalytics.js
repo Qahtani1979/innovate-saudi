@@ -2,7 +2,7 @@
  * System Analytics Hook
  * Centralized data access for system health, user activities, and usage metrics.
  */
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useSystemAnalytics() {
@@ -88,3 +88,4 @@ export function useSystemAnalytics() {
 }
 
 export default useSystemAnalytics;
+

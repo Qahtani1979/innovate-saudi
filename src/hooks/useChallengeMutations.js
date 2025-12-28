@@ -1,3 +1,4 @@
+import { useQuery, useMutation } from '@/hooks/useAppQueryClient';
 /**
  * Challenge Mutations Hook
  */
@@ -250,22 +251,22 @@ export function useImportChallenges() {
 /**
  * Challenge Mutations Hook
  * @returns {{
- *   createChallenge: import('@tanstack/react-query').UseMutationResult<any, Error, any>,
- *   updateChallenge: import('@tanstack/react-query').UseMutationResult<any, Error, {id: string, data: any, activityLog?: any, metadata?: any}>,
- *   deleteChallenge: import('@tanstack/react-query').UseMutationResult<any, Error, string>,
- *   archiveChallenge: import('@tanstack/react-query').UseMutationResult<any, Error, string>,
- *   submitForReview: import('@tanstack/react-query').UseMutationResult<any, Error, {id: string, data: any, metadata?: any}>,
- *   changeStatus: import('@tanstack/react-query').UseMutationResult<any, Error, {id: string, newStatus: string, notes?: string, rejectionReason?: string}>,
- *   assignReviewer: import('@tanstack/react-query').UseMutationResult<any, Error, {id: string, reviewerEmail: string}>,
- *   checkConsensus: import('@tanstack/react-query').UseMutationResult<any, Error, string>,
+ *   createChallenge: import('@/hooks/useAppQueryClient').UseMutationResult<any, Error, any>,
+ *   updateChallenge: import('@/hooks/useAppQueryClient').UseMutationResult<any, Error, {id: string, data: any, activityLog?: any, metadata?: any}>,
+ *   deleteChallenge: import('@/hooks/useAppQueryClient').UseMutationResult<any, Error, string>,
+ *   archiveChallenge: import('@/hooks/useAppQueryClient').UseMutationResult<any, Error, string>,
+ *   submitForReview: import('@/hooks/useAppQueryClient').UseMutationResult<any, Error, {id: string, data: any, metadata?: any}>,
+ *   changeStatus: import('@/hooks/useAppQueryClient').UseMutationResult<any, Error, {id: string, newStatus: string, notes?: string, rejectionReason?: string}>,
+ *   assignReviewer: import('@/hooks/useAppQueryClient').UseMutationResult<any, Error, {id: string, reviewerEmail: string}>,
+ *   checkConsensus: import('@/hooks/useAppQueryClient').UseMutationResult<any, Error, string>,
  *   refreshChallenges: function,
  *   isCreating: boolean,
  *   isUpdating: boolean,
  *   isDeleting: boolean,
  *   isSubmitting: boolean,
- *   generateEmbeddings: import('@tanstack/react-query').UseMutationResult<any, Error, any>,
- *   checkConsensus: import('@tanstack/react-query').UseMutationResult<any, Error, string>,
- *   updatePublishingSettings: import('@tanstack/react-query').UseMutationResult<any, Error, any>
+ *   generateEmbeddings: import('@/hooks/useAppQueryClient').UseMutationResult<any, Error, any>,
+ *   checkConsensus: import('@/hooks/useAppQueryClient').UseMutationResult<any, Error, string>,
+ *   updatePublishingSettings: import('@/hooks/useAppQueryClient').UseMutationResult<any, Error, any>
  * }}
  */
 export function useChallengeMutations() {
@@ -1059,4 +1060,6 @@ export function useLinkChallengeToRDCall() {
 }
 
 export default useChallengeMutations;
+
+
 

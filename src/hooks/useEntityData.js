@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useEntity(entityType, entityId) {
@@ -35,3 +35,4 @@ export function useEntity(entityType, entityId) {
         staleTime: 5 * 60 * 1000
     });
 }
+

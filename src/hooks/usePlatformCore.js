@@ -1,3 +1,4 @@
+import { useMutation } from '@/hooks/useAppQueryClient';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
@@ -162,4 +163,6 @@ export function useSemanticSearch() {
         error: searchMutation.error
     };
 }
+
+
 

@@ -1,3 +1,4 @@
+import { useMutation } from '@/hooks/useAppQueryClient';
 /**
  * Hook for Strategy Automation
  * Handles batch generation, scheduled analysis, and quality assessment.
@@ -130,4 +131,6 @@ export function useStrategyAutomation() {
         updateQueueResult
     };
 }
+
+
 

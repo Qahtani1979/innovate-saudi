@@ -1,6 +1,7 @@
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useQuery, useMutation } from '@/hooks/useAppQueryClient';
 
 export function useMyRoleRequests(email) {
     return useQuery({
@@ -70,7 +71,7 @@ export function usePendingRoleRequests() {
 export function useRoleRequestMutations() {
     const queryClient = useAppQueryClient();
 
-    /** @type {import('@tanstack/react-query').UseMutationResult<void, Error, RoleRequestData>} */
+    /** @type {import('@/hooks/useAppQueryClient').UseMutationResult<void, Error, RoleRequestData>} */
     const requestRole = useMutation({
         mutationFn: async (requestData) => {
             const { error } = await supabase.from('role_requests').insert(requestData);
@@ -84,7 +85,7 @@ export function useRoleRequestMutations() {
         onError: (error) => toast.error(error.message)
     });
 
-    /** @type {import('@tanstack/react-query').UseMutationResult<void, Error, RoleRequestUpdateData>} */
+    /** @type {import('@/hooks/useAppQueryClient').UseMutationResult<void, Error, RoleRequestUpdateData>} */
     const updateRequestStatus = useMutation({
         mutationFn: async ({ id, status, rejection_reason, roleId, userId }) => {
             // Update request status
@@ -120,4 +121,5 @@ export function useRoleRequestMutations() {
 
     return { requestRole, updateRequestStatus };
 }
+
 

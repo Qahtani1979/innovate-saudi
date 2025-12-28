@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserProfile } from '@/hooks/useUserProfile'; // Consolidated user profile hook
 import { differenceInDays } from 'date-fns';
@@ -123,3 +123,4 @@ export function useMyPartnerships(userEmail, { page = 1, pageSize = 12 } = {}) {
         refetch
     };
 }
+

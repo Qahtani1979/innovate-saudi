@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useEvaluationHistory({ entityType, entityId, filterEntityType, filterEvaluator, filterRecommendation, textSearch }) {
@@ -40,3 +40,4 @@ export function useEvaluationHistory({ entityType, entityId, filterEntityType, f
         staleTime: 5 * 60 * 1000
     });
 }
+

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useExpertProfile(userId) {
@@ -217,3 +217,4 @@ export function useExpertAssignmentsWithDetails(email) {
         staleTime: 5 * 60 * 1000
     });
 }
+

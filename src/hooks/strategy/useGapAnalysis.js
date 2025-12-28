@@ -1,3 +1,4 @@
+import { useQuery, useMutation } from '@/hooks/useAppQueryClient';
 import { useState } from 'react';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
@@ -147,4 +148,6 @@ export function useGapAnalysis(strategicPlanId) {
     canGenerateQueue: !!analysis && !generateQueue.isPending
   };
 }
+
+
 

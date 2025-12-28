@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation } from '@/hooks/useAppQueryClient';
 import { useRegulatoryExemptions } from '@/hooks/useRegulatoryExemptions';
 
 export function useAutomatedCompliance(application, sandbox) {
@@ -140,3 +140,4 @@ export function useAutomatedCompliance(application, sandbox) {
         setComplianceStatus
     };
 }
+

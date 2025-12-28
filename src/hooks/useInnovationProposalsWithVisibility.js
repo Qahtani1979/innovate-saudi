@@ -9,7 +9,7 @@
  * - Others: No access (proposals are internal)
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useVisibilitySystem } from './visibility/useVisibilitySystem';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -150,3 +150,4 @@ export function useInnovationProposalsWithVisibility(options = {}) {
 }
 
 export default useInnovationProposalsWithVisibility;
+

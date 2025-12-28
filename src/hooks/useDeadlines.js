@@ -3,7 +3,7 @@
  * Aggregates tasks, pilots (milestones), and programs with deadlines within a specific range.
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useDeadlines() {
@@ -77,3 +77,4 @@ export function useDeadlines() {
         programs
     };
 }
+

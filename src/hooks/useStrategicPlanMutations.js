@@ -1,7 +1,7 @@
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation } from '@/hooks/useAppQueryClient';
 import { useAuth } from '@/lib/AuthContext';
 import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
@@ -53,4 +53,5 @@ export function useStrategicPlanMutations() {
         updatePlan
     };
 }
+
 

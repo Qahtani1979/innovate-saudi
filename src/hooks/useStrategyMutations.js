@@ -1,7 +1,7 @@
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation } from '@/hooks/useAppQueryClient';
 import { useAuditLogger } from '@/hooks/useAuditLogger';
 import { useApprovalRequest } from '@/hooks/useApprovalRequest';
 import { useNotificationSystem } from '@/hooks/useNotificationSystem';
@@ -9,14 +9,14 @@ import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 /**
  * Hook for strategic plan mutations (create, update, delete).
  * @returns {{
- *   createStrategy: import('@tanstack/react-query').UseMutationResult<any, Error, {data: any, metadata?: any}>,
- *   updateStrategy: import('@tanstack/react-query').UseMutationResult<any, Error, {id: string, data: any, metadata?: any}>,
- *   deleteStrategy: import('@tanstack/react-query').UseMutationResult<any, Error, string>,
- *   duplicateStrategy: import('@tanstack/react-query').UseMutationResult<any, Error, any>,
- *   bulkUpdateStrategies: import('@tanstack/react-query').UseMutationResult<any, Error, {ids: string[], data: any}>,
- *   submitStrategy: import('@tanstack/react-query').UseMutationResult<any, Error, {id: string, data: any, userEmail: string}>,
- *   wizardSave: import('@tanstack/react-query').UseMutationResult<any, Error, {id?: string, data: any, mode: string}>,
- *   wizardSubmit: import('@tanstack/react-query').UseMutationResult<any, Error, {id: string, data: any, userEmail?: string}>,
+ *   createStrategy: import('@/hooks/useAppQueryClient').UseMutationResult<any, Error, {data: any, metadata?: any}>,
+ *   updateStrategy: import('@/hooks/useAppQueryClient').UseMutationResult<any, Error, {id: string, data: any, metadata?: any}>,
+ *   deleteStrategy: import('@/hooks/useAppQueryClient').UseMutationResult<any, Error, string>,
+ *   duplicateStrategy: import('@/hooks/useAppQueryClient').UseMutationResult<any, Error, any>,
+ *   bulkUpdateStrategies: import('@/hooks/useAppQueryClient').UseMutationResult<any, Error, {ids: string[], data: any}>,
+ *   submitStrategy: import('@/hooks/useAppQueryClient').UseMutationResult<any, Error, {id: string, data: any, userEmail: string}>,
+ *   wizardSave: import('@/hooks/useAppQueryClient').UseMutationResult<any, Error, {id?: string, data: any, mode: string}>,
+ *   wizardSubmit: import('@/hooks/useAppQueryClient').UseMutationResult<any, Error, {id: string, data: any, userEmail?: string}>,
  *   fetchTemplate: (id: string) => Promise<any>,
  *   refreshStrategies: () => void
  * }}
@@ -476,4 +476,5 @@ export const useStrategyMutations = () => {
         refreshStrategies  // ✅ Gold Standard
     };
 };
+
 

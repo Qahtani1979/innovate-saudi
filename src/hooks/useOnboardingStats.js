@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useOnboardingStats() {
@@ -45,3 +45,4 @@ export function useOnboardingStats() {
         isLoading: loadingUsers || loadingChallenges || loadingSolutions
     };
 }
+

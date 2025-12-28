@@ -1,7 +1,7 @@
 
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@/hooks/useAppQueryClient';
 import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 import { useEmailTrigger } from './useEmailTrigger';
 
@@ -67,4 +67,5 @@ export function useWaitlist(programId) {
         promoteToParticipant: promoteMutation
     };
 }
+
 

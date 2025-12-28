@@ -1,3 +1,4 @@
+import { useMutation } from '@/hooks/useAppQueryClient';
 /**
  * Hooks for Budget Approval Gates
  * Handles logic for Budget Allocation Approval and Scaling Plan Budget Approval.
@@ -101,4 +102,6 @@ export function useScalingBudgetApproval() {
 
     return { approvalMutation };
 }
+
+
 

@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useAuditLogger, AUDIT_ACTIONS, ENTITY_TYPES } from './useAuditLogger';
 import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 import { useAccessControl } from '@/hooks/useAccessControl';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation } from '@/hooks/useAppQueryClient';
 import { toast } from 'sonner';
 
 export function useEventMutations() {
@@ -343,3 +343,4 @@ export function useEventMutations() {
 }
 
 export default useEventMutations;
+

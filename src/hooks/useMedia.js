@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useMediaLibrary({ typeFilter = 'all', searchQuery = '', bucketId = '', allowedTypes = [] } = {}) {
@@ -36,3 +36,4 @@ export function useMediaLibrary({ typeFilter = 'all', searchQuery = '', bucketId
         staleTime: 1000 * 60 * 5 // 5 minutes
     });
 }
+

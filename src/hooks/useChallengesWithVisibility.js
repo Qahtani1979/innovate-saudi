@@ -1,4 +1,4 @@
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useVisibilitySystem } from './visibility/useVisibilitySystem';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -183,4 +183,5 @@ export function useChallenge(challengeId) {
 }
 
 export default useChallengesWithVisibility;
+
 

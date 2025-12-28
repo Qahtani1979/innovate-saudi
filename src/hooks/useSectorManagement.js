@@ -1,3 +1,4 @@
+import { useQuery, useMutation } from '@/hooks/useAppQueryClient';
 /**
  * Hook for Sector Management
  * Handles fetching and mutations for Sectors, Subsectors, Services, and Deputyships.
@@ -141,4 +142,6 @@ export function useSectorManagement() {
         deleteMutation
     };
 }
+
+
 

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useStrategicPlans() {
@@ -14,3 +14,4 @@ export function useStrategicPlans() {
         staleTime: 1000 * 60 * 60 // 1 hour
     });
 }
+

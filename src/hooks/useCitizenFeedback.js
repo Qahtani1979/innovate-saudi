@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@/hooks/useAppQueryClient';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -44,7 +44,7 @@ export function useCitizenFeedback(options = {}) {
 export function useSubmitCitizenFeedback() {
     const queryClient = useAppQueryClient();
 
-    /** @type {import('@tanstack/react-query').UseMutationResult<any, Error, {entityId?: string, entityType?: string, content: string, feedbackType: string, isAnonymous: boolean, sentiment?: string, rating?: number}>} */
+    /** @type {import('@/hooks/useAppQueryClient').UseMutationResult<any, Error, {entityId?: string, entityType?: string, content: string, feedbackType: string, isAnonymous: boolean, sentiment?: string, rating?: number}>} */
     const mutation = useMutation({
         mutationFn: async ({ entityId, entityType, content, feedbackType, isAnonymous, sentiment, rating }) => {
             const { error } = await supabase.from('citizen_feedback').insert({
@@ -67,4 +67,5 @@ export function useSubmitCitizenFeedback() {
 }
 
 export const useCitizenFeedbackMutation = useSubmitCitizenFeedback;
+
 

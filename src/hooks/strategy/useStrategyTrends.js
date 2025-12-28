@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -40,3 +40,4 @@ export function usePolicyDocuments(limit = 5) {
         staleTime: 1000 * 60 * 15 // 15 minutes
     });
 }
+

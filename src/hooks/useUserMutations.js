@@ -3,7 +3,7 @@
  * Centralized mutations for user management, profiles, and roles.
  */
 
-import { useMutation } from '@tanstack/react-query';
+import { useMutation } from '@/hooks/useAppQueryClient';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -301,4 +301,5 @@ export function useUserMutations() {
 }
 
 export default useUserMutations;
+
 

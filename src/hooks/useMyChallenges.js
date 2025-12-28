@@ -1,5 +1,5 @@
 import { useEntityPagination } from '@/hooks/useEntityPagination';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useMyChallenges(userEmail) {
@@ -60,3 +60,4 @@ export function useMyChallenges(userEmail) {
         stats: stats || { total: 0, approved: 0, in_treatment: 0, under_review: 0 }
     };
 }
+

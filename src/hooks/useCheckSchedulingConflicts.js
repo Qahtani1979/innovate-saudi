@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useCheckSchedulingConflicts() {
@@ -47,3 +47,4 @@ export function useCheckSchedulingConflicts() {
         isError: eventsQuery.isError || pilotsQuery.isError || programsQuery.isError
     };
 }
+

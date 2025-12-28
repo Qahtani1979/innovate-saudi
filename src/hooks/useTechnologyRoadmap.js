@@ -1,6 +1,6 @@
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@/hooks/useAppQueryClient';
 import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
@@ -175,4 +175,5 @@ export function useTechnologyRoadmapMutations() {
 }
 
 export default useTechnologyRoadmap;
+
 

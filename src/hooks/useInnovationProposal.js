@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useInnovationProposal(id) {
@@ -18,3 +18,4 @@ export function useInnovationProposal(id) {
         staleTime: 5 * 60 * 1000
     });
 }
+

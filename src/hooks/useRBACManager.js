@@ -11,6 +11,7 @@
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import rbacService from '@/services/rbac/rbacService';
 import { toast } from 'sonner';
+import { useQuery, useMutation } from '@/hooks/useAppQueryClient';
 
 /**
  * Fetch user roles
@@ -32,7 +33,7 @@ export function useUserRoles(userId, userEmail) {
  * @property {string} [municipality_id]
  * @property {string} [organization_id]
  * 
- * @returns {import('@tanstack/react-query').UseMutationResult<any, Error, AssignRoleParams>}
+ * @returns {import('@/hooks/useAppQueryClient').UseMutationResult<any, Error, AssignRoleParams>}
  */
 export function useAssignRole() {
   const queryClient = useAppQueryClient();
@@ -58,7 +59,7 @@ export function useAssignRole() {
  * @property {string} [municipality_id]
  * @property {string} [organization_id]
  * 
- * @returns {import('@tanstack/react-query').UseMutationResult<any[], Error, BulkAssignRoleParams>}
+ * @returns {import('@/hooks/useAppQueryClient').UseMutationResult<any[], Error, BulkAssignRoleParams>}
  */
 export function useBulkAssignRole() {
   const queryClient = useAppQueryClient();
@@ -119,7 +120,7 @@ export function useCheckAutoApproval() {
  * @property {string} [organization_id]
  * @property {string} approver_email
  * 
- * @returns {import('@tanstack/react-query').UseMutationResult<any, Error, ApproveRoleRequestParams>}
+ * @returns {import('@/hooks/useAppQueryClient').UseMutationResult<any, Error, ApproveRoleRequestParams>}
  */
 export function useApproveRoleRequest() {
   const queryClient = useAppQueryClient();
@@ -145,7 +146,7 @@ export function useApproveRoleRequest() {
  * @property {string} reason
  * @property {string} approver_email
  * 
- * @returns {import('@tanstack/react-query').UseMutationResult<any, Error, RejectRoleRequestParams>}
+ * @returns {import('@/hooks/useAppQueryClient').UseMutationResult<any, Error, RejectRoleRequestParams>}
  */
 export function useRejectRoleRequest() {
   const queryClient = useAppQueryClient();
@@ -255,4 +256,5 @@ export default {
   useSendRoleNotification,
   useSecurityAudit
 };
+
 

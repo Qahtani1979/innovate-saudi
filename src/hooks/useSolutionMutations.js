@@ -6,7 +6,7 @@ import { useNotificationSystem } from '@/hooks/useNotificationSystem'; // Replac
 import { useAuditLogger, AUDIT_ACTIONS, ENTITY_TYPES } from './useAuditLogger';
 import { useAccessControl } from '@/hooks/useAccessControl';
 // Removed useLogActivity as it's likely redundant with AuditLogger + Notification
-import { useMutation } from '@tanstack/react-query';
+import { useMutation } from '@/hooks/useAppQueryClient';
 
 /**
  * Hook for solution-related mutations: create, update, delete.
@@ -381,4 +381,5 @@ export function useSolutionMutations() {
 }
 
 export default useSolutionMutations;
+
 

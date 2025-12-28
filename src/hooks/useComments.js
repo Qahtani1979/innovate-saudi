@@ -1,3 +1,4 @@
+import { useQuery, useMutation } from '@/hooks/useAppQueryClient';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
@@ -30,7 +31,7 @@ export function useCommentMutations(entityType = null, entityId = null) {
     const queryClient = useAppQueryClient();
     const { user } = useAuth();
 
-    /** @type {import('@tanstack/react-query').UseMutationResult<any, Error, {entity_type: string, entity_id: string, comment_text: string, user_name: string, user_email: string}>} */
+    /** @type {import('@/hooks/useAppQueryClient').UseMutationResult<any, Error, {entity_type: string, entity_id: string, comment_text: string, user_name: string, user_email: string}>} */
     const addComment = useMutation({
         mutationFn: async (commentData) => {
             const { error } = await supabase.from('comments').insert(commentData);
@@ -47,7 +48,7 @@ export function useCommentMutations(entityType = null, entityId = null) {
         }
     });
 
-    /** @type {import('@tanstack/react-query').UseMutationResult<any, Error, {id: string}>} */
+    /** @type {import('@/hooks/useAppQueryClient').UseMutationResult<any, Error, {id: string}>} */
     const flagComment = useMutation({
         mutationFn: async ({ id }) => {
             const { error } = await supabase
@@ -67,4 +68,6 @@ export function useCommentMutations(entityType = null, entityId = null) {
 
     return { addComment, flagComment };
 }
+
+
 

@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation } from '@/hooks/useAppQueryClient';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useNotificationSystem } from '@/hooks/useNotificationSystem';
@@ -422,4 +422,5 @@ export function useRDMutations() {
         provideFeedback
     };
 }
+
 

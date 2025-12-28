@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { getCollaborationSuggesterPrompt, collaborationSuggesterSchema } from '@/lib/ai/prompts/portfolio';
 import { getSystemPrompt } from '@/lib/saudiContext';
@@ -34,3 +34,4 @@ export function useCollaborationSuggestions({ entityType, entityId, entityData }
         }
     };
 }
+

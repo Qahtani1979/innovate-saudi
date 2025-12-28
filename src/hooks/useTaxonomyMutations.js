@@ -1,6 +1,6 @@
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation } from '@/hooks/useAppQueryClient';
 import { useNotificationSystem } from '@/hooks/useNotificationSystem';
 
 export function useTaxonomyMutations() {
@@ -166,4 +166,5 @@ export function useTaxonomyMutations() {
         deleteTag
     };
 }
+
 

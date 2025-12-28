@@ -1,3 +1,4 @@
+import { useMutation } from '@/hooks/useAppQueryClient';
 /**
  * Hook for Proposal Escalation Automation
  * Handles logic checking and triggering escalation for R&D proposals.
@@ -60,4 +61,6 @@ export function useProposalEscalation() {
 
     return { escalateMutation };
 }
+
+
 

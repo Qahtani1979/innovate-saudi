@@ -1,7 +1,7 @@
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 
 /**
  * Hook for event CRUD operations (Queries Only)
@@ -176,4 +176,5 @@ export function useEventInvalidator() {
 }
 
 export default useEvents;
+
 

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -253,7 +253,7 @@ export function usePublicPilot(pilotId) {
     });
 }
 
-import { useMutation } from '@tanstack/react-query';
+import { useMutation } from '@/hooks/useAppQueryClient';
 import { toast } from 'sonner';
 
 /**
@@ -279,3 +279,4 @@ export function usePublicFeedbackMutation() {
         }
     });
 }
+

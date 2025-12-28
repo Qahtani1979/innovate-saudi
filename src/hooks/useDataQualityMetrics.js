@@ -3,7 +3,7 @@
  * Fetches data for the AI Data Quality Dashboard.
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useDataQualityMetrics() {
@@ -47,3 +47,4 @@ export function useDataQualityMetrics() {
         solutions
     };
 }
+

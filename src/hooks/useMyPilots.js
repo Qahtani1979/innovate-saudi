@@ -1,5 +1,5 @@
 import { useEntityPagination } from '@/hooks/useEntityPagination';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useMyPilots(userEmail, page = 1) {
@@ -61,3 +61,4 @@ export function useMyPilots(userEmail, page = 1) {
         stats: stats || { total: 0, in_progress: 0, completed: 0, avg_success: 0 }
     };
 }
+

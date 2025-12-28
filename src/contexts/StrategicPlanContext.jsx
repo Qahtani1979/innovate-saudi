@@ -29,7 +29,6 @@ export const StrategicPlanProvider = ({ children }) => {
   });
 
   // Fetch only active/approved plans for the context selector (not drafts)
-  // Fetch only active/approved plans for the context selector (not drafts)
   const { data: strategicPlans = [], isLoading } = useStrategicPlans({ status: ['active', 'completed'] });
 
   // Get the full plan object
