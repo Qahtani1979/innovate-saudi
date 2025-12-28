@@ -78,8 +78,7 @@ export function useToolExecutor() {
             store.requestConfirmation({ name: toolName, args });
             return { status: 'pending_confirmation' };
         } else {
-            // Execute immediately
-            store.setToolStatus('executing');
+            // Execute immediately - note: toolStatus is set within executeTool via completeAction/reportError
             return executeTool(toolName, args);
         }
     };
