@@ -42,6 +42,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { usePersonaRouting } from '@/hooks/usePersonaRouting';
 import { useAuth } from '@/lib/AuthContext';
 import OnboardingWizard from './components/onboarding/OnboardingWizard';
+import CopilotFAB from '@/components/copilot/CopilotFAB';
 
 function LayoutContent({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -281,8 +282,8 @@ function LayoutContent({ children, currentPageName }) {
         </main>
       </div>
 
-      {/* Global AI Assistant - temporarily disabled */}
-      {/* <AIAssistant context={{ page: currentPageName }} /> */}
+      {/* Global AI Assistant - Copilot FAB */}
+      <CopilotFAB />
 
       {/* Onboarding Wizard for new users */}
       {showOnboarding && (

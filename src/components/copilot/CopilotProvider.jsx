@@ -12,8 +12,6 @@ import { useAuth } from '@/lib/AuthContext';
  */
 export function CopilotProvider({ children }) {
     const { user } = useAuth();
-    const { setMessages, addMessage } = useCopilotStore();
-    useCopilotHistory();
     const { requestExecution } = useToolExecutor();
     const { askBrain, status, isLoading } = useCopilotAgent();
 

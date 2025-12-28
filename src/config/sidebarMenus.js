@@ -78,6 +78,7 @@ export const SIDEBAR_MENUS = {
     items: [
       HOME_LINK,
       { name: 'AdminPortal', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
+      { name: 'CopilotConsole', icon: Brain, label: { en: 'Super Copilot', ar: 'المساعد الذكي' }, color: 'text-purple-600' },
       { name: 'StrategyHub', icon: Target, label: { en: 'Strategy Hub', ar: 'مركز الاستراتيجية' } },
       { name: 'UserManagementHub', icon: Users, label: { en: 'Users', ar: 'المستخدمين' } },
       { name: 'RolePermissionManager', icon: UserCheck, label: { en: 'Roles & Permissions', ar: 'الأدوار والصلاحيات' } },
@@ -123,6 +124,7 @@ export const SIDEBAR_MENUS = {
     items: [
       HOME_LINK,
       { name: 'ExecutiveDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
+      { name: 'CopilotConsole', icon: Brain, label: { en: 'Super Copilot', ar: 'المساعد الذكي' }, color: 'text-purple-600' },
       { name: 'StrategyHub', icon: Target, label: { en: 'Strategy Hub', ar: 'مركز الاستراتيجية' }, permission: 'strategy_view' },
       { name: 'StrategyCockpit', icon: Gauge, label: { en: 'Strategy Cockpit', ar: 'قمرة الاستراتيجية' }, permission: 'strategy_view' },
       { name: 'OKRManagementSystem', icon: Target, label: { en: 'OKR Management', ar: 'إدارة الأهداف' } },
@@ -157,6 +159,7 @@ export const SIDEBAR_MENUS = {
     items: [
       HOME_LINK,
       { name: 'ExecutiveDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
+      { name: 'CopilotConsole', icon: Brain, label: { en: 'Super Copilot', ar: 'المساعد الذكي' }, color: 'text-purple-600' },
       { name: 'StrategyHub', icon: Target, label: { en: 'Strategy Hub', ar: 'مركز الاستراتيجية' }, permission: 'strategy_view' },
       { name: 'StrategyCockpit', icon: Gauge, label: { en: 'Strategy Cockpit', ar: 'قمرة الاستراتيجية' }, permission: 'strategy_view' },
       { name: 'RegionalDashboard', icon: Map, label: { en: 'Regional Dashboard', ar: 'لوحة إقليمية' } },
@@ -190,6 +193,7 @@ export const SIDEBAR_MENUS = {
       HOME_LINK,
       // Dashboard & Profile
       { name: 'MunicipalityDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' }, permission: 'dashboard_view', useMyMunicipality: true },
+      { name: 'CopilotConsole', icon: Brain, label: { en: 'Super Copilot', ar: 'المساعد الذكي' }, color: 'text-purple-600' },
       { name: 'MunicipalityProfile', icon: Building2, label: { en: 'Municipality Profile', ar: 'ملف البلدية' }, permission: 'dashboard_view', useMyMunicipality: true },
       // MII & Benchmarking
       { name: 'MIIDrillDown', icon: PieChart, label: { en: 'MII Score Details', ar: 'تفاصيل المؤشر' }, permission: 'analytics_view', useMyMunicipality: true },
@@ -241,6 +245,7 @@ export const SIDEBAR_MENUS = {
     items: [
       HOME_LINK,
       { name: 'StartupDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
+      { name: 'CopilotConsole', icon: Brain, label: { en: 'Super Copilot', ar: 'المساعد الذكي' }, color: 'text-purple-600' },
       { name: 'SolutionCreate', icon: Lightbulb, label: { en: 'Create Solution', ar: 'إنشاء حل' } },
       { name: 'ProviderPortfolioDashboard', icon: FolderKanban, label: { en: 'My Solutions', ar: 'حلولي' } },
       { name: 'StartupProfile', icon: Building2, label: { en: 'Company Profile', ar: 'ملف الشركة' } },
@@ -268,6 +273,7 @@ export const SIDEBAR_MENUS = {
     items: [
       HOME_LINK,
       { name: 'ExpertDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
+      { name: 'CopilotConsole', icon: Brain, label: { en: 'Super Copilot', ar: 'المساعد الذكي' }, color: 'text-purple-600' },
       { name: 'ExpertProfile', icon: UserCircle, label: { en: 'My Profile', ar: 'ملفي الشخصي' } },
       { name: 'ExpertPerformanceDashboard', icon: Activity, label: { en: 'Performance', ar: 'الأداء' } },
       { name: 'ExpertPanelManagement', icon: LayoutGrid, label: { en: 'Panel Management', ar: 'إدارة اللجان' } },
@@ -293,6 +299,7 @@ export const SIDEBAR_MENUS = {
     items: [
       HOME_LINK,
       { name: 'ResearcherDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
+      { name: 'CopilotConsole', icon: Brain, label: { en: 'Super Copilot', ar: 'المساعد الذكي' }, color: 'text-purple-600' },
       { name: 'RDCalls', icon: Rocket, label: { en: 'R&D Calls', ar: 'دعوات البحث' } },
       { name: 'ResearchOutputsHub', icon: FileSearch, label: { en: 'Research Outputs', ar: 'مخرجات البحث' } },
       { name: 'AcademiaDashboard', icon: Building2, label: { en: 'Institution Dashboard', ar: 'لوحة المؤسسة' } },
@@ -318,6 +325,7 @@ export const SIDEBAR_MENUS = {
     items: [
       HOME_LINK,
       { name: 'CitizenDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
+      { name: 'CopilotConsole', icon: Brain, label: { en: 'Super Copilot', ar: 'المساعد الذكي' }, color: 'text-purple-600' },
       { name: 'PublicStrategyDashboardPage', icon: Target, label: { en: 'Strategy Dashboard', ar: 'لوحة الاستراتيجية' } },
       { name: 'CitizenIdeaSubmission', icon: Lightbulb, label: { en: 'Submit Idea', ar: 'إرسال فكرة' } },
       { name: 'ChallengeIdeaResponse', icon: Target, label: { en: 'Submit Proposal', ar: 'تقديم مقترح' } },
@@ -347,6 +355,7 @@ export const SIDEBAR_MENUS = {
     items: [
       { name: 'PublicPortal', icon: Home, label: { en: 'Home', ar: 'الرئيسية' }, path: '/' },
       { name: 'CitizenDashboard', icon: LayoutDashboard, label: { en: 'Dashboard', ar: 'لوحة التحكم' } },
+      { name: 'CopilotConsole', icon: Brain, label: { en: 'Super Copilot', ar: 'المساعد الذكي' }, color: 'text-purple-600' },
       { name: 'CitizenIdeaSubmission', icon: Lightbulb, label: { en: 'Submit Idea', ar: 'إرسال فكرة' } },
       { name: 'ChallengeIdeaResponse', icon: Target, label: { en: 'Submit Proposal', ar: 'تقديم مقترح' } },
       { name: 'PublicIdeasBoard', icon: Sparkles, label: { en: 'Ideas Board', ar: 'لوحة الأفكار' } },

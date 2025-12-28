@@ -60,11 +60,23 @@ export default function CopilotConsole() {
 
     return (
         <div className="h-screen w-full bg-background flex flex-col">
-            <header className="h-14 border-b flex items-center px-4 bg-muted/20">
-                <span className="font-semibold text-sm flex items-center gap-2">
-                    <Bot className="w-4 h-4 text-primary" />
-                    Super Copilot
-                </span>
+            <header className="h-16 border-b flex items-center px-6 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-md z-10 shrink-0">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg border border-white/10 shadow-inner">
+                        <Bot className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                        <h1 className="font-bold text-lg flex items-center gap-2">
+                            Super Copilot
+                            <span className="px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-bold tracking-wider border border-white/10">
+                                BETA
+                            </span>
+                        </h1>
+                        <p className="text-xs text-purple-100/80 font-medium">
+                            Powered by Innovate Saudi AI
+                        </p>
+                    </div>
+                </div>
             </header>
 
             <ResizablePanelGroup direction="horizontal" className="flex-1">
@@ -90,12 +102,19 @@ export default function CopilotConsole() {
 
                                 {/* Introduction */}
                                 {messages.length === 0 && (
-                                    <div className="text-center py-20 text-muted-foreground">
-                                        <Bot className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                                        <h2 className="text-lg font-medium text-foreground">How can I help you govern today?</h2>
-                                        <div className="flex gap-2 justify-center mt-4">
-                                            <ActionChip label="Create Pilot" onClick={() => setInputValue('Create a new pilot')} />
-                                            <ActionChip label="Navigate Dashboard" onClick={() => setInputValue('Navigate to dashboard')} />
+                                    <div className="text-center py-20">
+                                        <div className="w-20 h-20 bg-gradient-to-tr from-purple-100 to-indigo-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                                            <Bot className="w-10 h-10 text-purple-600" />
+                                        </div>
+                                        <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-700 to-indigo-600 bg-clip-text text-transparent mb-2">
+                                            How can I help you govern today?
+                                        </h2>
+                                        <p className="text-muted-foreground text-sm max-w-md mx-auto mb-8">
+                                            I have access to your dashboard, pilots, and challenges. Ask me anything or choose a starter command below.
+                                        </p>
+                                        <div className="flex gap-3 justify-center">
+                                            <ActionChip label=" Create Pilot" icon={Sparkles} onClick={() => setInputValue('Create a new pilot')} />
+                                            <ActionChip label="Navigate Dashboard" icon={LayoutDashboard} onClick={() => setInputValue('Navigate to dashboard')} />
                                         </div>
                                     </div>
                                 )}
