@@ -5,6 +5,7 @@ import { addDays, isWithinInterval } from 'date-fns';
 
 export function useMyRDProjects(user, invokeAI) {
     const userEmail = user?.email;
+    const userId = user?.id;
 
     // 1. PAGINATED LIST (Main Grid)
     // Filters: created_by matches user (Primary ownership)
@@ -12,32 +13,24 @@ export function useMyRDProjects(user, invokeAI) {
         entityName: 'rd_projects',
         pageSize: 12,
         filters: {
-            created_by: userEmail
+            created_by: userId
         },
-        enabled: !!userEmail
+        enabled: !!userId
     });
 
-    // 2. STATS & DASHBOARD DATA (Lightweight fetch of ALL user projects)
-    // We need this to calculate: Active Count, Publications Total, and Critical Milestones
-    const { data: dashboardData = {
-        activeCount: 0,
-        publicationsTotal: 0,
-        criticalMilestones: [],
-        milestonesNextWeekCount: 0
-    }, isLoading: statsLoading } = useQuery({
-        queryKey: ['my-rd-stats', userEmail],
-        queryFn: async () => {
-            if (!userEmail) return { activeCount: 0, publicationsTotal: 0, criticalMilestones: [] };
+    // ...
 
-            // Fetch simplified objects
+    // 2. STATS & DASHBOARD DATA
+    const { data: dashboardData = { ... }, isLoading: statsLoading } = useQuery({
+        queryKey: ['my-rd-stats', userId], // Use userId in key
+        queryFn: async () => {
+            if (!userId) return { activeCount: 0, publicationsTotal: 0, criticalMilestones: [], milestonesNextWeekCount: 0 };
+
             const { data, error } = await supabase
                 .from('rd_projects')
                 .select('id, title_en, title_ar, status, timeline, publications, principal_investigator, team_members')
                 .eq('is_deleted', false)
-                // We replicate the complex ownership filter here since this is custom business logic for the dashboard
-                // For simplicity/performance in this refactor, we stick to created_by OR strict logic if possible.
-                // But simplified: created_by for now to match Pagination.
-                .eq('created_by', userEmail);
+                .eq('created_by', userId); // UUID check
 
             if (error) throw error;
 

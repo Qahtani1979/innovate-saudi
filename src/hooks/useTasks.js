@@ -13,8 +13,8 @@ export function useTasks(options = {}) {
             let query = supabase.from('tasks').select('*');
 
             // Non-admins only see their own tasks
-            if (!isAdmin && user?.email) {
-                query = query.or(`assigned_to.eq.${user.email},created_by.eq.${user.email}`);
+            if (!isAdmin && user?.id) {
+                query = query.or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`);
             }
 
             const { data, error } = await query;
@@ -28,7 +28,7 @@ export function useTasks(options = {}) {
         mutationFn: async (/** @type {any} */ data) => {
             const { data: createdTask, error } = await supabase
                 .from('tasks')
-                .insert({ ...data, assigned_to: data.assigned_to || user?.email })
+                .insert({ ...data, assigned_to: data.assigned_to || user?.id })
                 .select()
                 .single();
             if (error) throw error;

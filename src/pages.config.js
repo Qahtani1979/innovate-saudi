@@ -679,6 +679,7 @@ export const PAGES = {
     MatchmakerCoverageReport: MatchmakerCoverageReport,
     StrategicPlanningCoverageReport: StrategicPlanningCoverageReport,
 
+    MatchmakerEvaluationHub: MatchmakerEvaluationHub,
     MatchmakerApplications: MatchmakerApplications,
     MatchmakerApplicationCreate: MatchmakerApplicationCreate,
     MatchmakerApplicationDetail: MatchmakerApplicationDetail,
@@ -708,6 +709,7 @@ export const PAGES = {
     TaxonomyBuilder: TaxonomyBuilder,
     ProgramPortfolioPlanner: ProgramPortfolioPlanner,
     CampaignPlanner: CampaignPlanner,
+    ProgramCampaignHub: CampaignPlanner,
     WorkflowDesigner: WorkflowDesigner,
     CustomReportBuilder: CustomReportBuilder,
     MenuCoverageReport: MenuCoverageReport,

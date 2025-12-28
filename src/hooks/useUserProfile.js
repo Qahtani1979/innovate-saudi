@@ -26,7 +26,7 @@ export function useUserProfile(email, options = {}) {
             const { data, error } = await supabase
                 .from('user_profiles')
                 .select('*')
-                .eq('email', email)
+                .eq('user_email', email)
                 .maybeSingle();
 
             if (error) throw error;

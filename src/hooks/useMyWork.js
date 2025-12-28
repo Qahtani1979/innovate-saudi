@@ -14,51 +14,51 @@ export function useMyWork() {
     const { user } = useAuth();
 
     const { data: myChallenges = [], isLoading: loadingChallenges } = useQuery({
-        queryKey: ['my-challenges', user?.email],
+        queryKey: ['my-challenges', user?.id],
         queryFn: async () => {
-            if (!user?.email) return [];
+            if (!user?.id) return [];
             const { data, error } = await supabase
                 .from('challenges')
                 .select('*')
                 .eq('is_deleted', false)
-                .eq('created_by', user.email);
+                .eq('created_by', user.id);
 
             if (error) throw error;
             return data || [];
         },
-        enabled: !!user?.email
+        enabled: !!user?.id
     });
 
     const { data: myPilots = [], isLoading: loadingPilots } = useQuery({
-        queryKey: ['my-pilots', user?.email],
+        queryKey: ['my-pilots', user?.id],
         queryFn: async () => {
-            if (!user?.email) return [];
+            if (!user?.id) return [];
             const { data, error } = await supabase
                 .from('pilots')
                 .select('*')
                 .eq('is_deleted', false)
-                .eq('created_by', user.email);
+                .eq('created_by', user.id);
 
             if (error) throw error;
             return data || [];
         },
-        enabled: !!user?.email
+        enabled: !!user?.id
     });
 
     const { data: myTasks = [], isLoading: loadingTasks } = useQuery({
-        queryKey: ['my-tasks', user?.email],
+        queryKey: ['my-tasks', user?.id],
         queryFn: async () => {
-            if (!user?.email) return [];
+            if (!user?.id) return [];
             const { data, error } = await supabase
                 .from('tasks')
                 .select('*')
-                .eq('assigned_to', user.email)
+                .eq('assigned_to', user.id)
                 .neq('status', 'completed');
 
             if (error) throw error;
             return data || [];
         },
-        enabled: !!user?.email
+        enabled: !!user?.id
     });
 
     // AI Prioritization Logic

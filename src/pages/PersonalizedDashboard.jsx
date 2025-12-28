@@ -18,7 +18,7 @@ function PersonalizedDashboard() {
   const [aiSummary, setAiSummary] = useState(null);
   const { invokeAI, status, isLoading: loading, rateLimitInfo, isAvailable } = useAIWithFallback();
 
-  const { myTasks, myApprovals, myChallenges, myPilots } = usePersonalizedDashboardData(currentUser?.email);
+  const { myTasks, myApprovals, myChallenges, myPilots } = usePersonalizedDashboardData(currentUser?.id);
 
   const generateAIDailySummary = async () => {
     const { success, data } = await invokeAI({

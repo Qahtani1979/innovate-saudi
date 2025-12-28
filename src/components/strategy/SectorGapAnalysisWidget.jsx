@@ -3,6 +3,12 @@ import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility
 import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
 import { useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { AlertCircle } from 'lucide-react';
+import { useLanguage } from '../LanguageContext';
+import { useTaxonomy } from '@/hooks/useTaxonomy';
 
 /**
  * AI-powered sector gap analysis from strategic plans

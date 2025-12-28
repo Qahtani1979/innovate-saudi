@@ -26,7 +26,7 @@ function MyPartnershipsPage() {
     isLoading,
     isEmpty,
     totalPages
-  } = useMyPartnerships(user?.email, { page });
+  } = useMyPartnerships(user?.email, { page, userId: user?.id });
 
   return (
     <div className="space-y-6">

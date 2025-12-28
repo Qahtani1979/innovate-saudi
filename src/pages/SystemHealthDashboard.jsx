@@ -1,6 +1,8 @@
 import { useSystemAnalytics } from '@/hooks/useSystemAnalytics';
 import { useExpertAnalytics } from '@/hooks/useExpertAnalytics';
 import { useLanguage } from '../components/LanguageContext';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Activity, CheckCircle, TrendingUp, Database, Zap, Users } from 'lucide-react';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import SecurityHeadersConfig from '@/components/security/SecurityHeadersConfig';

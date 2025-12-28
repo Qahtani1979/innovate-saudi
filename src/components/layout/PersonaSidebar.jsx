@@ -28,27 +28,27 @@ export default function PersonaSidebar({ isOpen, onClose }) {
     return menuConfig.items.filter((item) => {
       // Always show items without permission requirements (like Home)
       if (!item.permission && !item.anyPermission && !item.roles) return true;
-      
+
       // Admin sees everything
       if (isAdmin) return true;
-      
+
       // Check role-based restriction first
       if (item.roles && item.roles.length > 0) {
-        if (!item.roles.some(r => roles.includes(r))) {
+        if (!item.roles.some(r => (roles || []).includes(r))) {
           return false;
         }
       }
-      
+
       // Check anyPermission (user needs at least one)
       if (item.anyPermission && item.anyPermission.length > 0) {
         return hasAnyPermission(item.anyPermission);
       }
-      
+
       // Check single permission
       if (item.permission) {
         return hasPermission(item.permission);
       }
-      
+
       return true;
     });
   }, [menuConfig.items, hasPermission, hasAnyPermission, roles, isAdmin]);
@@ -56,15 +56,15 @@ export default function PersonaSidebar({ isOpen, onClose }) {
   // Build link path with municipality ID for pages that need it
   const buildLinkPath = (item) => {
     if (item.path) return item.path;
-    
+
     let basePath = createPageUrl(item.name);
-    
+
     // For pages that need municipality ID, append it as query param
     if (item.useMyMunicipality && userMunicipality?.id) {
       const separator = basePath.includes('?') ? '&' : '?';
       return `${basePath}${separator}id=${userMunicipality.id}`;
     }
-    
+
     return basePath;
   };
 
@@ -72,7 +72,7 @@ export default function PersonaSidebar({ isOpen, onClose }) {
     <>
       {/* Backdrop for mobile */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={onClose}
         />
@@ -84,8 +84,8 @@ export default function PersonaSidebar({ isOpen, onClose }) {
         className={cn(
           "fixed top-16 bottom-0 z-40 w-64 bg-background border-border transition-transform duration-300 ease-in-out",
           isRTL ? "right-0 border-l" : "left-0 border-r",
-          isOpen 
-            ? "translate-x-0" 
+          isOpen
+            ? "translate-x-0"
             : isRTL ? "translate-x-full" : "-translate-x-full"
         )}
       >
@@ -105,7 +105,7 @@ export default function PersonaSidebar({ isOpen, onClose }) {
               </p>
             </div>
             {/* Mobile close button */}
-            <button 
+            <button
               onClick={onClose}
               className={cn(
                 "lg:hidden p-1.5 rounded-lg bg-white/20 hover:bg-white/30 transition-colors",
@@ -123,7 +123,7 @@ export default function PersonaSidebar({ isOpen, onClose }) {
             const Icon = item.icon;
             const linkPath = buildLinkPath(item);
             const active = item.path ? location.pathname === item.path : isActive(item.name);
-            
+
             return (
               <Link
                 key={item.name}

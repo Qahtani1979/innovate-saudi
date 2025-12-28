@@ -37,7 +37,7 @@ export default function ProtectedPage(Component, options = {}) {
     // Role check
     if (requiredRoles.length > 0) {
       const userRoles = user?.assigned_roles || [];
-      const hasRequiredRole = requiredRoles.some(role => userRoles.includes(role));
+      const hasRequiredRole = requiredRoles.some(role => (userRoles || []).includes(role));
 
       if (!hasRequiredRole) {
         return fallback || (

@@ -9,7 +9,7 @@ import { GenUICard } from '@/components/copilot/widgets/GenUICard';
 import { ProposalCard } from '@/components/copilot/widgets/ProposalCard';
 import { ActionChip } from '@/components/copilot/widgets/ActionChip';
 import { TypingEffect } from '@/components/copilot/widgets/TypingEffect';
-import { Loader2, Send, Bot, User, LayoutDashboard, History } from 'lucide-react';
+import { Loader2, Send, Bot, User, LayoutDashboard, History, Sparkles } from 'lucide-react';
 import { useCopilotHistory } from '@/hooks/useCopilotHistory';
 
 export default function CopilotConsole() {

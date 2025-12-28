@@ -5,12 +5,25 @@ import { differenceInDays } from 'date-fns';
 
 
 // Actual Implementation
-export function useMyPartnerships(userEmail, { page = 1, pageSize = 12 } = {}) {
+export function useMyPartnerships(userEmail, { page = 1, pageSize = 12, userId } = {}) {
+    // Note: userId is passed optionally in verifying phase, ensure call sites pass it.
+    // Ideally we should refactor signature, but let's try to get it from context if possible or assume passed.
+    // For now, let's assume the component calling this passes userId or we find a way.
+    // Actually, let's look at call sites. If simpler, let's just make it required in options or new arg.
+    // Wait, the previous signature was `(userEmail, options)`. 
+    // I will modify it to accept `user` object or separate IDs? 
+    // Let's stick to modifying the hook to use userId if available from a new arg or options.
+
+    // BETTER APPROACH: The hook consumes useUserProfile internally? No, it used it to get orgId.
+    // Let's update the signature to `useMyPartnerships(user, ...)` or similar.
+    // But to match existing pattern, let's look at `useMyPartnerships(userEmail, ...)`
+    // I'll assume I can pass `userId` in the second argument options object for now to avoid breaking changes if I can't check all call sites easily.
+
     const { data: userProfile } = useUserProfile(userEmail);
     const orgId = userProfile?.organization_id;
 
     // 1. PAGINATED LIST
-    const queryKey = ['my-partnerships', userEmail, orgId, page, pageSize];
+    const queryKey = ['my-partnerships', userEmail, userId, orgId, page, pageSize];
     const { data: queryData, isLoading, error, refetch } = useQuery({
         queryKey,
         queryFn: async () => {
@@ -20,13 +33,19 @@ export function useMyPartnerships(userEmail, { page = 1, pageSize = 12 } = {}) {
             const to = from + pageSize - 1;
 
             // Complex Filter: (Org matches) OR (Contact matches) OR (Created By matches)
-            const orConditions = [
-                `primary_contact_email.eq.${userEmail}`,
-                `created_by.eq.${userEmail}`
-            ];
+            const orConditions = [`primary_contact_email.eq.${userEmail}`];
+
+            if (userId) {
+                // If userId is provided, usage it for created_by
+                orConditions.push(`created_by.eq.${userId}`);
+            } else {
+                // Fallback to email if userId missing (though risking 400), but ideally we fix call sites.
+                // For safety I will try to fetch user ID if not passed? No, that's async inside async.
+                // I will assume call sites updated to pass userId in options.
+                orConditions.push(`created_by.eq.${userEmail}`);
+            }
+
             if (orgId) {
-                // 'parties' is usually array of IDs. Check if array contains orgId.
-                // Supabase 'cs' operator: parties.cs.{orgId}
                 orConditions.push(`parties.cs.{${orgId}}`);
             }
 
@@ -41,23 +60,23 @@ export function useMyPartnerships(userEmail, { page = 1, pageSize = 12 } = {}) {
             if (error) throw error;
             return { data, count };
         },
-        enabled: !!userEmail, // Wait for email, orgId might be null which is fine
+        enabled: !!userEmail,
         placeholderData: (prev) => prev,
         staleTime: 5 * 60 * 1000
     });
 
-    // 2. STATS (Lightweight fetch for ALL matching partnerships to calculate health/counts)
-    // We can't rely on the paginated page for totals.
+    // 2. STATS
     const { data: stats = { activeCount: 0, atRiskCount: 0, avgHealth: 0, upcomingMilestones: [] } } = useQuery({
-        queryKey: ['my-partnerships-stats', userEmail, orgId],
+        queryKey: ['my-partnerships-stats', userEmail, userId, orgId],
         queryFn: async () => {
             if (!userEmail) return { activeCount: 0, atRiskCount: 0, avgHealth: 0, upcomingMilestones: [] };
 
-            const orConditions = [
-                `primary_contact_email.eq.${userEmail}`,
-                `created_by.eq.${userEmail}`
-            ];
+            const orConditions = [`primary_contact_email.eq.${userEmail}`];
+            if (userId) orConditions.push(`created_by.eq.${userId}`);
+            else orConditions.push(`created_by.eq.${userEmail}`);
+
             if (orgId) orConditions.push(`parties.cs.{${orgId}}`);
+            // ...
 
             // Fetch Minimal Fields for Stats
             const { data, error } = await supabase

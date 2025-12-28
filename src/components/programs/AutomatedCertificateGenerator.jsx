@@ -1,5 +1,11 @@
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useLanguage } from '../LanguageContext';
+import { Award, Download, Mail, CheckCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
-
 export default function AutomatedCertificateGenerator({ programId, graduates }) {
   const { language, t } = useLanguage();
   const [generating, setGenerating] = useState(false);
