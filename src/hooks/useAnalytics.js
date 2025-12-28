@@ -35,7 +35,7 @@ export function useAnalytics() {
 
     const trackSearch = useCallback((query, resultsCount, entityType) => {
         trackSearchMutation.mutate({ query, resultsCount, entityType });
-    }, [trackSearchMutation]);
+    }, [trackSearchMutation.mutate]);
 
     const trackActivityMutation = useMutation({
         mutationFn: async ({ activityType, activityDescription, entityType, entityId, metadata }) => {
@@ -60,7 +60,7 @@ export function useAnalytics() {
 
     const trackActivity = useCallback((activityType, activityDescription, entityType, entityId, metadata) => {
         trackActivityMutation.mutate({ activityType, activityDescription, entityType, entityId, metadata });
-    }, [trackActivityMutation]);
+    }, [trackActivityMutation.mutate]);
 
     const trackPageView = useCallback((pageName, pageUrl, metadata = {}) => {
         trackActivity('page_view', `Viewed page: ${pageName}`, 'page', null, {
