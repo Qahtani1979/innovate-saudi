@@ -170,7 +170,7 @@ export function useChallenge(challengeId) {
       if (!challengeId) return null;
       const data = await fetchWithVisibility('challenges', `
         *,
-        municipality:municipalities(id, name_en, name_ar, region_id, region:regions(id, code, name_en)),
+        municipality:municipalities(id, name_en, name_ar, region),
         sector:sectors(id, name_en, name_ar, code)
       `, {
         additionalFilters: { id: challengeId }
