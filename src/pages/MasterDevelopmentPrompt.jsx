@@ -3816,7 +3816,7 @@ const generateEmbeddings = async (entity_type, entity_id) => {
   
   if (response.data.success) {
     // Embedding stored in entity.embedding field (768 dimensions)
-    console.log('Embedding generated');
+
   }
 };
 
@@ -4383,13 +4383,13 @@ Filter menu items by permission in layout.js navigation sections`
             {t({ en: 'Master Development Prompt', ar: 'موجه التطوير الرئيسي' })}
           </h1>
           <p className="text-xl text-white/90 max-w-3xl">
-            {t({ 
+            {t({
               en: 'Complete instruction blueprint for AI-assisted platform development. Load this reference before any code generation or modification.',
               ar: 'مخطط تعليمات كامل لتطوير المنصة بمساعدة الذكاء الاصطناعي. قم بتحميل هذا المرجع قبل أي توليد أو تعديل للكود.'
             })}
           </p>
           <div className="flex items-center gap-3 mt-6">
-            <Button 
+            <Button
               className="bg-white text-purple-600 hover:bg-white/90"
               onClick={() => copyToClipboard(fullPrompt, 'full')}
             >
@@ -4708,7 +4708,7 @@ Filter menu items by permission in layout.js navigation sections`
               </div>
               <p className="text-sm text-slate-700">Pages, Components, Workflows, UI</p>
             </div>
-            
+
             <div className="flex justify-center">
               <div className="text-2xl text-slate-400">↓ uses</div>
             </div>

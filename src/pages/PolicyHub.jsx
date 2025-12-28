@@ -65,17 +65,25 @@ function PolicyHub() {
   const { updatePolicy, bulkUpdatePolicies, bulkDeletePolicies } = usePolicyMutations();
 
   // Fetch all policies with visibility
-  const { data: policies = [], isLoading } = usePoliciesWithVisibility({
+  const { data: policiesData, isLoading } = usePoliciesWithVisibility({
     status: filters.status,
     entityType: filters.entity_type,
     priority: filters.priority
   });
+  const policies = policiesData?.data || (Array.isArray(policiesData) ? policiesData : []);
 
   // Fetch related entities with visibility
-  const { data: challenges = [] } = useChallengesWithVisibility();
-  const { data: pilots = [] } = usePilotsWithVisibility();
-  const { data: rdProjects = [] } = useRDProjectsWithVisibility();
-  const { data: programs = [] } = useProgramsWithVisibility();
+  const { data: challengesData } = useChallengesWithVisibility();
+  const challenges = challengesData?.data || (Array.isArray(challengesData) ? challengesData : []);
+
+  const { data: pilotsData } = usePilotsWithVisibility();
+  const pilots = pilotsData?.data || (Array.isArray(pilotsData) ? pilotsData : []);
+
+  const { data: rdProjectsData } = useRDProjectsWithVisibility();
+  const rdProjects = rdProjectsData?.data || (Array.isArray(rdProjectsData) ? rdProjectsData : []);
+
+  const { data: programsData } = useProgramsWithVisibility();
+  const programs = programsData?.data || (Array.isArray(programsData) ? programsData : []);
 
 
 
@@ -352,7 +360,7 @@ function PolicyHub() {
       {showSemanticSearch && (
         <PolicySemanticSearch onResultsFound={(results) => {
           // Handle results - maybe filter the list or show a modal
-          console.log('Semantic search results:', results);
+
           toast.info(t({ en: 'Search results found', ar: 'تم العثور على نتائج' }));
         }} />
       )}

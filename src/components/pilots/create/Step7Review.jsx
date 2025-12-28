@@ -1,7 +1,6 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Clock, MapPin, Shield, Users, Coins, Target } from 'lucide-react';
+import { CheckCircle2, Clock, MapPin, Users, Coins, Target } from 'lucide-react';
 
 export default function Step7Review({ formData, t, language }) {
     // Helper to safely display values

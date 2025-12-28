@@ -18,7 +18,7 @@ import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { useMatchingEntities } from '@/hooks/useMatchingEntities';
 import { usePrograms } from '@/hooks/usePrograms';
-import { usePolicies } from '@/hooks/usePolicies';
+import { usePolicyTemplates } from '@/hooks/usePolicies';
 import { usePolicyMutations } from '@/hooks/usePolicyMutations';
 import StrategicPlanSelector from '@/components/strategy/StrategicPlanSelector';
 
@@ -94,7 +94,9 @@ function PolicyCreate() {
             setCurrentStep(2);
           }
         }
-      } catch (e) { }
+      } catch (e) {
+        console.warn('Failed to parse policy draft:', e);
+      }
     }
   }, []);
 
@@ -106,7 +108,6 @@ function PolicyCreate() {
   const { programs } = usePrograms();
 
   // Fetch templates
-  const { usePolicyTemplates } = usePolicies();
   const { data: allTemplates = [] } = usePolicyTemplates();
 
   // Mutations
@@ -191,7 +192,7 @@ function PolicyCreate() {
       try {
         await generateEmbedding.mutateAsync();
       } catch (error) {
-        console.log('Embedding generation skipped');
+
       }
 
       localStorage.removeItem('policy_draft');

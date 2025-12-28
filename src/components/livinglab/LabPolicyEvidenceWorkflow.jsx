@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../LanguageContext';
 import { Beaker, FileText, Sparkles, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import {
   POLICY_EVIDENCE_SYSTEM_PROMPT,

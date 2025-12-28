@@ -13,16 +13,16 @@ import { Link } from 'react-router-dom';
 const NationalStrategyLinkerPage = () => {
   const { t } = useLanguage();
   const { activePlanId, activePlan, strategicPlans, setActivePlanId, isLoading } = useActivePlan();
-  
+
   // Extract objectives from active plan's JSONB objectives field
   const objectives = useMemo(() => {
     if (!activePlan?.objectives) return [];
-    
+
     // Handle both array format and object format
-    const objArray = Array.isArray(activePlan.objectives) 
-      ? activePlan.objectives 
+    const objArray = Array.isArray(activePlan.objectives)
+      ? activePlan.objectives
       : Object.values(activePlan.objectives);
-    
+
     return objArray.map((obj, index) => ({
       id: obj.id || `obj-${index}`,
       title_en: obj.name_en || obj.title_en || obj.title || `Objective ${index + 1}`,
@@ -34,7 +34,7 @@ const NationalStrategyLinkerPage = () => {
   }, [activePlan]);
 
   const handleSave = (data) => {
-    console.log('Alignments saved:', data);
+
   };
 
   // Show plan selector if no plans exist or no plan selected
@@ -43,7 +43,7 @@ const NationalStrategyLinkerPage = () => {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <ActivePlanBanner />
-      
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">{t({ en: 'National Strategy Alignment', ar: 'مواءمة الاستراتيجية الوطنية' })}</h1>
@@ -51,7 +51,7 @@ const NationalStrategyLinkerPage = () => {
             {t({ en: 'Link your strategic plan objectives to national strategies', ar: 'ربط أهداف خطتك الاستراتيجية بالاستراتيجيات الوطنية' })}
           </p>
         </div>
-        
+
         {strategicPlans.length > 0 && (
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">
@@ -84,9 +84,9 @@ const NationalStrategyLinkerPage = () => {
                   {t({ en: 'No Strategic Plans Found', ar: 'لم يتم العثور على خطط استراتيجية' })}
                 </h3>
                 <p className="text-sm text-amber-700 mt-1">
-                  {t({ 
-                    en: 'Create a strategic plan first to link objectives to national strategies.', 
-                    ar: 'قم بإنشاء خطة استراتيجية أولاً لربط الأهداف بالاستراتيجيات الوطنية.' 
+                  {t({
+                    en: 'Create a strategic plan first to link objectives to national strategies.',
+                    ar: 'قم بإنشاء خطة استراتيجية أولاً لربط الأهداف بالاستراتيجيات الوطنية.'
                   })}
                 </p>
               </div>
@@ -112,9 +112,9 @@ const NationalStrategyLinkerPage = () => {
                   {t({ en: 'No Objectives in This Plan', ar: 'لا توجد أهداف في هذه الخطة' })}
                 </h3>
                 <p className="text-sm text-amber-700 mt-1">
-                  {t({ 
-                    en: 'The selected strategic plan has no objectives. Add objectives to link them to national strategies.', 
-                    ar: 'الخطة الاستراتيجية المحددة لا تحتوي على أهداف. أضف أهدافًا لربطها بالاستراتيجيات الوطنية.' 
+                  {t({
+                    en: 'The selected strategic plan has no objectives. Add objectives to link them to national strategies.',
+                    ar: 'الخطة الاستراتيجية المحددة لا تحتوي على أهداف. أضف أهدافًا لربطها بالاستراتيجيات الوطنية.'
                   })}
                 </p>
               </div>
@@ -127,14 +127,14 @@ const NationalStrategyLinkerPage = () => {
           </CardContent>
         </Card>
       )}
-      
+
       {/* Show linker component when we have a plan with objectives */}
       {activePlan && objectives.length > 0 && (
-        <NationalStrategyLinker 
+        <NationalStrategyLinker
           strategicPlanId={activePlanId}
           strategicPlan={activePlan}
           objectives={objectives}
-          onSave={handleSave} 
+          onSave={handleSave}
         />
       )}
     </div>

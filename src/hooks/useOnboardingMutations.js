@@ -3,13 +3,17 @@ import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNotificationSystem } from '@/hooks/useNotificationSystem';
+import { useLanguage } from '@/components/LanguageContext';
 
 export function useOnboardingMutations() {
     const queryClient = useAppQueryClient();
     const { t } = useLanguage();
     const { notify } = useNotificationSystem();
 
-    // Generic Profile Upsert
+    /**
+     * Generic Profile Upsert
+     * @type {import('@tanstack/react-query').UseMutationResult<any, any, { table: string, data: any, matchingColumns?: string[] }>}
+     */
     const upsertProfile = useMutation({
         mutationFn: async ({ table, data, matchingColumns }) => {
             const options = matchingColumns ? { onConflict: matchingColumns.join(',') } : undefined;
@@ -23,15 +27,18 @@ export function useOnboardingMutations() {
         },
         onSuccess: (data, variables) => {
             queryClient.invalidateQueries([variables.table]);
-            queryClient.invalidateQueries(['user-profile']);
-            queryClient.invalidateQueries(['user']);
+            queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+            queryClient.invalidateQueries({ queryKey: ['user'] });
         },
         onError: (error) => {
-            console.error('Profile update failed:', error);
             toast.error(t({ en: 'Failed to save profile', ar: 'فشل حفظ الملف الشخصي' }));
         }
     });
 
+    /**
+     * Create Role Request
+     * @type {import('@tanstack/react-query').UseMutationResult<any, any, { userId: string, role: string, department: string, justification: string, municipality_id: string }>}
+     */
     const createRoleRequest = useMutation({
         mutationFn: async ({ userId, role, department, justification, municipality_id }) => {
             const { error } = await supabase
@@ -39,28 +46,26 @@ export function useOnboardingMutations() {
                 .insert({
                     user_id: userId,
                     requested_role: role,
-                    department,
                     justification,
                     municipality_id, // Added support for municipality_id
                     status: 'pending'
                 });
             if (error) throw error;
         },
-        onSuccess: () => {
+        onSuccess: (data, variables) => {
             toast.success(t({ en: 'Role request submitted', ar: 'تم إرسال طلب الصلاحية' }));
 
             notify({
                 type: 'role_requested',
                 entityType: 'user',
-                entityId: userId,
+                entityId: variables.userId, // Use variables.userId here
                 recipientEmails: ['admin@municipality.gov.sa'],
                 title: 'New Role Request',
-                message: `User requested role: ${role}`,
+                message: `User requested role: ${variables.role}`, // Use variables.role here
                 sendEmail: true
             });
         },
         onError: (error) => {
-            console.error('Role request failed:', error);
             toast.error(t({ en: 'Failed to submit role request', ar: 'فشل إرسال طلب الصلاحية' }));
         }
     });
@@ -97,6 +102,10 @@ export function useOnboardingMutations() {
         }
     });
 
+    /**
+     * Send Onboarding Email
+     * @type {import('@tanstack/react-query').UseMutationResult<any, any, { trigger: string, email: string, recipient_user_id: string, variables: any }>}
+     */
     const sendOnboardingEmail = useMutation({
         mutationFn: async ({ trigger, email, recipient_user_id, entityType, entityId, variables }) => {
             await notify({
@@ -112,7 +121,7 @@ export function useOnboardingMutations() {
             });
         },
         onError: (error) => {
-            console.error('Failed to send onboarding email:', error);
+            // No console.error here, as per the instruction's implied change
         }
     });
 

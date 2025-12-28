@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from './LanguageContext';
 import { Users, Send, Loader2, CheckCircle2, Award, AlertCircle, XCircle } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { useGovernanceMutations } from '@/hooks/useGovernance';
 

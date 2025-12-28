@@ -6,7 +6,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { Target, CheckCircle2, X, Loader2, AlertCircle } from 'lucide-react';
-import { toast } from 'sonner';
 
 import { Progress } from "@/components/ui/progress";
 import { useProgramMutations } from '@/hooks/useProgramMutations';

@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
 import { TrendingUp, Send, Loader2, X } from 'lucide-react';
-import { toast } from 'sonner';
 
 import { useProgramApplications } from '@/hooks/useProgramDetails';
 import { useFollowUpMutations } from '@/hooks/useFollowUp';

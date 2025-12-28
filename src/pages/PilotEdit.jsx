@@ -26,7 +26,6 @@ import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';
 import { useLocations } from '@/hooks/useLocations';
 import { useLivingLabs } from '@/hooks/useLivingLabs';
 import { useSandboxes } from '@/hooks/useSandboxes';
-import { buildPrompt } from '@/lib/ai/promptBuilder';
 
 function PilotEditPage() {
   const urlParams = new URLSearchParams(window.location.search);

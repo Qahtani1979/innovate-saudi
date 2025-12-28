@@ -9,8 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 
 export function useChallengeRealtime(options = {}) {
   const queryClient = useAppQueryClient();
-  const { 
-    enabled = true, 
+  const {
+    enabled = true,
     challengeId = null,
     onInsert = null,
     onUpdate = null,
@@ -22,7 +22,7 @@ export function useChallengeRealtime(options = {}) {
 
   // Handle realtime payload
   const handlePayload = useCallback((payload) => {
-    console.log('[ChallengeRealtime] Received:', payload.eventType, payload);
+
     setLastEvent({ type: payload.eventType, timestamp: new Date().toISOString() });
 
     // Invalidate relevant queries
@@ -53,11 +53,11 @@ export function useChallengeRealtime(options = {}) {
       return;
     }
 
-    console.log('[ChallengeRealtime] Setting up subscription', { challengeId });
+
 
     // Create channel for challenges table
-    const channelName = challengeId 
-      ? `challenges-realtime-${challengeId}` 
+    const channelName = challengeId
+      ? `challenges-realtime-${challengeId}`
       : 'challenges-realtime-all';
 
     const channel = supabase
@@ -81,7 +81,7 @@ export function useChallengeRealtime(options = {}) {
           ...(challengeId && { filter: `challenge_id=eq.${challengeId}` })
         },
         (payload) => {
-          console.log('[ChallengeRealtime] Activity update:', payload);
+
           if (challengeId) {
             queryClient.invalidateQueries({ queryKey: ['challenge-activities', challengeId] });
           }
@@ -96,7 +96,7 @@ export function useChallengeRealtime(options = {}) {
           ...(challengeId && { filter: `challenge_id=eq.${challengeId}` })
         },
         (payload) => {
-          console.log('[ChallengeRealtime] Proposal update:', payload);
+
           if (challengeId) {
             queryClient.invalidateQueries({ queryKey: ['challenge-proposals', challengeId] });
           }
@@ -105,13 +105,13 @@ export function useChallengeRealtime(options = {}) {
 
     // Subscribe and track connection state
     channel.subscribe((status) => {
-      console.log('[ChallengeRealtime] Subscription status:', status);
+
       setConnectionState(status === 'SUBSCRIBED' ? 'connected' : status.toLowerCase());
     });
 
     // Cleanup on unmount (rt-2: Subscription cleans up on unmount)
     return () => {
-      console.log('[ChallengeRealtime] Cleaning up subscription');
+
       supabase.removeChannel(channel);
       setConnectionState('disconnected');
     };

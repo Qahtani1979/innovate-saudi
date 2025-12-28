@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
 import { Users, Handshake, MessageSquare, Building2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import { usePartnerships, useStartups } from '@/hooks/useStartupEcosystem';
 

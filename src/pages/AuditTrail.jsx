@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../components/LanguageContext';
-import { FileText, Search, User, Calendar, Activity, Edit2, Trash2, Plus, Eye, RefreshCw, Filter, Settings, Shield, Download } from 'lucide-react';
+import { FileText, Search, User, Calendar, Activity, Edit2, Trash2, Plus, Eye, RefreshCw } from 'lucide-react';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from 'date-fns';

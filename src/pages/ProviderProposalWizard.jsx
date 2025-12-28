@@ -11,7 +11,6 @@ import { useLanguage } from '../components/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { FileText, CheckCircle2, Send } from 'lucide-react';
-import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
 import { CitizenPageLayout, CitizenPageHeader } from '@/components/citizen/CitizenPageLayout';

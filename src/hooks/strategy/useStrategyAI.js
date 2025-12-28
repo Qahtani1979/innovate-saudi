@@ -93,7 +93,7 @@ export function useStrategyAI({ wizardData, updateData, sectors, planId }) {
             let data = null;
 
             if (useSpecializedFunction) {
-                console.log(`[Wizard AI] Using specialized edge function: ${edgeFunctionName} for step ${step}`);
+
 
                 const requestBody = {
                     strategic_plan_id: planId,
@@ -125,7 +125,7 @@ export function useStrategyAI({ wizardData, updateData, sectors, planId }) {
                 success = fnData?.success !== false;
                 data = fnData?.data || fnData;
             } else {
-                console.log(`[Wizard AI] Using generic invoke-llm for step ${step}`);
+
                 const { STRATEGY_WIZARD_SYSTEM_PROMPT } = await import('@/lib/ai/prompts/strategy/wizard');
 
                 const result = await invokeAI({
@@ -225,8 +225,8 @@ export function useStrategyAI({ wizardData, updateData, sectors, planId }) {
                         realUniquenessScore = similarityData.uniqueness_score;
                         scoreDetails = similarityData;
                     }
-                } catch (e) {
-                    console.warn('Similarity check failed', e);
+                } catch (similarityError) {
+                    console.warn('Similarity check error:', similarityError);
                 }
 
                 return {

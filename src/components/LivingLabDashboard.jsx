@@ -1,4 +1,3 @@
-import React from 'react';
 import { useLivingLabs } from '@/hooks/useLivingLabs';
 import { useLivingLabBookings, useLivingLabProjectBookings } from '@/hooks/useLivingLabBookings';
 import { usePilotsList } from '@/hooks/usePilots';

@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from './LanguageContext';
 import { Rocket, X, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useLivingLabMutations } from '@/hooks/useLivingLab';
 
 export default function LivingLabLaunchChecklist({ lab, onClose }) {

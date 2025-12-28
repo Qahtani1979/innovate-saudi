@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { usePublicIdeas, useIdeaVotes, useIdeaVoteMutation } from '@/hooks/useCitizenParticipation';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { toast } from 'sonner';
 import {
   Lightbulb, ThumbsUp, TrendingUp, Plus, Calendar, Loader2, ArrowRight
 } from 'lucide-react';

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '../LanguageContext';
 import { Award, CheckCircle2, AlertCircle, Loader2, Star, Users, Calendar, BarChart3 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import EvaluationConsensusPanel from '@/components/evaluation/EvaluationConsensusPanel';
 import { useExpertEvaluations, useExpertEvaluation, useExpertEvaluationMutations } from '@/hooks/useExpertEvaluations';

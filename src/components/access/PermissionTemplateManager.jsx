@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { usePermissionTemplates, usePermissionTemplateMutations } from '@/hooks/usePermissionTemplates';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { toast } from 'sonner';
 import {
   Copy, Save, Trash2, Plus, Shield, FileText
 } from 'lucide-react';

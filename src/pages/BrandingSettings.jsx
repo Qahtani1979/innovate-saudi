@@ -83,7 +83,7 @@ function BrandingSettings() {
     });
     if (result.success) {
       toast.success(t({ en: 'AI analysis complete', ar: 'اكتمل التحليل الذكي' }));
-      console.log('AI Branding Recommendations:', result.data);
+
     }
   };
 

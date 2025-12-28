@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { useStartups, useStartupProfiles } from '../hooks/useStartupProfiles';
+import { useStartups } from '../hooks/useStartupProfiles';
 import { useStartupVerifications, useStartupVerificationMutations } from '../hooks/useStartupVerification';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,6 @@ import { useLanguage } from '../components/LanguageContext';
 import {
   Shield, CheckCircle2, XCircle, Clock, Building2
 } from 'lucide-react';
-import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 

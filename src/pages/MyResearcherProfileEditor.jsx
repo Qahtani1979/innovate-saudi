@@ -11,7 +11,6 @@ import { useAuth } from '@/lib/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { GraduationCap, Save, ArrowLeft, Plus, X, Loader2, Link2 } from 'lucide-react';
-import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import ProfileVisibilityControl from '@/components/users/ProfileVisibilityControl';

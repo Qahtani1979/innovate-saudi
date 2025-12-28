@@ -17,7 +17,6 @@ import {
   MoreVertical,
   CheckCircle,
   XCircle,
-  Mail,
   Download,
   Loader2,
   UserPlus

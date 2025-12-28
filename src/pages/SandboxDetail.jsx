@@ -12,7 +12,7 @@ import {
   Shield, MapPin, TestTube, CheckCircle2, AlertCircle, Sparkles,
   Activity, Building2, Wifi, Database, Zap, Users, Phone, Mail,
   Clock, DollarSign, FileText, Image, Video, Globe, Calendar,
-  BarChart3, TrendingUp, Award, Loader2, X, Target
+  BarChart3, TrendingUp, Award, Loader2, X
 } from 'lucide-react';
 import SandboxCapacityManager from '../components/SandboxCapacityManager';
 import SandboxApplicationWizard from '../components/SandboxApplicationWizard';

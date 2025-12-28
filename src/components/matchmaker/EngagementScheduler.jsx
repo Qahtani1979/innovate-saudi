@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { useMatchEngagements, useMatchEngagementMutations } from '@/hooks/useMatchmakerEngagements';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useLanguage } from '../LanguageContext';
-import { Calendar, Clock, MessageSquare, Video, Mail, CheckCircle2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { Calendar, MessageSquare, Video, Mail } from 'lucide-react';
 
 export default function EngagementScheduler({ matchId }) {
     const { t, isRTL } = useLanguage();

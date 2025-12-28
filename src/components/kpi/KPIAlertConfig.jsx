@@ -141,7 +141,7 @@ export default function KPIAlertConfig({ kpis = [] }) {
       } : null
     }));
 
-    console.log('Saving alerts with strategic context:', alertData);
+
     toast.success(t({ en: 'Alert rules saved with strategic thresholds', ar: 'تم حفظ قواعد التنبيه مع العتبات الاستراتيجية' }));
   };
 

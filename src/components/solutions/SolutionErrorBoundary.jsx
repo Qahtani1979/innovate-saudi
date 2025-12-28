@@ -43,8 +43,8 @@ class SolutionErrorBoundary extends React.Component {
               <p className="text-muted-foreground text-sm">
                 An error occurred while loading this page. Please try again or return to the Solutions list.
               </p>
-              
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+
+              {import.meta.env.DEV && this.state.error && (
                 <details className="text-left bg-muted p-3 rounded text-xs">
                   <summary className="cursor-pointer font-medium">Error Details</summary>
                   <pre className="mt-2 whitespace-pre-wrap text-destructive">
@@ -52,7 +52,7 @@ class SolutionErrorBoundary extends React.Component {
                   </pre>
                 </details>
               )}
-              
+
               <div className="flex gap-3 justify-center pt-2">
                 <Button variant="outline" onClick={this.handleRetry}>
                   <RefreshCw className="h-4 w-4 mr-2" />

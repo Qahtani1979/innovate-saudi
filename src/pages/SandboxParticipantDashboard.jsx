@@ -10,7 +10,6 @@ import { useLanguage } from '../components/LanguageContext';
 import {
   Shield, Activity, FileText, AlertCircle, Upload
 } from 'lucide-react';
-import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
 

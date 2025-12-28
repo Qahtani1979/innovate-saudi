@@ -8,7 +8,6 @@ import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Responsi
 import useAIWithFallback, { AI_STATUS } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator, { AIOptionalBadge } from '@/components/ai/AIStatusIndicator';
 import { MATCH_SUCCESS_PREDICTOR_PROMPT_TEMPLATE } from '@/lib/ai/prompts/matchmaker';
-import { getSystemPrompt } from '@/lib/saudiContext';
 
 export default function AIMatchSuccessPredictor({ match, provider, challenge }) {
   const { t } = useLanguage();

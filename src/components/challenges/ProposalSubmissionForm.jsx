@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../LanguageContext';
 import { Send, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import { useChallengeProposalMutations } from '@/hooks/useChallengeProposalMutations';
@@ -47,7 +46,7 @@ export default function ProposalSubmissionForm({ challenge, onSuccess, onCancel 
       onSuccess: async (proposal) => {
         // Trigger email notification for proposal submission
         await triggerEmail('challenge.proposal_received', {
-          entityType: 'challenge_proposal',
+          entity_type: 'challenge_proposal',
           entityId: proposal.id,
           variables: {
             proposal_title: formData.proposal_title,
@@ -180,11 +179,11 @@ export default function ProposalSubmissionForm({ challenge, onSuccess, onCancel 
           {t({ en: 'Cancel', ar: 'إلغاء' })}
         </Button>
         <Button
-          onClick={() => submitMutation.mutate(formData)}
-          disabled={submitMutation.isPending || !formData.proposal_text}
+          onClick={() => handleSubmit(formData)}
+          disabled={createProposal.isPending || !formData.proposal_text}
           className="bg-gradient-to-r from-green-600 to-teal-600"
         >
-          {submitMutation.isPending ? (
+          {createProposal.isPending ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               {t({ en: 'Submitting...', ar: 'جاري الإرسال...' })}

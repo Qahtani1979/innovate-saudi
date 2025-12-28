@@ -3,7 +3,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThumbsUp, MessageSquare, MapPin, TrendingUp } from 'lucide-react';
-import { toast } from 'sonner';
 import { useCitizenIdeasWithVisibility } from '@/hooks/useCitizenIdeasWithVisibility';
 import { useVoteOnIdea } from '@/hooks/useCitizenIdeas';
 

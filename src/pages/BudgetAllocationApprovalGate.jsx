@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../components/LanguageContext';
 import { CheckCircle2, XCircle, Clock } from 'lucide-react';
-import { toast } from 'sonner';
 
 export default function BudgetAllocationApprovalGate() {
   const { language, isRTL, t } = useLanguage();

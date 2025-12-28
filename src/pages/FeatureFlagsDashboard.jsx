@@ -73,7 +73,7 @@ Suggest:
 
     if (result.success) {
       toast.success(t({ en: 'Experiment designed', ar: 'تم تصميم التجربة' }));
-      console.log('Experiment Design:', result.data);
+
     }
   };
 

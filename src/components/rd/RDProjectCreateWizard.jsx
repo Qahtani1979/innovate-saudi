@@ -13,7 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react';
-import { toast } from 'sonner';
 import AIProposalWriter from './AIProposalWriter';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 

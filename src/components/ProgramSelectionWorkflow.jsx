@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from './LanguageContext';
 import { Award, CheckCircle2, X, Loader2, Mail, XCircle } from 'lucide-react';
-import { toast } from 'sonner';
 
 import { useProgramApplications } from '@/hooks/useProgramDetails';
 import { useProgramMutations } from '@/hooks/useProgramMutations';

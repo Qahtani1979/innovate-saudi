@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import {
@@ -38,7 +38,6 @@ import {
 } from 'lucide-react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { toast } from 'sonner';
 import ExportData from '../components/ExportData';
 import PilotsAIInsights from '../components/pilots/PilotsAIInsights';
 import ProtectedPage from '../components/permissions/ProtectedPage';

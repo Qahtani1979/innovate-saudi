@@ -5,7 +5,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { useRDCallMutations } from '@/hooks/useRDCallMutations';
-import { toast } from 'sonner';
 import { CheckCircle2, X, AlertTriangle, Send, Loader2 } from 'lucide-react';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 

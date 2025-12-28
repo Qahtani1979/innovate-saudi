@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Plus, Edit, Trash2, Save, X, ArrowUp, ArrowDown } from 'lucide-react';
-import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
@@ -163,7 +162,9 @@ function PolicyTemplateManagerPage() {
                     try {
                       const parsed = JSON.parse(e.target.value);
                       setEditingTemplate({ ...editingTemplate, template_data: parsed });
-                    } catch (err) { }
+                    } catch (err) {
+                      console.warn('Invalid JSON:', err);
+                    }
                   }}
                   rows={12}
                   className="font-mono text-xs"

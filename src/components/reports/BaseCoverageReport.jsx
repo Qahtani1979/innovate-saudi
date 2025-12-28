@@ -5,7 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import {
     CheckCircle2, XCircle, AlertTriangle, Target, TrendingUp,
     ChevronDown, ChevronRight, Sparkles, Database, Workflow,
-    Users, Network, FileText, Brain, Shield, ArrowLeftRight
+    Users, Network, Brain, Shield, ArrowLeftRight
 } from 'lucide-react';
 
 /**

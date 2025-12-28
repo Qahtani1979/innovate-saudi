@@ -25,7 +25,6 @@ import {
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Edit, Loader2, X } from 'lucide-react';
-import { toast } from 'sonner';
 import { usePermissions } from '@/hooks/usePermissions';
 import {
   Select,

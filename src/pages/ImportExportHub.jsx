@@ -17,9 +17,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from 'sonner';
 import {
-  Upload, Download, FileSpreadsheet, FileText, Database,
+  Upload, Download,
   Loader2, CheckCircle, FileUp,
-  History, Wand2, Filter, XCircle, Sparkles
+  History, Filter
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import ProtectedPage from '@/components/permissions/ProtectedPage';

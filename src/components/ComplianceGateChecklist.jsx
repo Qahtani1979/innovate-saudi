@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from './LanguageContext';
 import { Shield, CheckCircle2, Circle, Loader2, AlertTriangle } from 'lucide-react';
-import { toast } from 'sonner';
 import { useGovernanceMutations } from '@/hooks/useGovernance';
 
 function ComplianceGateChecklist({ pilot, onClose }) {

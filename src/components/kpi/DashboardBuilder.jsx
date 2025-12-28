@@ -113,7 +113,7 @@ export default function DashboardBuilder({ kpis = [] }) {
       created_at: new Date().toISOString()
     };
 
-    console.log('Saving dashboard:', dashboardData);
+
     toast.success(t({ en: 'Dashboard saved with strategic KPI links', ar: 'تم حفظ اللوحة مع روابط مؤشرات الأداء الاستراتيجية' }));
   };
 

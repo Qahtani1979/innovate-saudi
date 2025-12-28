@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { User, Calendar, Target, DollarSign, Clock } from 'lucide-react';
+import { User, Calendar, DollarSign, Clock } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AIProposalScreening from '../components/citizen/AIProposalScreening';
 import StakeholderAlignmentGate from '../components/citizen/StakeholderAlignmentGate';

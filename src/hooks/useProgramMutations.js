@@ -78,9 +78,7 @@ export function useProgramMutations() {
                             requester_email: user?.email
                         }
                     });
-                } catch (e) {
-                    console.warn('Notification failed:', e);
-                }
+                } catch (e) { console.warn('Notification failed:', e); }
             } else {
                 try {
                     await notify({

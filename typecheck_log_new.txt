@@ -1,0 +1,5 @@
+
+> innovate-saudi-app@0.0.0 typecheck
+> tsc -p ./jsconfig.json
+
+src/pages/PolicyTemplateManager.jsx(167,19): error TS1472: 'catch' or 'finally' expected.

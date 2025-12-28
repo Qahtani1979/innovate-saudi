@@ -59,7 +59,7 @@ function TemplateLibrary() {
     ]
   };
 
-  const useTemplate = (template) => {
+  const handleUseTemplate = (template) => {
     toast.success(t({ en: `Template "${template.name.en}" cloned`, ar: `تم استنساخ القالب "${template.name.ar}"` }));
   };
 
@@ -108,7 +108,7 @@ function TemplateLibrary() {
                         <Eye className="h-3 w-3 mr-2" />
                         {t({ en: 'Preview', ar: 'معاينة' })}
                       </Button>
-                      <Button size="sm" className="flex-1 bg-blue-600" onClick={() => useTemplate(template)}>
+                      <Button size="sm" className="flex-1 bg-blue-600" onClick={() => handleUseTemplate(template)}>
                         <Copy className="h-3 w-3 mr-2" />
                         {t({ en: 'Use', ar: 'استخدام' })}
                       </Button>

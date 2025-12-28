@@ -52,7 +52,7 @@ export function useEvaluationQueue() {
                         entity_id: selectedEntity.id
                     }
                 });
-                // eslint-disable-next-line no-empty
+                 
             } catch (e) {
                 console.error('Error invoking checkConsensus:', e);
             }

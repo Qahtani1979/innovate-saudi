@@ -12,8 +12,8 @@ import ActivePlanBanner from '@/components/strategy/ActivePlanBanner';
 const SectorStrategyPage = () => {
   const { t, language, isRTL } = useLanguage();
   const { activePlan, activePlanId, isLoading } = useActivePlan();
-  
-  const handleSave = (data) => console.log('Sector strategies saved:', data);
+
+  const handleSave = (data) => { };
 
   return (
     <div className="container mx-auto p-6 space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -49,9 +49,9 @@ const SectorStrategyPage = () => {
               {t({ en: 'No Strategic Plan Selected', ar: 'لم يتم اختيار خطة استراتيجية' })}
             </CardTitle>
             <CardDescription>
-              {t({ 
-                en: 'Please select a strategic plan from the Strategy Hub to create sector-specific strategies.', 
-                ar: 'يرجى اختيار خطة استراتيجية من مركز الاستراتيجية لإنشاء استراتيجيات خاصة بالقطاع.' 
+              {t({
+                en: 'Please select a strategic plan from the Strategy Hub to create sector-specific strategies.',
+                ar: 'يرجى اختيار خطة استراتيجية من مركز الاستراتيجية لإنشاء استراتيجيات خاصة بالقطاع.'
               })}
             </CardDescription>
           </CardHeader>

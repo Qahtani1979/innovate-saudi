@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { useLanguage } from '../LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { Award, CheckCircle2, X, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from 'react';
 

@@ -9,8 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../LanguageContext';
-import { CheckCircle2, ChevronRight, ChevronLeft, Save, Send, FileText, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { ChevronRight, ChevronLeft, Save, Send, FileText, Loader2 } from 'lucide-react';
 
 const STEPS = [
     { id: 'basics', title: { en: 'Executive Summary', ar: 'الملخص التنفيذي' } },

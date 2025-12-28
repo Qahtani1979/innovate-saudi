@@ -14,7 +14,6 @@ import { User, Shield, Save, Eye, Activity } from 'lucide-react';
 import RoleRequestCard from '../components/settings/RoleRequestCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { toast } from 'sonner';
 import TwoFactorAuth from '../components/auth/TwoFactorAuth';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import ChangePasswordDialog from '../components/auth/ChangePasswordDialog';

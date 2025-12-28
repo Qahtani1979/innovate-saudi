@@ -1,4 +1,3 @@
-import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../components/LanguageContext';
 import { Award, Target, Zap, CheckCircle2 } from 'lucide-react';

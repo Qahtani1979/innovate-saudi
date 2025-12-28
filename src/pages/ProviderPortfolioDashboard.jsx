@@ -8,7 +8,6 @@ import { createPageUrl } from '../utils';
 import {
   Lightbulb, TrendingUp, Star, TestTube, XCircle, CheckCircle2, BarChart3, Briefcase
 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { useOrganizationByOwner } from '@/hooks/useOrganizations';
 import { useSolutionsWithVisibility } from '@/hooks/useSolutionsWithVisibility';

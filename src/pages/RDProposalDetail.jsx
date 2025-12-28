@@ -30,7 +30,6 @@ import {
   X,
   Activity
 } from 'lucide-react';
-import { toast } from 'sonner';
 import ProposalSubmissionWizard from '../components/ProposalSubmissionWizard';
 import ProposalReviewWorkflow from '../components/ProposalReviewWorkflow';
 import ProposalEligibilityChecker from '../components/ProposalEligibilityChecker';

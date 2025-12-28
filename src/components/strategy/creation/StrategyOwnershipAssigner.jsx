@@ -10,7 +10,7 @@ import { useLanguage } from '@/components/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useStrategyOwnership } from '@/hooks/strategy';
 import { useStrategyAIGeneration } from '@/hooks/useStrategyAIGeneration';
-import { useUserProfile, useAllUserProfiles } from '@/hooks/useUserProfile';
+import { useAllUserProfiles } from '@/hooks/useUserProfile';
 import {
   Users,
   UserCog,

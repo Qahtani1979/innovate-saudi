@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { Users, Search, Save, X } from 'lucide-react';
-import { toast } from 'sonner';
 import { useUsersWithVisibility } from '@/hooks/useUsersWithVisibility';
 
 function UserRoleManager() {

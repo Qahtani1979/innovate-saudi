@@ -9,7 +9,6 @@ import { useLanguage } from '../components/LanguageContext';
 import { Award, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { toast } from 'sonner';
 import FileUploader from '../components/FileUploader';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 

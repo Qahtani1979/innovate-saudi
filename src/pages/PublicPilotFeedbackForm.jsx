@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from '../components/LanguageContext';
 import { MessageSquare, Send, Star, CheckCircle2 } from 'lucide-react';
-import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 
 function PublicPilotFeedbackForm() {

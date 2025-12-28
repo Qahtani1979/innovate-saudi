@@ -2,18 +2,12 @@ import { useState } from 'react';
 import { useRDProjectInvalidator } from '@/hooks/useRDProjectMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../components/LanguageContext';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
-import { toast } from 'sonner';
 import {
-  Beaker, Target, Calendar, DollarSign, FileText, Sparkles,
-  TrendingUp, CheckCircle2, Users, BookOpen, Award, Send, MessageSquare,
-  Clock, Building2, Image, Video, Database, AlertCircle,
-  ExternalLink, TestTube, Rocket, Loader2, X, Shield, Lightbulb, Activity
+  Beaker, Calendar, DollarSign, FileText, Sparkles,
+  TrendingUp, CheckCircle2, Users, BookOpen, Award, MessageSquare,
+  Clock, Image, Database, AlertCircle, TestTube, Loader2, X, Shield, Activity
 } from 'lucide-react';
 import RDProjectActivityLog from '../components/rd/RDProjectActivityLog';
 import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowApprovalTab';

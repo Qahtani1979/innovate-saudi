@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useSolutionDetails } from '@/hooks/useSolutionDetails';
 import { useMatchingEntities } from '@/hooks/useMatchingEntities';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,11 +10,10 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import {
   Building2, Globe, Mail, Award, TrendingUp, CheckCircle2, Star,
-  Target, FileText, ExternalLink, Lightbulb,
-  Sparkles, DollarSign, TestTube, Video, Users, Code,
+  Target, FileText, Lightbulb,
+  Sparkles, DollarSign, TestTube, Users, Code,
   Clock, Shield, Package, Loader2, X
 } from 'lucide-react';
-import { toast } from 'sonner';
 import SolutionVerificationWizard from '../components/SolutionVerificationWizard';
 import SolutionDeploymentTracker from '../components/SolutionDeploymentTracker';
 import SolutionReviewCollector from '../components/SolutionReviewCollector';

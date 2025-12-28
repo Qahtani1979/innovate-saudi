@@ -4,9 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useLanguage } from '../LanguageContext';
-import { CheckCircle2, XCircle, AlertCircle, MessageSquare, FileText } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertCircle, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function MatchAcceptanceAction({ match, onChange }) {

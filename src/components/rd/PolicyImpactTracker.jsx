@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../LanguageContext';
 import { FileText, Trash2, Plus } from 'lucide-react';
-import { toast } from 'sonner';
 
 export default function PolicyImpactTracker({ rdProject }) {
   const { t } = useLanguage();

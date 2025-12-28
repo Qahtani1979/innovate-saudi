@@ -9,12 +9,13 @@ import { Switch } from "@/components/ui/switch";
 import { useLanguage } from '../LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import { Globe, Lock, CheckCircle2, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 
 export default function PublishingWorkflow({ challenge, onClose, isCreationMode = false }) {
   const { language, isRTL, t } = useLanguage();
 
   const { user } = useAuth();
+  const { updatePublishingSettings } = useChallengeMutations();
+
   const [publishData, setPublishData] = useState({
     is_published: challenge?.is_published || false,
     is_confidential: challenge?.is_confidential || false,
@@ -34,8 +35,6 @@ export default function PublishingWorkflow({ challenge, onClose, isCreationMode 
       </div>
     );
   }
-
-  const { updatePublishingSettings } = useChallengeMutations();
 
   const handlePublish = () => {
     updatePublishingSettings.mutate({

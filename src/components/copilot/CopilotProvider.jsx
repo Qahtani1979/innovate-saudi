@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useCopilotStore } from '@/lib/store/copilotStore';
 import { useToolExecutor } from '@/hooks/useToolExecutor';
 import { useCopilotAgent } from '@/hooks/useCopilotAgent';

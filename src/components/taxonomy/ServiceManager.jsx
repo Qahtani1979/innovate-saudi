@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../LanguageContext';
 import { Plus, Save, X, Edit2, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useTaxonomyMutations } from '@/hooks/useTaxonomyMutations';
 
 export default function ServiceManager({ subsector, services, onClose }) {

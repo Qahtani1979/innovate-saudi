@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../LanguageContext';
 import { ArrowRight, Beaker } from 'lucide-react';
-import { toast } from 'sonner';
 import { useLivingLabsWithVisibility } from '@/hooks/useLivingLabsWithVisibility';
 
 export default function LabRoutingHub({ entity, entityType }) {

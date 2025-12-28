@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLanguage } from '@/components/LanguageContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/lib/AuthContext';
-import { useEvents, useEvent } from '@/hooks/useEvents';
+import { useEvent } from '@/hooks/useEvents';
 import { useEventMutations } from '@/hooks/useEventMutations';
 import { usePrograms } from '@/hooks/usePrograms';
 import { useMunicipalities } from '@/hooks/useMunicipalities';

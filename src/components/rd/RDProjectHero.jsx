@@ -3,10 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import {
-    Beaker, Target, Calendar, DollarSign, FileText, Sparkles,
-    TrendingUp, CheckCircle2, Users, BookOpen, Award, Send, MessageSquare,
-    Clock, Building2, Image, Video, Database, AlertCircle,
-    ExternalLink, TestTube, Rocket, Loader2, X, Shield, Lightbulb, Activity
+    Beaker, Sparkles,
+    TrendingUp, CheckCircle2, Award,
+    Clock, Building2, TestTube, Rocket, Shield, Lightbulb
 } from 'lucide-react';
 
 export default function RDProjectHero({

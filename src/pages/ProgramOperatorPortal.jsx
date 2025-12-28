@@ -13,8 +13,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { format } from 'date-fns';
 
 import { useMyManagedOrganization } from '@/hooks/useOrganizationsWithVisibility';
-import { usePrograms, useMyProgramApplications, useMyProgramEvents, useApplicationsForPrograms } from '@/hooks/usePrograms';
-import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
+import { usePrograms, useMyProgramEvents, useApplicationsForPrograms } from '@/hooks/usePrograms';
 import { usePilotsForPrograms, useMatchmakerApplicationsForPrograms } from '@/hooks/useProgramIntegrations';
 
 function ProgramOperatorPortal() {

@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { CheckCircle2, X, Loader2, Sparkles } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { useRDMutations } from '@/hooks/useRDMutations';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';

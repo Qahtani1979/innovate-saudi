@@ -1,3 +1,4 @@
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -168,6 +169,27 @@ export function useSandboxes() {
         }
     });
 
+    const useCaptureRegulatoryFeedback = () => useMutation({
+        mutationFn: async ({ sandboxId, feedback, findings }) => {
+            const { data: sandbox } = /** @type {any} */ (await supabase.from('sandboxes').select('*').eq('id', sandboxId).single());
+            const suggestion = {
+                source_entity_id: sandboxId,
+                source_entity_type: 'Sandbox',
+                description_en: `Regulatory Feedback: ${feedback}\nFindings: ${findings}`,
+                title_en: `Regulatory Update for ${sandbox.name}`,
+                status: 'draft',
+                created_at: new Date().toISOString()
+            };
+
+            const { error } = await supabase.from('policy_recommendations').insert(suggestion);
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['policy-recommendations'] });
+            toast.success('Regulatory feedback captured as policy recommendation');
+        }
+    });
+
     return {
         useAllSandboxes,
         useSandboxApplications,
@@ -181,7 +203,8 @@ export function useSandboxes() {
         useCreateResource,
         useCreateBooking,
         useLivingLabs,
-        useOrganizations
+        useOrganizations,
+        useCaptureRegulatoryFeedback
     };
 }
 

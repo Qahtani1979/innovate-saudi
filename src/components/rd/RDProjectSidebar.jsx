@@ -2,7 +2,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Building2, Clock } from 'lucide-react';
+import { Building2 } from 'lucide-react';
 
 export default function RDProjectSidebar({ project, t, language }) {
     return (

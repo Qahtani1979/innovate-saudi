@@ -10,8 +10,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { createPageUrl } from '../utils';
-import { useChallengeMutations } from '@/hooks/useChallengeMutations';
-import { useRDProjectMutations } from '@/hooks/useRDProjectMutations';
 import { useRDCalls } from '@/hooks/useRDCalls';
 import { useChallengeToRDConversion } from '@/hooks/useChallengeConversionMutations';
 

@@ -43,14 +43,14 @@ export const fetchWithRetry = async (fn, options = {}) => {
       // Check if we should retry
       const isLastAttempt = attempt === retries - 1;
       const isAbortError = error.name === 'AbortError';
-      
+
       if (isLastAttempt || !shouldRetry(error)) {
         throw error;
       }
 
       // Calculate backoff delay
       const delay = backoffMs * Math.pow(2, attempt);
-      
+
       // Call retry callback if provided
       if (onRetry) {
         onRetry({ error, attempt, delay, isAbortError });
@@ -78,8 +78,8 @@ export const supabaseWithRetry = async (queryFn, options = {}) => {
     ...options,
     shouldRetry: (error) => {
       // Retry on network errors or server errors (5xx)
-      const isNetworkError = error.message?.includes('network') || 
-                             error.message?.includes('fetch');
+      const isNetworkError = error.message?.includes('network') ||
+        error.message?.includes('fetch');
       const isServerError = error.code >= 500;
       return isNetworkError || isServerError;
     }
@@ -91,15 +91,15 @@ export const supabaseWithRetry = async (queryFn, options = {}) => {
  */
 export const trackApiPerformance = (endpoint, startTime, success, metadata = {}) => {
   const duration = Date.now() - startTime;
-  
+
   // Log slow requests
   if (duration > 500) {
     console.warn(`[SLOW API] ${endpoint}: ${duration}ms`, metadata);
   }
 
   // Log to console for debugging
-  console.log(`[API] ${endpoint}: ${duration}ms - ${success ? 'OK' : 'FAIL'}`, metadata);
-  
+
+
   return { duration, success };
 };
 

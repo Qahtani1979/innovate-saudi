@@ -7,7 +7,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { toast } from 'sonner';
 import { Scale, CheckCircle2, XCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function PolicyLegalReviewGate({ policy }) {

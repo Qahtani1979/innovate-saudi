@@ -1,5 +1,5 @@
 import { useForumThreads } from '@/hooks/useForumThreads';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '@/components/LanguageContext';
 import { Loader2, MessageCircle, Users } from 'lucide-react';

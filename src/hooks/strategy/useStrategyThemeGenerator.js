@@ -6,6 +6,9 @@ import { toast } from 'sonner';
 export function useStrategyThemeGenerator() {
     const { invokeAI, isLoading: aiLoading } = useAIWithFallback();
 
+    /**
+     * @type {import('@tanstack/react-query').UseMutationResult<any, any, { selectedPlan: any }>}
+     */
     const generateThemes = useMutation({
         mutationFn: async ({ selectedPlan }) => {
             if (!selectedPlan) throw new Error('No plan selected');
@@ -23,7 +26,7 @@ export function useStrategyThemeGenerator() {
                     return data.themes;
                 }
             } catch (e) {
-                console.log('Edge function fallback to AI hook:', e);
+
             }
 
             // Fallback to AI hook

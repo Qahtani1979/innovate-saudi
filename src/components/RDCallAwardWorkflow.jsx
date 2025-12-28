@@ -7,7 +7,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { Award, X, Send, CheckCircle2, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useRDCallMutations } from '@/hooks/useRDCallMutations';
 
 export default function RDCallAwardWorkflow({ rdCall, selectedProposals, onClose }) {

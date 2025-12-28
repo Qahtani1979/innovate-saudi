@@ -79,7 +79,8 @@ export default function UnifiedWorkflowApprovalTab({
           ...approvalRequest.metadata,
           decision,
           comments,
-          conditions: conditions.length > 0 ? conditions : undefined
+          conditions: conditions.length > 0 ? conditions : undefined,
+          approver_name: currentUser?.full_name || currentUser?.email || 'Approver'
         }
       }
     });
@@ -355,7 +356,9 @@ function GateOverview({ gate, approval }) {
               <>
                 <div>
                   <p className="text-slate-600">{t({ en: 'Reviewer:', ar: 'المراجع:' })}</p>
-                  <p className="font-medium text-slate-900">{approval.approver_email}</p>
+                  <p className="font-medium text-slate-900">
+                    {approval.metadata?.approver_name || approval.approver_email}
+                  </p>
                 </div>
                 <div>
                   <p className="text-slate-600">{t({ en: 'Decision:', ar: 'القرار:' })}</p>

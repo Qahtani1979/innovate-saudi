@@ -4,7 +4,6 @@ import { useLanguage } from '../LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { Rocket, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useConvertProposalToPilot } from '@/hooks/useChallengeConversionMutations';
 import { useSolution } from '@/hooks/useSolutions';
 

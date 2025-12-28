@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
-import { usePolicies } from '@/hooks/usePolicies';
+import { usePolicy } from '@/hooks/usePolicies';
 import { usePolicyMutations } from '@/hooks/usePolicyMutations';
 import { useNavigate, Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -35,7 +35,6 @@ function PolicyEdit() {
   const [lastSaved, setLastSaved] = useState(null);
   const { invokeAI, status: aiStatus, isLoading: isEnhancing, isAvailable, rateLimitInfo } = useAIWithFallback();
 
-  const { usePolicy } = usePolicies();
   const { data: policy, isLoading } = usePolicy(policyId);
   const { updatePolicy, translatePolicy } = usePolicyMutations();
 
@@ -77,7 +76,9 @@ function PolicyEdit() {
             setFormData(parsed.formData);
           }
         }
-      } catch (e) { }
+      } catch (e) {
+        console.warn('Failed to parse draft:', e);
+      }
     }
   }, [policyId]);
 

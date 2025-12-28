@@ -6,8 +6,7 @@ import ProtectedPage from '@/components/permissions/ProtectedPage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Microscope, FileText, Clock, CheckCircle, AlertCircle, Plus, ArrowRight, Calendar, TrendingUp } from 'lucide-react';
+import { Microscope, FileText, Clock, Plus, TrendingUp } from 'lucide-react';
 
 function ResearcherWorkspace() {
   const { language, isRTL, t } = useLanguage();

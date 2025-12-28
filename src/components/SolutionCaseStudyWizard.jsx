@@ -6,7 +6,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { FileText, X, Loader2, Award } from 'lucide-react';
-import { toast } from 'sonner';
 import { useSolutionMutations } from '@/hooks/useSolutionMutations';
 
 export default function SolutionCaseStudyWizard({ solution, onClose }) {

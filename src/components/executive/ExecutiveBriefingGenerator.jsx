@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
 import { FileText, Download, Loader2, Sparkles, Award, AlertCircle, Target } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { getSystemPrompt } from '@/lib/saudiContext';
 import {

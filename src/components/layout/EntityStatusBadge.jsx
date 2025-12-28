@@ -64,7 +64,7 @@ const STATUS_CONFIG = {
     icon: XCircle,
     label: { en: 'Cancelled', ar: 'ملغي' }
   },
-  
+
   // Challenge-specific
   submitted: {
     color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -86,7 +86,7 @@ const STATUS_CONFIG = {
     icon: CheckCircle,
     label: { en: 'Resolved', ar: 'تم الحل' }
   },
-  
+
   // Pilot-specific
   planning: {
     color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
@@ -108,7 +108,7 @@ const STATUS_CONFIG = {
     icon: TrendingUp,
     label: { en: 'Scaling', ar: 'توسع' }
   },
-  
+
   // Program-specific
   open: {
     color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
@@ -125,7 +125,7 @@ const STATUS_CONFIG = {
     icon: Send,
     label: { en: 'Accepting Applications', ar: 'يقبل الطلبات' }
   },
-  
+
   // Solution-specific
   verified: {
     color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
@@ -137,7 +137,7 @@ const STATUS_CONFIG = {
     icon: AlertCircle,
     label: { en: 'Unverified', ar: 'غير موثق' }
   },
-  
+
   // R&D-specific
   published: {
     color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -149,7 +149,7 @@ const STATUS_CONFIG = {
     icon: Play,
     label: { en: 'In Progress', ar: 'قيد التنفيذ' }
   },
-  
+
   // Living Lab specific
   operational: {
     color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
@@ -174,50 +174,50 @@ const STATUS_CONFIG = {
  * @param {boolean} props.showLabel - Whether to show translated label (vs raw status)
  * @param {string} props.className - Additional CSS classes
  */
-export function EntityStatusBadge({ 
-  status, 
+export function EntityStatusBadge({
+  status,
   entityType,
-  size = 'md', 
+  size = 'md',
   showIcon = false,
   showLabel = true,
-  className = '' 
+  className = ''
 }) {
   const { language } = useLanguage();
-  
+
   if (!status) return null;
-  
+
   // Normalize status to lowercase with underscores
   const normalizedStatus = status.toLowerCase().replace(/[\s-]+/g, '_');
-  
+
   // Get config or use default
   const config = STATUS_CONFIG[normalizedStatus] || {
     color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
     icon: FileText,
     label: { en: status, ar: status }
   };
-  
+
   const StatusIcon = config.icon;
-  
+
   // Size classes
   const sizeClasses = {
     sm: 'text-xs px-2 py-0.5 gap-1',
     md: 'text-sm px-2.5 py-1 gap-1.5',
     lg: 'text-base px-3 py-1.5 gap-2'
   };
-  
+
   const iconSizes = {
     sm: 'h-3 w-3',
     md: 'h-3.5 w-3.5',
     lg: 'h-4 w-4'
   };
-  
+
   // Determine display text
-  const displayText = showLabel 
+  const displayText = showLabel
     ? (language === 'ar' && config.label.ar ? config.label.ar : config.label.en)
     : status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-  
+
   return (
-    <Badge 
+    <Badge
       className={`
         ${config.color} 
         ${sizeClasses[size]} 
@@ -239,9 +239,9 @@ export function EntityStatusBadge({
  * Get all available statuses for a specific entity type
  * Useful for filter dropdowns
  */
-export function getStatusOptionsForEntity(entityType) {
-  const { language } = useLanguage();
-  
+export function getStatusOptionsForEntity(entityType, language = 'en') {
+  // const { language } = useLanguage(); // Removed hook usage
+
   const entityStatusMap = {
     challenge: ['draft', 'submitted', 'under_review', 'approved', 'in_treatment', 'resolved', 'rejected', 'archived'],
     pilot: ['draft', 'planning', 'active', 'running', 'paused', 'completed', 'scaling', 'cancelled'],
@@ -253,9 +253,9 @@ export function getStatusOptionsForEntity(entityType) {
     organization: ['pending', 'active', 'verified', 'suspended', 'archived'],
     proposal: ['draft', 'submitted', 'under_review', 'approved', 'rejected', 'withdrawn']
   };
-  
+
   const statuses = entityStatusMap[entityType] || Object.keys(STATUS_CONFIG);
-  
+
   return statuses.map(status => {
     const config = STATUS_CONFIG[status] || { label: { en: status, ar: status } };
     return {

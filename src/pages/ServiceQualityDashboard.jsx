@@ -14,7 +14,6 @@ import {
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { toast } from 'sonner';
 
 function ServiceQualityDashboard() {
   const { t, language } = useLanguage();

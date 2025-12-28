@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '@/components/LanguageContext';
-import { Loader2, MessageSquare, BarChart3 } from 'lucide-react';
+import { MessageSquare, BarChart3 } from 'lucide-react';
 import PublicFeedbackAggregator from '@/components/citizen/PublicFeedbackAggregator';
 
 export default function CitizenFeedbackHub() {

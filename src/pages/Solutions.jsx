@@ -32,7 +32,6 @@ import {
   SortAsc,
   SortDesc
 } from 'lucide-react';
-import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { usePermissions } from '@/hooks/usePermissions';
 import { usePrompt } from '@/hooks/usePrompt';

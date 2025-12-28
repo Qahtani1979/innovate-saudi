@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Calendar, Clock, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { format, isBefore, isAfter, addDays } from 'date-fns';
+import { format, isBefore } from 'date-fns';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useUserSchedule } from '@/hooks/useUserSchedule';
 import { Skeleton } from "@/components/ui/skeleton";

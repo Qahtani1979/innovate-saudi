@@ -9,7 +9,6 @@ import { useLanguage } from './LanguageContext';
 import { useRDCallMutations } from '@/hooks/useRDCallMutations';
 import { useAuth } from '@/lib/AuthContext';
 import { CheckCircle2, X, AlertCircle, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 
 export default function RDCallReviewWorkflow({ rdCall, onClose }) {
   const { language, isRTL, t } = useLanguage();

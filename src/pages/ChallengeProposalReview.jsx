@@ -8,7 +8,6 @@ import { useAuth } from '@/lib/AuthContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { CheckCircle2, XCircle, FileText, DollarSign, Clock, Rocket } from 'lucide-react';
-import ProtectedPage from '../components/permissions/ProtectedPage';
 import ProposalToPilotConverter from '../components/challenges/ProposalToPilotConverter';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useProposalsWithVisibility } from '@/hooks/useProposalsWithVisibility';

@@ -6,7 +6,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Beaker, Award, Search, CheckCircle2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useSolutions } from '@/hooks/useSolutions';
 import { useLabCertifications, useIssueCertification } from '@/hooks/useLabCertifications';
 

@@ -1,7 +1,7 @@
 import { useMatchmakerStats } from '@/hooks/useMatchmakerStats';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../LanguageContext';
-import { Network, TrendingUp, Handshake, CheckCircle2 } from 'lucide-react';
+import { Network, TrendingUp, Handshake } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function MatchmakerExecutiveWidget() {

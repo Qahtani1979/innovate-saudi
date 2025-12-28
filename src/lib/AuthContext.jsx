@@ -19,24 +19,24 @@ export const AuthProvider = ({ children }) => {
   // Check if user needs onboarding - no automatic redirect, just sets state
   const checkOnboardingStatus = (profile) => {
     if (!profile) return false;
-    
+
     // User needs onboarding if onboarding_completed is explicitly false or null/undefined
     const needsIt = profile.onboarding_completed !== true;
     setNeedsOnboarding(needsIt);
-    
+
     return needsIt;
   };
-  
+
   // Separate function to redirect to onboarding if needed (called by components)
   const redirectToOnboardingIfNeeded = () => {
     // Only redirect if:
     // 1. User needs onboarding
     // 2. Not already on auth page or onboarding-related pages
     const currentPath = window.location.pathname.toLowerCase();
-    const onboardingPaths = ['/auth', '/onboarding', '/startup-onboarding', '/municipality-staff-onboarding', 
+    const onboardingPaths = ['/auth', '/onboarding', '/startup-onboarding', '/municipality-staff-onboarding',
       '/researcher-onboarding', '/citizen-onboarding', '/expert-onboarding'];
     const isOnOnboardingPage = onboardingPaths.some(p => currentPath.includes(p.toLowerCase()));
-    
+
     if (needsOnboarding && !isOnOnboardingPage) {
       window.location.href = '/onboarding';
       return true;
@@ -48,12 +48,11 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     if (needsOnboarding && isAuthenticated && !isLoadingAuth) {
       const currentPath = window.location.pathname.toLowerCase();
-      const onboardingPaths = ['/auth', '/onboarding', '/startup-onboarding', '/municipality-staff-onboarding', 
+      const onboardingPaths = ['/auth', '/onboarding', '/startup-onboarding', '/municipality-staff-onboarding',
         '/researcher-onboarding', '/citizen-onboarding', '/expert-onboarding', '/deputyship-onboarding'];
       const isOnOnboardingPage = onboardingPaths.some(p => currentPath.includes(p.toLowerCase()));
-      
+
       if (!isOnOnboardingPage) {
-        console.log('Redirecting to onboarding - needsOnboarding:', needsOnboarding);
         window.location.href = '/onboarding';
       }
     }
@@ -64,15 +63,13 @@ export const AuthProvider = ({ children }) => {
     const handleOAuthCallback = async () => {
       const hash = window.location.hash;
       if (hash && hash.includes('access_token')) {
-        console.log('OAuth callback detected, processing tokens...');
         // Supabase will automatically detect and process the hash
         // We just need to clean the URL after processing
         const { data: { session: callbackSession }, error } = await supabase.auth.getSession();
-        
+
         if (callbackSession && !error) {
           // Clean the URL by removing the hash
           window.history.replaceState(null, '', window.location.pathname);
-          console.log('OAuth callback processed successfully');
         } else if (error) {
           console.error('OAuth callback error:', error);
         }
@@ -84,18 +81,17 @@ export const AuthProvider = ({ children }) => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
-        console.log('Auth state changed:', event, currentSession?.user?.email);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setIsAuthenticated(!!currentSession?.user);
         setIsLoadingAuth(false);
-        
+
         // Defer profile fetch to avoid deadlock
         if (currentSession?.user) {
           setTimeout(() => {
             fetchUserProfile(currentSession.user.id);
             fetchUserRoles(currentSession.user.id);
-            
+
             // Create profile for OAuth users if it doesn't exist
             if (event === 'SIGNED_IN') {
               createOAuthProfile(currentSession.user);
@@ -131,7 +127,6 @@ export const AuthProvider = ({ children }) => {
           full_name: metadata.full_name || metadata.name || '',
           preferred_language: 'en',
         });
-        console.log('OAuth profile created');
       }
     } catch (error) {
       console.error('Error creating OAuth profile:', error);
@@ -142,9 +137,9 @@ export const AuthProvider = ({ children }) => {
     try {
       setIsLoadingAuth(true);
       setAuthError(null);
-      
+
       const { data: { session: currentSession }, error } = await supabase.auth.getSession();
-      
+
       if (error) {
         console.error('Auth check failed:', error);
         setAuthError({
@@ -152,11 +147,11 @@ export const AuthProvider = ({ children }) => {
           message: error.message
         });
       }
-      
+
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       setIsAuthenticated(!!currentSession?.user);
-      
+
       if (currentSession?.user) {
         await Promise.all([
           fetchUserProfile(currentSession.user.id),
@@ -181,13 +176,13 @@ export const AuthProvider = ({ children }) => {
         .select('*')
         .eq('user_id', userId)
         .maybeSingle();
-      
+
       if (error) {
         console.error('Error fetching user profile:', error);
       }
-      
+
       setUserProfile(data);
-      
+
       // Check if user needs onboarding after profile is fetched
       if (data) {
         checkOnboardingStatus(data);
@@ -203,11 +198,11 @@ export const AuthProvider = ({ children }) => {
         .from('user_roles')
         .select('role, municipality_id, organization_id')
         .eq('user_id', userId);
-      
+
       if (error) {
         console.error('Error fetching user roles:', error);
       }
-      
+
       setUserRoles(data || []);
     } catch (error) {
       console.error('Error fetching user roles:', error);
@@ -217,27 +212,27 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setAuthError(null);
-      
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      
+
       if (error) {
         // Log failed login attempt
         logAuthEvent('login_failed', email, error.message);
-        
+
         setAuthError({
           type: 'login_error',
           message: error.message
         });
         throw error;
       }
-      
+
       // Log successful login and create session record
       logAuthEvent('login_success', email);
       createSessionRecord(data.user);
-      
+
       return data;
     } catch (error) {
       throw error;
@@ -259,7 +254,6 @@ export const AuthProvider = ({ children }) => {
         }
       });
     } catch (error) {
-      console.debug('Auth event logging failed:', error);
       // Don't throw - logging failures shouldn't block auth
     }
   };
@@ -280,16 +274,15 @@ export const AuthProvider = ({ children }) => {
         is_active: true
       });
     } catch (error) {
-      console.debug('Session record creation failed:', error);
     }
   };
 
   const signUp = async (email, password, metadata = {}) => {
     try {
       setAuthError(null);
-      
+
       const redirectUrl = `${window.location.origin}/`;
-      
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -298,7 +291,7 @@ export const AuthProvider = ({ children }) => {
           data: metadata,
         },
       });
-      
+
       if (error) {
         setAuthError({
           type: 'signup_error',
@@ -306,7 +299,7 @@ export const AuthProvider = ({ children }) => {
         });
         throw error;
       }
-      
+
       // Create user profile if signup successful
       if (data.user) {
         const { error: profileError } = await supabase.from('user_profiles').upsert({
@@ -315,7 +308,7 @@ export const AuthProvider = ({ children }) => {
           full_name: metadata.full_name || metadata.name,
           preferred_language: 'en',
         }, { onConflict: 'user_id' });
-        
+
         if (profileError) {
           console.error('Error creating profile:', profileError);
         }
@@ -341,7 +334,7 @@ export const AuthProvider = ({ children }) => {
           console.error('Failed to send welcome email:', emailError);
         }
       }
-      
+
       return data;
     } catch (error) {
       throw error;
@@ -351,17 +344,17 @@ export const AuthProvider = ({ children }) => {
   const signInWithGoogle = async () => {
     try {
       setAuthError(null);
-      
+
       // Always use current origin for redirect
       const redirectUrl = `${window.location.origin}/`;
-      
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: redirectUrl,
         },
       });
-      
+
       if (error) {
         setAuthError({
           type: 'oauth_error',
@@ -369,7 +362,7 @@ export const AuthProvider = ({ children }) => {
         });
         throw error;
       }
-      
+
       return data;
     } catch (error) {
       throw error;
@@ -379,9 +372,9 @@ export const AuthProvider = ({ children }) => {
   const signInWithMicrosoft = async () => {
     try {
       setAuthError(null);
-      
+
       const redirectUrl = `${window.location.origin}/`;
-      
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'azure',
         options: {
@@ -389,7 +382,7 @@ export const AuthProvider = ({ children }) => {
           scopes: 'email profile openid',
         },
       });
-      
+
       if (error) {
         setAuthError({
           type: 'oauth_error',
@@ -397,7 +390,7 @@ export const AuthProvider = ({ children }) => {
         });
         throw error;
       }
-      
+
       return data;
     } catch (error) {
       throw error;
@@ -407,7 +400,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async (shouldRedirect = true) => {
     const currentEmail = user?.email;
     const currentUserId = user?.id;
-    
+
     // Clear local state first - this ensures UI updates immediately
     setUser(null);
     setSession(null);
@@ -415,13 +408,13 @@ export const AuthProvider = ({ children }) => {
     setUserRoles([]);
     setIsAuthenticated(false);
     setNeedsOnboarding(false);
-    
+
     try {
       // Log the logout event
       if (currentEmail) {
         logAuthEvent('logout', currentEmail);
       }
-      
+
       // Mark session as ended in database
       if (currentUserId) {
         await supabase
@@ -430,10 +423,10 @@ export const AuthProvider = ({ children }) => {
           .eq('user_id', currentUserId)
           .eq('is_active', true);
       }
-      
+
       // Try to sign out from Supabase - but don't fail if session is already gone
       const { error } = await supabase.auth.signOut({ scope: 'local' });
-      
+
       // session_not_found is expected if server session was already invalidated
       if (error && error.message !== 'Session from session_id claim in JWT does not exist') {
         console.warn('Signout warning:', error.message);
@@ -442,7 +435,7 @@ export const AuthProvider = ({ children }) => {
       // Silently handle - local state is already cleared which is the main goal
       console.debug('Logout cleanup:', error?.message);
     }
-    
+
     if (shouldRedirect) {
       // Immediate redirect since state is already cleared
       window.location.href = '/Auth';
@@ -483,12 +476,12 @@ export const AuthProvider = ({ children }) => {
   } : null;
 
   return (
-    <AuthContext.Provider value={{ 
+    <AuthContext.Provider value={{
       user: currentUser,
       session,
       userProfile,
       userRoles,
-      isAuthenticated, 
+      isAuthenticated,
       isLoadingAuth,
       isLoadingPublicSettings,
       authError,
@@ -532,14 +525,14 @@ export const useAuth = () => {
       signUp: async () => { throw new Error('AuthProvider not mounted'); },
       signInWithGoogle: async () => { throw new Error('AuthProvider not mounted'); },
       signInWithMicrosoft: async () => { throw new Error('AuthProvider not mounted'); },
-      logout: async () => {},
+      logout: async () => { },
       navigateToLogin: () => { window.location.href = '/Auth'; },
       resetPassword: async () => { throw new Error('AuthProvider not mounted'); },
       updatePassword: async () => { throw new Error('AuthProvider not mounted'); },
       hasRole: () => false,
       isAdmin: () => false,
-      checkAuth: async () => {},
-      checkAppState: async () => {},
+      checkAuth: async () => { },
+      checkAppState: async () => { },
       redirectToOnboardingIfNeeded: () => false,
     };
   }

@@ -19,7 +19,6 @@ import {
   Loader2,
   ClipboardList
 } from 'lucide-react';
-import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAuth } from '@/lib/AuthContext';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';

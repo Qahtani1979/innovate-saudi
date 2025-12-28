@@ -155,7 +155,7 @@ function RelationManagementHub() {
 
   // Run AI Matching
   const runMatching = async (matcherConfig) => {
-    console.log('🚀 Starting matcher:', matcherConfig.id);
+
     setIsMatching(true);
     setSelectedMatcher(matcherConfig.id);
 
@@ -163,13 +163,13 @@ function RelationManagementHub() {
       let sourceEntities = getEntitiesByType(matcherConfig.sourceType);
       let targetEntities = getEntitiesByType(matcherConfig.targetType);
 
-      console.log(`📊 Raw counts - Source (${matcherConfig.sourceType}): ${sourceEntities.length}, Target (${matcherConfig.targetType}): ${targetEntities.length}`);
+
 
       // Filter entities with embeddings only
       sourceEntities = sourceEntities.filter(e => e.embedding && e.embedding.length > 0);
       targetEntities = targetEntities.filter(e => e.embedding && e.embedding.length > 0);
 
-      console.log(`🎯 With embeddings - Source: ${sourceEntities.length}, Target: ${targetEntities.length}`);
+
 
       if (sourceEntities.length === 0 || targetEntities.length === 0) {
         toast.error(t({
@@ -251,9 +251,9 @@ function RelationManagementHub() {
       }
 
       if (newMatchesToCreate.length > 0) {
-        console.log(`Creating ${newMatchesToCreate.length} matches...`);
+
         await createMatches.mutateAsync(newMatchesToCreate);
-        console.log(`✅ Created ${newMatchesToCreate.length} matches`);
+
 
         toast.success(t({
           en: `✅ Created ${newMatchesToCreate.length} new matches! Check Review Suggestions tab →`,
@@ -261,7 +261,7 @@ function RelationManagementHub() {
         }), { duration: 5000 });
         setTimeout(() => setActiveTab('review'), 500);
       } else {
-        console.log('No new matches found.');
+
         toast.info(t({
           en: '⚠️ No new matches found. All existing or below 70% similarity threshold.',
           ar: '⚠️ لم يتم العثور على مطابقات جديدة. جميعها موجودة أو أقل من 70٪ تشابه.'
@@ -506,7 +506,7 @@ function RelationManagementHub() {
                         <Button
                           size="sm"
                           onClick={() => {
-                            console.log('🟢 Approving relation:', relation.id);
+
                             reviewMutation.mutate({ relationId: relation.id, decision: 'approved' });
                           }}
                           disabled={reviewMutation.isPending}
@@ -523,7 +523,7 @@ function RelationManagementHub() {
                           size="sm"
                           variant="outline"
                           onClick={() => {
-                            console.log('🔴 Rejecting relation:', relation.id);
+
                             reviewMutation.mutate({ relationId: relation.id, decision: 'rejected' });
                           }}
                           disabled={reviewMutation.isPending}

@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
 import { Shield, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
-import { toast } from 'sonner';
 
 export default function LabEthicsReviewBoard({ livingLabId, projectId }) {
   const { t } = useLanguage();

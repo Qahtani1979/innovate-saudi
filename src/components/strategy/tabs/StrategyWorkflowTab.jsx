@@ -1,11 +1,10 @@
-import React from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, ArrowRight, Target, Clock, TrendingUp, AlertCircle, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, ArrowRight, Target } from 'lucide-react';
 import { phases } from '@/config/strategyHubTools';
 
 export default function StrategyWorkflowTab({

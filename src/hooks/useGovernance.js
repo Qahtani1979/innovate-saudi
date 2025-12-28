@@ -1,8 +1,10 @@
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNotificationSystem } from './useNotificationSystem';
 import { useAuditLogger } from './useAuditLogger';
+import { useAuth } from '@/lib/AuthContext';
 
 /**
  * Hook for Governance and Committee Mutations
@@ -23,22 +25,23 @@ export function useGovernanceQueries(entityId, entityType) {
             if (error) throw error;
 
             // Normalize data mapping to consistent structure
-            return (data || []).map(item => ({
-                id: item.id,
-                // For pilot_approvals, we might store step in approval_type if needed, 
-                // but for now we'll rely on the order of created_at or metadata
-                step: item.metadata?.step || (item.approval_type?.startsWith('step_') ? parseInt(item.approval_type.split('_')[1]) : null),
-                decision: item.decision || item.status || item.approval_status || 'pending',
-                approver_name: item.approver_name || item.approver_email || 'Approver',
-                comments: item.comments || item.reviewer_notes || item.rejection_reason || '',
-                approved_date: item.approved_date || item.approval_date || item.approved_at || item.created_at
-            }));
+            return (data || []).map(item => {
+                const typedItem = /** @type {any} */ (item);
+                return {
+                    id: typedItem.id,
+                    step: typedItem.metadata?.step || (typedItem.approval_type?.startsWith('step_') ? parseInt(typedItem.approval_type.split('_')[1]) : null),
+                    decision: typedItem.decision || typedItem.status || typedItem.approval_status || 'pending',
+                    // Prioritize metadata name, then fallback to database fields
+                    approver_name: typedItem.metadata?.approver_name || typedItem.approver_name || typedItem.approver_email || 'Approver',
+                    approver_email: typedItem.approver_email || '',
+                    comments: typedItem.comments || typedItem.reviewer_notes || typedItem.rejection_reason || '',
+                    approved_date: typedItem.approved_date || typedItem.approval_date || typedItem.approved_at || typedItem.created_at
+                };
+            });
         },
         enabled: !!entityId && !!entityType
     });
 }
-
-import { useAuth } from '@/lib/AuthContext';
 
 const APPROVAL_WORKFLOW_CONFIG = {
     challenge: [
@@ -91,6 +94,7 @@ export function useGovernanceMutations() {
     const queryClient = useAppQueryClient();
     const { notify } = useNotificationSystem();
     const { logAction } = useAuditLogger();
+    const { user: currentUser } = useAuth();
 
     /**
      * Submit a decision in a multi-step approval workflow
@@ -100,22 +104,22 @@ export function useGovernanceMutations() {
             const isPilot = entityType.toLowerCase() === 'pilot';
             const table = isPilot ? 'pilot_approvals' : 'approval_requests';
 
-            // 1. Prepare record based on table schema
+            /** @type {any} */
             const record = isPilot ? {
                 pilot_id: entity.id,
                 approval_type: `step_${step}_${approverRole}`,
-                approver_email: approverName, // Mapping name to email for now if that's what's available
+                approver_email: currentUser?.email || approverName,
                 status: decision,
-                comments: comments,
+                comments: comments || '', // pilot_approvals uses 'comments'
                 approval_date: new Date().toISOString()
             } : {
                 entity_type: entityType.toLowerCase(),
                 entity_id: entity.id,
                 request_type: 'multi_step_approval',
-                approver_email: approverName,
+                approver_email: currentUser?.email || 'system@innovate.sa',
                 approval_status: decision,
-                reviewer_notes: comments,
-                metadata: { step, role: approverRole },
+                reviewer_notes: comments || '', // approval_requests uses 'reviewer_notes'
+                metadata: { step, role: approverRole, approver_name: approverName },
                 created_at: new Date().toISOString()
             };
 
@@ -127,7 +131,7 @@ export function useGovernanceMutations() {
             // 2. Update entity status if rejected or final approval
             if (decision === 'rejected') {
                 const { error: updateError } = await supabase
-                    .from(entityType.toLowerCase() + 's')
+                    .from(/** @type {any} */(entityType.toLowerCase() + 's'))
                     .update({ status: 'rejected' })
                     .eq('id', entity.id);
                 if (updateError) throw updateError;
@@ -135,9 +139,11 @@ export function useGovernanceMutations() {
 
             return { decision, step };
         },
-        onSuccess: (data, variables) => {
-            queryClient.invalidateQueries(['governance-approvals', variables.entity.id, variables.entityType]);
-            queryClient.invalidateQueries([variables.entityType.toLowerCase(), variables.entity.id]);
+        onSuccess: (data, /** @type {any} */ variables) => {
+            if (variables?.entity?.id) {
+                queryClient.invalidateQueries({ queryKey: ['governance-approvals', variables.entity.id, variables.entityType] });
+                queryClient.invalidateQueries({ queryKey: [variables.entityType?.toLowerCase(), variables.entity.id] });
+            }
             toast.success('Decision recorded');
         }
     });
@@ -158,7 +164,7 @@ export function useGovernanceMutations() {
             if (error) throw error;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(['strategic-plans']);
+            queryClient.invalidateQueries({ queryKey: ['strategic-plans'] });
             toast.success('Strategic review submitted');
         }
     });
@@ -179,7 +185,7 @@ export function useGovernanceMutations() {
             if (error) throw error;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(['rd-proposal']);
+            queryClient.invalidateQueries({ queryKey: ['rd-proposal'] });
             toast.success('Peer review submitted');
         }
     });
@@ -192,12 +198,12 @@ export function useGovernanceMutations() {
             // 1. Update pilot compliance status
             const { error: pilotError } = await supabase
                 .from('pilots')
-                .update({
+                .update(/** @type {any} */({
                     compliance_passed: true,
                     compliance_date: new Date().toISOString(),
                     compliance_notes: notes,
                     compliance_checklist: checklist
-                })
+                }))
                 .eq('id', pilotId);
             if (pilotError) throw pilotError;
 
@@ -211,7 +217,7 @@ export function useGovernanceMutations() {
             });
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(['pilot']);
+            queryClient.invalidateQueries({ queryKey: ['pilot'] });
             toast.success('Compliance gate passed');
         }
     });
@@ -237,11 +243,11 @@ export function useGovernanceMutations() {
             // 2. Update RD Call
             const { error: callError } = await supabase
                 .from('rd_calls')
-                .update({
+                .update(/** @type {any} */({
                     evaluation_meeting_scheduled: true,
                     evaluation_meeting_date: meetingData.date,
                     evaluation_meeting_link: meetingData.meeting_link
-                })
+                }))
                 .eq('id', rdCall.id);
             if (callError) throw callError;
 
@@ -267,8 +273,8 @@ export function useGovernanceMutations() {
             ));
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(['rd-call']);
-            queryClient.invalidateQueries(['tasks']);
+            queryClient.invalidateQueries({ queryKey: ['rd-call'] });
+            queryClient.invalidateQueries({ queryKey: ['tasks'] });
             toast.success('Committee meeting scheduled and notifications sent');
         }
     });
@@ -288,7 +294,7 @@ export function useGovernanceMutations() {
             if (error) throw error;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(['challenge']);
+            queryClient.invalidateQueries({ queryKey: ['challenge'] });
             toast.success('Treatment plan updated');
         }
     });

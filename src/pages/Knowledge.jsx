@@ -8,7 +8,6 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookOpen, FileText, Plus, Edit, Trash2, Video, Headphones, Image as ImageIcon, Eye, Star, Bookmark, Play, TrendingUp, Sparkles, Grid, List, Loader2, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import PolicyLibraryWidget from '../components/knowledge/PolicyLibraryWidget';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';

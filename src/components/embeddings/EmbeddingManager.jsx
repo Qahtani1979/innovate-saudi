@@ -69,7 +69,7 @@ export default function EmbeddingManager({ entities = [] }) {
             const withEmbedding = entityData?.with_embedding || 0;
             const coverage = total > 0 ? Math.round((withEmbedding / total) * 100) : 0;
 
-            console.log(`${entity.name}: total=${total}, withEmbedding=${withEmbedding}, coverage=${coverage}`);
+
 
             return (
               <div key={entity.name} className="p-4 border rounded-lg bg-white hover:shadow-md transition-shadow">

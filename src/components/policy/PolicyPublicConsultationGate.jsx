@@ -56,8 +56,7 @@ export default function PolicyPublicConsultationGate({ policy, approvalRequest, 
                 { en: 'Public URL configured', ar: 'رابط الاستشارة جاهز' },
                 { en: 'Duration set (min 30 days)', ar: 'المدة محددة (30 يوم كحد أدنى)' }
               ]
-            }}
-            onSelfCheckUpdate={(result) => console.log('AI Check Result:', result)}
+            }} onSelfCheckUpdate={undefined}
           />
 
           <Card>

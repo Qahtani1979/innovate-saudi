@@ -10,12 +10,19 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Progress } from "@/components/ui/progress";
 import ProtectedPage from '../components/permissions/ProtectedPage';
+import PartnershipPerformanceDashboard from '@/components/partnerships/PartnershipPerformanceDashboard';
+import PartnershipSynergyDetector from '@/components/partnerships/PartnershipSynergyDetector';
+import AIPartnerDiscovery from '@/components/partnerships/AIPartnerDiscovery';
+import PartnershipPlaybookLibrary from '@/components/partnerships/PartnershipPlaybookLibrary';
+import AIAgreementGenerator from '@/components/partnerships/AIAgreementGenerator';
+import PartnershipEngagementTracker from '@/components/partnerships/PartnershipEngagementTracker';
 
 function PartnershipRegistry() {
   const { language, isRTL, t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [selectedPartnership, setSelectedPartnership] = useState(null);
 
   const { data: partnerships = [], isLoading } = usePartnerships();
 
@@ -97,6 +104,47 @@ function PartnershipRegistry() {
         </Card>
       </div>
 
+      {/* Strategic AI Insights */}
+      {selectedPartnership ? (
+        <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-indigo-600" />
+              {t({ en: 'Strategic Insights:', ar: 'رؤى استراتيجية:' })} {selectedPartnership.name_en || selectedPartnership.name_ar}
+            </h2>
+            <Button variant="ghost" size="sm" onClick={() => setSelectedPartnership(null)}>
+              {t({ en: 'Close Insights', ar: 'إغلاق الرؤى' })}
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <PartnershipPerformanceDashboard partnershipId={selectedPartnership.id} />
+            <PartnershipSynergyDetector challengeId={selectedPartnership.linked_challenge_ids?.[0] || ""} />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <AIPartnerDiscovery
+              challengeId={selectedPartnership.linked_challenge_ids?.[0] || ""}
+              sector={selectedPartnership.sector || ""}
+              keywords=""
+            />
+            <AIAgreementGenerator partnership={selectedPartnership} />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-6">
+            <PartnershipEngagementTracker partnership={selectedPartnership} />
+            <PartnershipPlaybookLibrary />
+          </div>
+        </div>
+      ) : (
+        <div className="p-4 bg-indigo-50 border-2 border-dashed border-indigo-200 rounded-xl text-center">
+          <TrendingUp className="h-8 w-8 text-indigo-400 mx-auto mb-2" />
+          <p className="text-sm text-indigo-600 font-medium">
+            {t({ en: 'Select a partnership below to view strategic AI insights and health metrics', ar: 'اختر شراكة أدناه لعرض الرؤى الاستراتيجية ومقاييس الصحة' })}
+          </p>
+        </div>
+      )}
+
       {/* Filters */}
       <Card>
         <CardContent className="pt-6">
@@ -151,7 +199,8 @@ function PartnershipRegistry() {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {filteredPartnerships.map((partnership) => {
+          {filteredPartnerships.map((p) => {
+            const partnership = /** @type {any} */ (p);
             const completedMilestones = partnership.milestones?.filter(m => m.status === 'completed').length || 0;
             const totalMilestones = partnership.milestones?.length || 1;
             const progress = Math.round((completedMilestones / totalMilestones) * 100);
@@ -215,7 +264,7 @@ function PartnershipRegistry() {
                   </div>
 
                   {partnership.parties && partnership.parties.length > 0 && (
-                    <div className="mt-4 pt-4 border-t">
+                    <div className="flex flex-wrap items-center justify-between gap-4 mt-4 pt-4 border-t">
                       <div className="flex flex-wrap gap-2">
                         {partnership.parties.slice(0, 3).map((party, i) => (
                           <Badge key={i} variant="outline" className="text-xs">
@@ -228,6 +277,18 @@ function PartnershipRegistry() {
                           </Badge>
                         )}
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                        onClick={() => {
+                          setSelectedPartnership(partnership);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                      >
+                        <TrendingUp className="h-4 w-4 mr-2" />
+                        {t({ en: 'View AI Insights', ar: 'عرض رؤى الذكاء' })}
+                      </Button>
                     </div>
                   )}
                 </CardContent>

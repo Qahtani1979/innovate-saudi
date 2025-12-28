@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { Sparkles, Loader2, Plus } from 'lucide-react';
 import { Checkbox } from "@/components/ui/checkbox";
-import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import {
   buildExemptionSuggesterPrompt,

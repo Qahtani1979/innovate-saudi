@@ -69,7 +69,7 @@ function ChallengeEdit() {
     const autoSaveInterval = setInterval(() => {
       localStorage.setItem(`challenge_edit_${challengeId}`, JSON.stringify(formData));
       localStorage.setItem(`challenge_edit_${challengeId}_timestamp`, new Date().toISOString());
-      console.log('Auto-saved to localStorage');
+
     }, 30000);
 
     return () => clearInterval(autoSaveInterval);
@@ -85,7 +85,7 @@ function ChallengeEdit() {
     if (saved && timestamp) {
       const savedDate = new Date(timestamp);
       const now = new Date();
-      const hoursDiff = (now - savedDate) / (1000 * 60 * 60);
+      const hoursDiff = (now.getTime() - savedDate.getTime()) / (1000 * 60 * 60);
 
       if (hoursDiff < 24) {
         const savedData = JSON.parse(saved);
@@ -913,6 +913,7 @@ function ChallengeEdit() {
                   maxSize={10}
                   enableImageSearch={true}
                   searchContext={formData.title_en || formData.description_en?.substring(0, 100)}
+                  description={t({ en: 'Main challenge visual', ar: 'الصورة الرئيسية للتحدي' })}
                   onUploadComplete={(url) => setFormData({ ...formData, image_url: url })}
                 />
                 {formData.image_url && (
@@ -942,6 +943,7 @@ function ChallengeEdit() {
                       gallery_urls: [...(prev.gallery_urls || []), url]
                     }));
                   }}
+                  description={t({ en: 'Additional photos', ar: 'صور إضافية' })}
                 />
                 {formData.gallery_urls?.length > 0 && (
                   <div className="grid grid-cols-4 gap-2 mt-2">

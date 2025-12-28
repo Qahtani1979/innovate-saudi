@@ -11,7 +11,6 @@ import AutomatedComplianceChecker from '../components/AutomatedComplianceChecker
 import ApprovalStageProgress from '../components/ApprovalStageProgress';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { toast } from 'sonner';
 import { useSandboxes } from '@/hooks/useSandboxes';
 import { useSandboxMutations } from '@/hooks/useSandboxMutations';
 import { useAuth } from '@/lib/AuthContext';

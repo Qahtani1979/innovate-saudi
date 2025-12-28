@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from './LanguageContext';
 import { Shield, CheckCircle2, X, Loader2, AlertCircle, Wifi, Zap, Database } from 'lucide-react';
-import { toast } from 'sonner';
 
 export default function SandboxInfrastructureReadinessGate({ sandbox, onClose, onApprove }) {
   const { t, isRTL } = useLanguage();

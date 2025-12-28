@@ -50,6 +50,10 @@ export function usePolicyMutations() {
                     creation_date: new Date().toLocaleDateString()
                 }
             });
+        },
+        onError: (error) => {
+            console.error('Create policy failed:', error);
+            toast.error(t({ en: 'Failed to create policy', ar: 'فشل إنشاء السياسة' }));
         }
     });
 

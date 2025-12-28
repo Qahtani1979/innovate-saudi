@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from './LanguageContext';
 import { CheckCircle2, XCircle, AlertCircle, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 
 export default function RDCallApprovalWorkflow({ rdCall, onClose }) {

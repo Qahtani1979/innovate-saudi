@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   ChevronLeft, ChevronRight, Target, Save, FolderOpen,
-  AlertCircle, Clock, Send, Loader2, RotateCcw, FileText
+  AlertCircle, Loader2
 } from 'lucide-react';
 import { useLanguage } from '../../LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
@@ -18,7 +18,6 @@ import { WIZARD_STEPS, initialWizardData } from './StrategyWizardSteps';
 import WizardStepIndicator from './WizardStepIndicator';
 import { CompactStepIndicator } from './shared';
 import PlanSelectionDialog from './PlanSelectionDialog';
-import SaveAsTemplateDialog from '../templates/SaveAsTemplateDialog';
 import Step1Context from './steps/Step1Context';
 import Step2Vision from './steps/Step2Vision';
 import Step3Stakeholders from './steps/Step3Stakeholders';
@@ -40,7 +39,6 @@ import Step18Review from './steps/Step18Review';
 import AIStrategicPlanAnalyzer from './AIStrategicPlanAnalyzer';
 import { useStrategyAI } from '@/hooks/strategy/useStrategyAI';
 import { useStrategyMutations } from '@/hooks/useStrategyMutations';
-import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
 
 /**
  * StrategyWizardWrapper

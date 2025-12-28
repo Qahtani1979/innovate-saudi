@@ -1,9 +1,8 @@
-import React from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { Sparkles, Brain, ArrowRight } from 'lucide-react';
+import { Sparkles, Brain } from 'lucide-react';
 import StrategicNarrativeGenerator from '@/components/strategy/StrategicNarrativeGenerator';
 import StrategicGapProgramRecommender from '@/components/strategy/StrategicGapProgramRecommender';
 import WhatIfSimulator from '@/components/strategy/WhatIfSimulator';

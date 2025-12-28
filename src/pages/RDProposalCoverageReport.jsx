@@ -1,15 +1,13 @@
 import { useRDCalls, useRDProposals } from '@/hooks/useRDHooks';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
-import {
-  CheckCircle2, FileText,
+import { FileText,
   Database, Workflow, Users, Brain, Network, Target, Shield,
   ChevronDown, ChevronRight
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 
 /**

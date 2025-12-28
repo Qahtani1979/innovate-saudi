@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Target, CheckCircle2, AlertCircle, Loader2, Link2 } from 'lucide-react';
+import { Target, AlertCircle, Loader2, Link2 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useStrategicPlans } from '@/hooks/useStrategicPlans';
 import { useEventMutations } from '@/hooks/useEventMutations';

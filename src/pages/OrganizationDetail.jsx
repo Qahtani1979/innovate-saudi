@@ -23,6 +23,12 @@ import { createPageUrl } from '../utils';
 import OrganizationActivityDashboard from '../components/organizations/OrganizationActivityDashboard';
 import PartnershipWorkflow from '../components/partnerships/PartnershipWorkflow';
 import AINetworkAnalysis from '../components/organizations/AINetworkAnalysis';
+import AIPartnerDiscovery from '../components/partnerships/AIPartnerDiscovery';
+import PartnershipSynergyDetector from '../components/partnerships/PartnershipSynergyDetector';
+import OrganizationPerformanceMetrics from '../components/organizations/OrganizationPerformanceMetrics';
+import OrganizationNetworkGraph from '../components/organizations/OrganizationNetworkGraph';
+import OrganizationCollaborationManager from '../components/organizations/OrganizationCollaborationManager';
+import ExpertFinder from '../components/profiles/ExpertFinder';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowApprovalTab';
 import OrganizationWorkflowTab from '../components/organizations/OrganizationWorkflowTab';
@@ -34,6 +40,7 @@ function OrganizationDetail() {
   const orgId = urlParams.get('id');
   const { language, isRTL, t } = useLanguage();
 
+  /** @type {any} */
   const { data: organization, isLoading, error: orgError } = useOrganization(orgId);
   const { data: solutions = [] } = useOrganizationSolutions(orgId);
   const { data: pilots = [] } = useOrganizationPilots(orgId);
@@ -205,10 +212,14 @@ function OrganizationDetail() {
         {/* Main Content */}
         <div className="lg:col-span-2">
           <Tabs defaultValue="workflow" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6 h-auto">
+            <TabsList className="grid w-full grid-cols-7 h-auto">
               <TabsTrigger value="workflow" className="flex flex-col gap-1 py-3">
                 <Activity className="h-4 w-4" />
                 <span className="text-xs">{t({ en: 'Workflow', ar: 'سير العمل' })}</span>
+              </TabsTrigger>
+              <TabsTrigger value="intelligence" className="flex flex-col gap-1 py-3">
+                <Sparkles className="h-4 w-4" />
+                <span className="text-xs">{t({ en: 'AI Intelligence', ar: 'ذكاء متخصص' })}</span>
               </TabsTrigger>
               <TabsTrigger value="overview" className="flex flex-col gap-1 py-3">
                 <FileText className="h-4 w-4" />
@@ -237,12 +248,16 @@ function OrganizationDetail() {
               <UnifiedWorkflowApprovalTab
                 entityType="Organization"
                 entityId={orgId}
-                currentStage={
-                  organization.is_verified ? 'verified' :
-                    organization.verification_date ? 'verification' :
-                      organization.partnership_status === 'pending' ? 'partnership' : 'registration'
-                }
+                entityData={organization}
               />
+            </TabsContent>
+
+            <TabsContent value="intelligence" className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <OrganizationPerformanceMetrics organizationId={orgId} organizationData={organization} />
+                <OrganizationNetworkGraph organizationId={orgId} />
+              </div>
+              <ExpertFinder />
             </TabsContent>
 
             <TabsContent value="overview" className="space-y-6">
@@ -483,6 +498,14 @@ function OrganizationDetail() {
             </TabsContent>
 
             <TabsContent value="partnerships" className="space-y-6">
+              <div className="grid grid-cols-1 gap-6">
+                <AIPartnerDiscovery
+                  challengeId=""
+                  sector={organization.sectors?.join(', ')}
+                  keywords=""
+                />
+              </div>
+              <OrganizationCollaborationManager organizationId={orgId} />
               <AINetworkAnalysis organization={organization} />
               <PartnershipWorkflow organization={organization} onComplete={() => { }} />
             </TabsContent>

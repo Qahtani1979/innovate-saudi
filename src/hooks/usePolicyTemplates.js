@@ -1,3 +1,4 @@
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -12,7 +13,6 @@ export function usePolicyTemplates() {
                 .order('sort_order', { ascending: true })
                 .limit(100);
 
-            if (error) throw error;
             if (error) throw error;
             return /** @type {import('@/types/supa_ext').PolicyTemplate[]} */ (data) || [];
         }

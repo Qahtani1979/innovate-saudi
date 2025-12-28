@@ -7,7 +7,6 @@ import { CheckCircle2, Shield, AlertTriangle, TrendingUp, Network } from 'lucide
 import { useLanguage } from '../LanguageContext';
 import RequesterAI from '../approval/RequesterAI';
 import ReviewerAI from '../approval/ReviewerAI';
-import { toast } from 'sonner';
 import { useMunicipalities } from '@/hooks/useMunicipalities';
 import { useApprovalMutations } from '@/hooks/useApprovalRequest';
 import { usePolicyMutations } from '@/hooks/usePolicyMutations';

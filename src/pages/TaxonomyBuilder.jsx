@@ -17,6 +17,9 @@ import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
+import { TAXONOMY_SYSTEM_PROMPT, taxonomyPrompts } from '@/lib/ai/prompts/ecosystem/taxonomyPrompts.js';
+import { buildPrompt } from '@/lib/ai/promptBuilder.js';
+
 
 import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { useTaxonomyMutations } from '@/hooks/useTaxonomyMutations';
@@ -48,8 +51,8 @@ function TaxonomyBuilder() {
 
 
   const generateAISuggestions = async () => {
-    const { TAXONOMY_SYSTEM_PROMPT, taxonomyPrompts } = await import('@/lib/ai/prompts/ecosystem/taxonomyPrompts');
-    const { buildPrompt } = await import('@/lib/ai/promptBuilder');
+    // Imports moved to top level
+
 
     const { prompt, schema } = buildPrompt(taxonomyPrompts.suggestions, {
       sectors,

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
-import { FileText, Search, Plus, Calendar, DollarSign, Filter, Download, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { FileText, Search, Plus, Calendar, DollarSign, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import ProtectedPage from '../components/permissions/ProtectedPage';

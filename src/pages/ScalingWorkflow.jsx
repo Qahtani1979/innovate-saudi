@@ -9,7 +9,6 @@ import { useLanguage } from '../components/LanguageContext';
 import { TrendingUp, CheckCircle2, Target, DollarSign, Sparkles, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { toast } from 'sonner';
 import ScalingPlanningWizard from '../components/scaling/ScalingPlanningWizard';
 import ScalingExecutionDashboard from '../components/scaling/ScalingExecutionDashboard';
 import BudgetApprovalGate from '../components/scaling/BudgetApprovalGate';

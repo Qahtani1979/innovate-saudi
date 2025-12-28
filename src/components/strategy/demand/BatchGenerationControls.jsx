@@ -81,7 +81,8 @@ export default function BatchGenerationControls({ strategicPlanId }) {
       current: null
     });
 
-    const { generateItem, assessQuality, updateQueueResult } = useStrategyAutomation();
+    // Hook is already called at top level:
+    // const { generateItem, assessQuality, updateQueueResult } = useStrategyAutomation();
 
     for (let i = 0; i < queue.length; i++) {
       if (!isRunning || isPaused) break;

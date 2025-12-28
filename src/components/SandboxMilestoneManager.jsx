@@ -11,7 +11,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from './LanguageContext';
 import { CheckCircle2, Circle, Plus, Trash2, Calendar, AlertCircle } from 'lucide-react';
-import { toast } from 'sonner';
 
 export default function SandboxMilestoneManager({ application }) {
   const { language, isRTL, t } = useLanguage();

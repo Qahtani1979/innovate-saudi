@@ -5,7 +5,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from './LanguageContext';
 import { Award, X, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 
 import { useProgramApplications } from '@/hooks/useProgramDetails';
 import { useProgramMutations } from '@/hooks/useProgramMutations';

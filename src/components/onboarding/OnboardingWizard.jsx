@@ -46,7 +46,7 @@ const sendRoleRequestNotification = async (type, requestData) => {
       type,
       ...requestData
     });
-    console.log('Role notification sent via rbac-manager');
+
   } catch (err) {
     console.warn('Failed to send role notification:', err);
   }
@@ -285,10 +285,14 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
     degree: '',
     certifications: [],
     languages: [],
-    location_city: '',
-    location_region: '',
+    region: '',
+    city: '',
     region_id: '',
     city_id: '',
+    // Additional tracking/logic fields
+    persona_type: null,
+    municipality_id: null,
+    organization_id: null,
     preferred_language: language,
     // Mobile number with country code
     mobile_number: '',
@@ -297,8 +301,8 @@ export default function OnboardingWizard({ onComplete, onSkip }) {
     avatar_url: ''
   });
 
-  const [isTranslating, setIsTranslating] = useState({});
-  const [validationErrors, setValidationErrors] = useState({});
+  const [isTranslating, setIsTranslating] = useState(/** @type {Record<string, boolean>} */({}));
+  const [validationErrors, setValidationErrors] = useState(/** @type {Record<string, string>} */({}));
 
   // Filter cities based on selected region
   const filteredCities = formData.region_id
@@ -813,16 +817,16 @@ Note: This is a file URL reference. Please analyze what information can be infer
         updated_at: new Date().toISOString()
       };
 
-      console.log('Updating profile with:', updatePayload);
 
-      console.log('Updating profile with:', updatePayload);
+
+
 
       const updateData = await upsertProfile.mutateAsync({
         table: 'user_profiles',
         data: { user_id: user.id, ...updatePayload }
       });
 
-      console.log('Profile updated successfully:', updateData);
+
 
       // Handle role assignment based on persona type
       const selectedPersona = formData.selectedPersona;
@@ -834,7 +838,7 @@ Note: This is a file URL reference. Please analyze what information can be infer
           userEmail: user.email,
           role: 'viewer'
         });
-        console.log('Viewer role assigned');
+
       } else if (selectedPersona && !redirectToSpecialized) {
         // Non-specialized persona that doesn't have a stage 2 wizard
         // Check auto-approval and assign or create request
@@ -866,9 +870,9 @@ Note: This is a file URL reference. Please analyze what information can be infer
         });
 
         if (roleResult.autoApproved) {
-          console.log(`Role ${selectedPersona} auto-approved in stage 1`);
+
         } else {
-          console.log(`Role request created for ${selectedPersona}, pending stage 2 completion or admin approval`);
+
         }
       }
 
@@ -903,7 +907,7 @@ Note: This is a file URL reference. Please analyze what information can be infer
 
         toast.success(t({ en: 'Welcome aboard! Your profile is set up.', ar: 'مرحباً بك! تم إعداد ملفك الشخصي.' }));
         const landingPage = getLandingPage();
-        console.log('Navigating to:', landingPage);
+
         onComplete?.(formData);
         setTimeout(() => {
           navigate(createPageUrl(landingPage));
@@ -1105,6 +1109,7 @@ Note: This is a file URL reference. Please analyze what information can be infer
                         type="document"
                         label={t({ en: 'Upload CV (PDF, DOCX)', ar: 'رفع السيرة الذاتية (PDF, DOCX)' })}
                         maxSize={10}
+                        description={t({ en: 'PDF or Word document', ar: 'ملف PDF أو Word' })}
                       />
                       {isExtractingCV && (
                         <div className="flex items-center gap-2 mt-3 text-blue-600">
@@ -1222,7 +1227,6 @@ Note: This is a file URL reference. Please analyze what information can be infer
                       onUploadComplete={(url) => setFormData({ ...formData, avatar_url: url })}
                       description={t({ en: 'Upload a professional profile picture', ar: 'ارفع صورة شخصية مهنية' })}
                       accept="image/*"
-                      bucket="avatars"
                       trigger={
                         <Button type="button" variant="outline" size="sm">
                           <Upload className="h-4 w-4 mr-2" />
@@ -1909,7 +1913,7 @@ Note: This is a file URL reference. Please analyze what information can be infer
                     <div className="flex items-start gap-3">
                       <Checkbox
                         checked={formData.requestRole}
-                        onCheckedChange={(checked) => setFormData({ ...formData, requestRole: checked })}
+                        onCheckedChange={(checked) => setFormData({ ...formData, requestRole: !!checked })}
                       />
                       <div className="flex-1">
                         <p className="text-sm font-medium text-amber-900">

@@ -2,8 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import {
-  FileText, MessageSquare, CheckCircle2, Upload, Link as LinkIcon,
-  AlertCircle, Star, TestTube, Eye, Edit, Sparkles, Shield
+  FileText, MessageSquare, CheckCircle2, Upload, Star, TestTube, Eye, Edit, Sparkles, Shield
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useComments } from '@/hooks/useComments';

@@ -5,7 +5,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Paperclip, Send, Loader2, X } from 'lucide-react';
-import { toast } from 'sonner';
 import { useCommunicationHub } from '@/hooks/useCommunicationHub';
 import * as usePlatformCore from '@/hooks/usePlatformCore';
 

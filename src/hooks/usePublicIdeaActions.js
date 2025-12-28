@@ -6,6 +6,9 @@ import { toast } from 'sonner';
  * Hook to handle public idea submission actions
  */
 export function usePublicIdeaActions() {
+    /**
+     * @type {import('@tanstack/react-query').UseMutationResult<any, any, { idea: any, municipality: any, sessionId: any, user_id: any, user_type?: string }>}
+     */
     const analyzeIdeaMutation = useMutation({
         mutationFn: async (params) => {
             const { idea, municipality, sessionId, user_id, user_type } = params;
@@ -40,6 +43,9 @@ export function usePublicIdeaActions() {
         }
     });
 
+    /**
+     * @type {import('@tanstack/react-query').UseMutationResult<any, any, { formData: any, initialIdea: any, contactInfo: any, language: any }>}
+     */
     const submitIdeaMutation = useMutation({
         mutationFn: async (params) => {
             const { formData, initialIdea, contactInfo, language } = params;
@@ -76,7 +82,7 @@ export function usePublicIdeaActions() {
                         }
                     });
                 } catch (emailError) {
-                    console.log('Email notification failed (non-critical):', emailError);
+
                 }
             }
 

@@ -14,7 +14,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
 // Types
-export type RBACAction = 
+export type RBACAction =
   | 'role.assign'
   | 'role.revoke'
   | 'role.check_auto_approve'
@@ -64,8 +64,8 @@ interface AuditResult {
 
 // Core invoke function
 async function invokeRBAC<T = unknown>(action: RBACAction, payload: Record<string, unknown> = {}): Promise<T & RBACResponse> {
-  console.log(`[rbacService] Invoking: ${action}`, payload);
-  
+
+
   const { data, error } = await supabase.functions.invoke('rbac-manager', {
     body: { action, payload }
   });
@@ -74,11 +74,11 @@ async function invokeRBAC<T = unknown>(action: RBACAction, payload: Record<strin
     console.error(`[rbacService] Error:`, error);
     throw new Error(error.message || 'RBAC operation failed');
   }
-  
+
   if (!data.success) {
     throw new Error(data.error || 'RBAC operation failed');
   }
-  
+
   return data as T & RBACResponse;
 }
 
@@ -108,9 +108,9 @@ export async function checkAutoApproval(params: {
   municipality_id?: string;
   organization_id?: string;
   institution_domain?: string;
-}): Promise<{ 
-  auto_approved: boolean; 
-  role?: string; 
+}): Promise<{
+  auto_approved: boolean;
+  role?: string;
   role_data?: RoleData;
   requires_approval?: boolean;
   suggested_role?: string;
@@ -159,9 +159,9 @@ export async function validatePermission(params: {
   permission: string;
   resource?: string;
   action?: string;
-}): Promise<{ 
-  allowed: boolean; 
-  reason: string; 
+}): Promise<{
+  allowed: boolean;
+  reason: string;
   roles?: string[];
   delegated_from?: string;
 }> {
@@ -170,15 +170,15 @@ export async function validatePermission(params: {
 
 // ========== Delegation Operations ==========
 
-export async function approveDelegation(delegation_id: string): Promise<{ 
-  approved: boolean; 
-  delegation: unknown 
+export async function approveDelegation(delegation_id: string): Promise<{
+  approved: boolean;
+  delegation: unknown
 }> {
   return invokeRBAC('delegation.approve', { delegation_id });
 }
 
 export async function rejectDelegation(
-  delegation_id: string, 
+  delegation_id: string,
   reason?: string
 ): Promise<{ rejected: boolean; delegation: unknown }> {
   return invokeRBAC('delegation.reject', { delegation_id, reason });

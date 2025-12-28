@@ -21,7 +21,7 @@ export function useToolExecutor() {
         const toolDef = TOOL_REGISTRY[toolName];
         if (!toolDef) throw new Error(`Unknown tool: ${toolName}`);
 
-        console.log(`[Executor] Running ${toolName}`, args);
+
 
         try {
             let result;

@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from '../LanguageContext';
 import { Award, Plus, DollarSign, Shield, Edit2, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
 
 export default function IPManagementWidget({ project }) {
   const { language, isRTL, t } = useLanguage();

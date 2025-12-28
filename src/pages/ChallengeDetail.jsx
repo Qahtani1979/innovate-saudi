@@ -16,7 +16,7 @@ import { useEntityAccessCheck } from '@/hooks/useEntityAccessCheck';
 import { useSolutionsWithVisibility, usePilotsWithVisibility, useContractsWithVisibility } from '@/hooks/visibility';
 import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
 import { useRDProjectsWithVisibility } from '@/hooks/useRDProjectsWithVisibility';
-import { useChallengesWithVisibility, useChallenge } from '@/hooks/useChallengesWithVisibility';
+import { useChallenge } from '@/hooks/useChallengesWithVisibility';
 import { useComments } from '@/hooks/useComments';
 import { useExpertEvaluations } from '@/hooks/useExpertEvaluations';
 import { useChallengeProposals } from '@/hooks/useChallengeProposals';

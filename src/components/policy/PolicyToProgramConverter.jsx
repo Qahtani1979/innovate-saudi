@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { usePolicyMutations } from '@/hooks/usePolicyMutations';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from '../LanguageContext';
-import { Sparkles, Calendar, Loader2, CheckCircle2, Wand2, BookOpen } from 'lucide-react';
+import { Loader2, CheckCircle2, Wand2, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';

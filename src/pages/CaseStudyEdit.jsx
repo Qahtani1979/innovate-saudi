@@ -8,7 +8,6 @@ import { useLanguage } from '../components/LanguageContext';
 import { Award, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useCaseStudy, useCaseStudyMutations } from '@/hooks/useCaseStudies';
 

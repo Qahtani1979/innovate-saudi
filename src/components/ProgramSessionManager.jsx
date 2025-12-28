@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
-import { Calendar, Plus, Users, X, CheckCircle2 } from 'lucide-react';
+import { Calendar, Plus, Users, X, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useProgramMutations } from '@/hooks/useProgramMutations';
@@ -31,7 +31,7 @@ export default function ProgramSessionManager({ program, onClose }) {
   const handleAddSession = async () => {
     const updatedCurriculum = [...sessions, newSession];
     try {
-      await updateProgram({
+      await updateProgram.mutateAsync({
         id: program.id,
         data: { curriculum: updatedCurriculum }
       });
@@ -48,18 +48,24 @@ export default function ProgramSessionManager({ program, onClose }) {
         activities: [],
         resources: []
       });
-    } catch (error) { }
+    } catch (error) {
+      console.error('Failed to add session:', error);
+      toast.error(t({ en: 'Failed to add session', ar: 'فشل إضافة الجلسة' }));
+    }
   };
 
   const handleDeleteSession = async (index) => {
     const updated = sessions.filter((_, i) => i !== index);
     try {
-      await updateProgram({
+      await updateProgram.mutateAsync({
         id: program.id,
         data: { curriculum: updated }
       });
       setSessions(updated);
-    } catch (error) { }
+    } catch (error) {
+      console.error('Failed to delete session:', error);
+      toast.error(t({ en: 'Failed to delete session', ar: 'فشل حذف الجلسة' }));
+    }
   };
 
   return (

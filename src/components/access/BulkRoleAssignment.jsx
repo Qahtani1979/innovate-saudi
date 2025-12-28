@@ -12,6 +12,7 @@ export default function BulkRoleAssignment({ selectedUsers, onComplete }) {
   const { language, isRTL, t } = useLanguage();
   const { data: roles = [] } = useRoles();
   const bulkAssignMutation = useBulkAssignRole();
+  const [targetRole, setTargetRole] = useState('');
 
   const handleBulkUpdate = () => {
     if (!targetRole) {

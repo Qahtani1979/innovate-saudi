@@ -1,4 +1,3 @@
-import React from 'react';
 import { useMatchmakerApplications } from '@/hooks/useMatchmakerApplications';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

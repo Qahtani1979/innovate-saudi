@@ -10,7 +10,6 @@ import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import { useVisibilitySystem } from '@/hooks/visibility/useVisibilitySystem';
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { useOrganizations, useTeams } from '@/hooks/useCollaborationData';

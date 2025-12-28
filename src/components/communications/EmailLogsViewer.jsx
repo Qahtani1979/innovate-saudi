@@ -8,7 +8,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLanguage } from '@/components/LanguageContext';
 import { Mail, Search, RefreshCw, Eye, AlertCircle, CheckCircle2, Clock, XCircle, Send, Loader2, RotateCcw } from 'lucide-react';
-import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useEmailLogs, useEmailStats, useEmailRetry } from '@/hooks/useEmailLogs';
 

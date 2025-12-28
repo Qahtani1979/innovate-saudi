@@ -10,8 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { 
-  Sparkles, Loader2, Plus, X, Target, ChevronDown, ChevronUp, Wand2, Check, 
+import {
+  Sparkles, Loader2, Plus, X, Target, ChevronDown, ChevronUp, Wand2, Check,
   RefreshCw, AlertTriangle, CheckCircle, List, BarChart3, Building2,
   Flag, Calendar
 } from 'lucide-react';
@@ -21,10 +21,10 @@ import { cn } from "@/lib/utils";
 import { StepDashboardHeader, MainAIGeneratorCard } from '../shared';
 import AIObjectivesAnalyzer from '../AIObjectivesAnalyzer';
 
-export default function Step3Objectives({ 
-  data, 
-  onChange, 
-  onGenerateAI, 
+export default function Step3Objectives({
+  data,
+  onChange,
+  onGenerateAI,
   isGenerating,
   onGenerateSingleObjective,
   wizardData = {},
@@ -43,22 +43,22 @@ export default function Step3Objectives({
   const [scoreDetails, setScoreDetails] = useState(null);
   const [isGeneratingSingle, setIsGeneratingSingle] = useState(false);
   const [targetSector, setTargetSector] = useState('_any');
-  
+
   const objectives = data.objectives || [];
-  
+
   // Calculate stats
   const stats = useMemo(() => {
     const highPriority = objectives.filter(o => o.priority === 'high').length;
     const mediumPriority = objectives.filter(o => o.priority === 'medium').length;
     const lowPriority = objectives.filter(o => o.priority === 'low').length;
-    
+
     const sectorsWithObjectives = new Set(objectives.filter(o => o.sector_code).map(o => o.sector_code)).size;
     const totalSectors = sectors.length;
-    
+
     // Completeness calculation
     let completedFields = 0;
     let totalFields = 0;
-    
+
     objectives.forEach(obj => {
       totalFields += 5; // name_en, name_ar, description, sector, priority
       if (obj.name_en) completedFields++;
@@ -67,9 +67,9 @@ export default function Step3Objectives({
       if (obj.sector_code) completedFields++;
       if (obj.priority) completedFields++;
     });
-    
+
     const completeness = totalFields > 0 ? Math.round((completedFields / totalFields) * 100) : 0;
-    
+
     return {
       total: objectives.length,
       highPriority,
@@ -81,10 +81,10 @@ export default function Step3Objectives({
       completeness
     };
   }, [objectives, sectors]);
-  
+
   // Priority order for sorting
   const priorityOrder = { high: 0, medium: 1, low: 2 };
-  
+
   // Sort objectives
   const sortedObjectives = useMemo(() => {
     return [...objectives].map((obj, originalIndex) => ({ ...obj, originalIndex }))
@@ -95,7 +95,7 @@ export default function Step3Objectives({
         return (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2);
       });
   }, [objectives]);
-  
+
   // Group by sector
   const objectivesBySector = useMemo(() => {
     const grouped = {};
@@ -106,7 +106,7 @@ export default function Step3Objectives({
     });
     return grouped;
   }, [objectives]);
-  
+
   // Group by priority
   const objectivesByPriority = useMemo(() => {
     return {
@@ -115,7 +115,7 @@ export default function Step3Objectives({
       low: objectives.map((obj, idx) => ({ ...obj, originalIndex: idx })).filter(o => o.priority === 'low' || !o.priority)
     };
   }, [objectives]);
-  
+
   // Calculate objective completeness
   const getObjectiveCompleteness = (obj) => {
     let filled = 0;
@@ -145,7 +145,7 @@ export default function Step3Objectives({
 
   const updateObjective = (index, updates) => {
     if (isReadOnly) return;
-    const updated = objectives.map((obj, i) => 
+    const updated = objectives.map((obj, i) =>
       i === index ? { ...obj, ...updates } : obj
     );
     onChange({ objectives: updated });
@@ -196,7 +196,7 @@ export default function Step3Objectives({
         }
       }
     } catch (error) {
-      console.error('Error generating single objective:', error);
+
     } finally {
       setIsGeneratingSingle(false);
     }
@@ -222,7 +222,7 @@ export default function Step3Objectives({
     const originalIndex = obj.originalIndex;
     const isOpen = expandedIndex === originalIndex;
     const completeness = getObjectiveCompleteness(obj);
-    
+
     return (
       <Collapsible key={originalIndex} open={isOpen} onOpenChange={(open) => !isReadOnly && setExpandedIndex(open ? originalIndex : null)}>
         <Card className={cn(
@@ -247,8 +247,8 @@ export default function Step3Objectives({
                       )}
                     </div>
                     <p className="font-medium text-sm mt-1 line-clamp-1">
-                      {language === 'ar' 
-                        ? (obj.name_ar || obj.name_en || t({ en: 'New Objective', ar: 'هدف جديد' })) 
+                      {language === 'ar'
+                        ? (obj.name_ar || obj.name_en || t({ en: 'New Objective', ar: 'هدف جديد' }))
                         : (obj.name_en || t({ en: 'New Objective', ar: 'هدف جديد' }))}
                     </p>
                   </div>
@@ -267,7 +267,7 @@ export default function Step3Objectives({
               </div>
             </CardHeader>
           </CollapsibleTrigger>
-          
+
           <CollapsibleContent>
             <CardContent className="space-y-4 pt-0">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -330,8 +330,8 @@ export default function Step3Objectives({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>{t({ en: 'Sector', ar: 'القطاع' })}</Label>
-                  <Select 
-                    value={obj.sector_code || ''} 
+                  <Select
+                    value={obj.sector_code || ''}
                     onValueChange={(v) => updateObjective(originalIndex, { sector_code: v })}
                     disabled={isReadOnly}
                   >
@@ -347,8 +347,8 @@ export default function Step3Objectives({
                 </div>
                 <div className="space-y-2">
                   <Label>{t({ en: 'Priority', ar: 'الأولوية' })}</Label>
-                  <Select 
-                    value={obj.priority || 'medium'} 
+                  <Select
+                    value={obj.priority || 'medium'}
                     onValueChange={(v) => updateObjective(originalIndex, { priority: v })}
                     disabled={isReadOnly}
                   >
@@ -362,8 +362,8 @@ export default function Step3Objectives({
                 </div>
                 <div className="space-y-2">
                   <Label>{t({ en: 'Target Year', ar: 'السنة المستهدفة' })}</Label>
-                  <Select 
-                    value={String(obj.target_year || data.end_year)} 
+                  <Select
+                    value={String(obj.target_year || data.end_year)}
                     onValueChange={(v) => updateObjective(originalIndex, { target_year: parseInt(v) })}
                     disabled={isReadOnly}
                   >
@@ -485,7 +485,7 @@ export default function Step3Objectives({
           {sectors.map(sector => {
             const sectorObjs = objectivesBySector[sector.code] || [];
             if (sectorObjs.length === 0) return null;
-            
+
             return (
               <Card key={sector.code}>
                 <CardHeader className="py-3">
@@ -499,7 +499,7 @@ export default function Step3Objectives({
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {sectorObjs.map((obj, idx) => (
-                    <div 
+                    <div
                       key={obj.originalIndex}
                       className="flex items-center justify-between p-3 rounded-lg border bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors"
                       onClick={() => { setActiveTab('list'); setExpandedIndex(obj.originalIndex); }}
@@ -522,7 +522,7 @@ export default function Step3Objectives({
               </Card>
             );
           })}
-          
+
           {/* Uncategorized */}
           {objectivesBySector['_uncategorized']?.length > 0 && (
             <Card>
@@ -535,7 +535,7 @@ export default function Step3Objectives({
               </CardHeader>
               <CardContent className="space-y-2">
                 {objectivesBySector['_uncategorized'].map((obj) => (
-                  <div 
+                  <div
                     key={obj.originalIndex}
                     className="flex items-center justify-between p-3 rounded-lg border border-dashed hover:bg-muted/50 cursor-pointer transition-colors"
                     onClick={() => { setActiveTab('list'); setExpandedIndex(obj.originalIndex); }}
@@ -547,7 +547,7 @@ export default function Step3Objectives({
               </CardContent>
             </Card>
           )}
-          
+
           {/* Empty sectors hint */}
           {Object.keys(objectivesBySector).filter(k => k !== '_uncategorized').length === 0 && (
             <Card className="border-dashed">
@@ -568,7 +568,7 @@ export default function Step3Objectives({
               medium: { bg: 'bg-amber-50 dark:bg-amber-900/20', border: 'border-amber-200 dark:border-amber-800', text: 'text-amber-700 dark:text-amber-400' },
               low: { bg: 'bg-green-50 dark:bg-green-900/20', border: 'border-green-200 dark:border-green-800', text: 'text-green-700 dark:text-green-400' }
             };
-            
+
             return (
               <Card key={priority} className={cn(colors[priority].bg, colors[priority].border)}>
                 <CardHeader className="py-3">
@@ -583,7 +583,7 @@ export default function Step3Objectives({
                 {priorityObjs.length > 0 && (
                   <CardContent className="space-y-2">
                     {priorityObjs.map((obj) => (
-                      <div 
+                      <div
                         key={obj.originalIndex}
                         className="flex items-center justify-between p-3 rounded-lg bg-background/60 border hover:bg-background cursor-pointer transition-colors"
                         onClick={() => { setActiveTab('list'); setExpandedIndex(obj.originalIndex); }}
@@ -680,7 +680,7 @@ export default function Step3Objectives({
                     const height = (count / maxCount) * 100;
                     return (
                       <div key={year} className="flex-1 flex flex-col items-center gap-1">
-                        <div 
+                        <div
                           className="w-full bg-primary/20 rounded-t transition-all duration-300"
                           style={{ height: `${height}%`, minHeight: count > 0 ? '8px' : '0' }}
                         />
@@ -732,7 +732,7 @@ export default function Step3Objectives({
             strategicThemes={strategicThemes}
             onApplyRecommendation={(rec) => {
               // Handle applying recommendations if needed
-              console.log('Apply recommendation:', rec);
+
             }}
           />
         </TabsContent>
@@ -747,7 +747,7 @@ export default function Step3Objectives({
               {t({ en: 'AI Generated Objective', ar: 'هدف مولد بالذكاء الاصطناعي' })}
             </DialogTitle>
           </DialogHeader>
-          
+
           {isGeneratingSingle ? (
             <div className="py-12 text-center">
               <Loader2 className="w-8 h-8 mx-auto animate-spin text-primary mb-4" />
@@ -760,13 +760,13 @@ export default function Step3Objectives({
                   <span className="text-sm">{t({ en: 'Uniqueness Score', ar: 'درجة التفرد' })}</span>
                   <Badge className={cn(
                     differentiationScore >= 80 ? 'bg-green-100 text-green-700' :
-                    differentiationScore >= 60 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
+                      differentiationScore >= 60 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
                   )}>
                     {differentiationScore}%
                   </Badge>
                 </div>
               )}
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>{t({ en: 'Name (English)', ar: 'الاسم (إنجليزي)' })}</Label>
@@ -784,7 +784,7 @@ export default function Step3Objectives({
                   />
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>{t({ en: 'Description (English)', ar: 'الوصف (إنجليزي)' })}</Label>
@@ -804,12 +804,12 @@ export default function Step3Objectives({
                   />
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>{t({ en: 'Sector', ar: 'القطاع' })}</Label>
-                  <Select 
-                    value={proposedObjective.sector_code || ''} 
+                  <Select
+                    value={proposedObjective.sector_code || ''}
                     onValueChange={(v) => updateProposedField('sector_code', v)}
                   >
                     <SelectTrigger><SelectValue /></SelectTrigger>
@@ -824,8 +824,8 @@ export default function Step3Objectives({
                 </div>
                 <div className="space-y-2">
                   <Label>{t({ en: 'Priority', ar: 'الأولوية' })}</Label>
-                  <Select 
-                    value={proposedObjective.priority || 'medium'} 
+                  <Select
+                    value={proposedObjective.priority || 'medium'}
                     onValueChange={(v) => updateProposedField('priority', v)}
                   >
                     <SelectTrigger><SelectValue /></SelectTrigger>
@@ -839,7 +839,7 @@ export default function Step3Objectives({
               </div>
             </div>
           ) : null}
-          
+
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => handleGenerateSingleObjective()} disabled={isGeneratingSingle}>
               <RefreshCw className="w-4 h-4 mr-2" />
@@ -865,12 +865,12 @@ export default function Step3Objectives({
               {t({ en: 'Select Target Sector', ar: 'اختر القطاع المستهدف' })}
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <p className="text-sm text-muted-foreground">
               {t({ en: 'Choose a sector for the AI to generate a unique objective, or let AI decide.', ar: 'اختر قطاعاً للذكاء الاصطناعي لإنشاء هدف فريد، أو دع الذكاء الاصطناعي يقرر.' })}
             </p>
-            
+
             <div className="space-y-2">
               <Label>{t({ en: 'Sector', ar: 'القطاع' })}</Label>
               <Select value={targetSector} onValueChange={setTargetSector}>
@@ -893,12 +893,12 @@ export default function Step3Objectives({
               </Select>
             </div>
           </div>
-          
+
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setShowSectorModal(false)}>
               {t({ en: 'Cancel', ar: 'إلغاء' })}
             </Button>
-            <Button 
+            <Button
               onClick={() => {
                 setShowSectorModal(false);
                 handleGenerateSingleObjective(targetSector === '_any' ? null : targetSector);

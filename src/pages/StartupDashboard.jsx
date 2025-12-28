@@ -9,6 +9,11 @@ import OpportunityPipelineDashboard from '../components/provider/OpportunityPipe
 import MarketIntelligenceFeed from '../components/solutions/MarketIntelligenceFeed';
 import ProviderPerformanceDashboard from '../components/solutions/ProviderPerformanceDashboard';
 import ProposalWorkflowTracker from '../components/startup/ProposalWorkflowTracker';
+import StartupJourneyAnalytics from '../components/startup/StartupJourneyAnalytics';
+import StartupChurnPredictor from '../components/startup/StartupChurnPredictor';
+import EcosystemContributionScore from '../components/startup/EcosystemContributionScore';
+import StartupMentorshipMatcher from '../components/startup/StartupMentorshipMatcher';
+import MultiMunicipalityExpansionTracker from '../components/startup/MultiMunicipalityExpansionTracker';
 import FirstActionRecommender from '../components/onboarding/FirstActionRecommender';
 import ProfileCompletenessCoach from '../components/onboarding/ProfileCompletenessCoach';
 import ProgressiveProfilingPrompt from '../components/onboarding/ProgressiveProfilingPrompt';
@@ -39,14 +44,17 @@ function StartupDashboard() {
   const { useUserProposals } = useProposals({ user });
 
   // Find startup's organization profile
+  /** @type {any} */
   const { data: organizations = [] } = useOrganizations({ userEmail: user?.email });
-  const myOrganization = organizations.find(o => o.contact_email === user?.email || o.primary_contact_name === user?.full_name);
+  /** @type {any} */
+  const myOrganization = organizations.find(o => o.contact_email === user?.email || (o && /** @type {any} */(o).primary_contact_name === user?.full_name));
 
   // RLS: Startup sees only PUBLISHED challenges
   const { data: allChallenges = [] } = useChallenges({ published: true, deleted: false });
   const openChallenges = allChallenges.filter(c => ['approved', 'in_treatment'].includes(c.status));
 
   // Matchmaker application
+  /** @type {any} */
   const { data: matchmakerApps = [] } = useMatchmakerApplications({ contactEmail: user?.email });
   const myMatchmakerApp = matchmakerApps[0];
 
@@ -92,12 +100,15 @@ function StartupDashboard() {
       <PageHeader
         icon={Rocket}
         title={t({ en: 'Startup & Provider Portal', ar: 'بوابة الشركات الناشئة والمزودين' })}
+        subtitle=""
         description={t({ en: 'Discover opportunities, submit proposals, and grow your impact', ar: 'اكتشف الفرص، قدم المقترحات، وزد تأثيرك' })}
         stats={[
           { icon: Target, value: openChallenges.length, label: t({ en: 'Open Challenges', ar: 'تحديات مفتوحة' }) },
           { icon: Lightbulb, value: mySolutions.length, label: t({ en: 'My Solutions', ar: 'حلولي' }) },
           { icon: Calendar, value: openPrograms.length, label: t({ en: 'Open Programs', ar: 'برامج مفتوحة' }) },
         ]}
+        action={null}
+        actions={null}
       />
 
       {/* Matchmaker Status Banner */}
@@ -187,7 +198,21 @@ function StartupDashboard() {
       </div>
 
       {/* Progressive Profiling Prompt */}
-      <ProgressiveProfilingPrompt />
+      <ProgressiveProfilingPrompt onComplete={() => { }} onDismiss={() => { }} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-6">
+        {myOrganization && <StartupJourneyAnalytics startupId={myOrganization.id} />}
+        {myOrganization && <StartupChurnPredictor startupId={myOrganization.id} />}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-6">
+        {myOrganization && <EcosystemContributionScore startupId={myOrganization.id} />}
+        {myOrganization && <StartupMentorshipMatcher startupId={myOrganization.id} onClose={() => { }} />}
+      </div>
+
+      <div className="pb-6">
+        {myOrganization && <MultiMunicipalityExpansionTracker providerId={myOrganization.id} />}
+      </div>
 
       {/* Opportunity Pipeline */}
       {myOrganization && (

@@ -6,7 +6,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from './LanguageContext';
 import { CheckCircle2, XCircle, AlertCircle, X, Loader2, Send, Users, Award } from 'lucide-react';
-import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { useChallengeMutations } from '@/hooks/useChallengeMutations';

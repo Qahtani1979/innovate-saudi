@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { FileText, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useSolutions } from '@/hooks/useSolutions';
-import { useContracts, useAllContracts } from '@/hooks/useContracts';
+import { useAllContracts } from '@/hooks/useContracts';
 import { usePilotsList } from '@/hooks/usePilots';
 
 export default function ContractPipelineTracker({ providerId }) {

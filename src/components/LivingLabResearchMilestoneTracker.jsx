@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from './LanguageContext';
 import { Target, CheckCircle2, X, Clock, Plus, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useLivingLab, useLivingLabMutations } from '@/hooks/useLivingLab';
 
 export default function LivingLabResearchMilestoneTracker({ lab: initialLab, projectId, onClose }) {

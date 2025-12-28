@@ -7,7 +7,6 @@ import { useLanguage } from '../LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import ReviewerAI from './ReviewerAI';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
-import { toast } from 'sonner';
 import { useApprovalRequests } from '@/hooks/useApprovalRequests';
 
 /**

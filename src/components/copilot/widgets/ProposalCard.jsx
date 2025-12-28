@@ -1,4 +1,3 @@
-import React from 'react';
 import { GenUICard } from './GenUICard';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, Check, X } from 'lucide-react';

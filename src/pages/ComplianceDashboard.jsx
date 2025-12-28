@@ -6,7 +6,6 @@ import { useLanguage } from '../components/LanguageContext';
 import { Shield, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { useVisibilitySystem } from '@/hooks/visibility/useVisibilitySystem';
 
 function ComplianceDashboard() {
   const { language, isRTL, t } = useLanguage();

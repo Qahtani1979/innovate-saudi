@@ -6,7 +6,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from './LanguageContext';
 import { Rocket, X, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import { useProgramMutations } from '@/hooks/useProgramMutations';
 

@@ -1,4 +1,11 @@
 import { useDeadlines } from '@/hooks/useDeadlines';
+import { useLanguage } from '@/components/LanguageContext';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { AlertTriangle, Clock, Calendar } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
+
 
 export default function DeadlineAlerts() {
   const { language, isRTL, t } = useLanguage();

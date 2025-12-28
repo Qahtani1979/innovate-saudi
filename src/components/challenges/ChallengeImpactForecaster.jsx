@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { TrendingUp, Sparkles, Loader2, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { getImpactForecasterPrompt, impactForecasterSchema } from '@/lib/ai/prompts/challenges';
 import { getSystemPrompt } from '@/lib/saudiContext';

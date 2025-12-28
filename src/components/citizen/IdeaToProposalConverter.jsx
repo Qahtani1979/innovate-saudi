@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
-import { Sparkles, FileText, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
+import { Sparkles, FileText, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { IDEA_TO_PROPOSAL_SYSTEM_PROMPT, buildIdeaToProposalPrompt, IDEA_TO_PROPOSAL_SCHEMA } from '@/lib/ai/prompts/citizen';

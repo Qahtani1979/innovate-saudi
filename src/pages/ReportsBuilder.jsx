@@ -30,7 +30,7 @@ export default function ReportsBuilder() {
   ];
 
   const handleGenerate = () => {
-    console.log('Generating report:', reportConfig);
+
   };
 
   return (

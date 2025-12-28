@@ -262,7 +262,10 @@ export function useImportChallenges() {
  *   isCreating: boolean,
  *   isUpdating: boolean,
  *   isDeleting: boolean,
- *   isSubmitting: boolean
+ *   isSubmitting: boolean,
+ *   generateEmbeddings: import('@tanstack/react-query').UseMutationResult<any, Error, any>,
+ *   checkConsensus: import('@tanstack/react-query').UseMutationResult<any, Error, string>,
+ *   updatePublishingSettings: import('@tanstack/react-query').UseMutationResult<any, Error, any>
  * }}
  */
 export function useChallengeMutations() {
@@ -790,6 +793,10 @@ export function useChallengeMutations() {
         queryClient.invalidateQueries({ queryKey: ['challenge', data.id] });
         queryClient.invalidateQueries({ queryKey: ['challenges'] });
         notify.success(t({ en: 'Publishing settings updated', ar: 'تم تحديث إعدادات النشر' }));
+      },
+      onError: (error) => {
+        console.error('Publishing update failed:', error);
+        notify.error(t({ en: 'Failed to update publishing settings', ar: 'فشل تحديث إعدادات النشر' }));
       }
     })
   };

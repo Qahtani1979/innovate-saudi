@@ -2,7 +2,6 @@ import { useAuditSchedule } from '@/hooks/useAuditSchedule';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { useLanguage } from '../LanguageContext';
-import { toast } from 'sonner';
 import {
   Calendar, Clock, CheckCircle2, Settings, Bell
 } from 'lucide-react';

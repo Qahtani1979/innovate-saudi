@@ -1,5 +1,5 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Image as ImageIcon, Video } from 'lucide-react';
+import { Video } from 'lucide-react';
 
 export default function MediaTab({ project, t }) {
     return (

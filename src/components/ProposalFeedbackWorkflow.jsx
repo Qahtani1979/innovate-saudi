@@ -5,7 +5,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from './LanguageContext';
 import { MessageSquare, X, Send, Loader2, Sparkles } from 'lucide-react';
-import { toast } from 'sonner';
 
 import { useRDMutations } from '@/hooks/useRDMutations';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';

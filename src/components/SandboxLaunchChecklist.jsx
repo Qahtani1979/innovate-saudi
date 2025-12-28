@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from './LanguageContext';
 import { Rocket, AlertCircle, X, Loader2, Shield } from 'lucide-react';
-import { toast } from 'sonner';
 
 export default function SandboxLaunchChecklist({ sandbox, onClose }) {
   const { t, isRTL } = useLanguage();

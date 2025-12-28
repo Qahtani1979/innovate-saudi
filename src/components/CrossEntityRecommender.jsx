@@ -7,7 +7,6 @@ import { Sparkles, Loader2, ArrowRight, Target, TestTube, Microscope, Megaphone,
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { toast } from 'sonner';
-import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import {
   CROSS_ENTITY_PROMPTS,

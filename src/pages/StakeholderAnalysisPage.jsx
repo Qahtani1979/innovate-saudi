@@ -10,30 +10,30 @@ function StakeholderAnalysisPage() {
   const { activePlanId, activePlan } = useActivePlan();
 
   const handleSave = (data) => {
-    console.log('Stakeholder Analysis saved:', data);
+
   };
 
   return (
     <div className="container mx-auto py-6 px-4 space-y-6">
       <ActivePlanBanner />
-      
+
       <div>
         <h1 className="text-2xl font-bold">
           {t({ en: 'Stakeholder Analysis', ar: 'تحليل أصحاب المصلحة' })}
         </h1>
         <p className="text-muted-foreground mt-1">
-          {t({ 
+          {t({
             en: 'Map and analyze stakeholders using the Power/Interest Grid methodology',
             ar: 'رسم خريطة وتحليل أصحاب المصلحة باستخدام منهجية شبكة القوة/الاهتمام'
           })}
         </p>
       </div>
-      
+
       <NoPlanGuard>
-        <StakeholderAnalysisWidget 
+        <StakeholderAnalysisWidget
           strategicPlanId={activePlanId}
-          strategicPlan={activePlan}
-          onSave={handleSave} 
+          initialData={activePlan}
+          onSave={handleSave}
         />
       </NoPlanGuard>
     </div>

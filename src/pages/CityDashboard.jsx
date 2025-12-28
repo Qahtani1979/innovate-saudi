@@ -4,8 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import {
-  Building2, Users, TrendingUp, AlertCircle, TestTube, Lightbulb,
-  BarChart3, MapPin, DollarSign, Briefcase, Activity
+  Building2, Users, TrendingUp, AlertCircle, TestTube, Lightbulb, MapPin, DollarSign, Briefcase, Activity
 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';

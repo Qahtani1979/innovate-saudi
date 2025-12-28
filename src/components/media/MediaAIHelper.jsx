@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/components/LanguageContext';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { MEDIA_AI_HELPER_SYSTEM_PROMPT, buildMediaAnalysisPrompt, MEDIA_ANALYSIS_SCHEMA } from '@/lib/ai/prompts/media';
-import { 
+import {
   Sparkles, Loader2, TrendingUp, AlertTriangle, Archive, Trash2, Eye, ChevronDown, ChevronUp,
   RefreshCw, Lightbulb, BarChart3, Zap
 } from 'lucide-react';
@@ -15,7 +15,7 @@ export default function MediaAIHelper({ files = [], stats = {}, onAction }) {
   const { t, language } = useLanguage();
   const [insights, setInsights] = useState(null);
   const [isExpanded, setIsExpanded] = useState(true);
-  
+
   const { invokeAI, isLoading, isRateLimited, error } = useAIWithFallback({
     showToasts: true,
     fallbackData: null,
@@ -34,12 +34,12 @@ export default function MediaAIHelper({ files = [], stats = {}, onAction }) {
       // Basic stats
       totalFiles: files.length,
       totalSize: files.reduce((acc, f) => acc + (f.file_size || 0), 0),
-      
+
       // Type distribution
       byType: {},
       byBucket: {},
       byCategory: {},
-      
+
       // Temporal analysis
       recentUploads: files.filter(f => new Date(f.created_at).getTime() > weekAgo).length,
       monthOld: files.filter(f => {
@@ -47,7 +47,7 @@ export default function MediaAIHelper({ files = [], stats = {}, onAction }) {
         return t < monthAgo && t > threeMonthsAgo;
       }).length,
       staleFiles: files.filter(f => new Date(f.created_at).getTime() < threeMonthsAgo).length,
-      
+
       // Engagement metrics
       noEngagement: files.filter(f => (f.view_count || 0) === 0 && (f.download_count || 0) === 0).length,
       lowEngagement: files.filter(f => {
@@ -57,22 +57,22 @@ export default function MediaAIHelper({ files = [], stats = {}, onAction }) {
       highEngagement: files.filter(f => (f.view_count || 0) > 10 || (f.download_count || 0) > 5).length,
       totalViews: files.reduce((acc, f) => acc + (f.view_count || 0), 0),
       totalDownloads: files.reduce((acc, f) => acc + (f.download_count || 0), 0),
-      
+
       // Entity associations
       linkedToEntities: files.filter(f => f.entity_id).length,
       orphanedFiles: files.filter(f => !f.entity_id).length,
       entityTypes: {},
-      
+
       // Content quality
       withDescription: files.filter(f => f.description || f.ai_description).length,
       withTags: files.filter(f => (f.tags?.length || 0) > 0 || (f.ai_tags?.length || 0) > 0).length,
       withAltText: files.filter(f => f.alt_text).length,
-      
+
       // Storage optimization
       duplicateCandidates: findPotentialDuplicates(files),
       largeFiles: files.filter(f => (f.file_size || 0) > 10 * 1024 * 1024),
       veryLargeFiles: files.filter(f => (f.file_size || 0) > 50 * 1024 * 1024),
-      
+
       // User activity
       uploaders: [...new Set(files.map(f => f.uploaded_by_email).filter(Boolean))].length,
       topUploaders: getTopUploaders(files, 3),
@@ -84,7 +84,7 @@ export default function MediaAIHelper({ files = [], stats = {}, onAction }) {
       const bucket = f.bucket_id || 'unknown';
       const category = f.category || 'uncategorized';
       const entityType = f.entity_type || 'none';
-      
+
       mediaSummary.byType[type] = (mediaSummary.byType[type] || 0) + 1;
       mediaSummary.byBucket[bucket] = (mediaSummary.byBucket[bucket] || 0) + 1;
       mediaSummary.byCategory[category] = (mediaSummary.byCategory[category] || 0) + 1;
@@ -145,7 +145,7 @@ Focus on actionable recommendations with specific file counts and potential impa
   };
 
   const handleAction = (action, recommendation) => {
-    console.log('[MediaAIHelper] Take Action clicked', action, recommendation);
+
     if (onAction) {
       onAction(action, recommendation);
     }
@@ -232,9 +232,9 @@ Focus on actionable recommendations with specific file counts and potential impa
                 <Lightbulb className="h-10 w-10 mx-auto mb-3 opacity-50" />
                 <p>{t({ en: 'Click "Analyze" to get AI-powered insights', ar: 'انقر على "تحليل" للحصول على رؤى ذكية' })}</p>
                 <p className="text-sm mt-1">
-                  {t({ 
-                    en: `${files.length} files ready for analysis`, 
-                    ar: `${files.length} ملف جاهز للتحليل` 
+                  {t({
+                    en: `${files.length} files ready for analysis`,
+                    ar: `${files.length} ملف جاهز للتحليل`
                   })}
                 </p>
               </div>

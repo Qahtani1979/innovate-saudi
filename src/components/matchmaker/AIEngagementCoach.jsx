@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '../LanguageContext';
-import { Sparkles, Lightbulb, MessageSquare, ArrowRight } from 'lucide-react';
+import { Sparkles, Lightbulb, MessageSquare } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
-import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 
 export default function AIEngagementCoach({ application, match }) {
     const { t } = useLanguage();

@@ -24,9 +24,6 @@ import {
   MILESTONE_APPROVAL_PROMPT_TEMPLATE
 } from '@/lib/ai/prompts/approval/approvalAnalysis';
 import { useApprovalRequests } from '@/hooks/useApprovalRequests';
-import { useAllProgramApplications } from '@/hooks/useProgramDetails';
-import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
-import { useAuditLogger } from '@/hooks/useAuditLogger';
 import { usePendingLegacyPolicies } from '@/hooks/usePolicies';
 
 function ApprovalCenter() {

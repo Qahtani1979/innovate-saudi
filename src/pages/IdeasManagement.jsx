@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
 import { useCitizenIdeas, useCitizenIdeaActions, useIdeaConversion } from '@/hooks/useCitizenIdeas';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

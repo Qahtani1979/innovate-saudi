@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useStrategiesWithVisibility } from '@/hooks/useStrategiesWithVisibility';
 import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { useChallengesWithVisibility } from '@/hooks/useChallengesWithVisibility';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 import { useLanguage } from '../LanguageContext';

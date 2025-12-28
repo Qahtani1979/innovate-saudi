@@ -2,7 +2,14 @@ import * as React from "react"
 import * as SwitchPrimitives from "@radix-ui/react-switch"
 
 import { cn } from "@/lib/utils"
+/**
+ * @typedef {Object} SwitchProps
+ * @property {boolean} [checked]
+ * @property {(checked: boolean) => void} [onCheckedChange]
+ * @property {string} [className]
+ */
 
+/** @type {React.ForwardRefExoticComponent<SwitchProps & React.RefAttributes<HTMLButtonElement>>} */
 const Switch = React.forwardRef(({ className, ...props }, ref) => (
   <SwitchPrimitives.Root
     className={cn(

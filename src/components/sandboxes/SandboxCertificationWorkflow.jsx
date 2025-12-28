@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../LanguageContext';
 import { Award, Search, CheckCircle2 } from 'lucide-react';
-import { toast } from 'sonner';
 
 export default function SandboxCertificationWorkflow({ sandboxId }) {
   const { language, isRTL, t } = useLanguage();

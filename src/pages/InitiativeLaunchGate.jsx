@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../components/LanguageContext';
 import { CheckCircle2, XCircle, Clock, TestTube, Calendar, Microscope } from 'lucide-react';
-import { toast } from 'sonner';
 import { usePilotsWithVisibility } from '@/hooks/usePilotsWithVisibility';
 import { useProgramsWithVisibility } from '@/hooks/useProgramsWithVisibility';
 import { useRDCalls } from '@/hooks/useRDCalls';

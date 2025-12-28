@@ -2,7 +2,7 @@ import { useMatchmakerApplications } from '@/hooks/useMatchmakerApplications';
 import { useOrganizationPartnerships } from '@/hooks/useOrganizationPartnerships';
 import { useLanguage } from '@/components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import ProtectedPage from '@/components/layout/ProtectedPage';
+import ProtectedPage from '@/components/permissions/ProtectedPage';
 
 function MatchmakerSuccessAnalytics() {
   const { t, isRTL } = useLanguage();

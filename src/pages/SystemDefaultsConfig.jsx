@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLanguage } from '../components/LanguageContext';
 import { Save, Loader2 } from 'lucide-react';
 import ProtectedPage from '../components/permissions/ProtectedPage';
-import { toast } from 'sonner';
 
 function SystemDefaultsConfig() {
   const { language, isRTL, t } = useLanguage();

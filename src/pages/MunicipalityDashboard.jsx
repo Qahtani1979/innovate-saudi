@@ -10,7 +10,6 @@ import { useChallengeMatches } from '@/hooks/useChallengeMatches';
 import { useChallengeActivities } from '@/hooks/useChallengeActivities';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
 import QuickSolutionsMarketplace from '../components/municipalities/QuickSolutionsMarketplace';

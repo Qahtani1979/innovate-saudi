@@ -26,7 +26,6 @@ import {
   Eye,
   UsersRound
 } from 'lucide-react';
-import { toast } from 'sonner';
 import { PageLayout, PageHeader, PersonaButton } from '@/components/layout/PersonaPageLayout';
 
 export default function ExpertPanelManagement() {

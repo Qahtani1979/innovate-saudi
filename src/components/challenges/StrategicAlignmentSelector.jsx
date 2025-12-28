@@ -65,7 +65,7 @@ export default function StrategicAlignmentSelector({ challenge, onUpdate }) {
 
       if (response.success) {
         toast.success(t({ en: 'Validation complete - see analysis', ar: 'اكتمل التحقق - راجع التحليل' }));
-        console.log('Alignment validation:', response.data);
+
       }
     } catch (error) {
       toast.error(t({ en: 'Validation failed', ar: 'فشل التحقق' }));

@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from './LanguageContext';
 import { Activity, Plus, X, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useGovernanceMutations } from '@/hooks/useGovernance';
 
 export default function ChallengeTreatmentPlan({ challenge, onClose }) {

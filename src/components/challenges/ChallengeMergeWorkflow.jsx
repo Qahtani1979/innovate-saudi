@@ -6,7 +6,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from '../LanguageContext';
 import { GitMerge, Loader2, AlertTriangle } from 'lucide-react';
-import { toast } from 'sonner';
 
 import { useMergeChallenges } from '@/hooks/useChallengeMutations';
 
