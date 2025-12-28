@@ -68,6 +68,7 @@ const LayoutWrapper = ({ children, currentPageName }) => {
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isAuthenticated } = useAuth();
+  console.log('APP.JSX: AuthenticatedApp render', { isLoadingAuth, isAuthenticated });
 
   // Show loading spinner while checking auth
   if (isLoadingAuth) {
@@ -160,6 +161,7 @@ const AuthenticatedApp = () => {
 
 
 function App() {
+  console.log('APP.JSX: Rendering App component');
   return (
     <QueryClientProvider client={queryClientInstance}>
       <LanguageProvider>

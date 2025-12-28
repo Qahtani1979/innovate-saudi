@@ -1,3 +1,4 @@
+console.log('MAIN.JSX: EXECUTION START (BEFORE IMPORTS)');
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from '@/App.jsx'
@@ -7,6 +8,7 @@ import '@/index.css'
 if (typeof window !== 'undefined') {
   window.React = React;
 }
+console.log('MAIN.JSX: Loading...');
 
 // Error boundary for the entire app
 class AppErrorBoundary extends React.Component {
@@ -29,8 +31,8 @@ class AppErrorBoundary extends React.Component {
         <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center">
           <h1 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h1>
           <p className="text-gray-600 mb-4">{this.state.error?.message || 'Unknown error'}</p>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             Reload Page
@@ -42,6 +44,7 @@ class AppErrorBoundary extends React.Component {
   }
 }
 
+console.log('MAIN.JSX: Rendering to root...');
 ReactDOM.createRoot(document.getElementById('root')).render(
   <AppErrorBoundary>
     <App />
