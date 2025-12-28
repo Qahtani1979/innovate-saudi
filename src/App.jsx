@@ -1,6 +1,7 @@
 import './App.css'
 import { Toaster } from "@/components/ui/toaster"
-import { QueryClientProvider, queryClientInstance } from '@/hooks/useAppQueryClient'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { queryClientInstance } from '@/hooks/useAppQueryClient'
 import VisualEditAgent from '@/lib/VisualEditAgent'
 import NavigationTracker from '@/lib/NavigationTracker'
 import { pagesConfig } from './pages.config'
