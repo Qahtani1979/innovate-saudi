@@ -15,7 +15,7 @@ export default function LivingLabActivityLog({ livingLabId }) {
     ...bookings.map(b => ({
       ...b,
       type: 'booking',
-      activity_description: `Booking: ${b.booking_purpose} (${b.booking_status})`,
+      description: `Booking: ${b.booking_purpose} (${b.booking_status})`,
       created_by: b.requester_email
     }))
   ].sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
@@ -48,7 +48,7 @@ export default function LivingLabActivityLog({ livingLabId }) {
                       {new Date(event.created_date).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')}
                     </span>
                   </div>
-                  <p className="text-sm text-slate-700">{event.activity_description}</p>
+                  <p className="text-sm text-slate-700">{event.description || event.activity_description}</p>
                   {event.activity_type && (
                     <Badge variant="outline" className="mt-2 text-xs">
                       {event.activity_type}

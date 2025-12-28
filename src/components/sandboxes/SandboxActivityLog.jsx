@@ -12,7 +12,7 @@ export default function SandboxActivityLog({ sandboxId }) {
 
   const allEvents = [
     ...activities.map(a => ({ ...a, type: 'activity' })),
-    ...incidents.map(i => ({ ...i, type: 'incident', activity_description: `Incident: ${i.incident_type} - ${i.severity}` }))
+    ...incidents.map(i => ({ ...i, type: 'incident', description: `Incident: ${i.incident_type} - ${i.severity}` }))
   ].sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
   const activityIcons = {
@@ -50,7 +50,7 @@ export default function SandboxActivityLog({ sandboxId }) {
                       {new Date(event.created_date).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')}
                     </span>
                   </div>
-                  <p className="text-sm text-slate-700">{event.activity_description}</p>
+                  <p className="text-sm text-slate-700">{event.description || event.activity_description}</p>
                   {event.activity_type && (
                     <Badge variant="outline" className="mt-2 text-xs">
                       {event.activity_type}

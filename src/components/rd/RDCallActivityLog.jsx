@@ -44,7 +44,7 @@ export default function RDCallActivityLog({ rdCallId }) {
                   </span>
                 </div>
                 <p className="text-sm text-slate-700">
-                  {event.type === 'comment' ? event.comment_text : event.activity_description}
+                  {event.type === 'comment' ? event.comment_text : (event.description || event.activity_description)}
                 </p>
                 {event.activity_type && (
                   <Badge variant="outline" className="mt-2 text-xs">

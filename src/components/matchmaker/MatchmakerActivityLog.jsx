@@ -15,7 +15,7 @@ export default function MatchmakerActivityLog({ applicationId }) {
     ...evaluations.map(e => ({
       ...e,
       type: 'evaluation',
-      activity_description: `Evaluation: ${e.evaluation_outcome || 'In Progress'}`,
+      description: `Evaluation: ${e.evaluation_outcome || 'In Progress'}`,
       created_by: e.evaluator_email
     }))
   ].sort((a, b) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime());
@@ -48,7 +48,7 @@ export default function MatchmakerActivityLog({ applicationId }) {
                       {new Date(event.created_date).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')}
                     </span>
                   </div>
-                  <p className="text-sm text-slate-700">{event.activity_description}</p>
+                  <p className="text-sm text-slate-700">{event.description || event.activity_description}</p>
                   {event.activity_type && (
                     <Badge variant="outline" className="mt-2 text-xs">
                       {event.activity_type}

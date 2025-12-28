@@ -11,7 +11,15 @@ import { useAuth } from '@/lib/AuthContext';
  * Ensures the 'Brain' always knows who the user is.
  */
 export function CopilotProvider({ children }) {
-    console.log('CopilotProvider: Rendered (Pass-through)');
-    // Completely stripped for debugging
+    const { user } = useAuth();
+    const { setMessages, addMessage } = useCopilotStore();
+    useCopilotHistory();
+    const { requestExecution } = useToolExecutor();
+    const { askBrain, status, isLoading } = useCopilotAgent();
+
+    useEffect(() => {
+        orchestrator.setExecutor(requestExecution);
+        orchestrator.setCaller(askBrain);
+    }, [requestExecution, askBrain]);
     return <>{children}</>;
 }

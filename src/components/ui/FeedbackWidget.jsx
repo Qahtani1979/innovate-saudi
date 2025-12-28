@@ -20,7 +20,7 @@ export default function FeedbackWidget() {
     logActivity({
       user_email: user?.email || 'anonymous',
       activity_type: 'feedback',
-      activity_description: `Platform Feedback - Rating: ${rating}/5`,
+      description: `Platform Feedback - Rating: ${rating}/5`,
       metadata: {
         rating,
         feedback,

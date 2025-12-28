@@ -17,7 +17,7 @@ export function useAnalytics() {
                 user_email: user?.email || 'anonymous',
                 user_id: user?.id, // Add user_id
                 activity_type: 'search',
-                activity_description: `Searched: ${query}`,
+                description: `Searched: ${query}`,
                 entity_type: entityType || 'mixed',
                 metadata: {
                     query,
@@ -43,7 +43,7 @@ export function useAnalytics() {
                 user_email: user?.email || 'anonymous',
                 user_id: user?.id,
                 activity_type: activityType,
-                activity_description: activityDescription,
+                description: activityDescription,
                 entity_type: entityType || 'mixed',
                 entity_id: entityId,
                 metadata: {

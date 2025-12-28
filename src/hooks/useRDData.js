@@ -114,3 +114,36 @@ export function useRDPolicies() {
         }
     });
 }
+
+/**
+ * Hook to fetch Comments for an RD Call
+ * Mapped from system_activities where activity_type = 'comment'
+ */
+export function useRDCallComments(entityId) {
+    return useQuery({
+        queryKey: ['rd-call-comments', entityId],
+        queryFn: async () => {
+            if (!entityId) return [];
+            const { data, error } = await supabase
+                .from('system_activities')
+                .select('*')
+                .eq('entity_type', 'RDCall')
+                .eq('entity_id', entityId)
+                .eq('activity_type', 'comment')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.warn(`Failed to fetch comments for RDCall ${entityId}`, error);
+                return [];
+            }
+
+            // Map description to comment_text to match component expectation
+            return data.map(item => ({
+                ...item,
+                comment_text: item.description,
+                created_by: item.user_email // Fallback since created_by isn't direct
+            }));
+        },
+        enabled: !!entityId
+    });
+}
