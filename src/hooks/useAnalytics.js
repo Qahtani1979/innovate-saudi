@@ -4,6 +4,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -14,6 +15,7 @@ export function useAnalytics() {
         mutationFn: async ({ query, resultsCount, entityType }) => {
             const { error } = await supabase.from('user_activities').insert({
                 user_email: user?.email || 'anonymous',
+                user_id: user?.id, // Add user_id
                 activity_type: 'search',
                 activity_description: `Searched: ${query}`,
                 entity_type: entityType || 'mixed',
@@ -31,9 +33,9 @@ export function useAnalytics() {
         }
     });
 
-    const trackSearch = (query, resultsCount, entityType) => {
+    const trackSearch = useCallback((query, resultsCount, entityType) => {
         trackSearchMutation.mutate({ query, resultsCount, entityType });
-    };
+    }, [trackSearchMutation]);
 
     const trackActivityMutation = useMutation({
         mutationFn: async ({ activityType, activityDescription, entityType, entityId, metadata }) => {
@@ -56,17 +58,17 @@ export function useAnalytics() {
         }
     });
 
-    const trackActivity = (activityType, activityDescription, entityType, entityId, metadata) => {
+    const trackActivity = useCallback((activityType, activityDescription, entityType, entityId, metadata) => {
         trackActivityMutation.mutate({ activityType, activityDescription, entityType, entityId, metadata });
-    };
+    }, [trackActivityMutation]);
 
-    const trackPageView = (pageName, pageUrl, metadata = {}) => {
+    const trackPageView = useCallback((pageName, pageUrl, metadata = {}) => {
         trackActivity('page_view', `Viewed page: ${pageName}`, 'page', null, {
             page_name: pageName,
             page_url: pageUrl,
             ...metadata
         });
-    };
+    }, [trackActivity]);
 
     return {
         trackSearch,
