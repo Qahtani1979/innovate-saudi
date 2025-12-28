@@ -120,11 +120,11 @@ export function usePilotMutations() {
                     entity_type: 'pilot',
                     entity_id: id,
                     activity_type: data.activity_type || `pilot_${data.stage}`,
-                    description: data.activity_description || (data.stage ? `Pilot "${pilot.title_en}" moved to stage ${data.stage}` : `Pilot "${pilot.title_en}" updated`),
+                    description: data.description || data.activity_description || (data.stage ? `Pilot "${pilot.title_en}" moved to stage ${data.stage}` : `Pilot "${pilot.title_en}" updated`),
                     metadata: {
                         old_stage: currentPilot.stage,
                         new_stage: data.stage || currentPilot.stage,
-                        ...(data.activity_metadata || data.metadata || {})
+                        ...(data.metadata || data.activity_metadata || {})
                     }
                 });
 

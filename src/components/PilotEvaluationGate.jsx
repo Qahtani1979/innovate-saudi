@@ -27,8 +27,8 @@ export default function PilotEvaluationGate({ pilot, onClose }) {
           evaluation_start: new Date().toISOString()
         },
         activity_type: 'pilot_evaluation_started',
-        activity_description: `Pilot "${pilot.title_en}" closed and moved to evaluation`,
-        activity_metadata: { recommendation: recommendationType, ai_evaluation: aiEvaluation }
+        description: `Pilot "${pilot.title_en}" closed and moved to evaluation`,
+        metadata: { recommendation: recommendationType, ai_evaluation: aiEvaluation }
       }
     }, {
       onSuccess: () => {

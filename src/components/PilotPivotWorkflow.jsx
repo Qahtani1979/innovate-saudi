@@ -44,8 +44,8 @@ export default function PilotPivotWorkflow({ pilot, onClose }) {
           }
         ],
         activity_type: 'pilot_pivot',
-        activity_description: `Pilot "${pilot.title_en}" pivot initiated: ${pivotType}`,
-        activity_metadata: { pivot_type: pivotType, rationale, ai_analysis: aiAnalysis }
+        description: `Pilot "${pilot.title_en}" pivot initiated: ${pivotType}`,
+        metadata: { pivot_type: pivotType, rationale, ai_analysis: aiAnalysis }
       }
     }, {
       onSuccess: () => {
