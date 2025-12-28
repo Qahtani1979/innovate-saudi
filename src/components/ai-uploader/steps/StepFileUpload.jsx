@@ -5,12 +5,12 @@
 import { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Upload, FileText, FileSpreadsheet, FileImage, 
+import {
+  Upload, FileText, FileSpreadsheet, FileImage,
   File, Loader2, ArrowRight, X, CheckCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import aiService from '@/services/aiService';
 
 const SUPPORTED_TYPES = {
   'text/csv': { icon: FileSpreadsheet, label: 'CSV', color: 'bg-green-100 text-green-800' },
@@ -34,7 +34,7 @@ export default function StepFileUpload({ state, updateState, onNext }) {
   const getFileType = (file) => {
     const mimeType = file.type;
     const extension = file.name.split('.').pop().toLowerCase();
-    
+
     if (mimeType === 'text/csv' || extension === 'csv') return 'csv';
     if (mimeType.includes('spreadsheet') || extension === 'xlsx' || extension === 'xls') return 'excel';
     if (mimeType === 'application/json' || extension === 'json') return 'json';
@@ -48,11 +48,11 @@ export default function StepFileUpload({ state, updateState, onNext }) {
     const result = [];
     let current = '';
     let inQuotes = false;
-    
+
     for (let i = 0; i < line.length; i++) {
       const char = line[i];
       const nextChar = line[i + 1];
-      
+
       if (char === '"' && !inQuotes) {
         inQuotes = true;
       } else if (char === '"' && inQuotes) {
@@ -77,14 +77,14 @@ export default function StepFileUpload({ state, updateState, onNext }) {
     const text = await file.text();
     // Handle different line endings
     const lines = text.split(/\r?\n/).filter(line => line.trim());
-    
+
     if (lines.length === 0) {
       return { headers: [], rows: [], rawText: text };
     }
-    
+
     const headers = parseCSVLine(lines[0]).map(h => h.replace(/^["']|["']$/g, ''));
     const rows = [];
-    
+
     for (let i = 1; i < lines.length; i++) {
       const values = parseCSVLine(lines[i]).map(v => v.replace(/^["']|["']$/g, ''));
       // Be more lenient - create row even if column count doesn't match exactly
@@ -96,7 +96,7 @@ export default function StepFileUpload({ state, updateState, onNext }) {
         rows.push(row);
       }
     }
-    
+
     return { headers, rows, rawText: text };
   };
 
@@ -111,48 +111,48 @@ export default function StepFileUpload({ state, updateState, onNext }) {
   // Process Excel files using dynamic import to avoid React hook conflicts
   const processExcel = async (file) => {
     setProcessStatus('Loading Excel parser...');
-    
+
     try {
       // Dynamic import to isolate xlsx from React's module resolution
       const XLSX = await import('xlsx');
-      
+
       setProcessStatus('Reading Excel file...');
       const buffer = await file.arrayBuffer();
       const workbook = XLSX.read(buffer, { type: 'array' });
-      
+
       const firstSheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[firstSheetName];
-      
+
       // Convert to JSON with headers
       const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-      
+
       if (jsonData.length === 0) {
         throw new Error('No data found in Excel file');
       }
-      
+
       // First row is headers
       const headers = jsonData[0].map(h => String(h || '').trim()).filter(h => h);
       const rows = [];
-      
+
       // Process remaining rows
       for (let i = 1; i < jsonData.length; i++) {
         const rowData = jsonData[i];
         if (!rowData || rowData.length === 0) continue;
-        
+
         const row = {};
         let hasData = false;
-        
+
         headers.forEach((header, idx) => {
           const value = rowData[idx];
           row[header] = value !== undefined && value !== null ? String(value) : '';
           if (row[header]) hasData = true;
         });
-        
+
         if (hasData) {
           rows.push(row);
         }
       }
-      
+
       return { headers, rows, rawText: JSON.stringify({ headers, rows }) };
     } catch (error) {
       console.error('Excel parsing error:', error);
@@ -164,36 +164,32 @@ export default function StepFileUpload({ state, updateState, onNext }) {
 
   const processWithAI = async (file, fileType) => {
     setProcessStatus('Processing with AI...');
-    
+
     // For PDF and images, we need to use AI extraction
     // Read file as base64 for AI processing
     const buffer = await file.arrayBuffer();
     const base64 = btoa(
       new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
     );
-    
+
     setProcessStatus('AI is extracting data from your file...');
-    
-    // Call AI extraction edge function with base64 content
-    const { data: result, error: extractError } = await supabase.functions.invoke('extract-file-data', {
-      body: { 
-        file_content: base64,
-        file_name: file.name,
-        file_type: file.type,
-        json_schema: {
-          type: 'object',
-          properties: {
-            headers: { type: 'array', items: { type: 'string' } },
-            rows: { type: 'array', items: { type: 'object' } }
-          }
+
+    // Call AI extraction service
+    const result = await aiService.extractFileData({
+      file_content: base64,
+      file_name: file.name,
+      file_type: file.type,
+      json_schema: {
+        type: 'object',
+        properties: {
+          headers: { type: 'array', items: { type: 'string' } },
+          rows: { type: 'array', items: { type: 'object' } }
         }
       }
     });
-    
-    if (extractError) throw new Error('AI extraction failed: ' + extractError.message);
-    
-    if (result?.error) throw new Error(result.error);
-    
+
+    // Error handling is done inside service or caught by try/catch below
+
     return {
       headers: result.headers || Object.keys(result.rows?.[0] || {}),
       rows: result.rows || [],
@@ -203,27 +199,27 @@ export default function StepFileUpload({ state, updateState, onNext }) {
 
   const handleFile = useCallback(async (file) => {
     if (!file) return;
-    
+
     // Validate size
     if (file.size > MAX_FILE_SIZE) {
       toast.error('File too large. Maximum size is 20MB');
       return;
     }
-    
+
     const fileType = getFileType(file);
     const typeInfo = SUPPORTED_TYPES[file.type];
-    
+
     if (fileType === 'unknown') {
       toast.error('Unsupported file type. Please upload CSV, Excel, JSON, PDF, or image files.');
       return;
     }
-    
+
     setIsProcessing(true);
     setProcessStatus('Reading file...');
-    
+
     try {
       let extractedData;
-      
+
       if (fileType === 'csv') {
         setProcessStatus('Parsing CSV...');
         extractedData = await processCSV(file);
@@ -237,7 +233,7 @@ export default function StepFileUpload({ state, updateState, onNext }) {
         // PDF, Image - use AI extraction
         extractedData = await processWithAI(file, fileType);
       }
-      
+
       updateState({
         file,
         fileType,
@@ -247,9 +243,9 @@ export default function StepFileUpload({ state, updateState, onNext }) {
           columnCount: extractedData.headers.length
         }
       });
-      
+
       toast.success(`Extracted ${extractedData.rows.length} rows from ${file.name}`);
-      
+
     } catch (error) {
       console.error('File processing error:', error);
       toast.error('Failed to process file: ' + error.message);
@@ -304,7 +300,7 @@ export default function StepFileUpload({ state, updateState, onNext }) {
             accept=".csv,.xlsx,.xls,.json,.pdf,.png,.jpg,.jpeg,.webp"
             onChange={(e) => handleFile(e.target.files[0])}
           />
-          
+
           {isProcessing ? (
             <div className="flex flex-col items-center gap-4">
               <Loader2 className="h-12 w-12 text-primary animate-spin" />
@@ -348,7 +344,7 @@ export default function StepFileUpload({ state, updateState, onNext }) {
               <X className="h-4 w-4" />
             </Button>
           </div>
-          
+
           {state.extractedData && (
             <div className="mt-4 pt-4 border-t">
               <div className="flex items-center gap-2 text-green-600 mb-3">
@@ -365,7 +361,7 @@ export default function StepFileUpload({ state, updateState, onNext }) {
                   <p className="text-2xl font-bold">{state.extractedData.columnCount}</p>
                 </div>
               </div>
-              
+
               {/* Column Preview */}
               <div className="mt-4">
                 <p className="text-sm text-muted-foreground mb-2">Detected columns:</p>
@@ -385,8 +381,8 @@ export default function StepFileUpload({ state, updateState, onNext }) {
 
       {/* Action Button */}
       <div className="flex justify-end">
-        <Button 
-          onClick={onNext} 
+        <Button
+          onClick={onNext}
           disabled={!state.extractedData}
           className="gap-2"
         >

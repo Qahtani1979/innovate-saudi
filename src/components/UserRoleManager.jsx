@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { useUserRoleMutations } from '@/hooks/useUserRoleMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,6 @@ function UserRoleManager() {
   const { language, isRTL, t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [editingUser, setEditingUser] = useState(null);
-  const queryClient = useAppQueryClient();
 
   const { data: users = [] } = useUsersWithVisibility();
 

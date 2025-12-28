@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { useSandboxMutations } from '@/hooks/useSandboxMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,6 @@ import { Rocket, AlertCircle, X, Loader2, Shield } from 'lucide-react';
 
 export default function SandboxLaunchChecklist({ sandbox, onClose }) {
   const { t, isRTL } = useLanguage();
-  const queryClient = useAppQueryClient();
 
   const checklistItems = [
     {

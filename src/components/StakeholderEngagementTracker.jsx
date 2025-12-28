@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { usePilotMutations } from '@/hooks/usePilotMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,6 @@ import { toast } from 'sonner';
 
 export default function StakeholderEngagementTracker({ pilot }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useAppQueryClient();
   const [showAddEvent, setShowAddEvent] = useState(false);
   const [newEvent, setNewEvent] = useState({
     stakeholder_name: '',

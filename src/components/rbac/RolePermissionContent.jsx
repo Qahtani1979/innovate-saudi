@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -122,7 +121,6 @@ const PERMISSION_CATEGORIES = {
 export default function RolePermissionContent() {
   const { language, t } = useLanguage();
   const { isAdmin, hasPermission } = usePermissions();
-  const queryClient = useAppQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
   const [formData, setFormData] = useState({ name: '', description: '', permissions: [] });

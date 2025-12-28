@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { useSandboxMilestones } from '@/hooks/useSandboxMilestones';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,6 @@ import { CheckCircle2, Circle, Plus, Trash2, Calendar, AlertCircle } from 'lucid
 
 export default function SandboxMilestoneManager({ application }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useAppQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMilestone, setEditingMilestone] = useState(null);
   const [formData, setFormData] = useState({

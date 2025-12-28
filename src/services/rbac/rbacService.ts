@@ -214,6 +214,24 @@ export async function runSecurityAudit(params: {
   return invokeRBAC('audit.run_security_audit', params);
 }
 
+// ========== Field Security Operations ==========
+
+export async function validateFieldAccess(params: {
+  entity_type: string;
+  field_name: string;
+  operation: string;
+}): Promise<{
+  allowed: boolean;
+  reason?: string;
+}> {
+  const { data, error } = await supabase.functions.invoke('check-field-security', {
+    body: params
+  });
+
+  if (error) throw error;
+  return data;
+}
+
 // Default export as object for convenience
 const rbacService = {
   assignRole,
@@ -226,7 +244,8 @@ const rbacService = {
   approveDelegation,
   rejectDelegation,
   sendRoleNotification,
-  runSecurityAudit
+  runSecurityAudit,
+  validateFieldAccess
 };
 
 export default rbacService;

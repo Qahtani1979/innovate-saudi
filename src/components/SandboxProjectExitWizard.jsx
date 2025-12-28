@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { usePilotMutations } from '@/hooks/usePilotMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,6 @@ import { toast } from 'sonner';
 
 export default function SandboxProjectExitWizard({ pilot, sandbox, onClose }) {
   const { t, isRTL } = useLanguage();
-  const queryClient = useAppQueryClient();
   const [step, setStep] = useState(1);
 
   const [exitData, setExitData] = useState({

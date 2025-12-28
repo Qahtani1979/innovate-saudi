@@ -200,7 +200,6 @@ const BaselineDataCollector = ({ strategicPlanId, strategicPlan, onSave }) => {
   const handleRefreshData = async () => {
     setIsRefreshing(true);
     // Actually invalidate keys to refresh
-    // queryClient.invalidateQueries aka refetch
     // For now simulate delay as per original, but technically should refetch hooks.
     // Since we use real hooks now, they auto-update or use staleTime.
     // We can just sleep or if we had access to refetch functions we could call them.

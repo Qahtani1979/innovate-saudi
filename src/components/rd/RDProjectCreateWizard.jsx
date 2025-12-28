@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { useLanguage } from '../LanguageContext';
@@ -19,7 +18,6 @@ import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 export default function RDProjectCreateWizard() {
   const { language, isRTL, t } = useLanguage();
   const navigate = useNavigate();
-  const queryClient = useAppQueryClient();
   const { triggerEmail } = useEmailTrigger();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({

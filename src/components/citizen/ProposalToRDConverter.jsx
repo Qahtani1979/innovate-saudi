@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { useInnovationMutations } from '@/hooks/useInnovationMutations';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +12,6 @@ import { buildProposalToRDPrompt, PROPOSAL_TO_RD_SCHEMA } from '@/lib/ai/prompts
 
 export default function ProposalToRDConverter({ proposal, onClose, onSuccess }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useAppQueryClient();
   const { invokeAI, status, isLoading: generating, rateLimitInfo, isAvailable } = useAIWithFallback();
   const [rdData, setRdData] = useState({
     title_en: '',

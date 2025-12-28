@@ -2,6 +2,7 @@ import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 import { useCallback } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
 
 /**
  * A/B Testing Hook (Refactored to Gold Standard)

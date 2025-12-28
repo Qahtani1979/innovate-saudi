@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useAppQueryClient } from '@/hooks/useAppQueryClient';
+import { useRBACRefresh } from '@/hooks/useRBACRefresh';
 import { useAllUserProfiles } from '@/hooks/useUserProfile';
 import { useRoles } from '@/hooks/useRoles';
 import { useSystemPermissions } from '@/hooks/useSystemPermissions';
@@ -21,9 +21,6 @@ import {
 
 export default function RBACAuditContent() {
   const { t, language } = useLanguage();
-  const queryClient = useAppQueryClient();
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [lastRefresh, setLastRefresh] = useState(null);
 
   // Wrap entire component in admin permission gate - all queries are admin-only
   return (
@@ -47,9 +44,7 @@ export default function RBACAuditContent() {
 
 function RBACAuditContentInner() {
   const { t, language } = useLanguage();
-  const queryClient = useAppQueryClient();
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [lastRefresh, setLastRefresh] = useState(null);
+  const { isRefreshing, lastRefresh, refreshRBACData: handleRefresh } = useRBACRefresh();
 
   const { data: allUsers = [], isLoading: loadingUsers } = useAllUserProfiles();
   const { userRoleAssignments: userRoles, delegations } = useRBACStatistics();
@@ -150,20 +145,6 @@ function RBACAuditContentInner() {
     };
   }, [allUsers, userRoles, roles, permissions, rolePermissions, delegations, accessLogs]);
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['all-user-profiles'] }),
-      queryClient.invalidateQueries({ queryKey: ['rbac-user-roles'] }),
-      queryClient.invalidateQueries({ queryKey: ['roles'] }),
-      queryClient.invalidateQueries({ queryKey: ['system-permissions'] }),
-      queryClient.invalidateQueries({ queryKey: ['role-permissions'] }),
-      queryClient.invalidateQueries({ queryKey: ['rbac-delegations'] }),
-      queryClient.invalidateQueries({ queryKey: ['rbac-access-logs'] })
-    ]);
-    setLastRefresh(new Date());
-    setIsRefreshing(false);
-  };
 
   const exportReport = () => {
     const report = {

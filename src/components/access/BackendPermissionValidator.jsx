@@ -1,5 +1,4 @@
 import React from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import rbacService from '@/services/rbac/rbacService';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -10,7 +9,7 @@ import { useAuth } from '@/lib/AuthContext';
 
 export const useBackendPermission = () => {
   const { user } = useAuth();
-  
+
   const validatePermission = async (permission, entity_type = null, entity_id = null, action = null) => {
     try {
       // Use unified rbac-manager
@@ -31,12 +30,12 @@ export const useBackendPermission = () => {
 
   const validateFieldAccess = async (entity_type, field_name, operation) => {
     try {
-      const { data, error } = await supabase.functions.invoke('check-field-security', {
-        body: { entity_type, field_name, operation }
+      const result = await rbacService.validateFieldAccess({
+        entity_type,
+        field_name,
+        operation
       });
-
-      if (error) throw error;
-      return data;
+      return result;
     } catch (error) {
       console.error('Field security check error:', error);
       return { allowed: false, reason: 'Validation failed' };
@@ -53,13 +52,13 @@ export const useBackendPermission = () => {
  * Protected Action Component
  * Wraps actions that require backend permission validation
  */
-export const ProtectedBackendAction = ({ 
-  permission, 
-  entity_type, 
-  entity_id, 
-  action, 
-  children, 
-  fallback = null 
+export const ProtectedBackendAction = ({
+  permission,
+  entity_type,
+  entity_id,
+  action,
+  children,
+  fallback = null
 }) => {
   const [allowed, setAllowed] = React.useState(false);
   const [loading, setLoading] = React.useState(true);

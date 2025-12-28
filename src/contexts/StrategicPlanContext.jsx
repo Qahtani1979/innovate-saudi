@@ -1,20 +1,19 @@
 /* @refresh reset */
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useStrategicPlans } from '@/hooks/useStrategicPlans';
 
 const StrategicPlanContext = createContext();
 
 export const useActivePlan = () => {
   const context = useContext(StrategicPlanContext);
   if (!context) {
-    return { 
-      activePlanId: null, 
-      activePlan: null, 
-      setActivePlanId: () => {}, 
-      strategicPlans: [], 
+    return {
+      activePlanId: null,
+      activePlan: null,
+      setActivePlanId: () => { },
+      strategicPlans: [],
       isLoading: false,
-      clearActivePlan: () => {}
+      clearActivePlan: () => { }
     };
   }
   return context;
@@ -30,21 +29,8 @@ export const StrategicPlanProvider = ({ children }) => {
   });
 
   // Fetch only active/approved plans for the context selector (not drafts)
-  const { data: strategicPlans = [], isLoading } = useQuery({
-    queryKey: ['strategic-plans-global'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('strategic_plans')
-        .select('*')
-        .or('is_template.is.null,is_template.eq.false')
-        .or('is_deleted.is.null,is_deleted.eq.false')
-        .in('status', ['active', 'completed']) // Only show active/completed plans in selector
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-  });
+  // Fetch only active/approved plans for the context selector (not drafts)
+  const { data: strategicPlans = [], isLoading } = useStrategicPlans({ status: ['active', 'completed'] });
 
   // Get the full plan object
   const activePlan = strategicPlans.find(p => p.id === activePlanId) || null;

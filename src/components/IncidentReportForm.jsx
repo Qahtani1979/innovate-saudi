@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +15,6 @@ import { useSandboxIncidentMutations } from '@/hooks/useSandboxIncidents';
 
 export default function IncidentReportForm({ sandbox, applicationId }) {
   const { language, isRTL, t } = useLanguage();
-  const queryClient = useAppQueryClient();
   const { invokeAI, status, isLoading: aiGenerating, isAvailable, rateLimitInfo } = useAIWithFallback();
   const [formData, setFormData] = useState({
     incident_type: 'safety',

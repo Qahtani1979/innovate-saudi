@@ -17,7 +17,8 @@ export function useStrategicPlans(options = {}) {
                 .from('strategic_plans')
                 .select('*')
                 .or('is_template.is.null,is_template.eq.false')
-                .or('is_deleted.is.null,is_deleted.eq.false');
+                .or('is_deleted.is.null,is_deleted.eq.false')
+                .order('created_at', { ascending: false });
 
             if (status) {
                 if (Array.isArray(status)) {
