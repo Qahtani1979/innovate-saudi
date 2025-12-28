@@ -17,22 +17,6 @@ export default defineConfig(({ mode }) => {
       alias: {
         "@": path.resolve(__dirname, "./src"),
       },
-      dedupe: [
-        "react",
-        "react-dom",
-        "@tanstack/react-query",
-      ],
-    },
-    optimizeDeps: {
-      include: [
-        "react",
-        "react-dom",
-        "react-dom/client",
-        "react/jsx-runtime",
-        "react/jsx-dev-runtime",
-        "@tanstack/react-query",
-      ],
-      force: true,
     },
     define: {
       "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(
@@ -40,7 +24,7 @@ export default defineConfig(({ mode }) => {
       ),
       "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
         env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZW9yZ2lxeXZra2ptcW9vdHBlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMDc3NDksImV4cCI6MjA4MDc4Mzc0OX0.sG8en2_gRniPGgxdUETZy0N592mQ8YtSPyp8zcbPkAE"
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZW9yZ2lxeXZra2ptcW9vdHBlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMDc3NDksImV4cCI6MjA4MDc4Mzc0OX0.sG8en2_gRniPGgxdUETZy0N592mQ8YtSPyp8zcbPkAE"
       ),
       "import.meta.env.VITE_SUPABASE_PROJECT_ID": JSON.stringify(
         env.VITE_SUPABASE_PROJECT_ID || "wneorgiqyvkkjmqootpe"
