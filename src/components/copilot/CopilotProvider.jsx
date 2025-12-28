@@ -11,23 +11,7 @@ import { useAuth } from '@/lib/AuthContext';
  * Ensures the 'Brain' always knows who the user is.
  */
 export function CopilotProvider({ children }) {
-    const { user } = useAuth();
-    const { activeSessionId } = useCopilotStore();
-    const { useSessionMessages } = useCopilotHistory();
-    const { requestExecution } = useToolExecutor(); // Initialize the Bridge
-    const { askBrain } = useCopilotAgent(); // Initialize the Intelligence
-
-    // Inject the "Hands" and "Brain Connection"
-    useEffect(() => {
-        orchestrator.setExecutor(requestExecution);
-        orchestrator.setCaller(askBrain);
-    }, [requestExecution, askBrain]);
-
-    // Prefetch logic or hydration logic can go here
-
-    return (
-        <>
-            {children}
-        </>
-    );
+    console.log('CopilotProvider: Rendered (Pass-through)');
+    // Completely stripped for debugging
+    return <>{children}</>;
 }
