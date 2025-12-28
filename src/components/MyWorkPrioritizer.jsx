@@ -6,48 +6,23 @@ import { Sparkles, Clock, Target, ArrowRight, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { buildWorkPrioritizerPrompt, WORK_PRIORITIZER_SCHEMA } from '@/lib/ai/prompts/core/workPrioritizer';
 import { useMyWork } from '@/hooks/useMyWork';
 
 export default function MyWorkPrioritizer() {
   const { language, isRTL, t } = useLanguage();
-  const [aiPriorities, setAiPriorities] = useState(null);
-  // Use the new hook for fetching work items
-  const { myChallenges, myPilots, myTasks, isLoading: loadingWork } = useMyWork();
 
-  const generatePriorities = async () => {
-    const context = {
-      challenges: myChallenges.slice(0, 5).map(c => ({
-        id: c.id,
-        title: c.title_en,
-        status: c.status,
-        priority: c.priority,
-        sector: c.sector
-      })),
-      pilots: myPilots.slice(0, 5).map(p => ({
-        id: p.id,
-        title: p.title_en,
-        stage: p.stage,
-        success_probability: p.success_probability,
-        milestones: p.milestones?.filter(m => m.status === 'pending').length || 0
-      })),
-      tasks: myTasks.slice(0, 5).map(t => ({
-        id: t.id,
-        title: t.title,
-        due_date: t.due_date,
-        priority: t.priority
-      }))
-    };
+  // Use the new hook for fetching work items and AI
+  const {
+    isLoading: loadingWork,
+    aiPriorities,
+    generatePriorities,
+    isAIAnalyzing,
+    isAIAvailable,
+    aiStatus,
+    aiError,
+    rateLimitInfo
+  } = useMyWork();
 
-    const { success, data } = await invokeAI({
-      prompt: buildWorkPrioritizerPrompt(context),
-      response_json_schema: WORK_PRIORITIZER_SCHEMA
-    });
-
-    if (success && data) {
-      setAiPriorities(data);
-    }
-  };
 
   const urgencyColors = {
     high: 'bg-red-100 text-red-700 border-red-300',
@@ -83,10 +58,10 @@ export default function MyWorkPrioritizer() {
           </div>
           <Button
             onClick={generatePriorities}
-            disabled={isLoading || !isAvailable}
+            disabled={isAIAnalyzing || !isAIAvailable}
             className="bg-gradient-to-r from-purple-600 to-pink-600"
           >
-            {isLoading ? (
+            {isAIAnalyzing ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 {t({ en: 'Analyzing...', ar: 'جاري التحليل...' })}
@@ -102,9 +77,9 @@ export default function MyWorkPrioritizer() {
       </CardHeader>
 
       <CardContent>
-        <AIStatusIndicator status={status} error={error} rateLimitInfo={rateLimitInfo} />
+        <AIStatusIndicator status={aiStatus} error={aiError} rateLimitInfo={rateLimitInfo} />
 
-        {!aiPriorities && !isLoading && (
+        {!aiPriorities && !isAIAnalyzing && (
           <div className="text-center py-8">
             <Target className="h-12 w-12 text-purple-300 mx-auto mb-3" />
             <p className="text-slate-600">

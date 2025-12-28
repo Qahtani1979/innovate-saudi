@@ -6,6 +6,9 @@
 import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { buildWorkPrioritizerPrompt, WORK_PRIORITIZER_SCHEMA } from '@/lib/ai/prompts/core/workPrioritizer';
+import { useState } from 'react';
 
 export function useMyWork() {
     const { user } = useAuth();
@@ -62,7 +65,15 @@ export function useMyWork() {
         myChallenges,
         myPilots,
         myTasks,
-        isLoading: loadingChallenges || loadingPilots || loadingTasks
+        isLoading: loadingChallenges || loadingPilots || loadingTasks,
+        // AI Exports
+        aiPriorities,
+        generatePriorities,
+        isAIAnalyzing,
+        isAIAvailable,
+        aiStatus,
+        aiError,
+        rateLimitInfo
     };
 }
 
