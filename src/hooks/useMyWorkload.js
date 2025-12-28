@@ -14,7 +14,7 @@ export function useMyChallenges() {
                 .from('challenges')
                 .select('*')
                 .eq('is_deleted', false)
-                .or(`created_by.eq.${user.email},reviewer.eq.${user.email}`);
+                .or(`created_by.eq.${user.id},review_assigned_to.eq.${user.email}`);
 
             if (error) throw error;
             return data || [];
@@ -63,7 +63,7 @@ export function useMyTasks() {
             const { data, error } = await supabase
                 .from('tasks')
                 .select('*')
-                .or(`assigned_to.eq.${user.email},created_by.eq.${user.email}`);
+                .or(`assigned_to.eq.${user.id},created_by.eq.${user.id}`);
 
             if (error) throw error;
             return data || [];

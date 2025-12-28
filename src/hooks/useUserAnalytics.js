@@ -19,7 +19,7 @@ export function useUserAnalytics() {
                 .from('challenges')
                 .select('id, created_at, linked_pilot_ids')
                 .eq('is_deleted', false)
-                .eq('created_by', userEmail);
+                .eq('created_by', user?.id);
 
             if (error) throw error;
             return data || [];
@@ -36,7 +36,7 @@ export function useUserAnalytics() {
                 .from('pilots')
                 .select('id, stage, created_at')
                 .eq('is_deleted', false)
-                .eq('created_by', userEmail);
+                .eq('created_by', user?.id);
 
             if (error) throw error;
             return data || [];

@@ -13,7 +13,8 @@ export function useAcademiaData() {
     const { data: profile, isLoading: profileLoading } = useQuery({
         queryKey: ['my-researcher-profile', user?.email],
         queryFn: async () => {
-            const { data } = await supabase.from('researcher_profiles').select('*').eq('email', user?.email).single();
+            const { data } = await supabase.from('researcher_profiles').select('*').eq('user_email', user?.email).single();
+
             return data || null;
         },
         enabled: !!user?.email
@@ -42,7 +43,7 @@ export function useAcademiaData() {
             const { data, error } = await supabase.from('rd_projects')
                 .select('*')
                 .eq('is_deleted', false)
-                .eq('created_by', user?.email)
+                .eq('created_by', user?.id)
                 .order('created_at', { ascending: false });
             if (error) throw error;
             return data || [];

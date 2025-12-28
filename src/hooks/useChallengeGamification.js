@@ -1,17 +1,27 @@
 import { useQuery } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 
-export function useChallengeGamification(userEmail) {
+import { useAuth } from '@/lib/AuthContext';
+
+export function useChallengeGamification(userEmail, userId) {
+    const { user } = useAuth();
+    const resolvedUserId = userId || (user?.email === userEmail ? user?.id : null);
+
     const { data: solvedChallenges = [], isLoading: isLoadingChallenges } = useQuery({
-        queryKey: ['solved-challenges', userEmail],
+        queryKey: ['solved-challenges', userEmail, resolvedUserId],
         queryFn: async () => {
             if (!userEmail) return [];
+
+            let orQuery = `challenge_owner_email.eq.${userEmail},review_assigned_to.eq.${userEmail}`;
+            if (resolvedUserId) {
+                orQuery += `,created_by.eq.${resolvedUserId}`;
+            }
+
             const { data, error } = await supabase
                 .from('challenges')
                 .select('*')
                 .eq('status', 'resolved')
-                // @ts-ignore
-                .or(`challenge_owner_email.eq.${userEmail},created_by.eq.${userEmail},review_assigned_to.eq.${userEmail}`);
+                .or(orQuery);
             // Note: original code used reviewer, but commonly it's review_assigned_to. 
             // Will stick to original check 'reviewer' if that column exists, but usually it's review_assigned_to.
             // Let's verify column names if possible or stick to permissive approach.

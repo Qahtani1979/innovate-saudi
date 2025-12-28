@@ -78,7 +78,7 @@ export function useChallengesWithVisibility(options = {}) {
       // 1. Base Select
       const selectQuery = `
         *,
-        municipality:municipalities(id, name_en, name_ar, region_id, region:regions(id, code, name_en)),
+        municipality:municipalities(id, name_en, name_ar, region),
         sector:sectors(id, name_en, name_ar, code)
       `;
 
