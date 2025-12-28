@@ -2533,6 +2533,71 @@ export type Database = {
           },
         ]
       }
+      copilot_messages: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          id: string
+          meta_data: Json | null
+          role: string | null
+          session_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          meta_data?: Json | null
+          role?: string | null
+          session_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          meta_data?: Json | null
+          role?: string | null
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "copilot_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "copilot_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      copilot_sessions: {
+        Row: {
+          context_data: Json | null
+          created_at: string | null
+          id: string
+          mode: string | null
+          title: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          context_data?: Json | null
+          created_at?: string | null
+          id?: string
+          mode?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          context_data?: Json | null
+          created_at?: string | null
+          id?: string
+          mode?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       coverage_snapshots: {
         Row: {
           created_at: string
