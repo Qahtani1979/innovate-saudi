@@ -14,32 +14,40 @@ export function ProposalCard({
 }) {
     return (
         <GenUICard
-            title="Action Required"
-            subtitle="The Copilot needs your permission"
-            variant="highlight"
-            className="border-amber-400/50 bg-amber-50/10"
+            title="Action Verification"
+            subtitle="Security Protocol"
+            variant="default"
+            className="border-primary/20 shadow-sm"
         >
-            <div className="flex items-start gap-3 mb-4">
-                <div className="p-2 bg-amber-100 rounded-lg dark:bg-amber-900/40">
-                    <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            <div className="space-y-4">
+                <div className="flex gap-4 p-4 bg-muted/30 rounded-lg border border-border/50">
+                    <div className="shrink-0 mt-0.5">
+                        <AlertTriangle className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="space-y-2">
+                        <div>
+                            <p className="text-sm font-semibold text-foreground">Proposed {toolName} Operation</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                                This action is part of the automated workflow manager. Manual approval is required for all write operations to ensure data integrity.
+                            </p>
+                        </div>
+                        <div className="bg-background rounded border px-3 py-2">
+                            <code className="text-[10px] font-mono whitespace-pre-wrap text-muted-foreground">
+                                {JSON.stringify(args, null, 2)}
+                            </code>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <p className="text-sm font-medium">Proposed Operation:</p>
-                    <code className="block mt-1 text-xs bg-muted p-2 rounded border font-mono">
-                        {toolName}({JSON.stringify(args, null, 2)})
-                    </code>
-                </div>
-            </div>
 
-            <div className="flex gap-2 justify-end w-full mt-2">
-                <Button variant="ghost" size="sm" onClick={onCancel} className="text-muted-foreground hover:text-destructive">
-                    <X className="w-4 h-4 mr-1" />
-                    Reject
-                </Button>
-                <Button size="sm" onClick={onConfirm} className="bg-primary text-primary-foreground">
-                    <Check className="w-4 h-4 mr-1" />
-                    Approve
-                </Button>
+                <div className="flex gap-3 justify-end pt-2 border-t border-border/50">
+                    <Button variant="outline" size="sm" onClick={onCancel} className="h-8">
+                        Cancel
+                    </Button>
+                    <Button size="sm" onClick={onConfirm} className="h-8 gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+                        <Check className="w-3.5 h-3.5" />
+                        Confirm Action
+                    </Button>
+                </div>
             </div>
         </GenUICard>
     );

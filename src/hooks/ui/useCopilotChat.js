@@ -54,6 +54,12 @@ export function useCopilotChat() {
             systemPrompt: systemPrompt
         });
 
+        if (response.status === 'pending_confirmation') {
+            // Do not render "pending_confirmation" as text. 
+            // The ProposalCard will be shown by useCopilotStore state.
+            return;
+        }
+
         if (response.type === 'confirmation_request') {
             // Handled by toolStatus in Store (CopilotConsole renders ProposalCard)
         } else if (response.type === 'data_list') {

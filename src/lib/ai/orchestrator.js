@@ -99,30 +99,32 @@ Protocol:
                 // Fallback Mock (Dev Mode) - Dynamic Discovery
                 const lowerMsg = userMessage.toLowerCase();
 
-                // 1. Try to find a matching tool in the Dynamic Registry
-                // Simple heuristic: if message contains "list sectors", look for "list_sectors"
-                const matchedTool = tools.find(t => {
-                    const keywords = t.name.split('_'); // [list, sectors]
-                    return keywords.every(k => lowerMsg.includes(k));
-                });
-
-                if (matchedTool) {
-                    console.log("[Orchestrator] Mock found dynamic tool:", matchedTool.name);
-                    aiResponseText = `\`\`\`json\n{ "tool": "${matchedTool.name}", "args": {} }\n\`\`\``;
-                }
-                // 2. Hardcoded fallback for Create Pilot (since it needs args)
-                else if (lowerMsg.includes('create') && lowerMsg.includes('pilot')) {
+                // 1. Hardcoded fallback for Create Pilot (since it needs args)
+                if (lowerMsg.includes('create') && lowerMsg.includes('pilot')) {
                     aiResponseText = '```json\n{ "tool": "create_pilot", "args": { "title": "New Pilot", "sector": "Recycling" } }\n```';
                 }
-                // 3. Mock for Update Context
+                // 2. Mock for Update Context
                 else if (lowerMsg.includes('update') || lowerMsg.includes('set title')) {
                     aiResponseText = '```json\n{ "tool": "update_context", "args": { "entityType": "pilot", "data": { "title": "Mock Pilot Title" } } }\n```';
                 }
                 else if (lowerMsg.includes('navigate')) {
                     aiResponseText = '```json\n{ "tool": "navigate", "args": { "path": "/dashboard" } }\n```';
                 }
+                // 3. Try to find a matching tool in the Dynamic Registry
+                // Simple heuristic: if message contains "list sectors", look for "list_sectors"
                 else {
-                    aiResponseText = "I am the Orchestrator. (AI Link Disconnected). I have access to: " + tools.map(t => t.name).join(", ");
+                    const matchedTool = tools.find(t => {
+                        const keywords = t.name.split('_'); // [list, sectors]
+                        return keywords.every(k => lowerMsg.includes(k));
+                    });
+
+                    if (matchedTool) {
+                        console.log("[Orchestrator] Mock found dynamic tool:", matchedTool.name);
+                        aiResponseText = `\`\`\`json\n{ "tool": "${matchedTool.name}", "args": {} }\n\`\`\``;
+                    }
+                    else {
+                        aiResponseText = "I am the Orchestrator. (AI Link Disconnected). I have access to: " + tools.map(t => t.name).join(", ");
+                    }
                 }
             }
 

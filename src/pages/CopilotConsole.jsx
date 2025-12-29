@@ -43,19 +43,19 @@ export default function CopilotConsole() {
 
     return (
         <div className="h-screen w-full bg-background flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
-            <header className="h-16 border-b flex items-center px-6 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-md z-10 shrink-0">
+            <header className="h-16 border-b flex items-center px-6 bg-background text-foreground shadow-sm z-10 shrink-0">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg border border-white/10 shadow-inner">
-                        <Bot className="w-5 h-5 text-white" />
+                    <div className="p-2 bg-primary/10 rounded-lg border border-primary/20">
+                        <Bot className="w-5 h-5 text-primary" />
                     </div>
                     <div>
                         <h1 className="font-bold text-lg flex items-center gap-2">
                             Super Copilot
-                            <span className="px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-bold tracking-wider border border-white/10">
+                            <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold tracking-wider border border-primary/20">
                                 BETA
                             </span>
                         </h1>
-                        <p className="text-xs text-purple-100/80 font-medium">
+                        <p className="text-xs text-muted-foreground font-medium">
                             Powered by Innovate Saudi AI
                         </p>
                     </div>
