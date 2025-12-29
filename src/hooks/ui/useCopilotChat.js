@@ -21,6 +21,12 @@ export function useCopilotChat() {
     const [messages, setMessages] = useState([]);
     const { activeSessionId, addToHistory } = useCopilotHistory();
     const { status, toolStatus, pendingToolCall } = useCopilotStore();
+    const { requestExecution } = useToolExecutor();
+
+    // Wire up the Executor to the Orchestrator
+    useEffect(() => {
+        orchestrator.setExecutor(requestExecution);
+    }, [requestExecution]);
 
     // -- Handle Send --
     const handleSend = async () => {

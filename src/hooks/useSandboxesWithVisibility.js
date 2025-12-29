@@ -52,7 +52,7 @@ export function useSandboxesWithVisibility(options = {}) {
       const baseSelect = `
         *,
         municipality:municipalities(id, name_en, name_ar),
-        sector:sectors(id, name_en, name_ar, code)
+        sector:sectors(id, name_en, name_ar)
       `;
 
       let query = supabase

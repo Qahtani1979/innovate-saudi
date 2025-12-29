@@ -13,7 +13,7 @@ import { usePermissions } from '@/hooks/usePermissions';
  * - Others: Published documents only
  */
 export function useKnowledgeWithVisibility(options = {}) {
-  const { 
+  const {
     documentType,
     sectorId,
     limit = 100,
@@ -21,19 +21,19 @@ export function useKnowledgeWithVisibility(options = {}) {
   } = options;
 
   const { isAdmin, hasRole, userId } = usePermissions();
-  const { 
-    isNational, 
-    sectorIds, 
-    userMunicipalityId, 
+  const {
+    isNational,
+    sectorIds,
+    userMunicipalityId,
     nationalMunicipalityIds,
     hasFullVisibility,
-    isLoading: visibilityLoading 
+    isLoading: visibilityLoading
   } = useVisibilitySystem();
 
-  const isStaffUser = hasRole('municipality_staff') || 
-                      hasRole('municipality_admin') || 
-                      hasRole('deputyship_staff') || 
-                      hasRole('deputyship_admin');
+  const isStaffUser = hasRole('municipality_staff') ||
+    hasRole('municipality_admin') ||
+    hasRole('deputyship_staff') ||
+    hasRole('deputyship_admin');
 
   return useQuery({
     queryKey: ['knowledge-with-visibility', {
@@ -51,7 +51,7 @@ export function useKnowledgeWithVisibility(options = {}) {
       const baseSelect = `
         *,
         municipality:municipalities(id, name_en, name_ar),
-        sector:sectors(id, name_en, name_ar, code)
+        sector:sectors(id, name_en, name_ar)
       `;
 
       let query = supabase
@@ -62,7 +62,7 @@ export function useKnowledgeWithVisibility(options = {}) {
 
       // Apply deleted filter
       if (!includeDeleted) {
-        query = query.eq('is_deleted', false);
+        // query = query.eq('is_deleted', false);
       }
 
       // Apply document type filter if provided
@@ -105,7 +105,7 @@ export function useKnowledgeWithVisibility(options = {}) {
           .from('knowledge_documents')
           .select(baseSelect)
           .eq('municipality_id', userMunicipalityId)
-          .eq('is_deleted', false)
+          // .eq('is_deleted', false)
           .order('created_at', { ascending: false });
 
         if (ownError) throw ownError;
@@ -117,7 +117,7 @@ export function useKnowledgeWithVisibility(options = {}) {
             .from('knowledge_documents')
             .select(baseSelect)
             .in('municipality_id', nationalMunicipalityIds)
-            .eq('is_deleted', false)
+            // .eq('is_deleted', false)
             .order('created_at', { ascending: false });
 
           if (!natError) {
@@ -130,7 +130,7 @@ export function useKnowledgeWithVisibility(options = {}) {
           .from('knowledge_documents')
           .select(baseSelect)
           .eq('is_published', true)
-          .eq('is_deleted', false)
+          // .eq('is_deleted', false)
           .order('created_at', { ascending: false });
 
         if (publishedError) throw publishedError;

@@ -56,7 +56,7 @@ export function useRDProjectsWithVisibility(options = {}) {
       const baseSelect = `
         *,
         municipality:municipalities(id, name_en, name_ar),
-        sector:sectors(id, name_en, name_ar, code),
+        sector:sectors(id, name_en, name_ar),
         institution:institutions(id, name_en, name_ar)
       `;
 
@@ -68,7 +68,7 @@ export function useRDProjectsWithVisibility(options = {}) {
 
       // Apply deleted filter
       if (!includeDeleted) {
-        query = query.eq('is_deleted', false);
+        // query = query.eq('is_deleted', false);
       }
 
       // Apply status filter if provided
@@ -116,7 +116,7 @@ export function useRDProjectsWithVisibility(options = {}) {
           .from('rd_projects')
           .select(baseSelect)
           .eq('municipality_id', userMunicipalityId)
-          .eq('is_deleted', false)
+          // .eq('is_deleted', false)
           .order('created_at', { ascending: false });
 
         if (ownError) throw ownError;
@@ -128,7 +128,7 @@ export function useRDProjectsWithVisibility(options = {}) {
             .from('rd_projects')
             .select(baseSelect)
             .in('municipality_id', nationalMunicipalityIds)
-            .eq('is_deleted', false)
+            // .eq('is_deleted', false)
             .order('created_at', { ascending: false });
 
           if (!natError) {
@@ -178,7 +178,7 @@ export function useRDProject(projectId) {
         .select(`
           *,
           municipality:municipalities(id, name_en, name_ar),
-          sector:sectors(id, name_en, name_ar, code),
+          sector:sectors(id, name_en, name_ar),
           institution:institutions(id, name_en, name_ar)
         `)
         .eq('id', projectId)

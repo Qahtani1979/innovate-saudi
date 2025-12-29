@@ -64,7 +64,7 @@ export function useContractsWithVisibility(options = {}) {
 
       // Apply deleted filter
       if (!includeDeleted) {
-        query = query.eq('is_deleted', false);
+        // query = query.eq('is_deleted', false);
       }
 
       // Apply status filter if provided

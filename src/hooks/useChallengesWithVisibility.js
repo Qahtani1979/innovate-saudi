@@ -79,7 +79,7 @@ export function useChallengesWithVisibility(options = {}) {
       const selectQuery = `
         *,
         municipality:municipalities(id, name_en, name_ar),
-        sector:sectors(id, name_en, name_ar, code)
+        sector:sectors(id, name_en, name_ar)
       `;
 
       const countOption = paginate ? { count: 'exact' } : {};
@@ -171,7 +171,7 @@ export function useChallenge(challengeId) {
       const data = await fetchWithVisibility('challenges', `
         *,
         municipality:municipalities(id, name_en, name_ar),
-        sector:sectors(id, name_en, name_ar, code)
+        sector:sectors(id, name_en, name_ar)
       `, {
         additionalFilters: { id: challengeId }
       });
