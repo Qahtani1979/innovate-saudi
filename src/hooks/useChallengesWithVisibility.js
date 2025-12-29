@@ -78,7 +78,7 @@ export function useChallengesWithVisibility(options = {}) {
       // 1. Base Select
       const selectQuery = `
         *,
-        municipality:municipalities(id, name_en, name_ar, region),
+        municipality:municipalities(id, name_en, name_ar, region_id),
         sector:sectors(id, name_en, name_ar, code)
       `;
 
@@ -170,7 +170,7 @@ export function useChallenge(challengeId) {
       if (!challengeId) return null;
       const data = await fetchWithVisibility('challenges', `
         *,
-        municipality:municipalities(id, name_en, name_ar, region),
+        municipality:municipalities(id, name_en, name_ar, region_id),
         sector:sectors(id, name_en, name_ar, code)
       `, {
         additionalFilters: { id: challengeId }

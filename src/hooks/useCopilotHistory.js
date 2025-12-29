@@ -17,7 +17,7 @@ export function useCopilotHistory() {
     const useSessionMessages = (sessionId) => useQuery({
         queryKey: ['copilot-messages', sessionId],
         queryFn: async () => {
-            if (!sessionId) return [];
+            if (!sessionId || sessionId === 'mock-session-id') return [];
             const { data, error } = await supabase
                 .from('copilot_messages')
                 .select('*')
@@ -26,7 +26,7 @@ export function useCopilotHistory() {
             if (error) throw error;
             return data;
         },
-        enabled: !!sessionId
+        enabled: !!sessionId && sessionId !== 'mock-session-id'
     });
 
     return {

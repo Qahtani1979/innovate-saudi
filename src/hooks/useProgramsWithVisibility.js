@@ -14,7 +14,7 @@ import { usePermissions } from '@/hooks/usePermissions';
  * - Others: Published/active programs only
  */
 export function useProgramsWithVisibility(options = {}) {
-  const { 
+  const {
     status,
     programType,
     sectorId,
@@ -23,20 +23,20 @@ export function useProgramsWithVisibility(options = {}) {
   } = options;
 
   const { isAdmin, hasRole, userId, profile } = usePermissions();
-  const { 
-    isNational, 
-    sectorIds, 
-    userMunicipalityId, 
+  const {
+    isNational,
+    sectorIds,
+    userMunicipalityId,
     nationalRegionId,
     nationalMunicipalityIds,
     hasFullVisibility,
-    isLoading: visibilityLoading 
+    isLoading: visibilityLoading
   } = useVisibilitySystem();
 
-  const isStaffUser = hasRole('municipality_staff') || 
-                      hasRole('municipality_admin') || 
-                      hasRole('deputyship_staff') || 
-                      hasRole('deputyship_admin');
+  const isStaffUser = hasRole('municipality_staff') ||
+    hasRole('municipality_admin') ||
+    hasRole('deputyship_staff') ||
+    hasRole('deputyship_admin');
 
   return useQuery({
     queryKey: ['programs-with-visibility', {
@@ -54,7 +54,7 @@ export function useProgramsWithVisibility(options = {}) {
     queryFn: async () => {
       let baseSelect = `
         *,
-        municipality:municipalities(id, name_en, name_ar, region_id, region:regions(id, code, name_en)),
+        municipality:municipalities(id, name_en, name_ar, region_id),
         sector:sectors(id, name_en, name_ar, code)
       `;
 
