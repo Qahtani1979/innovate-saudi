@@ -265,7 +265,7 @@ export default function RoleRequestCard() {
             </Button>
             <Button
               onClick={handleSubmitRequest}
-              disabled={submitRequestMutation.isPending || !selectedRole || justification.length < 50}
+              disabled={requestRole.isPending || !selectedRole || justification.length < 50}
             >
               {t({ en: 'Submit Request', ar: 'إرسال الطلب' })}
             </Button>
