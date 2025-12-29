@@ -57,46 +57,52 @@ export function useCopilotChat() {
             }).join('\n')
         });
 
-        console.log('[useCopilotChat] Processing message with orchestrator');
-        const response = await orchestrator.processMessage(content, {
-            tools: currentTools,
-            systemPrompt: systemPrompt,
-            messages: [...messages, userMsg] // Assuming orchestrator.processMessage now takes messages as an option
-        });
-        console.log('[useCopilotChat] Orchestrator response:', response);
+        try {
+            console.log('[useCopilotChat] Processing message with orchestrator');
+            const response = await orchestrator.processMessage(content, {
+                tools: currentTools,
+                systemPrompt: systemPrompt,
+                messages: [...messages, userMsg]
+            });
+            console.log('[useCopilotChat] Orchestrator response:', response);
 
-        if (response.status === 'pending_confirmation') {
-            // Do not render "pending_confirmation" as text. 
-            // The ProposalCard will be shown by useCopilotStore state.
-            return;
-        }
+            if (response.status === 'pending_confirmation') {
+                return;
+            }
 
-        if (response.type === 'confirmation_request') {
-            // Handled by toolStatus in Store (CopilotConsole renders ProposalCard)
-        } else if (response.type === 'data_list') {
-            // Return Data Payload for UI Component to Render
+            if (response.type === 'confirmation_request') {
+                // Handled by toolStatus in Store
+            } else if (response.type === 'data_list') {
+                // Return Data Payload for UI Component to Render
+                setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    content: t(COPILOT_UI_TEXT.assistant_intro),
+                    ui: {
+                        type: 'data_list',
+                        entity: response.entity || 'default',
+                        items: response.items
+                    }
+                }]);
+
+            } else if (response.success && response.draft) {
+                // Return Draft Payload
+                setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    content: response.message,
+                    ui: {
+                        type: 'draft_summary',
+                        draft: response.draft
+                    }
+                }]);
+            } else {
+                setMessages(prev => [...prev, { role: 'assistant', content: response.content || JSON.stringify(response) }]);
+            }
+        } catch (error) {
+            console.error('[useCopilotChat] Error processing message:', error);
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: t(COPILOT_UI_TEXT.assistant_intro),
-                ui: {
-                    type: 'data_list',
-                    entity: response.entity || 'default',
-                    items: response.items
-                }
+                content: t('errors.generic_error', 'I encountered an error processing your request. Please try again or check the console for details.')
             }]);
-
-        } else if (response.success && response.draft) {
-            // Return Draft Payload
-            setMessages(prev => [...prev, {
-                role: 'assistant',
-                content: response.message,
-                ui: {
-                    type: 'draft_summary',
-                    draft: response.draft
-                }
-            }]);
-        } else {
-            setMessages(prev => [...prev, { role: 'assistant', content: response.content || JSON.stringify(response) }]);
         }
     };
 
