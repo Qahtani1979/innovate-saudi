@@ -1,6 +1,7 @@
 import { useToast } from '@/hooks/use-toast';
 import { useCopilotStore } from '@/lib/store/copilotStore';
 import { useCopilotTools } from '@/contexts/CopilotToolsContext';
+import { useCallback } from 'react';
 
 /**
  * The Generic Tool Executor (Kernel Layer).
@@ -19,7 +20,7 @@ export function useToolExecutor() {
     /**
      * Core execution logic
      */
-    const executeTool = async (toolName, args, onProgress) => {
+    const executeTool = useCallback(async (toolName, args, onProgress) => {
         console.log('[Executor] Executing:', toolName, args);
         const tool = getTool(toolName);
 
@@ -60,12 +61,12 @@ export function useToolExecutor() {
             });
             throw error;
         }
-    };
+    }, [getTool, store, toast]);
 
     /**
      * Safety Wrapper
      */
-    const requestExecution = (toolName, args) => {
+    const requestExecution = useCallback((toolName, args) => {
         console.log('[Executor] Requesting execution for:', toolName, args);
         const tool = getTool(toolName);
 
@@ -79,7 +80,7 @@ export function useToolExecutor() {
         } else {
             return executeTool(toolName, args);
         }
-    };
+    }, [getTool, store, executeTool]);
 
     return {
         executeTool,
