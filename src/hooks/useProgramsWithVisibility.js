@@ -66,7 +66,7 @@ export function useProgramsWithVisibility(options = {}) {
 
       // Apply deleted filter
       if (!includeDeleted) {
-        query = query.eq('is_deleted', false);
+        // query = query.eq('is_deleted', false); // Column doesn't exist on programs
       }
 
       // Apply status filter if provided
@@ -114,7 +114,7 @@ export function useProgramsWithVisibility(options = {}) {
           .from('programs')
           .select(baseSelect)
           .eq('municipality_id', userMunicipalityId)
-          .eq('is_deleted', false)
+          // .eq('is_deleted', false) // Column doesn't exist
           .order('created_at', { ascending: false });
 
         if (ownError) throw ownError;
@@ -126,7 +126,7 @@ export function useProgramsWithVisibility(options = {}) {
             .from('programs')
             .select(baseSelect)
             .in('municipality_id', nationalMunicipalityIds)
-            .eq('is_deleted', false)
+            // .eq('is_deleted', false) // Column doesn't exist
             .order('created_at', { ascending: false });
 
           if (!natError) {

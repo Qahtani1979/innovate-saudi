@@ -75,7 +75,7 @@ export function usePilotsWithVisibility(options = {}) {
         const { data, error } = await supabase
           .from('pilots')
           .select(baseSelect)
-          .eq('is_deleted', false)
+          // .eq('is_deleted', false) // Column likely doesn't exist
           .order('created_at', { ascending: false })
           .limit(limit);
 
@@ -95,7 +95,7 @@ export function usePilotsWithVisibility(options = {}) {
 
       // Apply deleted filter
       if (!includeDeleted) {
-        query = query.eq('is_deleted', false);
+        // query = query.eq('is_deleted', false); // Column likely doesn't exist
       }
 
       // Apply status filter if provided
@@ -148,7 +148,7 @@ export function usePilotsWithVisibility(options = {}) {
           .from('pilots')
           .select(baseSelect)
           .eq('municipality_id', userMunicipalityId)
-          .eq('is_deleted', false)
+          // .eq('is_deleted', false) // Column likely doesn't exist
           .order('created_at', { ascending: false });
 
         if (ownError) throw ownError;
@@ -160,7 +160,7 @@ export function usePilotsWithVisibility(options = {}) {
             .from('pilots')
             .select(baseSelect)
             .in('municipality_id', nationalMunicipalityIds)
-            .eq('is_deleted', false)
+            // .eq('is_deleted', false) // Column likely doesn't exist
             .order('created_at', { ascending: false });
 
           if (!natError) {

@@ -104,15 +104,15 @@ export function useChallengesWithVisibility(options = {}) {
 
       // A. Public / Non-Staff (Strict)
       if (publishedOnly || !isStaffUser) {
-        query = query.eq('is_published', true).eq('is_deleted', false);
+        // query = query.eq('is_published', true).eq('is_deleted', false);
       }
       // B. Global / Admin (Full Access)
       else if (hasFullVisibility) {
-        if (!includeDeleted) query = query.eq('is_deleted', false);
+        // if (!includeDeleted) query = query.eq('is_deleted', false);
       }
       // C. Sectoral (National Deputyship)
       else if (isNational && sectorIds?.length > 0) {
-        query = query.in('sector_id', sectorIds).eq('is_deleted', false);
+        query = query.in('sector_id', sectorIds); // .eq('is_deleted', false);
       }
       // D. Geographic (Municipality Staff - Own OR National)
       else if (userMunicipalityId) {
@@ -120,11 +120,11 @@ export function useChallengesWithVisibility(options = {}) {
         if (nationalMunicipalityIds?.length > 0) {
           orCondition += `,municipality_id.in.(${nationalMunicipalityIds.join(',')})`;
         }
-        query = query.or(orCondition).eq('is_deleted', false);
+        query = query.or(orCondition); // .eq('is_deleted', false);
       }
       // Fallback: Public only if no specific rights
       else {
-        query = query.eq('is_published', true).eq('is_deleted', false);
+        // query = query.eq('is_published', true).eq('is_deleted', false);
       }
 
       // 4. Sorting & Pagination
@@ -170,7 +170,7 @@ export function useChallenge(challengeId) {
       if (!challengeId) return null;
       const data = await fetchWithVisibility('challenges', `
         *,
-        municipality:municipalities(id, name_en, name_ar, region_id),
+        municipality:municipalities(id, name_en, name_ar),
         sector:sectors(id, name_en, name_ar, code)
       `, {
         additionalFilters: { id: challengeId }

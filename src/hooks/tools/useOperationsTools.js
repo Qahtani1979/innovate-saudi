@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { z } from 'zod';
 import { useCopilotTools } from '@/contexts/CopilotToolsContext';
 import { useAuth } from '@/lib/AuthContext';
