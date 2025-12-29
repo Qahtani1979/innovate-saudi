@@ -60,7 +60,7 @@ export function usePilotsWithVisibility(options = {}) {
     queryFn: async () => {
       let baseSelect = `
         *,
-        municipality:municipalities(id, name_en, name_ar, region_id),
+        municipality:municipalities(id, name_en, name_ar),
         sector:sectors(id, name_en, name_ar, code),
         solution:solutions(id, name_en, name_ar, provider_id)
       `;
@@ -211,7 +211,7 @@ export function usePilot(pilotId) {
     queryFn: async () => {
       return fetchWithVisibility('pilots', `
         *,
-        municipality:municipalities(id, name_en, name_ar, region_id),
+        municipality:municipalities(id, name_en, name_ar),
         sector:sectors(id, name_en, name_ar, code),
         solution:solutions(id, name_en, name_ar, provider_id)
       `, { id: pilotId, single: true });

@@ -14,7 +14,7 @@ import { usePermissions } from '@/hooks/usePermissions';
  * - Others: No access
  */
 export function useContractsWithVisibility(options = {}) {
-  const { 
+  const {
     status,
     contractType,
     limit = 100,
@@ -22,17 +22,17 @@ export function useContractsWithVisibility(options = {}) {
   } = options;
 
   const { isAdmin, hasRole, userId, profile } = usePermissions();
-  const { 
-    isNational, 
-    userMunicipalityId, 
+  const {
+    isNational,
+    userMunicipalityId,
     hasFullVisibility,
-    isLoading: visibilityLoading 
+    isLoading: visibilityLoading
   } = useVisibilitySystem();
 
-  const isStaffUser = hasRole('municipality_staff') || 
-                      hasRole('municipality_admin') || 
-                      hasRole('deputyship_staff') || 
-                      hasRole('deputyship_admin');
+  const isStaffUser = hasRole('municipality_staff') ||
+    hasRole('municipality_admin') ||
+    hasRole('deputyship_staff') ||
+    hasRole('deputyship_admin');
 
   const isProvider = hasRole('provider');
 
@@ -52,8 +52,8 @@ export function useContractsWithVisibility(options = {}) {
         *,
         municipality:municipalities(id, name_en, name_ar),
         provider:providers(id, name_en, name_ar),
-        pilot:pilots(id, name_en, name_ar),
-        solution:solutions(id, name_en, name_ar)
+        pilot:pilots(id, title_en, title_ar),
+        solution:solutions(id, title_en, title_ar)
       `;
 
       let query = supabase

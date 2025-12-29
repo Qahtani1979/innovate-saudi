@@ -55,7 +55,7 @@ export function useRDProjectsWithVisibility(options = {}) {
     queryFn: async () => {
       const baseSelect = `
         *,
-        municipality:municipalities(id, name_en, name_ar, region_id),
+        municipality:municipalities(id, name_en, name_ar),
         sector:sectors(id, name_en, name_ar, code),
         institution:institutions(id, name_en, name_ar)
       `;
@@ -177,7 +177,7 @@ export function useRDProject(projectId) {
         .from('rd_projects')
         .select(`
           *,
-          municipality:municipalities(id, name_en, name_ar, region_id),
+          municipality:municipalities(id, name_en, name_ar),
           sector:sectors(id, name_en, name_ar, code),
           institution:institutions(id, name_en, name_ar)
         `)

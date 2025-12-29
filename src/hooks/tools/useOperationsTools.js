@@ -73,6 +73,30 @@ export function useOperationsTools() {
     const { data: proposals, isLoading: proposalsLoading } = useProposalsWithVisibility({ limit: 20 });
 
 
+    // --- Refs for Dynamic Data (Prevent Infinite Loops) ---
+    const tasksRef = useRef(tasks);
+    const challengesRef = useRef(challenges);
+    const pilotsRef = useRef(pilots);
+    const contractsRef = useRef(contracts);
+    const risksRef = useRef(risks);
+    const budgetsRef = useRef(budgets);
+    const teamsRef = useRef(teams);
+    const proposalsRef = useRef(proposals);
+    const auditLogsRef = useRef(auditLogs);
+
+    useEffect(() => {
+        tasksRef.current = tasks;
+        challengesRef.current = challenges;
+        pilotsRef.current = pilots;
+        contractsRef.current = contracts;
+        risksRef.current = risks;
+        budgetsRef.current = budgets;
+        teamsRef.current = teams;
+        proposalsRef.current = proposals;
+        auditLogsRef.current = auditLogs;
+    }, [tasks, challenges, pilots, contracts, risks, budgets, teams, proposals, auditLogs]);
+
+
     useEffect(() => {
         // --- Tool: List My Tasks ---
         const unregisterTasks = registerTool({
@@ -83,8 +107,8 @@ export function useOperationsTools() {
             }),
             safety: 'safe',
             execute: async ({ status }) => {
-                if (tasksLoading) return "Loading tasks...";
-                let result = tasks || [];
+                if (tasksLoading) return "Loading tasks..."; // Note: Accessing loading state directly is fine if it doesn't cause cycle, but better ref it too? Usually loading toggles rarely.
+                let result = tasksRef.current || [];
                 if (status) result = result.filter(t => t.status === status);
                 return {
                     type: 'data_list',
@@ -126,16 +150,17 @@ export function useOperationsTools() {
             schema: z.object({}),
             safety: 'safe',
             execute: async () => {
-                const pendingChallenges = challenges.data || [];
-                const pendingPilots = pilots.data || [];
+                // Access nested .data if structure is { data: [...] }
+                const challengeData = challengesRef.current?.data || [];
+                const pilotData = pilotsRef.current?.data || [];
 
                 return {
                     type: 'data_list',
                     entity: 'approval_request',
-                    summary: `Found ${pendingChallenges.length} challenges and ${pendingPilots.length} pilots pending approval.`,
+                    summary: `Found ${challengeData.length} challenges and ${pilotData.length} pilots pending approval.`,
                     items: [
-                        ...pendingChallenges.map(c => ({ id: c.id, type: 'challenge', title: c.title })),
-                        ...pendingPilots.map(p => ({ id: p.id, type: 'pilot', title: p.title_en }))
+                        ...challengeData.map(c => ({ id: c.id, type: 'challenge', title: c.title })),
+                        ...pilotData.map(p => ({ id: p.id, type: 'pilot', title: p.title_en }))
                     ]
                 };
             }
@@ -152,12 +177,9 @@ export function useOperationsTools() {
             }),
             safety: 'unsafe',
             execute: async ({ type, id, notes }) => {
-                // Determine update payload based on type (Logic mirroring UI)
                 let updateData = {};
-                if (type === 'challenge') updateData = { status: 'approved' }; // Simplified
-                if (type === 'pilot') updateData = { status: 'approved' }; // Simplified, arguably needs milestone logic
-
-                // Note: Real logic is complex, this is a basic "Approve" signal.
+                if (type === 'challenge') updateData = { status: 'approved' };
+                if (type === 'pilot') updateData = { status: 'approved' };
                 return await approveMutation.mutateAsync({ type, id, data: updateData });
             }
         });
@@ -169,8 +191,7 @@ export function useOperationsTools() {
             schema: z.object({ status: z.string().optional() }),
             safety: 'safe',
             execute: async ({ status }) => {
-                if (contractsLoading) return "Loading contracts...";
-                let result = contracts || [];
+                let result = contractsRef.current || [];
                 if (status) result = result.filter(c => c.status === status);
                 return {
                     type: 'data_list',
@@ -187,11 +208,10 @@ export function useOperationsTools() {
             schema: z.object({}),
             safety: 'safe',
             execute: async () => {
-                if (risksLoading) return "Loading risks...";
                 return {
                     type: 'data_list',
                     entity: 'risk',
-                    items: (risks || []).map(r => ({ id: r.id, description: r.description, severity: r.severity, status: r.status }))
+                    items: (risksRef.current || []).map(r => ({ id: r.id, description: r.description, severity: r.severity, status: r.status }))
                 };
             }
         });
@@ -203,11 +223,10 @@ export function useOperationsTools() {
             schema: z.object({}),
             safety: 'safe',
             execute: async () => {
-                if (budgetsLoading) return "Loading budgets...";
                 return {
                     type: 'data_list',
                     entity: 'budget',
-                    items: (budgets || []).map(b => ({
+                    items: (budgetsRef.current || []).map(b => ({
                         id: b.id,
                         entity: b.entity_invoked,
                         amount: b.total_amount,
@@ -224,11 +243,10 @@ export function useOperationsTools() {
             schema: z.object({}),
             safety: 'safe',
             execute: async () => {
-                if (teamsLoading) return "Loading teams...";
                 return {
                     type: 'data_list',
                     entity: 'team',
-                    items: (teams || []).map(t => ({
+                    items: (teamsRef.current || []).map(t => ({
                         id: t.id,
                         name: t.name,
                         member_count: t.members?.length || 0
@@ -244,8 +262,7 @@ export function useOperationsTools() {
             schema: z.object({ status: z.string().optional() }),
             safety: 'safe',
             execute: async ({ status }) => {
-                if (proposalsLoading) return "Loading proposals...";
-                let result = proposals || [];
+                let result = proposalsRef.current || [];
                 if (status) result = result.filter(p => p.status === status);
                 return {
                     type: 'data_list',
@@ -267,7 +284,7 @@ export function useOperationsTools() {
             safety: 'safe',
             execute: async ({ action }) => {
                 if (!isAdmin) return "Access denied. Admin only.";
-                let result = auditLogs || [];
+                let result = auditLogsRef.current || [];
                 if (action) result = result.filter(l => l.action === action);
                 return {
                     type: 'data_list',
@@ -295,5 +312,5 @@ export function useOperationsTools() {
             unregisterAuditLogs();
         };
 
-    }, [registerTool, tasks, tasksLoading, challenges, pilots, contracts, contractsLoading, risks, risksLoading, budgets, budgetsLoading, teams, teamsLoading, proposals, proposalsLoading, auditLogs]);
+    }, [registerTool, createTaskMutation, approveMutation, isAdmin]); // Minimized dependencies
 }

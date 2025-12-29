@@ -59,7 +59,7 @@ export function useEventsWithVisibility(options = {}) {
     queryFn: async () => {
       let baseSelect = `
         *,
-        municipality:municipalities(id, name_en, name_ar, region_id, region:regions(id, code, name_en)),
+        municipality:municipalities(id, name_en, name_ar),
         program:programs(id, name_en, name_ar, sector_id)
       `;
 

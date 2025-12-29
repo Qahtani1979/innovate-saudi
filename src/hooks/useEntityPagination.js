@@ -18,14 +18,15 @@ export function useEntityPagination({
     pageSize = 10,
     filters = {},
     select = '*',
-    enabled = true
+    enabled = true,
+    deletedColumn = 'is_deleted'
 } = {}) {
     const { fetchWithVisibility } = useVisibilitySystem();
 
     // 1. QUERY CONFIGURATION
     const query = useQuery({
-        // Include page/pageSize/filters in key for automatic refetching
-        queryKey: [entityName, 'paginated', filters, page, pageSize],
+        // Include page/pageSize/filters/deletedColumn in key for automatic refetching
+        queryKey: [entityName, 'paginated', filters, page, pageSize, deletedColumn],
 
         queryFn: async () => {
             const start = (page - 1) * pageSize;
@@ -37,7 +38,7 @@ export function useEntityPagination({
                 range: { start, end },
                 additionalFilters: filters,
                 count: 'exact',
-                deletedColumn: 'is_deleted' // Standard soft-delete check
+                deletedColumn: deletedColumn // Use the passed option (can be null)
             });
         },
 

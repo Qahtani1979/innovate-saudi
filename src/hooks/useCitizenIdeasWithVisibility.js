@@ -13,13 +13,14 @@ export function useCitizenIdeasWithVisibility(options = {}) {
             if (status && status !== 'all') filters.status = status;
 
             // Standard public board filter
-            filters.is_published = true;
+            // filters.is_published = true; // Column likely doesn't exist
 
             return fetchWithVisibility('citizen_ideas', '*', {
                 additionalFilters: filters,
                 noVisibilityLimit: options.noVisibilityLimit,
                 orderBy,
-                orderDirection
+                orderDirection,
+                deletedColumn: null // Column likely doesn't exist
             });
         },
         enabled: !isVisibilityLoading

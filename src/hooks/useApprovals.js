@@ -49,6 +49,7 @@ export function useApprovals(userEmail, { challengesPage = 1, pilotsPage = 1, ex
             recommendation: 'approve_with_conditions',
             // status: 'pending' // Assuming column exists
         },
+        deletedColumn: null, // Expert evaluations table does not have is_deleted column
         enabled: !!email
     });
 

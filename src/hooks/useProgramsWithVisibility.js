@@ -54,7 +54,7 @@ export function useProgramsWithVisibility(options = {}) {
     queryFn: async () => {
       let baseSelect = `
         *,
-        municipality:municipalities(id, name_en, name_ar, region_id),
+        municipality:municipalities(id, name_en, name_ar),
         sector:sectors(id, name_en, name_ar, code)
       `;
 

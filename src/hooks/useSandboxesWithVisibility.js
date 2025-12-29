@@ -14,7 +14,7 @@ import { useVisibilitySystem } from './visibility/useVisibilitySystem';
 import { usePermissions } from '@/hooks/usePermissions';
 
 export function useSandboxesWithVisibility(options = {}) {
-  const { 
+  const {
     status,
     sectorId,
     limit = 100,
@@ -22,19 +22,19 @@ export function useSandboxesWithVisibility(options = {}) {
   } = options;
 
   const { isAdmin, hasRole, userId } = usePermissions();
-  const { 
-    isNational, 
-    sectorIds, 
-    userMunicipalityId, 
+  const {
+    isNational,
+    sectorIds,
+    userMunicipalityId,
     nationalMunicipalityIds,
     hasFullVisibility,
-    isLoading: visibilityLoading 
+    isLoading: visibilityLoading
   } = useVisibilitySystem();
 
-  const isStaffUser = hasRole('municipality_staff') || 
-                      hasRole('municipality_admin') || 
-                      hasRole('deputyship_staff') || 
-                      hasRole('deputyship_admin');
+  const isStaffUser = hasRole('municipality_staff') ||
+    hasRole('municipality_admin') ||
+    hasRole('deputyship_staff') ||
+    hasRole('deputyship_admin');
 
   return useQuery({
     queryKey: ['sandboxes-with-visibility', {
@@ -51,7 +51,7 @@ export function useSandboxesWithVisibility(options = {}) {
     queryFn: async () => {
       const baseSelect = `
         *,
-        municipality:municipalities(id, name_en, name_ar, region_id, region:regions(id, code, name_en)),
+        municipality:municipalities(id, name_en, name_ar),
         sector:sectors(id, name_en, name_ar, code)
       `;
 
