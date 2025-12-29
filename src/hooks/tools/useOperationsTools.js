@@ -260,7 +260,7 @@ export function useOperationsTools() {
             }
         });
         // --- Tool: List Audit Logs (Admin) ---
-        registerTool({
+        const unregisterAuditLogs = registerTool({
             name: 'list_audit_logs',
             description: 'View system audit logs.',
             schema: z.object({ action: z.string().optional() }),
@@ -283,7 +283,6 @@ export function useOperationsTools() {
         });
 
         return () => {
-            unregisterNotify();
             unregisterTasks();
             unregisterTaskCreate();
             unregisterApprovals();
@@ -293,6 +292,7 @@ export function useOperationsTools() {
             unregisterBudgets();
             unregisterTeams();
             unregisterProposals();
+            unregisterAuditLogs();
         };
 
     }, [registerTool, tasks, tasksLoading, challenges, pilots, contracts, contractsLoading, risks, risksLoading, budgets, budgetsLoading, teams, teamsLoading, proposals, proposalsLoading, auditLogs]);

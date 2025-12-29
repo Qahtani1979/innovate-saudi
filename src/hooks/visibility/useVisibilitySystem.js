@@ -292,7 +292,13 @@ export function useVisibilitySystem() {
     // Apply additional filters
     Object.entries(additionalFilters).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== 'all') {
-        query = query.eq(key, value);
+        if (typeof value === 'object' && value !== null && 'operator' in value && 'value' in value) {
+          query = query.filter(key, value.operator, value.value);
+        } else if (Array.isArray(value)) {
+          query = query.in(key, value);
+        } else {
+          query = query.eq(key, value);
+        }
       }
     });
 
@@ -347,9 +353,11 @@ export function useVisibilitySystem() {
     // Apply additional filters
     Object.entries(additionalFilters).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== 'all') {
-        // Handle array range filters (e.g. for dates or numbers) if needed, 
-        // but standard strict equality is default
-        if (Array.isArray(value)) {
+        if (typeof value === 'object' && value !== null && 'operator' in value && 'value' in value) {
+          query = query.filter(key, value.operator, value.value);
+        } else if (Array.isArray(value)) {
+          // Handle array range filters (e.g. for dates or numbers) if needed, 
+          // but standard strict equality is default
           query = query.in(key, value);
         } else {
           query = query.eq(key, value);
