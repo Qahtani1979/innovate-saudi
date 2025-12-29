@@ -1,4 +1,3 @@
-import { TOOL_REGISTRY } from '@/lib/ai/tools/registry';
 import { useCopilotStore } from '@/lib/store/copilotStore';
 
 // Access store outside of React Component
@@ -83,7 +82,8 @@ Protocol:
         try {
             // 1. Prepare Prompt
             const tools = systemContext?.tools || [];
-            const systemPrompt = this.buildSystemPrompt(tools);
+            // Use externally provided prompt OR build default
+            const systemPrompt = systemContext?.systemPrompt || this.buildSystemPrompt(tools);
 
             // 2. Call AI (Real or Mock)
             let aiResponseText = "";

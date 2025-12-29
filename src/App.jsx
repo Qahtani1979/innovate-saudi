@@ -129,7 +129,9 @@ const AuthenticatedApp = () => {
       {/* Super Copilot Route */}
       <Route path="/copilot" element={
         isAuthenticated ? (
-          <CopilotConsole />
+          <LayoutWrapper currentPageName="CopilotConsole">
+            <CopilotConsole />
+          </LayoutWrapper>
         ) : <Navigate to="/auth" replace />
       } />
 
