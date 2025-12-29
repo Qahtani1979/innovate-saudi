@@ -1,19 +1,37 @@
-import { useState, useEffect } from 'react';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
+import { useRef, useEffect, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCopilotStore } from '@/lib/store/copilotStore';
-import { orchestrator } from '@/lib/ai/orchestrator';
+import { CopilotOrchestrator } from '@/lib/ai/orchestrator';
 import { GenUICard } from '@/components/copilot/widgets/GenUICard';
 import { ProposalCard } from '@/components/copilot/widgets/ProposalCard';
 import { ActionChip } from '@/components/copilot/widgets/ActionChip';
-import { TypingEffect } from '@/components/copilot/widgets/TypingEffect';
-import { Loader2, Send, Bot, User, LayoutDashboard, History, Sparkles } from 'lucide-react';
+import { TypingEffect } from '@/components/ui/TypingEffect';
+import { Loader2, Send, Bot, User, LayoutDashboard, History, Sparkles, Maximize2, Minimize2, X } from 'lucide-react';
 import { useCopilotHistory } from '@/hooks/useCopilotHistory';
+import { useToolExecutor } from '@/hooks/useToolExecutor';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
+import { useReferenceDataTools } from '@/hooks/tools/useReferenceDataTools';
+import { useCopilotTools } from '@/contexts/CopilotToolsContext';
+
+import { useContextTools } from '@/hooks/tools/useContextTools';
+
+const orchestrator = new CopilotOrchestrator();
 
 export default function CopilotConsole() {
+    // Mount Feature Plugins
+    useReferenceDataTools();
+    usePilotTools();
+    useContextTools(); // Mount Context Router
+
+    // Access Registry
+    const { getAllTools } = useCopilotTools();
+
     const {
+        isOpen,
+        toggleConsole,
+        activeSessionId, // Get real session ID
         isThinking,
         toolStatus,
         pendingToolCall,
@@ -25,12 +43,15 @@ export default function CopilotConsole() {
     const [messages, setMessages] = useState([]);
     const { useSessionMessages } = useCopilotHistory();
 
-    // -- Mock History for UI Development --
-    const { data: historyMessages } = useSessionMessages('mock-session-id');
+    // -- Real History --
+    const { data: historyMessages } = useSessionMessages(activeSessionId);
 
     // -- Resume Execution on Confirmation --
     useEffect(() => {
         if (toolStatus === 'executing' && pendingToolCall) {
+            // Re-fetch tools for resuming execution context if needed
+            const tools = getAllTools();
+            // Pass specific handler or just rely on global executor
             orchestrator.executor(pendingToolCall.name, pendingToolCall.args)
                 .then(result => {
                     // Result handling is inside executor, but we can add UI feedback here if needed
@@ -38,6 +59,28 @@ export default function CopilotConsole() {
                 .catch(err => console.error("Resumed execution failed", err));
         }
     }, [toolStatus, pendingToolCall]);
+
+    // -- CRITICAL: Wire Orchestrator to Executor --
+    const { requestExecution } = useToolExecutor();
+    useEffect(() => {
+        orchestrator.setExecutor(requestExecution);
+    }, [requestExecution]);
+
+    // -- CRITICAL: Wire Orchestrator to AI Backend --
+    const { invokeAI } = useAIWithFallback({ showToasts: false });
+    useEffect(() => {
+        // Adapt invokeAI to match Orchestrator's expected signature
+        orchestrator.setCaller(async ({ system, user, tools }) => {
+            const { success, data } = await invokeAI({
+                prompt: user, // Core user message
+                system_prompt: system, // The Schema/Persona we built
+                // Note: invokeAI internal logic might handle tools differently, 
+                // but passing system prompt is key.
+            });
+            if (success) return data;
+            throw new Error("AI Invoke Failed");
+        });
+    }, [invokeAI]);
 
     const handleSend = async () => {
         if (!inputValue.trim()) return;
@@ -47,14 +90,69 @@ export default function CopilotConsole() {
         setMessages(prev => [...prev, newMsg]);
         setInputValue('');
 
-        // Call Brain
-        const response = await orchestrator.processMessage(newMsg.content);
+        // Call Brain with Dynamic Tools
+        const currentTools = getAllTools();
+        const response = await orchestrator.processMessage(newMsg.content, { tools: currentTools });
 
+        // Handle Response
         // Handle Response
         if (response.type === 'confirmation_request') {
             // UI State handles the specific card via `toolStatus`
-        } else if (response.type === 'text') {
-            setMessages(prev => [...prev, { role: 'assistant', content: response.content }]);
+        } else if (response.type === 'data_list') {
+            // Generative UI Response
+            const ContentWidget = (
+                <GenUICard title={`Found ${response.items.length} ${response.entity}s`} variant="highlight">
+                    <div className="max-h-60 overflow-y-auto space-y-1 mt-2">
+                        {response.items.map((item, i) => (
+                            <div key={i} className="p-2 hover:bg-white/50 rounded flex justify-between cursor-pointer border border-transparent hover:border-violet-100 transition-colors"
+                                onClick={() => setInputValue(`Create pilot in ${item.name_en || item.name} sector`)}>
+                                <span>{item.name_en || item.name}</span>
+                            </div>
+                        ))}
+                    </div>
+                </GenUICard>
+            );
+
+            setMessages(prev => [...prev, { role: 'assistant', content: "Here are the sectors you asked for:", ui: ContentWidget }]);
+
+        } else if (response.success && response.draft) {
+            // Context/Draft Update Response
+            const ContentWidget = (
+                <GenUICard title="Context Updated" subtitle={`${response.draft.type || 'Draft'} modified`} variant="default">
+                    <div className="text-sm space-y-2">
+                        {/* Data Fields */}
+                        {Object.entries(response.draft.data).map(([k, v]) => (
+                            <div key={k} className="flex justify-between border-b border-dashed pb-1">
+                                <span className="text-muted-foreground capitalize">{k}:</span>
+                                <span className="font-medium">{String(v)}</span>
+                            </div>
+                        ))}
+
+                        {/* Intelligence Layer: Missing Fields or Action */}
+                        {response.draft.analysis?.isValid ? (
+                            <div className="pt-2 flex justify-end animate-in fade-in">
+                                <ActionChip label="Execute Pilot" icon={Sparkles} onClick={() => setInputValue('Create pilot now')} />
+                            </div>
+                        ) : (
+                            response.draft.analysis?.missingFields?.length > 0 && (
+                                <div className="mt-3 p-2 bg-amber-50 rounded border border-amber-100 text-amber-700 text-xs">
+                                    <span className="font-bold block mb-1">Missing Parameters:</span>
+                                    <div className="flex gap-1 flex-wrap">
+                                        {response.draft.analysis.missingFields.map(f => (
+                                            <span key={f} className="px-1.5 py-0.5 bg-amber-100 rounded-full capitalize">{f}</span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )
+                        )}
+                    </div>
+                </GenUICard>
+            );
+            setMessages(prev => [...prev, { role: 'assistant', content: response.message, ui: ContentWidget }]);
+
+        } else {
+            // Default Text
+            setMessages(prev => [...prev, { role: 'assistant', content: response.content || JSON.stringify(response) }]);
         }
     };
 
@@ -125,10 +223,17 @@ export default function CopilotConsole() {
                                         {msg.role === 'assistant' && <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center"><Bot className="w-4 h-4 text-primary" /></div>}
 
                                         <div className={`p-3 rounded-lg max-w-[80%] text-sm ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-                                            {msg.role === 'assistant' && idx === messages.length - 1 ? (
+                                            {msg.role === 'assistant' && idx === messages.length - 1 && !msg.ui ? (
                                                 <TypingEffect text={msg.content} />
                                             ) : (
-                                                msg.content
+                                                <div className="flex flex-col gap-3">
+                                                    <div>{msg.content}</div>
+                                                    {msg.ui && (
+                                                        <div className="mt-1 w-full animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                                            {msg.ui}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
 

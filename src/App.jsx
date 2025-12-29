@@ -34,6 +34,7 @@ import CitizenLivingLabsBrowser from './pages/CitizenLivingLabsBrowser';
 import PublicProfilePage from './pages/PublicProfilePage';
 import CopilotConsole from './pages/CopilotConsole';
 import { CopilotProvider } from './components/copilot/CopilotProvider';
+import { CopilotToolsProvider } from '@/contexts/CopilotToolsContext';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -171,9 +172,12 @@ function App() {
             <StrategicPlanProvider>
               <Router>
                 <NavigationTracker />
-                <CopilotProvider>
-                  <AuthenticatedApp />
-                </CopilotProvider>
+                <NavigationTracker />
+                <CopilotToolsProvider>
+                  <CopilotProvider>
+                    <AuthenticatedApp />
+                  </CopilotProvider>
+                </CopilotToolsProvider>
                 <Toaster />
               </Router>
               <VisualEditAgent />

@@ -55,5 +55,35 @@ export const useCopilotStore = create((set) => ({
         toolStatus: 'idle',
         pendingToolCall: null,
         lastExecutionResult: null
+    }),
+
+    // 4. Context Router State (Phase 3)
+    contextDraft: {
+        type: null, // 'pilot' | 'challenge'
+        data: {},   // { title: "..." }
+        references: [], // [{ type: 'challenge', id: '123' }] (Gap Fix: Linking)
+        status: 'idle'
+    },
+
+    setDraftType: (type) => set((state) => ({
+        contextDraft: { ...state.contextDraft, type, status: 'collecting' }
+    })),
+
+    updateDraft: (data) => set((state) => ({
+        contextDraft: {
+            ...state.contextDraft,
+            data: { ...state.contextDraft.data, ...data }
+        }
+    })),
+
+    addReference: (ref) => set((state) => ({
+        contextDraft: {
+            ...state.contextDraft,
+            references: [...state.contextDraft.references, ref]
+        }
+    })),
+
+    resetDraft: () => set({
+        contextDraft: { type: null, data: {}, references: [], status: 'idle' }
     })
 }));

@@ -1,62 +1,56 @@
-import { useNavigate } from 'react-router-dom';
-import { usePilotMutations } from '@/hooks/usePilotMutations';
 import { useToast } from '@/hooks/use-toast';
 import { useCopilotStore } from '@/lib/store/copilotStore';
-import { TOOL_REGISTRY } from '@/lib/ai/tools/registry';
+import { useCopilotTools } from '@/contexts/CopilotToolsContext';
 
 /**
- * The Bridge between "Intent" (Registry) and "Action" (Hooks).
- * This hook is consumed by the Orchestrator/Provider.
+ * The Generic Tool Executor (Kernel Layer).
+ * Decoupled from specific domain logic.
+ * 
+ * Responsibility:
+ * 1. Lookup tool in Registry.
+ * 2. Handle "Safety" (Confirmation).
+ * 3. Execute & Report Status.
  */
 export function useToolExecutor() {
-    const navigate = useNavigate();
     const { toast } = useToast();
-    const { createPilot } = usePilotMutations(); // Ensure you have this hook
     const store = useCopilotStore();
+    const { getTool } = useCopilotTools();
 
     /**
-     * core execution function
+     * Core execution logic
      */
-    const executeTool = async (toolName, args) => {
-        const toolDef = TOOL_REGISTRY[toolName];
-        if (!toolDef) throw new Error(`Unknown tool: ${toolName}`);
+    const executeTool = async (toolName, args, onProgress) => {
+        const tool = getTool(toolName);
 
-
+        if (!tool) {
+            const error = new Error(`Tool '${toolName}' not found in registry.Ensure the Feature Plugin is loaded.`);
+            store.reportError(error);
+            throw error;
+        }
 
         try {
-            let result;
-
-            switch (toolName) {
-                // --- Navigation ---
-                case 'navigate':
-                    navigate(args.path);
-                    result = { success: true, message: `Navigated to ${args.path}` };
-                    break;
-
-                // --- Pilots ---
-                case 'create_pilot':
-                    // This is an async mutation
-                    result = await createPilot.mutateAsync(args);
-                    break;
-
-                // --- Analysis ---
-                case 'analyze_data':
-                    // Mock for now, Phase 3 will make this real
-                    await new Promise(r => setTimeout(r, 1000));
-                    result = { analysis: "Deep analysis complete. (Mock)", data: args };
-                    break;
-
-                default:
-                    throw new Error(`No execution handler for ${toolName}`);
+            // Gap Fix: Schema Validation
+            if (tool.schema) {
+                // Zod parse will throw if invalid
+                tool.schema.parse(args);
             }
+
+            // Execute Implementation
+            // Gap Fix: Streaming (pass onProgress if tool supports it)
+            const result = await tool.execute(args, onProgress);
 
             // Success Handler
             store.completeAction(result);
-            toast({ title: "Action Completed", description: `Successfully ran ${toolName}` });
+
+            // Optional: Toast for visibility
+            if (!result.silent) {
+                toast({ title: "Completed", description: `Executed ${tool.description} ` });
+            }
+
             return result;
 
         } catch (error) {
-            console.error(`[Executor] Error in ${toolName}:`, error);
+            console.error(`[Executor] Error in ${toolName}: `, error);
             store.reportError(error);
             toast({
                 title: "Action Failed",
@@ -68,17 +62,18 @@ export function useToolExecutor() {
     };
 
     /**
-     * Safety Wrapper: Checks confirmation logic
+     * Safety Wrapper
      */
     const requestExecution = (toolName, args) => {
-        const toolDef = TOOL_REGISTRY[toolName];
+        const tool = getTool(toolName);
 
-        if (toolDef?.safety === 'unsafe') {
-            // Pause and ask UI
+        // If tool is missing, we fail fast (or let execute catch it)
+        if (!tool) return executeTool(toolName, args);
+
+        if (tool.safety === 'unsafe') {
             store.requestConfirmation({ name: toolName, args });
             return { status: 'pending_confirmation' };
         } else {
-            // Execute immediately - note: toolStatus is set within executeTool via completeAction/reportError
             return executeTool(toolName, args);
         }
     };

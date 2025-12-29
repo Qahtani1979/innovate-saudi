@@ -40,5 +40,12 @@ export const TOOL_REGISTRY = {
             contextIds: z.array(z.string()).optional()
         }),
         safety: 'safe'
+    },
+
+    // 4. Reference Data (Safe)
+    'list_sectors': {
+        description: 'List all available industry and government sectors.',
+        schema: z.object({}), // No args needed
+        safety: 'safe'
     }
 };
