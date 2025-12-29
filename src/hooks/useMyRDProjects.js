@@ -21,7 +21,7 @@ export function useMyRDProjects(user, invokeAI) {
     // ...
 
     // 2. STATS & DASHBOARD DATA
-    const { data: dashboardData = { ... }, isLoading: statsLoading } = useQuery({
+    const { data: dashboardData = { activeCount: 0, publicationsTotal: 0, criticalMilestones: [], milestonesNextWeekCount: 0 }, isLoading: statsLoading } = useQuery({
         queryKey: ['my-rd-stats', userId], // Use userId in key
         queryFn: async () => {
             if (!userId) return { activeCount: 0, publicationsTotal: 0, criticalMilestones: [], milestonesNextWeekCount: 0 };
