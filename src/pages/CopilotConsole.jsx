@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'react-resizable-panels';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,11 +9,12 @@ import { GenUICard } from '@/components/copilot/widgets/GenUICard';
 import { ProposalCard } from '@/components/copilot/widgets/ProposalCard';
 import { ActionChip } from '@/components/copilot/widgets/ActionChip';
 import { TypingEffect } from '@/components/ui/TypingEffect';
-import { Loader2, Send, Bot, User, LayoutDashboard, History, Sparkles, Maximize2, Minimize2, X } from 'lucide-react';
+import { Loader2, Send, Bot, User, LayoutDashboard, History, Sparkles } from 'lucide-react';
 import { useCopilotHistory } from '@/hooks/useCopilotHistory';
 import { useToolExecutor } from '@/hooks/useToolExecutor';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { useReferenceDataTools } from '@/hooks/tools/useReferenceDataTools';
+import { usePilotTools } from '@/hooks/tools/usePilotTools';
 import { useCopilotTools } from '@/contexts/CopilotToolsContext';
 
 import { useContextTools } from '@/hooks/tools/useContextTools';
