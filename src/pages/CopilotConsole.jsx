@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'react-resizable-panels';
+import { PanelResizeHandle as ResizableHandle, Panel as ResizablePanel, PanelGroup as ResizablePanelGroup } from 'react-resizable-panels';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
