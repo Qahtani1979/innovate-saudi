@@ -21,7 +21,7 @@ export function useMyRDProjects(user, invokeAI) {
     // ...
 
     // 2. STATS & DASHBOARD DATA
-    const { data: dashboardData = { activeCount: 0, publicationsTotal: 0, criticalMilestones: [], milestonesNextWeekCount: 0 }, isLoading: statsLoading } = useQuery({
+    const statsQuery = useQuery({
         queryKey: ['my-rd-stats', userId], // Use userId in key
         queryFn: async () => {
             if (!userId) return { activeCount: 0, publicationsTotal: 0, criticalMilestones: [], milestonesNextWeekCount: 0 };
@@ -60,6 +60,9 @@ export function useMyRDProjects(user, invokeAI) {
         enabled: !!userEmail,
         staleTime: 5 * 60 * 1000 // 5 min cache for dashboard stats
     });
+
+    const dashboardData = statsQuery.data || { activeCount: 0, publicationsTotal: 0, criticalMilestones: [], milestonesNextWeekCount: 0 };
+    const statsLoading = statsQuery.isLoading;
 
     // 3. OPEN R&D CALLS (Keep existing)
     const { data: rdCalls = [] } = useQuery({
