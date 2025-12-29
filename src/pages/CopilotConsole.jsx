@@ -8,7 +8,7 @@ import { CopilotOrchestrator } from '@/lib/ai/orchestrator';
 import { GenUICard } from '@/components/copilot/widgets/GenUICard';
 import { ProposalCard } from '@/components/copilot/widgets/ProposalCard';
 import { ActionChip } from '@/components/copilot/widgets/ActionChip';
-import { TypingEffect } from '@/components/ui/TypingEffect';
+import { TypingEffect } from '@/components/copilot/widgets/TypingEffect'; // Corrected path
 import { Loader2, Send, Bot, User, LayoutDashboard, History, Sparkles } from 'lucide-react';
 import { useCopilotHistory } from '@/hooks/useCopilotHistory';
 import { useToolExecutor } from '@/hooks/useToolExecutor';
