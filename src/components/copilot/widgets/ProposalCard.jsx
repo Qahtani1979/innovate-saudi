@@ -6,12 +6,9 @@ import { AlertTriangle, Check, X } from 'lucide-react';
  * The "Safety Valve" UI.
  * Shows a Proposed Action and asks for User Confirmation.
  */
-export function ProposalCard({
-    toolName,
-    args,
-    onConfirm,
-    onCancel
-}) {
+export const ProposalCard = ({ toolName, args, onConfirm, onCancel }) => {
+    console.log('[ProposalCard] Rendering with:', { toolName, args });
+
     return (
         <GenUICard
             title="Action Verification"
@@ -43,7 +40,14 @@ export function ProposalCard({
                     <Button variant="outline" size="sm" onClick={onCancel} className="h-8">
                         Cancel
                     </Button>
-                    <Button size="sm" onClick={onConfirm} className="h-8 gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+                    <Button
+                        variant="default"
+                        onClick={() => {
+                            console.log('[ProposalCard] Confirm clicked');
+                            onConfirm();
+                        }}
+                        className="flex-1 bg-primary hover:bg-primary/90"
+                    >
                         <Check className="w-3.5 h-3.5" />
                         Confirm Action
                     </Button>

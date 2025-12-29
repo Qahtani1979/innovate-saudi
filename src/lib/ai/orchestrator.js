@@ -75,7 +75,13 @@ Protocol:
     /**
      * Main Entry Point
      */
-    async processMessage(userMessage, systemContext) {
+    async processMessage(message, context = []) {
+        console.log('[Orchestrator] Processing message:', message);
+        console.log('[Orchestrator] Context:', context);
+
+        // Check for tool usage
+        const toolValidation = await this.evaluateToolRequirement(message);
+
         const store = getStore();
         store.setIsThinking(true);
 
@@ -91,13 +97,13 @@ Protocol:
                 // Pass system prompt + user message to the hook/caller
                 const result = await this.caller({
                     system: systemPrompt,
-                    user: userMessage,
+                    user: message, // Changed from userMessage to message
                     tools: tools // Some callers might support native function calling
                 });
                 aiResponseText = typeof result === 'string' ? result : (result.message || JSON.stringify(result));
             } else {
                 // Fallback Mock (Dev Mode) - Dynamic Discovery
-                const lowerMsg = userMessage.toLowerCase();
+                const lowerMsg = message.toLowerCase(); // Changed from userMessage to message
 
                 // 1. Hardcoded fallback for Create Pilot (since it needs args)
                 if (lowerMsg.includes('create') && lowerMsg.includes('pilot')) {
@@ -132,6 +138,15 @@ Protocol:
             const toolCall = this.parseToolCall(aiResponseText);
 
             if (toolCall) {
+                if (toolValidation.requiresTool) {
+                    console.log('[Orchestrator] Tool required:', toolValidation.toolName);
+
+                    // MOCK LOGIC for demo purposes (if needed)
+                    if (this.isMockMode(toolValidation.toolName)) {
+                        console.log('[Orchestrator] Using mock response for:', toolValidation.toolName);
+                        return this.getMockResponse(toolValidation.toolName, message);
+                    }
+                }
                 if (this.executor) {
                     return this.executor(toolCall.tool, toolCall.args);
                 } else {

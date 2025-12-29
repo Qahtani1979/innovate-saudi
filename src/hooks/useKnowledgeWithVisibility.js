@@ -48,7 +48,7 @@ export function useKnowledgeWithVisibility(options = {}) {
       limit
     }],
     queryFn: async () => {
-      const baseSelect = `
+      const selectQuery = `
         *,
         municipality:municipalities(id, name_en, name_ar),
         sector:sectors(id, name_en, name_ar)
@@ -56,7 +56,7 @@ export function useKnowledgeWithVisibility(options = {}) {
 
       let query = supabase
         .from('knowledge_documents')
-        .select(baseSelect)
+        .select(selectQuery)
         .order('created_at', { ascending: false })
         .limit(limit);
 

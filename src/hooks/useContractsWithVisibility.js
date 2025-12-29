@@ -53,7 +53,7 @@ export function useContractsWithVisibility(options = {}) {
         municipality:municipalities(id, name_en, name_ar),
         provider:providers(id, name_en, name_ar),
         pilot:pilots(id, title_en, title_ar),
-        solution:solutions(id, title_en, title_ar)
+        solution:solutions(id, name_en, name_ar)
       `;
 
       let query = supabase

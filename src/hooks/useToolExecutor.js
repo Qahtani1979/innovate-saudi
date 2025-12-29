@@ -20,6 +20,7 @@ export function useToolExecutor() {
      * Core execution logic
      */
     const executeTool = async (toolName, args, onProgress) => {
+        console.log('[Executor] Executing:', toolName, args);
         const tool = getTool(toolName);
 
         if (!tool) {
@@ -65,12 +66,14 @@ export function useToolExecutor() {
      * Safety Wrapper
      */
     const requestExecution = (toolName, args) => {
+        console.log('[Executor] Requesting execution for:', toolName, args);
         const tool = getTool(toolName);
 
         // If tool is missing, we fail fast (or let execute catch it)
         if (!tool) return executeTool(toolName, args);
 
         if (tool.safety === 'unsafe') {
+            console.log('[Executor] Tool unsafe requiring confirmation:', toolName);
             store.requestConfirmation({ name: toolName, args });
             return { status: 'pending_confirmation' };
         } else {

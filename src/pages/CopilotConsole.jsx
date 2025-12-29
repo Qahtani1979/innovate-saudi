@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { PanelResizeHandle as ResizableHandle, Panel as ResizablePanel, PanelGroup as ResizablePanelGroup } from 'react-resizable-panels';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -40,6 +40,11 @@ export default function CopilotConsole() {
         messages,
         handleSend
     } = useCopilotChat();
+
+    useEffect(() => {
+        console.log('[CopilotConsole] Mounted');
+        return () => console.log('[CopilotConsole] Unmounted');
+    }, []);
 
     return (
         <div className="h-screen w-full bg-background flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>

@@ -52,7 +52,7 @@ export function useProgramsWithVisibility(options = {}) {
       limit
     }],
     queryFn: async () => {
-      let baseSelect = `
+      const baseSelect = `
         *,
         municipality:municipalities(id, name_en, name_ar),
         sector:sectors(id, name_en, name_ar)

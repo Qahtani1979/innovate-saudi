@@ -25,15 +25,23 @@ export function useCopilotChat() {
 
     // Wire up the Executor to the Orchestrator
     useEffect(() => {
-        orchestrator.setExecutor(requestExecution);
-    }, [requestExecution]);
+        if (orchestrator && requestExecution) {
+            console.log('[useCopilotChat] Wiring executor to orchestrator');
+            orchestrator.setExecutor(requestExecution);
+        }
+    }, [orchestrator, requestExecution]);
 
     // -- Handle Send --
     const handleSend = async () => {
         if (!inputValue.trim()) return;
 
-        const newMsg = { role: 'user', content: inputValue };
-        setMessages(prev => [...prev, newMsg]);
+        const content = inputValue;
+        console.log('[useCopilotChat] Sending message:', content);
+
+        const userMsg = { role: 'user', content: content };
+
+        // visual update
+        setMessages(prev => [...prev, userMsg]);
         setInputValue('');
 
         const currentTools = getAllTools();
@@ -49,10 +57,13 @@ export function useCopilotChat() {
             }).join('\n')
         });
 
-        const response = await orchestrator.processMessage(newMsg.content, {
+        console.log('[useCopilotChat] Processing message with orchestrator');
+        const response = await orchestrator.processMessage(content, {
             tools: currentTools,
-            systemPrompt: systemPrompt
+            systemPrompt: systemPrompt,
+            messages: [...messages, userMsg] // Assuming orchestrator.processMessage now takes messages as an option
         });
+        console.log('[useCopilotChat] Orchestrator response:', response);
 
         if (response.status === 'pending_confirmation') {
             // Do not render "pending_confirmation" as text. 

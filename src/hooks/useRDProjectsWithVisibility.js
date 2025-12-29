@@ -53,7 +53,7 @@ export function useRDProjectsWithVisibility(options = {}) {
       limit
     }],
     queryFn: async () => {
-      const baseSelect = `
+      const selectQuery = `
         *,
         municipality:municipalities(id, name_en, name_ar),
         sector:sectors(id, name_en, name_ar),
@@ -62,7 +62,7 @@ export function useRDProjectsWithVisibility(options = {}) {
 
       let query = supabase
         .from('rd_projects')
-        .select(baseSelect)
+        .select(selectQuery)
         .order('created_at', { ascending: false })
         .limit(limit);
 
@@ -114,7 +114,7 @@ export function useRDProjectsWithVisibility(options = {}) {
         // Get own municipality R&D projects
         const { data: ownProjects, error: ownError } = await supabase
           .from('rd_projects')
-          .select(baseSelect)
+          .select(selectQuery) // Use the same selectQuery for consistency
           .eq('municipality_id', userMunicipalityId)
           // .eq('is_deleted', false)
           .order('created_at', { ascending: false });
@@ -126,7 +126,7 @@ export function useRDProjectsWithVisibility(options = {}) {
         if (nationalMunicipalityIds?.length > 0) {
           const { data: natProjects, error: natError } = await supabase
             .from('rd_projects')
-            .select(baseSelect)
+            .select(selectQuery) // Use the same selectQuery for consistency
             .in('municipality_id', nationalMunicipalityIds)
             // .eq('is_deleted', false)
             .order('created_at', { ascending: false });
