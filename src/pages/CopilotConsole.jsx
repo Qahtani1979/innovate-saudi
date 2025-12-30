@@ -168,12 +168,12 @@ export default function CopilotConsole() {
                                                         widgets={msg.widgets || []}
                                                         onAction={(action) => {
                                                             const prompt = action.prompt || action.label;
-                                                            setInputValue(prompt);
-                                                            setTimeout(() => handleSend(prompt), 150);
+                                                            if (prompt) {
+                                                                setInputValue(prompt);
+                                                                setTimeout(() => handleSend(prompt), 150);
+                                                            }
                                                         }}
                                                     />
-                                                ) : msg.role === 'assistant' && idx === messages.length - 1 ? (
-                                                    <TypingEffect text={msg.content} />
                                                 ) : (
                                                     <span>{msg.content}</span>
                                                 )}
