@@ -135,14 +135,15 @@ export const SECTION_TYPES = {
     // Interactive sections
     action_buttons: {
         name: 'action_buttons',
-        description: 'Action buttons for user interaction',
+        description: 'Action buttons for user interaction. Each action should have a prompt that will be sent to the AI.',
         example: {
             type: 'action_buttons',
             content: 'What would you like to do?',
             metadata: {
                 actions: [
-                    { label: 'Create Pilot', action: 'create_pilot', variant: 'primary' },
-                    { label: 'View Details', action: 'view_details', variant: 'secondary' }
+                    { label: 'Create Pilot', action: 'create_pilot', prompt: 'Create a new pilot project', variant: 'primary' },
+                    { label: 'View Details', action: 'view_details', prompt: 'Show me the details', variant: 'secondary' },
+                    { label: 'Navigate', action: 'navigate', path: '/dashboard', variant: 'outline' }
                 ]
             }
         }

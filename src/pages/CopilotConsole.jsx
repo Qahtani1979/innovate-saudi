@@ -168,7 +168,13 @@ export default function CopilotConsole() {
                                                     <StructuredResponseRenderer 
                                                         sections={msg.structured.sections} 
                                                         language={msg.structured.language}
-                                                        onAction={(action) => setInputValue(action.prompt || action.label)}
+                                                        onAction={(action) => {
+                                                            const prompt = action.prompt || action.label;
+                                                            // Set input value briefly to show user what's being sent
+                                                            setInputValue(prompt);
+                                                            // Auto-send after a brief visual delay
+                                                            setTimeout(() => handleSend(prompt), 150);
+                                                        }}
                                                     />
                                                 ) : msg.role === 'assistant' && idx === messages.length - 1 && !msg.ui ? (
                                                     <TypingEffect text={msg.content} />
