@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useMemo } from 'react';
 import { PanelResizeHandle as ResizableHandle, Panel as ResizablePanel, PanelGroup as ResizablePanelGroup } from 'react-resizable-panels';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -9,18 +9,19 @@ import { ActionChip } from '@/components/copilot/widgets/ActionChip';
 import { TypingEffect } from '@/components/copilot/widgets/TypingEffect';
 import { MarkdownMessage } from '@/components/copilot/widgets/MarkdownMessage';
 import { StructuredResponseRenderer } from '@/components/copilot/widgets/StructuredResponseRenderer';
-import { Loader2, Send, Bot, User, LayoutDashboard, History, Sparkles } from 'lucide-react';
+import { Loader2, Send, Bot, User, History } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
-import { COPILOT_UI_TEXT, ENTITY_CONFIG } from '@/lib/copilot/uiConfig';
+import { COPILOT_UI_TEXT, ENTITY_CONFIG, getStarterActionsForRole, getGreetingForRole } from '@/lib/copilot/uiConfig';
 import { GenUICard } from '@/components/copilot/widgets/GenUICard';
+import { useAuth } from '@/lib/AuthContext';
 
 import { useCopilotChat } from '@/hooks/ui/useCopilotChat';
 import { useCopilotPlugins } from '@/hooks/ui/useCopilotPlugins';
 
 export default function CopilotConsole() {
-    const { t, isRTL } = useLanguage();
+    const { t, isRTL, language } = useLanguage();
+    const { user } = useAuth();
 
-    // Mount Feature Plugins
     // Mount Feature Plugins
     useCopilotPlugins();
 
@@ -40,6 +41,11 @@ export default function CopilotConsole() {
         messages,
         handleSend
     } = useCopilotChat();
+
+    // Get user role and role-based content
+    const userRole = user?.role || user?.user_metadata?.role || 'default';
+    const starterActions = useMemo(() => getStarterActionsForRole(userRole), [userRole]);
+    const roleGreeting = useMemo(() => getGreetingForRole(userRole), [userRole]);
 
     useEffect(() => {
         console.log('[CopilotConsole] Mounted');
@@ -92,13 +98,24 @@ export default function CopilotConsole() {
                                             <Bot className="w-10 h-10 text-purple-600" />
                                         </div>
                                         <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-700 to-indigo-600 bg-clip-text text-transparent mb-2">
-                                            {t(COPILOT_UI_TEXT.greeting)}
+                                            {t(roleGreeting.greeting)}
                                         </h2>
                                         <p className="text-muted-foreground text-sm max-w-md mx-auto mb-8">
-                                            {t(COPILOT_UI_TEXT.subtitle)}
+                                            {t(roleGreeting.subtitle)}
                                         </p>
-                                        <div className="flex gap-3 justify-center">
-                                            <ActionChip label={t(COPILOT_UI_TEXT.starter_create_pilot)} icon={Sparkles} onClick={() => setInputValue('Create a new pilot')} />
+                                        <div className="flex flex-wrap gap-2 justify-center max-w-lg mx-auto">
+                                            {starterActions.map((action) => (
+                                                <ActionChip 
+                                                    key={action.id}
+                                                    label={t(action.label)} 
+                                                    icon={action.icon} 
+                                                    onClick={() => {
+                                                        const prompt = t(action.prompt);
+                                                        setInputValue(prompt);
+                                                        setTimeout(() => handleSend(prompt), 100);
+                                                    }} 
+                                                />
+                                            ))}
                                         </div>
                                     </div>
                                 )}
