@@ -174,7 +174,6 @@ function App() {
             <StrategicPlanProvider>
               <Router>
                 <NavigationTracker />
-                <NavigationTracker />
                 <CopilotToolsProvider>
                   <CopilotProvider>
                     <AuthenticatedApp />
