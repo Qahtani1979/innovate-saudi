@@ -1,4 +1,5 @@
 import { useCopilotStore } from '@/lib/store/copilotStore';
+import { validateStructuredResponse, createFallbackStructuredResponse } from '@/lib/ai/schemas/responseSchema';
 
 // Access store outside of React Component
 const getStore = () => useCopilotStore.getState();
@@ -9,8 +10,9 @@ const getStore = () => useCopilotStore.getState();
  * Flow:
  * 1. receives (text, context)
  * 2. calls LLM (via your existing useAI or direct API if we move to server actions)
- * 3. parses response
+ * 3. parses response - now expecting structured JSON format
  * 4. if Tool Call -> Checks Registry -> Checks Safety -> Returns Instruction
+ * 5. if Structured Response -> Returns sections for rich UI rendering
  */
 export class CopilotOrchestrator {
 
@@ -35,7 +37,7 @@ export class CopilotOrchestrator {
         const toolDefinitions = tools.map(t => ({
             name: t.name,
             description: t.description,
-            parameters: t.schema ? "See Zod Schema" : {} // In a real system, we'd convert Zod to JSON Schema here
+            parameters: t.schema ? "See Zod Schema" : {}
         }));
 
         return `
@@ -47,29 +49,92 @@ Protocol:
 1. If the user asks to do something supported by a tool, you MUST reply with a JSON tool call block.
 2. Format: \`\`\`json { "tool": "tool_name", "args": { ... } } \`\`\`
 3. If information is missing, use the 'update_context' tool to gather it progressively.
-4. If no tool matches, answer helpfully using your knowledge.
+4. If no tool matches, answer helpfully using structured JSON format.
         `.trim();
     }
 
     /**
-     * Robust JSON Parser
+     * Parse structured response from LLM
+     * Handles both tool calls and structured section responses
      */
-    parseToolCall(text) {
+    parseResponse(text) {
         try {
-            // 1. Try Code Block regex
+            // 1. Try to extract JSON from code blocks
             const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
-            if (jsonMatch) return JSON.parse(jsonMatch[1]);
-
-            // 2. Try raw JSON (if model forgot markdown)
-            if (text.trim().startsWith('{') && text.trim().endsWith('}')) {
-                return JSON.parse(text);
+            if (jsonMatch) {
+                const parsed = JSON.parse(jsonMatch[1]);
+                return this.categorizeResponse(parsed);
             }
 
-            return null;
+            // 2. Try raw JSON (if model forgot markdown)
+            const trimmed = text.trim();
+            if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+                const parsed = JSON.parse(trimmed);
+                return this.categorizeResponse(parsed);
+            }
+
+            // 3. Try to find JSON anywhere in the response
+            const jsonInText = text.match(/\{[\s\S]*\}/);
+            if (jsonInText) {
+                try {
+                    const parsed = JSON.parse(jsonInText[0]);
+                    return this.categorizeResponse(parsed);
+                } catch (e) {
+                    // Continue to fallback
+                }
+            }
+
+            // 4. Fallback: treat as plain text and convert to structured format
+            console.log('[Orchestrator] No JSON found, creating fallback structured response');
+            return {
+                type: 'structured',
+                data: createFallbackStructuredResponse(text)
+            };
+
         } catch (e) {
-            console.warn("[Orchestrator] Failed to parse JSON:", e);
-            return null;
+            console.warn("[Orchestrator] Failed to parse response:", e);
+            return {
+                type: 'structured',
+                data: createFallbackStructuredResponse(text)
+            };
         }
+    }
+
+    /**
+     * Categorize parsed JSON response
+     */
+    categorizeResponse(parsed) {
+        // Check if it's a tool call
+        if (parsed.tool && typeof parsed.tool === 'string') {
+            return {
+                type: 'tool_call',
+                data: parsed
+            };
+        }
+
+        // Check if it's a structured response with sections
+        if (parsed.sections && Array.isArray(parsed.sections)) {
+            const validation = validateStructuredResponse(parsed);
+            if (!validation.valid) {
+                console.warn('[Orchestrator] Structured response validation errors:', validation.errors);
+            }
+            return {
+                type: 'structured',
+                data: parsed
+            };
+        }
+
+        // Unknown format - wrap in a structured response
+        console.log('[Orchestrator] Unknown response format, wrapping in structured response');
+        return {
+            type: 'structured',
+            data: {
+                sections: [{
+                    type: 'paragraph',
+                    content: JSON.stringify(parsed)
+                }]
+            }
+        };
     }
 
     /**
@@ -97,49 +162,78 @@ Protocol:
                 const result = await this.caller({
                     system: systemPrompt,
                     user: message,
-                    tools: tools // Some callers might support native function calling
+                    tools: tools
                 });
                 aiResponseText = typeof result === 'string' ? result : (result.message || JSON.stringify(result));
             } else {
-                // Fallback Mock (Dev Mode) - Dynamic Discovery
+                // Fallback Mock (Dev Mode) - Returns structured responses
                 const lowerMsg = message.toLowerCase();
 
-                // 1. Hardcoded fallback for Create Pilot (since it needs args)
+                // Tool call mocks
                 if (lowerMsg.includes('create') && lowerMsg.includes('pilot')) {
                     aiResponseText = '```json\n{ "tool": "create_pilot", "args": { "title": "New Pilot", "sector": "Recycling" } }\n```';
                 }
-                // 2. Mock for Update Context
                 else if (lowerMsg.includes('update') || lowerMsg.includes('set title')) {
                     aiResponseText = '```json\n{ "tool": "update_context", "args": { "entityType": "pilot", "data": { "title": "Mock Pilot Title" } } }\n```';
                 }
                 else if (lowerMsg.includes('navigate')) {
                     aiResponseText = '```json\n{ "tool": "navigate", "args": { "path": "/dashboard" } }\n```';
                 }
-                // 3. Try to find a matching tool in the Dynamic Registry
+                // Structured response mocks
                 else {
-                    const matchedTool = tools.find(t => {
-                        const keywords = t.name.split('_');
-                        return keywords.every(k => lowerMsg.includes(k));
+                    const isArabic = systemContext?.language === 'ar';
+                    aiResponseText = JSON.stringify({
+                        sections: [
+                            { 
+                                type: 'header', 
+                                content: isArabic ? 'مرحباً بك في المساعد الذكي' : 'Welcome to Super Copilot', 
+                                metadata: { level: 1, icon: 'sparkles' } 
+                            },
+                            { 
+                                type: 'paragraph', 
+                                content: isArabic 
+                                    ? 'أنا هنا لمساعدتك في إدارة المشاريع التجريبية والتحديات الابتكارية في منصة الابتكار السعودية.'
+                                    : 'I am here to help you manage pilot projects and innovation challenges on the Saudi Innovation platform.'
+                            },
+                            { type: 'divider' },
+                            { 
+                                type: 'header', 
+                                content: isArabic ? 'ما يمكنني مساعدتك به' : 'How I Can Help', 
+                                metadata: { level: 2 } 
+                            },
+                            { 
+                                type: 'bullet_list', 
+                                metadata: { 
+                                    items: isArabic 
+                                        ? ['إنشاء وإدارة المشاريع التجريبية', 'استعراض التحديات الابتكارية', 'تحليل البيانات الاستراتيجية', 'التنقل في المنصة']
+                                        : ['Create and manage pilot projects', 'Browse innovation challenges', 'Analyze strategic data', 'Navigate the platform']
+                                } 
+                            },
+                            { 
+                                type: 'action_buttons', 
+                                content: isArabic ? 'اختر ما تريد القيام به:' : 'Choose what you want to do:',
+                                metadata: { 
+                                    actions: [
+                                        { label: isArabic ? 'إنشاء مشروع تجريبي' : 'Create a Pilot', action: 'create_pilot', variant: 'primary' },
+                                        { label: isArabic ? 'استعراض التحديات' : 'Browse Challenges', action: 'list_challenges', variant: 'secondary' }
+                                    ]
+                                }
+                            }
+                        ],
+                        language: isArabic ? 'ar' : 'en'
                     });
-
-                    if (matchedTool) {
-                        console.log("[Orchestrator] Mock found dynamic tool:", matchedTool.name);
-                        aiResponseText = `\`\`\`json\n{ "tool": "${matchedTool.name}", "args": {} }\n\`\`\``;
-                    }
-                    else {
-                        // Provide a helpful response listing available tools
-                        aiResponseText = tools.length > 0 
-                            ? `I can help you with: ${tools.map(t => t.description).join(", ")}. What would you like to do?`
-                            : "I'm ready to help! What would you like to do?";
-                    }
                 }
             }
 
-            // 3. Parse & Execute
-            const toolCall = this.parseToolCall(aiResponseText);
+            // 3. Parse Response
+            const parsedResponse = this.parseResponse(aiResponseText);
+            console.log('[Orchestrator] Parsed response:', parsedResponse);
 
-            if (toolCall && toolCall.tool) {
-                console.log('[Orchestrator] Parsed tool call:', toolCall);
+            // 4. Handle based on response type
+            if (parsedResponse.type === 'tool_call') {
+                const toolCall = parsedResponse.data;
+                console.log('[Orchestrator] Executing tool call:', toolCall);
+                
                 if (this.executor) {
                     const result = await this.executor(toolCall.tool, toolCall.args);
                     store.setIsThinking(false);
@@ -148,17 +242,22 @@ Protocol:
                     console.warn("[Orchestrator] Executor not set, returning tool call info");
                     store.setIsThinking(false);
                     return {
-                        type: 'text',
-                        content: `Tool "${toolCall.tool}" would be executed with args: ${JSON.stringify(toolCall.args)}`
+                        type: 'structured',
+                        sections: [{
+                            type: 'info_box',
+                            content: `Tool "${toolCall.tool}" would be executed with args: ${JSON.stringify(toolCall.args)}`,
+                            metadata: { variant: 'info', title: 'Tool Call' }
+                        }]
                     };
                 }
             }
 
-            // 4. Return Text Response
+            // 5. Return Structured Response
             store.setIsThinking(false);
             return {
-                type: 'text',
-                content: aiResponseText.replace(/```json[\s\S]*?```/g, '').trim() || aiResponseText
+                type: 'structured',
+                sections: parsedResponse.data.sections,
+                language: parsedResponse.data.language
             };
 
         } catch (error) {
@@ -166,8 +265,12 @@ Protocol:
             store.setIsThinking(false);
             store.reportError(error);
             return { 
-                type: 'error', 
-                content: error?.message || 'An unexpected error occurred. Please try again.'
+                type: 'structured', 
+                sections: [{
+                    type: 'info_box',
+                    content: error?.message || 'An unexpected error occurred. Please try again.',
+                    metadata: { variant: 'danger', title: 'Error' }
+                }]
             };
         }
     }

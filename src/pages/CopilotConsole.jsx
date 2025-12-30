@@ -8,12 +8,11 @@ import { ProposalCard } from '@/components/copilot/widgets/ProposalCard';
 import { ActionChip } from '@/components/copilot/widgets/ActionChip';
 import { TypingEffect } from '@/components/copilot/widgets/TypingEffect';
 import { MarkdownMessage } from '@/components/copilot/widgets/MarkdownMessage';
+import { StructuredResponseRenderer } from '@/components/copilot/widgets/StructuredResponseRenderer';
 import { Loader2, Send, Bot, User, LayoutDashboard, History, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { COPILOT_UI_TEXT, ENTITY_CONFIG } from '@/lib/copilot/uiConfig';
-import { GenUICard } from '@/components/copilot/widgets/GenUICard'; // Still needed for Stats
-
-// Plugin imports moved to useCopilotPlugins hook
+import { GenUICard } from '@/components/copilot/widgets/GenUICard';
 
 import { useCopilotChat } from '@/hooks/ui/useCopilotChat';
 import { useCopilotPlugins } from '@/hooks/ui/useCopilotPlugins';
