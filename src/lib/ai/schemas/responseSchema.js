@@ -275,3 +275,99 @@ export function createFallbackStructuredResponse(text) {
     
     return { sections };
 }
+
+/**
+ * JSON Schema for structured response - used with AI tool calling
+ * This forces the LLM to return structured JSON instead of plain text
+ */
+export const STRUCTURED_RESPONSE_SCHEMA = {
+    type: "object",
+    properties: {
+        sections: {
+            type: "array",
+            description: "Array of UI sections to render",
+            items: {
+                type: "object",
+                properties: {
+                    type: {
+                        type: "string",
+                        enum: ["header", "paragraph", "bullet_list", "numbered_list", "table", "card", "highlight", "info_box", "stats", "action_buttons", "code", "divider"],
+                        description: "The UI element type to render"
+                    },
+                    content: {
+                        type: "string",
+                        description: "Primary text content for this section"
+                    },
+                    metadata: {
+                        type: "object",
+                        description: "Additional configuration for the section",
+                        properties: {
+                            level: { type: "number", description: "Header level (1-3)" },
+                            icon: { type: "string", description: "Icon name" },
+                            variant: { type: "string", enum: ["default", "primary", "secondary", "success", "warning", "danger", "info", "highlight"] },
+                            title: { type: "string", description: "Title for cards/info boxes" },
+                            items: { 
+                                type: "array", 
+                                description: "Items for lists or stats",
+                                items: { 
+                                    oneOf: [
+                                        { type: "string" },
+                                        { 
+                                            type: "object",
+                                            properties: {
+                                                label: { type: "string" },
+                                                value: { type: "string" },
+                                                icon: { type: "string" },
+                                                trend: { type: "string" }
+                                            }
+                                        }
+                                    ]
+                                }
+                            },
+                            columns: {
+                                type: "array",
+                                description: "Column definitions for tables",
+                                items: {
+                                    type: "object",
+                                    properties: {
+                                        key: { type: "string" },
+                                        label: { type: "string" }
+                                    },
+                                    required: ["key", "label"]
+                                }
+                            },
+                            rows: {
+                                type: "array",
+                                description: "Row data for tables",
+                                items: { type: "object" }
+                            },
+                            actions: {
+                                type: "array",
+                                description: "Action button definitions",
+                                items: {
+                                    type: "object",
+                                    properties: {
+                                        label: { type: "string", description: "Button label text" },
+                                        action: { type: "string", description: "Action identifier" },
+                                        prompt: { type: "string", description: "Prompt to send when clicked (MUST match user's language)" },
+                                        variant: { type: "string", enum: ["primary", "secondary", "outline", "ghost"] },
+                                        path: { type: "string", description: "Navigation path if action is navigate" }
+                                    },
+                                    required: ["label", "action", "prompt"]
+                                }
+                            },
+                            language: { type: "string", description: "Code language for syntax highlighting" }
+                        }
+                    }
+                },
+                required: ["type"]
+            }
+        },
+        language: {
+            type: "string",
+            enum: ["en", "ar"],
+            description: "Response language"
+        }
+    },
+    required: ["sections", "language"]
+};

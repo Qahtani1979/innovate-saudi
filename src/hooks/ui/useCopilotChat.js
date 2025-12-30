@@ -9,6 +9,7 @@ import { useLanguage } from '@/components/LanguageContext';
 import { buildSystemPrompt } from '@/lib/ai/prompts/copilotPrompts';
 import { useAuth } from '@/lib/AuthContext';
 import { COPILOT_UI_TEXT } from '@/lib/copilot/uiConfig';
+import { STRUCTURED_RESPONSE_SCHEMA } from '@/lib/ai/schemas/responseSchema';
 
 const orchestrator = new CopilotOrchestrator();
 
@@ -32,18 +33,22 @@ export function useCopilotChat() {
         }
     }, [orchestrator, requestExecution]);
 
-    // Wire up the AI Caller to the Orchestrator
+    // Wire up the AI Caller to the Orchestrator with JSON schema enforcement
     useEffect(() => {
         if (orchestrator && invokeAI) {
-            console.log('[useCopilotChat] Wiring AI caller to orchestrator');
+            console.log('[useCopilotChat] Wiring AI caller to orchestrator with structured schema');
             orchestrator.setCaller(async ({ system, user: userMessage }) => {
                 const result = await invokeAI({
                     system_prompt: system,
-                    prompt: userMessage
+                    prompt: userMessage,
+                    response_json_schema: STRUCTURED_RESPONSE_SCHEMA
                 });
                 if (result.success && result.data) {
-                    // Handle string or object response
-                    return typeof result.data === 'string' ? result.data : (result.data.message || JSON.stringify(result.data));
+                    // If structured response returned directly as object, stringify for parsing
+                    if (typeof result.data === 'object' && result.data.sections) {
+                        return JSON.stringify(result.data);
+                    }
+                    return typeof result.data === 'string' ? result.data : JSON.stringify(result.data);
                 }
                 throw new Error(result.error?.message || 'AI call failed');
             });
