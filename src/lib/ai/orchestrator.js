@@ -1,4 +1,5 @@
 import { useCopilotStore } from '@/lib/store/copilotStore';
+import { validateStructuredResponse, createFallbackStructuredResponse } from '@/lib/ai/schemas/responseSchema';
 
 // Access store outside of React Component
 const getStore = () => useCopilotStore.getState();
@@ -83,24 +84,18 @@ Protocol:
                 }
             }
 
-            // 4. Fallback: treat as plain text
-            console.log('[Orchestrator] No JSON found, returning plain text');
+            // 4. Fallback: treat as plain text and convert to structured format
+            console.log('[Orchestrator] No JSON found, creating fallback structured response');
             return {
-                type: 'chat',
-                data: {
-                    content: text,
-                    widgets: []
-                }
+                type: 'structured',
+                data: createFallbackStructuredResponse(text)
             };
 
         } catch (e) {
             console.warn("[Orchestrator] Failed to parse response:", e);
             return {
-                type: 'chat',
-                data: {
-                    content: text,
-                    widgets: []
-                }
+                type: 'structured',
+                data: createFallbackStructuredResponse(text)
             };
         }
     }
@@ -117,33 +112,27 @@ Protocol:
             };
         }
 
-        // Check if it's a Lovable-style response with content + widgets
-        if (parsed.content || parsed.widgets) {
-            return {
-                type: 'chat',
-                data: {
-                    content: parsed.content || '',
-                    widgets: parsed.widgets || [],
-                    language: parsed.language
-                }
-            };
-        }
-
-        // Check if it's a legacy structured response with sections
+        // Check if it's a structured response with sections
         if (parsed.sections && Array.isArray(parsed.sections)) {
+            const validation = validateStructuredResponse(parsed);
+            if (!validation.valid) {
+                console.warn('[Orchestrator] Structured response validation errors:', validation.errors);
+            }
             return {
                 type: 'structured',
                 data: parsed
             };
         }
 
-        // Unknown format - wrap as plain text
-        console.log('[Orchestrator] Unknown response format, wrapping as plain text');
+        // Unknown format - wrap in a structured response
+        console.log('[Orchestrator] Unknown response format, wrapping in structured response');
         return {
-            type: 'chat',
+            type: 'structured',
             data: {
-                content: JSON.stringify(parsed),
-                widgets: []
+                sections: [{
+                    type: 'paragraph',
+                    content: JSON.stringify(parsed)
+                }]
             }
         };
     }
@@ -177,7 +166,7 @@ Protocol:
                 });
                 aiResponseText = typeof result === 'string' ? result : (result.message || JSON.stringify(result));
             } else {
-                // Fallback Mock (Dev Mode) - Returns Lovable-style responses with widgets
+                // Fallback Mock (Dev Mode) - Returns structured responses
                 const lowerMsg = message.toLowerCase();
 
                 // Tool call mocks
@@ -190,39 +179,46 @@ Protocol:
                 else if (lowerMsg.includes('navigate')) {
                     aiResponseText = '```json\n{ "tool": "navigate", "args": { "path": "/dashboard" } }\n```';
                 }
-                // Lovable-style response mocks with inline widgets
+                // Structured response mocks
                 else {
                     const isArabic = systemContext?.language === 'ar';
                     aiResponseText = JSON.stringify({
-                        content: isArabic 
-                            ? 'مرحباً بك! أنا هنا لمساعدتك في إدارة المشاريع التجريبية والتحديات الابتكارية. يمكنني مساعدتك في إنشاء مشاريع جديدة، استعراض التحديات، وتحليل البيانات.'
-                            : "Welcome! I'm here to help you manage pilot projects and innovation challenges. I can help you create new projects, browse challenges, and analyze data.",
-                        widgets: [
-                            {
-                                type: 'tools_used',
-                                count: 3,
-                                tools: ['context_analysis', 'user_preferences', 'platform_status']
+                        sections: [
+                            { 
+                                type: 'header', 
+                                content: isArabic ? 'مرحباً بك في المساعد الذكي' : 'Welcome to Super Copilot', 
+                                metadata: { level: 1, icon: 'sparkles' } 
                             },
-                            {
-                                type: 'tasks',
-                                title: isArabic ? 'المهام' : 'Tasks',
-                                items: [
-                                    { label: isArabic ? 'تحليل السياق' : 'Analyze context', status: 'done' },
-                                    { label: isArabic ? 'تحميل تفضيلات المستخدم' : 'Load user preferences', status: 'done' },
-                                    { label: isArabic ? 'التحقق من حالة المنصة' : 'Check platform status', status: 'in_progress' },
-                                    { label: isArabic ? 'إعداد التوصيات' : 'Prepare recommendations', status: 'pending' }
-                                ]
+                            { 
+                                type: 'paragraph', 
+                                content: isArabic 
+                                    ? 'أنا هنا لمساعدتك في إدارة المشاريع التجريبية والتحديات الابتكارية في منصة الابتكار السعودية.'
+                                    : 'I am here to help you manage pilot projects and innovation challenges on the Saudi Innovation platform.'
                             },
-                            {
-                                type: 'editing',
-                                files: ['copilotPrompts.js']
+                            { type: 'divider' },
+                            { 
+                                type: 'header', 
+                                content: isArabic ? 'ما يمكنني مساعدتك به' : 'How I Can Help', 
+                                metadata: { level: 2 } 
                             },
-                            {
-                                type: 'actions',
-                                items: [
-                                    { label: isArabic ? 'إنشاء مشروع تجريبي' : 'Create a Pilot', prompt: 'Create a new pilot project', variant: 'default' },
-                                    { label: isArabic ? 'استعراض التحديات' : 'Browse Challenges', prompt: 'Show me the list of challenges', variant: 'outline' }
-                                ]
+                            { 
+                                type: 'bullet_list', 
+                                metadata: { 
+                                    items: isArabic 
+                                        ? ['إنشاء وإدارة المشاريع التجريبية', 'استعراض التحديات الابتكارية', 'تحليل البيانات الاستراتيجية', 'التنقل في المنصة']
+                                        : ['Create and manage pilot projects', 'Browse innovation challenges', 'Analyze strategic data', 'Navigate the platform']
+                                } 
+                            },
+                            { 
+                                type: 'action_buttons', 
+                                content: isArabic ? 'اختر ما تريد القيام به:' : 'Choose what you want to do:',
+                                metadata: { 
+                                    actions: [
+                                        { label: isArabic ? 'إنشاء مشروع تجريبي' : 'Create a Pilot', action: 'create_pilot', prompt: 'Create a new pilot project', variant: 'primary' },
+                                        { label: isArabic ? 'استعراض التحديات' : 'Browse Challenges', action: 'list_challenges', prompt: 'Show me the list of challenges', variant: 'secondary' },
+                                        { label: isArabic ? 'عرض لوحة القيادة' : 'View Dashboard', action: 'navigate', prompt: 'Navigate to dashboard', variant: 'outline' }
+                                    ]
+                                }
                             }
                         ],
                         language: isArabic ? 'ar' : 'en'
@@ -257,18 +253,8 @@ Protocol:
                 }
             }
 
-            // 5. Return Chat Response (Lovable-style)
+            // 5. Return Structured Response
             store.setIsThinking(false);
-            if (parsedResponse.type === 'chat') {
-                return {
-                    type: 'chat',
-                    content: parsedResponse.data.content,
-                    widgets: parsedResponse.data.widgets,
-                    language: parsedResponse.data.language
-                };
-            }
-            
-            // Legacy structured response fallback
             return {
                 type: 'structured',
                 sections: parsedResponse.data.sections,
@@ -280,9 +266,12 @@ Protocol:
             store.setIsThinking(false);
             store.reportError(error);
             return { 
-                type: 'chat', 
-                content: error?.message || 'An unexpected error occurred. Please try again.',
-                widgets: []
+                type: 'structured', 
+                sections: [{
+                    type: 'info_box',
+                    content: error?.message || 'An unexpected error occurred. Please try again.',
+                    metadata: { variant: 'danger', title: 'Error' }
+                }]
             };
         }
     }

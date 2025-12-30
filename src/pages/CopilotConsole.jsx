@@ -7,7 +7,8 @@ import { useCopilotStore } from '@/lib/store/copilotStore';
 import { ProposalCard } from '@/components/copilot/widgets/ProposalCard';
 import { ActionChip } from '@/components/copilot/widgets/ActionChip';
 import { TypingEffect } from '@/components/copilot/widgets/TypingEffect';
-import { ChatMessage } from '@/components/copilot/widgets/ChatMessage';
+import { MarkdownMessage } from '@/components/copilot/widgets/MarkdownMessage';
+import { StructuredResponseRenderer } from '@/components/copilot/widgets/StructuredResponseRenderer';
 import { Loader2, Send, Bot, User, LayoutDashboard, History, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { COPILOT_UI_TEXT, ENTITY_CONFIG } from '@/lib/copilot/uiConfig';
@@ -161,21 +162,31 @@ export default function CopilotConsole() {
                                             {/* Avatar Logic */}
                                             {msg.role === 'assistant' && <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0"><Bot className="w-4 h-4 text-primary" /></div>}
 
-                                            <div className={`max-w-[80%] text-sm ${msg.role === 'user' ? 'p-3 rounded-lg bg-primary text-primary-foreground' : ''}`}>
-                                                {msg.role === 'assistant' ? (
-                                                    <ChatMessage 
-                                                        content={msg.content}
-                                                        widgets={msg.widgets || []}
+                                            <div className={`p-3 rounded-lg max-w-[80%] text-sm ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                                                {/* Structured Response Rendering */}
+                                                {msg.structured?.sections ? (
+                                                    <StructuredResponseRenderer 
+                                                        sections={msg.structured.sections} 
+                                                        language={msg.structured.language}
                                                         onAction={(action) => {
                                                             const prompt = action.prompt || action.label;
-                                                            if (prompt) {
-                                                                setInputValue(prompt);
-                                                                setTimeout(() => handleSend(prompt), 150);
-                                                            }
+                                                            // Set input value briefly to show user what's being sent
+                                                            setInputValue(prompt);
+                                                            // Auto-send after a brief visual delay
+                                                            setTimeout(() => handleSend(prompt), 150);
                                                         }}
                                                     />
+                                                ) : msg.role === 'assistant' && idx === messages.length - 1 && !msg.ui ? (
+                                                    <TypingEffect text={msg.content} />
                                                 ) : (
-                                                    <span>{msg.content}</span>
+                                                    <div className="flex flex-col gap-3">
+                                                        {msg.content && <MarkdownMessage content={msg.content} />}
+                                                        {msg.ui && (
+                                                            <div className="mt-1 w-full animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                                                {renderMessageUI(msg.ui)}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 )}
                                             </div>
 
