@@ -90,7 +90,17 @@ export function useCopilotChat() {
                 return;
             }
 
-            // Handle structured responses (new format)
+            // Handle Lovable-style chat responses (new format)
+            if (response.type === 'chat') {
+                setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    content: response.content || '',
+                    widgets: response.widgets || []
+                }]);
+                return;
+            }
+
+            // Handle legacy structured responses
             if (response.type === 'structured' && response.sections) {
                 setMessages(prev => [...prev, {
                     role: 'assistant',
