@@ -7,6 +7,7 @@ import { useCopilotStore } from '@/lib/store/copilotStore';
 import { ProposalCard } from '@/components/copilot/widgets/ProposalCard';
 import { ActionChip } from '@/components/copilot/widgets/ActionChip';
 import { TypingEffect } from '@/components/copilot/widgets/TypingEffect';
+import { MarkdownMessage } from '@/components/copilot/widgets/MarkdownMessage';
 import { Loader2, Send, Bot, User, LayoutDashboard, History, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { COPILOT_UI_TEXT, ENTITY_CONFIG } from '@/lib/copilot/uiConfig';
@@ -167,7 +168,7 @@ export default function CopilotConsole() {
                                                     <TypingEffect text={msg.content} />
                                                 ) : (
                                                     <div className="flex flex-col gap-3">
-                                                        <div>{msg.content}</div>
+                                                        <MarkdownMessage content={msg.content} />
                                                         {msg.ui && (
                                                             <div className="mt-1 w-full animate-in fade-in slide-in-from-bottom-2 duration-500">
                                                                 {renderMessageUI(msg.ui)}
