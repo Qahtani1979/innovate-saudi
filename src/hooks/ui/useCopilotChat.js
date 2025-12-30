@@ -70,6 +70,16 @@ export function useCopilotChat() {
                 return;
             }
 
+            // Handle error responses from orchestrator
+            if (response.type === 'error') {
+                console.warn('[useCopilotChat] Orchestrator returned error:', response.content);
+                setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    content: response.content || t('errors.generic_error', 'Something went wrong. Please try again.')
+                }]);
+                return;
+            }
+
             if (response.type === 'confirmation_request') {
                 // Handled by toolStatus in Store
             } else if (response.type === 'data_list') {
@@ -95,13 +105,24 @@ export function useCopilotChat() {
                     }
                 }]);
             } else {
-                setMessages(prev => [...prev, { role: 'assistant', content: response.content || JSON.stringify(response) }]);
+                // Default text response
+                const content = response.content || response.message || '';
+                if (content) {
+                    setMessages(prev => [...prev, { role: 'assistant', content }]);
+                } else {
+                    console.warn('[useCopilotChat] Empty response from orchestrator:', response);
+                    setMessages(prev => [...prev, { 
+                        role: 'assistant', 
+                        content: t('copilot.ready_to_help', 'I\'m ready to help. What would you like to do?')
+                    }]);
+                }
             }
         } catch (error) {
             console.error('[useCopilotChat] Error processing message:', error);
+            const errorMessage = error?.message || t('errors.generic_error', 'I encountered an error. Please try again.');
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: t('errors.generic_error', 'I encountered an error processing your request. Please try again or check the console for details.')
+                content: errorMessage
             }]);
         }
     };
