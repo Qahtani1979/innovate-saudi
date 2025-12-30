@@ -163,11 +163,18 @@ export default function CopilotConsole() {
                                             {msg.role === 'assistant' && <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0"><Bot className="w-4 h-4 text-primary" /></div>}
 
                                             <div className={`p-3 rounded-lg max-w-[80%] text-sm ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-                                                {msg.role === 'assistant' && idx === messages.length - 1 && !msg.ui ? (
+                                                {/* Structured Response Rendering */}
+                                                {msg.structured?.sections ? (
+                                                    <StructuredResponseRenderer 
+                                                        sections={msg.structured.sections} 
+                                                        language={msg.structured.language}
+                                                        onAction={(action) => setInputValue(action.prompt || action.label)}
+                                                    />
+                                                ) : msg.role === 'assistant' && idx === messages.length - 1 && !msg.ui ? (
                                                     <TypingEffect text={msg.content} />
                                                 ) : (
                                                     <div className="flex flex-col gap-3">
-                                                        <MarkdownMessage content={msg.content} />
+                                                        {msg.content && <MarkdownMessage content={msg.content} />}
                                                         {msg.ui && (
                                                             <div className="mt-1 w-full animate-in fade-in slide-in-from-bottom-2 duration-500">
                                                                 {renderMessageUI(msg.ui)}
