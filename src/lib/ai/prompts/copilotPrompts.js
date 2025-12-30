@@ -179,15 +179,15 @@ ${sectionTypesDoc}
 }
 \`\`\`
 
-**action_buttons** - For suggested actions:
+**action_buttons** - For suggested actions (IMPORTANT: prompt must match the user's language):
 \`\`\`json
 { 
   "type": "action_buttons", 
   "content": "${isArabic ? 'ماذا تريد أن تفعل؟' : 'What would you like to do?'}",
   "metadata": { 
     "actions": [
-      { "label": "${isArabic ? 'إنشاء مشروع' : 'Create Pilot'}", "action": "create_pilot", "variant": "primary" },
-      { "label": "${isArabic ? 'عرض التفاصيل' : 'View Details'}", "action": "view_details", "variant": "secondary" }
+      { "label": "${isArabic ? 'إنشاء مشروع' : 'Create Pilot'}", "action": "create_pilot", "prompt": "${isArabic ? 'أنشئ مشروع تجريبي جديد' : 'Create a new pilot project'}", "variant": "primary" },
+      { "label": "${isArabic ? 'عرض التفاصيل' : 'View Details'}", "action": "view_details", "prompt": "${isArabic ? 'اعرض التفاصيل' : 'Show details'}", "variant": "secondary" }
     ]
   }
 }
@@ -209,14 +209,15 @@ ${sectionTypesDoc}
 
 ## RESPONSE GUIDELINES
 
-1. **Structure your response** with appropriate section types based on content
-2. **Use headers** to organize major topics
-3. **Use bullet_list or numbered_list** for multiple items
-4. **Use card or info_box** for important callouts
-5. **Use stats** when presenting numerical data
-6. **Use action_buttons** to suggest next steps
-7. **Use highlight** for key takeaways
-8. **Keep paragraphs concise** - break long text into multiple paragraphs
+1. **CRITICAL: ALL text content MUST be in ${isArabic ? 'Arabic (العربية)' : 'English'}** - including action button labels AND prompts
+2. **Structure your response** with appropriate section types based on content
+3. **Use headers** to organize major topics
+4. **Use bullet_list or numbered_list** for multiple items
+5. **Use card or info_box** for important callouts
+6. **Use stats** when presenting numerical data
+7. **Use action_buttons** to suggest next steps - ensure prompts are in the user's language (${responseLanguage})
+8. **Use highlight** for key takeaways
+9. **Keep paragraphs concise** - break long text into multiple paragraphs
 
 ## TOOL CALLING
 
@@ -256,8 +257,8 @@ ${toolDefinitions}
       "content": "${isArabic ? 'ابدأ الآن' : 'Get Started'}",
       "metadata": { 
         "actions": [
-          { "label": "${isArabic ? 'إنشاء مشروع تجريبي' : 'Create a Pilot'}", "action": "create_pilot", "variant": "primary" },
-          { "label": "${isArabic ? 'استعراض التحديات' : 'Browse Challenges'}", "action": "list_challenges", "variant": "secondary" }
+          { "label": "${isArabic ? 'إنشاء مشروع تجريبي' : 'Create a Pilot'}", "action": "create_pilot", "prompt": "${isArabic ? 'أنشئ مشروع تجريبي جديد' : 'Create a new pilot project'}", "variant": "primary" },
+          { "label": "${isArabic ? 'استعراض التحديات' : 'Browse Challenges'}", "action": "list_challenges", "prompt": "${isArabic ? 'اعرض لي قائمة التحديات' : 'Show me the list of challenges'}", "variant": "secondary" }
         ]
       }
     }
