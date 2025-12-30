@@ -16,11 +16,22 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
+        // Force a single React instance across all deps (fixes "Invalid hook call")
+        react: path.resolve(__dirname, "./node_modules/react"),
+        "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
+        "react/jsx-runtime": path.resolve(__dirname, "./node_modules/react/jsx-runtime.js"),
+        "react/jsx-dev-runtime": path.resolve(__dirname, "./node_modules/react/jsx-dev-runtime.js"),
       },
-      dedupe: ["react", "react-dom"],
+      dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime"],
     },
     optimizeDeps: {
-      include: ["react", "react-dom"],
+      include: [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "react/jsx-dev-runtime",
+        "@tanstack/react-query",
+      ],
     },
     define: {
       "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(
