@@ -16,6 +16,7 @@ export function useCopilotChat() {
     const { t, language } = useLanguage();
     const { user } = useAuth();
     const { getAllTools } = useCopilotTools();
+    const { invokeAI } = useAIWithFallback({ showToasts: false });
 
     const [inputValue, setInputValue] = useState('');
     const [messages, setMessages] = useState([]);
@@ -30,6 +31,24 @@ export function useCopilotChat() {
             orchestrator.setExecutor(requestExecution);
         }
     }, [orchestrator, requestExecution]);
+
+    // Wire up the AI Caller to the Orchestrator
+    useEffect(() => {
+        if (orchestrator && invokeAI) {
+            console.log('[useCopilotChat] Wiring AI caller to orchestrator');
+            orchestrator.setCaller(async ({ system, user: userMessage }) => {
+                const result = await invokeAI({
+                    system_prompt: system,
+                    prompt: userMessage
+                });
+                if (result.success && result.data) {
+                    // Handle string or object response
+                    return typeof result.data === 'string' ? result.data : (result.data.message || JSON.stringify(result.data));
+                }
+                throw new Error(result.error?.message || 'AI call failed');
+            });
+        }
+    }, [invokeAI]);
 
     // -- Handle Send --
     const handleSend = async () => {
