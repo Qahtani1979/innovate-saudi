@@ -81,7 +81,8 @@ export function useCopilotChat() {
             const response = await orchestrator.processMessage(content, {
                 tools: currentTools,
                 systemPrompt: systemPrompt,
-                messages: [...messages, userMsg]
+                messages: [...messages, userMsg],
+                language: language
             });
             console.log('[useCopilotChat] Orchestrator response:', response);
 
@@ -89,59 +90,53 @@ export function useCopilotChat() {
                 return;
             }
 
-            // Handle error responses from orchestrator
-            if (response.type === 'error') {
-                console.warn('[useCopilotChat] Orchestrator returned error:', response.content);
+            // Handle structured responses (new format)
+            if (response.type === 'structured' && response.sections) {
                 setMessages(prev => [...prev, {
                     role: 'assistant',
-                    content: response.content || t('errors.generic_error', 'Something went wrong. Please try again.')
+                    content: '',
+                    structured: {
+                        sections: response.sections,
+                        language: response.language || language
+                    }
                 }]);
                 return;
             }
 
-            if (response.type === 'confirmation_request') {
-                // Handled by toolStatus in Store
-            } else if (response.type === 'data_list') {
-                // Return Data Payload for UI Component to Render
+            // Handle error responses
+            if (response.type === 'error') {
+                setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    content: response.content || t('errors.generic_error', 'Something went wrong.')
+                }]);
+                return;
+            }
+
+            // Legacy handlers for backward compatibility
+            if (response.type === 'data_list') {
                 setMessages(prev => [...prev, {
                     role: 'assistant',
                     content: t(COPILOT_UI_TEXT.assistant_intro),
-                    ui: {
-                        type: 'data_list',
-                        entity: response.entity || 'default',
-                        items: response.items
-                    }
+                    ui: { type: 'data_list', entity: response.entity || 'default', items: response.items }
                 }]);
-
             } else if (response.success && response.draft) {
-                // Return Draft Payload
                 setMessages(prev => [...prev, {
                     role: 'assistant',
                     content: response.message,
-                    ui: {
-                        type: 'draft_summary',
-                        draft: response.draft
-                    }
+                    ui: { type: 'draft_summary', draft: response.draft }
                 }]);
             } else {
-                // Default text response
                 const content = response.content || response.message || '';
-                if (content) {
-                    setMessages(prev => [...prev, { role: 'assistant', content }]);
-                } else {
-                    console.warn('[useCopilotChat] Empty response from orchestrator:', response);
-                    setMessages(prev => [...prev, { 
-                        role: 'assistant', 
-                        content: t('copilot.ready_to_help', 'I\'m ready to help. What would you like to do?')
-                    }]);
-                }
+                setMessages(prev => [...prev, { 
+                    role: 'assistant', 
+                    content: content || t('copilot.ready_to_help', 'I\'m ready to help.')
+                }]);
             }
         } catch (error) {
-            console.error('[useCopilotChat] Error processing message:', error);
-            const errorMessage = error?.message || t('errors.generic_error', 'I encountered an error. Please try again.');
+            console.error('[useCopilotChat] Error:', error);
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: errorMessage
+                content: error?.message || t('errors.generic_error', 'An error occurred.')
             }]);
         }
     };
