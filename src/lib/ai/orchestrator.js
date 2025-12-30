@@ -74,19 +74,18 @@ Protocol:
 
     /**
      * Main Entry Point
+     * @param {string} message - User message
+     * @param {Object} systemContext - Context object with tools, systemPrompt, messages
      */
-    async processMessage(message, context = []) {
+    async processMessage(message, systemContext = {}) {
         console.log('[Orchestrator] Processing message:', message);
-        console.log('[Orchestrator] Context:', context);
-
-        // Check for tool usage
-        const toolValidation = await this.evaluateToolRequirement(message);
+        console.log('[Orchestrator] Context:', systemContext);
 
         const store = getStore();
         store.setIsThinking(true);
 
         try {
-            // 1. Prepare Prompt
+            // 1. Prepare Prompt - use provided context
             const tools = systemContext?.tools || [];
             // Use externally provided prompt OR build default
             const systemPrompt = systemContext?.systemPrompt || this.buildSystemPrompt(tools);
@@ -97,13 +96,13 @@ Protocol:
                 // Pass system prompt + user message to the hook/caller
                 const result = await this.caller({
                     system: systemPrompt,
-                    user: message, // Changed from userMessage to message
+                    user: message,
                     tools: tools // Some callers might support native function calling
                 });
                 aiResponseText = typeof result === 'string' ? result : (result.message || JSON.stringify(result));
             } else {
                 // Fallback Mock (Dev Mode) - Dynamic Discovery
-                const lowerMsg = message.toLowerCase(); // Changed from userMessage to message
+                const lowerMsg = message.toLowerCase();
 
                 // 1. Hardcoded fallback for Create Pilot (since it needs args)
                 if (lowerMsg.includes('create') && lowerMsg.includes('pilot')) {
@@ -117,10 +116,9 @@ Protocol:
                     aiResponseText = '```json\n{ "tool": "navigate", "args": { "path": "/dashboard" } }\n```';
                 }
                 // 3. Try to find a matching tool in the Dynamic Registry
-                // Simple heuristic: if message contains "list sectors", look for "list_sectors"
                 else {
                     const matchedTool = tools.find(t => {
-                        const keywords = t.name.split('_'); // [list, sectors]
+                        const keywords = t.name.split('_');
                         return keywords.every(k => lowerMsg.includes(k));
                     });
 
@@ -129,7 +127,10 @@ Protocol:
                         aiResponseText = `\`\`\`json\n{ "tool": "${matchedTool.name}", "args": {} }\n\`\`\``;
                     }
                     else {
-                        aiResponseText = "I am the Orchestrator. (AI Link Disconnected). I have access to: " + tools.map(t => t.name).join(", ");
+                        // Provide a helpful response listing available tools
+                        aiResponseText = tools.length > 0 
+                            ? `I can help you with: ${tools.map(t => t.description).join(", ")}. What would you like to do?`
+                            : "I'm ready to help! What would you like to do?";
                     }
                 }
             }
@@ -137,20 +138,19 @@ Protocol:
             // 3. Parse & Execute
             const toolCall = this.parseToolCall(aiResponseText);
 
-            if (toolCall) {
-                if (toolValidation.requiresTool) {
-                    console.log('[Orchestrator] Tool required:', toolValidation.toolName);
-
-                    // MOCK LOGIC for demo purposes (if needed)
-                    if (this.isMockMode(toolValidation.toolName)) {
-                        console.log('[Orchestrator] Using mock response for:', toolValidation.toolName);
-                        return this.getMockResponse(toolValidation.toolName, message);
-                    }
-                }
+            if (toolCall && toolCall.tool) {
+                console.log('[Orchestrator] Parsed tool call:', toolCall);
                 if (this.executor) {
-                    return this.executor(toolCall.tool, toolCall.args);
+                    const result = await this.executor(toolCall.tool, toolCall.args);
+                    store.setIsThinking(false);
+                    return result;
                 } else {
-                    console.error("[Orchestrator] Executor not set!");
+                    console.warn("[Orchestrator] Executor not set, returning tool call info");
+                    store.setIsThinking(false);
+                    return {
+                        type: 'text',
+                        content: `Tool "${toolCall.tool}" would be executed with args: ${JSON.stringify(toolCall.args)}`
+                    };
                 }
             }
 
@@ -162,16 +162,14 @@ Protocol:
             };
 
         } catch (error) {
+            console.error('[Orchestrator] Error:', error);
+            store.setIsThinking(false);
             store.reportError(error);
-            return { type: 'error', content: error.message };
+            return { 
+                type: 'error', 
+                content: error?.message || 'An unexpected error occurred. Please try again.'
+            };
         }
-    }
-
-    /**
-     * Deprecated: Logic moved to useToolExecutor hook to be closer to context
-     */
-    handleToolDiscovery(toolName, args) {
-        // ...
     }
 }
 
