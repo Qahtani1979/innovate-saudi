@@ -214,9 +214,24 @@ Protocol:
                                 content: isArabic ? 'اختر ما تريد القيام به:' : 'Choose what you want to do:',
                                 metadata: { 
                                     actions: [
-                                        { label: isArabic ? 'إنشاء مشروع تجريبي' : 'Create a Pilot', action: 'create_pilot', prompt: 'Create a new pilot project', variant: 'primary' },
-                                        { label: isArabic ? 'استعراض التحديات' : 'Browse Challenges', action: 'list_challenges', prompt: 'Show me the list of challenges', variant: 'secondary' },
-                                        { label: isArabic ? 'عرض لوحة القيادة' : 'View Dashboard', action: 'navigate', prompt: 'Navigate to dashboard', variant: 'outline' }
+                                        { 
+                                            label: isArabic ? 'إنشاء مشروع تجريبي' : 'Create a Pilot', 
+                                            action: 'create_pilot', 
+                                            prompt: isArabic ? 'أنشئ مشروع تجريبي جديد' : 'Create a new pilot project', 
+                                            variant: 'primary' 
+                                        },
+                                        { 
+                                            label: isArabic ? 'استعراض التحديات' : 'Browse Challenges', 
+                                            action: 'list_challenges', 
+                                            prompt: isArabic ? 'اعرض لي قائمة التحديات' : 'Show me the list of challenges', 
+                                            variant: 'secondary' 
+                                        },
+                                        { 
+                                            label: isArabic ? 'عرض لوحة القيادة' : 'View Dashboard', 
+                                            action: 'navigate', 
+                                            prompt: isArabic ? 'انتقل إلى لوحة القيادة' : 'Navigate to dashboard', 
+                                            variant: 'outline' 
+                                        }
                                     ]
                                 }
                             }
