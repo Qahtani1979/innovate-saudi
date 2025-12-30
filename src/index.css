@@ -1,6 +1,12 @@
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap");
+
+/* Arabic font class for RTL content */
+.font-arabic {
+  font-family: 'Noto Sans Arabic', 'Tahoma', 'Arial', sans-serif;
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
