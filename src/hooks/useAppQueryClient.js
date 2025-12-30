@@ -6,7 +6,7 @@ import {
     useInfiniteQuery as useReactInfiniteQuery,
     useSuspenseQuery as useReactSuspenseQuery,
     QueryClientProvider as useReactQueryClientProvider,
-    QueryClient as useReactQueryClientClass
+    QueryClient
 } from '@tanstack/react-query';
 
 /**
@@ -16,8 +16,9 @@ import {
 export function useAppQueryClient() {
     return useReactQueryClient();
 }
-// Create a singleton instance
-export const queryClientInstance = new useReactQueryClientClass({
+
+// Create a singleton instance - using proper QueryClient class name
+export const queryClientInstance = new QueryClient({
     defaultOptions: {
         queries: {
             refetchOnWindowFocus: false,
@@ -31,6 +32,6 @@ export const useMutation = useReactMutation;
 export const useInfiniteQuery = useReactInfiniteQuery;
 export const useSuspenseQuery = useReactSuspenseQuery;
 export const keepPreviousData = keepPreviousDataFn;
-export const useQueryClient = useReactQueryClient; // Export as alias for compat
+export const useQueryClient = useReactQueryClient;
 export const QueryClientProvider = useReactQueryClientProvider;
-export const QueryClient = useReactQueryClientClass;
+export { QueryClient };
