@@ -51,10 +51,10 @@ export function useCopilotChat() {
     }, [invokeAI]);
 
     // -- Handle Send --
-    const handleSend = async () => {
-        if (!inputValue.trim()) return;
+    const handleSend = async (directMessage = null) => {
+        const content = directMessage || inputValue;
+        if (!content.trim()) return;
 
-        const content = inputValue;
         console.log('[useCopilotChat] Sending message:', content);
 
         const userMsg = { role: 'user', content: content };

@@ -397,16 +397,17 @@ function ActionButtonsSection({ content, metadata, isRTL, onAction }) {
     const { actions = [] } = metadata;
     
     const handleClick = (action) => {
+        console.log('[ActionButtons] Clicked:', action);
         if (onAction) {
             onAction(action);
         }
     };
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-3">
             {content && (
                 <p className={cn(
-                    'text-sm text-muted-foreground',
+                    'text-sm text-muted-foreground font-medium',
                     isRTL ? 'text-right' : 'text-left'
                 )}>
                     {content}
@@ -422,10 +423,17 @@ function ActionButtonsSection({ content, metadata, isRTL, onAction }) {
                         variant={BUTTON_VARIANTS[action.variant] || 'default'}
                         size="sm"
                         onClick={() => handleClick(action)}
-                        className="gap-1"
+                        className={cn(
+                            'gap-2 transition-all duration-200 hover:scale-105 active:scale-95',
+                            action.variant === 'primary' && 'shadow-sm hover:shadow-md'
+                        )}
                     >
-                        {action.label}
-                        <ChevronRight className={cn('w-3 h-3', isRTL && 'rotate-180')} />
+                        {action.icon && (() => {
+                            const IconComp = ICON_MAP[action.icon];
+                            return IconComp ? <IconComp className="w-4 h-4" /> : null;
+                        })()}
+                        <span>{action.label}</span>
+                        <ChevronRight className={cn('w-3 h-3 opacity-60', isRTL && 'rotate-180')} />
                     </Button>
                 ))}
             </div>
