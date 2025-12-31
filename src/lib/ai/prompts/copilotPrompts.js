@@ -1,14 +1,10 @@
 import { SECTION_TYPES } from '../schemas/responseSchema';
-import { 
-    ENTITY_TYPES, 
-    ENTITY_RELATIONSHIPS, 
-    CRUD_CONTEXT, 
-    ANALYSIS_CONTEXT,
-    getCrudContext,
-    getAnalysisContext,
-    buildCrudContextPrompt,
-    buildAnalysisContextPrompt
-} from '@/lib/copilot/entityContext';
+import * as EntityContext from '@/lib/copilot/entityContext';
+
+const ENTITY_TYPES = EntityContext.ENTITY_TYPES || {};
+const ENTITY_RELATIONSHIPS = EntityContext.ENTITY_RELATIONSHIPS || {};
+const buildCrudContextPrompt = EntityContext.buildCrudContextPrompt || (() => '');
+const buildAnalysisContextPrompt = EntityContext.buildAnalysisContextPrompt || (() => '');
 
 /**
  * Generates the System Prompt for the Copilot Agent.
@@ -343,26 +339,31 @@ Remember: ALWAYS respond with valid JSON following this schema. NEVER use plain 
  * Build entity knowledge section for the prompt
  */
 function buildEntityKnowledge(isArabic) {
-    const entities = Object.keys(ENTITY_TYPES);
-    
-    const lines = [
-        isArabic ? '**الكيانات المتاحة:**' : '**Available Entities:**'
-    ];
-    
-    for (const entityType of entities) {
-        const config = ENTITY_TYPES[entityType];
-        const rels = ENTITY_RELATIONSHIPS[entityType];
+    try {
+        const entities = Object.keys(ENTITY_TYPES);
         
-        if (!rels) continue;
+        const lines = [
+            isArabic ? '**الكيانات المتاحة:**' : '**Available Entities:**'
+        ];
         
-        const label = config.label[isArabic ? 'ar' : 'en'];
-        const parents = rels.parents?.map(p => ENTITY_TYPES[p.entity]?.label[isArabic ? 'ar' : 'en'] || p.entity).join(', ') || 'None';
-        const children = rels.children?.map(c => ENTITY_TYPES[c]?.label[isArabic ? 'ar' : 'en'] || c).join(', ') || 'None';
+        for (const entityType of entities) {
+            const config = ENTITY_TYPES[entityType];
+            const rels = ENTITY_RELATIONSHIPS[entityType];
+            
+            if (!rels) continue;
+            
+            const label = config?.label?.[isArabic ? 'ar' : 'en'] || entityType;
+            const parents = rels.parents?.map(p => ENTITY_TYPES[p.entity]?.label?.[isArabic ? 'ar' : 'en'] || p.entity).join(', ') || 'None';
+            const children = rels.children?.map(c => ENTITY_TYPES[c]?.label?.[isArabic ? 'ar' : 'en'] || c).join(', ') || 'None';
+            
+            lines.push(`- **${label}**: ${isArabic ? 'ينتمي إلى' : 'belongs to'} [${parents}], ${isArabic ? 'يحتوي على' : 'contains'} [${children}]`);
+        }
         
-        lines.push(`- **${label}**: ${isArabic ? 'ينتمي إلى' : 'belongs to'} [${parents}], ${isArabic ? 'يحتوي على' : 'contains'} [${children}]`);
+        return lines.join('\n');
+    } catch (error) {
+        console.error('[buildEntityKnowledge] Error:', error);
+        return '';
     }
-    
-    return lines.join('\n');
 }
 
 /**
