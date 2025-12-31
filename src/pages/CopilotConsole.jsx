@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { PanelResizeHandle as ResizableHandle, Panel as ResizablePanel, PanelGroup as ResizablePanelGroup } from 'react-resizable-panels';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -9,11 +9,13 @@ import { ActionChip } from '@/components/copilot/widgets/ActionChip';
 import { TypingEffect } from '@/components/copilot/widgets/TypingEffect';
 import { MarkdownMessage } from '@/components/copilot/widgets/MarkdownMessage';
 import { StructuredResponseRenderer } from '@/components/copilot/widgets/StructuredResponseRenderer';
-import { Loader2, Send, Bot, User, History } from 'lucide-react';
+import { Loader2, Send, Bot, User, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { COPILOT_UI_TEXT, ENTITY_CONFIG, getStarterActionsForRole, getGreetingForRole } from '@/lib/copilot/uiConfig';
 import { GenUICard } from '@/components/copilot/widgets/GenUICard';
 import { useAuth } from '@/lib/AuthContext';
+import { HistorySidebar } from '@/components/copilot/panels/HistorySidebar';
+import { StatsHUD } from '@/components/copilot/panels/StatsHUD';
 
 import { useCopilotChat } from '@/hooks/ui/useCopilotChat';
 import { useCopilotPlugins } from '@/hooks/ui/useCopilotPlugins';
@@ -68,14 +70,9 @@ export default function CopilotConsole() {
 
             <ResizablePanelGroup direction="horizontal" className="flex-1">
 
-                {/* SIDEBAR: Context / Navigation */}
+                {/* SIDEBAR: History / Navigation */}
                 <ResizablePanel defaultSize={20} minSize={15} maxSize={25} className={`bg-muted/10 hidden md:block ${isRTL ? 'border-l' : 'border-r'}`}>
-                    <div className="p-4 space-y-4">
-                        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t(COPILOT_UI_TEXT.context_title)}</div>
-                        <div className="space-y-2">
-                            <ActionChip label={t(COPILOT_UI_TEXT.recent_chats)} icon={History} className="w-full justify-start" />
-                        </div>
-                    </div>
+                    <HistorySidebar />
                 </ResizablePanel>
 
                 <ResizableHandle />
@@ -249,15 +246,9 @@ export default function CopilotConsole() {
 
                 <ResizableHandle />
 
-                {/* RIGHT: HUD (Stats) */}
+                {/* RIGHT: Stats HUD */}
                 <ResizablePanel defaultSize={30} minSize={20} maxSize={40} className={`bg-muted/5 hidden lg:block ${isRTL ? 'border-r' : 'border-l'}`}>
-                    <div className="p-4">
-                        <GenUICard title={t(COPILOT_UI_TEXT.active_stats)} subtitle={t(COPILOT_UI_TEXT.stats_subtitle)}>
-                            <div className="text-center py-8 text-muted-foreground text-xs">
-                                {t(COPILOT_UI_TEXT.stats_placeholder)}
-                            </div>
-                        </GenUICard>
-                    </div>
+                    <StatsHUD />
                 </ResizablePanel>
 
             </ResizablePanelGroup>
