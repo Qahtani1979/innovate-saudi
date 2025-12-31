@@ -57,53 +57,75 @@ Protocol:
      * Parse structured response from LLM
      * Handles both tool calls and structured section responses
      */
-    parseResponse(text) {
+    parseResponse(text, language = 'en') {
         try {
-            // 1. Try to extract JSON from code blocks
-            const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
+            // 1. Try to extract JSON from code blocks (various formats)
+            const jsonMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
             if (jsonMatch) {
-                const parsed = JSON.parse(jsonMatch[1]);
-                return this.categorizeResponse(parsed);
+                try {
+                    const parsed = JSON.parse(jsonMatch[1].trim());
+                    return this.categorizeResponse(parsed, language);
+                } catch (e) {
+                    console.warn("[Orchestrator] JSON in code block failed to parse:", e);
+                }
             }
 
             // 2. Try raw JSON (if model forgot markdown)
             const trimmed = text.trim();
             if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-                const parsed = JSON.parse(trimmed);
-                return this.categorizeResponse(parsed);
+                try {
+                    const parsed = JSON.parse(trimmed);
+                    return this.categorizeResponse(parsed, language);
+                } catch (e) {
+                    // Continue to next approach
+                }
             }
 
-            // 3. Try to find JSON anywhere in the response
-            const jsonInText = text.match(/\{[\s\S]*\}/);
-            if (jsonInText) {
-                try {
-                    const parsed = JSON.parse(jsonInText[0]);
-                    return this.categorizeResponse(parsed);
-                } catch (e) {
-                    // Continue to fallback
+            // 3. Try to find JSON object anywhere in the response
+            // More aggressive regex to find JSON with sections array
+            const jsonPatterns = [
+                /\{\s*"sections"\s*:\s*\[[\s\S]*\]\s*(?:,\s*"language"\s*:\s*"[^"]*")?\s*\}/,
+                /\{\s*"tool"\s*:\s*"[^"]*"\s*,\s*"args"\s*:\s*\{[\s\S]*\}\s*\}/,
+                /\{[\s\S]*\}/
+            ];
+
+            for (const pattern of jsonPatterns) {
+                const jsonMatch = text.match(pattern);
+                if (jsonMatch) {
+                    try {
+                        const parsed = JSON.parse(jsonMatch[0]);
+                        // Validate it's a proper response structure
+                        if (parsed.sections || parsed.tool) {
+                            return this.categorizeResponse(parsed, language);
+                        }
+                    } catch (e) {
+                        // Continue to next pattern
+                    }
                 }
             }
 
             // 4. Fallback: treat as plain text and convert to structured format
-            // No JSON found, creating fallback structured response
+            console.log("[Orchestrator] No valid JSON found, using fallback parser");
             return {
                 type: 'structured',
-                data: createFallbackStructuredResponse(text)
+                data: createFallbackStructuredResponse(text, language)
             };
 
         } catch (e) {
             console.warn("[Orchestrator] Failed to parse response:", e);
             return {
                 type: 'structured',
-                data: createFallbackStructuredResponse(text)
+                data: createFallbackStructuredResponse(text, language)
             };
         }
     }
 
     /**
      * Categorize parsed JSON response
+     * @param {Object} parsed - Parsed JSON object
+     * @param {string} language - Current language for fallback
      */
-    categorizeResponse(parsed) {
+    categorizeResponse(parsed, language = 'en') {
         // Check if it's a tool call
         if (parsed.tool && typeof parsed.tool === 'string') {
             return {
@@ -118,6 +140,12 @@ Protocol:
             if (!validation.valid) {
                 console.warn('[Orchestrator] Structured response validation errors:', validation.errors);
             }
+            
+            // Ensure language is set
+            if (!parsed.language) {
+                parsed.language = language;
+            }
+            
             return {
                 type: 'structured',
                 data: parsed
@@ -125,14 +153,15 @@ Protocol:
         }
 
         // Unknown format - wrap in a structured response
-        // Unknown response format, wrapping in structured response
+        console.log("[Orchestrator] Unknown response format, wrapping in structured response");
         return {
             type: 'structured',
             data: {
                 sections: [{
                     type: 'paragraph',
-                    content: JSON.stringify(parsed)
-                }]
+                    content: typeof parsed === 'string' ? parsed : JSON.stringify(parsed)
+                }],
+                language
             }
         };
     }
@@ -240,8 +269,9 @@ Protocol:
                 }
             }
 
-            // 3. Parse Response
-            const parsedResponse = this.parseResponse(aiResponseText);
+            // 3. Parse Response - pass language for proper fallback handling
+            const language = systemContext?.language || 'en';
+            const parsedResponse = this.parseResponse(aiResponseText, language);
 
             // 4. Handle based on response type
             if (parsedResponse.type === 'tool_call') {
