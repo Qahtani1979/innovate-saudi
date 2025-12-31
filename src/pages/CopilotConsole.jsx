@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { PanelResizeHandle as ResizableHandle, Panel as ResizablePanel, PanelGroup as ResizablePanelGroup } from 'react-resizable-panels';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { ActionChip } from '@/components/copilot/widgets/ActionChip';
 import { TypingEffect } from '@/components/copilot/widgets/TypingEffect';
 import { MarkdownMessage } from '@/components/copilot/widgets/MarkdownMessage';
 import { StructuredResponseRenderer } from '@/components/copilot/widgets/StructuredResponseRenderer';
+import { EntityContextBar, EntitySelector } from '@/components/copilot/widgets/EntityContextBar';
 import { Loader2, Send, Bot, User, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { COPILOT_UI_TEXT, ENTITY_CONFIG, getStarterActionsForRole, getGreetingForRole } from '@/lib/copilot/uiConfig';
@@ -16,6 +17,7 @@ import { GenUICard } from '@/components/copilot/widgets/GenUICard';
 import { useAuth } from '@/lib/AuthContext';
 import { HistorySidebar } from '@/components/copilot/panels/HistorySidebar';
 import { StatsHUD } from '@/components/copilot/panels/StatsHUD';
+import { useEntityContext, useRecentEntities } from '@/hooks/useEntityContext';
 
 import { useCopilotChat } from '@/hooks/ui/useCopilotChat';
 import { useCopilotPlugins } from '@/hooks/ui/useCopilotPlugins';
@@ -23,9 +25,21 @@ import { useCopilotPlugins } from '@/hooks/ui/useCopilotPlugins';
 export default function CopilotConsole() {
     const { t, isRTL, language } = useLanguage();
     const { user } = useAuth();
+    const [selectorOpen, setSelectorOpen] = useState(false);
 
     // Mount Feature Plugins
     useCopilotPlugins();
+
+    // Entity Context Hook
+    const { 
+        focusEntity, 
+        setFocusEntity, 
+        clearContext, 
+        processMessage: processEntityCommand,
+        hasFocus 
+    } = useEntityContext();
+    
+    const { entities: recentEntities, isLoading: entitiesLoading } = useRecentEntities();
 
     const {
         isOpen,
@@ -41,8 +55,29 @@ export default function CopilotConsole() {
         inputValue,
         setInputValue,
         messages,
-        handleSend
+        handleSend: originalHandleSend
     } = useCopilotChat();
+
+    // Wrapped handleSend that processes entity commands first
+    const handleSend = (msg) => {
+        const messageToSend = msg || inputValue;
+        const { processed, cleanMessage } = processEntityCommand(messageToSend);
+        
+        if (processed && !cleanMessage) {
+            // Only entity command, no additional message
+            setInputValue('');
+            return;
+        }
+        
+        // Send the clean message (stripped of entity commands)
+        originalHandleSend(cleanMessage || messageToSend);
+    };
+
+    // Handle entity selection from selector
+    const handleEntitySelect = (entity) => {
+        setFocusEntity(entity.type, entity.id);
+        setSelectorOpen(false);
+    };
 
     // Get user role and role-based content
     const userRole = user?.role || user?.user_metadata?.role || 'default';
@@ -51,20 +86,36 @@ export default function CopilotConsole() {
 
     return (
         <div className="h-screen w-full bg-background flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
-            <header className="h-20 border-b flex items-center px-6 bg-background text-foreground shadow-sm z-10 shrink-0">
-                <div className="flex items-center gap-3">
-                    <Bot className="w-8 h-8 text-primary" />
-                    <div>
-                        <h1 className="font-bold text-2xl flex items-center gap-2">
-                            Strategy Copilot
-                            <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold tracking-wider border border-primary/20">
-                                BETA
-                            </span>
-                        </h1>
-                        <p className="text-sm text-muted-foreground font-medium">
-                            AI-Powered Strategic Planning Assistant
-                        </p>
+            {/* Header with Context Bar */}
+            <header className="border-b flex flex-col bg-background text-foreground shadow-sm z-10 shrink-0">
+                {/* Main Header */}
+                <div className="h-16 flex items-center px-6 justify-between">
+                    <div className="flex items-center gap-3">
+                        <Bot className="w-8 h-8 text-primary" />
+                        <div>
+                            <h1 className="font-bold text-xl flex items-center gap-2">
+                                Strategy Copilot
+                                <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold tracking-wider border border-primary/20">
+                                    BETA
+                                </span>
+                            </h1>
+                            <p className="text-xs text-muted-foreground font-medium">
+                                AI-Powered Strategic Planning Assistant
+                            </p>
+                        </div>
                     </div>
+
+                    {/* Entity Selector */}
+                    <EntitySelector
+                        entities={recentEntities}
+                        isLoading={entitiesLoading}
+                        onSelect={handleEntitySelect}
+                    />
+                </div>
+
+                {/* Context Bar - shows when entity is focused */}
+                <div className="px-6 py-2 border-t bg-muted/20">
+                    <EntityContextBar onOpenSelector={() => setSelectorOpen(true)} />
                 </div>
             </header>
 

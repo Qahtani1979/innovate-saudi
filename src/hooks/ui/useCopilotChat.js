@@ -10,6 +10,7 @@ import { buildSystemPrompt } from '@/lib/ai/prompts/copilotPrompts';
 import { useAuth } from '@/lib/AuthContext';
 import { COPILOT_UI_TEXT } from '@/lib/copilot/uiConfig';
 import { STRUCTURED_RESPONSE_SCHEMA } from '@/lib/ai/schemas/responseSchema';
+import { buildEntityContextPrompt } from '@/lib/copilot/entityContext';
 
 const orchestrator = new CopilotOrchestrator();
 
@@ -22,7 +23,7 @@ export function useCopilotChat() {
     const [inputValue, setInputValue] = useState('');
     const [messages, setMessages] = useState([]);
     const { activeSessionId, addToHistory } = useCopilotHistory();
-    const { status, toolStatus, pendingToolCall } = useCopilotStore();
+    const { status, toolStatus, pendingToolCall, focusEntity } = useCopilotStore();
     const { requestExecution } = useToolExecutor();
 
     // Wire up the Executor to the Orchestrator
@@ -70,11 +71,15 @@ export function useCopilotChat() {
 
         const currentTools = getAllTools();
 
+        // Build entity context if focused
+        const entityContext = focusEntity ? buildEntityContextPrompt(focusEntity, language) : '';
+
         const systemPrompt = buildSystemPrompt({
             user,
             language,
             location: window.location.pathname,
             pageTitle: document.title,
+            entityContext,
             toolDefinitions: currentTools.map(t => {
                 const params = t.schema ? Object.keys(t.schema.shape).join(', ') : 'none';
                 return `- ${t.name}(${params}): ${t.description}`;

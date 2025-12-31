@@ -7,10 +7,11 @@ import { SECTION_TYPES } from '../schemas/responseSchema';
  * @param {string} context.language - 'en' | 'ar'
  * @param {string} context.location - Current Path
  * @param {string} context.pageTitle - Current Page Title
- * @param {string} toolDefinitions - List of available tools
+ * @param {string} context.toolDefinitions - List of available tools
+ * @param {string} context.entityContext - Optional entity context injection
  * @returns {string} The formatted system prompt
  */
-export const buildSystemPrompt = ({ user, language, location, pageTitle, toolDefinitions }) => {
+export const buildSystemPrompt = ({ user, language, location, pageTitle, toolDefinitions, entityContext }) => {
     const isArabic = language === 'ar';
 
     // Build section types documentation for the LLM
@@ -59,6 +60,8 @@ You are the Super Copilot for Innovate Saudi - an intelligent strategic planning
 - Language: ${responseLanguage}
 - Path: ${location}
 - Page: ${pageTitle}
+
+${entityContext ? entityContext : ''}
 
 ${languageRules}
 
