@@ -1,14 +1,18 @@
 /**
  * Shared Saudi Arabia / MoMAH Context for AI Prompts
  * Centralized context to ensure consistent AI outputs across all components
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 /**
- * Comprehensive Saudi context for AI prompts
- * Used across all AI-powered components for consistency
+ * Comprehensive Saudi context for AI prompts.
+ *
+ * NOTE:
+ * - Many prompt files historically referenced additional snippet keys.
+ * - To avoid leaking "undefined" into prompts, we keep backward-compatible snippet keys and
+ *   provide a safe fallback for unknown keys.
  */
-export const SAUDI_CONTEXT = {
+const SAUDI_CONTEXT_RAW = {
   /**
    * Full detailed context - use for complex generation tasks
    */
@@ -56,8 +60,70 @@ Innovation: KACST, SDAIA, MCIT. Platforms: Balady, Sakani, Mostadam.`,
 - Platforms: Balady (citizen services), unified CRM
 - Governance: Amanat (17 major cities), municipalities (285+), districts
 - Compliance: Saudi Building Code, fire safety, accessibility standards
-- Investment: PPP, concessions, asset commercialization`
+- Investment: PPP, concessions, asset commercialization`,
+
+  // ----------------------------
+  // Backward-compatible snippets
+  // ----------------------------
+
+  /**
+   * Used by legacy prompts that embed a Vision 2030 block explicitly.
+   */
+  VISION_2030: `VISION 2030 ALIGNMENT (CRITICAL):
+- Prioritize Quality of Life improvements, Thriving Cities, sustainability, and digital transformation.
+- Recommend measurable outcomes (KPIs), clear ownership, and realistic timelines.
+- Use formal Saudi government tone and contextually appropriate terminology.`,
+
+  /**
+   * Used by legacy R&D prompts.
+   */
+  TECHNOLOGY_PRIORITIES: `TECHNOLOGY PRIORITIES:
+- AI/ML (computer vision, predictive analytics, NLP)
+- IoT & Smart Infrastructure
+- Digital Twins & GIS-enabled urban planning
+- GovTech service digitization and automation
+- PropTech/ConTech (BIM, modular construction, 3D printing)
+- Cybersecurity and data governance`,
+
+  /**
+   * Used by legacy policy prompts.
+   */
+  GOVERNMENT_TONE: `TONE (CRITICAL):
+- Write in a formal, professional Saudi government style.
+- Be precise, actionable, and decision-oriented.
+- Avoid speculation; state assumptions explicitly when needed.`,
+
+  /**
+   * Used by legacy ecosystem prompts.
+   */
+  MUNICIPAL_CONTEXT: `MUNICIPAL CONTEXT:
+- Saudi municipalities deliver frontline services (waste, permits, inspections, parks, lighting).
+- Consider governance structure (Amanat/municipalities), regional variation, and operational constraints.
+- Recommend implementable steps and accountability.`,
+
+  /**
+   * Used by legacy technology prompts.
+   */
+  SMART_CITIES_FOCUS: `SMART CITIES FOCUS:
+- Emphasize interoperability, data platforms, sensor networks, and citizen experience.
+- Consider digital twin use cases, predictive maintenance, and service optimization.
+- Include security, privacy, and responsible AI considerations.`,
 };
+
+/**
+ * Exported context object.
+ *
+ * Any unknown key returns an empty string to prevent "undefined"/"[object Object]" from
+ * leaking into prompt templates.
+ */
+export const SAUDI_CONTEXT = new Proxy(SAUDI_CONTEXT_RAW, {
+  get(target, prop) {
+    if (typeof prop === 'string' && Object.prototype.hasOwnProperty.call(target, prop)) {
+      return target[prop];
+    }
+    return '';
+  }
+});
 
 /**
  * Language requirements for AI outputs
@@ -78,21 +144,50 @@ Use formal, professional language appropriate for government documentation.`
 };
 
 /**
- * Get system prompt with context
- * @param {string} contextType - 'FULL' | 'COMPACT' | 'INNOVATION' | 'HOUSING' | 'MUNICIPAL'
- * @param {boolean} bilingual - Whether to include bilingual requirements
- * @returns {string} System prompt
+ * Get system prompt with context.
+ *
+ * Backward compatibility:
+ * - New/Preferred: getSystemPrompt('FULL'|'COMPACT'|'INNOVATION'|'HOUSING'|'MUNICIPAL', boolean)
+ * - Legacy: getSystemPrompt('persona_key', 'extra instructions...')
+ * - Legacy: getSystemPrompt('persona_key', 'extra instructions...', false)
  */
-export function getSystemPrompt(contextType = 'FULL', bilingual = true) {
-  const context = SAUDI_CONTEXT[contextType] || SAUDI_CONTEXT.FULL;
+export function getSystemPrompt(contextOrPersona = 'FULL', arg2 = true, arg3) {
+  const contextOrPersonaStr = typeof contextOrPersona === 'string' ? contextOrPersona : 'FULL';
+
+  const isContextKey = Object.prototype.hasOwnProperty.call(SAUDI_CONTEXT_RAW, contextOrPersonaStr);
+  const contextType = isContextKey ? contextOrPersonaStr : 'FULL';
+  const persona = isContextKey ? '' : contextOrPersonaStr;
+
+  let bilingual = true;
+  let extraInstructions = '';
+
+  if (typeof arg2 === 'boolean') {
+    bilingual = arg2;
+    extraInstructions = typeof arg3 === 'string' ? arg3 : '';
+  } else if (typeof arg2 === 'string') {
+    extraInstructions = arg2;
+    bilingual = typeof arg3 === 'boolean' ? arg3 : true;
+  } else {
+    bilingual = true;
+    extraInstructions = typeof arg3 === 'string' ? arg3 : '';
+  }
+
+  const context = SAUDI_CONTEXT_RAW[contextType] || SAUDI_CONTEXT_RAW.FULL;
   const langReq = bilingual ? LANGUAGE_REQUIREMENTS.BILINGUAL : '';
-  
+
+  const personaBlock = persona
+    ? `\nROLE/FOCUS:\n- ${persona}\n`
+    : '';
+
+  const extraBlock = extraInstructions?.trim()
+    ? `\nADDITIONAL INSTRUCTIONS:\n${extraInstructions.trim()}\n`
+    : '';
+
   return `You are an expert AI assistant for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH).
 
 ${context}
 
-${langReq}
-
+${langReq}${personaBlock}${extraBlock}
 Provide accurate, actionable, and contextually relevant responses aligned with Saudi Vision 2030 objectives.`;
 }
 
@@ -110,10 +205,10 @@ export function buildPromptWithContext(basePrompt, options = {}) {
     additionalContext = ''
   } = options;
 
-  let contextBlock = SAUDI_CONTEXT[contextType] || SAUDI_CONTEXT.FULL;
-  
+  let contextBlock = SAUDI_CONTEXT_RAW[contextType] || SAUDI_CONTEXT_RAW.FULL;
+
   if (includeInnovation && contextType !== 'INNOVATION') {
-    contextBlock += '\n\n' + SAUDI_CONTEXT.INNOVATION;
+    contextBlock += '\n\n' + SAUDI_CONTEXT_RAW.INNOVATION;
   }
 
   const langBlock = includeBilingual ? LANGUAGE_REQUIREMENTS.BILINGUAL : '';
@@ -128,3 +223,4 @@ ${basePrompt}`;
 }
 
 export default SAUDI_CONTEXT;
+

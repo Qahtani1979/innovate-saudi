@@ -175,6 +175,12 @@ export default function StrategyWizardWrapper() {
     setShowDraftRecovery(false);
   };
 
+  const handleDiscardDraft = () => {
+    clearLocalDraft();
+    setShowDraftRecovery(false);
+    toast.success(t({ en: 'Draft discarded', ar: 'تم حذف المسودة' }));
+  };
+
   const renderStep = () => {
     const isGenerating = generatingStep === currentStep;
     const isReadOnly = mode === 'review';
