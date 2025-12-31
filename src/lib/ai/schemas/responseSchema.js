@@ -213,21 +213,23 @@ export function validateStructuredResponse(response) {
 
 /**
  * Creates a fallback structured response from plain text
+ * Handles both English and Arabic text with proper list detection
  * @param {string} text - Plain text to convert
+ * @param {string} language - 'en' or 'ar'
  * @returns {Object} Structured response object
  */
-export function createFallbackStructuredResponse(text) {
-    // Try to intelligently parse the text into sections
+export function createFallbackStructuredResponse(text, language = 'en') {
+    const isArabic = language === 'ar' || /[\u0600-\u06FF]/.test(text);
     const sections = [];
     
-    // Split by double newlines for paragraphs
+    // Split by double newlines for blocks
     const blocks = text.split(/\n\n+/);
     
     blocks.forEach(block => {
         const trimmed = block.trim();
         if (!trimmed) return;
         
-        // Check for headers (lines starting with # or all caps short lines)
+        // Check for headers (# syntax, ** bold headers **, or Arabic colon headers)
         if (trimmed.startsWith('#')) {
             const level = (trimmed.match(/^#+/) || [''])[0].length;
             sections.push({
@@ -236,31 +238,94 @@ export function createFallbackStructuredResponse(text) {
                 metadata: { level: Math.min(level, 3) }
             });
         }
-        // Check for bullet lists
-        else if (trimmed.match(/^[-•*]\s/m)) {
-            const items = trimmed.split(/\n/).filter(l => l.match(/^[-•*]\s/)).map(l => l.replace(/^[-•*]\s+/, ''));
+        // Bold text as headers (e.g., **Header** or **العنوان**)
+        else if (trimmed.match(/^\*\*[^*]+\*\*$/)) {
+            sections.push({
+                type: 'header',
+                content: trimmed.replace(/^\*\*|\*\*$/g, ''),
+                metadata: { level: 2 }
+            });
+        }
+        // Arabic-style headers ending with colon (e.g., "القطاعات المتاحة:")
+        else if (isArabic && trimmed.match(/^[^•\-*\d\n]+:$/) && trimmed.length < 100) {
+            sections.push({
+                type: 'header',
+                content: trimmed.replace(/:$/, ''),
+                metadata: { level: 2 }
+            });
+        }
+        // Check for bullet lists (including Arabic bullet •)
+        else if (trimmed.match(/^[-•*]\s/m) || trimmed.match(/\n[-•*]\s/)) {
+            // Extract list title if exists (first line without bullet)
+            const lines = trimmed.split('\n');
+            const firstLine = lines[0].trim();
+            let listTitle = null;
+            let listLines = lines;
+            
+            // Check if first line is a title (not a bullet)
+            if (!firstLine.match(/^[-•*]\s/)) {
+                listTitle = firstLine.replace(/:$/, '');
+                listLines = lines.slice(1);
+            }
+            
+            const items = listLines
+                .filter(l => l.match(/^[-•*]\s/) || l.match(/^\s*[-•*]\s/))
+                .map(l => l.replace(/^\s*[-•*]\s+/, '').trim())
+                .filter(item => item.length > 0);
+            
             if (items.length > 0) {
                 sections.push({
                     type: 'bullet_list',
+                    content: listTitle || undefined,
                     metadata: { items }
+                });
+            } else if (listTitle) {
+                // No valid list items, treat as paragraph
+                sections.push({
+                    type: 'paragraph',
+                    content: trimmed
                 });
             }
         }
-        // Check for numbered lists
-        else if (trimmed.match(/^\d+[.)]\s/m)) {
-            const items = trimmed.split(/\n/).filter(l => l.match(/^\d+[.)]\s/)).map(l => l.replace(/^\d+[.)]\s+/, ''));
+        // Check for numbered lists (1. or 1) syntax, also Arabic numerals)
+        else if (trimmed.match(/^\d+[.)]\s/m) || trimmed.match(/\n\d+[.)]\s/)) {
+            const lines = trimmed.split('\n');
+            const firstLine = lines[0].trim();
+            let listTitle = null;
+            let listLines = lines;
+            
+            if (!firstLine.match(/^\d+[.)]\s/)) {
+                listTitle = firstLine.replace(/:$/, '');
+                listLines = lines.slice(1);
+            }
+            
+            const items = listLines
+                .filter(l => l.match(/^\d+[.)]\s/) || l.match(/^\s*\d+[.)]\s/))
+                .map(l => l.replace(/^\s*\d+[.)]\s+/, '').trim())
+                .filter(item => item.length > 0);
+            
             if (items.length > 0) {
                 sections.push({
                     type: 'numbered_list',
+                    content: listTitle || undefined,
                     metadata: { items }
+                });
+            } else if (listTitle) {
+                sections.push({
+                    type: 'paragraph',
+                    content: trimmed
                 });
             }
         }
         // Default to paragraph
         else {
+            // Check if this looks like action suggestions (contains words like "Next Steps", "الخطوات")
+            const isActionPrompt = trimmed.match(/next\s*step|الخطوات|what.*do|ماذا|choose|اختر/i);
+            
             sections.push({
-                type: 'paragraph',
-                content: trimmed
+                type: isActionPrompt ? 'highlight' : 'paragraph',
+                content: trimmed,
+                metadata: isActionPrompt ? { variant: 'primary' } : undefined
             });
         }
     });
@@ -273,7 +338,25 @@ export function createFallbackStructuredResponse(text) {
         });
     }
     
-    return { sections };
+    // Add default action buttons if none exist in response
+    const hasActions = sections.some(s => s.type === 'action_buttons');
+    if (!hasActions) {
+        sections.push({
+            type: 'action_buttons',
+            content: isArabic ? 'الخطوات التالية' : 'Next Steps',
+            metadata: {
+                actions: isArabic ? [
+                    { label: 'عرض المزيد', action: 'more', prompt: 'أخبرني المزيد', variant: 'primary' },
+                    { label: 'مساعدة أخرى', action: 'help', prompt: 'ما الذي يمكنك مساعدتي به؟', variant: 'secondary' }
+                ] : [
+                    { label: 'Tell me more', action: 'more', prompt: 'Tell me more about this', variant: 'primary' },
+                    { label: 'Other help', action: 'help', prompt: 'What else can you help me with?', variant: 'secondary' }
+                ]
+            }
+        });
+    }
+    
+    return { sections, language: isArabic ? 'ar' : 'en' };
 }
 
 /**
