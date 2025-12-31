@@ -1,18 +1,28 @@
-import { useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { useCopilotHistory } from '@/hooks/useCopilotHistory';
+import { useQuery } from '@/hooks/useAppQueryClient';
+import { supabase } from '@/integrations/supabase/client';
 import { useCopilotStore } from '@/lib/store/copilotStore';
 import { useLanguage } from '@/components/LanguageContext';
-import { History, Plus, MessageSquare, Trash2, Loader2 } from 'lucide-react';
+import { History, Plus, MessageSquare, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
 export function HistorySidebar() {
-    const { t, isRTL, language } = useLanguage();
+    const { t, language } = useLanguage();
     const { activeSessionId, setActiveSessionId } = useCopilotStore();
-    const { useSessions } = useCopilotHistory();
-    const { data: sessions, isLoading } = useSessions();
+    
+    const { data: sessions, isLoading } = useQuery({
+        queryKey: ['copilot-sessions'],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('copilot_sessions')
+                .select('*')
+                .order('updated_at', { ascending: false });
+            if (error) throw error;
+            return data;
+        }
+    });
 
     const formatTime = (date) => {
         try {
