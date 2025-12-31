@@ -1,7 +1,7 @@
 /**
  * Project Analysis AI Prompts
  * @module prompts/projects/projectAnalysis
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { SAUDI_CONTEXT } from '@/lib/saudiContext';
@@ -26,7 +26,7 @@ ${project.milestones?.map(m => `- ${m.title}: ${m.status}`).join('\n') || 'None 
 Risks:
 ${project.risks?.map(r => `- ${r.description}: ${r.severity}`).join('\n') || 'None identified'}
 
-${SAUDI_CONTEXT}
+${SAUDI_CONTEXT.COMPACT}
 
 Analyze:
 1. Overall Health Score (0-100)
@@ -50,7 +50,7 @@ Team Size: ${project.team_size || 'Not specified'}
 Objectives:
 ${project.objectives?.map(o => `- ${o}`).join('\n') || 'Define project objectives'}
 
-${SAUDI_CONTEXT}
+${SAUDI_CONTEXT.COMPACT}
 
 Create roadmap with:
 1. Phase breakdown
@@ -65,11 +65,12 @@ export const PROJECT_ANALYSIS_SYSTEM_PROMPT = `You are a project management expe
 export const PROJECT_ANALYSIS_SCHEMA = {
   type: "object",
   properties: {
-    healthScore: { type: "number" },
-    spiIndex: { type: "number" },
-    cpiIndex: { type: "number" },
-    riskLevel: { type: "string" },
-    recommendations: { type: "array", items: { type: "string" } }
+    healthScore: { type: "number", description: 'Overall project health score 0-100' },
+    spiIndex: { type: "number", description: 'Schedule Performance Index' },
+    cpiIndex: { type: "number", description: 'Cost Performance Index' },
+    riskLevel: { type: "string", enum: ['low', 'medium', 'high', 'critical'], description: 'Overall risk level' },
+    recommendations: { type: "array", items: { type: "string" }, description: 'Recommended actions' },
+    recommendations_ar: { type: "array", items: { type: "string" }, description: 'Arabic recommendations' }
   },
-  required: ["healthScore", "recommendations"]
+  required: ["healthScore", "spiIndex", "cpiIndex", "riskLevel", "recommendations"]
 };

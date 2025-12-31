@@ -2,9 +2,10 @@
  * Gap Analysis Engine Prompt Module
  * Comprehensive gap analysis for innovation ecosystem
  * @module prompts/gaps/analysisEngine
+ * @version 1.1.0
  */
 
-import { SAUDI_CONTEXT } from '@/lib/saudiContext';
+import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
 
 /**
  * Schema for gap analysis response
@@ -19,12 +20,13 @@ export const GAP_ANALYSIS_SCHEMA = {
         properties: {
           sector_en: { type: 'string' },
           sector_ar: { type: 'string' },
-          severity: { type: 'string' },
+          severity: { type: 'string', enum: ['high', 'medium', 'low'] },
           gap_description_en: { type: 'string' },
           gap_description_ar: { type: 'string' },
           recommendation_en: { type: 'string' },
           recommendation_ar: { type: 'string' }
-        }
+        },
+        required: ['sector_en', 'severity', 'gap_description_en', 'recommendation_en']
       }
     },
     innovation_gaps: {
@@ -34,12 +36,13 @@ export const GAP_ANALYSIS_SCHEMA = {
         properties: {
           gap_type_en: { type: 'string' },
           gap_type_ar: { type: 'string' },
-          severity: { type: 'string' },
+          severity: { type: 'string', enum: ['high', 'medium', 'low'] },
           description_en: { type: 'string' },
           description_ar: { type: 'string' },
           action_en: { type: 'string' },
           action_ar: { type: 'string' }
-        }
+        },
+        required: ['gap_type_en', 'severity', 'description_en', 'action_en']
       }
     },
     geographic_gaps: {
@@ -53,7 +56,8 @@ export const GAP_ANALYSIS_SCHEMA = {
           gap_description_ar: { type: 'string' },
           recommendation_en: { type: 'string' },
           recommendation_ar: { type: 'string' }
-        }
+        },
+        required: ['region_en', 'gap_description_en', 'recommendation_en']
       }
     },
     technology_gaps: {
@@ -65,7 +69,8 @@ export const GAP_ANALYSIS_SCHEMA = {
           technology_ar: { type: 'string' },
           potential_impact_en: { type: 'string' },
           potential_impact_ar: { type: 'string' }
-        }
+        },
+        required: ['technology_en', 'potential_impact_en']
       }
     },
     priority_actions: {
@@ -75,13 +80,15 @@ export const GAP_ANALYSIS_SCHEMA = {
         properties: {
           action_en: { type: 'string' },
           action_ar: { type: 'string' },
-          priority: { type: 'string' },
+          priority: { type: 'string', enum: ['high', 'medium', 'low'] },
           expected_impact_en: { type: 'string' },
           expected_impact_ar: { type: 'string' }
-        }
+        },
+        required: ['action_en', 'priority', 'expected_impact_en']
       }
     }
-  }
+  },
+  required: ['underserved_sectors', 'innovation_gaps', 'priority_actions']
 };
 
 /**
@@ -94,7 +101,7 @@ export function GAP_ANALYSIS_PROMPT_TEMPLATE(context) {
   
   return `Perform COMPREHENSIVE gap analysis for Saudi municipal innovation ecosystem:
 
-${SAUDI_CONTEXT}
+${SAUDI_CONTEXT.FULL}
 
 CURRENT PORTFOLIO:
 ${JSON.stringify(sectorData, null, 2)}
@@ -104,6 +111,8 @@ DETAILED METRICS:
 - Total Pilots: ${pilots.total} (Active: ${pilots.active}, At Risk: ${pilots.atRisk})
 - Total Solutions: ${solutions.total} (Market-ready: ${solutions.marketReady})
 - Total R&D Projects: ${rdProjects.total}
+
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 Identify in BOTH English and Arabic:
 

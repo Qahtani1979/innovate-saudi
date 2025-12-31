@@ -1,7 +1,7 @@
 /**
  * Program Success Predictor Prompt
  * Predicts program success metrics and provides recommendations
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
@@ -11,7 +11,7 @@ import { createBilingualSchema } from '../../bilingualSchemaBuilder';
  * Build success predictor prompt
  */
 export function buildSuccessPredictorPrompt(program) {
-  return `${SAUDI_CONTEXT}
+  return `${SAUDI_CONTEXT.INNOVATION}
 
 You are an AI program analytics specialist for Saudi Arabia's municipal innovation programs.
 
@@ -35,7 +35,7 @@ PREDICT:
 5. Risk Factors - What could cause problems
 6. Recommendations - Actionable improvements
 
-${LANGUAGE_REQUIREMENTS}
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 Base predictions on program structure, Saudi market context, and best practices.`;
 }

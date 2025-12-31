@@ -1,7 +1,7 @@
 /**
  * Expert Finder Prompt
  * AI-powered search for experts across platform profiles
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
@@ -11,7 +11,7 @@ import { createBilingualSchema } from '../../bilingualSchemaBuilder';
  * Build expert finder prompt
  */
 export function buildExpertFinderPrompt(query) {
-  return `${SAUDI_CONTEXT}
+  return `${SAUDI_CONTEXT.COMPACT}
 
 You are an AI expert matching specialist for Saudi Arabia's municipal innovation platform.
 
@@ -26,7 +26,7 @@ FOR EACH EXPERT, PROVIDE:
 4. Why they're relevant to the query
 5. Suggested collaboration angle
 
-${LANGUAGE_REQUIREMENTS}
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 Consider Saudi Vision 2030 priorities, municipal innovation needs, and cross-sector collaboration potential.`;
 }

@@ -85,7 +85,7 @@ Protocol:
             }
 
             // 4. Fallback: treat as plain text and convert to structured format
-            console.log('[Orchestrator] No JSON found, creating fallback structured response');
+            // No JSON found, creating fallback structured response
             return {
                 type: 'structured',
                 data: createFallbackStructuredResponse(text)
@@ -125,7 +125,7 @@ Protocol:
         }
 
         // Unknown format - wrap in a structured response
-        console.log('[Orchestrator] Unknown response format, wrapping in structured response');
+        // Unknown response format, wrapping in structured response
         return {
             type: 'structured',
             data: {
@@ -143,8 +143,7 @@ Protocol:
      * @param {Object} systemContext - Context object with tools, systemPrompt, messages
      */
     async processMessage(message, systemContext = {}) {
-        console.log('[Orchestrator] Processing message:', message);
-        console.log('[Orchestrator] Context:', systemContext);
+        // Processing message with context
 
         const store = getStore();
         store.setIsThinking(true);
@@ -243,12 +242,10 @@ Protocol:
 
             // 3. Parse Response
             const parsedResponse = this.parseResponse(aiResponseText);
-            console.log('[Orchestrator] Parsed response:', parsedResponse);
 
             // 4. Handle based on response type
             if (parsedResponse.type === 'tool_call') {
                 const toolCall = parsedResponse.data;
-                console.log('[Orchestrator] Executing tool call:', toolCall);
                 
                 if (this.executor) {
                     const result = await this.executor(toolCall.tool, toolCall.args);

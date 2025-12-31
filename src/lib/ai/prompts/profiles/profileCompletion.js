@@ -1,7 +1,7 @@
 /**
  * Profile Completion Suggestions Prompt
  * Analyzes user profiles and suggests improvements
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
@@ -11,7 +11,7 @@ import { createBilingualSchema } from '../../bilingualSchemaBuilder';
  * Build profile completion prompt
  */
 export function buildProfileCompletionPrompt(profile) {
-  return `${SAUDI_CONTEXT}
+  return `${SAUDI_CONTEXT.COMPACT}
 
 You are an AI profile optimization specialist for Saudi Arabia's municipal innovation platform.
 
@@ -33,7 +33,7 @@ PROVIDE:
 3. Recommended expertise tags relevant to Saudi innovation ecosystem
 4. Networking opportunities based on profile
 
-${LANGUAGE_REQUIREMENTS}
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 Focus on professional growth within Saudi Vision 2030 context.`;
 }
@@ -64,7 +64,8 @@ export function getProfileCompletionSchema() {
             field_ar: { type: 'string' },
             suggestion_en: { type: 'string' }, 
             suggestion_ar: { type: 'string' } 
-          } 
+          },
+          required: ['field', 'suggestion_en']
         },
         description: 'Improvement suggestions per field'
       },

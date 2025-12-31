@@ -1,7 +1,7 @@
 /**
  * Contract Analysis AI Prompts
  * @module prompts/contracts/contractAnalysis
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { SAUDI_CONTEXT } from '@/lib/saudiContext';
@@ -24,7 +24,7 @@ Parties:
 
 Terms: ${contract.terms_conditions || 'Not specified'}
 
-${SAUDI_CONTEXT}
+${SAUDI_CONTEXT.COMPACT}
 
 Analyze:
 1. Compliance Risks
@@ -47,7 +47,7 @@ Progress: ${contract.completion_percentage || 0}%
 Deliverables:
 ${deliverables?.map(d => `- ${d.name}: ${d.status} (Due: ${d.due_date})`).join('\n') || 'None specified'}
 
-${SAUDI_CONTEXT}
+${SAUDI_CONTEXT.COMPACT}
 
 Provide:
 1. Performance Score (0-100)
@@ -62,11 +62,14 @@ export const CONTRACT_ANALYSIS_SYSTEM_PROMPT = `You are a contract analyst speci
 export const CONTRACT_ANALYSIS_SCHEMA = {
   type: "object",
   properties: {
-    performanceScore: { type: "number" },
-    complianceRisks: { type: "array", items: { type: "string" } },
-    financialRisks: { type: "array", items: { type: "string" } },
-    recommendations: { type: "array", items: { type: "string" } },
-    riskLevel: { type: "string" }
+    performanceScore: { type: "number", description: 'Contract performance score 0-100' },
+    complianceRisks: { type: "array", items: { type: "string" }, description: 'Compliance risks identified' },
+    complianceRisks_ar: { type: "array", items: { type: "string" }, description: 'Arabic compliance risks' },
+    financialRisks: { type: "array", items: { type: "string" }, description: 'Financial risks identified' },
+    financialRisks_ar: { type: "array", items: { type: "string" }, description: 'Arabic financial risks' },
+    recommendations: { type: "array", items: { type: "string" }, description: 'Risk mitigation recommendations' },
+    recommendations_ar: { type: "array", items: { type: "string" }, description: 'Arabic recommendations' },
+    riskLevel: { type: "string", enum: ['low', 'medium', 'high', 'critical'], description: 'Overall risk level' }
   },
-  required: ["performanceScore", "riskLevel"]
+  required: ["performanceScore", "complianceRisks", "financialRisks", "recommendations", "riskLevel"]
 };

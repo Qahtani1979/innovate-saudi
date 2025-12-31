@@ -1,7 +1,7 @@
 /**
  * Credential Verification Prompt
  * AI-powered document verification for professional credentials
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
@@ -11,7 +11,7 @@ import { createBilingualSchema } from '../../bilingualSchemaBuilder';
  * Build credential verification prompt
  */
 export function buildCredentialVerificationPrompt(profileType, fileUrl) {
-  return `${SAUDI_CONTEXT}
+  return `${SAUDI_CONTEXT.COMPACT}
 
 You are an AI credential verification specialist for Saudi Arabia's municipal innovation platform.
 
@@ -31,7 +31,7 @@ VERIFY AND EXTRACT:
 5. Key Details extracted from the document
 6. Confidence Score (0-100) based on document quality and authenticity indicators
 
-${LANGUAGE_REQUIREMENTS}
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 Consider Saudi and international credential standards. Flag any inconsistencies.`;
 }

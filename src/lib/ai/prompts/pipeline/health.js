@@ -2,6 +2,7 @@
  * Pipeline Health AI Prompts
  * Prompts for analyzing innovation pipeline health
  * @module ai/prompts/pipeline/health
+ * @version 1.1.0
  */
 
 import { SAUDI_CONTEXT } from '@/lib/saudiContext';
@@ -20,7 +21,7 @@ export const PIPELINE_HEALTH_ANALYSIS_PROMPT_TEMPLATE = ({
   pendingAssignments,
   language = 'en'
 }) => ({
-  prompt: `${SAUDI_CONTEXT}
+  prompt: `${SAUDI_CONTEXT.FULL}
 
 Analyze this innovation pipeline health and provide recommendations:
 
@@ -51,15 +52,30 @@ Consider Saudi municipal innovation context and Vision 2030 alignment.`,
         items: { type: 'string' },
         description: 'Top 3 identified bottlenecks'
       },
+      bottlenecks_ar: { 
+        type: 'array', 
+        items: { type: 'string' },
+        description: 'Arabic bottlenecks'
+      },
       recommendations: { 
         type: 'array', 
         items: { type: 'string' },
         description: 'Recommended actions to improve pipeline flow'
       },
+      recommendations_ar: { 
+        type: 'array', 
+        items: { type: 'string' },
+        description: 'Arabic recommendations'
+      },
       risks: { 
         type: 'array', 
         items: { type: 'string' },
         description: 'Risk areas requiring attention'
+      },
+      risks_ar: { 
+        type: 'array', 
+        items: { type: 'string' },
+        description: 'Arabic risks'
       }
     },
     required: ['health_score', 'bottlenecks', 'recommendations', 'risks']
@@ -78,7 +94,7 @@ export const PIPELINE_STAGE_ANALYSIS_PROMPT_TEMPLATE = ({
   transitionRate,
   language = 'en'
 }) => ({
-  prompt: `${SAUDI_CONTEXT}
+  prompt: `${SAUDI_CONTEXT.COMPACT}
 
 Analyze this pipeline stage performance:
 
@@ -95,11 +111,15 @@ Provide:
   schema: {
     type: 'object',
     properties: {
-      efficiency_score: { type: 'number' },
-      assessment: { type: 'string' },
-      improvements: { type: 'array', items: { type: 'string' } },
-      resource_suggestions: { type: 'array', items: { type: 'string' } }
-    }
+      efficiency_score: { type: 'number', description: 'Stage efficiency score 0-100' },
+      assessment: { type: 'string', description: 'Stage efficiency assessment' },
+      assessment_ar: { type: 'string', description: 'Arabic assessment' },
+      improvements: { type: 'array', items: { type: 'string' }, description: 'Improvement recommendations' },
+      improvements_ar: { type: 'array', items: { type: 'string' }, description: 'Arabic improvements' },
+      resource_suggestions: { type: 'array', items: { type: 'string' }, description: 'Resource allocation suggestions' },
+      resource_suggestions_ar: { type: 'array', items: { type: 'string' }, description: 'Arabic resource suggestions' }
+    },
+    required: ['efficiency_score', 'assessment', 'improvements', 'resource_suggestions']
   }
 });
 
