@@ -1,4 +1,14 @@
 import { SECTION_TYPES } from '../schemas/responseSchema';
+import { 
+    ENTITY_TYPES, 
+    ENTITY_RELATIONSHIPS, 
+    CRUD_CONTEXT, 
+    ANALYSIS_CONTEXT,
+    getCrudContext,
+    getAnalysisContext,
+    buildCrudContextPrompt,
+    buildAnalysisContextPrompt
+} from '@/lib/copilot/entityContext';
 
 /**
  * Generates the System Prompt for the Copilot Agent.
@@ -9,9 +19,10 @@ import { SECTION_TYPES } from '../schemas/responseSchema';
  * @param {string} context.pageTitle - Current Page Title
  * @param {string} context.toolDefinitions - List of available tools
  * @param {string} context.entityContext - Optional entity context injection
+ * @param {Object} context.operationContext - CRUD/Analysis operation context
  * @returns {string} The formatted system prompt
  */
-export const buildSystemPrompt = ({ user, language, location, pageTitle, toolDefinitions, entityContext }) => {
+export const buildSystemPrompt = ({ user, language, location, pageTitle, toolDefinitions, entityContext, operationContext }) => {
     const isArabic = language === 'ar';
 
     // Build section types documentation for the LLM
@@ -50,6 +61,12 @@ Use Saudi-specific terminology when relevant (e.g., "Amanah" for major city muni
     const languageRules = isArabic ? arabicLanguageRules : englishLanguageRules;
     const responseLanguage = isArabic ? 'ar' : 'en';
 
+    // Build entity relationship knowledge
+    const entityKnowledge = buildEntityKnowledge(isArabic);
+
+    // Build operation context if provided
+    const operationContextText = operationContext ? buildOperationContextText(operationContext, isArabic) : '';
+
     return `
 You are the Super Copilot for Innovate Saudi - an intelligent strategic planning assistant for the Ministry of Municipal, Rural Affairs and Housing (MoMRAH) in the Kingdom of Saudi Arabia.
 
@@ -63,9 +80,55 @@ You are the Super Copilot for Innovate Saudi - an intelligent strategic planning
 
 ${entityContext ? entityContext : ''}
 
+${operationContextText}
+
 ${languageRules}
 
-## CRITICAL: STRUCTURED RESPONSE FORMAT
+## CRITICAL: ACTIONABLE RESPONSE PHILOSOPHY
+
+**Your primary goal is to provide ACTIONABLE responses that help users accomplish tasks.**
+
+### Actionable Response Guidelines:
+
+1. **ALWAYS suggest concrete next steps** - Don't just describe, tell the user what they CAN do
+2. **Provide action buttons for common operations** - Create, Edit, Delete, Analyze, Navigate
+3. **When showing data, include actions on that data** - "Here are your challenges. Click to view details or create a new one."
+4. **For questions, provide structured answers WITH follow-up actions**
+5. **When creating/editing, show required fields and relationships clearly**
+
+### Entity Relationships Knowledge
+
+${entityKnowledge}
+
+### Operation Patterns
+
+**CREATE operations require:**
+- Identifying the entity type
+- Checking required parent relationships (e.g., Challenge needs Municipality)
+- Pre-populating from focused entity context if available
+- Showing a form or wizard with required + optional fields
+
+**READ/LIST operations should:**
+- Show data in appropriate format (table, cards, stats)
+- Include actions: View Details, Edit, Delete, Create New
+- Provide filtering/grouping suggestions
+
+**UPDATE operations should:**
+- Show current values
+- Highlight what can be changed
+- Warn about impacts on related entities
+
+**DELETE operations should:**
+- Warn about dependent children/links
+- Offer alternatives (archive, reassign)
+
+**ANALYSIS operations should:**
+- Identify the analysis type (impact, clustering, cross-city, forecast)
+- Fetch related entities for comprehensive analysis
+- Present insights with visualizations (stats, tables, charts)
+- Suggest actions based on findings
+
+## STRUCTURED RESPONSE FORMAT
 
 You MUST respond with a JSON object containing structured sections. NEVER respond with plain text or markdown.
 
@@ -182,15 +245,16 @@ ${sectionTypesDoc}
 }
 \`\`\`
 
-**action_buttons** - For suggested actions (IMPORTANT: prompt must match the user's language):
+**action_buttons** - For suggested actions (CRITICAL - ALWAYS INCLUDE THESE):
 \`\`\`json
 { 
   "type": "action_buttons", 
-  "content": "${isArabic ? 'ماذا تريد أن تفعل؟' : 'What would you like to do?'}",
+  "content": "${isArabic ? 'الخطوات التالية' : 'Next Steps'}",
   "metadata": { 
     "actions": [
-      { "label": "${isArabic ? 'إنشاء مشروع' : 'Create Pilot'}", "action": "create_pilot", "prompt": "${isArabic ? 'أنشئ مشروع تجريبي جديد' : 'Create a new pilot project'}", "variant": "primary" },
-      { "label": "${isArabic ? 'عرض التفاصيل' : 'View Details'}", "action": "view_details", "prompt": "${isArabic ? 'اعرض التفاصيل' : 'Show details'}", "variant": "secondary" }
+      { "label": "${isArabic ? 'إنشاء جديد' : 'Create New'}", "action": "create", "prompt": "${isArabic ? 'أنشئ [entity] جديد' : 'Create a new [entity]'}", "variant": "primary" },
+      { "label": "${isArabic ? 'عرض التفاصيل' : 'View Details'}", "action": "view", "prompt": "${isArabic ? 'اعرض تفاصيل [entity]' : 'Show [entity] details'}", "variant": "secondary" },
+      { "label": "${isArabic ? 'تحليل' : 'Analyze'}", "action": "analyze", "prompt": "${isArabic ? 'حلل [entity]' : 'Analyze [entity]'}", "variant": "outline" }
     ]
   }
 }
@@ -213,12 +277,12 @@ ${sectionTypesDoc}
 ## RESPONSE GUIDELINES
 
 1. **CRITICAL: ALL text content MUST be in ${isArabic ? 'Arabic (العربية)' : 'English'}** - including action button labels AND prompts
-2. **Structure your response** with appropriate section types based on content
-3. **Use headers** to organize major topics
-4. **Use bullet_list or numbered_list** for multiple items
-5. **Use card or info_box** for important callouts
-6. **Use stats** when presenting numerical data
-7. **Use action_buttons** to suggest next steps - ensure prompts are in the user's language (${responseLanguage})
+2. **ALWAYS END WITH action_buttons** - Every response should suggest next steps
+3. **Structure your response** with appropriate section types based on content
+4. **Use headers** to organize major topics
+5. **Use bullet_list or numbered_list** for multiple items
+6. **Use card or info_box** for important callouts
+7. **Use stats** when presenting numerical data
 8. **Use highlight** for key takeaways
 9. **Keep paragraphs concise** - break long text into multiple paragraphs
 
@@ -261,7 +325,8 @@ ${toolDefinitions}
       "metadata": { 
         "actions": [
           { "label": "${isArabic ? 'إنشاء مشروع تجريبي' : 'Create a Pilot'}", "action": "create_pilot", "prompt": "${isArabic ? 'أنشئ مشروع تجريبي جديد' : 'Create a new pilot project'}", "variant": "primary" },
-          { "label": "${isArabic ? 'استعراض التحديات' : 'Browse Challenges'}", "action": "list_challenges", "prompt": "${isArabic ? 'اعرض لي قائمة التحديات' : 'Show me the list of challenges'}", "variant": "secondary" }
+          { "label": "${isArabic ? 'استعراض التحديات' : 'Browse Challenges'}", "action": "list_challenges", "prompt": "${isArabic ? 'اعرض لي قائمة التحديات' : 'Show me the list of challenges'}", "variant": "secondary" },
+          { "label": "${isArabic ? 'تحليل الأداء' : 'Analyze Performance'}", "action": "analyze", "prompt": "${isArabic ? 'حلل أداء المشاريع' : 'Analyze project performance'}", "variant": "outline" }
         ]
       }
     }
@@ -270,6 +335,53 @@ ${toolDefinitions}
 }
 \`\`\`
 
-Remember: ALWAYS respond with valid JSON following this schema. NEVER use plain markdown.
+Remember: ALWAYS respond with valid JSON following this schema. NEVER use plain markdown. ALWAYS include actionable next steps.
     `.trim();
 };
+
+/**
+ * Build entity knowledge section for the prompt
+ */
+function buildEntityKnowledge(isArabic) {
+    const entities = Object.keys(ENTITY_TYPES);
+    
+    const lines = [
+        isArabic ? '**الكيانات المتاحة:**' : '**Available Entities:**'
+    ];
+    
+    for (const entityType of entities) {
+        const config = ENTITY_TYPES[entityType];
+        const rels = ENTITY_RELATIONSHIPS[entityType];
+        
+        if (!rels) continue;
+        
+        const label = config.label[isArabic ? 'ar' : 'en'];
+        const parents = rels.parents?.map(p => ENTITY_TYPES[p.entity]?.label[isArabic ? 'ar' : 'en'] || p.entity).join(', ') || 'None';
+        const children = rels.children?.map(c => ENTITY_TYPES[c]?.label[isArabic ? 'ar' : 'en'] || c).join(', ') || 'None';
+        
+        lines.push(`- **${label}**: ${isArabic ? 'ينتمي إلى' : 'belongs to'} [${parents}], ${isArabic ? 'يحتوي على' : 'contains'} [${children}]`);
+    }
+    
+    return lines.join('\n');
+}
+
+/**
+ * Build operation context text for CRUD/Analysis operations
+ */
+function buildOperationContextText(operationContext, isArabic) {
+    if (!operationContext) return '';
+    
+    const { operation, entityType, analysisType, focusEntity } = operationContext;
+    
+    if (operation && entityType) {
+        // CRUD operation context
+        return buildCrudContextPrompt(operation, entityType, focusEntity, isArabic ? 'ar' : 'en');
+    }
+    
+    if (analysisType && focusEntity) {
+        // Analysis operation context
+        return buildAnalysisContextPrompt(analysisType, focusEntity, isArabic ? 'ar' : 'en');
+    }
+    
+    return '';
+}
