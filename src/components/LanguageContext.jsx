@@ -25,6 +25,7 @@ export const LanguageProvider = ({ children }) => {
   };
 
   const t = (translations) => {
+    if (!translations || typeof translations !== 'object') return '';
     return translations[language] || translations.en || '';
   };
 

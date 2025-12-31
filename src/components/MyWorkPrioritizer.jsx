@@ -8,8 +8,6 @@ import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
 import { useMyWork } from '@/hooks/useMyWork';
 
 export default function MyWorkPrioritizer() {
-  // v2.1.1 - Added debug log to verify HMR
-  console.log('Mounting MyWorkPrioritizer v2.1.1 - isLoading check');
   const { language, isRTL, t } = useLanguage();
 
   // Use the new hook for fetching work items and AI

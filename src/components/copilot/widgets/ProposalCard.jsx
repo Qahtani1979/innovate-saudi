@@ -7,8 +7,6 @@ import { AlertTriangle, Check, X } from 'lucide-react';
  * Shows a Proposed Action and asks for User Confirmation.
  */
 export const ProposalCard = ({ toolName, args, onConfirm, onCancel }) => {
-    console.log('[ProposalCard] Rendering with:', { toolName, args });
-
     return (
         <GenUICard
             title="Action Verification"
@@ -42,10 +40,9 @@ export const ProposalCard = ({ toolName, args, onConfirm, onCancel }) => {
                     </Button>
                     <Button
                         variant="default"
-                        onClick={() => {
-                            console.log('[ProposalCard] Confirm clicked');
-                            onConfirm();
-                        }}
+                        onClick={onConfirm}
+                        className="flex-1 bg-primary hover:bg-primary/90"
+                    >
                         className="flex-1 bg-primary hover:bg-primary/90"
                     >
                         <Check className="w-3.5 h-3.5" />

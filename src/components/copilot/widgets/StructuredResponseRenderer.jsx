@@ -397,7 +397,6 @@ function ActionButtonsSection({ content, metadata, isRTL, onAction }) {
     const { actions = [] } = metadata;
     
     const handleClick = (action) => {
-        console.log('[ActionButtons] Clicked:', action);
         if (onAction) {
             onAction(action);
         }
