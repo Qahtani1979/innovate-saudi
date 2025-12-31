@@ -7,7 +7,7 @@ import { create } from 'zustand';
  * Note: Actual Chat History is handled by React Query (server-state).
  * This store handles CLIENT-ONLY interaction state.
  */
-export const useCopilotStore = create((set) => ({
+export const useCopilotStore = create((set, get) => ({
     // 1. Session State
     activeSessionId: null,
     isConsoleOpen: false,
@@ -21,11 +21,23 @@ export const useCopilotStore = create((set) => ({
     pendingToolCall: null, // { id, name, args } when waiting for confirmation
     lastExecutionResult: null,
 
+    // 4. Entity Focus State (Context Control)
+    focusEntity: null, // { type: 'challenge' | 'pilot' | etc, id: string, data: object }
+
     // Actions
     setActiveSessionId: (id) => set({ activeSessionId: id }),
     toggleConsole: (isOpen) => set({ isConsoleOpen: isOpen ?? ((s) => !s.isConsoleOpen) }),
 
     setIsThinking: (isThinking) => set({ isThinking }),
+
+    // Entity Focus Actions
+    setFocusEntity: (entity) => set({ focusEntity: entity }),
+    clearFocusEntity: () => set({ focusEntity: null }),
+    updateFocusEntityData: (data) => set((state) => ({
+        focusEntity: state.focusEntity 
+            ? { ...state.focusEntity, data: { ...state.focusEntity.data, ...data } }
+            : null
+    })),
 
     // Safety Flow
     requestConfirmation: (toolCall) => set({
@@ -57,7 +69,7 @@ export const useCopilotStore = create((set) => ({
         lastExecutionResult: null
     }),
 
-    // 4. Context Router State (Phase 3)
+    // 5. Context Router State (Phase 3 - Draft Collection)
     contextDraft: {
         type: null, // 'pilot' | 'challenge'
         data: {},   // { title: "..." }
