@@ -47,11 +47,6 @@ export default function CopilotConsole() {
     const starterActions = useMemo(() => getStarterActionsForRole(userRole), [userRole]);
     const roleGreeting = useMemo(() => getGreetingForRole(userRole), [userRole]);
 
-    useEffect(() => {
-        console.log('[CopilotConsole] Mounted');
-        return () => console.log('[CopilotConsole] Unmounted');
-    }, []);
-
     return (
         <div className="h-screen w-full bg-background flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
             <header className="h-20 border-b flex items-center px-6 bg-background text-foreground shadow-sm z-10 shrink-0">

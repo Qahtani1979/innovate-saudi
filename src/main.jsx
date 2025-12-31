@@ -1,4 +1,3 @@
-console.log('MAIN.JSX: EXECUTION START (BEFORE IMPORTS)');
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from '@/App.jsx'
@@ -8,7 +7,6 @@ import '@/index.css'
 if (typeof window !== 'undefined') {
   window.React = React;
 }
-console.log('MAIN.JSX: Loading...');
 
 // Error boundary for the entire app
 class AppErrorBoundary extends React.Component {
@@ -44,7 +42,6 @@ class AppErrorBoundary extends React.Component {
   }
 }
 
-console.log('MAIN.JSX: Rendering to root...');
 ReactDOM.createRoot(document.getElementById('root')).render(
   <AppErrorBoundary>
     <App />
