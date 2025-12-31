@@ -4,13 +4,14 @@
  * @version 1.0.0
  */
 
-import { getSystemPrompt } from '@/lib/saudiContext';
+import { getSystemPrompt, SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
 
-export const PORTFOLIO_REVIEW_SYSTEM_PROMPT = getSystemPrompt('portfolio_review', `
+export const PORTFOLIO_REVIEW_SYSTEM_PROMPT = getSystemPrompt('INNOVATION', true) + `
+
 You are a portfolio review specialist for Saudi municipal innovation programs.
 Your role is to analyze quarterly performance and provide strategic recommendations.
 Focus on KPI achievement, budget utilization, and pilot success rates.
-`);
+`;
 
 /**
  * Build portfolio review prompt
@@ -21,6 +22,8 @@ export function buildPortfolioReviewPrompt({ performanceMetrics }) {
   return `Perform quarterly portfolio review for Saudi municipal innovation:
 
 Performance: ${JSON.stringify(performanceMetrics || [])}
+
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 Provide bilingual review:
 1. Key achievements this quarter
@@ -38,7 +41,8 @@ export const PORTFOLIO_REVIEW_SCHEMA = {
         properties: { 
           en: { type: 'string' }, 
           ar: { type: 'string' } 
-        } 
+        },
+        required: ['en', 'ar']
       } 
     },
     concerns: { 
@@ -48,7 +52,8 @@ export const PORTFOLIO_REVIEW_SCHEMA = {
         properties: { 
           en: { type: 'string' }, 
           ar: { type: 'string' } 
-        } 
+        },
+        required: ['en', 'ar']
       } 
     },
     recommendations: { 
@@ -58,10 +63,12 @@ export const PORTFOLIO_REVIEW_SCHEMA = {
         properties: { 
           en: { type: 'string' }, 
           ar: { type: 'string' } 
-        } 
+        },
+        required: ['en', 'ar']
       } 
     }
-  }
+  },
+  required: ['achievements', 'concerns', 'recommendations']
 };
 
 export const PORTFOLIO_REVIEW_PROMPTS = {

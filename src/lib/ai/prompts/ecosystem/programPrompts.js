@@ -1,8 +1,15 @@
-import { getSystemPrompt, SAUDI_CONTEXT } from '@/lib/saudiContext';
+import { getSystemPrompt, SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
 
-const PROGRAM_SYSTEM_PROMPT = getSystemPrompt('innovation_consultant');
-const INSIGHTS_SYSTEM_PROMPT = getSystemPrompt('program_analyst', `
-You are a program effectiveness analyst for Saudi municipal innovation programs. Analyze program performance, identify patterns, and recommend optimization strategies.`);
+const PROGRAM_SYSTEM_PROMPT = getSystemPrompt('INNOVATION', true) + `
+
+You are an expert innovation consultant for Saudi municipal programs.
+`;
+
+const INSIGHTS_SYSTEM_PROMPT = getSystemPrompt('INNOVATION', true) + `
+
+You are a program effectiveness analyst for Saudi municipal innovation programs. 
+Analyze program performance, identify patterns, and recommend optimization strategies.
+`;
 
 export const programPrompts = {
     // 1. Detail Analysis
@@ -20,6 +27,8 @@ PROGRAM DETAILS:
 - Participants: ${context.program.participant_count || 0}
 - Outcomes: ${JSON.stringify(context.program.outcomes || {})}
 
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
+
 Provide bilingual insights (each item should have both English and Arabic versions):
 1. Effectiveness Assessment
 2. Engagement Recommendations
@@ -36,7 +45,8 @@ Provide bilingual insights (each item should have both English and Arabic versio
                         properties: {
                             en: { type: 'string' },
                             ar: { type: 'string' }
-                        }
+                        },
+                        required: ['en', 'ar']
                     }
                 },
                 engagement_recommendations: {
@@ -46,7 +56,8 @@ Provide bilingual insights (each item should have both English and Arabic versio
                         properties: {
                             en: { type: 'string' },
                             ar: { type: 'string' }
-                        }
+                        },
+                        required: ['en', 'ar']
                     }
                 },
                 outcome_optimization: {
@@ -56,7 +67,8 @@ Provide bilingual insights (each item should have both English and Arabic versio
                         properties: {
                             en: { type: 'string' },
                             ar: { type: 'string' }
-                        }
+                        },
+                        required: ['en', 'ar']
                     }
                 },
                 scaling_potential: {
@@ -66,7 +78,8 @@ Provide bilingual insights (each item should have both English and Arabic versio
                         properties: {
                             en: { type: 'string' },
                             ar: { type: 'string' }
-                        }
+                        },
+                        required: ['en', 'ar']
                     }
                 },
                 partnership_opportunities: {
@@ -76,7 +89,8 @@ Provide bilingual insights (each item should have both English and Arabic versio
                         properties: {
                             en: { type: 'string' },
                             ar: { type: 'string' }
-                        }
+                        },
+                        required: ['en', 'ar']
                     }
                 }
             },
@@ -84,7 +98,6 @@ Provide bilingual insights (each item should have both English and Arabic versio
         }
     },
 
-    // 2. Editor / Enhancement
     // 2. Editor / Enhancement
     editor: {
         system: PROGRAM_SYSTEM_PROMPT + `
@@ -95,6 +108,8 @@ Focus on creating engaging, clear, and impact-oriented program descriptions.`,
 Program: ${context.name_en}
 Type: ${context.program_type}
 Current Description: ${context.description_en || 'N/A'}
+
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 Generate comprehensive bilingual (English + Arabic) content:
 1. Improved names (EN + AR)
@@ -130,6 +145,8 @@ Statistics:
 - Completed: ${data.stats?.completed || 0}
 - Total Participants: ${data.stats?.participants || 0}
 
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
+
 Provide bilingual insights (each item should have both English and Arabic versions):
 1. Program effectiveness patterns across different types
 2. Participant engagement optimization strategies
@@ -139,11 +156,11 @@ Provide bilingual insights (each item should have both English and Arabic versio
         schema: {
             type: 'object',
             properties: {
-                effectiveness_patterns: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-                engagement_optimization: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-                outcome_improvements: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-                new_program_recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } },
-                partnership_opportunities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } } }
+                effectiveness_patterns: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } }, required: ['en', 'ar'] } },
+                engagement_optimization: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } }, required: ['en', 'ar'] } },
+                outcome_improvements: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } }, required: ['en', 'ar'] } },
+                new_program_recommendations: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } }, required: ['en', 'ar'] } },
+                partnership_opportunities: { type: 'array', items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } }, required: ['en', 'ar'] } }
             },
             required: ['effectiveness_patterns', 'engagement_optimization', 'outcome_improvements', 'new_program_recommendations', 'partnership_opportunities']
         }

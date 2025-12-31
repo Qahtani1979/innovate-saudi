@@ -3,12 +3,13 @@
  * @version 1.0.0
  */
 
-import { getSystemPrompt } from '@/lib/saudiContext';
+import { getSystemPrompt, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
 
-export const LINKEDIN_IMPORT_SYSTEM_PROMPT = getSystemPrompt('linkedin_import', `
+export const LINKEDIN_IMPORT_SYSTEM_PROMPT = getSystemPrompt('COMPACT', true) + `
+
 You are an AI assistant analyzing LinkedIn profiles for Saudi municipal innovation platforms.
 Extract professional information and provide bilingual suggestions.
-`);
+`;
 
 /**
  * Build LinkedIn import prompt
@@ -17,7 +18,8 @@ export function buildLinkedInImportPrompt(linkedinUrl) {
   return `Based on this LinkedIn profile URL: ${linkedinUrl}
 
 Extract or infer the following information. If the URL contains a username or name pattern, try to suggest professional details.
-IMPORTANT: Provide all text fields in BOTH English AND Arabic.
+
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 Return a JSON with:
 1. Likely name (if inferable from URL) in both languages
@@ -36,5 +38,6 @@ export const LINKEDIN_IMPORT_SCHEMA = {
     expertise_areas: { type: 'array', items: { type: 'string' } },
     bio_en: { type: 'string', description: 'Suggested professional bio in English' },
     bio_ar: { type: 'string', description: 'Suggested professional bio in Arabic' }
-  }
+  },
+  required: ['full_name_en', 'job_title_en', 'expertise_areas', 'bio_en']
 };

@@ -69,7 +69,11 @@ export function getProposalScreeningSchema() {
  * Get system prompt for proposal screening
  */
 export function getProposalScreeningSystemPrompt() {
-  return getSystemPrompt('proposal-screener');
+  return getSystemPrompt('INNOVATION', true) + `
+
+You are a proposal screener for Saudi municipal innovation platforms.
+Pre-screen innovation proposals for completeness, feasibility, and strategic alignment.
+`;
 }
 
 export const PROPOSAL_SCREENING_CONFIG = {

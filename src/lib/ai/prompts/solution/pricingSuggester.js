@@ -88,7 +88,11 @@ export function getPricingAnalysisSchema() {
  * Get system prompt for pricing analysis
  */
 export function getPricingSystemPrompt() {
-  return getSystemPrompt('pricing-analyst');
+  return getSystemPrompt('INNOVATION', true) + `
+
+You are a pricing analyst for Saudi municipal innovation solutions.
+Analyze market conditions and recommend optimal pricing strategies for municipal technology solutions.
+`;
 }
 
 export const PRICING_SUGGESTER_CONFIG = {

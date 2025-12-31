@@ -4,12 +4,13 @@
  * @version 1.0.0
  */
 
-import { getSystemPrompt } from '@/lib/saudiContext';
+import { getSystemPrompt, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
 
 /**
  * System prompt for eligibility check
  */
-export const ELIGIBILITY_CHECK_SYSTEM_PROMPT = getSystemPrompt('eligibility_check', `
+export const ELIGIBILITY_CHECK_SYSTEM_PROMPT = getSystemPrompt('INNOVATION', true) + `
+
 You are an expert R&D proposal eligibility evaluator for Saudi municipal innovation.
 
 EVALUATION CRITERIA:
@@ -18,7 +19,7 @@ EVALUATION CRITERIA:
 3. Duration limits
 4. PI qualifications
 5. Theme alignment
-`);
+`;
 
 /**
  * Build eligibility check prompt
@@ -65,9 +66,11 @@ export const ELIGIBILITY_CHECK_SCHEMA = {
           criterion: { type: 'string' },
           passed: { type: 'boolean' },
           reason: { type: 'string' }
-        }
+        },
+        required: ['criterion', 'passed', 'reason']
       }
     },
     recommendation: { type: 'string' }
-  }
+  },
+  required: ['overall_eligible', 'checks', 'recommendation']
 };

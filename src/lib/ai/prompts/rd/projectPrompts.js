@@ -1,9 +1,10 @@
-import { getSystemPrompt, SAUDI_CONTEXT } from '@/lib/saudiContext';
+import { getSystemPrompt, SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
 
-export const RD_PROJECT_SYSTEM_PROMPT = getSystemPrompt('rd_analyst', `
+export const RD_PROJECT_SYSTEM_PROMPT = getSystemPrompt('INNOVATION', true) + `
+
 You are an expert R&D analyst specializing in research and development projects for Saudi Arabia's innovation ecosystem.
-${SAUDI_CONTEXT.VISION_2030}
-${SAUDI_CONTEXT.TECHNOLOGY_PRIORITIES}
+
+${SAUDI_CONTEXT.INNOVATION}
 
 Analyze R&D projects with focus on:
 - Research methodology and approach
@@ -12,7 +13,7 @@ Analyze R&D projects with focus on:
 - Resource requirements and timeline
 - Collaboration opportunities
 - Alignment with national priorities
-`);
+`;
 
 export const rdProjectPrompts = {
     detailInsights: {
@@ -40,6 +41,8 @@ ${context.project.methodology || 'Not documented'}
 EXPECTED OUTCOMES:
 ${context.project.expected_outcomes ? JSON.stringify(context.project.expected_outcomes, null, 2) : 'Not defined'}
 
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
+
 Provide:
 1. Research Quality Assessment
 2. Innovation Potential Analysis
@@ -52,25 +55,26 @@ Provide:
             properties: {
                 strategic_alignment: {
                     type: 'array',
-                    items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } }
+                    items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } }, required: ['en', 'ar'] }
                 },
                 trl_recommendations: {
                     type: 'array',
-                    items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } }
+                    items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } }, required: ['en', 'ar'] }
                 },
                 pilot_applications: {
                     type: 'array',
-                    items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } }
+                    items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } }, required: ['en', 'ar'] }
                 },
                 collaboration_opportunities: {
                     type: 'array',
-                    items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } }
+                    items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } }, required: ['en', 'ar'] }
                 },
                 risk_mitigation: {
                     type: 'array',
-                    items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } } }
+                    items: { type: 'object', properties: { en: { type: 'string' }, ar: { type: 'string' } }, required: ['en', 'ar'] }
                 }
-            }
+            },
+            required: ['strategic_alignment', 'trl_recommendations', 'pilot_applications', 'collaboration_opportunities', 'risk_mitigation']
         }
     },
     portfolioAnalysis: {
@@ -101,7 +105,8 @@ Provide:
                 gaps: { type: 'array', items: { type: 'string' } },
                 commercialization_opportunities: { type: 'array', items: { type: 'string' } },
                 call_recommendations: { type: 'array', items: { type: 'string' } }
-            }
+            },
+            required: ['diversity_score', 'gaps', 'commercialization_opportunities', 'call_recommendations']
         }
     },
     portfolioPlanner: {
@@ -116,6 +121,8 @@ Current State:
 - R&D Calls: ${context.calls.length}
 - Unaddressed Challenges: ${context.gapChallenges.length}
 - Challenges by sector: ${context.challenges.slice(0, 10).map(c => `${c.sector}: ${c.title_en}`).join('; ')}
+
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 Generate bilingual recommendations for:
 1. Recommended R&D calls for next 12 months (3-5 calls)
@@ -143,7 +150,8 @@ Each recommendation should include English and Arabic versions.
                             timeline_ar: { type: 'string' },
                             expected_projects: { type: 'number' },
                             priority: { type: 'string' }
-                        }
+                        },
+                        required: ['title_en', 'title_ar', 'budget', 'priority']
                     }
                 },
                 research_themes: {
@@ -156,7 +164,8 @@ Each recommendation should include English and Arabic versions.
                             budget_percentage: { type: 'number' },
                             rationale_en: { type: 'string' },
                             rationale_ar: { type: 'string' }
-                        }
+                        },
+                        required: ['theme_en', 'theme_ar', 'budget_percentage']
                     }
                 },
                 portfolio_balance: {
@@ -166,9 +175,11 @@ Each recommendation should include English and Arabic versions.
                         long_term_percentage: { type: 'number' },
                         justification_en: { type: 'string' },
                         justification_ar: { type: 'string' }
-                    }
+                    },
+                    required: ['short_term_percentage', 'long_term_percentage']
                 }
-            }
+            },
+            required: ['recommended_calls', 'research_themes', 'portfolio_balance']
         }
     }
 };

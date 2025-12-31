@@ -4,13 +4,14 @@
  * @version 1.0.0
  */
 
-import { getSystemPrompt } from '@/lib/saudiContext';
+import { getSystemPrompt, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
 
-export const PILOT_LEARNING_ENGINE_SYSTEM_PROMPT = getSystemPrompt('pilot_learning', `
+export const PILOT_LEARNING_ENGINE_SYSTEM_PROMPT = getSystemPrompt('INNOVATION', true) + `
+
 You are a pilot analysis specialist for Saudi Arabia's municipal innovation platform.
 Your role is to analyze successful pilots, identify patterns, and extract actionable lessons.
 Consider Vision 2030 objectives and Saudi municipal context when providing recommendations.
-`);
+`;
 
 export function buildPilotLearningEnginePrompt({ pilot, completedPilots }) {
   return `Find similar pilots and extract learnings:
@@ -26,6 +27,8 @@ Success: ${p.recommendation}
 KPIs: ${p.kpis?.map(k => `${k.name}: ${k.current}`).join(', ')}
 Lessons: ${p.lessons_learned?.map(l => l.lesson).slice(0, 2).join('; ')}
 `).join('\n')}
+
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 Provide:
 1. Top 3 most similar pilots
@@ -46,7 +49,8 @@ export const PILOT_LEARNING_ENGINE_SCHEMA = {
           similarity_score: { type: "number" },
           key_lessons: { type: "array", items: { type: "string" } },
           approach_used: { type: "string" }
-        }
+        },
+        required: ["pilot_name", "similarity_score", "key_lessons"]
       }
     },
     best_practices: { type: "array", items: { type: "string" } },
