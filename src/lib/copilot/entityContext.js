@@ -209,6 +209,411 @@ export const ENTITY_RELATIONSHIPS = {
 };
 
 /**
+ * CRUD Operation Context Requirements
+ * Defines which relationships are needed for each operation type
+ */
+export const CRUD_CONTEXT = {
+    create: {
+        // What parent entities must be resolved before creation
+        requires: 'parents',
+        // Whether to pre-populate from focus entity
+        inheritFromFocus: true,
+        // Whether to validate required relationships
+        validateRequired: true
+    },
+    read: {
+        // Fetch related entities for display
+        fetchRelated: ['parents', 'children'],
+        // Depth of relationship traversal
+        depth: 1
+    },
+    update: {
+        // Which relationships can be modified
+        modifiable: 'parents',
+        // Whether to cascade updates
+        cascadeToChildren: false,
+        // Whether changing parents affects children
+        validateOrphans: true
+    },
+    delete: {
+        // Check for dependent entities before delete
+        checkDependents: ['children', 'links'],
+        // Whether to allow cascade delete
+        allowCascade: false,
+        // Soft delete by default
+        softDelete: true
+    }
+};
+
+/**
+ * Analysis Context Requirements
+ * Defines what related data to fetch for different analysis types
+ */
+export const ANALYSIS_CONTEXT = {
+    impact: {
+        // Entities to include in impact analysis
+        include: {
+            challenge: ['pilot', 'solution', 'municipality', 'sector', 'strategic_plan'],
+            pilot: ['challenge', 'solution', 'municipality', 'program'],
+            solution: ['challenge', 'pilot', 'organization', 'sector'],
+            program: ['pilot', 'strategic_plan', 'municipality'],
+            strategic_plan: ['challenge', 'program', 'municipality'],
+            rd_project: ['solution', 'sector', 'organization']
+        },
+        // Metrics to gather
+        metrics: ['kpis', 'budget', 'timeline', 'status']
+    },
+    clustering: {
+        // Group by these relationships
+        groupBy: ['sector', 'municipality', 'strategic_plan'],
+        // Compare these entity types
+        compare: ['challenge', 'solution', 'pilot']
+    },
+    crossCity: {
+        // Entities relevant for cross-city analysis
+        include: {
+            challenge: ['municipality', 'sector'],
+            solution: ['sector', 'organization'],
+            pilot: ['municipality', 'challenge']
+        },
+        // Group by geography
+        geographic: ['municipality', 'region']
+    },
+    forecast: {
+        // Time-series data sources
+        timeSeries: ['pilot', 'program'],
+        // Baseline comparisons
+        baselines: ['strategic_plan', 'sector']
+    }
+};
+
+/**
+ * Get CRUD operation context for an entity
+ * @param {string} entityType - Type of entity
+ * @param {string} operation - 'create' | 'read' | 'update' | 'delete'
+ * @param {Object} focusEntity - Current focus entity
+ * @returns {Object} - Context for the operation
+ */
+export function getCrudContext(entityType, operation, focusEntity = null) {
+    const opConfig = CRUD_CONTEXT[operation];
+    const relationships = ENTITY_RELATIONSHIPS[entityType];
+    
+    if (!opConfig || !relationships) {
+        return { error: `Invalid operation or entity type` };
+    }
+
+    const context = {
+        operation,
+        entityType,
+        requirements: [],
+        inheritedFields: {},
+        warnings: []
+    };
+
+    switch (operation) {
+        case 'create':
+            // Get required parent relationships
+            context.requirements = relationships.parents.filter(p => p.required);
+            
+            // Get inherited fields from focus entity
+            if (opConfig.inheritFromFocus && focusEntity) {
+                context.inheritedFields = getInheritedFields(entityType, focusEntity);
+            }
+            
+            // Add optional suggestions
+            context.suggestions = relationships.parents.filter(p => !p.required);
+            break;
+
+        case 'read':
+            // Define what to fetch
+            context.fetchParents = relationships.parents.map(p => p.entity);
+            context.fetchChildren = relationships.children;
+            context.fetchLinks = relationships.links.map(l => l.entity);
+            break;
+
+        case 'update':
+            // Relationships that can be updated
+            context.modifiableRelations = relationships.parents;
+            
+            // Warn about orphan children if parent changes
+            if (relationships.children.length > 0) {
+                context.warnings.push({
+                    type: 'orphan_risk',
+                    message: `Changing parent relationships may affect ${relationships.children.length} child entity type(s)`
+                });
+            }
+            break;
+
+        case 'delete':
+            // Check what depends on this entity
+            context.dependentChildren = relationships.children;
+            context.linkedEntities = relationships.links.map(l => l.entity);
+            
+            if (context.dependentChildren.length > 0 || context.linkedEntities.length > 0) {
+                context.warnings.push({
+                    type: 'cascade_warning',
+                    message: `This entity has children or links that may be affected by deletion`
+                });
+            }
+            break;
+    }
+
+    return context;
+}
+
+/**
+ * Get analysis context for an entity
+ * @param {string} entityType - Type of entity being analyzed
+ * @param {string} analysisType - 'impact' | 'clustering' | 'crossCity' | 'forecast'
+ * @param {Object} focusEntity - The entity being analyzed
+ * @returns {Object} - Analysis context with related entities to fetch
+ */
+export function getAnalysisContext(entityType, analysisType, focusEntity = null) {
+    const config = ANALYSIS_CONTEXT[analysisType];
+    if (!config) {
+        return { error: `Unknown analysis type: ${analysisType}` };
+    }
+
+    const context = {
+        analysisType,
+        entityType,
+        relatedEntities: [],
+        fetchQueries: []
+    };
+
+    // Get entities to include based on analysis type
+    if (config.include && config.include[entityType]) {
+        context.relatedEntities = config.include[entityType];
+    }
+
+    // Build fetch queries for related entities
+    const relationships = ENTITY_RELATIONSHIPS[entityType];
+    if (relationships && focusEntity?.data) {
+        for (const relatedType of context.relatedEntities) {
+            const query = buildRelationshipQuery(entityType, relatedType, focusEntity);
+            if (query) {
+                context.fetchQueries.push(query);
+            }
+        }
+    }
+
+    // Add analysis-specific metadata
+    if (config.metrics) {
+        context.metrics = config.metrics;
+    }
+    if (config.groupBy) {
+        context.groupBy = config.groupBy;
+    }
+    if (config.geographic) {
+        context.geographic = config.geographic;
+    }
+
+    return context;
+}
+
+/**
+ * Build a query to fetch related entities
+ * @param {string} sourceType - Source entity type
+ * @param {string} targetType - Target entity type to fetch
+ * @param {Object} focusEntity - Source entity with data
+ * @returns {Object} - Query definition
+ */
+export function buildRelationshipQuery(sourceType, targetType, focusEntity) {
+    if (!focusEntity?.data) return null;
+
+    const sourceRels = ENTITY_RELATIONSHIPS[sourceType];
+    const targetRels = ENTITY_RELATIONSHIPS[targetType];
+    
+    // Check if target is a parent of source
+    const parentRel = sourceRels?.parents?.find(p => p.entity === targetType);
+    if (parentRel && focusEntity.data[parentRel.field]) {
+        const ids = parentRel.isArray 
+            ? focusEntity.data[parentRel.field] 
+            : [focusEntity.data[parentRel.field]];
+        return {
+            table: ENTITY_TYPES[targetType].table,
+            type: 'parent',
+            filter: { field: 'id', operator: 'in', values: ids }
+        };
+    }
+
+    // Check if target is a child of source (source is parent of target)
+    const childRel = targetRels?.parents?.find(p => p.entity === sourceType);
+    if (childRel) {
+        return {
+            table: ENTITY_TYPES[targetType].table,
+            type: 'child',
+            filter: { field: childRel.field, operator: 'eq', value: focusEntity.id }
+        };
+    }
+
+    // Check link tables
+    const linkDef = sourceRels?.links?.find(l => l.entity === targetType);
+    if (linkDef) {
+        return {
+            table: linkDef.table,
+            type: 'link',
+            linkTable: true,
+            targetTable: ENTITY_TYPES[targetType].table,
+            sourceKey: linkDef.foreignKey,
+            sourceId: focusEntity.id
+        };
+    }
+
+    return null;
+}
+
+/**
+ * Build comprehensive context prompt for CRUD operations
+ * @param {string} operation - CRUD operation type
+ * @param {string} entityType - Target entity type
+ * @param {Object} focusEntity - Current focus entity
+ * @param {string} language - 'en' | 'ar'
+ * @returns {string}
+ */
+export function buildCrudContextPrompt(operation, entityType, focusEntity, language = 'en') {
+    const context = getCrudContext(entityType, operation, focusEntity);
+    const isArabic = language === 'ar';
+    const lines = [];
+
+    const opLabels = {
+        create: isArabic ? 'إنشاء' : 'Create',
+        read: isArabic ? 'قراءة' : 'Read',
+        update: isArabic ? 'تحديث' : 'Update',
+        delete: isArabic ? 'حذف' : 'Delete'
+    };
+
+    const entityLabel = ENTITY_TYPES[entityType]?.label[language] || entityType;
+    
+    lines.push(isArabic 
+        ? `## سياق العملية: ${opLabels[operation]} ${entityLabel}`
+        : `## Operation Context: ${opLabels[operation]} ${entityLabel}`
+    );
+    lines.push('');
+
+    // Show inherited fields for create
+    if (operation === 'create' && Object.keys(context.inheritedFields).length > 0) {
+        lines.push(isArabic ? '### الحقول الموروثة:' : '### Inherited Fields:');
+        for (const [field, value] of Object.entries(context.inheritedFields)) {
+            lines.push(`- **${field}:** ${Array.isArray(value) ? value.join(', ') : value}`);
+        }
+        lines.push('');
+    }
+
+    // Show required relationships
+    if (context.requirements?.length > 0) {
+        lines.push(isArabic ? '### العلاقات المطلوبة:' : '### Required Relationships:');
+        for (const req of context.requirements) {
+            const label = ENTITY_TYPES[req.entity]?.label[language] || req.entity;
+            lines.push(`- **${label}** → ${req.field}`);
+        }
+        lines.push('');
+    }
+
+    // Show suggestions
+    if (context.suggestions?.length > 0) {
+        lines.push(isArabic ? '### العلاقات الاختيارية:' : '### Optional Relationships:');
+        for (const sug of context.suggestions) {
+            const label = ENTITY_TYPES[sug.entity]?.label[language] || sug.entity;
+            lines.push(`- ${label} → ${sug.field}`);
+        }
+        lines.push('');
+    }
+
+    // Show warnings
+    if (context.warnings?.length > 0) {
+        lines.push(isArabic ? '### تحذيرات:' : '### Warnings:');
+        for (const warn of context.warnings) {
+            lines.push(`⚠️ ${warn.message}`);
+        }
+        lines.push('');
+    }
+
+    // Show what will be fetched (for read operations)
+    if (operation === 'read') {
+        lines.push(isArabic ? '### البيانات المرتبطة:' : '### Related Data:');
+        if (context.fetchParents?.length) {
+            lines.push(isArabic 
+                ? `- **الأصول:** ${context.fetchParents.join(', ')}`
+                : `- **Parents:** ${context.fetchParents.join(', ')}`
+            );
+        }
+        if (context.fetchChildren?.length) {
+            lines.push(isArabic 
+                ? `- **الفروع:** ${context.fetchChildren.join(', ')}`
+                : `- **Children:** ${context.fetchChildren.join(', ')}`
+            );
+        }
+        lines.push('');
+    }
+
+    // Show dependency info for delete
+    if (operation === 'delete') {
+        if (context.dependentChildren?.length > 0) {
+            lines.push(isArabic 
+                ? `⚠️ **كيانات تابعة:** ${context.dependentChildren.join(', ')}`
+                : `⚠️ **Dependent entities:** ${context.dependentChildren.join(', ')}`
+            );
+        }
+    }
+
+    return lines.join('\n');
+}
+
+/**
+ * Build analysis context prompt for AI
+ * @param {string} analysisType - Type of analysis
+ * @param {Object} focusEntity - Entity being analyzed
+ * @param {string} language - 'en' | 'ar'
+ * @returns {string}
+ */
+export function buildAnalysisContextPrompt(analysisType, focusEntity, language = 'en') {
+    if (!focusEntity?.type) return '';
+    
+    const context = getAnalysisContext(focusEntity.type, analysisType, focusEntity);
+    const isArabic = language === 'ar';
+    const lines = [];
+
+    const analysisLabels = {
+        impact: isArabic ? 'تحليل الأثر' : 'Impact Analysis',
+        clustering: isArabic ? 'تحليل التجميع' : 'Clustering Analysis',
+        crossCity: isArabic ? 'تحليل عبر المدن' : 'Cross-City Analysis',
+        forecast: isArabic ? 'التنبؤ' : 'Forecasting'
+    };
+
+    const entityLabel = ENTITY_TYPES[focusEntity.type]?.label[language] || focusEntity.type;
+    
+    lines.push(isArabic 
+        ? `## ${analysisLabels[analysisType]} - ${entityLabel}`
+        : `## ${analysisLabels[analysisType]} - ${entityLabel}`
+    );
+    lines.push('');
+
+    if (context.relatedEntities?.length > 0) {
+        lines.push(isArabic ? '### الكيانات المشمولة في التحليل:' : '### Entities Included in Analysis:');
+        for (const entity of context.relatedEntities) {
+            const label = ENTITY_TYPES[entity]?.label[language] || entity;
+            lines.push(`- ${label}`);
+        }
+        lines.push('');
+    }
+
+    if (context.metrics?.length > 0) {
+        lines.push(isArabic ? '### المقاييس المطلوبة:' : '### Required Metrics:');
+        lines.push(context.metrics.join(', '));
+        lines.push('');
+    }
+
+    if (context.groupBy?.length > 0) {
+        lines.push(isArabic ? '### التجميع حسب:' : '### Group By:');
+        lines.push(context.groupBy.map(g => ENTITY_TYPES[g]?.label[language] || g).join(', '));
+        lines.push('');
+    }
+
+    return lines.join('\n');
+}
+
+/**
  * Get related entity fields to pre-populate when creating a new record
  * @param {string} newEntityType - Type of entity being created
  * @param {Object} focusEntity - Current focused entity { type, id, data }
