@@ -2,12 +2,12 @@ import { useMemo } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { GenUICard } from '@/components/copilot/widgets/GenUICard';
 import { useLanguage } from '@/components/LanguageContext';
-import { useCopilotHistory } from '@/hooks/useCopilotHistory';
+import { useQuery } from '@/hooks/useAppQueryClient';
+import { supabase } from '@/integrations/supabase/client';
 import { useCopilotStore } from '@/lib/store/copilotStore';
 import { 
     MessageSquare, 
     Zap, 
-    Clock, 
     TrendingUp,
     Bot,
     Target,
@@ -48,10 +48,20 @@ function QuickAction({ icon: Icon, label, onClick }) {
 }
 
 export function StatsHUD() {
-    const { t, language } = useLanguage();
-    const { useSessions } = useCopilotHistory();
-    const { data: sessions } = useSessions();
+    const { t } = useLanguage();
     const { activeSessionId } = useCopilotStore();
+
+    const { data: sessions } = useQuery({
+        queryKey: ['copilot-sessions'],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('copilot_sessions')
+                .select('*')
+                .order('updated_at', { ascending: false });
+            if (error) throw error;
+            return data;
+        }
+    });
 
     // Calculate stats from sessions
     const stats = useMemo(() => {
