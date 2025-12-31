@@ -8,68 +8,159 @@ The Copilot is an AI-powered assistant built into the application that helps use
 
 ## Architecture Diagram
 
+```mermaid
+graph TB
+    subgraph UI["🖥️ User Interface"]
+        Console["CopilotConsole"]
+        Widgets["UI Widgets<br/>(data_list, draft_summary, chart)"]
+    end
+
+    subgraph Core["⚙️ Core Engine"]
+        Orchestrator["orchestrator.js<br/>Routes messages & decides actions"]
+        Agent["useCopilotAgent<br/>AI Brain - builds prompts"]
+        Executor["useToolExecutor<br/>Executes tool calls"]
+    end
+
+    subgraph AI["🤖 AI Layer"]
+        Gateway["Lovable AI Gateway<br/>invoke-llm Edge Function"]
+        Model["google/gemini-2.5-flash"]
+    end
+
+    subgraph Tools["🔧 Tool System"]
+        Registry["CopilotToolsContext<br/>Tool Registry"]
+        Plugins["useCopilotPlugins"]
+    end
+
+    subgraph FeaturePlugins["📦 Feature Plugins"]
+        P1["useReferenceDataTools"]
+        P2["usePilotTools"]
+        P3["useChallengeTools"]
+        P4["useNavigationTools"]
+        P5["useProgramTools"]
+        P6["useSolutionTools"]
+        P7["useStrategyTools"]
+        P8["useOperationsTools"]
+        P9["useCommunityTools"]
+        P10["useRDInnovationTools"]
+    end
+
+    subgraph State["💾 State Management"]
+        Store["copilotStore (Zustand)"]
+        Query["React Query (Server State)"]
+    end
+
+    Console -->|"User message"| Orchestrator
+    Orchestrator -->|"Ask AI"| Agent
+    Agent -->|"API call"| Gateway
+    Gateway --> Model
+    Model -->|"Response"| Gateway
+    Gateway -->|"Tool call or text"| Agent
+    Agent --> Orchestrator
+    Orchestrator -->|"Execute tool"| Executor
+    Executor -->|"Get tool"| Registry
+    Registry --> Plugins
+    Plugins --> FeaturePlugins
+    Executor -->|"Result"| Orchestrator
+    Orchestrator -->|"Render"| Widgets
+    
+    Store -.->|"UI State"| Console
+    Query -.->|"Chat History"| Console
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         User Interface                               │
-│  ┌─────────────────────────────────────────────────────────────┐    │
-│  │                    CopilotConsole                            │    │
-│  │  - Message list rendering                                    │    │
-│  │  - Input handling                                            │    │
-│  │  - UI widget display (data_list, draft_summary, etc.)       │    │
-│  └─────────────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                          Orchestrator                                │
-│  ┌─────────────────────────────────────────────────────────────┐    │
-│  │                    orchestrator.js                           │    │
-│  │  - Routes user messages                                      │    │
-│  │  - Decides: text response OR tool call                       │    │
-│  │  - Manages conversation flow                                 │    │
-│  └─────────────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────────┘
-                          │                    │
-                          ▼                    ▼
-┌──────────────────────────────┐    ┌──────────────────────────────────┐
-│        AI Brain              │    │         Tool Executor            │
-│  ┌────────────────────────┐  │    │  ┌────────────────────────────┐  │
-│  │   useCopilotAgent      │  │    │  │    useToolExecutor         │  │
-│  │  - Builds prompts      │  │    │  │  - Executes tool calls     │  │
-│  │  - Calls Lovable AI    │  │    │  │  - Returns results         │  │
-│  │  - Parses responses    │  │    │  │  - Handles confirmations   │  │
-│  └────────────────────────┘  │    │  └────────────────────────────┘  │
-└──────────────────────────────┘    └──────────────────────────────────┘
-            │                                      │
-            ▼                                      ▼
-┌──────────────────────────────┐    ┌──────────────────────────────────┐
-│    Lovable AI Gateway        │    │         Tool Registry            │
-│  ┌────────────────────────┐  │    │  ┌────────────────────────────┐  │
-│  │  invoke-llm Edge Fn    │  │    │  │  CopilotToolsContext       │  │
-│  │  - google/gemini-2.5   │  │    │  │  - registerTool()          │  │
-│  │  - Structured output   │  │    │  │  - getTool()               │  │
-│  │  - Rate limiting       │  │    │  │  - getAllTools()           │  │
-│  └────────────────────────┘  │    │  └────────────────────────────┘  │
-└──────────────────────────────┘    └──────────────────────────────────┘
-                                                   │
-                                                   ▼
-                              ┌──────────────────────────────────────────┐
-                              │            Feature Plugins               │
-                              │  ┌────────────────────────────────────┐  │
-                              │  │  useCopilotPlugins                 │  │
-                              │  │  - useReferenceDataTools           │  │
-                              │  │  - usePilotTools                   │  │
-                              │  │  - useChallengeTools               │  │
-                              │  │  - useNavigationTools              │  │
-                              │  │  - useProgramTools                 │  │
-                              │  │  - useSolutionTools                │  │
-                              │  │  - useOperationsTools              │  │
-                              │  │  - useCommunityTools               │  │
-                              │  │  - useStrategyTools                │  │
-                              │  │  - useRDInnovationTools            │  │
-                              │  │  - useContextTools                 │  │
-                              │  └────────────────────────────────────┘  │
-                              └──────────────────────────────────────────┘
+
+---
+
+## Message Flow Diagram
+
+```mermaid
+sequenceDiagram
+    participant U as 👤 User
+    participant C as 💬 CopilotConsole
+    participant O as ⚙️ Orchestrator
+    participant A as 🧠 useCopilotAgent
+    participant AI as 🤖 Lovable AI
+    participant E as 🔧 ToolExecutor
+    participant T as 📦 Tool Registry
+
+    U->>C: Types message
+    C->>O: process(message)
+    O->>A: askBrain(message, context)
+    A->>A: buildSystemPrompt()
+    A->>AI: invokeAI({ prompt, tools })
+    AI-->>A: { tool_call: "pilots:list", args: {...} }
+    A-->>O: Tool call response
+    
+    alt Safety = "read"
+        O->>E: Execute immediately
+    else Safety = "write" or "destructive"
+        O->>C: Show confirmation dialog
+        U->>C: Confirms action
+        C->>E: confirmAction()
+    end
+    
+    E->>T: getTool("pilots:list")
+    T-->>E: Tool definition
+    E->>E: tool.execute(args)
+    E-->>O: Execution result
+    O->>C: Render response with UI widget
+    C-->>U: Display result
+```
+
+---
+
+## Tool Registration Flow
+
+```mermaid
+flowchart LR
+    subgraph Plugin["Feature Plugin Hook"]
+        Hook["useMyFeatureTools()"]
+        Def["Tool Definition<br/>{ name, schema, execute, safety }"]
+    end
+
+    subgraph Context["CopilotToolsContext"]
+        Register["registerTool()"]
+        Map["Tool Registry Map"]
+    end
+
+    subgraph Agent["useCopilotAgent"]
+        Build["buildSystemPrompt()"]
+        Prompt["Tool definitions in prompt"]
+    end
+
+    Hook -->|"useEffect"| Def
+    Def -->|"registerTool()"| Register
+    Register -->|"set()"| Map
+    Map -->|"getAllTools()"| Build
+    Build --> Prompt
+
+    style Hook fill:#e1f5fe
+    style Map fill:#fff3e0
+    style Prompt fill:#e8f5e9
+```
+
+---
+
+## Safety Layer Flow
+
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    
+    Idle --> Executing: read-level tool
+    Idle --> RequiringConfirmation: write/destructive tool
+    
+    RequiringConfirmation --> Executing: confirmAction()
+    RequiringConfirmation --> Idle: cancelAction()
+    
+    Executing --> Success: Tool completes
+    Executing --> Error: Tool fails
+    
+    Success --> Idle: Reset
+    Error --> Idle: Reset
+    
+    note right of RequiringConfirmation
+        Shows confirmation dialog
+        with action details
+    end note
 ```
 
 ---
