@@ -2,9 +2,10 @@
  * Challenge Idea Response Prompt Module
  * Citizen proposal generation for municipal challenges
  * @module prompts/citizen/ideaResponse
+ * @version 1.1.0
  */
 
-import { SAUDI_CONTEXT } from '@/lib/saudiContext';
+import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
 
 /**
  * Schema for proposal generation response
@@ -12,17 +13,23 @@ import { SAUDI_CONTEXT } from '@/lib/saudiContext';
 export const IDEA_RESPONSE_SCHEMA = {
   type: 'object',
   properties: {
-    title_en: { type: 'string' },
-    title_ar: { type: 'string' },
-    description_en: { type: 'string' },
-    description_ar: { type: 'string' },
-    implementation_plan: { type: 'string' },
-    expected_outcomes: { type: 'string' },
-    resources_needed: { type: 'string' },
-    team_description: { type: 'string' },
-    budget_estimate: { type: 'number' },
-    timeline_proposal: { type: 'string' }
-  }
+    title_en: { type: 'string', description: 'English proposal title' },
+    title_ar: { type: 'string', description: 'Arabic proposal title' },
+    description_en: { type: 'string', description: 'English detailed description' },
+    description_ar: { type: 'string', description: 'Arabic detailed description' },
+    implementation_plan: { type: 'string', description: 'Step-by-step implementation plan' },
+    implementation_plan_ar: { type: 'string', description: 'Arabic implementation plan' },
+    expected_outcomes: { type: 'string', description: 'Expected outcomes and benefits' },
+    expected_outcomes_ar: { type: 'string', description: 'Arabic expected outcomes' },
+    resources_needed: { type: 'string', description: 'Required resources' },
+    resources_needed_ar: { type: 'string', description: 'Arabic resources needed' },
+    team_description: { type: 'string', description: 'Team requirements' },
+    team_description_ar: { type: 'string', description: 'Arabic team description' },
+    budget_estimate: { type: 'number', description: 'Estimated budget in SAR' },
+    timeline_proposal: { type: 'string', description: 'Proposed timeline' },
+    timeline_proposal_ar: { type: 'string', description: 'Arabic timeline' }
+  },
+  required: ['title_en', 'title_ar', 'description_en', 'description_ar', 'implementation_plan', 'expected_outcomes', 'budget_estimate', 'timeline_proposal']
 };
 
 /**
@@ -35,7 +42,7 @@ export function IDEA_RESPONSE_PROMPT_TEMPLATE(context) {
   
   return `You are helping a citizen create a formal innovation proposal for a municipal challenge.
 
-${SAUDI_CONTEXT}
+${SAUDI_CONTEXT.MUNICIPAL}
 
 CHALLENGE CONTEXT:
 Title: ${challenge.title_en}
@@ -47,6 +54,8 @@ KPIs: ${JSON.stringify(challenge.kpis || [])}
 
 USER'S INITIAL IDEA:
 ${initialDescription}
+
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 Generate a comprehensive innovation proposal with:
 1. Professional title (EN & AR) - Clear, descriptive proposal title

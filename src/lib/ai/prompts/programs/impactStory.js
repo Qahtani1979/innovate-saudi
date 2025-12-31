@@ -1,7 +1,7 @@
 /**
  * Impact Story Generator Prompt
  * Creates compelling success stories for program graduates
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
@@ -15,7 +15,7 @@ export function buildImpactStoryPrompt(programName, graduates) {
     `- ${g.startup_name || g.applicant_name}: ${g.sector || 'Innovation'}, ${g.impact_metrics?.jobs_created || 0} jobs created, ${g.impact_metrics?.revenue_growth || 0}% revenue growth`
   ).join('\n');
 
-  return `${SAUDI_CONTEXT}
+  return `${SAUDI_CONTEXT.INNOVATION}
 
 You are an AI content specialist for Saudi Arabia's municipal innovation programs.
 
@@ -34,7 +34,7 @@ FOR EACH STORY, GENERATE:
 4. Quote from founder (inspiring and authentic)
 5. Social media caption (engaging, shareable)
 
-${LANGUAGE_REQUIREMENTS}
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 Focus on Vision 2030 alignment, municipal impact, and innovation journey.`;
 }

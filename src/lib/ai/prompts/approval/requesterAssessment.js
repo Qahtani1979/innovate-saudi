@@ -1,14 +1,16 @@
 /**
  * Requester Assessment Prompts
  * AI-assisted self-check and readiness evaluation for approval requesters
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS, getSystemPrompt } from '@/lib/saudiContext';
+
 /**
  * System prompt for requester assessment
  */
-export const REQUESTER_ASSESSMENT_SYSTEM_PROMPT = getSystemPrompt('requester_assessment', `
+export const REQUESTER_ASSESSMENT_SYSTEM_PROMPT = getSystemPrompt('COMPACT', true) + `
+
 You are an AI assistant for Saudi municipal innovation platform approval workflows.
 
 CORE RESPONSIBILITIES:
@@ -17,7 +19,7 @@ CORE RESPONSIBILITIES:
 3. Identify issues and gaps
 4. Provide actionable recommendations
 
-${LANGUAGE_REQUIREMENTS}
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 ASSESSMENT GUIDELINES:
 - Be thorough but constructive in identifying issues
@@ -25,7 +27,7 @@ ASSESSMENT GUIDELINES:
 - Consider Vision 2030 alignment
 - Evaluate completeness of required documentation
 - Check for proper bilingual content where required
-`);
+`;
 
 /**
  * Build requester assessment prompt
@@ -119,7 +121,7 @@ Write professional Arabic for Saudi government context.
 export const REQUESTER_ASSESSMENT_SCHEMA = {
   type: 'object',
   properties: {
-    readiness_score: { type: 'number' },
+    readiness_score: { type: 'number', description: 'Readiness score 0-100' },
     checklist_status: {
       type: 'array',
       items: {
@@ -133,9 +135,11 @@ export const REQUESTER_ASSESSMENT_SCHEMA = {
             properties: {
               en: { type: 'string' },
               ar: { type: 'string' }
-            }
+            },
+            required: ['en']
           }
-        }
+        },
+        required: ['item', 'status', 'ai_verified']
       }
     },
     issues: { 
@@ -145,7 +149,8 @@ export const REQUESTER_ASSESSMENT_SCHEMA = {
         properties: {
           en: { type: 'string' },
           ar: { type: 'string' }
-        }
+        },
+        required: ['en']
       }
     },
     recommendations: { 
@@ -155,7 +160,8 @@ export const REQUESTER_ASSESSMENT_SCHEMA = {
         properties: {
           en: { type: 'string' },
           ar: { type: 'string' }
-        }
+        },
+        required: ['en']
       }
     },
     overall_assessment: { 
@@ -163,7 +169,9 @@ export const REQUESTER_ASSESSMENT_SCHEMA = {
       properties: {
         en: { type: 'string' },
         ar: { type: 'string' }
-      }
+      },
+      required: ['en']
     }
-  }
+  },
+  required: ['readiness_score', 'checklist_status', 'issues', 'recommendations', 'overall_assessment']
 };

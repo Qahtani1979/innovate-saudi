@@ -1,10 +1,10 @@
 /**
  * Report Generation AI Prompts
  * @module prompts/reports/reportGeneration
- * @version 1.0.0
+ * @version 1.1.0
  */
 
-import { SAUDI_CONTEXT } from '@/lib/saudiContext';
+import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
 
 /**
  * Executive summary generation prompt
@@ -17,7 +17,9 @@ ${JSON.stringify(data, null, 2)}
 
 Report Type: ${reportType}
 
-${SAUDI_CONTEXT}
+${SAUDI_CONTEXT.FULL}
+
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 Generate a bilingual executive summary including:
 1. Key Highlights (English & Arabic)
@@ -36,7 +38,7 @@ Generate actionable insights from dashboard metrics:
 Metrics:
 ${JSON.stringify(metrics, null, 2)}
 
-${SAUDI_CONTEXT}
+${SAUDI_CONTEXT.COMPACT}
 
 Provide:
 1. Key Performance Indicators Analysis
@@ -60,7 +62,9 @@ Progress: ${entity.progress_percentage || entity.completion_percentage || 0}%
 Key Metrics:
 ${JSON.stringify(entity.kpis || entity.metrics || {}, null, 2)}
 
-${SAUDI_CONTEXT}
+${SAUDI_CONTEXT.COMPACT}
+
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 Generate report sections:
 1. Executive Overview
@@ -75,11 +79,13 @@ export const REPORT_GENERATION_SYSTEM_PROMPT = `You are a report writer for Saud
 export const REPORT_GENERATION_SCHEMA = {
   type: "object",
   properties: {
-    summary_en: { type: "string" },
-    summary_ar: { type: "string" },
-    highlights: { type: "array", items: { type: "string" } },
-    recommendations: { type: "array", items: { type: "string" } },
-    metrics: { type: "object" }
+    summary_en: { type: "string", description: 'English executive summary' },
+    summary_ar: { type: "string", description: 'Arabic executive summary' },
+    highlights: { type: "array", items: { type: "string" }, description: 'Key highlights' },
+    highlights_ar: { type: "array", items: { type: "string" }, description: 'Arabic highlights' },
+    recommendations: { type: "array", items: { type: "string" }, description: 'Recommendations' },
+    recommendations_ar: { type: "array", items: { type: "string" }, description: 'Arabic recommendations' },
+    metrics: { type: "object", description: 'Key metrics data' }
   },
-  required: ["summary_en", "summary_ar"]
+  required: ["summary_en", "summary_ar", "highlights", "recommendations"]
 };

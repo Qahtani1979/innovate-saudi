@@ -1,7 +1,7 @@
 /**
  * Program Analysis AI Prompts
  * @module prompts/programs/programAnalysis
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { SAUDI_CONTEXT } from '@/lib/saudiContext';
@@ -24,7 +24,7 @@ ${program.objectives?.map(o => `- ${o}`).join('\n') || 'Not specified'}
 KPIs:
 ${JSON.stringify(program.kpis || {}, null, 2)}
 
-${SAUDI_CONTEXT}
+${SAUDI_CONTEXT.COMPACT}
 
 Provide:
 1. Performance Assessment (score 0-100)
@@ -48,7 +48,7 @@ Program ${i + 1}: ${p.title_en || p.title}
 - ROI: ${p.roi || 'Not calculated'}
 `).join('\n')}
 
-${SAUDI_CONTEXT}
+${SAUDI_CONTEXT.COMPACT}
 
 Compare:
 1. Cost Effectiveness
@@ -63,11 +63,14 @@ export const PROGRAM_ANALYSIS_SYSTEM_PROMPT = `You are a program management anal
 export const PROGRAM_ANALYSIS_SCHEMA = {
   type: "object",
   properties: {
-    performanceScore: { type: "number" },
-    goalAchievement: { type: "string" },
-    risks: { type: "array", items: { type: "string" } },
-    recommendations: { type: "array", items: { type: "string" } },
-    vision2030Score: { type: "number" }
+    performanceScore: { type: "number", description: 'Performance score 0-100' },
+    goalAchievement: { type: "string", description: 'Goal achievement assessment' },
+    goalAchievement_ar: { type: "string", description: 'Arabic goal achievement' },
+    risks: { type: "array", items: { type: "string" }, description: 'Risk factors identified' },
+    risks_ar: { type: "array", items: { type: "string" }, description: 'Arabic risks' },
+    recommendations: { type: "array", items: { type: "string" }, description: 'Recommendations' },
+    recommendations_ar: { type: "array", items: { type: "string" }, description: 'Arabic recommendations' },
+    vision2030Score: { type: "number", description: 'Vision 2030 alignment score 0-100' }
   },
-  required: ["performanceScore", "recommendations"]
+  required: ["performanceScore", "goalAchievement", "risks", "recommendations", "vision2030Score"]
 };

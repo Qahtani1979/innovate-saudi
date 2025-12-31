@@ -2,6 +2,7 @@
  * Innovation Proposals AI Prompts
  * Centralized prompts for innovation proposal analysis and enhancement
  * @module innovation
+ * @version 1.1.0
  */
 
 import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
@@ -40,7 +41,7 @@ Always provide actionable feedback that helps submitters improve their proposals
 // PROMPT TEMPLATES
 // ============================================
 
-export const INNOVATION_ASSESSMENT_PROMPT_TEMPLATE = `${SAUDI_CONTEXT}
+export const INNOVATION_ASSESSMENT_PROMPT_TEMPLATE = `${SAUDI_CONTEXT.FULL}
 
 Assess this innovation proposal for a Saudi municipality:
 
@@ -66,7 +67,7 @@ TIMELINE: {{timeline}}
 TARGET CHALLENGES:
 {{target_challenges}}
 
-${LANGUAGE_REQUIREMENTS}
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 Provide a comprehensive assessment including:
 1. Innovation Score (0-100)
@@ -77,7 +78,7 @@ Provide a comprehensive assessment including:
 6. Recommendations for Improvement
 7. Suggested Next Steps`;
 
-export const INNOVATION_MATCHING_PROMPT_TEMPLATE = `${SAUDI_CONTEXT}
+export const INNOVATION_MATCHING_PROMPT_TEMPLATE = `${SAUDI_CONTEXT.COMPACT}
 
 Match this innovation proposal to relevant municipal challenges:
 
@@ -91,11 +92,11 @@ PROPOSAL:
 AVAILABLE CHALLENGES:
 {{challenges_list}}
 
-${LANGUAGE_REQUIREMENTS}
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 Identify the top 5 most relevant challenges and explain the alignment.`;
 
-export const INNOVATION_ENHANCEMENT_PROMPT_TEMPLATE = `${SAUDI_CONTEXT}
+export const INNOVATION_ENHANCEMENT_PROMPT_TEMPLATE = `${SAUDI_CONTEXT.INNOVATION}
 
 Enhance this innovation proposal with professional content:
 
@@ -105,7 +106,7 @@ CURRENT PROPOSAL:
 - Proposed Solution: {{proposed_solution}}
 - Expected Impact: {{expected_impact}}
 
-${LANGUAGE_REQUIREMENTS}
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 Provide enhanced versions of:
 1. Executive Summary (English and Arabic)
@@ -135,7 +136,8 @@ export const INNOVATION_ASSESSMENT_SCHEMA = {
         properties: {
           strength_en: { type: 'string' },
           strength_ar: { type: 'string' }
-        }
+        },
+        required: ['strength_en']
       }
     },
     
@@ -146,7 +148,8 @@ export const INNOVATION_ASSESSMENT_SCHEMA = {
         properties: {
           weakness_en: { type: 'string' },
           weakness_ar: { type: 'string' }
-        }
+        },
+        required: ['weakness_en']
       }
     },
     
@@ -160,7 +163,8 @@ export const INNOVATION_ASSESSMENT_SCHEMA = {
           severity: { type: 'string', enum: ['low', 'medium', 'high'] },
           mitigation_en: { type: 'string' },
           mitigation_ar: { type: 'string' }
-        }
+        },
+        required: ['risk_en', 'severity', 'mitigation_en']
       }
     },
     
@@ -172,7 +176,8 @@ export const INNOVATION_ASSESSMENT_SCHEMA = {
           recommendation_en: { type: 'string' },
           recommendation_ar: { type: 'string' },
           priority: { type: 'string', enum: ['low', 'medium', 'high'] }
-        }
+        },
+        required: ['recommendation_en', 'priority']
       }
     },
     
@@ -184,14 +189,15 @@ export const INNOVATION_ASSESSMENT_SCHEMA = {
           step_en: { type: 'string' },
           step_ar: { type: 'string' },
           timeline: { type: 'string' }
-        }
+        },
+        required: ['step_en', 'timeline']
       }
     },
     
-    summary_en: { type: 'string' },
-    summary_ar: { type: 'string' }
+    summary_en: { type: 'string', description: 'English assessment summary' },
+    summary_ar: { type: 'string', description: 'Arabic assessment summary' }
   },
-  required: ['innovation_score', 'summary_en']
+  required: ['innovation_score', 'novelty_score', 'feasibility_score', 'impact_score', 'alignment_score', 'strengths', 'weaknesses', 'risks', 'recommendations', 'next_steps', 'summary_en']
 };
 
 export const INNOVATION_MATCHING_SCHEMA = {
@@ -204,10 +210,11 @@ export const INNOVATION_MATCHING_SCHEMA = {
         properties: {
           challenge_id: { type: 'string' },
           challenge_title: { type: 'string' },
-          match_score: { type: 'number' },
+          match_score: { type: 'number', description: 'Match score 0-100' },
           alignment_reason_en: { type: 'string' },
           alignment_reason_ar: { type: 'string' }
-        }
+        },
+        required: ['challenge_id', 'challenge_title', 'match_score', 'alignment_reason_en']
       }
     }
   },

@@ -1,14 +1,16 @@
 /**
  * Reviewer Analysis Prompts
  * AI-assisted review and decision support for approval reviewers
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS, getSystemPrompt } from '@/lib/saudiContext';
+
 /**
  * System prompt for reviewer analysis
  */
-export const REVIEWER_ANALYSIS_SYSTEM_PROMPT = getSystemPrompt('reviewer_analysis', `
+export const REVIEWER_ANALYSIS_SYSTEM_PROMPT = getSystemPrompt('COMPACT', true) + `
+
 You are an AI assistant for Saudi municipal innovation platform approval reviews.
 
 CORE RESPONSIBILITIES:
@@ -18,7 +20,7 @@ CORE RESPONSIBILITIES:
 4. Provide decision recommendations with rationale
 5. Reference similar cases for context
 
-${LANGUAGE_REQUIREMENTS}
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 REVIEW GUIDELINES:
 - Assess risk objectively with clear scoring
@@ -26,7 +28,7 @@ REVIEW GUIDELINES:
 - Consider Vision 2030 strategic alignment
 - Provide balanced, actionable recommendations
 - Support decisions with clear rationale
-`);
+`;
 
 /**
  * Build reviewer analysis prompt
@@ -131,15 +133,16 @@ Write professional formal Arabic for Saudi government officials.
 export const REVIEWER_ANALYSIS_SCHEMA = {
   type: 'object',
   properties: {
-    risk_score: { type: 'number' },
-    risk_level: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] },
-    compliance_check: { type: 'boolean' },
+    risk_score: { type: 'number', description: 'Risk score 0-100' },
+    risk_level: { type: 'string', enum: ['low', 'medium', 'high', 'critical'], description: 'Risk level' },
+    compliance_check: { type: 'boolean', description: 'Compliance status' },
     compliance_details: { 
       type: 'object',
       properties: {
         en: { type: 'string' },
         ar: { type: 'string' }
-      }
+      },
+      required: ['en']
     },
     concerns: { 
       type: 'array', 
@@ -148,7 +151,8 @@ export const REVIEWER_ANALYSIS_SCHEMA = {
         properties: {
           en: { type: 'string' },
           ar: { type: 'string' }
-        }
+        },
+        required: ['en']
       }
     },
     recommendations: { 
@@ -158,7 +162,8 @@ export const REVIEWER_ANALYSIS_SCHEMA = {
         properties: {
           en: { type: 'string' },
           ar: { type: 'string' }
-        }
+        },
+        required: ['en']
       }
     },
     similar_cases: {
@@ -171,42 +176,50 @@ export const REVIEWER_ANALYSIS_SCHEMA = {
             properties: {
               en: { type: 'string' },
               ar: { type: 'string' }
-            }
+            },
+            required: ['en']
           },
           outcome: { 
             type: 'object',
             properties: {
               en: { type: 'string' },
               ar: { type: 'string' }
-            }
+            },
+            required: ['en']
           },
           relevance: { 
             type: 'object',
             properties: {
               en: { type: 'string' },
               ar: { type: 'string' }
-            }
+            },
+            required: ['en']
           }
-        }
+        },
+        required: ['case', 'outcome', 'relevance']
       }
     },
     suggested_decision: { 
       type: 'string',
-      enum: ['approve', 'reject', 'conditional', 'request_info']
+      enum: ['approve', 'reject', 'conditional', 'request_info'],
+      description: 'Suggested decision'
     },
     decision_rationale: { 
       type: 'object',
       properties: {
         en: { type: 'string' },
         ar: { type: 'string' }
-      }
+      },
+      required: ['en']
     },
     review_summary: { 
       type: 'object',
       properties: {
         en: { type: 'string' },
         ar: { type: 'string' }
-      }
+      },
+      required: ['en']
     }
-  }
+  },
+  required: ['risk_score', 'risk_level', 'compliance_check', 'compliance_details', 'concerns', 'recommendations', 'suggested_decision', 'decision_rationale', 'review_summary']
 };

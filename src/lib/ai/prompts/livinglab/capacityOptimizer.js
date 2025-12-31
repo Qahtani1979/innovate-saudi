@@ -1,7 +1,7 @@
 /**
  * Capacity Optimizer Prompt
  * Analyzes lab usage patterns and provides optimization recommendations
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
@@ -11,7 +11,7 @@ import { createBilingualSchema } from '../../bilingualSchemaBuilder';
  * Build capacity optimization prompt
  */
 export function buildCapacityOptimizerPrompt(livingLab, bookingsCount, projectsCount) {
-  return `${SAUDI_CONTEXT}
+  return `${SAUDI_CONTEXT.INNOVATION}
 
 You are an AI capacity optimization specialist for Saudi Arabian living labs.
 
@@ -34,7 +34,7 @@ PROVIDE:
 5. Scheduling optimization suggestions
 6. Resource allocation improvements
 
-${LANGUAGE_REQUIREMENTS}
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 Consider Saudi work week (Sunday-Thursday) and local operational patterns.`;
 }

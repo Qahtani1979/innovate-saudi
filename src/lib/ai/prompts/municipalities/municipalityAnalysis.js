@@ -1,7 +1,7 @@
 /**
  * Municipality Analysis AI Prompts
  * @module prompts/municipalities/municipalityAnalysis
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { SAUDI_CONTEXT } from '@/lib/saudiContext';
@@ -23,7 +23,7 @@ Statistics:
 - Deployed Solutions: ${stats?.solutions || 0}
 - Innovation Score: ${stats?.innovation_score || 'N/A'}
 
-${SAUDI_CONTEXT}
+${SAUDI_CONTEXT.MUNICIPAL}
 
 Analyze:
 1. Innovation Maturity Assessment
@@ -48,7 +48,7 @@ Municipality ${i + 1}: ${m.name_en}
 - Budget Utilization: ${m.budget_utilization || 'N/A'}%
 `).join('\n')}
 
-${SAUDI_CONTEXT}
+${SAUDI_CONTEXT.MUNICIPAL}
 
 Provide:
 1. Comparative Rankings
@@ -63,12 +63,15 @@ export const MUNICIPALITY_ANALYSIS_SYSTEM_PROMPT = `You are a municipal performa
 export const MUNICIPALITY_ANALYSIS_SCHEMA = {
   type: "object",
   properties: {
-    innovationScore: { type: "number" },
-    maturityLevel: { type: "string" },
-    strengths: { type: "array", items: { type: "string" } },
-    weaknesses: { type: "array", items: { type: "string" } },
-    recommendations: { type: "array", items: { type: "string" } },
-    vision2030Score: { type: "number" }
+    innovationScore: { type: "number", description: 'Innovation maturity score 0-100' },
+    maturityLevel: { type: "string", enum: ['emerging', 'developing', 'established', 'advanced', 'leading'], description: 'Maturity level' },
+    strengths: { type: "array", items: { type: "string" }, description: 'Key strengths' },
+    strengths_ar: { type: "array", items: { type: "string" }, description: 'Arabic strengths' },
+    weaknesses: { type: "array", items: { type: "string" }, description: 'Areas for improvement' },
+    weaknesses_ar: { type: "array", items: { type: "string" }, description: 'Arabic weaknesses' },
+    recommendations: { type: "array", items: { type: "string" }, description: 'Recommendations' },
+    recommendations_ar: { type: "array", items: { type: "string" }, description: 'Arabic recommendations' },
+    vision2030Score: { type: "number", description: 'Vision 2030 alignment score 0-100' }
   },
-  required: ["innovationScore", "recommendations"]
+  required: ["innovationScore", "maturityLevel", "strengths", "weaknesses", "recommendations", "vision2030Score"]
 };

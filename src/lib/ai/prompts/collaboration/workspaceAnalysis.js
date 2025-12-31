@@ -1,7 +1,7 @@
 /**
  * Workspace Analysis AI Prompts
  * @module prompts/collaboration/workspaceAnalysis
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { SAUDI_CONTEXT } from '@/lib/saudiContext';
@@ -17,7 +17,7 @@ Members: ${workspace.memberCount || 0}
 Projects: ${workspace.projectCount || 0}
 Activity Level: ${workspace.activityLevel || 'unknown'}
 
-${SAUDI_CONTEXT}
+${SAUDI_CONTEXT.COMPACT}
 
 Provide:
 1. Collaboration Health Score (0-100)
@@ -39,7 +39,7 @@ Current Metrics:
 - Member Engagement: ${metrics.engagementScore || 'N/A'}
 - Cross-team Collaboration: ${metrics.crossTeamScore || 'N/A'}
 
-${SAUDI_CONTEXT}
+${SAUDI_CONTEXT.COMPACT}
 
 Recommend:
 1. Process Improvements
@@ -54,11 +54,15 @@ export const WORKSPACE_ANALYSIS_SYSTEM_PROMPT = `You are a workspace collaborati
 export const WORKSPACE_ANALYSIS_SCHEMA = {
   type: "object",
   properties: {
-    healthScore: { type: "number" },
-    strengths: { type: "array", items: { type: "string" } },
-    improvements: { type: "array", items: { type: "string" } },
-    recommendations: { type: "array", items: { type: "string" } },
-    teamDynamics: { type: "string" }
+    healthScore: { type: "number", description: 'Collaboration health score 0-100' },
+    strengths: { type: "array", items: { type: "string" }, description: 'Key strengths' },
+    strengths_ar: { type: "array", items: { type: "string" }, description: 'Arabic strengths' },
+    improvements: { type: "array", items: { type: "string" }, description: 'Areas for improvement' },
+    improvements_ar: { type: "array", items: { type: "string" }, description: 'Arabic improvements' },
+    recommendations: { type: "array", items: { type: "string" }, description: 'Recommended actions' },
+    recommendations_ar: { type: "array", items: { type: "string" }, description: 'Arabic recommendations' },
+    teamDynamics: { type: "string", description: 'Team dynamics assessment' },
+    teamDynamics_ar: { type: "string", description: 'Arabic team dynamics' }
   },
-  required: ["healthScore", "strengths", "improvements"]
+  required: ["healthScore", "strengths", "improvements", "recommendations"]
 };
