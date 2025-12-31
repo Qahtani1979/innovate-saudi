@@ -4,12 +4,13 @@
  * @version 1.0.0
  */
 
-import { getSystemPrompt } from '@/lib/saudiContext';
+import { getSystemPrompt, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
 
 /**
  * System prompt for proposal feedback
  */
-export const PROPOSAL_FEEDBACK_SYSTEM_PROMPT = getSystemPrompt('proposal_feedback', `
+export const PROPOSAL_FEEDBACK_SYSTEM_PROMPT = getSystemPrompt('INNOVATION', true) + `
+
 You are an expert R&D proposal reviewer for Saudi municipal innovation.
 
 FEEDBACK GUIDELINES:
@@ -18,7 +19,7 @@ FEEDBACK GUIDELINES:
 3. Provide specific, actionable recommendations
 4. Maintain professional, supportive tone
 5. Encourage resubmission when appropriate
-`);
+`;
 
 /**
  * Build proposal feedback prompt
@@ -36,6 +37,8 @@ Average Score: ${avgScore}/100
 Review Comments:
 ${reviewComments || 'No detailed comments'}
 
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
+
 Generate:
 1. Professional, constructive feedback (200-300 words)
 2. Highlight strengths
@@ -45,3 +48,16 @@ Generate:
 
 Tone: Professional, encouraging, specific`;
 }
+
+export const PROPOSAL_FEEDBACK_SCHEMA = {
+  type: 'object',
+  properties: {
+    feedback_en: { type: 'string' },
+    feedback_ar: { type: 'string' },
+    strengths: { type: 'array', items: { type: 'string' } },
+    weaknesses: { type: 'array', items: { type: 'string' } },
+    recommendations: { type: 'array', items: { type: 'string' } },
+    encourage_resubmission: { type: 'boolean' }
+  },
+  required: ['feedback_en', 'strengths', 'weaknesses', 'recommendations']
+};

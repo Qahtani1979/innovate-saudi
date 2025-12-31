@@ -4,13 +4,14 @@
  * @version 1.0.0
  */
 
-import { getSystemPrompt } from '@/lib/saudiContext';
+import { getSystemPrompt, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
 
-export const RD_CALL_MATCHER_SYSTEM_PROMPT = getSystemPrompt('rd_call_matcher', `
+export const RD_CALL_MATCHER_SYSTEM_PROMPT = getSystemPrompt('INNOVATION', true) + `
+
 You are an R&D funding opportunity specialist for Saudi Arabia's municipal innovation ecosystem.
 Your role is to match researchers with relevant R&D calls based on expertise and eligibility.
 Focus on alignment with call requirements, researcher track record, and success probability.
-`);
+`;
 
 /**
  * Build R&D call matching prompt
@@ -41,6 +42,8 @@ ${rdCalls.slice(0, 15).map(call => `
   Focus Areas: ${call.focus_areas?.join(', ') || 'Various'}
 `).join('\n') || 'No R&D calls available'}
 
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
+
 Provide:
 1. Top 5 matching R&D calls with match scores
 2. Eligibility assessment for each
@@ -67,7 +70,8 @@ export const RD_CALL_MATCHER_SCHEMA = {
           expertise_alignment: { type: "array", items: { type: "string" } },
           competitiveness_score: { type: "number" },
           success_probability: { type: "string" }
-        }
+        },
+        required: ["call_code", "call_title", "match_score", "eligibility_status"]
       }
     },
     proposal_strategies: {
@@ -80,7 +84,8 @@ export const RD_CALL_MATCHER_SCHEMA = {
           approach_ar: { type: "string" },
           key_strengths_to_highlight: { type: "array", items: { type: "string" } },
           suggested_collaborators: { type: "array", items: { type: "string" } }
-        }
+        },
+        required: ["call_code", "approach_en"]
       }
     },
     overall_recommendations: {
@@ -89,7 +94,8 @@ export const RD_CALL_MATCHER_SCHEMA = {
         priority_calls: { type: "array", items: { type: "string" } },
         preparation_tips: { type: "array", items: { type: "string" } },
         timeline_advice: { type: "string" }
-      }
+      },
+      required: ["priority_calls", "preparation_tips"]
     }
   },
   required: ["matches"]

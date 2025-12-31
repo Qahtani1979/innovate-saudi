@@ -3,9 +3,12 @@
  * @module rd/rdToPolicy
  */
 
-import { getSystemPrompt } from '@/lib/saudiContext';
+import { getSystemPrompt, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
 
-export const RD_TO_POLICY_SYSTEM_PROMPT = getSystemPrompt('policy_recommendations');
+export const RD_TO_POLICY_SYSTEM_PROMPT = getSystemPrompt('MUNICIPAL', true) + `
+
+You are a policy analyst specializing in translating R&D findings into actionable municipal policies.
+`;
 
 export const buildRDToPolicyPrompt = (rdProject) => `You are a policy analyst. Generate an evidence-based policy recommendation from this R&D project:
 
@@ -15,6 +18,8 @@ Research Area: ${rdProject.research_area_en}
 Publications: ${JSON.stringify(rdProject.publications || [])}
 Impact Assessment: ${JSON.stringify(rdProject.impact_assessment || {})}
 TRL: ${rdProject.trl_current}
+
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 Generate:
 1. Policy title (EN + AR)
@@ -45,11 +50,13 @@ export const RD_TO_POLICY_SCHEMA = {
           metric_en: { type: 'string' },
           metric_ar: { type: 'string' },
           target: { type: 'string' }
-        }
+        },
+        required: ['metric_en', 'target']
       }
     },
     affected_stakeholders: { type: 'array', items: { type: 'string' } }
-  }
+  },
+  required: ['title_en', 'title_ar', 'recommendation_text_en', 'recommendation_text_ar']
 };
 
 export const RD_TO_POLICY_PROMPTS = {

@@ -94,7 +94,11 @@ export function getBatchPrioritySchema() {
  * Get system prompt for priority analysis
  */
 export function getPriorityAnalysisSystemPrompt() {
-  return getSystemPrompt('priority-analyst');
+  return getSystemPrompt('MUNICIPAL', true) + `
+
+You are a priority analyst for Saudi municipal citizen ideas.
+Evaluate and rank ideas based on impact, feasibility, and strategic alignment.
+`;
 }
 
 export const PRIORITY_SORTER_CONFIG = {
