@@ -1,10 +1,10 @@
 /**
  * Ministry AI Prompts Index
  * Centralized exports for all ministry-related AI prompts
- * @version 1.0.0
+ * @version 1.1.0
  */
 
-import { SAUDI_CONTEXT } from '@/lib/saudiContext';
+import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
 
 /**
  * Ministry analysis prompt
@@ -35,7 +35,7 @@ ${ministry.name_ar ? `Arabic Name: ${ministry.name_ar}` : ''}
 Code: ${ministry.code || 'Not specified'}
 Sector: ${context?.sector_name || 'Not specified'}
 
-${SAUDI_CONTEXT}
+${SAUDI_CONTEXT.FULL}
 
 Analyze:
 1. Key municipal touchpoints
@@ -58,6 +58,8 @@ ${ministry.name_ar ? `Arabic Name: ${ministry.name_ar}` : ''}
 Code: ${ministry.code || 'N/A'}
 Website: ${ministry.website || 'N/A'}
 
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
+
 Generate:
 1. Professional description (Arabic + English)
 2. Key responsibilities
@@ -68,12 +70,16 @@ Generate:
 export const MINISTRY_PROFILE_RESPONSE_SCHEMA = {
   type: 'object',
   properties: {
-    description_en: { type: 'string' },
-    description_ar: { type: 'string' },
-    responsibilities: { type: 'array', items: { type: 'string' } },
-    municipal_areas: { type: 'array', items: { type: 'string' } },
-    vision_programs: { type: 'array', items: { type: 'string' } }
-  }
+    description_en: { type: 'string', description: 'English ministry description' },
+    description_ar: { type: 'string', description: 'Arabic ministry description' },
+    responsibilities: { type: 'array', items: { type: 'string' }, description: 'Key responsibilities' },
+    responsibilities_ar: { type: 'array', items: { type: 'string' }, description: 'Arabic responsibilities' },
+    municipal_areas: { type: 'array', items: { type: 'string' }, description: 'Municipal coordination areas' },
+    municipal_areas_ar: { type: 'array', items: { type: 'string' }, description: 'Arabic municipal areas' },
+    vision_programs: { type: 'array', items: { type: 'string' }, description: 'Vision 2030 programs' },
+    vision_programs_ar: { type: 'array', items: { type: 'string' }, description: 'Arabic Vision programs' }
+  },
+  required: ['description_en', 'description_ar', 'responsibilities', 'municipal_areas', 'vision_programs']
 };
 
 /**
@@ -87,6 +93,8 @@ Ministry: ${ministry.name_en}
 Services:
 ${services.map(s => `- ${s.name_en}`).join('\n')}
 
+${SAUDI_CONTEXT.COMPACT}
+
 Provide:
 1. Service gaps identification
 2. Integration opportunities
@@ -97,11 +105,16 @@ Provide:
 export const MINISTRY_SERVICE_RESPONSE_SCHEMA = {
   type: 'object',
   properties: {
-    service_gaps: { type: 'array', items: { type: 'string' } },
-    integration_opportunities: { type: 'array', items: { type: 'string' } },
-    digital_priorities: { type: 'array', items: { type: 'string' } },
-    cx_improvements: { type: 'array', items: { type: 'string' } }
-  }
+    service_gaps: { type: 'array', items: { type: 'string' }, description: 'Service gaps identified' },
+    service_gaps_ar: { type: 'array', items: { type: 'string' }, description: 'Arabic service gaps' },
+    integration_opportunities: { type: 'array', items: { type: 'string' }, description: 'Integration opportunities' },
+    integration_opportunities_ar: { type: 'array', items: { type: 'string' }, description: 'Arabic integration opportunities' },
+    digital_priorities: { type: 'array', items: { type: 'string' }, description: 'Digital transformation priorities' },
+    digital_priorities_ar: { type: 'array', items: { type: 'string' }, description: 'Arabic digital priorities' },
+    cx_improvements: { type: 'array', items: { type: 'string' }, description: 'Citizen experience improvements' },
+    cx_improvements_ar: { type: 'array', items: { type: 'string' }, description: 'Arabic CX improvements' }
+  },
+  required: ['service_gaps', 'integration_opportunities', 'digital_priorities', 'cx_improvements']
 };
 
 export default {

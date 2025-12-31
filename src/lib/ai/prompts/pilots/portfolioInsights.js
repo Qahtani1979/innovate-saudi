@@ -1,7 +1,7 @@
 /**
  * Pilots Portfolio AI Insights Prompt
  * Provides strategic analysis of pilot portfolio
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
@@ -40,7 +40,7 @@ ${Object.entries(sectorBreakdown).map(([sector, count]) => `- ${sector}: ${count
 TOP 5 PILOTS BY SUCCESS:
 ${topPilots.map(p => `${p.code}: ${p.title_en} (${p.success_probability}% success probability)`).join('\n')}
 
-${LANGUAGE_REQUIREMENTS}
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 Provide bilingual analysis covering:
 1. PORTFOLIO HEALTH: Overall assessment with score (0-100)
@@ -61,7 +61,7 @@ export const pilotPortfolioInsightsSchema = {
       type: 'object', 
       properties: { 
         ...flatBilingualFields('assessment'),
-        score: { type: 'number' } 
+        score: { type: 'number', description: 'Health score 0-100' } 
       },
       required: ['en', 'ar', 'score']
     },
@@ -81,9 +81,9 @@ export const pilotPortfolioInsightsSchema = {
       items: { 
         type: 'object', 
         properties: { 
-          pilot_code: { type: 'string' }, 
-          reason_en: { type: 'string' }, 
-          reason_ar: { type: 'string' } 
+          pilot_code: { type: 'string', description: 'Pilot code' }, 
+          reason_en: { type: 'string', description: 'English reason' }, 
+          reason_ar: { type: 'string', description: 'Arabic reason' } 
         },
         required: ['pilot_code', 'reason_en', 'reason_ar']
       }
@@ -113,7 +113,7 @@ export const pilotPortfolioInsightsSchema = {
       }
     }
   },
-  required: ['portfolio_health', 'risk_alerts', 'scaling_opportunities', 'strategic_priorities']
+  required: ['portfolio_health', 'risk_alerts', 'scaling_opportunities', 'sector_recommendations', 'resource_optimization', 'strategic_priorities']
 };
 
 export default { getPilotPortfolioInsightsPrompt, pilotPortfolioInsightsSchema };

@@ -1,7 +1,7 @@
 /**
  * Curriculum Generator Prompt
  * Designs comprehensive program curricula
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
@@ -11,7 +11,7 @@ import { createBilingualSchema } from '../../bilingualSchemaBuilder';
  * Build curriculum generator prompt
  */
 export function buildCurriculumPrompt(programType, durationWeeks, objectives) {
-  return `${SAUDI_CONTEXT}
+  return `${SAUDI_CONTEXT.INNOVATION}
 
 You are an AI curriculum design specialist for Saudi Arabia's innovation programs.
 
@@ -29,7 +29,7 @@ FOR EACH WEEK, INCLUDE:
 4. Activities (workshops, mentoring sessions, assignments)
 5. Deliverables (what participants should produce)
 
-${LANGUAGE_REQUIREMENTS}
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 Align with Saudi Vision 2030 priorities and municipal innovation needs.
 Make content practical and actionable for Saudi entrepreneurs.`;

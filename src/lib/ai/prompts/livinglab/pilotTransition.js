@@ -1,7 +1,7 @@
 /**
  * Lab to Pilot Transition Assessment Prompt
  * Evaluates readiness for transitioning lab projects to pilot phase
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
@@ -11,7 +11,7 @@ import { createBilingualSchema } from '../../bilingualSchemaBuilder';
  * Build pilot transition assessment prompt
  */
 export function buildPilotTransitionPrompt(labProject) {
-  return `${SAUDI_CONTEXT}
+  return `${SAUDI_CONTEXT.INNOVATION}
 
 You are an AI innovation lifecycle specialist for Saudi Arabian municipal innovation programs.
 
@@ -32,7 +32,7 @@ EVALUATION CRITERIA:
 4. Recommended Municipalities - Which municipalities would be good pilots?
 5. Risk Factors - What could go wrong in pilot phase?
 
-${LANGUAGE_REQUIREMENTS}
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 Consider Saudi Vision 2030 alignment and municipal innovation priorities.`;
 }
@@ -81,7 +81,7 @@ export function getPilotTransitionSchema() {
         description: 'Arabic next steps'
       }
     },
-    required: ['readiness_score', 'regulatory_status', 'budget_estimate', 'municipalities', 'risks']
+    required: ['readiness_score', 'technical_readiness', 'regulatory_status', 'budget_estimate', 'municipalities', 'risks', 'next_steps']
   });
 }
 
