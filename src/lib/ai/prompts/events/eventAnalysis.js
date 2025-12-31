@@ -24,7 +24,7 @@ Registrations: ${event.registration_count || 0}
 Description:
 ${event.description_en || event.description || 'No description'}
 
-${SAUDI_CONTEXT}
+${SAUDI_CONTEXT.COMPACT}
 
 Provide optimization suggestions for:
 1. Timing and Scheduling
@@ -49,7 +49,7 @@ Current Registrations: ${event.registration_count || 0}
 Historical Data:
 ${historicalData ? JSON.stringify(historicalData, null, 2) : 'No historical data available'}
 
-${SAUDI_CONTEXT}
+${SAUDI_CONTEXT.COMPACT}
 
 Predict:
 1. Expected Attendance Rate (%)

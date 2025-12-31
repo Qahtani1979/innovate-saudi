@@ -1,7 +1,7 @@
 /**
  * Organization Detail AI Prompts
  * @module prompts/organizations/organizationDetail
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { SAUDI_CONTEXT } from '@/lib/saudiContext';
@@ -25,7 +25,7 @@ Statistics:
 - Completed Pilots: ${stats?.completedPilots || 0}
 - Success Rate: ${stats?.successRate || 0}%
 
-${SAUDI_CONTEXT}
+${SAUDI_CONTEXT.COMPACT}
 
 Provide:
 1. Partnership Potential Assessment
@@ -39,12 +39,17 @@ Provide:
   schema: {
     type: 'object',
     properties: {
-      partnership_potential: { type: 'number' },
-      capability_assessment: { type: 'array', items: { type: 'string' } },
-      collaboration_recommendations: { type: 'array', items: { type: 'string' } },
-      sector_opportunities: { type: 'array', items: { type: 'string' } },
-      growth_strategies: { type: 'array', items: { type: 'string' } }
-    }
+      partnership_potential: { type: 'number', description: 'Partnership potential score 0-100' },
+      capability_assessment: { type: 'array', items: { type: 'string' }, description: 'Innovation capability assessment' },
+      capability_assessment_ar: { type: 'array', items: { type: 'string' }, description: 'Arabic capability assessment' },
+      collaboration_recommendations: { type: 'array', items: { type: 'string' }, description: 'Collaboration recommendations' },
+      collaboration_recommendations_ar: { type: 'array', items: { type: 'string' }, description: 'Arabic recommendations' },
+      sector_opportunities: { type: 'array', items: { type: 'string' }, description: 'Sector alignment opportunities' },
+      sector_opportunities_ar: { type: 'array', items: { type: 'string' }, description: 'Arabic sector opportunities' },
+      growth_strategies: { type: 'array', items: { type: 'string' }, description: 'Growth strategy suggestions' },
+      growth_strategies_ar: { type: 'array', items: { type: 'string' }, description: 'Arabic growth strategies' }
+    },
+    required: ['partnership_potential', 'capability_assessment', 'collaboration_recommendations', 'sector_opportunities', 'growth_strategies']
   }
 });
 

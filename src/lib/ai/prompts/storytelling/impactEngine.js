@@ -2,9 +2,10 @@
  * Impact Storytelling Engine Prompt Module
  * AI-powered impact story generation for innovation initiatives
  * @module prompts/storytelling/impactEngine
+ * @version 1.1.0
  */
 
-import { SAUDI_CONTEXT } from '@/lib/saudiContext';
+import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
 
 /**
  * Schema for impact story response
@@ -12,16 +13,16 @@ import { SAUDI_CONTEXT } from '@/lib/saudiContext';
 export const IMPACT_STORY_SCHEMA = {
   type: 'object',
   properties: {
-    story_title_en: { type: 'string' },
-    story_title_ar: { type: 'string' },
-    hook_en: { type: 'string' },
-    hook_ar: { type: 'string' },
-    challenge_narrative_en: { type: 'string' },
-    challenge_narrative_ar: { type: 'string' },
-    solution_narrative_en: { type: 'string' },
-    solution_narrative_ar: { type: 'string' },
-    impact_narrative_en: { type: 'string' },
-    impact_narrative_ar: { type: 'string' },
+    story_title_en: { type: 'string', description: 'English story title' },
+    story_title_ar: { type: 'string', description: 'Arabic story title' },
+    hook_en: { type: 'string', description: 'English attention-grabbing hook' },
+    hook_ar: { type: 'string', description: 'Arabic hook' },
+    challenge_narrative_en: { type: 'string', description: 'English challenge description' },
+    challenge_narrative_ar: { type: 'string', description: 'Arabic challenge narrative' },
+    solution_narrative_en: { type: 'string', description: 'English solution description' },
+    solution_narrative_ar: { type: 'string', description: 'Arabic solution narrative' },
+    impact_narrative_en: { type: 'string', description: 'English impact description' },
+    impact_narrative_ar: { type: 'string', description: 'Arabic impact narrative' },
     key_quotes: {
       type: 'array',
       items: {
@@ -30,27 +31,31 @@ export const IMPACT_STORY_SCHEMA = {
           quote_en: { type: 'string' },
           quote_ar: { type: 'string' },
           attribution: { type: 'string' }
-        }
+        },
+        required: ['quote_en', 'attribution']
       }
     },
     visual_suggestions: {
       type: 'array',
-      items: { type: 'string' }
+      items: { type: 'string' },
+      description: 'Suggestions for visuals and media'
     },
-    call_to_action_en: { type: 'string' },
-    call_to_action_ar: { type: 'string' },
+    call_to_action_en: { type: 'string', description: 'English call to action' },
+    call_to_action_ar: { type: 'string', description: 'Arabic call to action' },
     social_media_snippets: {
       type: 'array',
       items: {
         type: 'object',
         properties: {
-          platform: { type: 'string' },
+          platform: { type: 'string', enum: ['twitter', 'linkedin', 'instagram', 'facebook'] },
           content_en: { type: 'string' },
           content_ar: { type: 'string' }
-        }
+        },
+        required: ['platform', 'content_en']
       }
     }
-  }
+  },
+  required: ['story_title_en', 'hook_en', 'challenge_narrative_en', 'solution_narrative_en', 'impact_narrative_en', 'call_to_action_en']
 };
 
 /**
@@ -63,7 +68,7 @@ export function IMPACT_STORY_PROMPT_TEMPLATE(context) {
   
   return `Create a compelling impact story for this ${entityType}:
 
-${SAUDI_CONTEXT}
+${SAUDI_CONTEXT.FULL}
 
 ENTITY DETAILS:
 Title: ${entityTitle}
@@ -77,6 +82,8 @@ STAKEHOLDERS:
 ${stakeholders || 'Various municipal and national stakeholders'}
 
 TARGET AUDIENCE: ${audience || 'General public, government officials, innovation community'}
+
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 Generate a compelling bilingual impact story that:
 1. Opens with an engaging hook that captures attention

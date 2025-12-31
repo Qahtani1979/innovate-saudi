@@ -1,7 +1,7 @@
 /**
  * Expert Analysis AI Prompts
  * @module prompts/experts/expertDetail
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { SAUDI_CONTEXT } from '@/lib/saudiContext';
@@ -30,7 +30,7 @@ Evaluation Statistics:
 - Total Evaluations: ${evaluations?.length || 0}
 - Average Score: ${evaluations?.length > 0 ? (evaluations.reduce((sum, e) => sum + (e.overall_score || 0), 0) / evaluations.length).toFixed(1) : 'N/A'}
 
-${SAUDI_CONTEXT}
+${SAUDI_CONTEXT.COMPACT}
 
 Provide:
 1. Expertise Match Analysis
@@ -44,12 +44,18 @@ Provide:
   schema: {
     type: 'object',
     properties: {
-      expertise_match: { type: 'array', items: { type: 'string' } },
-      assignment_recommendations: { type: 'array', items: { type: 'string' } },
-      development_opportunities: { type: 'array', items: { type: 'string' } },
-      collaboration_potential: { type: 'array', items: { type: 'string' } },
-      engagement_optimization: { type: 'array', items: { type: 'string' } }
-    }
+      expertise_match: { type: 'array', items: { type: 'string' }, description: 'Expertise match analysis' },
+      expertise_match_ar: { type: 'array', items: { type: 'string' }, description: 'Arabic expertise match' },
+      assignment_recommendations: { type: 'array', items: { type: 'string' }, description: 'Assignment type recommendations' },
+      assignment_recommendations_ar: { type: 'array', items: { type: 'string' }, description: 'Arabic recommendations' },
+      development_opportunities: { type: 'array', items: { type: 'string' }, description: 'Development opportunities' },
+      development_opportunities_ar: { type: 'array', items: { type: 'string' }, description: 'Arabic development opportunities' },
+      collaboration_potential: { type: 'array', items: { type: 'string' }, description: 'Collaboration potential' },
+      collaboration_potential_ar: { type: 'array', items: { type: 'string' }, description: 'Arabic collaboration potential' },
+      engagement_optimization: { type: 'array', items: { type: 'string' }, description: 'Engagement optimization suggestions' },
+      engagement_optimization_ar: { type: 'array', items: { type: 'string' }, description: 'Arabic engagement optimization' }
+    },
+    required: ['expertise_match', 'assignment_recommendations', 'development_opportunities', 'collaboration_potential', 'engagement_optimization']
   }
 });
 

@@ -1,7 +1,7 @@
 /**
  * Living Lab Detail AI Prompts
  * @module prompts/livinglabs/livingLabDetail
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { SAUDI_CONTEXT } from '@/lib/saudiContext';
@@ -21,7 +21,7 @@ Completed Projects: ${lab.total_completed_projects || 0}
 Focus Areas: ${lab.focus_areas?.join(', ') || 'Not specified'}
 Equipment Count: ${lab.equipment?.length || 0}
 
-${SAUDI_CONTEXT}
+${SAUDI_CONTEXT.INNOVATION}
 
 Provide:
 1. Capacity Utilization Analysis
@@ -35,12 +35,18 @@ Provide:
   schema: {
     type: 'object',
     properties: {
-      capacity_analysis: { type: 'array', items: { type: 'string' } },
-      research_focus: { type: 'array', items: { type: 'string' } },
-      equipment_optimization: { type: 'array', items: { type: 'string' } },
-      collaboration_opportunities: { type: 'array', items: { type: 'string' } },
-      strategic_alignment: { type: 'array', items: { type: 'string' } }
-    }
+      capacity_analysis: { type: 'array', items: { type: 'string' }, description: 'Capacity utilization analysis' },
+      capacity_analysis_ar: { type: 'array', items: { type: 'string' }, description: 'Arabic capacity analysis' },
+      research_focus: { type: 'array', items: { type: 'string' }, description: 'Research focus recommendations' },
+      research_focus_ar: { type: 'array', items: { type: 'string' }, description: 'Arabic research focus' },
+      equipment_optimization: { type: 'array', items: { type: 'string' }, description: 'Equipment optimization suggestions' },
+      equipment_optimization_ar: { type: 'array', items: { type: 'string' }, description: 'Arabic equipment optimization' },
+      collaboration_opportunities: { type: 'array', items: { type: 'string' }, description: 'Collaboration opportunities' },
+      collaboration_opportunities_ar: { type: 'array', items: { type: 'string' }, description: 'Arabic collaboration opportunities' },
+      strategic_alignment: { type: 'array', items: { type: 'string' }, description: 'Vision 2030 alignment' },
+      strategic_alignment_ar: { type: 'array', items: { type: 'string' }, description: 'Arabic strategic alignment' }
+    },
+    required: ['capacity_analysis', 'research_focus', 'equipment_optimization', 'collaboration_opportunities', 'strategic_alignment']
   }
 });
 

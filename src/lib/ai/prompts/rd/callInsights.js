@@ -2,9 +2,10 @@
  * R&D Call Insights AI Prompts
  * Prompts for analyzing R&D calls and providing strategic insights
  * @module ai/prompts/rd/callInsights
+ * @version 1.1.0
  */
 
-import { SAUDI_CONTEXT } from '@/lib/saudiContext';
+import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
 
 /**
  * R&D Call Strategic Insights Prompt Template
@@ -22,7 +23,7 @@ export const RD_CALL_INSIGHTS_PROMPT_TEMPLATE = ({
   deadline,
   language = 'en'
 }) => ({
-  prompt: `${SAUDI_CONTEXT}
+  prompt: `${SAUDI_CONTEXT.INNOVATION}
 
 Analyze this R&D Call for Saudi municipal innovation and provide strategic insights in BOTH English AND Arabic:
 
@@ -34,6 +35,8 @@ Research Themes: ${researchThemes?.map(t => t.theme || t).join(', ') || 'N/A'}
 Focus Areas: ${focusAreas?.join(', ') || 'N/A'}
 Number of Proposals: ${proposalCount || 0}
 Deadline: ${deadline || 'N/A'}
+
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 Provide bilingual insights (each item should have both English and Arabic versions):
 1. Strategic alignment with Vision 2030
@@ -52,7 +55,8 @@ Provide bilingual insights (each item should have both English and Arabic versio
           properties: { 
             en: { type: 'string' }, 
             ar: { type: 'string' } 
-          } 
+          },
+          required: ['en']
         } 
       },
       expected_impact: { 
@@ -62,7 +66,8 @@ Provide bilingual insights (each item should have both English and Arabic versio
           properties: { 
             en: { type: 'string' }, 
             ar: { type: 'string' } 
-          } 
+          },
+          required: ['en']
         } 
       },
       proposal_recommendations: { 
@@ -72,7 +77,8 @@ Provide bilingual insights (each item should have both English and Arabic versio
           properties: { 
             en: { type: 'string' }, 
             ar: { type: 'string' } 
-          } 
+          },
+          required: ['en']
         } 
       },
       collaboration_opportunities: { 
@@ -82,7 +88,8 @@ Provide bilingual insights (each item should have both English and Arabic versio
           properties: { 
             en: { type: 'string' }, 
             ar: { type: 'string' } 
-          } 
+          },
+          required: ['en']
         } 
       },
       risk_mitigation: { 
@@ -92,7 +99,8 @@ Provide bilingual insights (each item should have both English and Arabic versio
           properties: { 
             en: { type: 'string' }, 
             ar: { type: 'string' } 
-          } 
+          },
+          required: ['en']
         } 
       }
     },
@@ -114,7 +122,7 @@ export const RD_PROPOSAL_ANALYSIS_PROMPT_TEMPLATE = ({
   teamQualifications,
   language = 'en'
 }) => ({
-  prompt: `${SAUDI_CONTEXT}
+  prompt: `${SAUDI_CONTEXT.INNOVATION}
 
 Analyze this R&D proposal:
 
@@ -135,12 +143,38 @@ Provide:
   schema: {
     type: 'object',
     properties: {
-      scientific_merit: { type: 'object', properties: { score: { type: 'number' }, assessment: { type: 'string' } } },
-      feasibility: { type: 'object', properties: { score: { type: 'number' }, assessment: { type: 'string' } } },
-      innovation_potential: { type: 'object', properties: { score: { type: 'number' }, assessment: { type: 'string' } } },
-      alignment_score: { type: 'number' },
-      recommendations: { type: 'array', items: { type: 'string' } }
-    }
+      scientific_merit: { 
+        type: 'object', 
+        properties: { 
+          score: { type: 'number' }, 
+          assessment: { type: 'string' },
+          assessment_ar: { type: 'string' }
+        },
+        required: ['score', 'assessment']
+      },
+      feasibility: { 
+        type: 'object', 
+        properties: { 
+          score: { type: 'number' }, 
+          assessment: { type: 'string' },
+          assessment_ar: { type: 'string' }
+        },
+        required: ['score', 'assessment']
+      },
+      innovation_potential: { 
+        type: 'object', 
+        properties: { 
+          score: { type: 'number' }, 
+          assessment: { type: 'string' },
+          assessment_ar: { type: 'string' }
+        },
+        required: ['score', 'assessment']
+      },
+      alignment_score: { type: 'number', description: 'Alignment with Saudi priorities 0-100' },
+      recommendations: { type: 'array', items: { type: 'string' }, description: 'Recommendations for improvement' },
+      recommendations_ar: { type: 'array', items: { type: 'string' }, description: 'Arabic recommendations' }
+    },
+    required: ['scientific_merit', 'feasibility', 'innovation_potential', 'alignment_score', 'recommendations']
   }
 });
 

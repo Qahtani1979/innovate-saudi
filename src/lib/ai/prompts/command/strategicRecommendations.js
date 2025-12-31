@@ -2,9 +2,10 @@
  * Command Center Prompt Module
  * Strategic recommendations for platform leadership
  * @module prompts/command/strategicRecommendations
+ * @version 1.1.0
  */
 
-import { SAUDI_CONTEXT } from '@/lib/saudiContext';
+import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
 
 /**
  * Schema for command center recommendations response
@@ -12,11 +13,48 @@ import { SAUDI_CONTEXT } from '@/lib/saudiContext';
 export const COMMAND_CENTER_SCHEMA = {
   type: 'object',
   properties: {
-    priority_actions: { type: 'array', items: { type: 'string' } },
-    resource_recommendations: { type: 'array', items: { type: 'string' } },
-    risk_priorities: { type: 'array', items: { type: 'string' } },
-    opportunities: { type: 'array', items: { type: 'string' } }
-  }
+    priority_actions: { 
+      type: 'array', 
+      items: { type: 'string' },
+      description: 'Top priority actions for leadership'
+    },
+    priority_actions_ar: { 
+      type: 'array', 
+      items: { type: 'string' },
+      description: 'Arabic priority actions'
+    },
+    resource_recommendations: { 
+      type: 'array', 
+      items: { type: 'string' },
+      description: 'Resource allocation recommendations'
+    },
+    resource_recommendations_ar: { 
+      type: 'array', 
+      items: { type: 'string' },
+      description: 'Arabic resource recommendations'
+    },
+    risk_priorities: { 
+      type: 'array', 
+      items: { type: 'string' },
+      description: 'Risk mitigation priorities'
+    },
+    risk_priorities_ar: { 
+      type: 'array', 
+      items: { type: 'string' },
+      description: 'Arabic risk priorities'
+    },
+    opportunities: { 
+      type: 'array', 
+      items: { type: 'string' },
+      description: 'Opportunities to accelerate'
+    },
+    opportunities_ar: { 
+      type: 'array', 
+      items: { type: 'string' },
+      description: 'Arabic opportunities'
+    }
+  },
+  required: ['priority_actions', 'resource_recommendations', 'risk_priorities', 'opportunities']
 };
 
 /**
@@ -29,12 +67,14 @@ export function COMMAND_CENTER_PROMPT_TEMPLATE(context) {
   
   return `Analyze this innovation platform status and provide strategic recommendations:
 
-${SAUDI_CONTEXT}
+${SAUDI_CONTEXT.FULL}
 
 Critical challenges: ${criticalChallenges}
 High-risk pilots: ${highRiskPilots}
 Active operations: ${activeOperations}
 Pending approvals: ${pendingApprovals}
+
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 Provide:
 1. Top 3 priority actions for platform leadership

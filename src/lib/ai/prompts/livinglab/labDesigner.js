@@ -1,7 +1,7 @@
 /**
  * Living Lab Design Prompt
  * Generates comprehensive lab infrastructure and configuration
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
@@ -20,7 +20,7 @@ export function buildLabDesignPrompt(labType, basicDescription) {
     digital: 'Digital Services - E-government, digital platforms, AI applications'
   };
 
-  return `${SAUDI_CONTEXT}
+  return `${SAUDI_CONTEXT.INNOVATION}
 
 You are an AI living lab design specialist for Saudi Arabian municipalities.
 
@@ -37,7 +37,7 @@ GENERATE:
 5. 4-6 facility components (rooms, zones, infrastructure)
 6. 5-7 booking and usage rules
 
-${LANGUAGE_REQUIREMENTS}
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 Ensure equipment and facilities are appropriate for the lab type and Saudi climate/context.`;
 }

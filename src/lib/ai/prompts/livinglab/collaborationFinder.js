@@ -1,7 +1,7 @@
 /**
  * Multi-Lab Collaboration Finder Prompt
  * Identifies equipment sharing and research collaboration opportunities between labs
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { SAUDI_CONTEXT, LANGUAGE_REQUIREMENTS } from '@/lib/saudiContext';
@@ -15,7 +15,7 @@ export function buildCollaborationFinderPrompt(currentLab, otherLabs) {
     `- ${l.name_en}: ${l.research_themes?.join(', ') || 'General research'}`
   ).join('\n');
 
-  return `${SAUDI_CONTEXT}
+  return `${SAUDI_CONTEXT.INNOVATION}
 
 You are an AI research collaboration specialist for Saudi Arabia's municipal living labs network.
 
@@ -35,7 +35,7 @@ COLLABORATION TYPES TO CONSIDER:
 3. Joint Research Projects - Combined capabilities
 4. Resource Optimization - Shared resources reduce costs
 
-${LANGUAGE_REQUIREMENTS}
+${LANGUAGE_REQUIREMENTS.BILINGUAL}
 
 For each opportunity, provide:
 - Partner lab name
