@@ -104,6 +104,53 @@ export function useCopilotChat() {
                 return;
             }
 
+            // Handle tool execution results - these need to be added to context
+            // and optionally trigger a follow-up LLM call to generate a proper response
+            if (response.type === 'tool_result') {
+                const toolResultContent = formatToolResultForContext(response, language);
+                
+                // Add tool result as a context message (not displayed directly)
+                const toolResultMsg = {
+                    role: 'tool_result',
+                    toolName: response.toolName,
+                    content: toolResultContent,
+                    data: response.data
+                };
+
+                // Now ask the LLM to respond based on the tool result
+                const followUpResponse = await orchestrator.processMessage(
+                    `[Tool "${response.toolName}" returned data. Please present this to the user in a helpful way.]`,
+                    {
+                        tools: currentTools,
+                        systemPrompt: systemPrompt,
+                        messages: [...messages, userMsg, toolResultMsg],
+                        language: language,
+                        toolResult: response.data // Pass tool result for LLM context
+                    }
+                );
+
+                if (followUpResponse.type === 'structured' && followUpResponse.sections) {
+                    setMessages(prev => [...prev, {
+                        role: 'assistant',
+                        content: '',
+                        structured: {
+                            sections: followUpResponse.sections,
+                            language: followUpResponse.language || language
+                        },
+                        toolContext: { name: response.toolName, data: response.data }
+                    }]);
+                } else {
+                    // Direct display of tool result with UI
+                    setMessages(prev => [...prev, {
+                        role: 'assistant',
+                        content: '',
+                        ui: response.data,
+                        toolContext: { name: response.toolName, data: response.data }
+                    }]);
+                }
+                return;
+            }
+
             // Handle structured responses (new format)
             if (response.type === 'structured' && response.sections) {
                 setMessages(prev => [...prev, {
@@ -140,10 +187,10 @@ export function useCopilotChat() {
                     ui: { type: 'draft_summary', draft: response.draft }
                 }]);
             } else {
-                const content = response.content || response.message || '';
+                const msgContent = response.content || response.message || '';
                 setMessages(prev => [...prev, { 
                     role: 'assistant', 
-                    content: content || t('copilot.ready_to_help', 'I\'m ready to help.')
+                    content: msgContent || t('copilot.ready_to_help', 'I\'m ready to help.')
                 }]);
             }
         } catch (error) {
@@ -154,6 +201,21 @@ export function useCopilotChat() {
             }]);
         }
     };
+
+    // Format tool result for conversation context
+    function formatToolResultForContext(response, lang) {
+        const data = response.data;
+        if (!data) return 'No data returned';
+        
+        if (data.type === 'data_list' && data.items) {
+            const itemNames = data.items.slice(0, 10).map(i => 
+                lang === 'ar' ? (i.name_ar || i.name || i.title_ar || i.title) : (i.name_en || i.name || i.title_en || i.title)
+            ).join(', ');
+            return `${data.entity || 'items'}: ${itemNames}${data.items.length > 10 ? '...' : ''}`;
+        }
+        
+        return typeof data === 'string' ? data : JSON.stringify(data);
+    }
 
     return {
         inputValue,

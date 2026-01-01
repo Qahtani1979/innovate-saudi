@@ -328,22 +328,58 @@ Respond in the requested format while emphasizing innovation opportunities. Prov
     if (conversationHistory && Array.isArray(conversationHistory)) {
       console.log(`Adding ${conversationHistory.length} messages from conversation history`);
       for (const msg of conversationHistory) {
-        if (msg.role === 'user' || msg.role === 'assistant') {
-          // For assistant messages with structured content, extract text
+        // Handle user messages
+        if (msg.role === 'user') {
+          if (msg.content?.trim()) {
+            messages.push({ role: 'user', content: msg.content });
+          }
+        }
+        // Handle assistant messages
+        else if (msg.role === 'assistant') {
           let content = msg.content || '';
+          // For structured responses, extract readable text
           if (msg.structured?.sections) {
             content = msg.structured.sections
               .filter((s: any) => s.content)
-              .map((s: any) => s.content)
+              .map((s: any) => {
+                if (s.type === 'bullet_list' && s.metadata?.items) {
+                  return s.metadata.items.join('\n- ');
+                }
+                return s.content;
+              })
               .join('\n');
           }
+          // Include tool context if available
+          if (msg.toolContext) {
+            content += `\n[Retrieved ${msg.toolContext.name} data: ${msg.toolContext.data?.items?.length || 0} items]`;
+          }
           if (content.trim()) {
-            messages.push({ role: msg.role, content });
+            messages.push({ role: 'assistant', content });
           }
         }
+        // Handle tool_result messages - convert to assistant context
+        else if (msg.role === 'tool_result') {
+          const toolData = msg.data;
+          let resultText = `[Tool "${msg.toolName}" returned: `;
+          if (toolData?.type === 'data_list' && toolData?.items) {
+            resultText += `${toolData.items.length} ${toolData.entity || 'items'}`;
+            if (toolData.items.length > 0) {
+              const sampleNames = toolData.items.slice(0, 5).map((i: any) => 
+                i.name_en || i.name || i.title_en || i.title || i.id
+              ).join(', ');
+              resultText += `: ${sampleNames}${toolData.items.length > 5 ? '...' : ''}`;
+            }
+          } else {
+            resultText += typeof toolData === 'string' ? toolData : JSON.stringify(toolData).substring(0, 200);
+          }
+          resultText += ']';
+          messages.push({ role: 'assistant', content: resultText });
+        }
       }
-    } else if (prompt) {
-      // Fallback: just add the current prompt
+    }
+    
+    // Add current prompt if no history or as fallback
+    if (prompt && messages.length <= 1) {
       messages.push({ role: "user", content: prompt });
     }
 
