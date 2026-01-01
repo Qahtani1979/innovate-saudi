@@ -132,7 +132,7 @@ serve(async (req) => {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   try {
-    const { prompt, response_json_schema, system_prompt, session_id } = await req.json();
+    const { prompt, response_json_schema, system_prompt, session_id, messages: conversationHistory } = await req.json();
     
     // Get user from auth header
     let userId: string | null = null;
@@ -179,11 +179,10 @@ serve(async (req) => {
 
     const messages: { role: string; content: string }[] = [];
     
+    // Add system prompt with Saudi context
     if (system_prompt) {
-      // If custom system prompt provided, enhance it with Saudi context
       messages.push({ role: "system", content: `${system_prompt}\n\n${COMPACT_SAUDI_CONTEXT}\n\n${INNOVATION_EMPHASIS}` });
     } else {
-      // Use full Saudi context as default system prompt
       messages.push({ 
         role: "system", 
         content: `You are a helpful AI assistant for Saudi Arabia's Ministry of Municipalities and Housing (MoMAH).
@@ -196,7 +195,28 @@ Respond in the requested format while emphasizing innovation opportunities. Prov
       });
     }
     
-    messages.push({ role: "user", content: prompt });
+    // Add conversation history if provided (for context continuity)
+    if (conversationHistory && Array.isArray(conversationHistory)) {
+      console.log(`Adding ${conversationHistory.length} messages from conversation history`);
+      for (const msg of conversationHistory) {
+        if (msg.role === 'user' || msg.role === 'assistant') {
+          // For assistant messages with structured content, extract text
+          let content = msg.content || '';
+          if (msg.structured?.sections) {
+            content = msg.structured.sections
+              .filter((s: any) => s.content)
+              .map((s: any) => s.content)
+              .join('\n');
+          }
+          if (content.trim()) {
+            messages.push({ role: msg.role, content });
+          }
+        }
+      }
+    } else if (prompt) {
+      // Fallback: just add the current prompt
+      messages.push({ role: "user", content: prompt });
+    }
 
     const body: Record<string, unknown> = {
       model: "google/gemini-2.5-flash",

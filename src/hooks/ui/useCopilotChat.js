@@ -38,10 +38,14 @@ export function useCopilotChat() {
     useEffect(() => {
         if (orchestrator && invokeAI) {
             console.log('[useCopilotChat] Wiring AI caller to orchestrator with structured schema');
-            orchestrator.setCaller(async ({ system, user: userMessage }) => {
+            orchestrator.setCaller(async ({ system, user: userMessage, conversationHistory }) => {
+                // Build full messages array including history for context continuity
+                const fullMessages = conversationHistory || [];
+                
                 const result = await invokeAI({
                     system_prompt: system,
-                    prompt: userMessage,
+                    prompt: userMessage, // Fallback if no history
+                    messages: fullMessages,
                     response_json_schema: STRUCTURED_RESPONSE_SCHEMA
                 });
                 if (result.success && result.data) {

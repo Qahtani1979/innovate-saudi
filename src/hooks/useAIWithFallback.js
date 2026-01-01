@@ -44,14 +44,14 @@ export function useAIWithFallback(options = {}) {
   const [error, setError] = useState(null);
   const [rateLimitInfo, setRateLimitInfo] = useState(null);
 
-  const invokeAI = useCallback(async ({ prompt, response_json_schema = null, system_prompt = '' }) => {
+  const invokeAI = useCallback(async ({ prompt, response_json_schema = null, system_prompt = '', messages = null }) => {
     setStatus(AI_STATUS.LOADING);
     setError(null);
 
     try {
       const sessionId = getSessionId();
       const { data: result, error: invokeError } = await supabase.functions.invoke('invoke-llm', {
-        body: { prompt, response_json_schema, system_prompt, session_id: sessionId }
+        body: { prompt, response_json_schema, system_prompt, session_id: sessionId, messages }
       });
 
       if (invokeError) {
