@@ -169,7 +169,7 @@ Protocol:
     /**
      * Main Entry Point
      * @param {string} message - User message
-     * @param {Object} systemContext - Context object with tools, systemPrompt, messages
+     * @param {Object} systemContext - Context object with tools, systemPrompt, messages, toolResult
      */
     async processMessage(message, systemContext = {}) {
         // Processing message with context
@@ -181,7 +181,13 @@ Protocol:
             // 1. Prepare Prompt - use provided context
             const tools = systemContext?.tools || [];
             // Use externally provided prompt OR build default
-            const systemPrompt = systemContext?.systemPrompt || this.buildSystemPrompt(tools);
+            let systemPrompt = systemContext?.systemPrompt || this.buildSystemPrompt(tools);
+
+            // If we have a tool result, inject it into the context for the LLM
+            if (systemContext?.toolResult) {
+                const toolResultContext = this.formatToolResultForPrompt(systemContext.toolResult);
+                systemPrompt += `\n\n## TOOL EXECUTION RESULT\nThe following data was just retrieved from the system:\n${toolResultContext}\n\nPlease present this information to the user in a helpful, structured way.`;
+            }
 
             // 2. Call AI (Real or Mock)
             let aiResponseText = "";
@@ -284,7 +290,18 @@ Protocol:
                 if (this.executor) {
                     const result = await this.executor(toolCall.tool, toolCall.args);
                     store.setIsThinking(false);
-                    return result;
+                    
+                    // Return tool result with context for follow-up
+                    if (result.status === 'pending_confirmation') {
+                        return result;
+                    }
+                    
+                    return {
+                        type: 'tool_result',
+                        toolName: toolCall.tool,
+                        args: toolCall.args,
+                        data: result
+                    };
                 } else {
                     console.warn("[Orchestrator] Executor not set, returning tool call info");
                     store.setIsThinking(false);
@@ -320,6 +337,38 @@ Protocol:
                 }]
             };
         }
+    }
+
+    /**
+     * Format tool result data for injection into LLM prompt
+     */
+    formatToolResultForPrompt(toolResult) {
+        if (!toolResult) return 'No data';
+        
+        // Handle data_list type (most common from our tools)
+        if (toolResult.type === 'data_list' && toolResult.items) {
+            const entity = toolResult.entity || 'items';
+            const items = toolResult.items;
+            
+            let formatted = `Entity Type: ${entity}\nTotal Items: ${items.length}\n\nItems:\n`;
+            items.forEach((item, i) => {
+                const name = item.name_en || item.name || item.title_en || item.title || item.id;
+                const nameAr = item.name_ar || item.title_ar || '';
+                const status = item.status ? ` (${item.status})` : '';
+                const sector = item.sector ? ` - Sector: ${item.sector}` : '';
+                formatted += `${i + 1}. ${name}${nameAr ? ` / ${nameAr}` : ''}${status}${sector}\n`;
+            });
+            
+            return formatted;
+        }
+        
+        // Handle confirmation_request type
+        if (toolResult.type === 'confirmation_request') {
+            return `Action requires confirmation: ${toolResult.message}`;
+        }
+        
+        // Fallback to JSON stringification
+        return typeof toolResult === 'string' ? toolResult : JSON.stringify(toolResult, null, 2);
     }
 }
 
