@@ -7,6 +7,129 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Fetch platform data for context injection
+async function fetchPlatformContext(supabase: any): Promise<string> {
+  try {
+    // Fetch sectors with subsectors count
+    const { data: sectors } = await supabase
+      .from('sectors')
+      .select('id, name_en, name_ar')
+      .limit(20);
+    
+    // Fetch subsectors grouped by sector
+    const { data: subsectors } = await supabase
+      .from('subsectors')
+      .select('id, name_en, name_ar, sector_id')
+      .limit(50);
+    
+    // Fetch challenge summary by status
+    const { data: challenges } = await supabase
+      .from('challenges')
+      .select('id, title_en, title_ar, status, sector_id, priority')
+      .eq('is_deleted', false)
+      .limit(30);
+    
+    // Fetch pilot summary
+    const { data: pilots } = await supabase
+      .from('pilots')
+      .select('id, title_en, title_ar, status, sector_id')
+      .eq('is_deleted', false)
+      .limit(20);
+    
+    // Fetch solutions
+    const { data: solutions } = await supabase
+      .from('solutions')
+      .select('id, name_en, name_ar, status, category')
+      .eq('is_deleted', false)
+      .limit(20);
+    
+    // Fetch municipalities
+    const { data: municipalities } = await supabase
+      .from('municipalities')
+      .select('id, name_en, name_ar')
+      .limit(30);
+    
+    // Build sector hierarchy
+    const sectorMap = new Map();
+    sectors?.forEach((s: any) => {
+      sectorMap.set(s.id, { ...s, subsectors: [] });
+    });
+    subsectors?.forEach((ss: any) => {
+      if (sectorMap.has(ss.sector_id)) {
+        sectorMap.get(ss.sector_id).subsectors.push(ss);
+      }
+    });
+    
+    // Build context string
+    let context = `\n## PLATFORM DATA (CURRENT STATE)\n\n`;
+    
+    // Sectors and subsectors
+    context += `### Available Sectors (${sectors?.length || 0} total):\n`;
+    sectorMap.forEach((sector: any) => {
+      context += `- **${sector.name_en}** (${sector.name_ar})`;
+      if (sector.subsectors.length > 0) {
+        const subNames = sector.subsectors.slice(0, 5).map((ss: any) => ss.name_en).join(', ');
+        context += ` → Subsectors: ${subNames}${sector.subsectors.length > 5 ? '...' : ''}`;
+      }
+      context += `\n`;
+    });
+    
+    // Challenges summary
+    context += `\n### Challenges (${challenges?.length || 0} in database):\n`;
+    const statusCounts: Record<string, number> = {};
+    challenges?.forEach((c: any) => {
+      statusCounts[c.status || 'unknown'] = (statusCounts[c.status || 'unknown'] || 0) + 1;
+    });
+    Object.entries(statusCounts).forEach(([status, count]) => {
+      context += `- ${status}: ${count} challenges\n`;
+    });
+    
+    // Sample challenges
+    if (challenges?.length > 0) {
+      context += `\nSample challenges:\n`;
+      challenges.slice(0, 5).forEach((c: any) => {
+        context += `- "${c.title_en}" (${c.status || 'N/A'}, Priority: ${c.priority || 'N/A'})\n`;
+      });
+    }
+    
+    // Pilots summary
+    context += `\n### Pilots (${pilots?.length || 0} in database):\n`;
+    const pilotStatusCounts: Record<string, number> = {};
+    pilots?.forEach((p: any) => {
+      pilotStatusCounts[p.status || 'unknown'] = (pilotStatusCounts[p.status || 'unknown'] || 0) + 1;
+    });
+    Object.entries(pilotStatusCounts).forEach(([status, count]) => {
+      context += `- ${status}: ${count} pilots\n`;
+    });
+    
+    // Solutions summary
+    context += `\n### Solutions (${solutions?.length || 0} in database):\n`;
+    const solutionCategories: Record<string, number> = {};
+    solutions?.forEach((s: any) => {
+      solutionCategories[s.category || 'uncategorized'] = (solutionCategories[s.category || 'uncategorized'] || 0) + 1;
+    });
+    Object.entries(solutionCategories).forEach(([cat, count]) => {
+      context += `- ${cat}: ${count} solutions\n`;
+    });
+    
+    // Municipalities
+    context += `\n### Municipalities (${municipalities?.length || 0} available):\n`;
+    municipalities?.slice(0, 10).forEach((m: any) => {
+      context += `- ${m.name_en} (${m.name_ar})\n`;
+    });
+    if ((municipalities?.length || 0) > 10) {
+      context += `- ... and ${(municipalities?.length || 0) - 10} more\n`;
+    }
+    
+    context += `\n**IMPORTANT:** When users ask to list or view data, use the ACTUAL entities above. Do not make up names or data.\n`;
+    
+    return context;
+  } catch (error) {
+    console.error('Error fetching platform context:', error);
+    return '\n## PLATFORM DATA: Unable to fetch. Respond based on general knowledge.\n';
+  }
+}
+
 // Get user role from database
 async function getUserRole(supabase: any, userId: string | null, userEmail: string | null): Promise<string> {
   if (!userId && !userEmail) return 'anonymous';
@@ -177,11 +300,15 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
+    // Fetch actual platform data for context
+    const platformContext = await fetchPlatformContext(supabase);
+    console.log("Platform context fetched, length:", platformContext.length);
+
     const messages: { role: string; content: string }[] = [];
     
-    // Add system prompt with Saudi context
+    // Add system prompt with Saudi context AND platform data
     if (system_prompt) {
-      messages.push({ role: "system", content: `${system_prompt}\n\n${COMPACT_SAUDI_CONTEXT}\n\n${INNOVATION_EMPHASIS}` });
+      messages.push({ role: "system", content: `${system_prompt}\n\n${COMPACT_SAUDI_CONTEXT}\n\n${INNOVATION_EMPHASIS}\n\n${platformContext}` });
     } else {
       messages.push({ 
         role: "system", 
@@ -190,6 +317,8 @@ serve(async (req) => {
 ${SAUDI_MOMAH_CONTEXT}
 
 ${INNOVATION_EMPHASIS}
+
+${platformContext}
 
 Respond in the requested format while emphasizing innovation opportunities. Provide bilingual support (English/Arabic) when appropriate.` 
       });
