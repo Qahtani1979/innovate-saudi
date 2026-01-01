@@ -326,17 +326,19 @@ Respond in the requested format while emphasizing innovation opportunities. Prov
     
     // Add conversation history if provided (for context continuity)
     if (conversationHistory && Array.isArray(conversationHistory)) {
-      console.log(`Adding ${conversationHistory.length} messages from conversation history`);
+      console.log(`[invoke-llm] Processing ${conversationHistory.length} messages from conversation history`);
       for (const msg of conversationHistory) {
         // Handle user messages
         if (msg.role === 'user') {
           if (msg.content?.trim()) {
             messages.push({ role: 'user', content: msg.content });
+            console.log(`[invoke-llm] Added user message: ${msg.content.substring(0, 50)}...`);
           }
         }
-        // Handle assistant messages
+        // Handle assistant messages - CRITICAL: Include full tool context data
         else if (msg.role === 'assistant') {
           let content = msg.content || '';
+          
           // For structured responses, extract readable text
           if (msg.structured?.sections) {
             content = msg.structured.sections
@@ -345,35 +347,56 @@ Respond in the requested format while emphasizing innovation opportunities. Prov
                 if (s.type === 'bullet_list' && s.metadata?.items) {
                   return s.metadata.items.join('\n- ');
                 }
+                if (s.type === 'data_table' && s.metadata?.rows) {
+                  return s.metadata.rows.map((r: any) => Object.values(r).join(' | ')).join('\n');
+                }
                 return s.content;
               })
               .join('\n');
           }
-          // Include tool context if available
-          if (msg.toolContext) {
-            content += `\n[Retrieved ${msg.toolContext.name} data: ${msg.toolContext.data?.items?.length || 0} items]`;
+          
+          // CRITICAL: Include FULL tool context data in history for continuity
+          if (msg.toolContext?.data) {
+            const toolData = msg.toolContext.data;
+            if (toolData.type === 'data_list' && toolData.items) {
+              const entity = toolData.entity || 'items';
+              content += `\n\n[RETRIEVED DATA - ${entity.toUpperCase()}]\n`;
+              toolData.items.forEach((item: any, i: number) => {
+                const name = item.name_en || item.name || item.title_en || item.title || item.id;
+                const status = item.status ? ` (${item.status})` : '';
+                const sector = item.sector ? ` - ${item.sector}` : '';
+                content += `${i + 1}. ${name}${status}${sector}\n`;
+              });
+            }
           }
+          
           if (content.trim()) {
             messages.push({ role: 'assistant', content });
+            console.log(`[invoke-llm] Added assistant message with ${msg.toolContext ? 'tool context' : 'no tool context'}`);
           }
         }
-        // Handle tool_result messages - convert to assistant context
+        // Handle tool_result messages - expand to full data
         else if (msg.role === 'tool_result') {
           const toolData = msg.data;
-          let resultText = `[Tool "${msg.toolName}" returned: `;
+          let resultText = `[TOOL RESULT: ${msg.toolName}]\n`;
+          
           if (toolData?.type === 'data_list' && toolData?.items) {
-            resultText += `${toolData.items.length} ${toolData.entity || 'items'}`;
-            if (toolData.items.length > 0) {
-              const sampleNames = toolData.items.slice(0, 5).map((i: any) => 
-                i.name_en || i.name || i.title_en || i.title || i.id
-              ).join(', ');
-              resultText += `: ${sampleNames}${toolData.items.length > 5 ? '...' : ''}`;
-            }
+            const entity = toolData.entity || 'items';
+            resultText += `Retrieved ${toolData.items.length} ${entity}:\n`;
+            toolData.items.forEach((item: any, i: number) => {
+              const name = item.name_en || item.name || item.title_en || item.title || item.id;
+              const status = item.status ? ` [${item.status}]` : '';
+              const sector = item.sector ? ` (${item.sector})` : '';
+              resultText += `${i + 1}. ${name}${status}${sector}\n`;
+            });
+          } else if (typeof toolData === 'string') {
+            resultText += toolData;
           } else {
-            resultText += typeof toolData === 'string' ? toolData : JSON.stringify(toolData).substring(0, 200);
+            resultText += JSON.stringify(toolData, null, 2);
           }
-          resultText += ']';
+          
           messages.push({ role: 'assistant', content: resultText });
+          console.log(`[invoke-llm] Added tool result for: ${msg.toolName}`);
         }
       }
     }
