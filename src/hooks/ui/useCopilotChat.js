@@ -104,28 +104,51 @@ export function useCopilotChat() {
                 return;
             }
 
-            // Handle tool execution results - these need to be added to context
-            // and optionally trigger a follow-up LLM call to generate a proper response
+            // Handle tool execution results - feed the ACTUAL DATA back to LLM
             if (response.type === 'tool_result') {
-                const toolResultContent = formatToolResultForContext(response, language);
+                console.log('[useCopilotChat] Tool result received:', response.toolName, response.data);
                 
-                // Add tool result as a context message (not displayed directly)
-                const toolResultMsg = {
-                    role: 'tool_result',
-                    toolName: response.toolName,
-                    content: toolResultContent,
-                    data: response.data
+                // Format the full tool result data for the LLM
+                const toolData = response.data;
+                let toolResultDescription = '';
+                
+                if (toolData?.type === 'data_list' && toolData.items) {
+                    const entity = toolData.entity || 'items';
+                    const items = toolData.items;
+                    
+                    toolResultDescription = `The "${response.toolName}" tool returned ${items.length} ${entity}(s):\n`;
+                    items.forEach((item, i) => {
+                        const name = item.name_en || item.name || item.title_en || item.title || item.id;
+                        const nameAr = item.name_ar || item.title_ar || '';
+                        const status = item.status ? ` [Status: ${item.status}]` : '';
+                        const sector = item.sector ? ` [Sector: ${item.sector}]` : '';
+                        toolResultDescription += `${i + 1}. ${name}${nameAr ? ` (${nameAr})` : ''}${status}${sector}\n`;
+                    });
+                } else if (toolData?.type === 'confirmation_request') {
+                    toolResultDescription = `Action requires confirmation: ${toolData.message}`;
+                } else if (typeof toolData === 'string') {
+                    toolResultDescription = toolData;
+                } else {
+                    toolResultDescription = JSON.stringify(toolData, null, 2);
+                }
+                
+                // Create assistant message with the tool result embedded
+                const assistantContextMsg = {
+                    role: 'assistant',
+                    content: toolResultDescription,
+                    toolContext: { name: response.toolName, data: response.data }
                 };
 
-                // Now ask the LLM to respond based on the tool result
+                // Now ask the LLM to format this data nicely for the user
+                console.log('[useCopilotChat] Requesting LLM to present tool data');
                 const followUpResponse = await orchestrator.processMessage(
-                    `[Tool "${response.toolName}" returned data. Please present this to the user in a helpful way.]`,
+                    `Present the data I just retrieved to the user. The data is already in my previous message. Format it nicely with action buttons if appropriate.`,
                     {
                         tools: currentTools,
                         systemPrompt: systemPrompt,
-                        messages: [...messages, userMsg, toolResultMsg],
+                        messages: [...messages, userMsg, assistantContextMsg],
                         language: language,
-                        toolResult: response.data // Pass tool result for LLM context
+                        toolResult: response.data
                     }
                 );
 
@@ -140,7 +163,7 @@ export function useCopilotChat() {
                         toolContext: { name: response.toolName, data: response.data }
                     }]);
                 } else {
-                    // Direct display of tool result with UI
+                    // Fallback: Direct display of tool result
                     setMessages(prev => [...prev, {
                         role: 'assistant',
                         content: '',
