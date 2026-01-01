@@ -186,11 +186,15 @@ Protocol:
             // 2. Call AI (Real or Mock)
             let aiResponseText = "";
             if (this.caller) {
-                // Pass system prompt + user message to the hook/caller
+                // Get conversation history for context continuity
+                const conversationHistory = systemContext?.messages || [];
+                
+                // Pass system prompt + user message + full history to the hook/caller
                 const result = await this.caller({
                     system: systemPrompt,
                     user: message,
-                    tools: tools
+                    tools: tools,
+                    conversationHistory: conversationHistory
                 });
                 aiResponseText = typeof result === 'string' ? result : (result.message || JSON.stringify(result));
             } else {
