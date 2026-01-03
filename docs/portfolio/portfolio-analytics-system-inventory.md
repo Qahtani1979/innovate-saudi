@@ -144,6 +144,21 @@ The Portfolio & Analytics System provides portfolio management, predictive analy
 
 ---
 
+## 🤖 AI Prompts (6)
+
+**Location:** `src/lib/ai/prompts/portfolio/`
+
+| Prompt | Purpose | Schema |
+|--------|---------|--------|
+| `getPortfolioHealthPrompt` | Portfolio health analysis | `portfolioHealthSchema` |
+| `getPortfolioOptimizerPrompt` | Optimization recommendations | `portfolioOptimizerSchema` |
+| `getCollaborationSuggesterPrompt` | Collaboration suggestions | `collaborationSuggesterSchema` |
+| `buildCustomReportPrompt` | AI-powered report generation | `CUSTOM_REPORT_SCHEMA` |
+| `buildPortfolioPredictivePrompt` | Predictive analytics | `PREDICTIVE_ANALYTICS_SCHEMA` |
+| `buildAnomalyDetectionPrompt` | Anomaly detection | `ANOMALY_DETECTION_SCHEMA` |
+
+---
+
 ## 🔐 RBAC Permissions
 
 | Permission | Description |

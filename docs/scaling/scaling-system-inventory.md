@@ -1,7 +1,7 @@
 # Scaling System Inventory
 
-> **Version:** 1.0  
-> **Last Updated:** 2025-12-14  
+> **Version:** 1.1  
+> **Last Updated:** 2026-01-03  
 > **Total Assets:** 28 files (8 pages, 18 components, 2 hooks)  
 > **Parent System:** Innovation Scaling Management  
 > **Hub Page:** `/scaling-workflow`
@@ -64,11 +64,14 @@ The Scaling System manages the transition of successful pilots to full-scale imp
 
 ## 🗄️ Database Tables
 
-| Table | Purpose |
-|-------|---------|
-| `scaling_plans` | Scaling plan data |
-| `scaling_rollouts` | Rollout tracking |
-| `scaling_municipalities` | Municipal scaling status |
+| Table | Purpose | Status |
+|-------|---------|--------|
+| `scaling_plans` | Scaling plan data | ✅ Exists |
+| `scaling_readiness` | Readiness assessments | ✅ Exists |
+| `scaling_rollouts` | Rollout tracking | ⚠️ Not implemented |
+| `scaling_municipalities` | Municipal scaling status | ⚠️ Not implemented |
+
+> **Note:** `scaling_rollouts` and `scaling_municipalities` are documented but not yet created. Create via migration if needed.
 
 ---
 
