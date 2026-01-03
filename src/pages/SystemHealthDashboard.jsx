@@ -51,8 +51,9 @@ import NativeMobileApp from '@/components/mobile/NativeMobileApp';
 import AdvancedAnalyticsDashboard from '@/components/analytics/AdvancedAnalyticsDashboard';
 import WidgetLibrary from '@/components/dashboards/WidgetLibrary';
 import { VoiceAssistant } from '@/components/voice/VoiceAssistant';
+import ProtectedPage from '@/components/permissions/ProtectedPage';
 
-export default function SystemHealthDashboard() {
+function SystemHealthDashboard() {
   const { language, t } = useLanguage();
 
   // Custom Hooks
@@ -297,3 +298,5 @@ export default function SystemHealthDashboard() {
     </PageLayout>
   );
 }
+
+export default ProtectedPage(SystemHealthDashboard, { requireAdmin: true });

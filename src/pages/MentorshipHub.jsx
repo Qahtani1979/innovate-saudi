@@ -210,4 +210,4 @@ function MentorshipHub() {
   );
 }
 
-export default ProtectedPage(MentorshipHub, { requiredPermissions: [] });
+export default ProtectedPage(MentorshipHub, { requiredPermissions: ['mentorship_manage', 'mentorship_view'] });

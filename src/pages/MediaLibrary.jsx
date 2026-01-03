@@ -50,7 +50,9 @@ const sortOptions = [
   { value: 'download_count', label: { en: 'Downloads', ar: 'التحميلات' }, icon: Download },
 ];
 
-export default function MediaLibrary() {
+import ProtectedPage from '@/components/permissions/ProtectedPage';
+
+function MediaLibrary() {
   const { language, isRTL, t } = useLanguage();
   const [viewMode, setViewMode] = useState('grid');
   const [showFilters, setShowFilters] = useState(true);
@@ -540,3 +542,5 @@ export default function MediaLibrary() {
     </PageLayout>
   );
 }
+
+export default ProtectedPage(MediaLibrary, { requireAdmin: true });
