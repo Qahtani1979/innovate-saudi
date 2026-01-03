@@ -49,7 +49,7 @@ export { useCommunicationAudienceStats } from './useCommunicationAudienceStats';
 export { useRecipientSelection } from './useRecipientSelection';
 
 // Phase 6: Monitoring Hooks
-export { useStrategyTrends } from './useStrategyTrends';
+export { useGlobalTrends, usePolicyDocuments } from './useStrategyTrends';
 export { useStrategyImpactStats } from './useStrategyImpactStats';
 
 // Phase 7: Evaluation Hooks
