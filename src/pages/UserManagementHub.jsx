@@ -68,7 +68,8 @@ function UserManagementHub() {
   const { useUserActivities } = useSystemAnalytics();
   const { data: activities = [] } = useUserActivities(100);
   const { organizations, municipalities } = useTaxonomy();
-  const { data: users = [] } = useUsersWithVisibility({ limit: 1000 });
+  const { data: usersResult } = useUsersWithVisibility({ pageSize: 1000 });
+  const users = usersResult?.data || [];
 
   // Directory filters
   const [searchTerm, setSearchTerm] = useState('');
