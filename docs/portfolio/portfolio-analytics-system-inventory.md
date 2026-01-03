@@ -1,8 +1,8 @@
 # Portfolio & Analytics System Inventory
 
-> **Version:** 1.0  
-> **Last Updated:** 2025-12-14  
-> **Total Assets:** 32 files (15 pages, 12 components, 4 hooks)  
+> **Version:** 1.1  
+> **Last Updated:** 2026-01-03  
+> **Total Assets:** 35 files (15 pages, 12 components, 8 hooks)  
 > **Parent System:** Portfolio Management & Analytics  
 > **Hub Page:** `/portfolio`
 
@@ -124,6 +124,23 @@ The Portfolio & Analytics System provides portfolio management, predictive analy
 | `recipients` | TEXT[] | Email recipients |
 | `next_run_at` | TIMESTAMPTZ | Next scheduled run |
 | `is_active` | BOOLEAN | Active status |
+
+---
+
+## 🪝 Hooks (8)
+
+**Location:** `src/hooks/portfolio/`
+
+| Hook | Purpose | Returns |
+|------|---------|---------|
+| `useCustomReports` | Fetch all custom reports with filters | `{ data, isLoading, error }` |
+| `useCustomReport` | Fetch single report by ID | `{ data, isLoading, error }` |
+| `useCreateCustomReport` | Create new custom report | `{ mutate, isPending }` |
+| `useUpdateCustomReport` | Update existing report | `{ mutate, isPending }` |
+| `useDeleteCustomReport` | Soft delete report | `{ mutate, isPending }` |
+| `useReportSchedules` | Fetch report schedules | `{ data, isLoading, error }` |
+| `useCreateReportSchedule` | Create schedule | `{ mutate, isPending }` |
+| `useToggleScheduleActive` | Toggle schedule on/off | `{ mutate, isPending }` |
 
 ---
 
