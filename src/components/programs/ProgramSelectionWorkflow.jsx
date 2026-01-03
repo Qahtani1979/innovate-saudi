@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { useLanguage } from './LanguageContext';
+import { useLanguage } from '../LanguageContext';
 import { Award, CheckCircle2, X, Loader2, Mail, XCircle } from 'lucide-react';
 
 import { useProgramApplications } from '@/hooks/useProgramDetails';

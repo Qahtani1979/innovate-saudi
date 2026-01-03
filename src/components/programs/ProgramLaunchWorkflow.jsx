@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { useLanguage } from './LanguageContext';
+import { useLanguage } from '../LanguageContext';
 import { Rocket, X, Loader2 } from 'lucide-react';
 import { useEmailTrigger } from '@/hooks/useEmailTrigger';
 import { useProgramMutations } from '@/hooks/useProgramMutations';
