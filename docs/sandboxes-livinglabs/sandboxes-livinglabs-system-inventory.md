@@ -109,12 +109,12 @@ The Sandboxes & Living Labs System manages regulatory sandboxes for testing inno
 | `ResearchOutputImpactTracker.jsx` | Research impact | LivingLabDetail |
 | `StrategicAlignmentLivingLab.jsx` | Strategic alignment | LivingLabDetail |
 
-### Root-Level Components
-**Location:** `src/components/`
+### Dashboard & Management (consolidated from root)
+**Location:** `src/components/living-labs/`
 
 | Component | Description |
 |-----------|-------------|
-| `LivingLabAccreditationWorkflow.jsx` | Accreditation workflow |
+| `LivingLabAccreditationWorkflowRoot.jsx` | Accreditation workflow |
 | `LivingLabDashboard.jsx` | Dashboard |
 | `LivingLabEventManager.jsx` | Event management |
 | `LivingLabExpertMatching.jsx` | Expert matching |
@@ -122,6 +122,12 @@ The Sandboxes & Living Labs System manages regulatory sandboxes for testing inno
 | `LivingLabPublicationSubmission.jsx` | Publication submission |
 | `LivingLabResearchMilestoneTracker.jsx` | Milestone tracking |
 | `LivingLabResourceBooking.jsx` | Resource booking |
+
+### Root-Level Sandbox Components
+**Location:** `src/components/`
+
+| Component | Description |
+|-----------|-------------|
 | `SandboxAIRiskAssessment.jsx` | AI risk assessment |
 | `SandboxApplicationForm.jsx` | Application form |
 | `SandboxApplicationWizard.jsx` | Application wizard |

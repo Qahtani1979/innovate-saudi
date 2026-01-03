@@ -11,7 +11,7 @@ import { useLanguage } from '../components/LanguageContext';
 import TrendingSolutionsWidget from '../components/home/TrendingSolutionsWidget';
 import DeadlineAlerts from '../components/DeadlineAlerts';
 import ProgressTracker from '../components/ProgressTracker';
-import LivingLabDashboard from '../components/LivingLabDashboard';
+import LivingLabDashboard from '../components/living-labs/LivingLabDashboard';
 import MyWorkPrioritizer from '../components/MyWorkPrioritizer';
 import SmartRecommendation from '../components/SmartRecommendation';
 import PlatformStatsWidget from '../components/PlatformStatsWidget';

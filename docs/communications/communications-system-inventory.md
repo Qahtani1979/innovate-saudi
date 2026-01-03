@@ -1,8 +1,8 @@
 # Communications System Inventory
 
-> **Version:** 1.0  
-> **Last Updated:** 2025-12-14  
-> **Total Assets:** 32 files (12 pages, 17 components, 3 hooks)  
+> **Version:** 1.1  
+> **Last Updated:** 2026-01-03  
+> **Total Assets:** 32 files (12 pages, 17 components, 8 hooks)  
 > **Parent System:** Communications & Messaging  
 > **Hub Page:** `/communications-hub`
 
@@ -85,13 +85,33 @@ The Communications System manages platform communications including email campai
 
 ## 🗄️ Database Tables
 
-| Table | Purpose |
-|-------|---------|
-| `email_campaigns` | Campaign data |
-| `campaign_recipients` | Campaign recipients |
-| `email_logs` | Email logs |
-| `citizen_notifications` | Citizen notifications |
-| `announcements` | Announcements |
+| Table | Purpose | Status |
+|-------|---------|--------|
+| `email_campaigns` | Campaign data | ✅ Verified |
+| `campaign_recipients` | Campaign recipients | ✅ Verified |
+| `email_logs` | Email logs | ✅ Verified |
+| `communication_analytics` | Analytics data | ✅ Verified |
+| `communication_notifications` | Notifications | ✅ Verified |
+| `communication_plans` | Communication plans | ✅ Verified |
+| `messages` | Direct messages | ✅ Verified |
+| `notifications` | System notifications | ✅ Verified |
+
+---
+
+## 🪝 Hooks (8)
+
+**Location:** `src/hooks/`
+
+| Hook | Purpose |
+|------|---------|
+| `useCommunicationHub` | Communication hub data |
+| `useMessaging` | Direct messaging |
+| `useNotifications` | Notification management |
+| `useNotificationPreferences` | User preferences |
+| `useEmailTemplates` | Email template CRUD |
+| `useEmailCampaigns` | Campaign management |
+| `useEmailLogs` | Email log viewing |
+| `useEmailAnalytics` | Email analytics |
 
 ---
 
