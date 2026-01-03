@@ -305,4 +305,4 @@ function ExpertRegistry() {
   );
 }
 
-export default ProtectedPage(ExpertRegistry, { requiredPermissions: [] });
+export default ProtectedPage(ExpertRegistry, { requiredPermissions: ['expert_manage', 'expert_view'], requireAdmin: true });

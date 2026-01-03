@@ -103,4 +103,4 @@ function StrategicCommunicationsHub() {
   );
 }
 
-export default ProtectedPage(StrategicCommunicationsHub, { requiredPermissions: [] });
+export default ProtectedPage(StrategicCommunicationsHub, { requiredPermissions: ['communications_manage'], requireAdmin: true });

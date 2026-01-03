@@ -280,4 +280,4 @@ function CollaborationHub() {
   );
 }
 
-export default ProtectedPage(CollaborationHub, { requiredPermissions: [] });
+export default ProtectedPage(CollaborationHub, { requiredPermissions: ['collaboration_manage', 'collaboration_view'] });
