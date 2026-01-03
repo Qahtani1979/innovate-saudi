@@ -1,8 +1,8 @@
 # Programs System Inventory
 
-> **Version:** 1.0  
-> **Last Updated:** 2025-12-14  
-> **Total Assets:** 65 files (25 pages, 40 components, 3 hooks)  
+> **Version:** 2.0  
+> **Last Updated:** 2026-01-03  
+> **Total Assets:** 72 files (25 pages, 47 components, 3 hooks)  
 > **Parent System:** Innovation Programs Management  
 > **Hub Page:** `/programs`
 
@@ -161,29 +161,33 @@ The Programs System manages innovation programs including accelerators, incubato
 | `StrategicAlignmentWidget.jsx` | Strategic alignment | ProgramCreate |
 | `ProgramAlumniStoryboard.jsx` | Alumni storyboard | Alumni |
 
-### Root-Level Program Components
-**Location:** `src/components/`
+### Additional Program Components
+**Location:** `src/components/programs/`
 
 | Component | Description |
 |-----------|-------------|
-| `ProgramApplicationScreening.jsx` | Application screening |
-| `ProgramCompletionWorkflow.jsx` | Completion workflow |
-| `ProgramLaunchWorkflow.jsx` | Launch workflow |
-| `ProgramMentorMatching.jsx` | Mentor matching |
-| `ProgramMidReviewGate.jsx` | Mid-review gate |
-| `ProgramSelectionWorkflow.jsx` | Selection workflow |
-| `ProgramSessionManager.jsx` | Session management |
+| `ProgramApplicationScreening.jsx` | AI-powered application screening |
+| `ProgramCompletionWorkflow.jsx` | Program completion workflow |
+| `ProgramLaunchWorkflow.jsx` | Program launch workflow |
+| `ProgramMentorMatching.jsx` | AI mentor matching |
+| `ProgramMidReviewGate.jsx` | Mid-program review gate |
+| `ProgramSelectionWorkflow.jsx` | Participant selection workflow |
+| `ProgramSessionManager.jsx` | Session & event management |
 
 ---
 
-## 🪝 Hooks (3)
+## 🪝 Hooks (4)
 
-**Location:** `src/hooks/`
+**Location:** `src/hooks/` and `src/hooks/programs/`
 
 | Hook | Description |
 |------|-------------|
-| `usePrograms.js` | Core programs hook |
-| `useProgramsWithVisibility.js` | Programs with visibility |
+| `usePrograms.js` | Core programs hook (legacy wrapper) |
+| `useProgramsWithVisibility.js` | Programs with visibility filtering |
+| `useProgramDetails.js` | Single program & applications hooks |
+| `useProgramMutations.js` | Program CRUD operations |
+
+**Centralized Index:** `src/hooks/programs/index.js`
 
 ---
 

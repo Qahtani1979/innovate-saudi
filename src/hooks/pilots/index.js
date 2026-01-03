@@ -56,3 +56,8 @@ export { usePilotEnrollments } from '../useCitizenParticipation';
 // EXPENSES
 // ============================================================================
 export { usePilotExpenses } from '../useExpenseMutations';
+
+// ============================================================================
+// SCALING
+// ============================================================================
+export { usePilotScaling } from '../usePilotScaling';

@@ -1,5 +1,5 @@
 import React from 'react';
-import PilotFlowDiagram from '../components/PilotFlowDiagram';
+import PilotFlowDiagram from '../components/pilots/PilotFlowDiagram';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
