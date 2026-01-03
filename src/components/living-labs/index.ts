@@ -1,7 +1,7 @@
 /**
  * Living Labs Components Index
- * Consolidated from livinglab/, livinglabs/, and living-labs/ folders
- * @version 1.0.0
+ * Consolidated from livinglab/, livinglabs/, living-labs/, and root-level components
+ * @version 1.1.0
  */
 
 // AI Components
@@ -16,6 +16,7 @@ export { default as LabResourceUtilizationTracker } from './LabResourceUtilizati
 export { default as LabPolicyEvidenceWorkflow } from './LabPolicyEvidenceWorkflow';
 export { default as LabSolutionCertificationWorkflow } from './LabSolutionCertificationWorkflow';
 export { default as LivingLabAccreditationWorkflow } from './LivingLabAccreditationWorkflow';
+export { default as LivingLabAccreditationWorkflowRoot } from './LivingLabAccreditationWorkflowRoot';
 export { default as LivingLabWorkflowTab } from './LivingLabWorkflowTab';
 
 // Transitions
@@ -37,3 +38,12 @@ export { default as LivingLabActivityLog } from './LivingLabActivityLog';
 
 // Strategic
 export { default as StrategicAlignmentLivingLab } from './StrategicAlignmentLivingLab';
+
+// Dashboard & Management (moved from root)
+export { default as LivingLabDashboard } from './LivingLabDashboard';
+export { default as LivingLabResourceBooking } from './LivingLabResourceBooking';
+export { default as LivingLabLaunchChecklist } from './LivingLabLaunchChecklist';
+export { default as LivingLabExpertMatching } from './LivingLabExpertMatching';
+export { default as LivingLabEventManager } from './LivingLabEventManager';
+export { default as LivingLabResearchMilestoneTracker } from './LivingLabResearchMilestoneTracker';
+export { default as LivingLabPublicationSubmission } from './LivingLabPublicationSubmission';

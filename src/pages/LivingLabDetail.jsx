@@ -17,14 +17,14 @@ import {
   GraduationCap, Wrench, Monitor, Activity, TrendingUp, Shield, Rocket
 } from 'lucide-react';
 import { useState } from 'react';
-import LivingLabResourceBooking from '../components/LivingLabResourceBooking';
-import LivingLabDashboard from '../components/LivingLabDashboard';
-import LivingLabLaunchChecklist from '../components/LivingLabLaunchChecklist';
-import LivingLabAccreditationWorkflow from '../components/LivingLabAccreditationWorkflow';
-import LivingLabExpertMatching from '../components/LivingLabExpertMatching';
-import LivingLabEventManager from '../components/LivingLabEventManager';
-import LivingLabResearchMilestoneTracker from '../components/LivingLabResearchMilestoneTracker';
-import LivingLabPublicationSubmission from '../components/LivingLabPublicationSubmission';
+import LivingLabResourceBooking from '../components/living-labs/LivingLabResourceBooking';
+import LivingLabDashboard from '../components/living-labs/LivingLabDashboard';
+import LivingLabLaunchChecklist from '../components/living-labs/LivingLabLaunchChecklist';
+import LivingLabAccreditationWorkflow from '../components/living-labs/LivingLabAccreditationWorkflowRoot';
+import LivingLabExpertMatching from '../components/living-labs/LivingLabExpertMatching';
+import LivingLabEventManager from '../components/living-labs/LivingLabEventManager';
+import LivingLabResearchMilestoneTracker from '../components/living-labs/LivingLabResearchMilestoneTracker';
+import LivingLabPublicationSubmission from '../components/living-labs/LivingLabPublicationSubmission';
 import LivingLabInfrastructureWizard from '../components/living-labs/LivingLabInfrastructureWizard';
 import AICapacityOptimizer from '../components/living-labs/AICapacityOptimizer';
 import LabSolutionCertificationWorkflow from '../components/living-labs/LabSolutionCertificationWorkflow';

@@ -68,10 +68,27 @@ The Scaling System manages the transition of successful pilots to full-scale imp
 |-------|---------|--------|
 | `scaling_plans` | Scaling plan data | ✅ Exists |
 | `scaling_readiness` | Readiness assessments | ✅ Exists |
-| `scaling_rollouts` | Rollout tracking | ⚠️ Not implemented |
-| `scaling_municipalities` | Municipal scaling status | ⚠️ Not implemented |
+| `scaling_rollouts` | Rollout tracking | ✅ Created |
+| `scaling_municipalities` | Municipal scaling status | ✅ Created |
 
-> **Note:** `scaling_rollouts` and `scaling_municipalities` are documented but not yet created. Create via migration if needed.
+---
+
+## 🪝 Hooks (10)
+
+**Location:** `src/hooks/scaling/`
+
+| Hook | Purpose | Returns |
+|------|---------|---------|
+| `useScalingRollouts` | Fetch rollouts for a plan | `{ data, isLoading }` |
+| `useScalingRollout` | Fetch single rollout | `{ data, isLoading }` |
+| `useCreateScalingRollout` | Create rollout | `{ mutate, isPending }` |
+| `useUpdateScalingRollout` | Update rollout | `{ mutate, isPending }` |
+| `useScalingMunicipalities` | Fetch municipalities for plan | `{ data, isLoading }` |
+| `useScalingMunicipality` | Fetch single municipality | `{ data, isLoading }` |
+| `useCreateScalingMunicipality` | Add municipality to plan | `{ mutate, isPending }` |
+| `useUpdateScalingMunicipality` | Update municipality status | `{ mutate, isPending }` |
+| `useUpdateMunicipalityReadiness` | Update readiness score | `{ mutate, isPending }` |
+| `useDeleteScalingMunicipality` | Remove municipality | `{ mutate, isPending }` |
 
 ---
 

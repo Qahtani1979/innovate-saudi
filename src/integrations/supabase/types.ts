@@ -10461,6 +10461,81 @@ export type Database = {
           },
         ]
       }
+      scaling_municipalities: {
+        Row: {
+          barriers: Json | null
+          budget_allocated: boolean | null
+          created_at: string
+          id: string
+          infrastructure_ready: boolean | null
+          local_champion_email: string | null
+          municipality_id: string | null
+          onboarding_completed_at: string | null
+          onboarding_started_at: string | null
+          onboarding_status: string | null
+          readiness_score: number | null
+          readiness_status: string | null
+          scaling_plan_id: string | null
+          staff_assigned: boolean | null
+          support_requests: Json | null
+          training_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          barriers?: Json | null
+          budget_allocated?: boolean | null
+          created_at?: string
+          id?: string
+          infrastructure_ready?: boolean | null
+          local_champion_email?: string | null
+          municipality_id?: string | null
+          onboarding_completed_at?: string | null
+          onboarding_started_at?: string | null
+          onboarding_status?: string | null
+          readiness_score?: number | null
+          readiness_status?: string | null
+          scaling_plan_id?: string | null
+          staff_assigned?: boolean | null
+          support_requests?: Json | null
+          training_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          barriers?: Json | null
+          budget_allocated?: boolean | null
+          created_at?: string
+          id?: string
+          infrastructure_ready?: boolean | null
+          local_champion_email?: string | null
+          municipality_id?: string | null
+          onboarding_completed_at?: string | null
+          onboarding_started_at?: string | null
+          onboarding_status?: string | null
+          readiness_score?: number | null
+          readiness_status?: string | null
+          scaling_plan_id?: string | null
+          staff_assigned?: boolean | null
+          support_requests?: Json | null
+          training_status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scaling_municipalities_municipality_id_fkey"
+            columns: ["municipality_id"]
+            isOneToOne: false
+            referencedRelation: "municipalities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scaling_municipalities_scaling_plan_id_fkey"
+            columns: ["scaling_plan_id"]
+            isOneToOne: false
+            referencedRelation: "scaling_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scaling_plans: {
         Row: {
           approach: string | null
@@ -10690,6 +10765,75 @@ export type Database = {
             columns: ["pilot_id"]
             isOneToOne: false
             referencedRelation: "pilots_public_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scaling_rollouts: {
+        Row: {
+          actual_completion_date: string | null
+          blockers: Json | null
+          created_at: string
+          id: string
+          municipality_id: string | null
+          notes: string | null
+          phase: string
+          progress_percentage: number | null
+          rollout_lead_email: string | null
+          scaling_plan_id: string | null
+          start_date: string | null
+          status: string
+          success_metrics: Json | null
+          target_completion_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          actual_completion_date?: string | null
+          blockers?: Json | null
+          created_at?: string
+          id?: string
+          municipality_id?: string | null
+          notes?: string | null
+          phase?: string
+          progress_percentage?: number | null
+          rollout_lead_email?: string | null
+          scaling_plan_id?: string | null
+          start_date?: string | null
+          status?: string
+          success_metrics?: Json | null
+          target_completion_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actual_completion_date?: string | null
+          blockers?: Json | null
+          created_at?: string
+          id?: string
+          municipality_id?: string | null
+          notes?: string | null
+          phase?: string
+          progress_percentage?: number | null
+          rollout_lead_email?: string | null
+          scaling_plan_id?: string | null
+          start_date?: string | null
+          status?: string
+          success_metrics?: Json | null
+          target_completion_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scaling_rollouts_municipality_id_fkey"
+            columns: ["municipality_id"]
+            isOneToOne: false
+            referencedRelation: "municipalities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scaling_rollouts_scaling_plan_id_fkey"
+            columns: ["scaling_plan_id"]
+            isOneToOne: false
+            referencedRelation: "scaling_plans"
             referencedColumns: ["id"]
           },
         ]
