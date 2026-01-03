@@ -9,7 +9,7 @@ import { Megaphone, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import AIStatusIndicator from '@/components/ai/AIStatusIndicator';
-import { buildChallengeToRDPrompt, CHALLENGE_TO_RD_SCHEMA } from '@/lib/ai/prompts/challenges/challengeToRD';
+import { buildRDScopePrompt, RD_SCOPE_SCHEMA } from '@/lib/ai/prompts/challenges/challengeToRD';
 
 import { useConvertChallengeToRDCall } from '@/hooks/useChallengeConversionMutations';
 
@@ -43,8 +43,8 @@ export default function ChallengeToRDWizard({ challenge, onClose, onSuccess }) {
 
   const generateRDCall = async () => {
     const response = await invokeAI({
-      prompt: buildChallengeToRDPrompt(challenge),
-      response_json_schema: CHALLENGE_TO_RD_SCHEMA
+      prompt: buildRDScopePrompt(challenge),
+      response_json_schema: RD_SCOPE_SCHEMA
     });
 
     if (response.success) {
