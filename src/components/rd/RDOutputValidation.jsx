@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { useLanguage } from './LanguageContext';
+import { useLanguage } from '../LanguageContext';
 import { CheckCircle2, X, Loader2, Sparkles } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { useRDMutations } from '@/hooks/useRDMutations';
@@ -18,8 +18,6 @@ export default function RDOutputValidation({ project, onClose }) {
   const { invokeAI, status, isLoading: validating, isAvailable, rateLimitInfo } = useAIWithFallback();
 
   const { validateProjectOutputs } = useRDMutations();
-
-  /* removed validateMutation */
 
   const runAIValidation = async () => {
     const prompt = `Validate R&D project outputs:

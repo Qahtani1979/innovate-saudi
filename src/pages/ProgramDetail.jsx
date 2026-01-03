@@ -14,13 +14,13 @@ import {
   Send, Image, Lightbulb, Activity, BookOpen, Loader2, X,
   Rocket, Filter
 } from 'lucide-react';
-import ProgramLaunchWorkflow from '../components/ProgramLaunchWorkflow';
-import ProgramApplicationScreening from '../components/ProgramApplicationScreening';
-import ProgramSelectionWorkflow from '../components/ProgramSelectionWorkflow';
-import ProgramSessionManager from '../components/ProgramSessionManager';
-import ProgramMentorMatching from '../components/ProgramMentorMatching';
-import ProgramCompletionWorkflow from '../components/ProgramCompletionWorkflow';
-import ProgramMidReviewGate from '../components/ProgramMidReviewGate';
+import ProgramLaunchWorkflow from '../components/programs/ProgramLaunchWorkflow';
+import ProgramApplicationScreening from '../components/programs/ProgramApplicationScreening';
+import ProgramSelectionWorkflow from '../components/programs/ProgramSelectionWorkflow';
+import ProgramSessionManager from '../components/programs/ProgramSessionManager';
+import ProgramMentorMatching from '../components/programs/ProgramMentorMatching';
+import ProgramCompletionWorkflow from '../components/programs/ProgramCompletionWorkflow';
+import ProgramMidReviewGate from '../components/programs/ProgramMidReviewGate';
 import PolicyTabWidget from '../components/policy/PolicyTabWidget';
 import ProgramActivityLog from '../components/programs/ProgramActivityLog';
 import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowApprovalTab';

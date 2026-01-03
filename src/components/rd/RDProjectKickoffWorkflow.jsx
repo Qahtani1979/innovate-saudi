@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { useLanguage } from './LanguageContext';
+import { useLanguage } from '../LanguageContext';
 import { Rocket, X, Calendar } from 'lucide-react';
 import { useRDMutations } from '@/hooks/useRDMutations';
 

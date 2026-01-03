@@ -3,7 +3,7 @@ import { useRDCallMutations } from '@/hooks/useRDCallMutations';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useLanguage } from './LanguageContext';
+import { useLanguage } from '../LanguageContext';
 import { CheckCircle2, XCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 

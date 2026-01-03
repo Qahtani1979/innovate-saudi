@@ -1,10 +1,12 @@
 # R&D System Inventory
 
-> **Version:** 1.0  
-> **Last Updated:** 2025-12-14  
-> **Total Assets:** 58 files (18 pages, 29 components, 3 hooks)  
+> **Version:** 2.0  
+> **Last Updated:** 2026-01-03  
+> **Total Assets:** 58 files (18 pages, 40 components, 20+ hooks)  
 > **Parent System:** Research & Development Management  
 > **Hub Page:** `/rd-projects`
+> **Hooks Index:** `src/hooks/rd/index.js`  
+> **Components Location:** `src/components/rd/`
 
 ---
 
