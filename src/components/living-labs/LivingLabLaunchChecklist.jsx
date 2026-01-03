@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { useLanguage } from './LanguageContext';
+import { useLanguage } from '@/components/LanguageContext';
 import { Rocket, X, Loader2 } from 'lucide-react';
 import { useLivingLabMutations } from '@/hooks/useLivingLab';
 

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { useLanguage } from './LanguageContext';
+import { useLanguage } from '@/components/LanguageContext';
 import { FileText, X, Loader2, Upload, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLivingLabMutations } from '@/hooks/useLivingLab';
