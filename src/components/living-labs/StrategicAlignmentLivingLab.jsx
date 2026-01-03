@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Target, TrendingUp, CheckCircle2, AlertCircle, Microscope } from 'lucide-react';
-import { useLanguage } from '../LanguageContext';
+import { useLanguage } from '@/components/LanguageContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { useStrategicPlans } from '@/hooks/useStrategicPlans';

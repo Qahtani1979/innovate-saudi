@@ -1,7 +1,7 @@
 # Sandboxes & Living Labs System Inventory
 
-> **Version:** 1.0  
-> **Last Updated:** 2025-12-14  
+> **Version:** 1.1  
+> **Last Updated:** 2026-01-03  
 > **Total Assets:** 45 files (14 pages, 31 components)  
 > **Parent System:** Regulatory Innovation  
 > **Hub Pages:** `/sandboxes`, `/living-labs`
@@ -84,12 +84,13 @@ The Sandboxes & Living Labs System manages regulatory sandboxes for testing inno
 
 ---
 
-## 🧩 Living Lab Components (17)
+## 🧩 Living Lab Components (18)
 
-**Location:** `src/components/livinglab/`
+**Location:** `src/components/living-labs/` *(Consolidated)*
 
 | Component | Description | Used By |
 |-----------|-------------|---------|
+| `AICapacityOptimizer.jsx` | AI capacity optimization | LivingLabDetail |
 | `CitizenScienceIntegration.jsx` | Citizen science | LivingLabDetail |
 | `LabEthicsReviewBoard.jsx` | Ethics review | LivingLabCreate |
 | `LabPolicyEvidenceWorkflow.jsx` | Policy evidence | LivingLabDetail |
@@ -102,22 +103,11 @@ The Sandboxes & Living Labs System manages regulatory sandboxes for testing inno
 | `LivingLabAccreditationWorkflow.jsx` | Accreditation | LivingLabDetail |
 | `LivingLabActivityLog.jsx` | Activity log | LivingLabDetail |
 | `LivingLabCreateWizard.jsx` | Creation wizard | LivingLabCreate |
+| `LivingLabInfrastructureWizard.jsx` | Infrastructure wizard | LivingLabDetail |
 | `LivingLabWorkflowTab.jsx` | Workflow tab | LivingLabDetail |
 | `MultiLabCollaborationEngine.jsx` | Multi-lab collaboration | LivingLabs |
 | `ResearchOutputImpactTracker.jsx` | Research impact | LivingLabDetail |
-
-**Location:** `src/components/livinglabs/`
-
-| Component | Description |
-|-----------|-------------|
-| `AICapacityOptimizer.jsx` | AI capacity optimization |
-| `LivingLabInfrastructureWizard.jsx` | Infrastructure wizard |
-
-**Location:** `src/components/living-labs/`
-
-| Component | Description |
-|-----------|-------------|
-| `StrategicAlignmentLivingLab.jsx` | Strategic alignment |
+| `StrategicAlignmentLivingLab.jsx` | Strategic alignment | LivingLabDetail |
 
 ### Root-Level Components
 **Location:** `src/components/`

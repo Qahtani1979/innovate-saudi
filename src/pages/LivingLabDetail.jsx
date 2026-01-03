@@ -6,8 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
 import { Link } from 'react-router-dom';
-import LabPolicyEvidenceWorkflow from '../components/livinglab/LabPolicyEvidenceWorkflow';
-import LivingLabWorkflowTab from '../components/livinglab/LivingLabWorkflowTab';
+import LabPolicyEvidenceWorkflow from '../components/living-labs/LabPolicyEvidenceWorkflow';
+import LivingLabWorkflowTab from '../components/living-labs/LivingLabWorkflowTab';
 import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowApprovalTab';
 import { createPageUrl } from '../utils';
 import {
@@ -25,9 +25,9 @@ import LivingLabExpertMatching from '../components/LivingLabExpertMatching';
 import LivingLabEventManager from '../components/LivingLabEventManager';
 import LivingLabResearchMilestoneTracker from '../components/LivingLabResearchMilestoneTracker';
 import LivingLabPublicationSubmission from '../components/LivingLabPublicationSubmission';
-import LivingLabInfrastructureWizard from '../components/livinglabs/LivingLabInfrastructureWizard';
-import AICapacityOptimizer from '../components/livinglabs/AICapacityOptimizer';
-import LabSolutionCertificationWorkflow from '../components/livinglab/LabSolutionCertificationWorkflow';
+import LivingLabInfrastructureWizard from '../components/living-labs/LivingLabInfrastructureWizard';
+import AICapacityOptimizer from '../components/living-labs/AICapacityOptimizer';
+import LabSolutionCertificationWorkflow from '../components/living-labs/LabSolutionCertificationWorkflow';
 import { PageLayout } from '@/components/layout/PersonaPageLayout';
 
 /**
