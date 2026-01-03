@@ -76,13 +76,45 @@ The Startups & Academia System manages specialized dashboards and features for s
 
 ---
 
+## 🪝 Hooks
+
+### Startup Hooks
+| Hook | File | Purpose |
+|------|------|---------|
+| `useStartups` | `useStartups.js` | Startup list & CRUD |
+| `useStartup` | `useStartups.js` | Single startup by ID |
+| `useStartupProfile` | `useStartupProfiles.js` | Startup profile data |
+| `useStartupVerifications` | `useStartupVerification.js` | Verification queue |
+| `useStartupOnboardingMutations` | `useStartupOnboarding.js` | Onboarding mutations |
+| `useStartupMentorshipMutations` | `useStartupMentorship.js` | Mentorship matching |
+| `useStartupReferrals` | `useStartupReferrals.js` | Referral program |
+| `useStartupEcosystem` | `useStartupEcosystem.js` | Ecosystem metrics |
+| `useProviders` | `useProviders.js` | Provider list |
+| `useProviderAwards` | `useProviderAwards.js` | Provider awards |
+| `useProviderMatches` | `useMatchmakerAnalytics.js` | Provider match history |
+| `useProviderPerformanceStats` | `useSolutionAnalytics.js` | Performance metrics |
+
+### Academia Hooks
+| Hook | File | Purpose |
+|------|------|---------|
+| `useResearcherProfiles` | `useResearcherProfiles.js` | Researcher profiles |
+| `useResearcherConnections` | `useResearcherNetwork.js` | Network connections |
+| `useResearcherCollaborations` | `useResearcherNetwork.js` | Collaborations |
+| `useResearcherMutations` | `useResearcherNetwork.js` | Network mutations |
+| `useResearcherDashboardData` | `useResearcherDashboardData.js` | Dashboard data |
+| `useAcademiaData` | `useAcademiaData.js` | Academia metrics |
+
+---
+
 ## 🗄️ Database Tables
 
-| Table | Purpose |
-|-------|---------|
-| `providers` | Startup/provider profiles |
-| `researcher_profiles` | Researcher profiles |
-| `institutions` | Academic institutions |
+| Table | Purpose | Status |
+|-------|---------|--------|
+| `providers` | Startup/provider profiles | ✅ Exists |
+| `researcher_profiles` | Researcher profiles | ✅ Exists |
+| `organizations` | Parent org for providers | ✅ Exists |
+
+> **Note:** `institutions` is stored as JSON in `partner_institutions` field within `rd_projects`, not as a standalone table.
 
 ---
 

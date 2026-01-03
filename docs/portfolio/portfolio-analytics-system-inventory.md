@@ -95,10 +95,35 @@ The Portfolio & Analytics System provides portfolio management, predictive analy
 
 ## 🗄️ Database Tables
 
-| Table | Purpose |
-|-------|---------|
-| `custom_reports` | Custom report definitions |
-| `report_schedules` | Report schedules |
+| Table | Purpose | Status |
+|-------|---------|--------|
+| `custom_reports` | Custom report definitions | ✅ Created |
+| `report_schedules` | Report schedules | ✅ Created |
+
+### custom_reports Schema
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | UUID | Primary key |
+| `name_en` | TEXT | Report name (English) |
+| `name_ar` | TEXT | Report name (Arabic) |
+| `report_type` | TEXT | Type of report |
+| `query_config` | JSONB | Query configuration |
+| `filters` | JSONB | Applied filters |
+| `columns` | JSONB | Column definitions |
+| `chart_config` | JSONB | Chart settings |
+| `created_by` | TEXT | Creator email |
+| `is_public` | BOOLEAN | Public visibility |
+| `is_template` | BOOLEAN | Template flag |
+
+### report_schedules Schema
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | UUID | Primary key |
+| `report_id` | UUID | FK to custom_reports |
+| `schedule_type` | TEXT | daily/weekly/monthly/quarterly |
+| `recipients` | TEXT[] | Email recipients |
+| `next_run_at` | TIMESTAMPTZ | Next scheduled run |
+| `is_active` | BOOLEAN | Active status |
 
 ---
 

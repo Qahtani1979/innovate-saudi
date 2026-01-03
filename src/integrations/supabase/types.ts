@@ -2762,6 +2762,60 @@ export type Database = {
           },
         ]
       }
+      custom_reports: {
+        Row: {
+          chart_config: Json | null
+          columns: Json | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          filters: Json | null
+          id: string
+          is_public: boolean | null
+          is_template: boolean | null
+          last_run_at: string | null
+          name_ar: string | null
+          name_en: string
+          query_config: Json
+          report_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          chart_config?: Json | null
+          columns?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          filters?: Json | null
+          id?: string
+          is_public?: boolean | null
+          is_template?: boolean | null
+          last_run_at?: string | null
+          name_ar?: string | null
+          name_en: string
+          query_config?: Json
+          report_type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          chart_config?: Json | null
+          columns?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          filters?: Json | null
+          id?: string
+          is_public?: boolean | null
+          is_template?: boolean | null
+          last_run_at?: string | null
+          name_ar?: string | null
+          name_en?: string
+          query_config?: Json
+          report_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       delegation_rules: {
         Row: {
           approval_date: string | null
@@ -9575,6 +9629,59 @@ export type Database = {
             columns: ["sector_id"]
             isOneToOne: false
             referencedRelation: "sectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_schedules: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          last_run_at: string | null
+          name: string
+          next_run_at: string | null
+          recipients: string[] | null
+          report_id: string | null
+          schedule_config: Json | null
+          schedule_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_run_at?: string | null
+          name: string
+          next_run_at?: string | null
+          recipients?: string[] | null
+          report_id?: string | null
+          schedule_config?: Json | null
+          schedule_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_run_at?: string | null
+          name?: string
+          next_run_at?: string | null
+          recipients?: string[] | null
+          report_id?: string | null
+          schedule_config?: Json | null
+          schedule_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_schedules_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "custom_reports"
             referencedColumns: ["id"]
           },
         ]
