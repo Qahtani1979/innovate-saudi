@@ -15,11 +15,11 @@ import {
   Clock, Award, Users, CheckCircle2, Send, MessageSquare,
   Beaker, AlertCircle, Image, BarChart3, Mail, Play, Loader2, X
 } from 'lucide-react';
-import RDCallPublishWorkflow from '../components/RDCallPublishWorkflow';
-import RDCallReviewWorkflow from '../components/RDCallReviewWorkflow';
-import RDCallEvaluationPanel from '../components/RDCallEvaluationPanel';
-import RDCallAwardWorkflow from '../components/RDCallAwardWorkflow';
-import RDCallApprovalWorkflow from '../components/RDCallApprovalWorkflow';
+import RDCallPublishWorkflow from '../components/rd/RDCallPublishWorkflow';
+import RDCallReviewWorkflow from '../components/rd/RDCallReviewWorkflow';
+import RDCallEvaluationPanel from '../components/rd/RDCallEvaluationPanel';
+import RDCallAwardWorkflow from '../components/rd/RDCallAwardWorkflow';
+import RDCallApprovalWorkflow from '../components/rd/RDCallApprovalWorkflow';
 import CrossEntityRecommender from '../components/CrossEntityRecommender';
 import ReviewerAutoAssignment from '../components/ReviewerAutoAssignment';
 import CommitteeMeetingScheduler from '../components/CommitteeMeetingScheduler';
