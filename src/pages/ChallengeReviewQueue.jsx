@@ -10,7 +10,7 @@ import { createPageUrl } from '../utils';
 import {
   Clock, CheckCircle2, Search, AlertCircle, FileText
 } from 'lucide-react';
-import ChallengeReviewWorkflow from '../components/ChallengeReviewWorkflow';
+import ChallengeReviewWorkflow from '../components/challenges/ChallengeReviewWorkflow';
 import UnifiedEvaluationForm from '../components/evaluation/UnifiedEvaluationForm';
 import EvaluationConsensusPanel from '../components/evaluation/EvaluationConsensusPanel';
 import BlindReviewToggle from '../components/challenges/BlindReviewToggle';
