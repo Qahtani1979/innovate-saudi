@@ -1,9 +1,9 @@
-import ChallengeSubmissionWizard from '@/components/ChallengeSubmissionWizard';
-import ChallengeReviewWorkflow from '@/components/ChallengeReviewWorkflow';
-import ChallengeTreatmentPlan from '@/components/ChallengeTreatmentPlan';
-import ChallengeResolutionWorkflow from '@/components/ChallengeResolutionWorkflow';
-import ChallengeToRDWizard from '@/components/ChallengeToRDWizard';
-import ChallengeArchiveWorkflow from '@/components/ChallengeArchiveWorkflow';
+import ChallengeSubmissionWizard from '@/components/challenges/ChallengeSubmissionWizard';
+import ChallengeReviewWorkflow from '@/components/challenges/ChallengeReviewWorkflow';
+import ChallengeTreatmentPlan from '@/components/challenges/ChallengeTreatmentPlan';
+import ChallengeResolutionWorkflow from '@/components/challenges/ChallengeResolutionWorkflow';
+import ChallengeToRDWizard from '@/components/challenges/ChallengeToRDWizard';
+import ChallengeArchiveWorkflow from '@/components/challenges/ChallengeArchiveWorkflow';
 
 export default function ChallengeWorkflowModals({
   challenge,
