@@ -43,8 +43,6 @@ export const ProposalCard = ({ toolName, args, onConfirm, onCancel }) => {
                         onClick={onConfirm}
                         className="flex-1 bg-primary hover:bg-primary/90"
                     >
-                        className="flex-1 bg-primary hover:bg-primary/90"
-                    >
                         <Check className="w-3.5 h-3.5" />
                         Confirm Action
                     </Button>
