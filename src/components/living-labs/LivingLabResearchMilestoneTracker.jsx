@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { useLanguage } from './LanguageContext';
+import { useLanguage } from '@/components/LanguageContext';
 import { Target, CheckCircle2, X, Clock, Plus, Loader2 } from 'lucide-react';
 import { useLivingLab, useLivingLabMutations } from '@/hooks/useLivingLab';
 
