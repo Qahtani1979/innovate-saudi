@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useLanguage } from './LanguageContext';
+import { useLanguage } from '@/components/LanguageContext';
 import { Award, Loader2, CheckCircle2, TrendingUp, RotateCcw, XCircle } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { usePilotMutations } from '@/hooks/usePilotMutations';

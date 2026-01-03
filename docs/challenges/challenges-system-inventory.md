@@ -1,8 +1,8 @@
 # Challenges System Inventory
 
-> **Version:** 1.0  
-> **Last Updated:** 2025-12-14  
-> **Total Assets:** 78 files (22 pages, 51 components, 5 hooks)  
+> **Version:** 2.0  
+> **Last Updated:** 2026-01-03  
+> **Total Assets:** 78 files (22 pages, 51 components, 22 hooks)  
 > **Parent System:** Innovation Challenges Management  
 > **Hub Page:** `/challenges`
 
@@ -187,13 +187,66 @@ The Challenges System manages the full lifecycle of innovation challenges from c
 
 ---
 
-## 🪝 Hooks (5)
+## 🪝 Hooks (22)
 
-**Location:** `src/hooks/`
+**Location:** `src/hooks/` (centralized via `src/hooks/challenges/index.js`)
+
+### Core Data Hooks
 
 | Hook | Description |
 |------|-------------|
+| `useChallenges.js` | Base challenge queries (all, single, top, strategic) |
 | `useChallengesWithVisibility.js` | Challenges with visibility filtering |
+| `useMyChallenges.js` | User's own challenges with pagination |
+| `useChallengesHubData.js` | Hub page aggregated data |
+
+### Mutation Hooks
+
+| Hook | Description |
+|------|-------------|
+| `useChallengeMutations.js` | CRUD operations, follow, interest |
+| `useChallengeCreateForm.js` | Multi-step form state management |
+| `useChallengeConversionMutations.js` | Convert to R&D/Program |
+
+### Activity & Metrics Hooks
+
+| Hook | Description |
+|------|-------------|
+| `useChallengeActivities.js` | Activity timeline data |
+| `useChallengeMetrics.js` | Challenge metrics (solutions, pilots, etc.) |
+| `useChallengeTeamStats.js` | Team activity statistics |
+| `useChallengeVoting.js` | Voting functionality |
+| `useChallengeGamification.js` | Gamification features |
+
+### Proposals & Matching Hooks
+
+| Hook | Description |
+|------|-------------|
+| `useChallengeProposals.js` | Proposal queries and mutations |
+| `useChallengeProposalMutations.js` | Proposal CRUD operations |
+| `useChallengeMatches.js` | Solution matching queries |
+| `useChallengeInterests.js` | Interest expressions |
+
+### Integration Hooks
+
+| Hook | Description |
+|------|-------------|
+| `useChallengeLinkedData.js` | Linked entities (pilots, solutions, R&D) |
+| `useChallengeIntegrations.js` | Cross-system integrations |
+| `useChallengeResolutionTracker.js` | Resolution tracking |
+
+### Realtime & Notifications
+
+| Hook | Description |
+|------|-------------|
+| `useChallengeRealtime.js` | Realtime subscriptions |
+| `useChallengeNotifications.js` | Notification triggers |
+
+### Delegation & Permissions
+
+| Hook | Description |
+|------|-------------|
+| `useChallengeDelegation.js` | Delegation and permission constants |
 
 ---
 

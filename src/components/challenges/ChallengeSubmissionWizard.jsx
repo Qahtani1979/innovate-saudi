@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { useLanguage } from './LanguageContext';
+import { useLanguage } from '@/components/LanguageContext';
 import { CheckCircle2, Send, Sparkles, Loader2, X } from 'lucide-react';
 import { useChallengeMutations } from '@/hooks/useChallengeMutations';
 

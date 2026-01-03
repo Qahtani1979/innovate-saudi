@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { useLanguage } from './LanguageContext';
+import { useLanguage } from '@/components/LanguageContext';
 import { Send, CheckCircle2, AlertCircle, Loader2, FileText, Target } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { toast } from 'sonner';

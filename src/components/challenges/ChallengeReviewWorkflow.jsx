@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useLanguage } from './LanguageContext';
+import { useLanguage } from '@/components/LanguageContext';
 import { CheckCircle2, XCircle, AlertCircle, X, Loader2, Send, Users, Award } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
+import { createPageUrl } from '@/utils';
 import { useChallengeMutations } from '@/hooks/useChallengeMutations';
 import { useEvaluationsByEntity } from '@/hooks/useEvaluations';
 

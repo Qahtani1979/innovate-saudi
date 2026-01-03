@@ -1,8 +1,8 @@
 # Pilots System Inventory
 
-> **Version:** 1.0  
-> **Last Updated:** 2025-12-14  
-> **Total Assets:** 52 files (20 pages, 27 components, 5 hooks)  
+> **Version:** 2.0  
+> **Last Updated:** 2026-01-03  
+> **Total Assets:** 52 files (20 pages, 29 components, 10 hooks)  
 > **Parent System:** Pilot Project Management  
 > **Hub Page:** `/pilots`
 
