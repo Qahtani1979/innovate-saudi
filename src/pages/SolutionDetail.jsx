@@ -14,10 +14,10 @@ import {
   Sparkles, DollarSign, TestTube, Users, Code,
   Clock, Shield, Package, Loader2, X
 } from 'lucide-react';
-import SolutionVerificationWizard from '../components/SolutionVerificationWizard';
-import SolutionDeploymentTracker from '../components/SolutionDeploymentTracker';
-import SolutionReviewCollector from '../components/SolutionReviewCollector';
-import SolutionCaseStudyWizard from '../components/SolutionCaseStudyWizard';
+import SolutionVerificationWizard from '../components/solutions/SolutionVerificationWizard';
+import SolutionDeploymentTracker from '../components/solutions/SolutionDeploymentTracker';
+import SolutionReviewCollector from '../components/solutions/SolutionReviewCollector';
+import SolutionCaseStudyWizard from '../components/solutions/SolutionCaseStudyWizard';
 import UnifiedWorkflowApprovalTab from '../components/approval/UnifiedWorkflowApprovalTab';
 import SolutionActivityLog from '../components/solutions/SolutionActivityLog';
 import RequestDemoButton from '../components/solutions/RequestDemoButton';
