@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
-import WorkflowStatus from '../components/WorkflowStatus';
+import WorkflowStatus from '../components/approval/WorkflowStatus';
 import {
   Sparkles,
   TrendingUp,
@@ -46,7 +46,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { toast } from 'sonner';
 import { usePrompt } from '@/hooks/usePrompt';
-import MultiStepApproval from '../components/MultiStepApproval';
+import MultiStepApproval from '../components/approval/MultiStepApproval';
 import FinancialTracker from '../components/FinancialTracker';
 import RegulatoryCompliance from '../components/RegulatoryCompliance';
 import AnomalyDetector from '../components/AnomalyDetector';
@@ -62,9 +62,9 @@ import PilotTerminationWorkflow from '../components/pilots/PilotTerminationWorkf
 import PilotPreparationChecklist from '../components/pilots/PilotPreparationChecklist';
 import PilotEvaluationGate from '../components/pilots/PilotEvaluationGate';
 import PilotPivotWorkflow from '../components/pilots/PilotPivotWorkflow';
-import ComplianceGateChecklist from '../components/ComplianceGateChecklist';
-import BudgetApprovalWorkflow from '../components/BudgetApprovalWorkflow';
-import MilestoneApprovalGate from '../components/MilestoneApprovalGate';
+import ComplianceGateChecklist from '../components/approval/ComplianceGateChecklist';
+import BudgetApprovalWorkflow from '../components/approval/BudgetApprovalWorkflow';
+import MilestoneApprovalGate from '../components/approval/MilestoneApprovalGate';
 import ProtectedPage from '../components/permissions/ProtectedPage';
 import PolicyTabWidget from '../components/policy/PolicyTabWidget';
 import SolutionFeedbackLoop from '../components/pilots/SolutionFeedbackLoop';

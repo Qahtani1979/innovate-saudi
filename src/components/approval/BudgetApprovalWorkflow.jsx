@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { useLanguage } from './LanguageContext';
+import { useLanguage } from '../LanguageContext';
 import { DollarSign, CheckCircle2, XCircle, Loader2, TrendingUp, TrendingDown } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { usePilotMutations } from '@/hooks/usePilotMutations';

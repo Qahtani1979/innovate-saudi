@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { useLanguage } from './LanguageContext';
+import { useLanguage } from '../LanguageContext';
 import { Shield, CheckCircle2, Circle, Loader2, AlertTriangle } from 'lucide-react';
 import { useGovernanceMutations } from '@/hooks/useGovernance';
 

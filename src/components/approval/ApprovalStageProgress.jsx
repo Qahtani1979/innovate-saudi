@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Circle, Clock, XCircle } from 'lucide-react';
-import { useLanguage } from './LanguageContext';
+import { useLanguage } from '../LanguageContext';
 
 export default function ApprovalStageProgress({ application }) {
   const { language, isRTL, t } = useLanguage();
