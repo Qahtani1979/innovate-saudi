@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useLanguage } from './LanguageContext';
+import { useLanguage } from '@/components/LanguageContext';
 import { RotateCcw, Loader2, AlertTriangle, Lightbulb } from 'lucide-react';
 import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 import { PILOT_PIVOT_SYSTEM_PROMPT, buildPilotPivotPrompt, PILOT_PIVOT_SCHEMA } from '@/lib/ai/prompts/pilots';
