@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useLanguage } from '../LanguageContext';
+import { useLanguage } from '@/components/LanguageContext';
 import { ArrowRight, Beaker } from 'lucide-react';
 import { useLivingLabsWithVisibility } from '@/hooks/useLivingLabsWithVisibility';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function LabRoutingHub({ entity, entityType }) {
   const { t, language } = useLanguage();
