@@ -10,7 +10,7 @@ import { Shield, FileText, Users, AlertTriangle, CheckCircle2, XCircle, MessageS
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import ApprovalStageProgress from '../components/ApprovalStageProgress';
+import ApprovalStageProgress from '../components/approval/ApprovalStageProgress';
 import SandboxAIRiskAssessment from '../components/SandboxAIRiskAssessment';
 import AutomatedComplianceChecker from '../components/AutomatedComplianceChecker';
 import SandboxCertificationWorkflow from '../components/sandboxes/SandboxCertificationWorkflow';

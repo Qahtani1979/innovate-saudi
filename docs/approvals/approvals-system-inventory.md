@@ -1,8 +1,8 @@
 # Approvals & Workflows System Inventory
 
-> **Version:** 1.0  
-> **Last Updated:** 2025-12-14  
-> **Total Assets:** 40 files (12 pages, 25 components, 3 hooks)  
+> **Version:** 2.0  
+> **Last Updated:** 2026-01-03  
+> **Total Assets:** 47 files (12 pages, 30 components, 5 hooks)  
 > **Parent System:** Approval & Workflow Management  
 > **Hub Page:** `/approval-center`
 
@@ -46,7 +46,7 @@ The Approvals System manages all approval workflows, gates, and SLA tracking acr
 
 ---
 
-## 🧩 Components (25)
+## 🧩 Components (30)
 
 ### Approval Components
 **Location:** `src/components/approval/`
@@ -54,16 +54,23 @@ The Approvals System manages all approval workflows, gates, and SLA tracking acr
 | Component | Description | Used By |
 |-----------|-------------|---------|
 | `ApprovalGateConfig.jsx` | Gate configuration | Admin |
-| `InlineApprovalWizard.jsx` | Inline approval | All entities |
+| `ApprovalStageProgress.jsx` | Stage progress visualization | Sandbox |
+| `BudgetApprovalWorkflow.jsx` | Budget approval workflow | Pilots |
+| `ComplianceGateChecklist.jsx` | Compliance checklist gate | Pilots |
+| `InlineApprovalWizard.jsx` | Inline approval wizard | All entities |
+| `MilestoneApprovalGate.jsx` | Milestone approval gate | Pilots |
+| `MultiStepApproval.jsx` | Multi-step approval workflow | All entities |
 | `RequesterAI.jsx` | AI for requesters | Approvals |
 | `ReviewerAI.jsx` | AI for reviewers | Approvals |
+| `SLAMonitoring.jsx` | SLA monitoring dashboard | Approvals |
 | `UnifiedWorkflowApprovalTab.jsx` | Unified approval tab | All entities |
+| `WorkflowStatus.jsx` | Workflow status display | All entities |
 
 **Location:** `src/components/approval/gate-configs/`
 
 | Component | Description |
 |-----------|-------------|
-| Various gate configurations | - |
+| Various gate configurations | Domain-specific gate configs |
 
 ### Gate Components
 **Location:** `src/components/gates/`
@@ -75,26 +82,19 @@ The Approvals System manages all approval workflows, gates, and SLA tracking acr
 | `PortfolioReviewGate.jsx` | Portfolio gate |
 | `StrategicPlanApprovalGate.jsx` | Strategic gate |
 
-### Root-Level Approval Components
-**Location:** `src/components/`
-
-| Component | Description |
-|-----------|-------------|
-| `ApprovalStageProgress.jsx` | Stage progress |
-| `BudgetApprovalWorkflow.jsx` | Budget approval |
-| `ComplianceGateChecklist.jsx` | Compliance gate |
-| `MilestoneApprovalGate.jsx` | Milestone gate |
-| `MultiStepApproval.jsx` | Multi-step approval |
-| `SLAMonitoring.jsx` | SLA monitoring |
-| `WorkflowStatus.jsx` | Workflow status |
-
 ---
 
-## 🪝 Hooks (3)
+## 🪝 Hooks (5)
+
+**Location:** `src/hooks/`
 
 | Hook | Description |
 |------|-------------|
-| `useApprovalRequest.js` | Approval requests |
+| `useApprovalRequest.js` | Create approval requests |
+| `useApprovalRequests.js` | Fetch and manage approval requests |
+| `useApprovalWorkflow.js` | Workflow state management |
+| `useApprovals.js` | Approval data queries |
+| `useGovernance.js` | Governance and workflow utilities |
 
 ---
 
@@ -127,3 +127,12 @@ The Approvals System manages all approval workflows, gates, and SLA tracking acr
 | System | Relationship |
 |--------|--------------|
 | All Systems | Approval workflows |
+
+---
+
+## 📋 Change Log
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 2.0 | 2026-01-03 | Moved 7 components from root to `src/components/approval/` |
+| 1.0 | 2025-12-14 | Initial inventory |

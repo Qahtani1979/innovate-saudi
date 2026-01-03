@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { useLanguage } from './LanguageContext';
+import { useLanguage } from '../LanguageContext';
 import { Flag, CheckCircle2, XCircle, Loader2, FileText } from 'lucide-react';
 import { useMilestoneApproval } from '@/hooks/useMilestoneGate';
 

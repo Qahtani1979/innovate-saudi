@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, Clock, ArrowRight, User, Loader2 } from 'lucide-react';
-import { useLanguage } from './LanguageContext';
+import { useLanguage } from '../LanguageContext';
 import { useApprovalWorkflow } from '@/hooks/useGovernance';
 
 export default function MultiStepApproval({ entity, entityType }) {

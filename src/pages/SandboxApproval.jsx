@@ -8,7 +8,7 @@ import { useLanguage } from '../components/LanguageContext';
 import { Shield, CheckCircle2, XCircle, MapPin, AlertCircle } from 'lucide-react';
 import SandboxAIRiskAssessment from '../components/SandboxAIRiskAssessment';
 import AutomatedComplianceChecker from '../components/AutomatedComplianceChecker';
-import ApprovalStageProgress from '../components/ApprovalStageProgress';
+import ApprovalStageProgress from '../components/approval/ApprovalStageProgress';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { useSandboxes } from '@/hooks/useSandboxes';
