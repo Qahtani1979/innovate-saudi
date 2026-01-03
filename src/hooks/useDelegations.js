@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from '@/hooks/useAppQueryClient';
+import { useQuery, useMutation, useAppQueryClient } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAccessControl } from '@/hooks/useAccessControl';
@@ -63,7 +63,7 @@ export function useReceivedDelegations(email) {
 }
 
 export function useDelegationMutations() {
-    const queryClient = useQueryClient();
+    const queryClient = useAppQueryClient();
     const { checkPermission, checkEntityAccess } = useAccessControl();
     const { user } = useAuth();
 
