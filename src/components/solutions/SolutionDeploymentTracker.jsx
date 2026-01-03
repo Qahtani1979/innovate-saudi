@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useLanguage } from './LanguageContext';
+import { useLanguage } from '../LanguageContext';
 import { TrendingUp, Plus, X, CheckCircle2, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSolutionMutations } from '@/hooks/useSolutionMutations';

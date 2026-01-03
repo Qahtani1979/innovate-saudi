@@ -5,9 +5,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { useLanguage } from './LanguageContext';
+import { useLanguage } from '../LanguageContext';
 import { CheckCircle2, X, FileText } from 'lucide-react';
-import FileUploader from './FileUploader';
+import FileUploader from '../FileUploader';
 import { useAuth } from '@/lib/AuthContext';
 import { useRDProjectMutations } from '@/hooks/useRDProjectMutations';
 

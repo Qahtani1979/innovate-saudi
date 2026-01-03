@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useLanguage } from './LanguageContext';
+import { useLanguage } from '../LanguageContext';
 import { Star, X, Loader2, CheckCircle2 } from 'lucide-react';
 import { useCreateReview } from '@/hooks/useSolutionReviews';
 
@@ -23,8 +23,8 @@ export default function SolutionReviewCollector({ solution, onClose }) {
         overall_rating: rating,
         review_text: reviewText,
         reviewerName: reviewerName,
-        reviewerRole: reviewerOrg, // Using organization field for role/org
-        municipalityId: null, // Optional
+        reviewerRole: reviewerOrg,
+        municipalityId: null,
         is_public: true
       });
 

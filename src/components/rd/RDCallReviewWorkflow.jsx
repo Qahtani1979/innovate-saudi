@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { useLanguage } from './LanguageContext';
+import { useLanguage } from '../LanguageContext';
 import { useRDCallMutations } from '@/hooks/useRDCallMutations';
 import { useAuth } from '@/lib/AuthContext';
 import { CheckCircle2, X, AlertCircle, Loader2 } from 'lucide-react';
