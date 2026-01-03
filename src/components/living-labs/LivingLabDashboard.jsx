@@ -8,7 +8,7 @@ import { useLanguage } from '@/components/LanguageContext';
 import { Microscope, Activity, TrendingUp, Package, Calendar, AlertCircle } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Link } from 'react-router-dom';
-import { createPageUrl } from '@/components/utils';
+import { createPageUrl } from '@/utils';
 
 export default function LivingLabDashboard() {
   const { language, isRTL, t } = useLanguage();
