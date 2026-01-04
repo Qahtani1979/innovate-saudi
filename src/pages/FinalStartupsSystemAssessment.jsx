@@ -184,7 +184,7 @@ function FinalStartupsSystemAssessment() {
   };
 
   return (
-    <ProtectedPage requiredPermissions={['system_settings']}>
+    <>
       <div className="p-6 space-y-6 max-w-7xl mx-auto">
         <div className="flex items-center justify-between">
           <div>
@@ -505,8 +505,8 @@ function FinalStartupsSystemAssessment() {
           </CardContent>
         </Card>
       </div>
-    </ProtectedPage>
+    </>
   );
 }
 
-export default FinalStartupsSystemAssessment;
+export default ProtectedPage(FinalStartupsSystemAssessment, { requireAdmin: true });

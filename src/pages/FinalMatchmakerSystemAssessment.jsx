@@ -192,7 +192,7 @@ function FinalMatchmakerSystemAssessment() {
   };
 
   return (
-    <ProtectedPage requiredPermissions={['system_settings']}>
+    <>
       <div className="p-6 space-y-6 max-w-7xl mx-auto">
         <div className="flex items-center justify-between">
           <div>
@@ -512,8 +512,8 @@ function FinalMatchmakerSystemAssessment() {
           </CardContent>
         </Card>
       </div>
-    </ProtectedPage>
+    </>
   );
 }
 
-export default FinalMatchmakerSystemAssessment;
+export default ProtectedPage(FinalMatchmakerSystemAssessment, { requireAdmin: true });

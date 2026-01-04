@@ -5,6 +5,7 @@ import PeerBenchmarkingTool from '@/components/municipalities/PeerBenchmarkingTo
 import { Users, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useMunicipalitiesWithVisibility } from '@/hooks/useMunicipalitiesWithVisibility';
+import ProtectedPage from '../components/permissions/ProtectedPage';
 
 /**
  * MunicipalityPeerMatcher
@@ -60,4 +61,4 @@ const MunicipalityPeerMatcher = () => {
   );
 };
 
-export default MunicipalityPeerMatcher;
+export default ProtectedPage(MunicipalityPeerMatcher, { requiredPermissions: ['municipality_view'] });

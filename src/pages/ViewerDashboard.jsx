@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import RoleRequestStatusBanner from '@/components/profile/RoleRequestStatusBanner';
 import { PageLayout, PageHeader, PersonaButton } from '@/components/layout/PersonaPageLayout';
+import ProtectedPage from '../components/permissions/ProtectedPage';
 
 /**
  * ViewerDashboard - Simple dashboard for authenticated viewers (browse-only access)
@@ -210,4 +211,4 @@ const ViewerDashboard = () => {
   );
 };
 
-export default ViewerDashboard;
+export default ProtectedPage(ViewerDashboard, { requiredPermissions: [] });

@@ -3,8 +3,9 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLanguage } from '../components/LanguageContext';
 import { CheckCircle2, Circle, AlertCircle, Award, TrendingUp } from 'lucide-react';
+import ProtectedPage from '../components/permissions/ProtectedPage';
 
-export default function PlatformCompletionReport() {
+function PlatformCompletionReport() {
   const { language, isRTL, t } = useLanguage();
 
   const pilotJourney = {
@@ -390,3 +391,5 @@ export default function PlatformCompletionReport() {
     </div>
   );
 }
+
+export default ProtectedPage(PlatformCompletionReport, { requireAdmin: true });
