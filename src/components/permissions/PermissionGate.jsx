@@ -30,7 +30,14 @@ export default function PermissionGate({
   showMessage = true
 }) {
   const { t } = useLanguage();
-  const { hasPermission, hasAnyPermission, hasAllPermissions, isAdmin, user } = usePermissions();
+  const {
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
+    isAdmin,
+    hasRole,
+    roles: userRoles = [],
+  } = usePermissions();
 
   // Admin check
   if (requireAdmin && !isAdmin) {
@@ -47,8 +54,9 @@ export default function PermissionGate({
   // Role check
   if (role || roles.length > 0) {
     const requiredRoles = role ? [role] : roles;
-    const userRoleIds = user?.assigned_roles || [];
-    const hasRequiredRole = requiredRoles.some(r => userRoleIds.includes(r));
+    const hasRequiredRole = requiredRoles.some((r) =>
+      typeof hasRole === 'function' ? hasRole(r) : (userRoles || []).includes(r)
+    );
 
     if (!hasRequiredRole) {
       return fallback || (showMessage ? (

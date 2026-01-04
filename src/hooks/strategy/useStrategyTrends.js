@@ -25,19 +25,32 @@ export function useGlobalTrends(limit = 5) {
  * Hook to fetch policy documents
  */
 export function usePolicyDocuments(limit = 5) {
-    return useQuery({
-        queryKey: ['policy-documents', limit],
-        queryFn: async () => {
-            const { data, error } = await supabase
-                .from('policy_documents')
-                .select('*')
-                .limit(limit)
-                .order('created_at', { ascending: false });
+  return useQuery({
+    queryKey: ['policy-documents', limit],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('policy_documents')
+        .select('*')
+        .limit(limit)
+        .order('created_at', { ascending: false });
 
-            if (error) throw error;
-            return data || [];
-        },
-        staleTime: 1000 * 60 * 15 // 15 minutes
-    });
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 1000 * 60 * 15, // 15 minutes
+  });
+}
+
+/**
+ * Backward-compatible convenience hook.
+ * Some parts of the app expect a single hook named `useStrategyTrends`.
+ */
+export function useStrategyTrends(options = {}) {
+  const { globalLimit = 5, policyLimit = 5 } = options;
+
+  const globalTrends = useGlobalTrends(globalLimit);
+  const policyDocuments = usePolicyDocuments(policyLimit);
+
+  return { globalTrends, policyDocuments };
 }
 

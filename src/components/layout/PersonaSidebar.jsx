@@ -11,7 +11,7 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 export default function PersonaSidebar({ isOpen, onClose }) {
   const { t, language, isRTL } = useLanguage();
   const { persona, hasMultiplePersonas, availablePersonas } = usePersonaRouting();
-  const { hasPermission, hasAnyPermission, roles, userMunicipality, isAdmin } = usePermissions();
+  const { hasPermission, hasAnyPermission, hasRole, roles, userMunicipality, isAdmin } = usePermissions();
   const location = useLocation();
 
   // Use the active persona from routing (which respects session storage)
@@ -34,9 +34,11 @@ export default function PersonaSidebar({ isOpen, onClose }) {
 
       // Check role-based restriction first
       if (item.roles && item.roles.length > 0) {
-        if (!item.roles.some(r => (roles || []).includes(r))) {
-          return false;
-        }
+        const hasRequiredRole = item.roles.some((r) =>
+          typeof hasRole === 'function' ? hasRole(r) : (roles || []).includes(r)
+        );
+
+        if (!hasRequiredRole) return false;
       }
 
       // Check anyPermission (user needs at least one)
@@ -51,7 +53,7 @@ export default function PersonaSidebar({ isOpen, onClose }) {
 
       return true;
     });
-  }, [menuConfig.items, hasPermission, hasAnyPermission, roles, isAdmin]);
+  }, [menuConfig.items, hasPermission, hasAnyPermission, hasRole, roles, isAdmin]);
 
   // Build link path with municipality ID for pages that need it
   const buildLinkPath = (item) => {
