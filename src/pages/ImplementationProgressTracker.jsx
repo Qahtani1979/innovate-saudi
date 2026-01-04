@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Clock } from 'lucide-react';
+import ProtectedPage from '../components/permissions/ProtectedPage';
 
 const ImplementationProgressTracker = () => {
   const progressData = {
@@ -152,4 +153,4 @@ const ImplementationProgressTracker = () => {
   );
 };
 
-export default ImplementationProgressTracker;
+export default ProtectedPage(ImplementationProgressTracker, { requireAdmin: true });

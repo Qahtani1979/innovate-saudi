@@ -17,16 +17,14 @@ function RDCoverageReport() {
   const coverageData = getRDCoverageData(rdCalls, rdProjects, rdProposals);
 
   return (
-    <ProtectedPage requiredPermission="rd_call_view_all">
-      <BaseCoverageReport
-        title={t({ en: '🔬 R&D System Coverage', ar: '🔬 تغطية نظام البحث والتطوير' })}
-        data={coverageData}
-        language={language}
-        isRTL={isRTL}
-        t={t}
-      />
-    </ProtectedPage>
+    <BaseCoverageReport
+      title={t({ en: '🔬 R&D System Coverage', ar: '🔬 تغطية نظام البحث والتطوير' })}
+      data={coverageData}
+      language={language}
+      isRTL={isRTL}
+      t={t}
+    />
   );
 }
 
-export default RDCoverageReport;
+export default ProtectedPage(RDCoverageReport, { requiredPermissions: ['rd_call_view_all'] });
