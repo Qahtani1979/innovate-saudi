@@ -138,7 +138,7 @@ export default function PilotCreatePage() {
     });
   };
 
-  if (!hasPermission('create_pilot')) {
+  if (!hasPermission('pilot_create')) {
     return (
       <PageLayout>
         <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8">

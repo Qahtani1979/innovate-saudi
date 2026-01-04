@@ -80,5 +80,5 @@ function CommunicationsHub() {
 }
 
 export default ProtectedPage(CommunicationsHub, { 
-  requiredPermissions: ['manage:email_templates'] 
+  requiredPermissions: ['email_templates_manage'] 
 });
