@@ -14,8 +14,9 @@ import { useLanguage } from '../components/LanguageContext';
 import { Target, AlertTriangle, TrendingUp, CheckCircle2, Sparkles, AlertCircle, TestTube, Microscope, Calendar } from 'lucide-react';
 import { STRATEGY_SYSTEM_PROMPT, strategyPrompts } from '@/lib/ai/prompts/ecosystem/strategyPrompts';
 import { buildPrompt } from '@/lib/ai/promptBuilder';
+import ProtectedPage from '@/components/permissions/ProtectedPage';
 
-export default function StrategicExecutionDashboard() {
+function StrategicExecutionDashboard() {
   const { language, isRTL, t } = useLanguage();
   const [aiInsights, setAiInsights] = useState(null);
   const { invokeAI, status, isLoading, rateLimitInfo, isAvailable, error } = useAIWithFallback();
@@ -295,3 +296,5 @@ export default function StrategicExecutionDashboard() {
     </div>
   );
 }
+
+export default ProtectedPage(StrategicExecutionDashboard, { requiredPermissions: ['strategy_view'] });

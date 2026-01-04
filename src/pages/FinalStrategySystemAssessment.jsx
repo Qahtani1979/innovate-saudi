@@ -16,8 +16,9 @@ import {
   Layers
 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import ProtectedPage from '@/components/permissions/ProtectedPage';
 
-export default function FinalStrategySystemAssessment() {
+function FinalStrategySystemAssessment() {
   const { t } = useLanguage();
 
   const categories = [
@@ -487,3 +488,5 @@ export default function FinalStrategySystemAssessment() {
     </div>
   );
 }
+
+export default ProtectedPage(FinalStrategySystemAssessment, { requireAdmin: true });
