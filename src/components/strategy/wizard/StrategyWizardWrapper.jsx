@@ -39,6 +39,7 @@ import Step18Review from './steps/Step18Review';
 import AIStrategicPlanAnalyzer from './AIStrategicPlanAnalyzer';
 import { useStrategyAI } from '@/hooks/strategy/useStrategyAI';
 import { useStrategyMutations } from '@/hooks/useStrategyMutations';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * StrategyWizardWrapper
@@ -67,6 +68,7 @@ export default function StrategyWizardWrapper() {
   const [completedSteps, setCompletedSteps] = useState([]);
   const [showDraftRecovery, setShowDraftRecovery] = useState(false);
   const [appliedTemplateName, setAppliedTemplateName] = useState(null);
+  const [isLoadingPlan, setIsLoadingPlan] = useState(false);
 
   const { validateStep } = useWizardValidation(wizardData, t);
 
@@ -108,6 +110,39 @@ export default function StrategyWizardWrapper() {
     planId
   });
 
+  // Fetch plan data from database
+  const fetchPlanData = useCallback(async (id) => {
+    setIsLoadingPlan(true);
+    try {
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        // Merge plan data with draft_data if exists
+        const planData = {
+          ...initialWizardData,
+          ...data,
+          ...(data.draft_data || {})
+        };
+        setWizardData(planData);
+        if (data.last_saved_step) {
+          setCurrentStep(data.last_saved_step);
+        }
+        toast.success(t({ en: 'Plan loaded successfully', ar: 'تم تحميل الخطة بنجاح' }));
+      }
+    } catch (error) {
+      console.error('Failed to load plan:', error);
+      toast.error(t({ en: 'Failed to load plan', ar: 'فشل في تحميل الخطة' }));
+    } finally {
+      setIsLoadingPlan(false);
+    }
+  }, [t]);
+
   useEffect(() => {
     const urlPlanId = searchParams.get('id');
     const urlMode = searchParams.get('mode');
@@ -126,11 +161,12 @@ export default function StrategyWizardWrapper() {
     } else if (urlPlanId) {
       setPlanId(urlPlanId);
       setMode(urlMode || 'edit');
-      // Loading handled by auto-save loadPlan if needed, but here we just wait for data
+      // Fetch plan data from database
+      fetchPlanData(urlPlanId);
     } else if (hasDraft) {
       setShowDraftRecovery(true);
     }
-  }, [searchParams, hasDraft, fetchTemplate]);
+  }, [searchParams, hasDraft, fetchTemplate, fetchPlanData]);
 
   const handleNext = async () => {
     if (currentStep < 18) {
@@ -225,6 +261,17 @@ export default function StrategyWizardWrapper() {
       default: return null;
     }
   };
+
+  if (isLoadingPlan) {
+    return (
+      <div className="max-w-5xl mx-auto space-y-6 p-4 flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+          <p className="text-muted-foreground">{t({ en: 'Loading plan...', ar: 'جاري تحميل الخطة...' })}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 p-4" dir={isRTL ? 'rtl' : 'ltr'}>
