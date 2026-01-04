@@ -9,8 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from '../components/LanguageContext';
 import { Shield, CheckCircle2, XCircle, Clock, FileText } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import ProtectedPage from '@/components/permissions/ProtectedPage';
 
-export default function StrategicPlanApprovalGate() {
+function StrategicPlanApprovalGate() {
   const { language, isRTL, t } = useLanguage();
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [reviewComments, setReviewComments] = useState('');
@@ -179,3 +180,5 @@ export default function StrategicPlanApprovalGate() {
     </div>
   );
 }
+
+export default ProtectedPage(StrategicPlanApprovalGate, { requiredPermissions: ['strategy_manage'] });
