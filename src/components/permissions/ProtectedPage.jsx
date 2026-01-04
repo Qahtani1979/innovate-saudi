@@ -18,7 +18,7 @@ export default function ProtectedPage(Component, options = {}) {
 
   return function ProtectedComponent(props) {
     const { t } = useLanguage();
-    const { hasPermission, hasAnyPermission, isAdmin, user } = usePermissions();
+    const { hasPermission, hasAnyPermission, isAdmin, hasRole, roles = [] } = usePermissions();
 
     // Admin check
     if (requireAdmin && !isAdmin) {
@@ -36,8 +36,9 @@ export default function ProtectedPage(Component, options = {}) {
 
     // Role check
     if (requiredRoles.length > 0) {
-      const userRoles = user?.assigned_roles || [];
-      const hasRequiredRole = requiredRoles.some(role => (userRoles || []).includes(role));
+      const hasRequiredRole = requiredRoles.some((role) =>
+        typeof hasRole === 'function' ? hasRole(role) : (roles || []).includes(role)
+      );
 
       if (!hasRequiredRole) {
         return fallback || (

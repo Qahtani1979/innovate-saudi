@@ -150,28 +150,43 @@ export function usePermissions() {
     retry: 1,
   });
 
-  // Extract role names - check both direct 'role' column and joined 'roles.name'
-  const roleNames = (userRoles || []).map(r => r.role || r.roles?.name).filter(Boolean);
-  
-  // Admin check - check both direct role column and joined roles table
-  const isAdmin = (userRoles || []).some(r => 
-    r.role?.toLowerCase() === 'admin' || r.roles?.name?.toLowerCase() === 'admin'
+  // Extract role names - supports both legacy `user_roles.role` (text) and `role_id` (FK)
+  const roleNames = Array.from(
+    new Set((userRoles || []).map((r) => r.role || r.roles?.name).filter(Boolean))
   );
-  
+
+  // Normalized role keys (e.g., "Executive Leadership" -> "executive_leadership")
+  const roleKeys = roleNames
+    .map((name) =>
+      String(name)
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+    )
+    .filter(Boolean);
+
+  const roleIds = (userRoles || []).map((r) => r.role_id).filter(Boolean);
+
+  // Backward-compatible: some older UI still expects `user.assigned_roles`
+  // (sometimes as role IDs, sometimes as role keys).
+  const assignedRolesCompat = Array.from(new Set([...roleNames, ...roleKeys, ...roleIds]));
+
+  // Admin check
+  const isAdmin = assignedRolesCompat.some((r) => String(r).toLowerCase() === 'admin');
+
   // Check if user belongs to a national deputyship
   const isNationalEntity = userMunicipality?.region?.code === 'NATIONAL';
-  
-  // Deputyship user check - check both direct role and joined roles
-  const isDeputyship = isNationalEntity || 
-    (userRoles || []).some(r => 
-      (r.role || r.roles?.name)?.toLowerCase().includes('deputyship')
-    );
-  
-  // Municipality user check - check both direct role and joined roles
-  const isMunicipality = !isNationalEntity && 
-    (userRoles || []).some(r => 
-      (r.role || r.roles?.name)?.toLowerCase().includes('municipality')
-    );
+
+  // Deputyship user check
+  const isDeputyship =
+    isNationalEntity ||
+    assignedRolesCompat.some((r) => String(r).toLowerCase().includes('deputyship'));
+
+  // Municipality user check
+  const isMunicipality =
+    !isNationalEntity &&
+    assignedRolesCompat.some((r) => String(r).toLowerCase().includes('municipality'));
 
   // Staff user (either municipality or deputyship)
   const isStaffUser = isMunicipality || isDeputyship;
@@ -198,13 +213,21 @@ export function usePermissions() {
     return hasPermission(permissionKey);
   };
 
-  // Check role by name - supports both direct role column and joined roles table
+  // Check role by name/key/id
   const hasRole = (role) => {
     if (isAdmin) return true;
-    return roleNames.some(name => 
-      name?.toLowerCase() === role?.toLowerCase()
-    );
+
+    const normalize = (value) =>
+      String(value)
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+
+    const target = normalize(role);
+    return assignedRolesCompat.some((r) => normalize(r) === target);
   };
+
 
   const hasFunctionalRole = (roleName) => {
     if (isAdmin) return true;
@@ -239,12 +262,17 @@ export function usePermissions() {
   };
 
   return {
-    user: session?.user ? { 
-      ...session.user, 
-      ...profile,
-      role: roleNames[0] || 'user',
-      municipality: userMunicipality
-    } : null,
+    user: session?.user
+      ? {
+          ...session.user,
+          ...profile,
+          // legacy compatibility for older components
+          assigned_roles: assignedRolesCompat,
+          assigned_role_ids: roleIds,
+          role: roleNames[0] || 'user',
+          municipality: userMunicipality,
+        }
+      : null,
     userId,
     userEmail,
     profile,
@@ -265,7 +293,8 @@ export function usePermissions() {
     isMunicipality,
     isStaffUser,
     isNationalEntity,
-    getVisibilityScope
+    getVisibilityScope,
   };
+
 }
 
