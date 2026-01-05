@@ -57,7 +57,7 @@ export { useStrategyEvaluation } from './useStrategyEvaluation';
 
 // Phase 8: Recalibration Hooks
 export { useStrategyRecalibration } from './useStrategyRecalibration';
-export { useStrategyAdjustments } from './useStrategyAdjustments';
+export { useStrategyAdjustmentMutations } from './useStrategyAdjustments';
 
 // Core Strategy Hooks
 export { useStrategyAI } from './useStrategyAI';
