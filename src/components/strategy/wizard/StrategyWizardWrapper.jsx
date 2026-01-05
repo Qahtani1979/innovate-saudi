@@ -277,33 +277,33 @@ export default function StrategyWizardWrapper() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 p-4" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="max-w-5xl mx-auto space-y-4 md:space-y-6 p-2 sm:p-4" dir={isRTL ? 'rtl' : 'ltr'}>
       {showDraftRecovery && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <AlertCircle className="h-5 w-5 text-blue-600" />
-            <span className="text-blue-800">{t({ en: 'You have an unsaved draft. Would you like to recover it?', ar: 'لديك مسودة غير محفوظة. هل تريد استردادها؟' })}</span>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0" />
+            <span className="text-blue-800 text-sm sm:text-base">{t({ en: 'You have an unsaved draft. Would you like to recover it?', ar: 'لديك مسودة غير محفوظة. هل تريد استردادها؟' })}</span>
           </div>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={handleDiscardDraft}>Discard</Button>
-            <Button size="sm" onClick={handleRecoverDraft}>Recover</Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button size="sm" variant="outline" onClick={handleDiscardDraft} className="flex-1 sm:flex-initial">Discard</Button>
+            <Button size="sm" onClick={handleRecoverDraft} className="flex-1 sm:flex-initial">Recover</Button>
           </div>
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold flex items-center gap-3">
-          <Target className="h-8 w-8 text-primary" />
-          {t({ en: 'Strategic Plan', ar: 'الخطة الاستراتيجية' })}
-          <Badge variant={mode === 'review' ? 'secondary' : 'default'}>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold flex items-center gap-2 sm:gap-3 flex-wrap">
+          <Target className="h-6 w-6 sm:h-8 sm:w-8 text-primary flex-shrink-0" />
+          <span>{t({ en: 'Strategic Plan', ar: 'الخطة الاستراتيجية' })}</span>
+          <Badge variant={mode === 'review' ? 'secondary' : 'default'} className="text-xs">
             {mode.toUpperCase()}
           </Badge>
         </h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           <PlanSelectionDialog
             onSelectPlan={handleSelectPlan}
             onCreateNew={handleCreateNew}
-            trigger={<Button variant="outline"><FolderOpen className="h-4 w-4 mr-2" />Open</Button>}
+            trigger={<Button variant="outline" className="w-full sm:w-auto"><FolderOpen className="h-4 w-4 mr-2" />Open</Button>}
           />
         </div>
       </div>
@@ -329,30 +329,37 @@ export default function StrategyWizardWrapper() {
         <CardContent className="pt-6">{renderStep()}</CardContent>
       </Card>
 
-      <div className="flex justify-between">
-        <Button variant="outline" onClick={handleBack} disabled={currentStep === 1}>
-          <ChevronLeft className="h-4 w-4 mr-2" />Back
+      <div className="flex flex-col sm:flex-row justify-between gap-3">
+        <Button variant="outline" onClick={handleBack} disabled={currentStep === 1} className="w-full sm:w-auto">
+          <ChevronLeft className="h-4 w-4 mr-2" />
+          <span className="hidden sm:inline">Back</span>
+          <span className="sm:hidden">Back</span>
         </Button>
 
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           {mode !== 'review' && (
             <Button
               variant="outline"
               onClick={() => saveNow(wizardData, currentStep)}
               disabled={isSaving}
+              className="w-full sm:w-auto"
             >
               {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-              Save Draft
+              <span className="hidden sm:inline">Save Draft</span>
+              <span className="sm:hidden">Save</span>
             </Button>
           )}
 
           {currentStep < 18 ? (
-            <Button onClick={handleNext}>Next<ChevronRight className="h-4 w-4 ml-2" /></Button>
+            <Button onClick={handleNext} className="w-full sm:w-auto">
+              Next
+              <ChevronRight className="h-4 w-4 ml-2" />
+            </Button>
           ) : mode !== 'review' && (
             <Button
               onClick={() => wizardSubmit.mutate({ id: planId, data: wizardData, userEmail: user?.email })}
               disabled={wizardSubmit.isPending || !wizardData.name_en}
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
             >
               Submit
             </Button>
