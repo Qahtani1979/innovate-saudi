@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-
 import { toast } from 'sonner';
-import { ArrowLeft, ArrowRight, Save, Loader2, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Save, Loader2, CheckCircle2, Shield } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { PageLayout, PageHeader } from '@/components/layout/PersonaPageLayout';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -79,15 +78,103 @@ export default function PilotCreatePage() {
     // Sandbox
     sandbox_id: '',
     sandbox_zone: '',
-    regulatory_exemptions: ''
+    regulatory_exemptions: []
   });
 
   // --- Data Fetching ---
   const { data: challenges = [] } = useChallengesWithVisibility({ limit: 1000 });
   const { data: solutions = [] } = useSolutionsWithVisibility({ limit: 1000 });
-  const { useAllMunicipalities } = useLocations();
+  const { useAllMunicipalities, useAllRegions, useAllCities } = useLocations();
   const { data: municipalities = [] } = useAllMunicipalities();
+  const { data: regions = [] } = useAllRegions();
+  const { data: cities = [] } = useAllCities();
   const { data: sandboxes = [] } = useSandboxes();
+  
+  // Readiness check state for Step 1
+  const [readinessChecked, setReadinessChecked] = useState(false);
+  const [selectedSolutionForCheck, setSelectedSolutionForCheck] = useState(null);
+  
+  // Filter solutions based on selected challenge
+  const filteredSolutions = formData.challenge_id 
+    ? solutions.filter(s => s.challenge_ids?.includes(formData.challenge_id) || s.matched_challenge_ids?.includes(formData.challenge_id))
+    : solutions;
+  
+  // Filter sandboxes based on selected municipality
+  const filteredSandboxes = formData.municipality_id
+    ? sandboxes.filter(s => s.municipality_id === formData.municipality_id || !s.municipality_id)
+    : sandboxes;
+    
+  // Sector options
+  const sectorOptions = [
+    { value: 'infrastructure', label: 'Infrastructure', label_ar: 'البنية التحتية' },
+    { value: 'transportation', label: 'Transportation', label_ar: 'النقل' },
+    { value: 'environment', label: 'Environment', label_ar: 'البيئة' },
+    { value: 'health', label: 'Health', label_ar: 'الصحة' },
+    { value: 'education', label: 'Education', label_ar: 'التعليم' },
+    { value: 'safety', label: 'Safety & Security', label_ar: 'الأمن والسلامة' },
+    { value: 'economy', label: 'Economy', label_ar: 'الاقتصاد' },
+    { value: 'social', label: 'Social Services', label_ar: 'الخدمات الاجتماعية' },
+    { value: 'digital', label: 'Digital Services', label_ar: 'الخدمات الرقمية' },
+    { value: 'tourism', label: 'Tourism & Culture', label_ar: 'السياحة والثقافة' },
+  ];
+  
+  // Living labs placeholder (add hook later if needed)
+  const livingLabs = [];
+  
+  // AI Suggestions handler
+  const handleAISuggestions = async () => {
+    if (!formData.challenge_id || !formData.solution_id) {
+      toast.error(t({ en: 'Select challenge and solution first', ar: 'اختر التحدي والحل أولاً' }));
+      return;
+    }
+    
+    const challenge = challenges.find(c => c.id === formData.challenge_id);
+    const solution = solutions.find(s => s.id === formData.solution_id);
+    
+    try {
+      const result = await invokeAI({
+        prompt: `Design a municipal pilot for:
+Challenge: ${challenge?.title_en}
+Solution: ${solution?.name_en}
+Sector: ${formData.sector}
+
+Generate pilot design with:
+1. Title (EN/AR)
+2. Description (EN/AR)
+3. 5 KPIs with baseline/target
+4. Timeline recommendation
+5. Budget estimate`,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            title_en: { type: 'string' },
+            title_ar: { type: 'string' },
+            description_en: { type: 'string' },
+            description_ar: { type: 'string' },
+            kpis: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, baseline: { type: 'string' }, target: { type: 'string' }, unit: { type: 'string' } } } },
+            duration_weeks: { type: 'number' },
+            budget_estimate: { type: 'number' }
+          }
+        }
+      });
+      
+      if (result.success && result.data) {
+        setFormData(prev => ({
+          ...prev,
+          title_en: result.data.title_en || prev.title_en,
+          title_ar: result.data.title_ar || prev.title_ar,
+          description_en: result.data.description_en || prev.description_en,
+          description_ar: result.data.description_ar || prev.description_ar,
+          kpis: result.data.kpis || prev.kpis,
+          duration_weeks: result.data.duration_weeks || prev.duration_weeks,
+          budget: result.data.budget_estimate || prev.budget
+        }));
+        toast.success(t({ en: 'AI suggestions applied!', ar: 'تم تطبيق اقتراحات الذكاء الاصطناعي!' }));
+      }
+    } catch (error) {
+      toast.error(t({ en: 'Failed to generate suggestions', ar: 'فشل إنشاء الاقتراحات' }));
+    }
+  };
 
   // --- Mutation ---
   const { createPilot } = usePilotMutations();
@@ -216,6 +303,17 @@ export default function PilotCreatePage() {
             challenges={challenges}
             solutions={solutions}
             municipalities={municipalities}
+            regions={regions}
+            cities={cities}
+            livingLabs={livingLabs}
+            sectorOptions={sectorOptions}
+            filteredSolutions={filteredSolutions}
+            readinessChecked={readinessChecked}
+            setReadinessChecked={setReadinessChecked}
+            selectedSolutionForCheck={selectedSolutionForCheck}
+            setSelectedSolutionForCheck={setSelectedSolutionForCheck}
+            handleAISuggestions={handleAISuggestions}
+            isAIProcessing={isAIProcessing}
             t={t}
             language={language}
           />
@@ -235,6 +333,8 @@ export default function PilotCreatePage() {
             setFormData={setFormData}
             invokeAI={invokeAI}
             isAIProcessing={isAIProcessing}
+            challenges={challenges}
+            solutions={solutions}
             t={t}
             language={language}
           />
@@ -244,8 +344,11 @@ export default function PilotCreatePage() {
             formData={formData}
             setFormData={setFormData}
             sandboxes={sandboxes}
+            filteredSandboxes={filteredSandboxes}
             invokeAI={invokeAI}
             isAIProcessing={isAIProcessing}
+            challenges={challenges}
+            solutions={solutions}
             t={t}
             language={language}
           />
