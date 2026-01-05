@@ -134,7 +134,7 @@ export function CompactStepIndicator({
 
   return (
     <div className={cn(
-      "flex items-center justify-between p-3 bg-muted/30 rounded-lg border",
+      "flex items-center justify-between p-2 sm:p-3 bg-muted/30 rounded-lg border",
       className
     )}>
       <Button 
@@ -142,24 +142,24 @@ export function CompactStepIndicator({
         size="icon"
         onClick={onBack} 
         disabled={currentStep === 1}
-        className="h-8 w-8"
+        className="h-8 w-8 flex-shrink-0"
       >
         <ChevronLeft className="h-4 w-4" />
       </Button>
 
-      <div className="flex-1 mx-4">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-xs text-muted-foreground">
+      <div className="flex-1 mx-2 sm:mx-4 min-w-0">
+        <div className="flex items-center justify-between mb-1 gap-2">
+          <span className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap">
             {t({ en: 'Step', ar: 'خطوة' })} {currentStep}/{totalSteps}
           </span>
           {stepTitle && (
-            <span className="text-sm font-medium truncate max-w-[200px]">
+            <span className="text-xs sm:text-sm font-medium truncate max-w-[100px] sm:max-w-[200px] hidden xs:block">
               {typeof stepTitle === 'object' ? stepTitle[language] : stepTitle}
             </span>
           )}
-          <span className="text-xs font-medium">{Math.round(progress)}%</span>
+          <span className="text-[10px] sm:text-xs font-medium whitespace-nowrap">{Math.round(progress)}%</span>
         </div>
-        <Progress value={progress} className="h-1.5" />
+        <Progress value={progress} className="h-1 sm:h-1.5" />
       </div>
 
       <Button 
@@ -167,7 +167,7 @@ export function CompactStepIndicator({
         size="icon"
         onClick={onNext} 
         disabled={currentStep === totalSteps}
-        className="h-8 w-8"
+        className="h-8 w-8 flex-shrink-0"
       >
         <ChevronRight className="h-4 w-4" />
       </Button>

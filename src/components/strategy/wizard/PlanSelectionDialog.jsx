@@ -354,20 +354,20 @@ export default function PlanSelectionDialog({
             </Button>
           )}
         </DialogTrigger>
-        <DialogContent className="max-w-3xl max-h-[80vh]">
+        <DialogContent className="max-w-3xl max-h-[85vh] sm:max-h-[80vh] w-[95vw] sm:w-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
               {t({ en: 'Strategic Plans', ar: 'الخطط الاستراتيجية' })}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-xs sm:text-sm">
               {t({ en: 'Select a plan to edit, start from a template, or create a new one', ar: 'اختر خطة للتعديل، أو ابدأ من قالب، أو أنشئ خطة جديدة' })}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {/* Create New Button */}
-            <Button onClick={handleCreateNew} className="w-full">
+            <Button onClick={handleCreateNew} className="w-full text-sm">
               <Plus className="h-4 w-4 mr-2" />
               {t({ en: 'Create New Strategic Plan', ar: 'إنشاء خطة استراتيجية جديدة' })}
             </Button>
@@ -379,31 +379,32 @@ export default function PlanSelectionDialog({
                 placeholder={t({ en: 'Search plans or templates...', ar: 'بحث في الخطط والقوالب...' })}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
+                className="pl-9 text-sm"
               />
             </div>
 
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-6">
-                <TabsTrigger value="drafts">
+              <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto">
+                <TabsTrigger value="drafts" className="text-xs sm:text-sm py-1.5 sm:py-2">
                   {t({ en: 'Drafts', ar: 'مسودات' })}
                 </TabsTrigger>
-                <TabsTrigger value="pending">
+                <TabsTrigger value="pending" className="text-xs sm:text-sm py-1.5 sm:py-2">
                   {t({ en: 'Pending', ar: 'معلق' })}
                 </TabsTrigger>
-                <TabsTrigger value="active">
+                <TabsTrigger value="active" className="text-xs sm:text-sm py-1.5 sm:py-2">
                   {t({ en: 'Active', ar: 'نشط' })}
                 </TabsTrigger>
-                <TabsTrigger value="archived">
+                <TabsTrigger value="archived" className="text-xs sm:text-sm py-1.5 sm:py-2">
                   {t({ en: 'Archived', ar: 'مؤرشف' })}
                 </TabsTrigger>
-                <TabsTrigger value="all">
+                <TabsTrigger value="all" className="text-xs sm:text-sm py-1.5 sm:py-2">
                   {t({ en: 'All', ar: 'الكل' })}
                 </TabsTrigger>
-                <TabsTrigger value="templates" className="gap-1">
+                <TabsTrigger value="templates" className="gap-1 text-xs sm:text-sm py-1.5 sm:py-2">
                   <Star className="h-3 w-3" />
-                  {t({ en: 'Templates', ar: 'القوالب' })}
+                  <span className="hidden sm:inline">{t({ en: 'Templates', ar: 'القوالب' })}</span>
+                  <span className="sm:hidden">{t({ en: 'Tpl', ar: 'قوالب' })}</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -420,26 +421,26 @@ export default function PlanSelectionDialog({
                       <p>{t({ en: 'No plans found', ar: 'لم يتم العثور على خطط' })}</p>
                     </div>
                   ) : (
-                    <ScrollArea className="h-[400px] pr-4">
-                      <div className="space-y-3">
+                    <ScrollArea className="h-[300px] sm:h-[400px] pr-2 sm:pr-4">
+                      <div className="space-y-2 sm:space-y-3">
                         {filteredPlans.map((plan) => (
                           <Card key={plan.id} className="hover:border-primary/50 transition-colors">
-                            <CardContent className="p-4">
-                              <div className="flex items-start justify-between gap-4">
+                            <CardContent className="p-3 sm:p-4">
+                              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4">
                                 <div className="flex-1 min-w-0">
-                                  <h4 className="font-medium truncate">
+                                  <h4 className="font-medium text-sm sm:text-base truncate">
                                     {language === 'ar' ? (plan.name_ar || plan.name_en) : plan.name_en}
                                   </h4>
-                                  <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                                    <Clock className="h-3 w-3" />
-                                    {new Date(plan.updated_at).toLocaleDateString()}
+                                  <div className="flex items-center gap-2 mt-1 text-xs sm:text-sm text-muted-foreground">
+                                    <Clock className="h-3 w-3 flex-shrink-0" />
+                                    <span>{new Date(plan.updated_at).toLocaleDateString()}</span>
                                     {plan.last_saved_step && (
                                       <span className="text-xs">
                                         • {t({ en: 'Step', ar: 'خطوة' })} {plan.last_saved_step}/18
                                       </span>
                                     )}
                                   </div>
-                                  <div className="flex items-center gap-2 mt-2">
+                                  <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-2">
                                     {getStatusBadge(plan)}
                                     {getApprovalBadge(plan)}
                                     {plan.version_number > 1 && (
@@ -449,17 +450,18 @@ export default function PlanSelectionDialog({
                                     )}
                                   </div>
                                 </div>
-                                <div className="flex gap-2 items-center">
+                                <div className="flex gap-2 items-center justify-end sm:justify-start mt-2 sm:mt-0">
                                   {plan.status === 'draft' ? (
-                                    <Button size="sm" onClick={() => handleSelect(plan, 'edit')}>
-                                      <Edit className="h-4 w-4 mr-1" />
-                                      {t({ en: 'Edit', ar: 'تعديل' })}
+                                    <Button size="sm" onClick={() => handleSelect(plan, 'edit')} className="text-xs sm:text-sm">
+                                      <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                                      <span className="hidden xs:inline">{t({ en: 'Edit', ar: 'تعديل' })}</span>
                                     </Button>
                                   ) : plan.status === 'archived' ? (
                                     <Button
                                       size="sm"
                                       variant="outline"
                                       onClick={() => openConfirmDialog('archive', plan)}
+                                      className="text-xs sm:text-sm"
                                     >
                                       {t({ en: 'Restore', ar: 'استعادة' })}
                                     </Button>
@@ -469,16 +471,18 @@ export default function PlanSelectionDialog({
                                         size="sm"
                                         variant="outline"
                                         onClick={() => handleSelect(plan, 'review')}
+                                        className="text-xs sm:text-sm"
                                       >
-                                        <Eye className="h-4 w-4 mr-1" />
-                                        {t({ en: 'Review', ar: 'مراجعة' })}
+                                        <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                                        <span className="hidden xs:inline">{t({ en: 'Review', ar: 'مراجعة' })}</span>
                                       </Button>
                                       <Button
                                         size="sm"
                                         onClick={() => handleSelect(plan, 'edit')}
+                                        className="text-xs sm:text-sm"
                                       >
-                                        <Edit className="h-4 w-4 mr-1" />
-                                        {t({ en: 'Edit', ar: 'تعديل' })}
+                                        <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                                        <span className="hidden xs:inline">{t({ en: 'Edit', ar: 'تعديل' })}</span>
                                       </Button>
                                     </>
                                   )}
