@@ -1,5 +1,5 @@
 /* @refresh reset */
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -69,6 +69,7 @@ export default function StrategyWizardWrapper() {
   const [showDraftRecovery, setShowDraftRecovery] = useState(false);
   const [appliedTemplateName, setAppliedTemplateName] = useState(null);
   const [isLoadingPlan, setIsLoadingPlan] = useState(false);
+  const lastLoadRef = useRef({ planId: null, templateId: null });
 
   const { validateStep } = useWizardValidation(wizardData, t);
 
@@ -134,7 +135,7 @@ export default function StrategyWizardWrapper() {
         ...(data.draft_data || {})
       };
       setWizardData(planData);
-      const savedStep = Number(data.draft_data?.last_saved_step ?? data.last_saved_step) || 1;
+      const savedStep = Number(data.last_saved_step ?? data.draft_data?.last_saved_step) || 1;
       setCurrentStep(savedStep);
       toast.success(t({ en: 'Plan loaded successfully', ar: 'تم تحميل الخطة بنجاح' }));
     } catch (error) {
@@ -151,6 +152,9 @@ export default function StrategyWizardWrapper() {
     const templateId = searchParams.get('template');
 
     if (templateId) {
+      if (lastLoadRef.current.templateId === templateId) return;
+      lastLoadRef.current = { planId: null, templateId };
+
       fetchTemplate(templateId).then(template => {
         if (template) {
           setWizardData({ ...initialWizardData, ...template, name_en: '', name_ar: '' });
@@ -160,14 +164,21 @@ export default function StrategyWizardWrapper() {
           toast.success(`Template applied`);
         }
       });
-    } else if (urlPlanId) {
+      return;
+    }
+
+    if (urlPlanId) {
+      if (lastLoadRef.current.planId === urlPlanId) return;
+      lastLoadRef.current = { planId: urlPlanId, templateId: null };
+
       setPlanId(urlPlanId);
       setMode(urlMode || 'edit');
-      // Fetch plan data from database
       fetchPlanData(urlPlanId);
-    } else if (hasDraft) {
-      setShowDraftRecovery(true);
+      return;
     }
+
+    lastLoadRef.current = { planId: null, templateId: null };
+    if (hasDraft) setShowDraftRecovery(true);
   }, [searchParams, hasDraft, fetchTemplate, fetchPlanData]);
 
   const handleNext = async () => {
@@ -190,7 +201,7 @@ export default function StrategyWizardWrapper() {
     setMode(selectedMode);
     setSearchParams({ id: plan.id, mode: selectedMode });
     setWizardData({ ...initialWizardData, ...plan, ...(plan.draft_data || {}) });
-    const savedStep = Number(plan?.draft_data?.last_saved_step ?? plan?.last_saved_step) || 1;
+    const savedStep = Number(plan?.last_saved_step ?? plan?.draft_data?.last_saved_step) || 1;
     setCurrentStep(savedStep);
   };
 
