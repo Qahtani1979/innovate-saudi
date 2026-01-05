@@ -374,7 +374,7 @@ export const useStrategyMutations = () => {
                 budget_range: data.budget_range,
                 core_values: data.core_values || [],
                 strategic_pillars: data.strategic_pillars || [],
-                last_saved_step: 18,
+                last_saved_step: Number(data.last_saved_step) || 1,
                 draft_data: data,
                 status: 'draft',
                 updated_at: new Date().toISOString()

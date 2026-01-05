@@ -118,23 +118,25 @@ export default function StrategyWizardWrapper() {
         .from('strategic_plans')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
-      if (data) {
-        // Merge plan data with draft_data if exists
-        const planData = {
-          ...initialWizardData,
-          ...data,
-          ...(data.draft_data || {})
-        };
-        setWizardData(planData);
-        if (data.last_saved_step) {
-          setCurrentStep(data.last_saved_step);
-        }
-        toast.success(t({ en: 'Plan loaded successfully', ar: 'تم تحميل الخطة بنجاح' }));
+      if (!data) {
+        toast.error(t({ en: 'Plan not found', ar: 'لم يتم العثور على الخطة' }));
+        return;
       }
+
+      // Merge plan data with draft_data if exists
+      const planData = {
+        ...initialWizardData,
+        ...data,
+        ...(data.draft_data || {})
+      };
+      setWizardData(planData);
+      const savedStep = Number(data.draft_data?.last_saved_step ?? data.last_saved_step) || 1;
+      setCurrentStep(savedStep);
+      toast.success(t({ en: 'Plan loaded successfully', ar: 'تم تحميل الخطة بنجاح' }));
     } catch (error) {
       console.error('Failed to load plan:', error);
       toast.error(t({ en: 'Failed to load plan', ar: 'فشل في تحميل الخطة' }));
@@ -188,7 +190,8 @@ export default function StrategyWizardWrapper() {
     setMode(selectedMode);
     setSearchParams({ id: plan.id, mode: selectedMode });
     setWizardData({ ...initialWizardData, ...plan, ...(plan.draft_data || {}) });
-    if (plan.last_saved_step) setCurrentStep(plan.last_saved_step);
+    const savedStep = Number(plan?.draft_data?.last_saved_step ?? plan?.last_saved_step) || 1;
+    setCurrentStep(savedStep);
   };
 
   const handleCreateNew = () => {
