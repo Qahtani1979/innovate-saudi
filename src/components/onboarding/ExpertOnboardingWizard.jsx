@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAIWithFallback } from '@/hooks/useAIWithFallback';
 
 import { useAutoRoleAssignment } from '@/hooks/useAutoRoleAssignment';
 import { useOnboardingMutations } from '@/hooks/useOnboardingMutations';
