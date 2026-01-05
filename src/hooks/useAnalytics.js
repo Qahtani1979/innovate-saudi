@@ -3,8 +3,8 @@
  * Tracks user interactions like searches, views, etc.
  */
 
-import { useMutation } from '@/hooks/useAppQueryClient';
 import { useCallback } from 'react';
+import { useMutation } from '@/hooks/useAppQueryClient';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/AuthContext';
 
