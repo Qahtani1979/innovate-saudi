@@ -142,8 +142,17 @@ export function useNotificationSystem() {
         }
     });
 
+    // Create a unified notify object that has both the async notification function 
+    // AND toast shortcuts for convenience
+    const notifyWithToasts = Object.assign(notifyMutation.mutateAsync, {
+        success: toast.success,
+        error: toast.error,
+        warning: toast.warning,
+        info: toast.info
+    });
+
     return {
-        notify: notifyMutation.mutateAsync,
+        notify: notifyWithToasts,
         markAsRead: markAsRead.mutateAsync,
         isNotifying: notifyMutation.isPending
     };
