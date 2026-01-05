@@ -500,7 +500,7 @@ export default function Step3Stakeholders({
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div className="space-y-1">
-                            <Label className="text-xs">{t({ en: 'Contact Person', ar: 'جهة الاتصال' })}</Label>
+                            <Label className="text-xs">{t({ en: 'Contact Person (English)', ar: 'جهة الاتصال (إنجليزي)' })}</Label>
                             <Input
                               value={stakeholder.contact_person_en || stakeholder.contact_person || ''}
                               onChange={(e) => updateStakeholder(index, 'contact_person_en', e.target.value)}
@@ -510,13 +510,62 @@ export default function Step3Stakeholders({
                             />
                           </div>
                           <div className="space-y-1">
-                            <Label className="text-xs">{t({ en: 'Influence Strategy', ar: 'استراتيجية التأثير' })}</Label>
+                            <Label className="text-xs">{t({ en: 'Contact Person (Arabic)', ar: 'جهة الاتصال (عربي)' })}</Label>
                             <Input
-                              value={stakeholder.influence_strategy_en || stakeholder.influence_strategy || ''}
-                              onChange={(e) => updateStakeholder(index, 'influence_strategy_en', e.target.value)}
-                              placeholder={t({ en: 'How to engage?', ar: 'كيفية التعامل؟' })}
+                              value={stakeholder.contact_person_ar || ''}
+                              onChange={(e) => updateStakeholder(index, 'contact_person_ar', e.target.value)}
+                              placeholder={t({ en: 'Arabic role/title', ar: 'الدور/المنصب بالعربية' })}
+                              dir="rtl"
                               disabled={isReadOnly}
                               className="bg-background/50"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs">{t({ en: 'Influence Strategy (English)', ar: 'استراتيجية التأثير (إنجليزي)' })}</Label>
+                            <Textarea
+                              value={stakeholder.influence_strategy_en || stakeholder.influence_strategy || ''}
+                              onChange={(e) => updateStakeholder(index, 'influence_strategy_en', e.target.value)}
+                              placeholder={t({ en: 'How to engage this stakeholder?', ar: 'كيفية التعامل مع هذا الطرف؟' })}
+                              disabled={isReadOnly}
+                              className="bg-background/50 min-h-[60px]"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">{t({ en: 'Influence Strategy (Arabic)', ar: 'استراتيجية التأثير (عربي)' })}</Label>
+                            <Textarea
+                              value={stakeholder.influence_strategy_ar || ''}
+                              onChange={(e) => updateStakeholder(index, 'influence_strategy_ar', e.target.value)}
+                              placeholder={t({ en: 'Arabic engagement strategy', ar: 'استراتيجية التعامل بالعربية' })}
+                              dir="rtl"
+                              disabled={isReadOnly}
+                              className="bg-background/50 min-h-[60px]"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs">{t({ en: 'Notes (English)', ar: 'ملاحظات (إنجليزي)' })}</Label>
+                            <Textarea
+                              value={stakeholder.notes_en || ''}
+                              onChange={(e) => updateStakeholder(index, 'notes_en', e.target.value)}
+                              placeholder={t({ en: 'Additional notes...', ar: 'ملاحظات إضافية...' })}
+                              disabled={isReadOnly}
+                              className="bg-background/50 min-h-[60px]"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">{t({ en: 'Notes (Arabic)', ar: 'ملاحظات (عربي)' })}</Label>
+                            <Textarea
+                              value={stakeholder.notes_ar || ''}
+                              onChange={(e) => updateStakeholder(index, 'notes_ar', e.target.value)}
+                              placeholder={t({ en: 'Arabic notes...', ar: 'ملاحظات بالعربية...' })}
+                              dir="rtl"
+                              disabled={isReadOnly}
+                              className="bg-background/50 min-h-[60px]"
                             />
                           </div>
                         </div>
