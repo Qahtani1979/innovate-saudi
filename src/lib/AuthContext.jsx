@@ -408,6 +408,7 @@ export const AuthProvider = ({ children }) => {
     setUserRoles([]);
     setIsAuthenticated(false);
     setNeedsOnboarding(false);
+    setAuthError(null);
 
     try {
       // Log the logout event
@@ -424,20 +425,35 @@ export const AuthProvider = ({ children }) => {
           .eq('is_active', true);
       }
 
-      // Try to sign out from Supabase - but don't fail if session is already gone
-      const { error } = await supabase.auth.signOut({ scope: 'local' });
-
-      // session_not_found is expected if server session was already invalidated
-      if (error && error.message !== 'Session from session_id claim in JWT does not exist') {
-        console.warn('Signout warning:', error.message);
-      }
+      // Sign out from Supabase globally (invalidates all sessions)
+      await supabase.auth.signOut({ scope: 'global' });
     } catch (error) {
       // Silently handle - local state is already cleared which is the main goal
       console.debug('Logout cleanup:', error?.message);
+    } finally {
+      // Clear all Supabase-related storage to ensure clean state
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      
+      // Also clear sessionStorage
+      const sessionKeysToRemove = [];
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
+          sessionKeysToRemove.push(key);
+        }
+      }
+      sessionKeysToRemove.forEach(key => sessionStorage.removeItem(key));
     }
 
     if (shouldRedirect) {
-      // Immediate redirect since state is already cleared
+      // Force full page reload to clear any cached state
       window.location.href = '/Auth';
     }
   };
